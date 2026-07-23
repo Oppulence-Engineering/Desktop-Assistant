@@ -8,6 +8,7 @@ import (
 
 	"entgo.io/contrib/entgql"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinitionhistory"
@@ -22,6 +23,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -29,6 +31,15 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
@@ -39,6 +50,11 @@ import (
 type Noder interface {
 	IsNode()
 }
+
+var actionoutcomeImplementors = []string{"ActionOutcome", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*ActionOutcome) IsNode() {}
 
 var agentapprovalImplementors = []string{"AgentApproval", "Node"}
 
@@ -110,6 +126,11 @@ var cloudeventImplementors = []string{"CloudEvent", "Node"}
 // IsNode implements the Node interface check for GQLGen.
 func (*CloudEvent) IsNode() {}
 
+var commitmentImplementors = []string{"Commitment", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Commitment) IsNode() {}
+
 var creditledgerImplementors = []string{"CreditLedger", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
@@ -144,6 +165,51 @@ var oauthpendingImplementors = []string{"OAuthPending", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*OAuthPending) IsNode() {}
+
+var policydecisionsnapshotImplementors = []string{"PolicyDecisionSnapshot", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*PolicyDecisionSnapshot) IsNode() {}
+
+var relationshipImplementors = []string{"Relationship", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Relationship) IsNode() {}
+
+var revenueactionImplementors = []string{"RevenueAction", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RevenueAction) IsNode() {}
+
+var revenueactionrevisionImplementors = []string{"RevenueActionRevision", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RevenueActionRevision) IsNode() {}
+
+var revenueevidenceImplementors = []string{"RevenueEvidence", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RevenueEvidence) IsNode() {}
+
+var revenueleakscanImplementors = []string{"RevenueLeakScan", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RevenueLeakScan) IsNode() {}
+
+var revenueoutboxeventImplementors = []string{"RevenueOutboxEvent", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RevenueOutboxEvent) IsNode() {}
+
+var revenueworkspaceImplementors = []string{"RevenueWorkspace", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RevenueWorkspace) IsNode() {}
+
+var revenueworkspacememberImplementors = []string{"RevenueWorkspaceMember", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RevenueWorkspaceMember) IsNode() {}
 
 var subscriptionImplementors = []string{"BillingSubscription", "Node"}
 
@@ -213,6 +279,15 @@ func (c *Client) Noder(ctx context.Context, id uuid.UUID, opts ...NodeOption) (_
 
 func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, error) {
 	switch table {
+	case actionoutcome.Table:
+		query := c.ActionOutcome.Query().
+			Where(actionoutcome.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, actionoutcomeImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case agentapproval.Table:
 		query := c.AgentApproval.Query().
 			Where(agentapproval.ID(id))
@@ -339,6 +414,15 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			}
 		}
 		return query.Only(ctx)
+	case commitment.Table:
+		query := c.Commitment.Query().
+			Where(commitment.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, commitmentImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case creditledger.Table:
 		query := c.CreditLedger.Query().
 			Where(creditledger.ID(id))
@@ -398,6 +482,87 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(oauthpending.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, oauthpendingImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case policydecisionsnapshot.Table:
+		query := c.PolicyDecisionSnapshot.Query().
+			Where(policydecisionsnapshot.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, policydecisionsnapshotImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relationship.Table:
+		query := c.Relationship.Query().
+			Where(relationship.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case revenueaction.Table:
+		query := c.RevenueAction.Query().
+			Where(revenueaction.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, revenueactionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case revenueactionrevision.Table:
+		query := c.RevenueActionRevision.Query().
+			Where(revenueactionrevision.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, revenueactionrevisionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case revenueevidence.Table:
+		query := c.RevenueEvidence.Query().
+			Where(revenueevidence.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, revenueevidenceImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case revenueleakscan.Table:
+		query := c.RevenueLeakScan.Query().
+			Where(revenueleakscan.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, revenueleakscanImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case revenueoutboxevent.Table:
+		query := c.RevenueOutboxEvent.Query().
+			Where(revenueoutboxevent.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, revenueoutboxeventImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case revenueworkspace.Table:
+		query := c.RevenueWorkspace.Query().
+			Where(revenueworkspace.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, revenueworkspaceImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case revenueworkspacemember.Table:
+		query := c.RevenueWorkspaceMember.Query().
+			Where(revenueworkspacemember.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, revenueworkspacememberImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -493,6 +658,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		idmap[id] = append(idmap[id], &noders[i])
 	}
 	switch table {
+	case actionoutcome.Table:
+		query := c.ActionOutcome.Query().
+			Where(actionoutcome.IDIn(ids...))
+		query, err := query.CollectFields(ctx, actionoutcomeImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case agentapproval.Table:
 		query := c.AgentApproval.Query().
 			Where(agentapproval.IDIn(ids...))
@@ -717,6 +898,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 				*noder = node
 			}
 		}
+	case commitment.Table:
+		query := c.Commitment.Query().
+			Where(commitment.IDIn(ids...))
+		query, err := query.CollectFields(ctx, commitmentImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case creditledger.Table:
 		query := c.CreditLedger.Query().
 			Where(creditledger.IDIn(ids...))
@@ -817,6 +1014,150 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.OAuthPending.Query().
 			Where(oauthpending.IDIn(ids...))
 		query, err := query.CollectFields(ctx, oauthpendingImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case policydecisionsnapshot.Table:
+		query := c.PolicyDecisionSnapshot.Query().
+			Where(policydecisionsnapshot.IDIn(ids...))
+		query, err := query.CollectFields(ctx, policydecisionsnapshotImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relationship.Table:
+		query := c.Relationship.Query().
+			Where(relationship.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relationshipImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case revenueaction.Table:
+		query := c.RevenueAction.Query().
+			Where(revenueaction.IDIn(ids...))
+		query, err := query.CollectFields(ctx, revenueactionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case revenueactionrevision.Table:
+		query := c.RevenueActionRevision.Query().
+			Where(revenueactionrevision.IDIn(ids...))
+		query, err := query.CollectFields(ctx, revenueactionrevisionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case revenueevidence.Table:
+		query := c.RevenueEvidence.Query().
+			Where(revenueevidence.IDIn(ids...))
+		query, err := query.CollectFields(ctx, revenueevidenceImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case revenueleakscan.Table:
+		query := c.RevenueLeakScan.Query().
+			Where(revenueleakscan.IDIn(ids...))
+		query, err := query.CollectFields(ctx, revenueleakscanImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case revenueoutboxevent.Table:
+		query := c.RevenueOutboxEvent.Query().
+			Where(revenueoutboxevent.IDIn(ids...))
+		query, err := query.CollectFields(ctx, revenueoutboxeventImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case revenueworkspace.Table:
+		query := c.RevenueWorkspace.Query().
+			Where(revenueworkspace.IDIn(ids...))
+		query, err := query.CollectFields(ctx, revenueworkspaceImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case revenueworkspacemember.Table:
+		query := c.RevenueWorkspaceMember.Query().
+			Where(revenueworkspacemember.IDIn(ids...))
+		query, err := query.CollectFields(ctx, revenueworkspacememberImplementors...)
 		if err != nil {
 			return nil, err
 		}

@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.21](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.20...v0.1.21) (2026-07-21)
+
+
+### Features
+
+* **mailbox:** add core data model, ids, capabilities, and error taxonomy ([802dade](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/802dadeb45092396991d86c2ebeca3c89077f1bd))
+* **mailbox:** add local store and sync reliability layer ([cbada95](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/cbada957e8734ad5b20449863c3685fa3d437d22))
+* **mailbox:** add MailboxService facade, public barrel, and module docs ([713d510](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/713d510a7dd3cd271e0c30bbc0481c4619e7cac3))
+* **mailbox:** add model-backed matcher, classifier, drafts, and evals ([1044859](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/1044859b483992e2d67b549756ce3a95eda8ce74))
+* **mailbox:** add privacy guards for model calls and logging ([a526443](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/a52644355cc088fc47e30e0da164344031adb663))
+* **mailbox:** add provider contract and Gmail adapter over existing sync ([7a4197a](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/7a4197ab1c1663868a6488b92e35d872a8ac3771))
+* **mailbox:** add reply tracking state machine and local drafts ([aca9f12](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/aca9f126164d858fc7b04a4037376955feea5be3))
+* **mailbox:** add rules engine with policy gate, audit log, and preview ([6a1f2d4](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6a1f2d4655c89daa3f08eee2c740d0a1dad4d5ef))
+* **mailbox:** provider-neutral mailbox foundation, rules engine, and reply tracking ([56acdf5](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/56acdf57e20c3cff6272ea1e73a16fb178ecb4aa))
+* **main:** wire provider-neutral mailbox IPC handlers ([358b06c](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/358b06cd4ad1f1e4668c0b93cc4e1548d4af35ea))
+* **shared:** add provider-neutral mailbox blocks and IPC schemas ([6518796](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6518796df100c91aab61e11286fd13e4a218abdb))
+* unified Cossistant-inspired design language across console and desktop ([11b0054](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/11b005429d2a6e4195b864c1a2ee02a9fd43c1b3))
+* **x:** adopt the console design language in the desktop shell ([25f408c](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/25f408c5d2af6e349787e5dccf49e6f623919ccb))
+
+
+### Refactors
+
+* **x:** back the desktop icon facade with phosphor ([0249a85](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/0249a85a5f1d32e322cc2ae60c0b250b41f78686))
+
 ## [0.1.20](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.19...v0.1.20) (2026-07-07)
 
 

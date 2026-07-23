@@ -11,7 +11,6 @@ import CodeIcon from "@mui/icons-material/CodeOutlined";
 import EnvelopeIcon from "@mui/icons-material/MailOutlineOutlined";
 import FileTextIcon from "@mui/icons-material/DescriptionOutlined";
 import FlowArrowIcon from "@mui/icons-material/SchemaOutlined";
-import GithubLogoIcon from "@mui/icons-material/GitHub";
 import GlobeIcon from "@mui/icons-material/LanguageOutlined";
 import HardDrivesIcon from "@mui/icons-material/StorageOutlined";
 import HeadsetIcon from "@mui/icons-material/SupportAgentOutlined";
@@ -62,10 +61,8 @@ const integrationGroups = [
 
 const mobileNavLinks = [
   { label: "Product", href: "/product" },
-  { label: "Revenue Leak Scan", href: "/ai-help-center" },
-  { label: "Action Queue", href: "/ai-documentation-agent" },
   { label: "Customers", href: "/customers" },
-  { label: "Plans", href: "/pricing" },
+  { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },
 ];
 
@@ -99,7 +96,7 @@ function MarketingIcon({
         className,
       )}
     >
-      <Icon style={{ fontSize: compact ? "0.875rem" : "1rem" }} />
+      <Icon style={{ fontSize: compact ? "0.875rem" : "1.25rem" }} />
     </span>
   );
 }
@@ -117,10 +114,6 @@ function iconForLink(item: LinkItem): { icon: SvgIconComponent; tone?: IconTone 
 
   if (key.includes("api") || key.includes("sdk") || key.includes("code")) {
     return { icon: CodeIcon, tone: "green" };
-  }
-
-  if (key.includes("github")) {
-    return { icon: GithubLogoIcon, tone: "neutral" };
   }
 
   if (key.includes("widget") || key.includes("chat") || key.includes("support")) {
@@ -251,7 +244,7 @@ function EyebrowPill({
   return (
     <p
       className={cn(
-        "marketing-eyebrow inline-flex w-fit max-w-full items-center gap-2 rounded-full py-1 pr-3 pl-1.5 font-mono text-[10px] uppercase tracking-wider",
+        "marketing-eyebrow inline-flex w-fit max-w-full items-center gap-2 rounded-full py-1 pr-3 pl-1.5 font-mono text-xs uppercase tracking-wider",
         className,
       )}
     >
@@ -379,85 +372,11 @@ function InlineLogo({
         width={iconSize}
       />
       {!compact ? (
-        <span className="font-display text-[24px] leading-6 font-semibold text-primary">
+        <span className="font-display text-[24px] leading-6 font-medium text-primary">
           oppulence
         </span>
       ) : null}
     </span>
-  );
-}
-
-function MenuLink({ item }: { item: LinkItem }) {
-  const { icon, tone } = iconForLink(item);
-  const content = (
-    <>
-      <MarketingIcon compact icon={icon} tone={tone} />
-      <span className="min-w-0">
-        <span className="text-sm font-medium text-foreground">{item.label}</span>
-        {item.description ? (
-          <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
-            {item.description}
-          </span>
-        ) : null}
-      </span>
-    </>
-  );
-
-  if (item.external) {
-    return (
-      <a
-        className="group/menu flex gap-3 rounded-md border border-transparent px-2.5 py-2.5 transition-colors hover:border-primary/10 hover:bg-background-100/80"
-        href={item.href}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        {content}
-      </a>
-    );
-  }
-
-  return (
-    <Link
-      className="group/menu flex gap-3 rounded-md border border-transparent px-2.5 py-2.5 transition-colors hover:border-primary/10 hover:bg-background-100/80"
-      href={item.href}
-    >
-      {content}
-    </Link>
-  );
-}
-
-function DropdownMenu({
-  label,
-  items,
-  width = "w-[560px]",
-}: {
-  label: string;
-  items: LinkItem[];
-  width?: string;
-}) {
-  return (
-    <details className="group relative" data-marketing-dropdown>
-      <summary aria-haspopup="menu" className="linear-nav-trigger">
-        {label}
-      </summary>
-      <div className="linear-dropdown-panel invisible absolute top-full left-0 z-50 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100">
-        <div
-          className={cn(
-            "marketing-surface-strong rounded-md border border-primary/10 bg-background p-3 shadow-xl shadow-black/30",
-            width,
-          )}
-        >
-          <div className="mb-2 px-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            {label}
-          </div>
-          <div className="grid grid-cols-2 gap-1">
-            {items.map((item) => (
-              <MenuLink item={item} key={`${label}-${item.label}-${item.href}`} />
-            ))}
-          </div>
-        </div>
-      </div>
-    </details>
   );
 }
 
@@ -475,8 +394,8 @@ function MobileMenu() {
           </Link>
         ))}
         <div className="mt-auto grid gap-2 pt-8">
-          <Link className="linear-button-secondary !h-11" href="/app">
-            Open action queue
+          <Link className="linear-button-secondary !h-11" href="/sign-in">
+            Sign in
           </Link>
           <Link className="linear-button-primary !h-11" href="/book-a-demo">
             Book a scan
@@ -492,24 +411,22 @@ export function TopBar() {
     <header className="linear-header">
       <div className="linear-header-inner">
         <div className="flex flex-1 justify-start">
-          <Link aria-label="Oppulence home" className="linear-logo !h-12" href="/">
-            <InlineLogo prominent />
+          <Link aria-label="Oppulence home" className="linear-logo" href="/">
+            <InlineLogo />
           </Link>
         </div>
 
         <nav className="hidden items-center gap-2 lg:flex">
-          <DropdownMenu items={productLinks} label="Product" width="w-[560px]" />
-          <div className="hidden xl:block">
-            <DropdownMenu items={featureLinks} label="Features" />
-          </div>
-          <DropdownMenu items={resourceLinks} label="Resources" width="w-[420px]" />
+          <Link className="linear-nav-link" href="/product">
+            Product
+          </Link>
           <Link className="linear-nav-link" href="/customers">
             Customers
           </Link>
           <Link className="linear-nav-link" href="/pricing">
-            Plans
+            Pricing
           </Link>
-          <Link className="linear-nav-link hidden xl:inline-flex" href="/blog">
+          <Link className="linear-nav-link" href="/blog">
             Blog
           </Link>
         </nav>
@@ -517,8 +434,8 @@ export function TopBar() {
         <div className="linear-header-divider hidden lg:block" />
 
         <div className="flex flex-1 items-center justify-end gap-2">
-          <Link className="linear-nav-link hidden md:inline-flex" href="/app">
-            Action queue
+          <Link className="linear-nav-link hidden md:inline-flex" href="/sign-in">
+            Sign in
           </Link>
           <Link className="linear-button-primary hidden md:inline-flex" href="/book-a-demo">
             Book a scan
@@ -569,9 +486,8 @@ export function Footer() {
             title="Company"
           />
           <p className="linear-footer-note">
-            Oppulence remembers every commercial relationship, finds who needs attention and why,
-            then safely prepares the next action. © 2026 Oppulence. Open source under the MIT
-            license.
+            Oppulence finds the money slipping away in your inbox and chases it in your voice, with
+            your approval. © 2026 Oppulence.
           </p>
         </div>
       </div>
@@ -602,33 +518,18 @@ function LinearFooterGroup({ title, items }: { title: string; items: LinkItem[] 
   );
 }
 
-const homeProblems = [
-  {
-    title: "Warm relationships go cold.",
-    body: "The proposal, promise, objection, and last real conversation are scattered across inboxes, meetings, calendars, and CRM records.",
-  },
-  {
-    title: "The CRM misses the promise.",
-    body: "Fields can show a stage, but they rarely explain what was said, who committed to what, or why the relationship matters now.",
-  },
-  {
-    title: "Sending without memory is risky.",
-    body: "A polished draft is still the wrong action if the contact opted out, changed roles, objected before, or should not hear from you yet.",
-  },
-];
-
 const homeSteps = [
   {
-    title: "Observe and remember",
-    body: "Connect communication and CRM history so every relationship, promise, objection, and outcome has a durable source trail.",
+    title: "Connect your inbox",
+    body: "Link Gmail in two minutes. Access is read-only at the start. Your mail stays yours.",
   },
   {
-    title: "Prioritize and verify",
-    body: "Rank the relationships worth attention, verify current contactability, and explain why each action matters now.",
+    title: "Watch the leak",
+    body: "Get a weekly report of each deal, invoice, and relationship going quiet, with dollar amounts attached.",
   },
   {
-    title: "Govern, act, and learn",
-    body: "Check policy and sender health, approve the next move, then use replies, meetings, and revenue outcomes to improve the memory.",
+    title: "Approve the chase",
+    body: "Review each drafted nudge and approve it with one click. A monthly receipt shows what came back.",
   },
 ];
 
@@ -651,25 +552,22 @@ const customerStoryIcons: {
   { icon: CheckCircleIcon, tone: "green" },
 ];
 
-function PlanCtaButton({ plan }: { plan: (typeof pricingPlans)[number] }) {
-  const href = "/book-a-demo";
-  const label =
-    plan.name === "Founder" ? "Book a scan" : plan.recommended ? "Plan rollout" : "Talk to us";
-
+export function ProductPage({ page }: { page: MarketingPage }) {
   return (
-    <Button
-      asChild
-      className={cn(
-        "mt-7 h-10 w-full justify-between px-4 font-medium",
-        plan.recommended ? "marketing-cta-primary" : "marketing-cta-secondary",
-      )}
-      variant={plan.recommended ? "default" : "ghost"}
-    >
-      <Link href={href}>
-        {label}
-        <ArrowRightIcon style={{ fontSize: "1rem" }} />
-      </Link>
-    </Button>
+    <div className="flex flex-col">
+      <section className="linear-hero linear-inset">
+        <p className="mb-5 font-mono text-xs text-oppulence-orange">[product]</p>
+        <h1 className="linear-hero-title">{page.title}</h1>
+        <div className="linear-hero-meta">
+          <p className="linear-body max-w-[620px]">{page.description}</p>
+        </div>
+      </section>
+      {linearHomeSections.map((section, index) => (
+        <LinearProductSection index={index} key={section.title} section={section} />
+      ))}
+      <HomeUpdates />
+      <FinalCta />
+    </div>
   );
 }
 
@@ -677,14 +575,11 @@ export function HomePage() {
   return (
     <div className="flex flex-col">
       <HomeHero />
-      <HeroVisual />
-      <LogoBand />
       <ProblemSection />
       {linearHomeSections.map((section, index) => (
         <LinearProductSection index={index} key={section.title} section={section} />
       ))}
       <HomeUpdates />
-      <CapabilityIndex />
       <HomeProofBand />
       <HomeFaqSection />
       <FinalCta />
@@ -695,197 +590,128 @@ export function HomePage() {
 function HomeHero() {
   return (
     <section className="linear-hero linear-inset">
-      <div>
-        <h1 className="linear-hero-title">
-          Turn forgotten relationships
-          <br className="hidden sm:block" /> into revenue.
-        </h1>
-        <div className="linear-hero-meta">
-          <p className="linear-body max-w-[620px]">
-            Oppulence remembers every commercial relationship, identifies who needs attention and
-            why, verifies what is safe to send, and prepares the next action for your approval.
-          </p>
-          <Link className="linear-inline-link shrink-0" href="/book-a-demo">
-            <span className="linear-new-pill">New</span>
-            Revenue Leak Scan <span className="text-foreground/40">→</span>
-          </Link>
-        </div>
+      <p className="mb-5 font-mono text-xs text-oppulence-orange">[revenue memory and execution]</p>
+      <h1 className="linear-hero-title">
+        The most expensive thing
+        <br className="hidden sm:block" /> in your pipeline is silence.
+      </h1>
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Link
+          className="linear-button-primary !h-12 !px-6 !text-[14px] sm:!w-[250px]"
+          href="/book-a-demo"
+        >
+          See what is slipping
+        </Link>
+        <Link className="linear-button-ghost !h-12 !px-5 !text-[14px]" href="/product">
+          How it works <span className="ml-2 text-foreground/40">→</span>
+        </Link>
+      </div>
+      <div className="linear-hero-band">
+        <HeroQueueCard />
+      </div>
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <p className="font-mono text-xs text-[var(--linear-text-tertiary)]">
+          watches gmail · calendar · billing
+        </p>
+        <Link className="linear-inline-link shrink-0" href="/book-a-demo">
+          <span className="linear-new-pill">New</span>
+          Revenue Leak Scan <span className="text-foreground/40">→</span>
+        </Link>
       </div>
     </section>
   );
 }
 
-function HeroVisual() {
-  return (
-    <section className="linear-hero-visual">
-      <div className="linear-hero-glow" />
-      <div className="linear-app-frame">
-        <Image
-          alt="The Oppulence revenue action queue with relationship context and recommended actions"
-          height={960}
-          priority
-          sizes="(max-width: 640px) 780px, (max-width: 1440px) 92vw, 1320px"
-          src={desktopScreenshots.home}
-          width={1440}
-        />
-      </div>
-    </section>
-  );
-}
+function HeroQueueCard() {
+  const rows = [
+    { amount: "$40k", what: "Acme proposal · quiet for 6 days", note: "nudge drafted" },
+    { amount: "$14k", what: "Beta Corp invoice · 3 weeks overdue", note: "reminder drafted" },
+    { amount: "$8k", what: "Star client · gone quiet", note: "check-in drafted" },
+  ];
 
-function LogoBand() {
   return (
-    <section aria-label="Connected tools" className="linear-logo-band">
-      <div className="linear-logo-cell linear-logo-caption">
-        One loop across your revenue systems
-      </div>
-      {integrationGroups.slice(0, 6).map((item) => {
-        const { icon: Icon } = iconForLink({ href: item, label: item });
-
-        return (
-          <div className="linear-logo-cell" key={item}>
-            <Icon style={{ fontSize: "1rem" }} />
-            {item}
-          </div>
-        );
-      })}
-    </section>
+    <aside aria-label="Example weekly slip report" className="linear-hero-card">
+      <p className="linear-hero-card-title">[this week: $62,000 slipping]</p>
+      <ul>
+        {rows.map((row) => (
+          <li key={row.amount}>
+            <span className="linear-hero-card-amt">{row.amount}</span>
+            <span className="linear-hero-card-what">
+              {row.what}
+              <em>{row.note}</em>
+            </span>
+            <span aria-hidden="true" className="linear-hero-card-act">
+              approve
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="linear-hero-card-foot">nothing sends until you click approve</p>
+    </aside>
   );
 }
 
 function ProblemSection() {
   return (
-    <section>
-      <div className="linear-statement linear-inset">
-        <h2 className="linear-statement-title">
-          <strong>Your next deal may already be in your inbox.</strong> Oppulence finds missed
-          promises, dormant champions, unanswered proposals, former customers, and neglected
-          referrals—then shows you the safest next move.
-        </h2>
-      </div>
-      <div className="linear-benefits linear-inset">
-        {homeProblems.map((card, index) => (
-          <article className="linear-benefit" key={card.title}>
-            <span className="linear-benefit-figure">FIG 0.{index + 2}</span>
-            <ProblemVisual index={index} />
-            <h3>{card.title}</h3>
-            <p className="linear-body">{card.body}</p>
-          </article>
-        ))}
-      </div>
+    <section className="linear-manifesto linear-inset">
+      <h2>
+        <strong>Few deals die from a &ldquo;no.&rdquo; Most die waiting.</strong>
+        <br />
+        <br />
+        Oppulence watches your inbox, calendar, and billing. It finds the money that is about to
+        slip: <strong>the proposal with no reply</strong>,{" "}
+        <strong>the invoice with no payment</strong>, <strong>the client who has gone quiet</strong>
+        .
+        <br />
+        <br />
+        It writes the chase in your voice, matched to the relationship.{" "}
+        <strong>Nothing sends until you click Approve.</strong>
+      </h2>
     </section>
-  );
-}
-
-function ProblemVisual({ index }: { index: number }) {
-  if (index === 0) {
-    return (
-      <div aria-hidden="true" className="linear-problem-art linear-problem-orbit">
-        <span className="linear-problem-orbit-ring" />
-        <span className="linear-problem-node linear-problem-node-a" />
-        <span className="linear-problem-node linear-problem-node-b" />
-        <span className="linear-problem-node linear-problem-node-c" />
-        <span className="linear-problem-orbit-break" />
-      </div>
-    );
-  }
-
-  if (index === 1) {
-    return (
-      <div aria-hidden="true" className="linear-problem-art linear-problem-stack">
-        <span className="linear-problem-plane linear-problem-plane-back" />
-        <span className="linear-problem-plane linear-problem-plane-middle" />
-        <span className="linear-problem-plane linear-problem-plane-front">
-          <i />
-          <i />
-          <i />
-        </span>
-        <span className="linear-problem-thread" />
-      </div>
-    );
-  }
-
-  return (
-    <div aria-hidden="true" className="linear-problem-art linear-problem-path">
-      <span className="linear-problem-path-rail" />
-      <span className="linear-problem-path-signal" />
-      <span className="linear-problem-path-gate">
-        <i />
-      </span>
-      <span className="linear-problem-path-echo" />
-    </div>
   );
 }
 
 const linearHomeSections = [
   {
-    title: "Find the revenue already hiding in your history.",
+    title: "See the money that is slipping.",
     description:
-      "Scan the last 60–90 days of communication and CRM activity for unanswered proposals, dormant opportunities, missed commitments, former customers, and neglected referrals.",
+      "Oppulence scans your last 60–90 days of email, calendar, and billing. It finds ghosted proposals, dormant clients, unbilled work, and unpaid invoices. Each finding shows a dollar amount and a link to its source.",
     label: "Revenue Leak Scan",
     href: "/ai-help-center",
     src: desktopScreenshots.knowledge,
     alt: "Oppulence Revenue Leak Scan showing warm opportunities and source evidence",
     bullets: [
-      "Unanswered proposals and missed promises",
-      "Dormant champions and former customers",
-      "Every finding linked to source evidence",
+      "Ghosted proposals, with the deal value attached",
+      "Dormant clients and unpaid invoices",
+      "Each finding links to the source email",
     ],
   },
   {
-    title: "Know who needs attention—and why now.",
+    title: "Get a short list, not another inbox.",
     description:
-      "Oppulence ranks the highest-value relationships into one daily action queue, with the history, commitment, opportunity, and timing behind every recommendation.",
+      "Each week, Oppulence hands you the three to five actions worth money right now. Each one shows who needs attention, why now, and how much is at stake. The chase arrives already drafted, in your voice. You approve, edit, snooze, or reject.",
     label: "Revenue Action Queue",
     href: "/ai-documentation-agent",
     src: desktopScreenshots.chat,
     alt: "Oppulence daily revenue action queue ranked by value and urgency",
     bullets: [
-      "Ten highest-value actions, not another noisy inbox",
-      "Relationship history and prior objections included",
-      "Approve, edit, snooze, or reject every action",
+      "The highest-value moves of the week",
+      "Who, why now, and how much on each item",
+      "Approve, edit, snooze, or reject in one click",
     ],
   },
   {
-    title: "Verify the person before you prepare the message.",
+    title: "Nothing sends without your click.",
     description:
-      "Research the account, confirm the person’s current role and address, and keep the evidence attached before a draft becomes an action.",
-    label: "Research & verification",
-    href: "/automated-screenshots-for-docs",
-    src: desktopScreenshots.tasks,
-    alt: "Oppulence researching an account and verifying a contact before outreach",
-    bullets: [
-      "Current role and contact verification",
-      "Account research with source provenance",
-      "Evidence stays attached to the proposed action",
-    ],
-  },
-  {
-    title: "Know what must not be sent.",
-    description:
-      "Check prior objections, opt-outs, suppression lists, frequency limits, sender health, and permissions before a message can leave the queue.",
+      "Each message waits for your approval. The system never emails a contact who bounced, opted out, or changed roles. Actions that touch money need a second confirmation. When a check fails, the system stops.",
     label: "Policy & sender protection",
     href: "/integrations",
     src: desktopScreenshots.connections,
     alt: "Oppulence policy checks and sender protection before execution",
     bullets: [
-      "Suppression and opt-out checks",
-      "Frequency and permission rules",
-      "Sender and domain health",
-    ],
-  },
-  {
-    title: "Let every outcome improve the next action.",
-    description:
-      "Replies, meetings, human edits, CRM changes, wins, and losses flow back into the relationship memory so the system learns what good follow-through looks like for your business.",
-    label: "Closed-loop learning",
-    href: "/product",
-    src: desktopScreenshots.home,
-    alt: "Oppulence relationship timeline updated by replies, meetings, and revenue outcomes",
-    bullets: [
-      "Replies and meetings update the relationship",
-      "Human edits become learning signals",
-      "Revenue outcomes close the loop",
+      "You approve every send",
+      "Bounced and opted-out contacts are blocked",
+      "Money actions need step-up approval",
     ],
   },
 ] as const;
@@ -910,6 +736,7 @@ function LinearProductSection({
     <section className="linear-product-section">
       <header className="linear-product-header linear-inset">
         <div>
+          <p className="linear-eyebrow">[{section.label.toLowerCase()}]</p>
           <h2 className="linear-product-title">{section.title}</h2>
         </div>
         <div className="linear-product-description">
@@ -951,10 +778,11 @@ function HomeUpdates() {
   return (
     <section className="linear-updates">
       <div className="linear-inset">
+        <p className="linear-eyebrow">[how it works]</p>
         <h2 className="linear-statement-title !max-w-[1180px]">
-          <strong>The memory is the advantage.</strong> Message generation is not the moat. The moat
-          is the source-linked history connecting relationships, commitments, policy decisions,
-          human edits, executed actions, and revenue outcomes.
+          <strong>The memory is the moat.</strong> Anyone can draft a message. Only Oppulence knows
+          every promise, chase, objection, and outcome across your relationships. No one can rebuild
+          that history anywhere else.
         </h2>
       </div>
       <div className="linear-updates-grid linear-inset">
@@ -1008,59 +836,18 @@ function HomeStepVisual({ index }: { index: number }) {
   );
 }
 
-const capabilityTiles: { label: string; icon: SvgIconComponent }[] = [
-  { label: "Revenue Leak Scan", icon: MagnifyingGlassIcon },
-  { label: "Revenue Action Queue", icon: TrayIcon },
-  { label: "Relationship memory", icon: BrainIcon },
-  { label: "Commitment tracking", icon: CalendarDotsIcon },
-  { label: "Source evidence", icon: FileTextIcon },
-  { label: "Contact verification", icon: SealCheckIcon },
-  { label: "Account research", icon: GlobeIcon },
-  { label: "Suppression checks", icon: CircleIcon },
-  { label: "Frequency policies", icon: PathIcon },
-  { label: "Sender health", icon: ChartLineIcon },
-  { label: "Human approvals", icon: CheckCircleIcon },
-  { label: "Execution telemetry", icon: FlowArrowIcon },
-  { label: "Meeting briefs", icon: CalendarDotsIcon },
-  { label: "CRM outcome sync", icon: PlugsConnectedIcon },
-  { label: "Audit history", icon: HardDrivesIcon },
-];
-
-function CapabilityIndex() {
-  return (
-    <section className="linear-capabilities linear-inset">
-      <header>
-        <h2>Everything a safe revenue action needs.</h2>
-        <p>
-          From source evidence and relationship history to verification, policy, approval,
-          execution, and the outcome that follows.
-        </p>
-      </header>
-      <div>
-        {capabilityTiles.map(({ icon: Icon, label }, index) => (
-          <div key={label}>
-            <span className="linear-index">{String(index + 1).padStart(2, "0")}</span>
-            <Icon aria-hidden="true" />
-            <span>{label}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function HomeProofBand() {
   const proof = [
     {
-      title: "Every recommendation explains why this relationship matters now.",
+      title: "Each finding shows its dollar amount and its source.",
       label: "Evidence before action",
     },
     {
-      title: "Verification, suppression, policy, and sender health precede execution.",
-      label: "Governed by default",
+      title: "Nothing sends without your click. Money actions need extra approval.",
+      label: "You stay in control",
     },
     {
-      title: "Replies, meetings, edits, and revenue outcomes improve the memory.",
+      title: "Replies, meetings, and payments make the memory sharper.",
       label: "Learns from outcomes",
     },
   ];
@@ -1081,32 +868,32 @@ const homeFaqs = [
   {
     question: "Is Oppulence another CRM?",
     answer:
-      "No. Your CRM remains the system of record for opportunity state. Oppulence remembers the communication, promises, objections, and evidence around the relationship, then turns that context into the next governed action.",
+      "No. Your CRM stays the system of record. Oppulence remembers the conversations, promises, and outcomes around each relationship. Then it turns them into the next chase, ready for your approval.",
   },
   {
-    question: "Is this a cold-email platform?",
+    question: "Is this a cold-email tool?",
     answer:
-      "The starting point is warm revenue: dormant opportunities, missed commitments, unanswered proposals, former customers, and neglected referrals. Cold-account discovery can come later, after the system earns trust.",
-  },
-  {
-    question: "How does Oppulence decide who needs attention?",
-    answer:
-      "It combines relationship history, commitments, recency, opportunity context, prior objections, contactability, and source evidence to rank the actions most likely to recover or advance revenue.",
+      "No. Oppulence sends zero cold email. It only works the warm relationships you already have: ghosted proposals, quiet clients, unpaid invoices, and neglected referrals.",
   },
   {
     question: "Will it send messages without me?",
     answer:
-      "High-value actions are approval-gated. You can approve, edit, snooze, or reject them. Controlled autonomy should only apply to low-risk actions under explicit policies.",
+      "No. Each message waits for your click. Actions that touch money need a second confirmation. You can approve, edit, snooze, or reject anything in the queue.",
   },
   {
-    question: "What does it check before a message is sent?",
+    question: "How does it decide what matters?",
     answer:
-      "Oppulence can verify the contact, inspect prior objections and opt-outs, apply suppression and frequency rules, check permissions and sender health, and retain the policy decision in the audit trail.",
+      "It looks at the relationship history, the commitment that was made, the dollar value at stake, and the time since the last reply. Each recommendation shows its evidence.",
   },
   {
-    question: "What systems does it connect to?",
+    question: "What does it cost?",
     answer:
-      "The initial workflow centers email, calendar, meetings, and CRM data, with research, verification, policy, and sending systems connected behind one revenue action queue. Exact availability depends on deployment and rollout stage.",
+      "Watch is free: a weekly report of what is slipping, with dollar amounts. Chase is $99 per month: drafted nudges, one-click approval, and recovery receipts. One saved deal pays for years.",
+  },
+  {
+    question: "What happens to my data?",
+    answer:
+      "We read your mail to serve you and no one else. We do not pool it with other customers, and we do not train shared models on it. You can disconnect at any time.",
   },
 ];
 
@@ -1114,11 +901,9 @@ function HomeFaqSection() {
   return (
     <section className="linear-faq linear-inset">
       <header>
+        <p className="linear-eyebrow">[faq]</p>
         <h2>Frequently asked questions</h2>
-        <p className="linear-body">
-          What revenue teams ask before they connect relationship history and approve external
-          action.
-        </p>
+        <p className="linear-body">What owners ask before they connect their inbox.</p>
       </header>
       <div>
         {homeFaqs.map((item) => (
@@ -1138,19 +923,21 @@ function HomeFaqSection() {
 function FinalCta() {
   return (
     <section className="linear-final-cta linear-inset">
-      <h2>Recover the revenue already in your relationships.</h2>
+      <p className="linear-eyebrow !mb-0">[get started]</p>
+      <h2>Find out what silence is costing you.</h2>
       <p className="linear-body max-w-xl text-balance">
-        Find the warm opportunities slipping through the cracks, understand why they matter now, and
-        approve the safest next action.
+        Connect your inbox. See the deals, invoices, and clients going quiet, each with a dollar
+        amount. Then let Oppulence chase them, one approval at a time.
       </p>
       <div className="flex flex-col items-center gap-3 sm:flex-row">
         <Link className="linear-button-primary !h-10 !px-5" href="/book-a-demo">
-          Book a Revenue Leak Scan
+          See what is slipping
         </Link>
         <Link className="linear-button-secondary !h-10 !px-5" href="/product">
           See how it works
         </Link>
       </div>
+      <p className="linear-cta-note">[watch is free · chase is $99/mo]</p>
     </section>
   );
 }
@@ -1178,10 +965,10 @@ function DesktopScreenshotPreview({
           <span className="size-2 rounded-full bg-oppulence-yellow/70" />
           <span className="size-2 rounded-full bg-oppulence-green/70" />
         </div>
-        <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+        <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
           Oppulence Desktop
         </span>
-        <span className="hidden font-mono text-[10px] text-muted-foreground uppercase tracking-wider sm:inline">
+        <span className="hidden font-mono text-xs text-muted-foreground uppercase tracking-wider sm:inline">
           Local graph
         </span>
       </div>
@@ -1219,11 +1006,11 @@ export function GenericPage({ page }: { page: MarketingPage }) {
             <article className="marketing-surface border p-5" key={bullet}>
               <div className="flex items-center justify-between gap-3">
                 <MarketingIcon icon={icon} tone={tone} />
-                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                   0{index + 1}
                 </span>
               </div>
-              <p className="mt-4 text-sm leading-relaxed text-foreground/78">{bullet}</p>
+              <p className="mt-4 text-[13px] leading-relaxed text-foreground/78">{bullet}</p>
             </article>
           );
         })}
@@ -1269,10 +1056,10 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
               >
                 <MarketingIcon compact icon={icon} tone={tone} />
                 <div className="min-w-0">
-                  <p className="font-mono text-[10px] text-foreground/55 uppercase tracking-wider">
+                  <p className="font-mono text-xs text-foreground/55 uppercase tracking-wider">
                     0{index + 1}
                   </p>
-                  <p className="mt-1 text-sm text-foreground/75">{bullet}</p>
+                  <p className="mt-1 text-[13px] text-foreground/75">{bullet}</p>
                 </div>
               </article>
             );
@@ -1290,12 +1077,12 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
             <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
               Why it matters
             </p>
-            <p className="mt-4 text-foreground/80 text-sm leading-relaxed">{details.summary}</p>
-            <h2 className="mt-8 font-semibold text-xl">How it works</h2>
+            <p className="mt-4 text-foreground/80 text-[13px] leading-relaxed">{details.summary}</p>
+            <h2 className="mt-8 font-medium text-sm">How it works</h2>
             <ol className="mt-4 space-y-3">
               {details.workflow.map((step, index) => (
-                <li className="flex gap-3 text-sm leading-relaxed" key={step}>
-                  <span className="marketing-icon-frame size-7 rounded font-mono text-[10px] text-muted-foreground">
+                <li className="flex gap-3 text-[13px] leading-relaxed" key={step}>
+                  <span className="marketing-icon-frame size-7 rounded font-mono text-xs text-muted-foreground">
                     {index + 1}
                   </span>
                   <span className="text-foreground/75">{step}</span>
@@ -1311,18 +1098,18 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
               return (
                 <article className="marketing-surface border p-6" key={section.title}>
                   <MarketingIcon icon={icon} tone={tone} />
-                  <h2 className="mt-5 font-semibold text-xl">{section.title}</h2>
-                  <p className="mt-3 text-muted-foreground text-sm leading-relaxed">
+                  <h2 className="mt-5 font-medium text-sm">{section.title}</h2>
+                  <p className="mt-3 text-muted-foreground text-[13px] leading-relaxed">
                     {section.body}
                   </p>
                 </article>
               );
             })}
             <article className="marketing-surface-strong border p-6">
-              <h2 className="font-semibold text-xl">Operational outcomes</h2>
+              <h2 className="font-medium text-sm">Operational outcomes</h2>
               <div className="mt-4 grid gap-3">
                 {details.outcomes.map((outcome) => (
-                  <div className="flex gap-3 text-sm leading-relaxed" key={outcome}>
+                  <div className="flex gap-3 text-[13px] leading-relaxed" key={outcome}>
                     <MarketingIcon compact icon={CheckCircleIcon} tone="green" />
                     <span className="text-foreground/75">{outcome}</span>
                   </div>
@@ -1339,9 +1126,7 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
                 <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
                   Use cases
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold">
-                  Where the graph changes the workflow.
-                </h2>
+                <h2 className="mt-2 text-2xl font-medium">Where the graph changes the workflow.</h2>
               </div>
               <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
                 The feature pages stay concrete: each capability maps back to work traces, graph
@@ -1355,8 +1140,8 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
                 return (
                   <article className="marketing-surface border p-5" key={useCase.title}>
                     <MarketingIcon icon={icon} tone={tone} />
-                    <h3 className="mt-4 font-semibold">{useCase.title}</h3>
-                    <p className="mt-2 text-muted-foreground text-sm leading-relaxed">
+                    <h3 className="mt-4 font-medium">{useCase.title}</h3>
+                    <p className="mt-2 text-muted-foreground text-[13px] leading-relaxed">
                       {useCase.body}
                     </p>
                   </article>
@@ -1377,7 +1162,7 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
               <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
                 Related
               </p>
-              <h2 className="mt-2 text-2xl font-semibold">Keep following the revenue loop.</h2>
+              <h2 className="mt-2 text-2xl font-medium">Keep following the revenue loop.</h2>
             </div>
             <div className="flex flex-wrap gap-3">
               <Button asChild className="marketing-cta-primary">
@@ -1430,16 +1215,16 @@ function FeatureActionButtons({
     <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
       <Button
         asChild
-        className="marketing-cta-primary h-12 border border-transparent px-6 font-medium text-md has-[>svg]:px-4"
+        className="marketing-cta-primary h-12 border border-transparent px-6 font-medium text-sm has-[>svg]:px-4"
       >
         <Link href="/book-a-demo">
           {primary}
-          <ArrowRightIcon style={{ fontSize: "1rem" }} />
+          <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
         </Link>
       </Button>
       <Button
         asChild
-        className="marketing-cta-secondary h-12 justify-between border border-primary/10 px-4 font-medium text-md"
+        className="marketing-cta-secondary h-12 justify-between border border-primary/10 px-4 font-medium text-sm"
         variant="ghost"
       >
         <Link href="/product">{secondary}</Link>
@@ -1463,7 +1248,7 @@ function PageShell({ page, children }: { page: MarketingPage; children: ReactNod
               <Button asChild className="marketing-cta-primary">
                 <Link href={page.ctaHref ?? "/book-a-demo"}>
                   {page.ctaLabel ?? "Book a Revenue Leak Scan"}
-                  <ArrowRightIcon style={{ fontSize: "1rem" }} />
+                  <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
                 </Link>
               </Button>
               <Button asChild className="marketing-cta-secondary" variant="outline">
@@ -1486,10 +1271,10 @@ function ProofGrid({ page }: { page: MarketingPage }) {
           <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
             Why teams trust the queue
           </p>
-          <h2 className="mt-2 text-2xl font-semibold">Built for evidence-backed action.</h2>
+          <h2 className="mt-2 text-2xl font-medium">Built for evidence-backed action.</h2>
         </div>
         <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-          Every workflow keeps the same standards: source evidence, current relationship context,
+          Each workflow keeps the same standards: source evidence, current relationship context,
           explicit policy decisions, and reviewable execution.
         </p>
       </div>
@@ -1498,10 +1283,10 @@ function ProofGrid({ page }: { page: MarketingPage }) {
           <article className="marketing-surface flex gap-3 border p-4" key={item}>
             <MarketingIcon compact icon={CheckCircleIcon} tone="green" />
             <div className="min-w-0">
-              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
                 0{index + 1}
               </p>
-              <p className="mt-1 text-sm leading-relaxed text-foreground/72">{item}</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-foreground/72">{item}</p>
             </div>
           </article>
         ))}
@@ -1518,7 +1303,7 @@ function IntegrationsPanel() {
           <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
             Connector surface
           </p>
-          <h2 className="mt-2 text-2xl font-semibold">Sources stay visible and reviewable.</h2>
+          <h2 className="mt-2 text-2xl font-medium">Sources stay visible and reviewable.</h2>
         </div>
         <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
           Oppulence keeps each connected source legible while agents work across the graph.
@@ -1530,7 +1315,7 @@ function IntegrationsPanel() {
 
           return (
             <div
-              className="marketing-surface flex items-center gap-3 border px-4 py-3 font-mono text-sm"
+              className="marketing-surface flex items-center gap-3 border px-4 py-3 font-mono text-[13px]"
               key={item}
             >
               <MarketingIcon compact icon={icon} tone={tone} />
@@ -1550,7 +1335,7 @@ function ToolPanel({ page }: { page: MarketingPage }) {
         <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
           Tool workflow
         </p>
-        <h2 className="mt-2 text-2xl font-semibold">A clear path from check to action.</h2>
+        <h2 className="mt-2 text-2xl font-medium">A clear path from check to action.</h2>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           This is a static marketing representation of the tool route. The production validator or
           quiz logic can be wired behind the same URL when ready.
@@ -1563,7 +1348,7 @@ function ToolPanel({ page }: { page: MarketingPage }) {
         </div>
         <div className="mt-5 space-y-3">
           {page.bullets.map((bullet) => (
-            <div className="marketing-chip flex gap-3 border px-4 py-3 text-sm" key={bullet}>
+            <div className="marketing-chip flex gap-3 border px-4 py-3 text-[13px]" key={bullet}>
               <MarketingIcon compact icon={SealCheckIcon} tone="green" />
               <span>{bullet}</span>
             </div>
@@ -1582,7 +1367,7 @@ function ApiReferenceEmbed() {
           <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
             API reference
           </p>
-          <h2 className="mt-2 text-2xl font-semibold">Explore the live Oppulence API contract.</h2>
+          <h2 className="mt-2 text-2xl font-medium">Explore the live Oppulence API contract.</h2>
         </div>
         <div className="flex flex-wrap gap-3">
           <Button asChild className="marketing-cta-secondary" variant="ghost">
@@ -1612,77 +1397,87 @@ function ApiReferenceEmbed() {
 
 export function PricingPage({ page }: { page: MarketingPage }) {
   return (
-    <PageShell page={page}>
-      <section className="grid border-y border-primary/10 md:grid-cols-3">
+    <div className="linear-subpage-simple linear-inset">
+      <header className="linear-page-hero">
+        <p className="linear-eyebrow-red">[pricing]</p>
+        <h1 className="linear-page-title">{page.title}</h1>
+        <p className="linear-body max-w-[560px]">{page.description}</p>
+      </header>
+      <section className="linear-plan-grid">
         {pricingPlans.map((plan) => (
           <article
-            className="border-b border-primary/10 bg-background-50/40 p-6 last:border-b-0 md:border-r md:border-b-0 md:last:border-r-0"
+            className={cn("linear-plan", plan.recommended && "linear-plan-featured")}
             key={plan.name}
           >
-            <div className="flex min-h-8 items-start justify-between gap-3">
-              <h2 className="text-lg font-medium">{plan.name}</h2>
-              {plan.recommended ? (
-                <span className="rounded-full border border-[#828fff]/25 bg-[#828fff]/10 px-2 py-1 font-mono text-[10px] text-[#aeb6ff] uppercase tracking-wider">
-                  Recommended
-                </span>
-              ) : null}
-            </div>
-            <p className="mt-6 text-3xl font-medium tracking-[-0.022em]">{plan.price}</p>
-            <p className="mt-3 min-h-16 text-sm leading-relaxed text-muted-foreground">
-              {plan.description}
+            <p className="linear-plan-name">[{plan.name.toLowerCase()}]</p>
+            <p className="linear-plan-price">
+              {plan.price}
+              {plan.period ? <span>{plan.period}</span> : null}
             </p>
-            <ul className="mt-8 space-y-3 border-primary/10 border-t pt-6">
+            <p className="linear-body">{plan.description}</p>
+            <ul>
               {plan.features.map((feature) => (
-                <li className="flex gap-3 text-sm text-foreground/80" key={feature}>
-                  <CheckCircleIcon className="mt-0.5 shrink-0 text-[#8a8f98]" fontSize="small" />
-                  <span>{feature}</span>
-                </li>
+                <li key={feature}>{feature}</li>
               ))}
             </ul>
-            <PlanCtaButton plan={plan} />
+            <Link
+              className={cn(
+                plan.recommended ? "linear-button-primary" : "linear-button-secondary",
+                "!h-10 w-full",
+              )}
+              href={plan.ctaHref}
+            >
+              {plan.ctaLabel}
+            </Link>
           </article>
         ))}
       </section>
-      <ProofGrid page={page} />
-    </PageShell>
+      <p className="linear-cta-note mt-6">
+        [usage-metered on executed chases · one saved deal pays for years]
+      </p>
+    </div>
   );
 }
 
 export function BlogIndexPage({ page }: { page: MarketingPage }) {
+  const [featured, ...rest] = blogPages;
+
   return (
-    <PageShell page={page}>
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {blogPages.slice(0, 18).map((post, index) => (
-          <Link
-            className="marketing-surface flex min-h-56 flex-col border p-5 transition-colors hover:bg-background-200"
-            href={`/${post.path}`}
-            key={post.path}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <MarketingIcon icon={FileTextIcon} tone="orange" />
-              <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
-                Guide {String(index + 1).padStart(2, "0")}
-              </span>
-            </div>
-            <h2 className="mt-4 line-clamp-2 font-semibold">{post.title}</h2>
-            <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-              {post.description}
-            </p>
-            <div className="mt-auto flex items-center justify-between border-primary/10 border-t pt-4 font-mono text-[10px] text-foreground/60 uppercase tracking-wider">
-              <span>Read guide</span>
-              <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
-            </div>
+    <div className="linear-subpage-simple linear-inset">
+      <header className="linear-page-hero">
+        <p className="linear-eyebrow-red">[blog]</p>
+        <h1 className="linear-page-title">{page.title}</h1>
+        <p className="linear-body max-w-[560px]">{page.description}</p>
+      </header>
+      {featured ? (
+        <Link className="linear-blog-featured" href={`/${featured.path}`}>
+          <div className="flex flex-wrap gap-2">
+            <span className="linear-chip">guide</span>
+            <span className="linear-chip">featured</span>
+          </div>
+          <h2>{featured.title}</h2>
+          <p className="linear-body max-w-[640px]">{featured.description}</p>
+          <span className="linear-blog-read">read the guide →</span>
+        </Link>
+      ) : null}
+      <section className="linear-blog-grid">
+        {rest.slice(0, 11).map((post) => (
+          <Link className="linear-blog-card" href={`/${post.path}`} key={post.path}>
+            <span className="linear-chip">guide</span>
+            <h3 className="line-clamp-2">{post.title}</h3>
+            <p className="line-clamp-3">{post.description}</p>
+            <span className="linear-blog-read">read →</span>
           </Link>
         ))}
       </section>
-    </PageShell>
+    </div>
   );
 }
 
 export function BlogArticlePage({ page }: { page: MarketingPage }) {
   return (
     <PageShell page={page}>
-      <article className="max-w-3xl space-y-8 text-base leading-relaxed text-foreground/78">
+      <article className="max-w-3xl space-y-8 text-sm leading-relaxed text-foreground/78">
         <p>
           Most knowledge-base and documentation categories assume the answer is a better publishing
           surface. Oppulence starts one layer lower: the living graph agents and operators rely on
@@ -1713,13 +1508,13 @@ export function CustomerIndexPage({ page }: { page: MarketingPage }) {
             We&rsquo;d rather show real stories than invented ones.
           </h2>
           <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
-            Oppulence is early. We&rsquo;re onboarding our first operators and teams now — when they
+            Oppulence is early. We&rsquo;re onboarding our first operators and teams now. When they
             have a story worth telling, it will live here. No placeholder logos in the meantime.
           </p>
           <Button asChild className="marketing-cta-primary mt-1">
             <Link href="/book-a-demo">
               Become an early customer
-              <ArrowRightIcon style={{ fontSize: "1rem" }} />
+              <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
             </Link>
           </Button>
         </section>
@@ -1737,16 +1532,16 @@ export function CustomerIndexPage({ page }: { page: MarketingPage }) {
             key={story.path}
           >
             <div className="flex items-start justify-between gap-3">
-              <MarketingIcon icon={GithubLogoIcon} tone="blue" />
-              <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              <MarketingIcon icon={BriefcaseIcon} tone="blue" />
+              <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
                 Story
               </span>
             </div>
-            <h2 className="mt-4 text-xl font-semibold">{story.title}</h2>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            <h2 className="mt-4 text-sm font-medium">{story.title}</h2>
+            <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
               {story.description}
             </p>
-            <div className="mt-auto flex items-center justify-between border-primary/10 border-t pt-4 font-mono text-[10px] text-foreground/60 uppercase tracking-wider">
+            <div className="mt-auto flex items-center justify-between border-primary/10 border-t pt-4 font-mono text-xs text-foreground/60 uppercase tracking-wider">
               <span>Open story</span>
               <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
             </div>
@@ -1768,14 +1563,14 @@ export function CustomerStoryPage({ page }: { page: MarketingPage }) {
                 icon={customerStoryIcons[index]?.icon ?? BriefcaseIcon}
                 tone={customerStoryIcons[index]?.tone ?? "neutral"}
               />
-              <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
                 0{index + 1}
               </span>
             </div>
-            <p className="mt-5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            <p className="mt-5 font-mono text-xs uppercase tracking-wider text-muted-foreground">
               {title}
             </p>
-            <p className="mt-4 text-sm leading-relaxed text-foreground/76">
+            <p className="mt-4 text-[13px] leading-relaxed text-foreground/76">
               {page.bullets[index] ?? page.description}
             </p>
           </article>
@@ -1791,10 +1586,10 @@ export function DemoPage({ page }: { page: MarketingPage }) {
     <PageShell page={page}>
       <section className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="marketing-surface border p-6">
-          <h2 className="text-2xl font-semibold">Your Revenue Leak Scan walkthrough</h2>
+          <h2 className="text-2xl font-medium">Your Revenue Leak Scan walkthrough</h2>
           <ul className="mt-6 space-y-4">
             {page.bullets.map((bullet) => (
-              <li className="flex gap-3 text-sm leading-relaxed" key={bullet}>
+              <li className="flex gap-3 text-[13px] leading-relaxed" key={bullet}>
                 <MarketingIcon compact icon={PlayIcon} tone="orange" />
                 <span>{bullet}</span>
               </li>
@@ -1808,7 +1603,7 @@ export function DemoPage({ page }: { page: MarketingPage }) {
           <div className="mt-5 grid gap-3">
             {["Work email", "Company", "CRM or sales system"].map((field) => (
               <div
-                className="marketing-chip border px-4 py-3 text-sm text-muted-foreground"
+                className="marketing-chip border px-4 py-3 text-[13px] text-muted-foreground"
                 key={field}
               >
                 {field}
@@ -1843,7 +1638,7 @@ export function LegalPage({ page }: { page: MarketingPage }) {
 export function NotFoundMarketingPage() {
   return (
     <div className="px-6 pt-40 pb-20 md:px-8">
-      <h1 className="font-display text-5xl leading-none font-normal md:text-7xl">Page not found</h1>
+      <h1 className="font-display text-[24px] font-medium">Page not found</h1>
       <p className="mt-4 max-w-xl text-muted-foreground">
         This route is not in the Oppulence marketing surface.
       </p>

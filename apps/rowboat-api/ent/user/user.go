@@ -65,6 +65,28 @@ const (
 	EdgeAgentApprovals = "agent_approvals"
 	// EdgeAgentToolResultBlobs holds the string denoting the agent_tool_result_blobs edge name in mutations.
 	EdgeAgentToolResultBlobs = "agent_tool_result_blobs"
+	// EdgeRevenueWorkspaces holds the string denoting the revenue_workspaces edge name in mutations.
+	EdgeRevenueWorkspaces = "revenue_workspaces"
+	// EdgeRevenueWorkspaceMembers holds the string denoting the revenue_workspace_members edge name in mutations.
+	EdgeRevenueWorkspaceMembers = "revenue_workspace_members"
+	// EdgeRelationships holds the string denoting the relationships edge name in mutations.
+	EdgeRelationships = "relationships"
+	// EdgeRevenueEvidences holds the string denoting the revenue_evidences edge name in mutations.
+	EdgeRevenueEvidences = "revenue_evidences"
+	// EdgeCommitments holds the string denoting the commitments edge name in mutations.
+	EdgeCommitments = "commitments"
+	// EdgeRevenueActions holds the string denoting the revenue_actions edge name in mutations.
+	EdgeRevenueActions = "revenue_actions"
+	// EdgeRevenueActionRevisions holds the string denoting the revenue_action_revisions edge name in mutations.
+	EdgeRevenueActionRevisions = "revenue_action_revisions"
+	// EdgePolicyDecisionSnapshots holds the string denoting the policy_decision_snapshots edge name in mutations.
+	EdgePolicyDecisionSnapshots = "policy_decision_snapshots"
+	// EdgeActionOutcomes holds the string denoting the action_outcomes edge name in mutations.
+	EdgeActionOutcomes = "action_outcomes"
+	// EdgeRevenueOutboxEvents holds the string denoting the revenue_outbox_events edge name in mutations.
+	EdgeRevenueOutboxEvents = "revenue_outbox_events"
+	// EdgeRevenueLeakScans holds the string denoting the revenue_leak_scans edge name in mutations.
+	EdgeRevenueLeakScans = "revenue_leak_scans"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -207,6 +229,83 @@ const (
 	AgentToolResultBlobsInverseTable = "agent_tool_result_blobs"
 	// AgentToolResultBlobsColumn is the table column denoting the agent_tool_result_blobs relation/edge.
 	AgentToolResultBlobsColumn = "user_agent_tool_result_blobs"
+	// RevenueWorkspacesTable is the table that holds the revenue_workspaces relation/edge.
+	RevenueWorkspacesTable = "revenue_workspaces"
+	// RevenueWorkspacesInverseTable is the table name for the RevenueWorkspace entity.
+	// It exists in this package in order to avoid circular dependency with the "revenueworkspace" package.
+	RevenueWorkspacesInverseTable = "revenue_workspaces"
+	// RevenueWorkspacesColumn is the table column denoting the revenue_workspaces relation/edge.
+	RevenueWorkspacesColumn = "user_revenue_workspaces"
+	// RevenueWorkspaceMembersTable is the table that holds the revenue_workspace_members relation/edge.
+	RevenueWorkspaceMembersTable = "revenue_workspace_members"
+	// RevenueWorkspaceMembersInverseTable is the table name for the RevenueWorkspaceMember entity.
+	// It exists in this package in order to avoid circular dependency with the "revenueworkspacemember" package.
+	RevenueWorkspaceMembersInverseTable = "revenue_workspace_members"
+	// RevenueWorkspaceMembersColumn is the table column denoting the revenue_workspace_members relation/edge.
+	RevenueWorkspaceMembersColumn = "user_revenue_workspace_members"
+	// RelationshipsTable is the table that holds the relationships relation/edge.
+	RelationshipsTable = "relationships"
+	// RelationshipsInverseTable is the table name for the Relationship entity.
+	// It exists in this package in order to avoid circular dependency with the "relationship" package.
+	RelationshipsInverseTable = "relationships"
+	// RelationshipsColumn is the table column denoting the relationships relation/edge.
+	RelationshipsColumn = "user_relationships"
+	// RevenueEvidencesTable is the table that holds the revenue_evidences relation/edge.
+	RevenueEvidencesTable = "revenue_evidences"
+	// RevenueEvidencesInverseTable is the table name for the RevenueEvidence entity.
+	// It exists in this package in order to avoid circular dependency with the "revenueevidence" package.
+	RevenueEvidencesInverseTable = "revenue_evidences"
+	// RevenueEvidencesColumn is the table column denoting the revenue_evidences relation/edge.
+	RevenueEvidencesColumn = "user_revenue_evidences"
+	// CommitmentsTable is the table that holds the commitments relation/edge.
+	CommitmentsTable = "commitments"
+	// CommitmentsInverseTable is the table name for the Commitment entity.
+	// It exists in this package in order to avoid circular dependency with the "commitment" package.
+	CommitmentsInverseTable = "commitments"
+	// CommitmentsColumn is the table column denoting the commitments relation/edge.
+	CommitmentsColumn = "user_commitments"
+	// RevenueActionsTable is the table that holds the revenue_actions relation/edge.
+	RevenueActionsTable = "revenue_actions"
+	// RevenueActionsInverseTable is the table name for the RevenueAction entity.
+	// It exists in this package in order to avoid circular dependency with the "revenueaction" package.
+	RevenueActionsInverseTable = "revenue_actions"
+	// RevenueActionsColumn is the table column denoting the revenue_actions relation/edge.
+	RevenueActionsColumn = "user_revenue_actions"
+	// RevenueActionRevisionsTable is the table that holds the revenue_action_revisions relation/edge.
+	RevenueActionRevisionsTable = "revenue_action_revisions"
+	// RevenueActionRevisionsInverseTable is the table name for the RevenueActionRevision entity.
+	// It exists in this package in order to avoid circular dependency with the "revenueactionrevision" package.
+	RevenueActionRevisionsInverseTable = "revenue_action_revisions"
+	// RevenueActionRevisionsColumn is the table column denoting the revenue_action_revisions relation/edge.
+	RevenueActionRevisionsColumn = "user_revenue_action_revisions"
+	// PolicyDecisionSnapshotsTable is the table that holds the policy_decision_snapshots relation/edge.
+	PolicyDecisionSnapshotsTable = "policy_decision_snapshots"
+	// PolicyDecisionSnapshotsInverseTable is the table name for the PolicyDecisionSnapshot entity.
+	// It exists in this package in order to avoid circular dependency with the "policydecisionsnapshot" package.
+	PolicyDecisionSnapshotsInverseTable = "policy_decision_snapshots"
+	// PolicyDecisionSnapshotsColumn is the table column denoting the policy_decision_snapshots relation/edge.
+	PolicyDecisionSnapshotsColumn = "user_policy_decision_snapshots"
+	// ActionOutcomesTable is the table that holds the action_outcomes relation/edge.
+	ActionOutcomesTable = "action_outcomes"
+	// ActionOutcomesInverseTable is the table name for the ActionOutcome entity.
+	// It exists in this package in order to avoid circular dependency with the "actionoutcome" package.
+	ActionOutcomesInverseTable = "action_outcomes"
+	// ActionOutcomesColumn is the table column denoting the action_outcomes relation/edge.
+	ActionOutcomesColumn = "user_action_outcomes"
+	// RevenueOutboxEventsTable is the table that holds the revenue_outbox_events relation/edge.
+	RevenueOutboxEventsTable = "revenue_outbox_events"
+	// RevenueOutboxEventsInverseTable is the table name for the RevenueOutboxEvent entity.
+	// It exists in this package in order to avoid circular dependency with the "revenueoutboxevent" package.
+	RevenueOutboxEventsInverseTable = "revenue_outbox_events"
+	// RevenueOutboxEventsColumn is the table column denoting the revenue_outbox_events relation/edge.
+	RevenueOutboxEventsColumn = "user_revenue_outbox_events"
+	// RevenueLeakScansTable is the table that holds the revenue_leak_scans relation/edge.
+	RevenueLeakScansTable = "revenue_leak_scans"
+	// RevenueLeakScansInverseTable is the table name for the RevenueLeakScan entity.
+	// It exists in this package in order to avoid circular dependency with the "revenueleakscan" package.
+	RevenueLeakScansInverseTable = "revenue_leak_scans"
+	// RevenueLeakScansColumn is the table column denoting the revenue_leak_scans relation/edge.
+	RevenueLeakScansColumn = "user_revenue_leak_scans"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -547,6 +646,160 @@ func ByAgentToolResultBlobs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOpt
 		sqlgraph.OrderByNeighborTerms(s, newAgentToolResultBlobsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByRevenueWorkspacesCount orders the results by revenue_workspaces count.
+func ByRevenueWorkspacesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRevenueWorkspacesStep(), opts...)
+	}
+}
+
+// ByRevenueWorkspaces orders the results by revenue_workspaces terms.
+func ByRevenueWorkspaces(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRevenueWorkspacesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRevenueWorkspaceMembersCount orders the results by revenue_workspace_members count.
+func ByRevenueWorkspaceMembersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRevenueWorkspaceMembersStep(), opts...)
+	}
+}
+
+// ByRevenueWorkspaceMembers orders the results by revenue_workspace_members terms.
+func ByRevenueWorkspaceMembers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRevenueWorkspaceMembersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRelationshipsCount orders the results by relationships count.
+func ByRelationshipsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipsStep(), opts...)
+	}
+}
+
+// ByRelationships orders the results by relationships terms.
+func ByRelationships(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRevenueEvidencesCount orders the results by revenue_evidences count.
+func ByRevenueEvidencesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRevenueEvidencesStep(), opts...)
+	}
+}
+
+// ByRevenueEvidences orders the results by revenue_evidences terms.
+func ByRevenueEvidences(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRevenueEvidencesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByCommitmentsCount orders the results by commitments count.
+func ByCommitmentsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommitmentsStep(), opts...)
+	}
+}
+
+// ByCommitments orders the results by commitments terms.
+func ByCommitments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommitmentsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRevenueActionsCount orders the results by revenue_actions count.
+func ByRevenueActionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRevenueActionsStep(), opts...)
+	}
+}
+
+// ByRevenueActions orders the results by revenue_actions terms.
+func ByRevenueActions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRevenueActionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRevenueActionRevisionsCount orders the results by revenue_action_revisions count.
+func ByRevenueActionRevisionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRevenueActionRevisionsStep(), opts...)
+	}
+}
+
+// ByRevenueActionRevisions orders the results by revenue_action_revisions terms.
+func ByRevenueActionRevisions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRevenueActionRevisionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByPolicyDecisionSnapshotsCount orders the results by policy_decision_snapshots count.
+func ByPolicyDecisionSnapshotsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPolicyDecisionSnapshotsStep(), opts...)
+	}
+}
+
+// ByPolicyDecisionSnapshots orders the results by policy_decision_snapshots terms.
+func ByPolicyDecisionSnapshots(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPolicyDecisionSnapshotsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByActionOutcomesCount orders the results by action_outcomes count.
+func ByActionOutcomesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newActionOutcomesStep(), opts...)
+	}
+}
+
+// ByActionOutcomes orders the results by action_outcomes terms.
+func ByActionOutcomes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newActionOutcomesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRevenueOutboxEventsCount orders the results by revenue_outbox_events count.
+func ByRevenueOutboxEventsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRevenueOutboxEventsStep(), opts...)
+	}
+}
+
+// ByRevenueOutboxEvents orders the results by revenue_outbox_events terms.
+func ByRevenueOutboxEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRevenueOutboxEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRevenueLeakScansCount orders the results by revenue_leak_scans count.
+func ByRevenueLeakScansCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRevenueLeakScansStep(), opts...)
+	}
+}
+
+// ByRevenueLeakScans orders the results by revenue_leak_scans terms.
+func ByRevenueLeakScans(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRevenueLeakScansStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -685,5 +938,82 @@ func newAgentToolResultBlobsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(AgentToolResultBlobsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, AgentToolResultBlobsTable, AgentToolResultBlobsColumn),
+	)
+}
+func newRevenueWorkspacesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RevenueWorkspacesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RevenueWorkspacesTable, RevenueWorkspacesColumn),
+	)
+}
+func newRevenueWorkspaceMembersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RevenueWorkspaceMembersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RevenueWorkspaceMembersTable, RevenueWorkspaceMembersColumn),
+	)
+}
+func newRelationshipsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipsTable, RelationshipsColumn),
+	)
+}
+func newRevenueEvidencesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RevenueEvidencesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RevenueEvidencesTable, RevenueEvidencesColumn),
+	)
+}
+func newCommitmentsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommitmentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommitmentsTable, CommitmentsColumn),
+	)
+}
+func newRevenueActionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RevenueActionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RevenueActionsTable, RevenueActionsColumn),
+	)
+}
+func newRevenueActionRevisionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RevenueActionRevisionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RevenueActionRevisionsTable, RevenueActionRevisionsColumn),
+	)
+}
+func newPolicyDecisionSnapshotsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PolicyDecisionSnapshotsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, PolicyDecisionSnapshotsTable, PolicyDecisionSnapshotsColumn),
+	)
+}
+func newActionOutcomesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ActionOutcomesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ActionOutcomesTable, ActionOutcomesColumn),
+	)
+}
+func newRevenueOutboxEventsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RevenueOutboxEventsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RevenueOutboxEventsTable, RevenueOutboxEventsColumn),
+	)
+}
+func newRevenueLeakScansStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RevenueLeakScansInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RevenueLeakScansTable, RevenueLeakScansColumn),
 	)
 }

@@ -976,6 +976,354 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/relationships": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List relationships
+     * @description Lists relationship summaries with open-loop counts.
+     */
+    get: operations["listRevenueRelationships"];
+    put?: never;
+    /**
+     * Create a relationship
+     * @description Records a relationship in the caller's workspace.
+     */
+    post: operations["createRevenueRelationship"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a relationship
+     * @description Returns one relationship with its commitments and actions.
+     */
+    get: operations["getRevenueRelationship"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-actions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the action queue
+     * @description Lists/filters the queue ordered by priority. The default page is the ten highest-priority open actions.
+     */
+    get: operations["listRevenueActions"];
+    put?: never;
+    /**
+     * Create a manual action
+     * @description Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.
+     */
+    post: operations["createRevenueAction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-actions/{actionId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get an action
+     * @description Returns one action with relationship context.
+     */
+    get: operations["getRevenueAction"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-actions/{actionId}/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve an action
+     * @description Approves the current revision. Send-mode actions require a passed (or explicitly risk-accepted review_required) unexpired decision bound to the exact revision; blocked actions can never be approved.
+     */
+    post: operations["approveRevenueAction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-actions/{actionId}/audit": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the audit chain
+     * @description Returns the full observe, decision, approval, execution, and outcome chain for one action.
+     */
+    get: operations["getRevenueActionAudit"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-actions/{actionId}/dismiss": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Dismiss an action
+     * @description Dismisses the action with a reason label and records the dismissed outcome.
+     */
+    post: operations["dismissRevenueAction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-actions/{actionId}/edit": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Edit an action
+     * @description Creates a new revision and invalidates the previous policy decision and approval. Editing is refused once execution has started.
+     */
+    post: operations["editRevenueAction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-actions/{actionId}/evaluate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Request policy preflight
+     * @description Requests or retries the OutboundConsole preflight for the current revision and stores the immutable decision snapshot. A fresh unexpired decision for the same revision is returned without provider cost. Facade unavailability keeps the action pending (fail closed).
+     */
+    post: operations["evaluateRevenueAction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-actions/{actionId}/execute": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Execute an action
+     * @description Executes the approved current revision exactly once through the assigned execution owner, with an idempotency key derived from the action and revision. A duplicate execute returns the existing result. A lost provider result is marked ambiguous and never automatically resent.
+     */
+    post: operations["executeRevenueAction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-actions/{actionId}/outcomes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Record an outcome
+     * @description Appends an observed outcome idempotently on (action, source, sourceEventId); the duplicate returns the stored row.
+     */
+    post: operations["recordRevenueActionOutcome"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-actions/{actionId}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reject an action
+     * @description Rejects the current revision with a reason.
+     */
+    post: operations["rejectRevenueAction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-actions/{actionId}/snooze": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Snooze an action
+     * @description Parks the action until a bounded future timestamp (at most 90 days).
+     */
+    post: operations["snoozeRevenueAction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-leak-scans": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start a revenue leak scan
+     * @description Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.
+     */
+    post: operations["startRevenueLeakScan"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-leak-scans/{scanId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get scan progress
+     * @description Returns progress, counts, errors, and source freshness for one scan.
+     */
+    get: operations["getRevenueLeakScan"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-workspaces/current": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get current revenue workspace
+     * @description Returns the caller's revenue workspace mapping and preflight health, creating the local-mode workspace on first touch.
+     */
+    get: operations["getRevenueWorkspace"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-workspaces/link": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Link the OutboundConsole workspace
+     * @description Completes the OutboundConsole workspace link and switches the workspace to linked mode. Requires a configured policy facade; without one the call fails closed.
+     */
+    post: operations["linkRevenueWorkspace"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/search/exa": {
     parameters: {
       query?: never;
@@ -1200,6 +1548,36 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    ActionOutcome: {
+      action: components["schemas"]["RevenueAction"];
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      kind: string;
+      metadata_json?: string;
+      /** Format: date-time */
+      occurred_at: string;
+      source: string;
+      source_event_id: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
     AgentApproval: {
       approval_id: string;
       approval_token_ref?: string;
@@ -2851,6 +3229,43 @@ export interface components {
       /** @description Linked runs. */
       runs: components["schemas"]["CloudEventRun"][];
     };
+    Commitment: {
+      /** Format: double */
+      confidence: number;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      direction: string;
+      /** Format: date-time */
+      due_at?: string;
+      evidences?: components["schemas"]["RevenueEvidence"][];
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      relationship: components["schemas"]["Relationship"];
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      text: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      user_confirmed: boolean;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
     /** @description Public bootstrap values consumed by the desktop before sign-in. */
     ConfigResponse: {
       /**
@@ -4037,6 +4452,53 @@ export interface components {
        */
       token_type?: string | null;
     };
+    PolicyDecisionSnapshot: {
+      action: components["schemas"]["RevenueAction"];
+      action_revision: number;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      crm_json?: string;
+      /** Format: date-time */
+      evaluated_at: string;
+      evidence_refs: string[];
+      /**
+       * Format: date-time
+       * @description Credential or one-time ticket expiry timestamp.
+       * @example 2026-06-04T20:48:00Z
+       */
+      expires_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      outbound_lead_id?: string;
+      reason_codes: string[];
+      research_json?: string;
+      response_hash: string;
+      revision_hash: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      suppression_json?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      verification_json?: string;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
     /** @description Ory pre-consent webhook payload mapped by ops. */
     PreConsentRequest: {
       /**
@@ -4126,6 +4588,668 @@ export interface components {
        * @example https://api.rowboat.dev/problems/reconnect_required
        */
       type: string;
+    };
+    Relationship: {
+      account_domain?: string;
+      actions?: components["schemas"]["RevenueAction"][];
+      commitments?: components["schemas"]["Commitment"][];
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      display_name: string;
+      evidences?: components["schemas"]["RevenueEvidence"][];
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      kind: string;
+      /** Format: date-time */
+      last_touch_at?: string;
+      /** Format: date-time */
+      next_action_at?: string;
+      outbound_account_ref?: string;
+      outbound_lead_id?: string;
+      primary_email?: string;
+      resource_refs: string[];
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      summary?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval. */
+    RevenueAction: {
+      /**
+       * @description Action type.
+       * @example warm_follow_up
+       * @enum {string}
+       */
+      actionType:
+        | "warm_follow_up"
+        | "proposal_nudge"
+        | "referral_reconnect"
+        | "customer_risk"
+        | "meeting_follow_up";
+      /**
+       * @description Approval state, bound to the exact revision and decision.
+       * @example pending
+       * @enum {string}
+       */
+      approvalStatus: "pending" | "approved" | "rejected";
+      /**
+       * Format: date-time
+       * @description Approval time.
+       * @example 2026-07-12T12:05:00Z
+       */
+      approvedAt?: string | null;
+      /**
+       * @description Revision the approval is bound to.
+       * @example 1
+       */
+      approvedRevision?: number;
+      /**
+       * @description Delivery channel.
+       * @example email
+       * @enum {string}
+       */
+      channel: "email" | "slack" | "call" | "crm_task";
+      /**
+       * Format: date-time
+       * @description Creation time.
+       * @example 2026-07-12T12:00:00Z
+       */
+      createdAt?: string;
+      /**
+       * @description Detector that produced the action.
+       * @example manual
+       * @enum {string}
+       */
+      detector:
+        | "requested_follow_up_due"
+        | "unanswered_proposal"
+        | "waiting_on_me"
+        | "dormant_warm_opportunity"
+        | "neglected_referral"
+        | "former_customer_reconnect"
+        | "manual";
+      /**
+       * @description Dismissal reason label.
+       * @example already_handled
+       */
+      dismissReason?: string;
+      /**
+       * Format: date-time
+       * @description Due time.
+       * @example 2026-07-15T00:00:00Z
+       */
+      dueAt?: string | null;
+      /**
+       * Format: date-time
+       * @description Execution time.
+       * @example 2026-07-12T12:06:00Z
+       */
+      executedAt?: string | null;
+      /**
+       * @description Bounded execution error.
+       * @example
+       */
+      executionError?: string;
+      /**
+       * @description Draft lands in the operator's mailbox; send requires a passed unexpired decision and a linked workspace.
+       * @example draft
+       * @enum {string}
+       */
+      executionMode: "draft" | "send";
+      /**
+       * @description Exactly one owner may execute a revision.
+       * @example rowboat
+       * @enum {string}
+       */
+      executionOwner: "rowboat" | "outbound";
+      /**
+       * @description Execution state. A lost provider result is ambiguous, never auto-resent.
+       * @example pending
+       * @enum {string}
+       */
+      executionStatus: "pending" | "requested" | "sent" | "failed" | "ambiguous" | "cancelled";
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Preflight state. Facade unavailability keeps pending (fail closed).
+       * @example pending
+       * @enum {string}
+       */
+      policyStatus: "pending" | "passed" | "review_required" | "blocked" | "stale";
+      /** @description Per-component priority breakdown; every component is stored and shown. */
+      priorityComponents?: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Explainable priority score (0-100).
+       * @example 82
+       */
+      priorityScore: number;
+      /**
+       * @description Proposed message body.
+       * @example Hi Jordan — you asked me to circle back this month...
+       */
+      proposedMessage?: string;
+      /**
+       * @description Proposed email subject.
+       * @example Following up as promised
+       */
+      proposedSubject?: string;
+      /**
+       * @description Provider message id after execution.
+       * @example msg_01
+       */
+      providerMessageId?: string;
+      /**
+       * @description Provider thread id after execution.
+       * @example thread_01
+       */
+      providerThreadId?: string;
+      /**
+       * @description Operator triage state.
+       * @example open
+       * @enum {string}
+       */
+      queueStatus: "open" | "snoozed" | "dismissed" | "handled";
+      /**
+       * @description Reason code for the ledger entry.
+       * @example llm_settle
+       * @enum {string}
+       */
+      reason:
+        | "llm_call"
+        | "llm_call_reserve"
+        | "llm_settle"
+        | "voice_tts"
+        | "exa_search"
+        | "grant"
+        | "refund";
+      /**
+       * @description Recipient email address.
+       * @example buyer@example.com
+       */
+      recipientEmail?: string;
+      /**
+       * Format: uuid
+       * @description Owning relationship id.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      relationshipId?: string;
+      /**
+       * @description Current revision number.
+       * @example 1
+       */
+      revision: number;
+      /**
+       * @description Canonical hash of the revision content.
+       * @example sha256:ab12...
+       */
+      revisionHash: string;
+      /**
+       * @description Sender account reference.
+       * @example gmail:me@company.com
+       */
+      senderAccountRef?: string;
+      /**
+       * Format: date-time
+       * @description Snooze wake time.
+       * @example 2026-07-20T09:00:00Z
+       */
+      snoozedUntil?: string | null;
+      /**
+       * Format: date-time
+       * @description Last update time.
+       * @example 2026-07-12T12:06:00Z
+       */
+      updatedAt?: string;
+    };
+    RevenueActionRevision: {
+      action: components["schemas"]["RevenueAction"];
+      action_type: string;
+      /** Format: uuid */
+      assigned_user_id?: string;
+      channel: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /** Format: uuid */
+      created_by?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      proposed_message?: string;
+      proposed_subject?: string;
+      /**
+       * @description Reason code for the ledger entry.
+       * @example llm_settle
+       * @enum {string}
+       */
+      reason?:
+        | "llm_call"
+        | "llm_call_reserve"
+        | "llm_settle"
+        | "voice_tts"
+        | "exa_search"
+        | "grant"
+        | "refund";
+      recipient_email?: string;
+      revision: number;
+      revision_hash: string;
+      sender_account_ref?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
+    RevenueEvidence: {
+      actions?: components["schemas"]["RevenueAction"][];
+      commitments?: components["schemas"]["Commitment"][];
+      content_hash: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      excerpt?: string;
+      external_evidence_refs: string[];
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /** Format: date-time */
+      observed_at: string;
+      /** Format: date-time */
+      occurred_at: string;
+      /** Format: byte */
+      payload_ciphertext?: string;
+      relationships?: components["schemas"]["Relationship"][];
+      source: string;
+      source_account_id?: string;
+      source_record_id: string;
+      source_uri?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description One bounded historical scan over connected sources (Gmail first). Detectors are deterministic; counts, errors, and freshness make runs incremental and auditable. */
+    RevenueLeakScan: {
+      /**
+       * @description New queue actions created.
+       * @example 5
+       */
+      actionsCreated?: number;
+      /**
+       * @description Detector candidates found.
+       * @example 7
+       */
+      candidatesSeen?: number;
+      /**
+       * Format: date-time
+       * @description Completion time.
+       * @example 2026-07-23T12:00:40Z
+       */
+      completedAt?: string | null;
+      /**
+       * @description Bounded failure reason.
+       * @example
+       */
+      error?: string;
+      /**
+       * @description New evidence rows recorded.
+       * @example 5
+       */
+      evidencesCreated?: number;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Historical lookback in days.
+       * @example 90
+       */
+      lookbackDays: number;
+      /**
+       * @description Workspace mode at scan time.
+       * @example local
+       * @enum {string}
+       */
+      mode: "local" | "linked";
+      /**
+       * @description New relationships recorded.
+       * @example 3
+       */
+      relationshipsCreated?: number;
+      /**
+       * Format: date-time
+       * @description Newest source timestamp observed (incremental cursor).
+       * @example 2026-07-22T09:00:00Z
+       */
+      sourceFreshnessAt?: string | null;
+      /**
+       * Format: date-time
+       * @description Start time.
+       * @example 2026-07-23T12:00:00Z
+       */
+      startedAt?: string | null;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       * @enum {string}
+       */
+      status: "pending" | "running" | "completed" | "failed";
+      /**
+       * @description Threads examined.
+       * @example 42
+       */
+      threadsSeen?: number;
+    };
+    RevenueOutboxEvent: {
+      /** Format: uuid */
+      action_id?: string;
+      attempts: number;
+      causation_id?: string;
+      correlation_id?: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      delivery_status: string;
+      event_type: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      idempotency_key: string;
+      last_error?: string;
+      /** Format: date-time */
+      next_attempt_at?: string;
+      /** Format: date-time */
+      occurred_at: string;
+      payload_json?: string;
+      schema_version: number;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description One observed action outcome, append-only and idempotent on (action, source, sourceEventId). */
+    RevenueOutcome: {
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Outcome kind.
+       * @example replied
+       * @enum {string}
+       */
+      kind:
+        | "sent"
+        | "delivered"
+        | "bounced"
+        | "replied"
+        | "meeting_booked"
+        | "won"
+        | "lost"
+        | "dismissed"
+        | "bad_recommendation";
+      /**
+       * Format: date-time
+       * @description When the outcome occurred.
+       * @example 2026-07-12T14:00:00Z
+       */
+      occurredAt: string;
+      /**
+       * @description Observing source.
+       * @example gmail
+       * @enum {string}
+       */
+      source: "gmail" | "calendar" | "crm" | "user" | "outbound";
+      /**
+       * @description Source event id used for deduplication.
+       * @example msg_01
+       */
+      sourceEventId: string;
+    };
+    /** @description Immutable OutboundConsole preflight decision for one exact action revision. Rowboat snapshots the decision; it never composes one. */
+    RevenuePolicyDecision: {
+      /** @description CRM sub-result snapshot; unknown when the connector is unavailable. */
+      crm?: {
+        [key: string]: unknown;
+      };
+      /**
+       * Format: date-time
+       * @description Evaluation time.
+       * @example 2026-07-12T12:00:00Z
+       */
+      evaluatedAt: string;
+      /**
+       * Format: date-time
+       * @description Decision expiry; expired decisions must be re-evaluated before approval or execution.
+       * @example 2026-07-13T12:00:00Z
+       */
+      expiresAt: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /** @description Bounded reason codes. */
+      reasonCodes?: string[];
+      /** @description Research sub-result snapshot. */
+      research?: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Action revision the decision is about.
+       * @example 1
+       */
+      revision: number;
+      /**
+       * @description Revision hash the decision is bound to.
+       * @example sha256:ab12...
+       */
+      revisionHash: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       * @enum {string}
+       */
+      status: "passed" | "review_required" | "blocked";
+      /** @description Suppression sub-result snapshot. */
+      suppression?: {
+        [key: string]: unknown;
+      };
+      /** @description Verification sub-result snapshot. */
+      verification?: {
+        [key: string]: unknown;
+      };
+    };
+    /** @description Longitudinal revenue-memory relationship. The enriched commercial lead stays canonical in OutboundConsole and is referenced, never duplicated. */
+    RevenueRelationship: {
+      /**
+       * @description Account domain.
+       * @example example.com
+       */
+      accountDomain?: string;
+      /**
+       * @description Human display name.
+       * @example Jordan Buyer
+       */
+      displayName: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Relationship kind.
+       * @example person
+       * @enum {string}
+       */
+      kind: "person" | "company" | "customer" | "opportunity" | "referral" | "partner";
+      /**
+       * Format: date-time
+       * @description Last observed touch.
+       * @example 2026-04-10T15:00:00Z
+       */
+      lastTouchAt?: string | null;
+      /**
+       * Format: date-time
+       * @description Next planned action.
+       * @example 2026-07-01T00:00:00Z
+       */
+      nextActionAt?: string | null;
+      /**
+       * @description Open queue actions for this relationship.
+       * @example 1
+       */
+      openActions?: number;
+      /**
+       * @description Primary email address.
+       * @example buyer@example.com
+       */
+      primaryEmail?: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       * @enum {string}
+       */
+      status: "active" | "dormant" | "closed" | "archived";
+      /**
+       * @description Bounded relationship summary.
+       * @example Asked for pricing in April; wants a follow-up in July.
+       */
+      summary?: string;
+    };
+    /** @description Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled. */
+    RevenueWorkspace: {
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * Format: date-time
+       * @description When the link was last verified.
+       * @example 2026-07-12T12:00:00Z
+       */
+      lastVerifiedAt?: string | null;
+      /**
+       * @description Workspace mode.
+       * @example local
+       * @enum {string}
+       */
+      mode: "local" | "linked";
+      /**
+       * @description OutboundConsole organization id.
+       * @example org_01ABC
+       */
+      outboundOrganizationId?: string;
+      /**
+       * @description OutboundConsole workspace id.
+       * @example ws_01ABC
+       */
+      outboundWorkspaceId?: string;
+      /**
+       * @description Whether policy preflight can run (linked and active).
+       * @example false
+       */
+      preflightAvailable: boolean;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       * @enum {string}
+       */
+      status: "active" | "disconnected" | "repair_required";
+    };
+    RevenueWorkspaceMember: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      outbound_account_id?: string;
+      role: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
     };
     /** @description Revision conflict returned when the caller edits a stale task, artifact, or run revision. Clients should refetch, merge, and retry with currentRevision. */
     RevisionConflictEnvelope: {
@@ -4494,6 +5618,7 @@ export interface components {
     };
     /** @description Local mirror of a WorkOS identity. Upserted when a verified bearer token is first seen. */
     User: {
+      action_outcomes?: components["schemas"]["ActionOutcome"][];
       agent_approvals?: components["schemas"]["AgentApproval"][];
       agent_definitions?: components["schemas"]["AgentDefinition"][];
       agent_session_events?: components["schemas"]["AgentSessionEvent"][];
@@ -4511,6 +5636,7 @@ export interface components {
       /** @description Background task mirrors owned by the user. */
       background_tasks?: components["schemas"]["BackgroundTask"][];
       cloud_events?: components["schemas"]["CloudEvent"][];
+      commitments?: components["schemas"]["Commitment"][];
       /**
        * Format: date-time
        * @description Row creation timestamp.
@@ -4538,6 +5664,15 @@ export interface components {
       meeting_minute_usages?: components["schemas"]["MeetingMinuteUsage"][];
       /** @description Third-party OAuth connections for the user. */
       oauth_connections?: components["schemas"]["OAuthConnection"][];
+      policy_decision_snapshots?: components["schemas"]["PolicyDecisionSnapshot"][];
+      relationships?: components["schemas"]["Relationship"][];
+      revenue_action_revisions?: components["schemas"]["RevenueActionRevision"][];
+      revenue_actions?: components["schemas"]["RevenueAction"][];
+      revenue_evidences?: components["schemas"]["RevenueEvidence"][];
+      revenue_leak_scans?: components["schemas"]["RevenueLeakScan"][];
+      revenue_outbox_events?: components["schemas"]["RevenueOutboxEvent"][];
+      revenue_workspace_members?: components["schemas"]["RevenueWorkspaceMember"][];
+      revenue_workspaces?: components["schemas"]["RevenueWorkspace"][];
       /** @description The user's billing subscription. */
       subscription?: components["schemas"]["Subscription"];
       /**
@@ -7675,6 +8810,911 @@ export interface operations {
       401: components["responses"]["401"];
       500: components["responses"]["500"];
       503: components["responses"]["503"];
+    };
+  };
+  listRevenueRelationships: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Relationships. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Relationships. */
+            relationships?: components["schemas"]["RevenueRelationship"][];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+    };
+  };
+  createRevenueRelationship: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Relationship. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "displayName": "Jordan Buyer",
+         *       "kind": "person",
+         *       "primaryEmail": "buyer@example.com"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Account domain.
+           * @example example.com
+           */
+          accountDomain?: string;
+          /**
+           * @description Display name.
+           * @example Jordan Buyer
+           */
+          displayName: string;
+          /**
+           * @description Relationship kind.
+           * @example person
+           * @enum {string}
+           */
+          kind: "person" | "company" | "customer" | "opportunity" | "referral" | "partner";
+          /**
+           * @description Primary email.
+           * @example buyer@example.com
+           */
+          primaryEmail?: string;
+          /**
+           * @description Summary.
+           * @example Warm lead from the April demo.
+           */
+          summary?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Created relationship. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueRelationship"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+    };
+  };
+  getRevenueRelationship: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Relationship detail. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Actions for this relationship. */
+            actions?: components["schemas"]["RevenueAction"][];
+            relationship?: components["schemas"]["RevenueRelationship"];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  listRevenueActions: {
+    parameters: {
+      query?: {
+        /** @description Queue status filter, or all. */
+        queueStatus?: "open" | "snoozed" | "dismissed" | "handled" | "all";
+        /** @description Page size (max 100, default 10). */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Queue page. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Actions. */
+            actions?: components["schemas"]["RevenueAction"][];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+    };
+  };
+  createRevenueAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Action. */
+    requestBody: {
+      content: {
+        "application/json": {
+          /**
+           * @description Action type.
+           * @example warm_follow_up
+           * @enum {string}
+           */
+          actionType:
+            | "warm_follow_up"
+            | "proposal_nudge"
+            | "referral_reconnect"
+            | "customer_risk"
+            | "meeting_follow_up";
+          /**
+           * @description Delivery channel.
+           * @example email
+           * @enum {string}
+           */
+          channel: "email" | "slack" | "call" | "crm_task";
+          /**
+           * Format: date-time
+           * @description Due time.
+           * @example 2026-07-15T00:00:00Z
+           */
+          dueAt?: string | null;
+          /**
+           * @description Execution mode.
+           * @example draft
+           * @enum {string}
+           */
+          executionMode?: "draft" | "send";
+          /** @description Per-component priority breakdown. */
+          priorityComponents?: {
+            [key: string]: unknown;
+          };
+          /**
+           * @description Priority (0-100).
+           * @example 80
+           */
+          priorityScore?: number;
+          /**
+           * @description Proposed body.
+           * @example Hi Jordan — circling back as promised...
+           */
+          proposedMessage?: string;
+          /**
+           * @description Proposed subject.
+           * @example Following up as promised
+           */
+          proposedSubject?: string;
+          /**
+           * @description Evidence-backed reason.
+           * @example They asked for a follow-up in July.
+           */
+          reason: string;
+          /**
+           * @description Recipient email.
+           * @example buyer@example.com
+           */
+          recipientEmail?: string;
+          /**
+           * Format: uuid
+           * @description Owning relationship id.
+           * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+           */
+          relationshipId: string;
+          /**
+           * @description Sender account reference.
+           * @example gmail:me@company.com
+           */
+          senderAccountRef?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Created action. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueAction"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  getRevenueAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Action id. */
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Action. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueAction"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  approveRevenueAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Action id. */
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Approval options. */
+    requestBody?: {
+      content: {
+        /**
+         * @example {
+         *       "acceptRisk": false
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Explicitly accept a review_required decision.
+           * @example false
+           */
+          acceptRisk?: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description Approved action. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueAction"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      /** @description Invariant violation: blocked, no decision, expired decision, or review required. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "blocked",
+           *       "detail": "action is blocked by policy",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/blocked"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  getRevenueActionAudit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Action id. */
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Audit chain. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            action?: components["schemas"]["RevenueAction"];
+            /** @description Policy decision snapshots. */
+            decisions?: components["schemas"]["RevenuePolicyDecision"][];
+            /** @description Observed outcomes. */
+            outcomes?: components["schemas"]["RevenueOutcome"][];
+            /** @description Immutable revision snapshots. */
+            revisions?: {
+              [key: string]: unknown;
+            }[];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  dismissRevenueAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Action id. */
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Dismissal reason. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "reason": "already_handled"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Reason label.
+           * @example already_handled
+           */
+          reason?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Dismissed action. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueAction"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  editRevenueAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Action id. */
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Fields to change; omitted fields keep their value. */
+    requestBody: {
+      content: {
+        "application/json": {
+          /**
+           * @description Action type.
+           * @example warm_follow_up
+           */
+          actionType?: string | null;
+          /**
+           * @description Channel.
+           * @example email
+           */
+          channel?: string | null;
+          /**
+           * @description Execution mode.
+           * @example draft
+           */
+          executionMode?: string | null;
+          /**
+           * @description Proposed body.
+           * @example Updated body
+           */
+          proposedMessage?: string | null;
+          /**
+           * @description Proposed subject.
+           * @example Updated subject
+           */
+          proposedSubject?: string | null;
+          /**
+           * @description Reason.
+           * @example Updated context.
+           */
+          reason?: string | null;
+          /**
+           * @description Recipient email.
+           * @example buyer@example.com
+           */
+          recipientEmail?: string | null;
+          /**
+           * @description Sender account reference.
+           * @example gmail:me@company.com
+           */
+          senderAccountRef?: string | null;
+        };
+      };
+    };
+    responses: {
+      /** @description Action at its new revision. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueAction"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      /** @description Execution already started; the action is immutable. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "not_editable",
+           *       "detail": "execution already started; the action is immutable",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/not_editable"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  evaluateRevenueAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Action id. */
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Decision snapshot. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenuePolicyDecision"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      /** @description Policy facade unavailable; the action stays pending. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "facade_unavailable",
+           *       "detail": "policy preflight unavailable; the action stays pending",
+           *       "requestId": "req-abc123",
+           *       "status": 503,
+           *       "title": "Service Unavailable",
+           *       "type": "https://api.rowboat.dev/problems/facade_unavailable"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  executeRevenueAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Action id. */
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Action after execution. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueAction"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      /** @description Invariant violation: not approved, blocked, expired decision, or workspace not linked for sends. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "not_approved",
+           *       "detail": "action is not approved for its current revision",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/not_approved"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  recordRevenueActionOutcome: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Action id. */
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Outcome. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "kind": "replied",
+         *       "source": "gmail",
+         *       "sourceEventId": "msg_01"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Outcome kind.
+           * @example replied
+           * @enum {string}
+           */
+          kind:
+            | "sent"
+            | "delivered"
+            | "bounced"
+            | "replied"
+            | "meeting_booked"
+            | "won"
+            | "lost"
+            | "dismissed"
+            | "bad_recommendation";
+          /** @description Bounded metadata. */
+          metadata?: {
+            [key: string]: unknown;
+          };
+          /**
+           * Format: date-time
+           * @description When the outcome occurred.
+           * @example 2026-07-12T14:00:00Z
+           */
+          occurredAt?: string | null;
+          /**
+           * @description Observing source.
+           * @example gmail
+           * @enum {string}
+           */
+          source: "gmail" | "calendar" | "crm" | "user" | "outbound";
+          /**
+           * @description Source event id for deduplication.
+           * @example msg_01
+           */
+          sourceEventId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Recorded outcome. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueOutcome"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  rejectRevenueAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Action id. */
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Rejection reason. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "reason": "wrong_recipient"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Reason.
+           * @example wrong_recipient
+           */
+          reason?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Rejected action. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueAction"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+    };
+  };
+  snoozeRevenueAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Action id. */
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Wake time. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "until": "2026-07-20T09:00:00Z"
+         *     }
+         */
+        "application/json": {
+          /**
+           * Format: date-time
+           * @description Wake time.
+           * @example 2026-07-20T09:00:00Z
+           */
+          until: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Snoozed action. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueAction"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  startRevenueLeakScan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Scan options. */
+    requestBody?: {
+      content: {
+        /**
+         * @example {
+         *       "lookbackDays": 90
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Historical lookback in days (default 90, max 365).
+           * @example 90
+           */
+          lookbackDays?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description Scan started. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueLeakScan"];
+        };
+      };
+      401: components["responses"]["401"];
+      /** @description A scan is already running, or no scan source is configured. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "scan_unavailable",
+           *       "detail": "revenue: scan unavailable: a scan is already running",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/scan_unavailable"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+    };
+  };
+  getRevenueLeakScan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Scan id. */
+        scanId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Scan state. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueLeakScan"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  getRevenueWorkspace: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Current workspace. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueWorkspace"];
+        };
+      };
+      401: components["responses"]["401"];
+    };
+  };
+  linkRevenueWorkspace: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description OutboundConsole identifiers. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "outboundOrganizationId": "org_01ABC",
+         *       "outboundWorkspaceId": "ws_01ABC"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description OutboundConsole organization id.
+           * @example org_01ABC
+           */
+          outboundOrganizationId?: string;
+          /**
+           * @description OutboundConsole workspace id.
+           * @example ws_01ABC
+           */
+          outboundWorkspaceId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Linked workspace. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueWorkspace"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      /** @description Policy facade unavailable; the link fails closed. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "facade_unavailable",
+           *       "detail": "policy preflight unavailable; the action stays pending",
+           *       "requestId": "req-abc123",
+           *       "status": 503,
+           *       "title": "Service Unavailable",
+           *       "type": "https://api.rowboat.dev/problems/facade_unavailable"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
     };
   };
   searchExa: {

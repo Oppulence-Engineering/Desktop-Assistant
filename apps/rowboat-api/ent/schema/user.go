@@ -73,5 +73,17 @@ func (User) Edges() []ent.Edge {
 		edge.To("agent_tool_calls", AgentToolCall.Type).Annotations(entproto.Skip()),
 		edge.To("agent_approvals", AgentApproval.Type).Annotations(entproto.Skip()),
 		edge.To("agent_tool_result_blobs", AgentToolResultBlob.Type).Annotations(entproto.Skip()),
+		// Revenue memory and outbound governance (RFC 030).
+		edge.To("revenue_workspaces", RevenueWorkspace.Type).Annotations(entproto.Skip()),
+		edge.To("revenue_workspace_members", RevenueWorkspaceMember.Type).Annotations(entproto.Skip()),
+		edge.To("relationships", Relationship.Type).Annotations(entproto.Skip()),
+		edge.To("revenue_evidences", RevenueEvidence.Type).Annotations(entproto.Skip()),
+		edge.To("commitments", Commitment.Type).Annotations(entproto.Skip()),
+		edge.To("revenue_actions", RevenueAction.Type).Annotations(entproto.Skip()),
+		edge.To("revenue_action_revisions", RevenueActionRevision.Type).Annotations(entproto.Skip()),
+		edge.To("policy_decision_snapshots", PolicyDecisionSnapshot.Type).Annotations(entproto.Skip()),
+		edge.To("action_outcomes", ActionOutcome.Type).Annotations(entproto.Skip()),
+		edge.To("revenue_outbox_events", RevenueOutboxEvent.Type).Annotations(entproto.Skip()),
+		edge.To("revenue_leak_scans", RevenueLeakScan.Type).Annotations(entproto.Skip()),
 	}
 }

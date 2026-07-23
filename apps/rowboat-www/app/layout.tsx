@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
@@ -22,6 +22,12 @@ const geist = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
 });
@@ -56,7 +62,7 @@ export default function RootLayout({
         <Script src="/config.js" strategy="beforeInteractive" />
       </head>
       <body
-        className={`${geist.variable} ${geistMono.variable} ${f37Stout.variable} antialiased`}
+        className={`${geist.variable} ${geistMono.variable} ${f37Stout.variable} ${inter.variable} antialiased`}
         suppressHydrationWarning
       >
         {children}

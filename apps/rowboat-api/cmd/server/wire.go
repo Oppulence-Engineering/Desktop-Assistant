@@ -29,6 +29,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/docs"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/feedback"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/google"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/gqlapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/minutes"
@@ -36,6 +37,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/ratelimit"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenue"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/search"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/server"
@@ -362,6 +364,30 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		}
 	}
 
+	// Revenue memory and outbound governance (RFC 030). Always mounted.
+	// Without a facade base URL the fail-closed disabled facade is used:
+	// observation and drafts work, preflight and sends don't.
+	var facade revenue.FacadeClient
+	if cfg.RevenueFacadeBaseURL != "" {
+		facade = revenue.NewHTTPFacade(revenue.HTTPFacadeConfig{
+			BaseURL:      cfg.RevenueFacadeBaseURL,
+			ServiceToken: cfg.RevenueFacadeServiceToken,
+			Timeout:      cfg.RevenueFacadeTimeout,
+		})
+	}
+	// Gmail is the first execution owner (draft in the operator's own
+	// mailbox by default; sends stay gated behind approval + preflight).
+	gmailExec := revenue.NewGmailExecutor(client, sealer, sec, googleapi.New(googleapi.Config{
+		TokenURL:        cfg.GoogleTokenURL,
+		GmailBaseURL:    cfg.GmailAPIBaseURL,
+		CalendarBaseURL: cfg.CalendarAPIBaseURL,
+		DriveBaseURL:    cfg.DriveAPIBaseURL,
+	}))
+	revenueSvc := revenue.NewService(client, facade, gmailExec, log)
+	// The Gmail backend also feeds the leak scan (read-only sweep).
+	revenueSvc.SetSweeper(gmailExec)
+	revenueH := revenue.NewHandler(revenueSvc, log)
+
 	r := srv.Router()
 
 	// Public (no auth).
@@ -574,6 +600,13 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Get("/", cloudEventsH.List)
 			r.Get("/{eventId}", cloudEventsH.Get)
 			r.Get("/{eventId}/runs", cloudEventsH.Runs)
+		})
+
+		// RFC 030 revenue queue. The lifecycle enforces the state-machine
+		// invariants server-side.
+		r.Group(func(r chi.Router) {
+			r.Use(rl.PerUserWindow(ratelimit.GroupRevenue, 120, time.Minute))
+			revenueH.Mount(r)
 		})
 
 		r.Get("/v1/connectors", connectorsH.List)

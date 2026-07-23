@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // maxGmailMessages caps the messages.list → messages.get fan-out: each listed
@@ -165,4 +166,100 @@ func encodeAddressHeader(to string) string {
 // sanitizeHeader strips CR/LF so a recipient/subject cannot inject extra headers.
 func sanitizeHeader(s string) string {
 	return strings.NewReplacer("\r", "", "\n", "").Replace(s)
+}
+
+// maxGmailThreads caps a thread sweep: one threads.list call plus at most this
+// many threads.get calls per scan page (RFC 030 WP3 historical boundary).
+const maxGmailThreads = 100
+
+// GmailThreadMessage is the metadata-only per-message shape a thread sweep
+// returns: headers and snippet, never bodies. Outbound reports whether the
+// message carries the SENT label (the user wrote it).
+type GmailThreadMessage struct {
+	ID       string    `json:"id"`
+	ThreadID string    `json:"threadId"`
+	From     string    `json:"from"`
+	To       string    `json:"to"`
+	Subject  string    `json:"subject"`
+	Snippet  string    `json:"snippet"`
+	Outbound bool      `json:"outbound"`
+	At       time.Time `json:"at"`
+}
+
+// ListThreadIDs searches the mailbox (Gmail query syntax) and returns up to
+// max thread ids (clamped to maxGmailThreads). One API call.
+func (c *Client) ListThreadIDs(ctx context.Context, token, query string, limit int) ([]string, error) {
+	if limit <= 0 || limit > maxGmailThreads {
+		limit = maxGmailThreads
+	}
+	q := url.Values{}
+	if query != "" {
+		q.Set("q", query)
+	}
+	q.Set("maxResults", strconv.Itoa(limit))
+	var list struct {
+		Threads []struct {
+			ID string `json:"id"`
+		} `json:"threads"`
+	}
+	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/threads", q, &list); err != nil {
+		return nil, fmt.Errorf("gmail threads.list: %w", err)
+	}
+	ids := make([]string, 0, len(list.Threads))
+	for _, t := range list.Threads {
+		ids = append(ids, t.ID)
+	}
+	return ids, nil
+}
+
+// GetThreadMessages returns the metadata-only messages of one thread in
+// chronological order. One API call per thread.
+func (c *Client) GetThreadMessages(ctx context.Context, token, threadID string) ([]GmailThreadMessage, error) {
+	q := url.Values{}
+	q.Set("format", "metadata")
+	q.Add("metadataHeaders", "From")
+	q.Add("metadataHeaders", "To")
+	q.Add("metadataHeaders", "Subject")
+	var thread struct {
+		Messages []struct {
+			ID           string   `json:"id"`
+			ThreadID     string   `json:"threadId"`
+			Snippet      string   `json:"snippet"`
+			LabelIDs     []string `json:"labelIds"`
+			InternalDate string   `json:"internalDate"`
+			Payload      struct {
+				Headers []struct {
+					Name  string `json:"name"`
+					Value string `json:"value"`
+				} `json:"headers"`
+			} `json:"payload"`
+		} `json:"messages"`
+	}
+	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/threads/"+url.PathEscape(threadID), q, &thread); err != nil {
+		return nil, fmt.Errorf("gmail threads.get %s: %w", threadID, err)
+	}
+	out := make([]GmailThreadMessage, 0, len(thread.Messages))
+	for _, m := range thread.Messages {
+		msg := GmailThreadMessage{ID: m.ID, ThreadID: m.ThreadID, Snippet: m.Snippet}
+		for _, l := range m.LabelIDs {
+			if l == "SENT" {
+				msg.Outbound = true
+			}
+		}
+		if ms, err := strconv.ParseInt(m.InternalDate, 10, 64); err == nil && ms > 0 {
+			msg.At = time.UnixMilli(ms).UTC()
+		}
+		for _, h := range m.Payload.Headers {
+			switch h.Name {
+			case "From":
+				msg.From = h.Value
+			case "To":
+				msg.To = h.Value
+			case "Subject":
+				msg.Subject = h.Value
+			}
+		}
+		out = append(out, msg)
+	}
+	return out, nil
 }

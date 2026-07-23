@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentapproval"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentdefinition"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentsession"
@@ -18,6 +19,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/intercept"
@@ -25,6 +27,15 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
@@ -37,6 +48,7 @@ import (
 // this generated entity/foreign-key map to inject the authenticated user's id
 // into every update/delete predicate.
 var tenantUserColumns = map[string]string{
+	ent.TypeActionOutcome:               actionoutcome.UserColumn,
 	ent.TypeAgentApproval:               agentapproval.UserColumn,
 	ent.TypeAgentDefinition:             agentdefinition.UserColumn,
 	ent.TypeAgentSession:                agentsession.UserColumn,
@@ -57,6 +69,16 @@ var tenantUserColumns = map[string]string{
 	ent.TypeMeetingMinuteUsage:          meetingminuteusage.UserColumn,
 	ent.TypeOAuthConnection:             oauthconnection.UserColumn,
 	ent.TypeSubscription:                subscription.UserColumn,
+	ent.TypeCommitment:                  commitment.UserColumn,
+	ent.TypePolicyDecisionSnapshot:      policydecisionsnapshot.UserColumn,
+	ent.TypeRelationship:                relationship.UserColumn,
+	ent.TypeRevenueAction:               revenueaction.UserColumn,
+	ent.TypeRevenueActionRevision:       revenueactionrevision.UserColumn,
+	ent.TypeRevenueEvidence:             revenueevidence.UserColumn,
+	ent.TypeRevenueLeakScan:             revenueleakscan.UserColumn,
+	ent.TypeRevenueOutboxEvent:          revenueoutboxevent.UserColumn,
+	ent.TypeRevenueWorkspace:            revenueworkspace.UserColumn,
+	ent.TypeRevenueWorkspaceMember:      revenueworkspacemember.UserColumn,
 }
 
 // ErrNoViewer is returned when a per-user entity is queried with neither an
@@ -218,6 +240,87 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.AgentToolResultBlobQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(agenttoolresultblob.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	// Revenue memory and outbound governance (RFC 030). MVP tenancy is
+	// founder-mode user scoping; the workspace edges exist for the WP6
+	// member-scoped upgrade, at which point these interceptors move to
+	// RevenueWorkspaceMember-driven predicates.
+	client.RevenueWorkspace.Intercept(intercept.TraverseRevenueWorkspace(
+		func(ctx context.Context, q *ent.RevenueWorkspaceQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(revenueworkspace.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.RevenueWorkspaceMember.Intercept(intercept.TraverseRevenueWorkspaceMember(
+		func(ctx context.Context, q *ent.RevenueWorkspaceMemberQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(revenueworkspacemember.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.RevenueLeakScan.Intercept(intercept.TraverseRevenueLeakScan(
+		func(ctx context.Context, q *ent.RevenueLeakScanQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(revenueleakscan.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.Relationship.Intercept(intercept.TraverseRelationship(
+		func(ctx context.Context, q *ent.RelationshipQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(relationship.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.RevenueEvidence.Intercept(intercept.TraverseRevenueEvidence(
+		func(ctx context.Context, q *ent.RevenueEvidenceQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(revenueevidence.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.Commitment.Intercept(intercept.TraverseCommitment(
+		func(ctx context.Context, q *ent.CommitmentQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(commitment.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.RevenueAction.Intercept(intercept.TraverseRevenueAction(
+		func(ctx context.Context, q *ent.RevenueActionQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(revenueaction.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.RevenueActionRevision.Intercept(intercept.TraverseRevenueActionRevision(
+		func(ctx context.Context, q *ent.RevenueActionRevisionQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(revenueactionrevision.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.PolicyDecisionSnapshot.Intercept(intercept.TraversePolicyDecisionSnapshot(
+		func(ctx context.Context, q *ent.PolicyDecisionSnapshotQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(policydecisionsnapshot.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.ActionOutcome.Intercept(intercept.TraverseActionOutcome(
+		func(ctx context.Context, q *ent.ActionOutcomeQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(actionoutcome.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.RevenueOutboxEvent.Intercept(intercept.TraverseRevenueOutboxEvent(
+		func(ctx context.Context, q *ent.RevenueOutboxEventQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(revenueoutboxevent.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 }

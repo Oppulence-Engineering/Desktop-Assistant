@@ -8,6 +8,30 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+func (_m *ActionOutcome) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *ActionOutcome) Action(ctx context.Context) (*RevenueAction, error) {
+	result, err := _m.Edges.ActionOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAction().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *ActionOutcome) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *AgentApproval) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
@@ -328,6 +352,42 @@ func (_m *CloudEvent) Runs(ctx context.Context) (result []*BackgroundTaskRun, er
 	return result, err
 }
 
+func (_m *Commitment) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *Commitment) Relationship(ctx context.Context) (*Relationship, error) {
+	result, err := _m.Edges.RelationshipOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationship().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *Commitment) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *Commitment) Evidences(ctx context.Context) (result []*RevenueEvidence, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedEvidences(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.EvidencesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryEvidences().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *CreditLedger) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
@@ -369,6 +429,386 @@ func (_m *MeetingMinuteUsage) User(ctx context.Context) (*User, error) {
 }
 
 func (_m *OAuthConnection) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PolicyDecisionSnapshot) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PolicyDecisionSnapshot) Action(ctx context.Context) (*RevenueAction, error) {
+	result, err := _m.Edges.ActionOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAction().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PolicyDecisionSnapshot) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *Relationship) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *Relationship) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *Relationship) Commitments(ctx context.Context) (result []*Commitment, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommitments(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommitmentsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommitments().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Relationship) Actions(ctx context.Context) (result []*RevenueAction, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedActions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ActionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryActions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Relationship) Evidences(ctx context.Context) (result []*RevenueEvidence, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedEvidences(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.EvidencesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryEvidences().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueAction) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueAction) Relationship(ctx context.Context) (*Relationship, error) {
+	result, err := _m.Edges.RelationshipOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationship().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueAction) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueAction) Evidences(ctx context.Context) (result []*RevenueEvidence, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedEvidences(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.EvidencesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryEvidences().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueAction) Revisions(ctx context.Context) (result []*RevenueActionRevision, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRevisions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RevisionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRevisions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueAction) Decisions(ctx context.Context) (result []*PolicyDecisionSnapshot, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedDecisions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.DecisionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryDecisions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueAction) Outcomes(ctx context.Context) (result []*ActionOutcome, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedOutcomes(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.OutcomesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOutcomes().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueActionRevision) Action(ctx context.Context) (*RevenueAction, error) {
+	result, err := _m.Edges.ActionOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAction().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueActionRevision) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueEvidence) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueEvidence) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueEvidence) Relationships(ctx context.Context) (result []*Relationship, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationships(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationships().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueEvidence) Commitments(ctx context.Context) (result []*Commitment, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommitments(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommitmentsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommitments().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueEvidence) Actions(ctx context.Context) (result []*RevenueAction, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedActions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ActionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryActions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueLeakScan) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueLeakScan) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueOutboxEvent) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueOutboxEvent) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) Members(ctx context.Context) (result []*RevenueWorkspaceMember, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedMembers(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.MembersOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryMembers().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) Relationships(ctx context.Context) (result []*Relationship, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationships(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationships().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) Evidences(ctx context.Context) (result []*RevenueEvidence, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedEvidences(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.EvidencesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryEvidences().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) Commitments(ctx context.Context) (result []*Commitment, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommitments(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommitmentsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommitments().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) Actions(ctx context.Context) (result []*RevenueAction, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedActions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ActionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryActions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) Decisions(ctx context.Context) (result []*PolicyDecisionSnapshot, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedDecisions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.DecisionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryDecisions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) Outcomes(ctx context.Context) (result []*ActionOutcome, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedOutcomes(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.OutcomesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOutcomes().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) OutboxEvents(ctx context.Context) (result []*RevenueOutboxEvent, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedOutboxEvents(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.OutboxEventsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOutboxEvents().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) Scans(ctx context.Context) (result []*RevenueLeakScan, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedScans(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ScansOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryScans().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspaceMember) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspaceMember) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
 		result, err = _m.QueryUser().Only(ctx)
@@ -616,6 +1056,138 @@ func (_m *User) AgentToolResultBlobs(ctx context.Context) (result []*AgentToolRe
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryAgentToolResultBlobs().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RevenueWorkspaces(ctx context.Context) (result []*RevenueWorkspace, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRevenueWorkspaces(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RevenueWorkspacesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRevenueWorkspaces().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RevenueWorkspaceMembers(ctx context.Context) (result []*RevenueWorkspaceMember, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRevenueWorkspaceMembers(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RevenueWorkspaceMembersOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRevenueWorkspaceMembers().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) Relationships(ctx context.Context) (result []*Relationship, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationships(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationships().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RevenueEvidences(ctx context.Context) (result []*RevenueEvidence, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRevenueEvidences(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RevenueEvidencesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRevenueEvidences().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) Commitments(ctx context.Context) (result []*Commitment, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommitments(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommitmentsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommitments().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RevenueActions(ctx context.Context) (result []*RevenueAction, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRevenueActions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RevenueActionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRevenueActions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RevenueActionRevisions(ctx context.Context) (result []*RevenueActionRevision, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRevenueActionRevisions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RevenueActionRevisionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRevenueActionRevisions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) PolicyDecisionSnapshots(ctx context.Context) (result []*PolicyDecisionSnapshot, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedPolicyDecisionSnapshots(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.PolicyDecisionSnapshotsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPolicyDecisionSnapshots().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) ActionOutcomes(ctx context.Context) (result []*ActionOutcome, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedActionOutcomes(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ActionOutcomesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryActionOutcomes().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RevenueOutboxEvents(ctx context.Context) (result []*RevenueOutboxEvent, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRevenueOutboxEvents(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RevenueOutboxEventsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRevenueOutboxEvents().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RevenueLeakScans(ctx context.Context) (result []*RevenueLeakScan, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRevenueLeakScans(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RevenueLeakScansOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRevenueLeakScans().All(ctx)
 	}
 	return result, err
 }
