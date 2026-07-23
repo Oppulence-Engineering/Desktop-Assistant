@@ -7,6 +7,7 @@ import {
   type SettingsSection,
 } from "@/components/app-shell";
 import { SettingsView } from "@/components/app-settings";
+import { RevenuePanel } from "@/components/revenue-panel";
 import { AuthGate, useAuthSession } from "@/components/auth-gate";
 import { CommandPalette } from "@/components/command-palette";
 import {
@@ -137,7 +138,7 @@ function PageBody() {
     conversation.length === 0 && !currentAssistantMessage && !currentReasoning;
   const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [view, setView] = useState<"chat" | "settings">("chat");
+  const [view, setView] = useState<"chat" | "settings" | "revenue">("chat");
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("general");
   const [sessions, setSessions] = useState<SessionMeta[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -993,6 +994,10 @@ function PageBody() {
               setView("chat");
               setSelectedResource(null);
             }}
+            onNavigateRevenue={() => {
+              setView("revenue");
+              setSelectedResource(null);
+            }}
             onOpenSettings={(section) => {
               setSettingsSection(section);
               setView("settings");
@@ -1031,7 +1036,9 @@ function PageBody() {
                 <span className="text-sm font-medium text-primary">
                   {view === "settings"
                     ? SETTINGS_SECTIONS.find((s) => s.key === settingsSection)?.label || "Settings"
-                    : "Chat"}
+                    : view === "revenue"
+                      ? "Revenue"
+                      : "Chat"}
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -1051,6 +1058,15 @@ function PageBody() {
 
             {view === "settings" ? (
               <SettingsView section={settingsSection} session={session} />
+            ) : view === "revenue" ? (
+              <div className="flex-1 overflow-y-auto">
+                <RevenuePanel
+                  onOpenConnectors={() => {
+                    setSettingsSection("connectors");
+                    setView("settings");
+                  }}
+                />
+              </div>
             ) : (
               <div className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pb-0 md:flex-row">
                 <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden">

@@ -10,6 +10,7 @@ import {
   ChatsCircle,
   Clock,
   Cpu,
+  CurrencyDollar,
   DotsThree,
   Folder,
   GearSix,
@@ -233,6 +234,7 @@ export function AppShellSidebar({
   selected,
   onSelectResource,
   onNavigateChat,
+  onNavigateRevenue,
   view = "chat",
   settingsSection = "general",
   onOpenSettings,
@@ -248,7 +250,8 @@ export function AppShellSidebar({
   selected: { kind: ResourceKind; name: string } | null;
   onSelectResource?: SidebarSelect;
   onNavigateChat?: () => void;
-  view?: "chat" | "settings";
+  onNavigateRevenue?: () => void;
+  view?: "chat" | "settings" | "revenue";
   settingsSection?: SettingsSection;
   onOpenSettings?: (section: SettingsSection) => void;
   onCloseSettings?: () => void;
@@ -421,10 +424,16 @@ export function AppShellSidebar({
         ) : (
           <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2">
             <SidebarNavItem
-              active={!selected}
+              active={view === "chat" && !selected}
               icon={ChatsCircle}
               label="Chat"
               onClick={onNavigateChat}
+            />
+            <SidebarNavItem
+              active={view === "revenue"}
+              icon={CurrencyDollar}
+              label="Revenue"
+              onClick={onNavigateRevenue}
             />
             {groups.map((group) => (
               <Collapsible
