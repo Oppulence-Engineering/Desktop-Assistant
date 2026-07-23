@@ -3550,4 +3550,187 @@
   .linear-product-header {
     padding-bottom: 72px;
   }
+
+  /*
+   * Cossistant-faithful pass. Anatomy studied from the cossistant repo
+   * (AGPL — design reference only; everything here is our own code):
+   * solid h-16 topbar with plain sans nav and one dashed rule, a hero of
+   * eyebrow + Stout headline + two tall buttons and nothing else, the
+   * demo framed by full-bleed dashed rules, a relaxed-leading Stout
+   * manifesto, dashed structural rules page-wide, and a mono footer.
+   */
+  .linear-header {
+    height: 64px;
+    border-bottom: 1px dashed var(--linear-border-strong);
+    background: var(--background);
+    backdrop-filter: none;
+  }
+
+  html[data-marketing-scrolled] .linear-header,
+  html[data-marketing-menu-open] .linear-header {
+    border-bottom-color: var(--linear-border-strong);
+    background: var(--background);
+  }
+
+  .linear-nav-link,
+  .linear-nav-trigger {
+    padding-inline: 12px;
+    font-family: var(--font-geist-sans), ui-sans-serif, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--foreground);
+  }
+
+  .linear-nav-link::before,
+  .linear-nav-link::after,
+  .linear-nav-trigger::before,
+  .linear-nav-trigger::after,
+  .linear-mobile-panel > a::before,
+  .linear-mobile-panel > a::after {
+    content: none;
+  }
+
+  .linear-mobile-summary {
+    height: 64px;
+  }
+
+  .linear-mobile-panel {
+    top: 64px;
+  }
+
+  .linear-mobile-panel > a {
+    font-family: var(--font-geist-sans), ui-sans-serif, sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  .linear-hero {
+    padding-top: 152px;
+    padding-bottom: 72px;
+  }
+
+  .linear-hero-title {
+    max-width: 900px;
+    font-size: clamp(2.6rem, 4.4vw, 3rem);
+    line-height: 1.08;
+  }
+
+  .linear-button-ghost {
+    display: inline-flex;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    padding-inline: 14px;
+    color: var(--foreground);
+    font-size: 13px;
+    font-weight: 510;
+    transition: background 160ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .linear-button-ghost:hover {
+    background: rgb(27 26 23 / 6%);
+  }
+
+  .linear-hero-band {
+    position: relative;
+    margin-top: 56px;
+    margin-bottom: 30px;
+    padding-block: 46px;
+  }
+
+  .linear-hero-band::before,
+  .linear-hero-band::after {
+    position: absolute;
+    left: 50%;
+    width: 100vw;
+    border-top: 1px dashed var(--linear-border-strong);
+    content: "";
+    pointer-events: none;
+    transform: translateX(-50%);
+  }
+
+  .linear-hero-band::before {
+    top: 0;
+  }
+
+  .linear-hero-band::after {
+    bottom: 0;
+  }
+
+  .linear-hero-band .linear-hero-card {
+    max-width: 580px;
+    margin-inline: auto;
+  }
+
+  .linear-manifesto {
+    padding-block: 148px;
+  }
+
+  .linear-manifesto h2,
+  .linear-statement-title {
+    max-width: 880px;
+    font-family: var(--font-f37-stout), var(--font-geist-sans), ui-sans-serif, sans-serif;
+    font-weight: 400;
+    font-size: clamp(1.7rem, 2.6vw, 2.125rem);
+    letter-spacing: -0.005em;
+    line-height: 1.55;
+    color: rgb(27 26 23 / 62%);
+    text-wrap: pretty;
+  }
+
+  .linear-manifesto h2 strong,
+  .linear-statement-title strong {
+    color: var(--foreground);
+    font-weight: 400;
+  }
+
+  .linear-updates-grid,
+  .linear-proof-band {
+    border-block-style: dashed;
+  }
+
+  .linear-update,
+  .linear-proof {
+    border-right-style: dashed;
+  }
+
+  .linear-faq details {
+    border-top-style: dashed;
+  }
+
+  .linear-faq details:last-child {
+    border-bottom-style: dashed;
+  }
+
+  .linear-product-tab {
+    border-left-style: dashed;
+  }
+
+  .linear-product-tab:last-child {
+    border-right-style: dashed;
+  }
+
+  .linear-footer {
+    border-top-style: dashed;
+  }
+
+  .linear-footer-column h3 {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 13px;
+  }
+
+  .linear-footer-column a {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 12px;
+  }
+
+  .linear-footer-note {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 11px;
+  }
+
+  .linear-final-cta h2 {
+    font-size: clamp(2.2rem, 4vw, 3rem);
+  }
 }
