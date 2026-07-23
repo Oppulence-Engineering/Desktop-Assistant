@@ -383,11 +383,9 @@ type Config struct {
 	AgentDeclarativeToolsEnabled bool
 	AgentGitOpsEnabled           bool
 
-	// RFC 030 revenue memory and outbound governance. Ships dark: the whole
-	// surface mounts only when RevenueEnabled is true. With no facade base
-	// URL the workspace runs in local mode — observation and draft-only
-	// execution work; preflight and sends fail closed.
-	RevenueEnabled            bool
+	// RFC 030 revenue memory and outbound governance. Always mounted. With
+	// no facade base URL the workspace runs in local mode — observation and
+	// draft-only execution work; preflight and sends fail closed.
 	RevenueFacadeBaseURL      string
 	RevenueFacadeServiceToken string
 	RevenueFacadeTimeout      time.Duration
@@ -660,7 +658,6 @@ func Load() Config {
 		AgentDeclarativeToolsEnabled: getbool("AGENT_DECLARATIVE_TOOLS_ENABLED", false),
 		AgentGitOpsEnabled:           getbool("AGENT_GITOPS_ENABLED", false),
 
-		RevenueEnabled:            getbool("REVENUE_ENABLED", false),
 		RevenueFacadeBaseURL:      getenv("REVENUE_FACADE_BASE_URL", ""),
 		RevenueFacadeServiceToken: getenv("REVENUE_FACADE_SERVICE_TOKEN", ""),
 		RevenueFacadeTimeout:      getdur("REVENUE_FACADE_TIMEOUT", 15*time.Second),

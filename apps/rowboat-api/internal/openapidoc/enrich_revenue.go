@@ -1,8 +1,8 @@
 package openapidoc
 
-// Revenue memory and outbound governance surface (RFC 030). Mounted only when
-// REVENUE_ENABLED is true; documented unconditionally so the SDK always
-// carries the contract.
+// Revenue memory and outbound governance surface (RFC 030). Always mounted;
+// without a configured facade the workspace runs in local mode (observation
+// and drafts work, preflight and sends fail closed).
 
 func addRevenueSchemas(schemas obj) {
 	schemas["RevenueWorkspace"] = objectSchema("Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled.", obj{
