@@ -28,6 +28,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
@@ -16519,6 +16520,454 @@ func (i *MailMessageMetaWhereInput) P() (predicate.MailMessageMeta, error) {
 	}
 }
 
+// MailSignalWhereInput represents a where input for filtering MailSignal queries.
+type MailSignalWhereInput struct {
+	Predicates []predicate.MailSignal  `json:"-"`
+	Not        *MailSignalWhereInput   `json:"not,omitempty"`
+	Or         []*MailSignalWhereInput `json:"or,omitempty"`
+	And        []*MailSignalWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "classification" field predicates.
+	Classification             *string  `json:"classification,omitempty"`
+	ClassificationNEQ          *string  `json:"classificationNEQ,omitempty"`
+	ClassificationIn           []string `json:"classificationIn,omitempty"`
+	ClassificationNotIn        []string `json:"classificationNotIn,omitempty"`
+	ClassificationGT           *string  `json:"classificationGT,omitempty"`
+	ClassificationGTE          *string  `json:"classificationGTE,omitempty"`
+	ClassificationLT           *string  `json:"classificationLT,omitempty"`
+	ClassificationLTE          *string  `json:"classificationLTE,omitempty"`
+	ClassificationContains     *string  `json:"classificationContains,omitempty"`
+	ClassificationHasPrefix    *string  `json:"classificationHasPrefix,omitempty"`
+	ClassificationHasSuffix    *string  `json:"classificationHasSuffix,omitempty"`
+	ClassificationEqualFold    *string  `json:"classificationEqualFold,omitempty"`
+	ClassificationContainsFold *string  `json:"classificationContainsFold,omitempty"`
+
+	// "summary" field predicates.
+	Summary             *string  `json:"summary,omitempty"`
+	SummaryNEQ          *string  `json:"summaryNEQ,omitempty"`
+	SummaryIn           []string `json:"summaryIn,omitempty"`
+	SummaryNotIn        []string `json:"summaryNotIn,omitempty"`
+	SummaryGT           *string  `json:"summaryGT,omitempty"`
+	SummaryGTE          *string  `json:"summaryGTE,omitempty"`
+	SummaryLT           *string  `json:"summaryLT,omitempty"`
+	SummaryLTE          *string  `json:"summaryLTE,omitempty"`
+	SummaryContains     *string  `json:"summaryContains,omitempty"`
+	SummaryHasPrefix    *string  `json:"summaryHasPrefix,omitempty"`
+	SummaryHasSuffix    *string  `json:"summaryHasSuffix,omitempty"`
+	SummaryIsNil        bool     `json:"summaryIsNil,omitempty"`
+	SummaryNotNil       bool     `json:"summaryNotNil,omitempty"`
+	SummaryEqualFold    *string  `json:"summaryEqualFold,omitempty"`
+	SummaryContainsFold *string  `json:"summaryContainsFold,omitempty"`
+
+	// "embedding_model" field predicates.
+	EmbeddingModel             *string  `json:"embeddingModel,omitempty"`
+	EmbeddingModelNEQ          *string  `json:"embeddingModelNEQ,omitempty"`
+	EmbeddingModelIn           []string `json:"embeddingModelIn,omitempty"`
+	EmbeddingModelNotIn        []string `json:"embeddingModelNotIn,omitempty"`
+	EmbeddingModelGT           *string  `json:"embeddingModelGT,omitempty"`
+	EmbeddingModelGTE          *string  `json:"embeddingModelGTE,omitempty"`
+	EmbeddingModelLT           *string  `json:"embeddingModelLT,omitempty"`
+	EmbeddingModelLTE          *string  `json:"embeddingModelLTE,omitempty"`
+	EmbeddingModelContains     *string  `json:"embeddingModelContains,omitempty"`
+	EmbeddingModelHasPrefix    *string  `json:"embeddingModelHasPrefix,omitempty"`
+	EmbeddingModelHasSuffix    *string  `json:"embeddingModelHasSuffix,omitempty"`
+	EmbeddingModelIsNil        bool     `json:"embeddingModelIsNil,omitempty"`
+	EmbeddingModelNotNil       bool     `json:"embeddingModelNotNil,omitempty"`
+	EmbeddingModelEqualFold    *string  `json:"embeddingModelEqualFold,omitempty"`
+	EmbeddingModelContainsFold *string  `json:"embeddingModelContainsFold,omitempty"`
+
+	// "computed_at" field predicates.
+	ComputedAt      *time.Time  `json:"computedAt,omitempty"`
+	ComputedAtNEQ   *time.Time  `json:"computedAtNEQ,omitempty"`
+	ComputedAtIn    []time.Time `json:"computedAtIn,omitempty"`
+	ComputedAtNotIn []time.Time `json:"computedAtNotIn,omitempty"`
+	ComputedAtGT    *time.Time  `json:"computedAtGT,omitempty"`
+	ComputedAtGTE   *time.Time  `json:"computedAtGTE,omitempty"`
+	ComputedAtLT    *time.Time  `json:"computedAtLT,omitempty"`
+	ComputedAtLTE   *time.Time  `json:"computedAtLTE,omitempty"`
+
+	// "thread" edge predicates.
+	HasThread     *bool                   `json:"hasThread,omitempty"`
+	HasThreadWith []*MailThreadWhereInput `json:"hasThreadWith,omitempty"`
+
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *MailSignalWhereInput) AddPredicates(predicates ...predicate.MailSignal) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the MailSignalWhereInput filter on the MailSignalQuery builder.
+func (i *MailSignalWhereInput) Filter(q *MailSignalQuery) (*MailSignalQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyMailSignalWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyMailSignalWhereInput is returned in case the MailSignalWhereInput is empty.
+var ErrEmptyMailSignalWhereInput = errors.New("ent: empty predicate MailSignalWhereInput")
+
+// P returns a predicate for filtering mailsignals.
+// An error is returned if the input is empty or invalid.
+func (i *MailSignalWhereInput) P() (predicate.MailSignal, error) {
+	var predicates []predicate.MailSignal
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, mailsignal.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.MailSignal, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, mailsignal.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.MailSignal, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, mailsignal.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, mailsignal.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, mailsignal.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, mailsignal.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, mailsignal.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, mailsignal.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, mailsignal.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, mailsignal.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, mailsignal.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, mailsignal.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, mailsignal.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, mailsignal.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, mailsignal.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, mailsignal.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, mailsignal.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, mailsignal.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, mailsignal.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, mailsignal.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, mailsignal.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, mailsignal.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, mailsignal.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, mailsignal.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, mailsignal.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, mailsignal.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, mailsignal.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.Classification != nil {
+		predicates = append(predicates, mailsignal.ClassificationEQ(*i.Classification))
+	}
+	if i.ClassificationNEQ != nil {
+		predicates = append(predicates, mailsignal.ClassificationNEQ(*i.ClassificationNEQ))
+	}
+	if len(i.ClassificationIn) > 0 {
+		predicates = append(predicates, mailsignal.ClassificationIn(i.ClassificationIn...))
+	}
+	if len(i.ClassificationNotIn) > 0 {
+		predicates = append(predicates, mailsignal.ClassificationNotIn(i.ClassificationNotIn...))
+	}
+	if i.ClassificationGT != nil {
+		predicates = append(predicates, mailsignal.ClassificationGT(*i.ClassificationGT))
+	}
+	if i.ClassificationGTE != nil {
+		predicates = append(predicates, mailsignal.ClassificationGTE(*i.ClassificationGTE))
+	}
+	if i.ClassificationLT != nil {
+		predicates = append(predicates, mailsignal.ClassificationLT(*i.ClassificationLT))
+	}
+	if i.ClassificationLTE != nil {
+		predicates = append(predicates, mailsignal.ClassificationLTE(*i.ClassificationLTE))
+	}
+	if i.ClassificationContains != nil {
+		predicates = append(predicates, mailsignal.ClassificationContains(*i.ClassificationContains))
+	}
+	if i.ClassificationHasPrefix != nil {
+		predicates = append(predicates, mailsignal.ClassificationHasPrefix(*i.ClassificationHasPrefix))
+	}
+	if i.ClassificationHasSuffix != nil {
+		predicates = append(predicates, mailsignal.ClassificationHasSuffix(*i.ClassificationHasSuffix))
+	}
+	if i.ClassificationEqualFold != nil {
+		predicates = append(predicates, mailsignal.ClassificationEqualFold(*i.ClassificationEqualFold))
+	}
+	if i.ClassificationContainsFold != nil {
+		predicates = append(predicates, mailsignal.ClassificationContainsFold(*i.ClassificationContainsFold))
+	}
+	if i.Summary != nil {
+		predicates = append(predicates, mailsignal.SummaryEQ(*i.Summary))
+	}
+	if i.SummaryNEQ != nil {
+		predicates = append(predicates, mailsignal.SummaryNEQ(*i.SummaryNEQ))
+	}
+	if len(i.SummaryIn) > 0 {
+		predicates = append(predicates, mailsignal.SummaryIn(i.SummaryIn...))
+	}
+	if len(i.SummaryNotIn) > 0 {
+		predicates = append(predicates, mailsignal.SummaryNotIn(i.SummaryNotIn...))
+	}
+	if i.SummaryGT != nil {
+		predicates = append(predicates, mailsignal.SummaryGT(*i.SummaryGT))
+	}
+	if i.SummaryGTE != nil {
+		predicates = append(predicates, mailsignal.SummaryGTE(*i.SummaryGTE))
+	}
+	if i.SummaryLT != nil {
+		predicates = append(predicates, mailsignal.SummaryLT(*i.SummaryLT))
+	}
+	if i.SummaryLTE != nil {
+		predicates = append(predicates, mailsignal.SummaryLTE(*i.SummaryLTE))
+	}
+	if i.SummaryContains != nil {
+		predicates = append(predicates, mailsignal.SummaryContains(*i.SummaryContains))
+	}
+	if i.SummaryHasPrefix != nil {
+		predicates = append(predicates, mailsignal.SummaryHasPrefix(*i.SummaryHasPrefix))
+	}
+	if i.SummaryHasSuffix != nil {
+		predicates = append(predicates, mailsignal.SummaryHasSuffix(*i.SummaryHasSuffix))
+	}
+	if i.SummaryIsNil {
+		predicates = append(predicates, mailsignal.SummaryIsNil())
+	}
+	if i.SummaryNotNil {
+		predicates = append(predicates, mailsignal.SummaryNotNil())
+	}
+	if i.SummaryEqualFold != nil {
+		predicates = append(predicates, mailsignal.SummaryEqualFold(*i.SummaryEqualFold))
+	}
+	if i.SummaryContainsFold != nil {
+		predicates = append(predicates, mailsignal.SummaryContainsFold(*i.SummaryContainsFold))
+	}
+	if i.EmbeddingModel != nil {
+		predicates = append(predicates, mailsignal.EmbeddingModelEQ(*i.EmbeddingModel))
+	}
+	if i.EmbeddingModelNEQ != nil {
+		predicates = append(predicates, mailsignal.EmbeddingModelNEQ(*i.EmbeddingModelNEQ))
+	}
+	if len(i.EmbeddingModelIn) > 0 {
+		predicates = append(predicates, mailsignal.EmbeddingModelIn(i.EmbeddingModelIn...))
+	}
+	if len(i.EmbeddingModelNotIn) > 0 {
+		predicates = append(predicates, mailsignal.EmbeddingModelNotIn(i.EmbeddingModelNotIn...))
+	}
+	if i.EmbeddingModelGT != nil {
+		predicates = append(predicates, mailsignal.EmbeddingModelGT(*i.EmbeddingModelGT))
+	}
+	if i.EmbeddingModelGTE != nil {
+		predicates = append(predicates, mailsignal.EmbeddingModelGTE(*i.EmbeddingModelGTE))
+	}
+	if i.EmbeddingModelLT != nil {
+		predicates = append(predicates, mailsignal.EmbeddingModelLT(*i.EmbeddingModelLT))
+	}
+	if i.EmbeddingModelLTE != nil {
+		predicates = append(predicates, mailsignal.EmbeddingModelLTE(*i.EmbeddingModelLTE))
+	}
+	if i.EmbeddingModelContains != nil {
+		predicates = append(predicates, mailsignal.EmbeddingModelContains(*i.EmbeddingModelContains))
+	}
+	if i.EmbeddingModelHasPrefix != nil {
+		predicates = append(predicates, mailsignal.EmbeddingModelHasPrefix(*i.EmbeddingModelHasPrefix))
+	}
+	if i.EmbeddingModelHasSuffix != nil {
+		predicates = append(predicates, mailsignal.EmbeddingModelHasSuffix(*i.EmbeddingModelHasSuffix))
+	}
+	if i.EmbeddingModelIsNil {
+		predicates = append(predicates, mailsignal.EmbeddingModelIsNil())
+	}
+	if i.EmbeddingModelNotNil {
+		predicates = append(predicates, mailsignal.EmbeddingModelNotNil())
+	}
+	if i.EmbeddingModelEqualFold != nil {
+		predicates = append(predicates, mailsignal.EmbeddingModelEqualFold(*i.EmbeddingModelEqualFold))
+	}
+	if i.EmbeddingModelContainsFold != nil {
+		predicates = append(predicates, mailsignal.EmbeddingModelContainsFold(*i.EmbeddingModelContainsFold))
+	}
+	if i.ComputedAt != nil {
+		predicates = append(predicates, mailsignal.ComputedAtEQ(*i.ComputedAt))
+	}
+	if i.ComputedAtNEQ != nil {
+		predicates = append(predicates, mailsignal.ComputedAtNEQ(*i.ComputedAtNEQ))
+	}
+	if len(i.ComputedAtIn) > 0 {
+		predicates = append(predicates, mailsignal.ComputedAtIn(i.ComputedAtIn...))
+	}
+	if len(i.ComputedAtNotIn) > 0 {
+		predicates = append(predicates, mailsignal.ComputedAtNotIn(i.ComputedAtNotIn...))
+	}
+	if i.ComputedAtGT != nil {
+		predicates = append(predicates, mailsignal.ComputedAtGT(*i.ComputedAtGT))
+	}
+	if i.ComputedAtGTE != nil {
+		predicates = append(predicates, mailsignal.ComputedAtGTE(*i.ComputedAtGTE))
+	}
+	if i.ComputedAtLT != nil {
+		predicates = append(predicates, mailsignal.ComputedAtLT(*i.ComputedAtLT))
+	}
+	if i.ComputedAtLTE != nil {
+		predicates = append(predicates, mailsignal.ComputedAtLTE(*i.ComputedAtLTE))
+	}
+
+	if i.HasThread != nil {
+		p := mailsignal.HasThread()
+		if !*i.HasThread {
+			p = mailsignal.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasThreadWith) > 0 {
+		with := make([]predicate.MailThread, 0, len(i.HasThreadWith))
+		for _, w := range i.HasThreadWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasThreadWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, mailsignal.HasThreadWith(with...))
+	}
+	if i.HasUser != nil {
+		p := mailsignal.HasUser()
+		if !*i.HasUser {
+			p = mailsignal.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, mailsignal.HasUserWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyMailSignalWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return mailsignal.And(predicates...), nil
+	}
+}
+
 // MailThreadWhereInput represents a where input for filtering MailThread queries.
 type MailThreadWhereInput struct {
 	Predicates []predicate.MailThread  `json:"-"`
@@ -16722,6 +17171,10 @@ type MailThreadWhereInput struct {
 	// "messages" edge predicates.
 	HasMessages     *bool                        `json:"hasMessages,omitempty"`
 	HasMessagesWith []*MailMessageMetaWhereInput `json:"hasMessagesWith,omitempty"`
+
+	// "signal" edge predicates.
+	HasSignal     *bool                   `json:"hasSignal,omitempty"`
+	HasSignalWith []*MailSignalWhereInput `json:"hasSignalWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -17320,6 +17773,24 @@ func (i *MailThreadWhereInput) P() (predicate.MailThread, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, mailthread.HasMessagesWith(with...))
+	}
+	if i.HasSignal != nil {
+		p := mailthread.HasSignal()
+		if !*i.HasSignal {
+			p = mailthread.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasSignalWith) > 0 {
+		with := make([]predicate.MailSignal, 0, len(i.HasSignalWith))
+		for _, w := range i.HasSignalWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasSignalWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, mailthread.HasSignalWith(with...))
 	}
 	switch len(predicates) {
 	case 0:
@@ -27216,6 +27687,10 @@ type UserWhereInput struct {
 	// "mail_body_caches" edge predicates.
 	HasMailBodyCaches     *bool                      `json:"hasMailBodyCaches,omitempty"`
 	HasMailBodyCachesWith []*MailBodyCacheWhereInput `json:"hasMailBodyCachesWith,omitempty"`
+
+	// "mail_signals" edge predicates.
+	HasMailSignals     *bool                   `json:"hasMailSignals,omitempty"`
+	HasMailSignalsWith []*MailSignalWhereInput `json:"hasMailSignalsWith,omitempty"`
 }
 
 // AddPredicates adds custom predicates to the where input to be used during the filtering phase.
@@ -28102,6 +28577,24 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasMailBodyCachesWith(with...))
+	}
+	if i.HasMailSignals != nil {
+		p := user.HasMailSignals()
+		if !*i.HasMailSignals {
+			p = user.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasMailSignalsWith) > 0 {
+		with := make([]predicate.MailSignal, 0, len(i.HasMailSignalsWith))
+		for _, w := range i.HasMailSignalsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasMailSignalsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, user.HasMailSignalsWith(with...))
 	}
 	switch len(predicates) {
 	case 0:

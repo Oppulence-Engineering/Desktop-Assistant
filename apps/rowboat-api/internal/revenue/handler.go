@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -38,6 +39,7 @@ func (h *Handler) Mount(r chi.Router) {
 	})
 	r.Get("/v1/revenue-impact", h.Impact)
 	r.Get("/v1/revenue-digest", h.Digest)
+	r.Get("/v1/revenue-search", h.SemanticSearch)
 	r.Route("/v1/revenue-leak-scans", func(r chi.Router) {
 		r.Post("/", h.StartScan)
 		r.Get("/{scanId}", h.GetScan)
@@ -419,6 +421,31 @@ func (h *Handler) Impact(w http.ResponseWriter, r *http.Request) {
 		ByDetector:  imp.Detectors,
 	}
 	httpx.WriteJSON(w, http.StatusOK, dto)
+}
+
+// SemanticSearch runs a natural-language search over the caller's Layer-2
+// signals (RFC 031). When no embedder is configured it returns an empty,
+// available=false result rather than an error, so the UI can degrade quietly.
+func (h *Handler) SemanticSearch(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	if q == "" {
+		httpx.Error(w, http.StatusBadRequest, "q is required", "invalid_input")
+		return
+	}
+	matches, err := h.svc.SemanticSearch(r.Context(), u, q, 10)
+	if err != nil {
+		if errors.Is(err, ErrEmbeddingsUnavailable) {
+			httpx.WriteJSON(w, http.StatusOK, map[string]any{"available": false, "matches": []any{}})
+			return
+		}
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"available": true, "matches": matches})
 }
 
 // Digest returns the caller's current digest content (the same summary the

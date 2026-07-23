@@ -18,6 +18,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/embeddings"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenuemetrics"
 )
 
@@ -140,6 +141,7 @@ type Service struct {
 	bodyFetcher  MailBodyFetcher
 	sealer       *crypto.Sealer
 	mailBodyTTL  time.Duration
+	embedder     embeddings.Embedder
 	log          *zap.Logger
 	now          func() time.Time
 }

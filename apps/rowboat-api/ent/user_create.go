@@ -32,6 +32,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
@@ -646,6 +647,21 @@ func (_c *UserCreate) AddMailBodyCaches(v ...*MailBodyCache) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddMailBodyCachIDs(ids...)
+}
+
+// AddMailSignalIDs adds the "mail_signals" edge to the MailSignal entity by IDs.
+func (_c *UserCreate) AddMailSignalIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddMailSignalIDs(ids...)
+	return _c
+}
+
+// AddMailSignals adds the "mail_signals" edges to the MailSignal entity.
+func (_c *UserCreate) AddMailSignals(v ...*MailSignal) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddMailSignalIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -1306,6 +1322,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailbodycache.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.MailSignalsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MailSignalsTable,
+			Columns: []string{user.MailSignalsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

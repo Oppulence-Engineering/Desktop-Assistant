@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
@@ -65,11 +66,13 @@ type MailThreadEdges struct {
 	Relationship *Relationship `json:"relationship,omitempty"`
 	// Messages holds the value of the messages edge.
 	Messages []*MailMessageMeta `json:"messages,omitempty"`
+	// Signal holds the value of the signal edge.
+	Signal *MailSignal `json:"signal,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 	// totalCount holds the count of the edges above.
-	totalCount [3]map[string]int
+	totalCount [4]map[string]int
 
 	namedMessages map[string][]*MailMessageMeta
 }
@@ -103,6 +106,17 @@ func (e MailThreadEdges) MessagesOrErr() ([]*MailMessageMeta, error) {
 		return e.Messages, nil
 	}
 	return nil, &NotLoadedError{edge: "messages"}
+}
+
+// SignalOrErr returns the Signal value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e MailThreadEdges) SignalOrErr() (*MailSignal, error) {
+	if e.Signal != nil {
+		return e.Signal, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: mailsignal.Label}
+	}
+	return nil, &NotLoadedError{edge: "signal"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -272,6 +286,11 @@ func (_m *MailThread) QueryRelationship() *RelationshipQuery {
 // QueryMessages queries the "messages" edge of the MailThread entity.
 func (_m *MailThread) QueryMessages() *MailMessageMetaQuery {
 	return NewMailThreadClient(_m.config).QueryMessages(_m)
+}
+
+// QuerySignal queries the "signal" edge of the MailThread entity.
+func (_m *MailThread) QuerySignal() *MailSignalQuery {
+	return NewMailThreadClient(_m.config).QuerySignal(_m)
 }
 
 // Update returns a builder for updating this MailThread.

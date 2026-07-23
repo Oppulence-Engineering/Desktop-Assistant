@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -30,6 +31,7 @@ type MailThreadQuery struct {
 	withUser          *UserQuery
 	withRelationship  *RelationshipQuery
 	withMessages      *MailMessageMetaQuery
+	withSignal        *MailSignalQuery
 	withFKs           bool
 	modifiers         []func(*sql.Selector)
 	loadTotal         []func(context.Context, []*MailThread) error
@@ -129,6 +131,28 @@ func (_q *MailThreadQuery) QueryMessages() *MailMessageMetaQuery {
 			sqlgraph.From(mailthread.Table, mailthread.FieldID, selector),
 			sqlgraph.To(mailmessagemeta.Table, mailmessagemeta.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, mailthread.MessagesTable, mailthread.MessagesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySignal chains the current query on the "signal" edge.
+func (_q *MailThreadQuery) QuerySignal() *MailSignalQuery {
+	query := (&MailSignalClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(mailthread.Table, mailthread.FieldID, selector),
+			sqlgraph.To(mailsignal.Table, mailsignal.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, mailthread.SignalTable, mailthread.SignalColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -331,6 +355,7 @@ func (_q *MailThreadQuery) Clone() *MailThreadQuery {
 		withUser:         _q.withUser.Clone(),
 		withRelationship: _q.withRelationship.Clone(),
 		withMessages:     _q.withMessages.Clone(),
+		withSignal:       _q.withSignal.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -367,6 +392,17 @@ func (_q *MailThreadQuery) WithMessages(opts ...func(*MailMessageMetaQuery)) *Ma
 		opt(query)
 	}
 	_q.withMessages = query
+	return _q
+}
+
+// WithSignal tells the query-builder to eager-load the nodes that are connected to
+// the "signal" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *MailThreadQuery) WithSignal(opts ...func(*MailSignalQuery)) *MailThreadQuery {
+	query := (&MailSignalClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withSignal = query
 	return _q
 }
 
@@ -449,10 +485,11 @@ func (_q *MailThreadQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*M
 		nodes       = []*MailThread{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			_q.withUser != nil,
 			_q.withRelationship != nil,
 			_q.withMessages != nil,
+			_q.withSignal != nil,
 		}
 	)
 	if _q.withUser != nil || _q.withRelationship != nil {
@@ -498,6 +535,12 @@ func (_q *MailThreadQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*M
 		if err := _q.loadMessages(ctx, query, nodes,
 			func(n *MailThread) { n.Edges.Messages = []*MailMessageMeta{} },
 			func(n *MailThread, e *MailMessageMeta) { n.Edges.Messages = append(n.Edges.Messages, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withSignal; query != nil {
+		if err := _q.loadSignal(ctx, query, nodes, nil,
+			func(n *MailThread, e *MailSignal) { n.Edges.Signal = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -593,6 +636,34 @@ func (_q *MailThreadQuery) loadMessages(ctx context.Context, query *MailMessageM
 	query.withFKs = true
 	query.Where(predicate.MailMessageMeta(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(mailthread.MessagesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.mail_thread_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "mail_thread_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "mail_thread_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *MailThreadQuery) loadSignal(ctx context.Context, query *MailSignalQuery, nodes []*MailThread, init func(*MailThread), assign func(*MailThread, *MailSignal)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*MailThread)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	query.withFKs = true
+	query.Where(predicate.MailSignal(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(mailthread.SignalColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

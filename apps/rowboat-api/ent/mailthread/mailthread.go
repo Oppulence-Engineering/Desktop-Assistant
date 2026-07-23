@@ -49,6 +49,8 @@ const (
 	EdgeRelationship = "relationship"
 	// EdgeMessages holds the string denoting the messages edge name in mutations.
 	EdgeMessages = "messages"
+	// EdgeSignal holds the string denoting the signal edge name in mutations.
+	EdgeSignal = "signal"
 	// Table holds the table name of the mailthread in the database.
 	Table = "mail_threads"
 	// UserTable is the table that holds the user relation/edge.
@@ -72,6 +74,13 @@ const (
 	MessagesInverseTable = "mail_message_meta"
 	// MessagesColumn is the table column denoting the messages relation/edge.
 	MessagesColumn = "mail_thread_id"
+	// SignalTable is the table that holds the signal relation/edge.
+	SignalTable = "mail_signals"
+	// SignalInverseTable is the table name for the MailSignal entity.
+	// It exists in this package in order to avoid circular dependency with the "mailsignal" package.
+	SignalInverseTable = "mail_signals"
+	// SignalColumn is the table column denoting the signal relation/edge.
+	SignalColumn = "mail_thread_id"
 )
 
 // Columns holds all SQL columns for mailthread fields.
@@ -252,6 +261,13 @@ func ByMessages(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newMessagesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// BySignalField orders the results by signal field.
+func BySignalField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSignalStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -271,5 +287,12 @@ func newMessagesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MessagesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, MessagesTable, MessagesColumn),
+	)
+}
+func newSignalStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SignalInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, SignalTable, SignalColumn),
 	)
 }

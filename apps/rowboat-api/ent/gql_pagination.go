@@ -32,6 +32,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
@@ -5605,6 +5606,255 @@ func (_m *MailMessageMeta) ToEdge(order *MailMessageMetaOrder) *MailMessageMetaE
 		order = DefaultMailMessageMetaOrder
 	}
 	return &MailMessageMetaEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// MailSignalEdge is the edge representation of MailSignal.
+type MailSignalEdge struct {
+	Node   *MailSignal `json:"node"`
+	Cursor Cursor      `json:"cursor"`
+}
+
+// MailSignalConnection is the connection containing edges to MailSignal.
+type MailSignalConnection struct {
+	Edges      []*MailSignalEdge `json:"edges"`
+	PageInfo   PageInfo          `json:"pageInfo"`
+	TotalCount int               `json:"totalCount"`
+}
+
+func (c *MailSignalConnection) build(nodes []*MailSignal, pager *mailsignalPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *MailSignal
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *MailSignal {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *MailSignal {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*MailSignalEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &MailSignalEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// MailSignalPaginateOption enables pagination customization.
+type MailSignalPaginateOption func(*mailsignalPager) error
+
+// WithMailSignalOrder configures pagination ordering.
+func WithMailSignalOrder(order *MailSignalOrder) MailSignalPaginateOption {
+	if order == nil {
+		order = DefaultMailSignalOrder
+	}
+	o := *order
+	return func(pager *mailsignalPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultMailSignalOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithMailSignalFilter configures pagination filter.
+func WithMailSignalFilter(filter func(*MailSignalQuery) (*MailSignalQuery, error)) MailSignalPaginateOption {
+	return func(pager *mailsignalPager) error {
+		if filter == nil {
+			return errors.New("MailSignalQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type mailsignalPager struct {
+	reverse bool
+	order   *MailSignalOrder
+	filter  func(*MailSignalQuery) (*MailSignalQuery, error)
+}
+
+func newMailSignalPager(opts []MailSignalPaginateOption, reverse bool) (*mailsignalPager, error) {
+	pager := &mailsignalPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultMailSignalOrder
+	}
+	return pager, nil
+}
+
+func (p *mailsignalPager) applyFilter(query *MailSignalQuery) (*MailSignalQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *mailsignalPager) toCursor(_m *MailSignal) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *mailsignalPager) applyCursors(query *MailSignalQuery, after, before *Cursor) (*MailSignalQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultMailSignalOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *mailsignalPager) applyOrder(query *MailSignalQuery) *MailSignalQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultMailSignalOrder.Field {
+		query = query.Order(DefaultMailSignalOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *mailsignalPager) orderExpr(query *MailSignalQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultMailSignalOrder.Field {
+			b.Comma().Ident(DefaultMailSignalOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to MailSignal.
+func (_m *MailSignalQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...MailSignalPaginateOption,
+) (*MailSignalConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newMailSignalPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &MailSignalConnection{Edges: []*MailSignalEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// MailSignalOrderField defines the ordering field of MailSignal.
+type MailSignalOrderField struct {
+	// Value extracts the ordering value from the given MailSignal.
+	Value    func(*MailSignal) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) mailsignal.OrderOption
+	toCursor func(*MailSignal) Cursor
+}
+
+// MailSignalOrder defines the ordering of MailSignal.
+type MailSignalOrder struct {
+	Direction OrderDirection        `json:"direction"`
+	Field     *MailSignalOrderField `json:"field"`
+}
+
+// DefaultMailSignalOrder is the default ordering of MailSignal.
+var DefaultMailSignalOrder = &MailSignalOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &MailSignalOrderField{
+		Value: func(_m *MailSignal) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: mailsignal.FieldID,
+		toTerm: mailsignal.ByID,
+		toCursor: func(_m *MailSignal) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts MailSignal into MailSignalEdge.
+func (_m *MailSignal) ToEdge(order *MailSignalOrder) *MailSignalEdge {
+	if order == nil {
+		order = DefaultMailSignalOrder
+	}
+	return &MailSignalEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

@@ -27,6 +27,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
@@ -1040,6 +1041,31 @@ func init() {
 	mailmessagemetaDescID := mailmessagemetaMixinFields0[0].Descriptor()
 	// mailmessagemeta.DefaultID holds the default value on creation for the id field.
 	mailmessagemeta.DefaultID = mailmessagemetaDescID.Default.(func() uuid.UUID)
+	mailsignalMixin := schema.MailSignal{}.Mixin()
+	mailsignalMixinFields0 := mailsignalMixin[0].Fields()
+	_ = mailsignalMixinFields0
+	mailsignalFields := schema.MailSignal{}.Fields()
+	_ = mailsignalFields
+	// mailsignalDescCreatedAt is the schema descriptor for created_at field.
+	mailsignalDescCreatedAt := mailsignalMixinFields0[1].Descriptor()
+	// mailsignal.DefaultCreatedAt holds the default value on creation for the created_at field.
+	mailsignal.DefaultCreatedAt = mailsignalDescCreatedAt.Default.(func() time.Time)
+	// mailsignalDescUpdatedAt is the schema descriptor for updated_at field.
+	mailsignalDescUpdatedAt := mailsignalMixinFields0[2].Descriptor()
+	// mailsignal.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	mailsignal.DefaultUpdatedAt = mailsignalDescUpdatedAt.Default.(func() time.Time)
+	// mailsignal.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	mailsignal.UpdateDefaultUpdatedAt = mailsignalDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// mailsignalDescClassification is the schema descriptor for classification field.
+	mailsignalDescClassification := mailsignalFields[0].Descriptor()
+	// mailsignal.DefaultClassification holds the default value on creation for the classification field.
+	mailsignal.DefaultClassification = mailsignalDescClassification.Default.(string)
+	// mailsignal.ClassificationValidator is a validator for the "classification" field. It is called by the builders before save.
+	mailsignal.ClassificationValidator = mailsignalDescClassification.Validators[0].(func(string) error)
+	// mailsignalDescID is the schema descriptor for id field.
+	mailsignalDescID := mailsignalMixinFields0[0].Descriptor()
+	// mailsignal.DefaultID holds the default value on creation for the id field.
+	mailsignal.DefaultID = mailsignalDescID.Default.(func() uuid.UUID)
 	mailthreadMixin := schema.MailThread{}.Mixin()
 	mailthreadMixinFields0 := mailthreadMixin[0].Fields()
 	_ = mailthreadMixinFields0

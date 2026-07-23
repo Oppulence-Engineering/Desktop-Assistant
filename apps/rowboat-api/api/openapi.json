@@ -4109,6 +4109,62 @@
         ],
         "type": "object"
       },
+      "MailSignal": {
+        "properties": {
+          "classification": {
+            "type": "string"
+          },
+          "computed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "embedding": {
+            "format": "byte",
+            "type": "string"
+          },
+          "embedding_model": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "thread": {
+            "$ref": "#/components/schemas/MailThread"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "classification",
+          "computed_at",
+          "thread",
+          "user"
+        ],
+        "type": "object"
+      },
       "MailThread": {
         "properties": {
           "account_domain": {
@@ -4170,6 +4226,9 @@
           },
           "reply_state": {
             "type": "string"
+          },
+          "signal": {
+            "$ref": "#/components/schemas/MailSignal"
           },
           "subject": {
             "type": "string"
@@ -6410,6 +6469,12 @@
           "mail_message_metas": {
             "items": {
               "$ref": "#/components/schemas/MailMessageMeta"
+            },
+            "type": "array"
+          },
+          "mail_signals": {
+            "items": {
+              "$ref": "#/components/schemas/MailSignal"
             },
             "type": "array"
           },
@@ -12129,6 +12194,97 @@
           }
         ],
         "summary": "Get scan progress",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-search": {
+      "get": {
+        "description": "Natural-language search over the caller's Layer-2 signals (RFC 031). Returns available=false with no matches when semantic memory is not configured.",
+        "operationId": "revenueSemanticSearch",
+        "parameters": [
+          {
+            "description": "Search query.",
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Search result.",
+                  "properties": {
+                    "available": {
+                      "description": "Whether semantic memory is configured.",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "matches": {
+                      "description": "Ranked matches.",
+                      "items": {
+                        "description": "Match.",
+                        "properties": {
+                          "classification": {
+                            "description": "Signal class.",
+                            "enum": ["deal", "invoice", "client", "referral", "other"],
+                            "example": "deal",
+                            "type": "string"
+                          },
+                          "counterparty": {
+                            "description": "Counterparty email.",
+                            "example": "buyer@example.com",
+                            "type": "string"
+                          },
+                          "score": {
+                            "description": "Cosine similarity.",
+                            "example": 0.82,
+                            "type": "number"
+                          },
+                          "subject": {
+                            "description": "Thread subject.",
+                            "example": "Proposal follow-up",
+                            "type": "string"
+                          },
+                          "summary": {
+                            "description": "Derived summary.",
+                            "example": "Unanswered proposal from 10 days ago.",
+                            "type": "string"
+                          },
+                          "threadId": {
+                            "description": "Provider thread id.",
+                            "example": "thr_01",
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Ranked matches."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Semantic search over mail",
         "tags": ["Revenue"]
       }
     },

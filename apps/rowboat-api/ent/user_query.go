@@ -32,6 +32,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
@@ -92,6 +93,7 @@ type UserQuery struct {
 	withMailThreads                       *MailThreadQuery
 	withMailMessageMetas                  *MailMessageMetaQuery
 	withMailBodyCaches                    *MailBodyCacheQuery
+	withMailSignals                       *MailSignalQuery
 	modifiers                             []func(*sql.Selector)
 	loadTotal                             []func(context.Context, []*User) error
 	withNamedLedgerEntries                map[string]*CreditLedgerQuery
@@ -127,6 +129,7 @@ type UserQuery struct {
 	withNamedMailThreads                  map[string]*MailThreadQuery
 	withNamedMailMessageMetas             map[string]*MailMessageMetaQuery
 	withNamedMailBodyCaches               map[string]*MailBodyCacheQuery
+	withNamedMailSignals                  map[string]*MailSignalQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -911,6 +914,28 @@ func (_q *UserQuery) QueryMailBodyCaches() *MailBodyCacheQuery {
 	return query
 }
 
+// QueryMailSignals chains the current query on the "mail_signals" edge.
+func (_q *UserQuery) QueryMailSignals() *MailSignalQuery {
+	query := (&MailSignalClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(mailsignal.Table, mailsignal.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.MailSignalsTable, user.MailSignalsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first User entity from the query.
 // Returns a *NotFoundError when no User was found.
 func (_q *UserQuery) First(ctx context.Context) (*User, error) {
@@ -1137,6 +1162,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withMailThreads:                  _q.withMailThreads.Clone(),
 		withMailMessageMetas:             _q.withMailMessageMetas.Clone(),
 		withMailBodyCaches:               _q.withMailBodyCaches.Clone(),
+		withMailSignals:                  _q.withMailSignals.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -1517,6 +1543,17 @@ func (_q *UserQuery) WithMailBodyCaches(opts ...func(*MailBodyCacheQuery)) *User
 	return _q
 }
 
+// WithMailSignals tells the query-builder to eager-load the nodes that are connected to
+// the "mail_signals" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithMailSignals(opts ...func(*MailSignalQuery)) *UserQuery {
+	query := (&MailSignalClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withMailSignals = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -1595,7 +1632,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [34]bool{
+		loadedTypes = [35]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -1630,6 +1667,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withMailThreads != nil,
 			_q.withMailMessageMetas != nil,
 			_q.withMailBodyCaches != nil,
+			_q.withMailSignals != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -1912,6 +1950,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withMailSignals; query != nil {
+		if err := _q.loadMailSignals(ctx, query, nodes,
+			func(n *User) { n.Edges.MailSignals = []*MailSignal{} },
+			func(n *User, e *MailSignal) { n.Edges.MailSignals = append(n.Edges.MailSignals, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedLedgerEntries {
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.appendNamedLedgerEntries(name) },
@@ -2140,6 +2185,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadMailBodyCaches(ctx, query, nodes,
 			func(n *User) { n.appendNamedMailBodyCaches(name) },
 			func(n *User, e *MailBodyCache) { n.appendNamedMailBodyCaches(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedMailSignals {
+		if err := _q.loadMailSignals(ctx, query, nodes,
+			func(n *User) { n.appendNamedMailSignals(name) },
+			func(n *User, e *MailSignal) { n.appendNamedMailSignals(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -3202,6 +3254,37 @@ func (_q *UserQuery) loadMailBodyCaches(ctx context.Context, query *MailBodyCach
 	}
 	return nil
 }
+func (_q *UserQuery) loadMailSignals(ctx context.Context, query *MailSignalQuery, nodes []*User, init func(*User), assign func(*User, *MailSignal)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.MailSignal(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.MailSignalsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_mail_signals
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_mail_signals" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_mail_signals" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -3746,6 +3829,20 @@ func (_q *UserQuery) WithNamedMailBodyCaches(name string, opts ...func(*MailBody
 		_q.withNamedMailBodyCaches = make(map[string]*MailBodyCacheQuery)
 	}
 	_q.withNamedMailBodyCaches[name] = query
+	return _q
+}
+
+// WithNamedMailSignals tells the query-builder to eager-load the nodes that are connected to the "mail_signals"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedMailSignals(name string, opts ...func(*MailSignalQuery)) *UserQuery {
+	query := (&MailSignalClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedMailSignals == nil {
+		_q.withNamedMailSignals = make(map[string]*MailSignalQuery)
+	}
+	_q.withNamedMailSignals[name] = query
 	return _q
 }
 

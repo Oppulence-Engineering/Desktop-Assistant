@@ -297,6 +297,18 @@ func (f MailMessageMetaFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Va
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MailMessageMetaMutation", m)
 }
 
+// The MailSignalFunc type is an adapter to allow the use of ordinary
+// function as MailSignal mutator.
+type MailSignalFunc func(context.Context, *ent.MailSignalMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MailSignalFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MailSignalMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MailSignalMutation", m)
+}
+
 // The MailThreadFunc type is an adapter to allow the use of ordinary
 // function as MailThread mutator.
 type MailThreadFunc func(context.Context, *ent.MailThreadMutation) (ent.Value, error)

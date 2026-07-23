@@ -276,6 +276,11 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		if created {
 			stats.actions++
 		}
+		// Layer 2 (RFC 031): derive signals + an embedding for this relevant
+		// thread. Inert unless an embedder is configured; best-effort.
+		if err := s.computeSignal(ctx, u, c.sum, c.hit); err != nil {
+			s.log.Debug("revenue: compute signal", zap.Error(err))
+		}
 	}
 	return stats, nil
 }

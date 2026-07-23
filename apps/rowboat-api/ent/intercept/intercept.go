@@ -30,6 +30,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnectionhistory"
@@ -757,6 +758,33 @@ func (f TraverseMailMessageMeta) Traverse(ctx context.Context, q ent.Query) erro
 	return fmt.Errorf("unexpected query type %T. expect *ent.MailMessageMetaQuery", q)
 }
 
+// The MailSignalFunc type is an adapter to allow the use of ordinary function as a Querier.
+type MailSignalFunc func(context.Context, *ent.MailSignalQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f MailSignalFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.MailSignalQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.MailSignalQuery", q)
+}
+
+// The TraverseMailSignal type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseMailSignal func(context.Context, *ent.MailSignalQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseMailSignal) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseMailSignal) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.MailSignalQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.MailSignalQuery", q)
+}
+
 // The MailThreadFunc type is an adapter to allow the use of ordinary function as a Querier.
 type MailThreadFunc func(context.Context, *ent.MailThreadQuery) (ent.Value, error)
 
@@ -1294,6 +1322,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.MailBodyCacheQuery, predicate.MailBodyCache, mailbodycache.OrderOption]{typ: ent.TypeMailBodyCache, tq: q}, nil
 	case *ent.MailMessageMetaQuery:
 		return &query[*ent.MailMessageMetaQuery, predicate.MailMessageMeta, mailmessagemeta.OrderOption]{typ: ent.TypeMailMessageMeta, tq: q}, nil
+	case *ent.MailSignalQuery:
+		return &query[*ent.MailSignalQuery, predicate.MailSignal, mailsignal.OrderOption]{typ: ent.TypeMailSignal, tq: q}, nil
 	case *ent.MailThreadQuery:
 		return &query[*ent.MailThreadQuery, predicate.MailThread, mailthread.OrderOption]{typ: ent.TypeMailThread, tq: q}, nil
 	case *ent.MeetingMinuteUsageQuery:

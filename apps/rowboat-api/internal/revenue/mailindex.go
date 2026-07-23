@@ -7,6 +7,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 )
@@ -130,10 +131,14 @@ func (s *Service) indexThread(ctx context.Context, u *ent.User, sum *threadSumma
 // survive — they are the customer's own action history. Runs in the caller's
 // tenant scope.
 func (s *Service) PurgeMailIndex(ctx context.Context, u *ent.User) (int, error) {
+	signals, err := s.purgeSignals(ctx, u.ID)
+	if err != nil {
+		return 0, err
+	}
 	bodies, err := s.client.MailBodyCache.Delete().
 		Where(mailbodycache.HasUserWith(user.IDEQ(u.ID))).Exec(ctx)
 	if err != nil {
-		return 0, err
+		return signals, err
 	}
 	msgs, err := s.client.MailMessageMeta.Delete().
 		Where(mailmessagemeta.HasUserWith(user.IDEQ(u.ID))).Exec(ctx)
@@ -143,9 +148,9 @@ func (s *Service) PurgeMailIndex(ctx context.Context, u *ent.User) (int, error) 
 	threads, err := s.client.MailThread.Delete().
 		Where(mailthread.HasUserWith(user.IDEQ(u.ID))).Exec(ctx)
 	if err != nil {
-		return bodies + msgs, err
+		return signals + bodies + msgs, err
 	}
-	return bodies + msgs + threads, nil
+	return signals + bodies + msgs + threads, nil
 }
 
 // SweepMailRetention deletes Layer-1 rows whose last activity is older than the
@@ -159,10 +164,15 @@ func (s *Service) SweepMailRetention(ctx context.Context, olderThan time.Time) (
 	if err != nil {
 		return 0, err
 	}
-	t, err := s.client.MailThread.Delete().
-		Where(mailthread.LastActivityAtLT(olderThan)).Exec(ctx)
+	sig, err := s.client.MailSignal.Delete().
+		Where(mailsignal.ComputedAtLT(olderThan)).Exec(ctx)
 	if err != nil {
 		return m, err
 	}
-	return m + t, nil
+	t, err := s.client.MailThread.Delete().
+		Where(mailthread.LastActivityAtLT(olderThan)).Exec(ctx)
+	if err != nil {
+		return m + sig, err
+	}
+	return m + sig + t, nil
 }
