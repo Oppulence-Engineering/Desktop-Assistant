@@ -700,28 +700,33 @@ export function HomePage() {
 function HomeHero() {
   return (
     <section className="linear-hero linear-inset">
-      <div className="linear-hero-grid">
-        <div>
-          <p className="mb-5 font-mono text-xs text-oppulence-orange">
-            [revenue memory and execution]
-          </p>
-          <h1 className="linear-hero-title">
-            The most expensive thing
-            <br className="hidden sm:block" /> in your pipeline is silence.
-          </h1>
-          <div className="linear-hero-meta">
-            <p className="linear-body max-w-[620px]">
-              Oppulence watches your inbox, calendar, and billing. It finds money that is about to
-              slip: a proposal with no reply, an invoice with no payment, a client who has gone
-              quiet. It writes the chase in your voice. Nothing sends until you click Approve.
-            </p>
-            <Link className="linear-inline-link shrink-0" href="/book-a-demo">
-              <span className="linear-new-pill">New</span>
-              Revenue Leak Scan <span className="text-foreground/40">→</span>
-            </Link>
-          </div>
-        </div>
+      <p className="mb-5 font-mono text-xs text-oppulence-orange">[revenue memory and execution]</p>
+      <h1 className="linear-hero-title">
+        The most expensive thing
+        <br className="hidden sm:block" /> in your pipeline is silence.
+      </h1>
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Link
+          className="linear-button-primary !h-12 !px-6 !text-[15px] sm:!w-[250px]"
+          href="/book-a-demo"
+        >
+          See what is slipping
+        </Link>
+        <Link className="linear-button-ghost !h-12 !px-5 !text-[15px]" href="/product">
+          How it works <span className="ml-2 text-foreground/40">→</span>
+        </Link>
+      </div>
+      <div className="linear-hero-band">
         <HeroQueueCard />
+      </div>
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <p className="font-mono text-xs text-[var(--linear-text-quaternary)]">
+          watches gmail · calendar · billing
+        </p>
+        <Link className="linear-inline-link shrink-0" href="/book-a-demo">
+          <span className="linear-new-pill">New</span>
+          Revenue Leak Scan <span className="text-foreground/40">→</span>
+        </Link>
       </div>
     </section>
   );
@@ -794,15 +799,20 @@ function LogoBand() {
 
 function ProblemSection() {
   return (
-    <section>
-      <div className="linear-statement linear-inset">
-        <p className="linear-eyebrow">[the problem]</p>
-        <h2 className="linear-statement-title">
-          <strong>Few deals die from a &ldquo;no.&rdquo;</strong> Most die waiting. A proposal sits
-          unanswered. Finished work goes unbilled. An old client drifts away. No one decides to lose
-          this money. It leaks.
-        </h2>
-      </div>
+    <section className="linear-manifesto linear-inset">
+      <h2>
+        <strong>Few deals die from a &ldquo;no.&rdquo; Most die waiting.</strong>
+        <br />
+        <br />
+        Oppulence watches your inbox, calendar, and billing. It finds the money that is about to
+        slip: <strong>the proposal with no reply</strong>,{" "}
+        <strong>the invoice with no payment</strong>, <strong>the client who has gone quiet</strong>
+        .
+        <br />
+        <br />
+        It writes the chase in your voice, matched to the relationship.{" "}
+        <strong>Nothing sends until you click Approve.</strong>
+      </h2>
     </section>
   );
 }
