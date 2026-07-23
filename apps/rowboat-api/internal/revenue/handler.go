@@ -306,6 +306,8 @@ func (h *Handler) writeServiceError(w http.ResponseWriter, err error) {
 		httpx.Error(w, http.StatusConflict, "execution already started; the action is immutable", "not_editable")
 	case errors.Is(err, ErrWorkspaceNotLinked):
 		httpx.Error(w, http.StatusConflict, "workspace is not linked; sends are disabled", "workspace_not_linked")
+	case errors.Is(err, ErrSubscriptionRequired):
+		httpx.Error(w, http.StatusPaymentRequired, "an active subscription is required to act on actions", "subscription_required")
 	case errors.Is(err, ErrConflict):
 		httpx.Error(w, http.StatusConflict, "conflicting concurrent transition; reload and retry", "conflict")
 	case errors.Is(err, ErrFacadeUnavailable):

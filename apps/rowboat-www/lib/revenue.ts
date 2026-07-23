@@ -62,6 +62,19 @@ export const getWorkspace = () => call<RevenueWorkspace>("/revenue-workspaces/cu
 
 export const getImpact = () => call<RevenueImpact>("/revenue-impact");
 
+// --- billing (upgrade to act) ------------------------------------------------
+
+// startCheckout opens a Stripe Checkout session for the given plan and returns
+// the URL to redirect to. Acting on actions (approve/execute) is gated behind
+// a paid plan; reading, scanning, and drafting stay free.
+export async function startCheckout(plan: "starter" | "pro"): Promise<string> {
+  const body = await call<{ url: string }>("/billing/checkout-session", {
+    method: "POST",
+    body: JSON.stringify({ plan }),
+  });
+  return body.url;
+}
+
 export interface LinkWorkspaceInput {
   outboundOrganizationId?: string;
   outboundWorkspaceId: string;

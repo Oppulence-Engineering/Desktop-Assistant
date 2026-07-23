@@ -9298,6 +9298,25 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+      /** @description Acting on actions requires a paid subscription. */
+      402: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "subscription_required",
+           *       "detail": "an active subscription is required to act on actions",
+           *       "requestId": "req-abc123",
+           *       "status": 402,
+           *       "title": "Payment Required",
+           *       "type": "https://api.rowboat.dev/problems/subscription_required"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
       404: components["responses"]["404"];
       /** @description Invariant violation: blocked, no decision, expired decision, or review required. */
       409: {
@@ -9561,6 +9580,25 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+      /** @description Acting on actions requires a paid subscription. */
+      402: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "subscription_required",
+           *       "detail": "an active subscription is required to act on actions",
+           *       "requestId": "req-abc123",
+           *       "status": 402,
+           *       "title": "Payment Required",
+           *       "type": "https://api.rowboat.dev/problems/subscription_required"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
       404: components["responses"]["404"];
       /** @description Invariant violation: not approved, blocked, expired decision, or workspace not linked for sends. */
       409: {

@@ -287,6 +287,7 @@ func addRevenuePaths(paths obj) {
 	}), obj{"acceptRisk": false}), obj{
 		"200": jsonResponse("Approved action.", ref("RevenueAction"), nil),
 		"401": responseRef("401"),
+		"402": problemResponse("Acting on actions requires a paid subscription.", ref("ErrorEnvelope"), problemExample(402, "Payment Required", "an active subscription is required to act on actions", "subscription_required")),
 		"404": responseRef("404"),
 		"409": problemResponse("Invariant violation: blocked, no decision, expired decision, or review required.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "action is blocked by policy", "blocked")),
 	})}
@@ -301,6 +302,7 @@ func addRevenuePaths(paths obj) {
 	paths["/v1/revenue-actions/{actionId}/execute"] = obj{"post": operation("Revenue", "Execute an action", "Executes the approved current revision exactly once through the assigned execution owner, with an idempotency key derived from the action and revision. A duplicate execute returns the existing result. A lost provider result is marked ambiguous and never automatically resent.", "executeRevenueAction", bearer(), actionParam, nil, obj{
 		"200": jsonResponse("Action after execution.", ref("RevenueAction"), nil),
 		"401": responseRef("401"),
+		"402": problemResponse("Acting on actions requires a paid subscription.", ref("ErrorEnvelope"), problemExample(402, "Payment Required", "an active subscription is required to act on actions", "subscription_required")),
 		"404": responseRef("404"),
 		"409": problemResponse("Invariant violation: not approved, blocked, expired decision, or workspace not linked for sends.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "action is not approved for its current revision", "not_approved")),
 	})}

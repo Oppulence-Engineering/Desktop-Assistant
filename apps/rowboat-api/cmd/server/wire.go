@@ -386,6 +386,9 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	revenueSvc := revenue.NewService(client, facade, gmailExec, log)
 	// The Gmail backend also feeds the leak scan (read-only sweep).
 	revenueSvc.SetSweeper(gmailExec)
+	// Gate execution behind a paid plan: scan/queue/draft/ROI stay free,
+	// approve+execute require an active subscription.
+	revenueSvc.SetEntitlements(revenue.NewSubscriptionEntitlements(client))
 	revenueH := revenue.NewHandler(revenueSvc, log)
 
 	r := srv.Router()

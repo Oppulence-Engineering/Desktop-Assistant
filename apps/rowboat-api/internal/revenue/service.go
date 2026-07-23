@@ -131,12 +131,13 @@ func (notConfiguredExecutor) Execute(context.Context, ExecRequest) (*ExecResult,
 // with the caller's authenticated context, so ent interceptors and mutation
 // hooks scope all reads and writes to the tenant.
 type Service struct {
-	client   *ent.Client
-	facade   FacadeClient
-	executor Executor
-	sweeper  ThreadSweeper
-	log      *zap.Logger
-	now      func() time.Time
+	client       *ent.Client
+	facade       FacadeClient
+	executor     Executor
+	sweeper      ThreadSweeper
+	entitlements Entitlements
+	log          *zap.Logger
+	now          func() time.Time
 }
 
 // NewService builds the lifecycle service. A nil facade falls back to the
@@ -862,6 +863,9 @@ func reasonGroup(codes []string) string {
 // action is not blocked — a draft lands in the operator's own mailbox and
 // nothing leaves the boundary.
 func (s *Service) Approve(ctx context.Context, u *ent.User, id uuid.UUID, acceptRisk bool) (*ent.RevenueAction, error) {
+	if err := s.requireEntitled(ctx, u); err != nil {
+		return nil, err
+	}
 	action, err := s.GetAction(ctx, id)
 	if err != nil {
 		return nil, err
@@ -1085,6 +1089,9 @@ func (s *Service) Dismiss(ctx context.Context, u *ent.User, id uuid.UUID, reason
 // execution owner. Draft mode works in any workspace mode; send mode requires
 // a linked workspace and a still-unexpired decision.
 func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.RevenueAction, error) {
+	if err := s.requireEntitled(ctx, u); err != nil {
+		return nil, err
+	}
 	action, err := s.GetAction(ctx, id)
 	if err != nil {
 		return nil, err
