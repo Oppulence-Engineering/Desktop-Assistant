@@ -1349,9 +1349,8 @@ function titleFromSlug(slug: string) {
 export const blogPages: MarketingPage[] = blogSlugs.map((slug) => ({
   path: `blog/${slug}`,
   eyebrow: "Oppulence Blog",
-  title: `${titleFromSlug(slug)} through the revenue memory lens`,
-  description:
-    "An Oppulence guide to turning scattered commercial history into evidence-backed, governed revenue action.",
+  title: titleFromSlug(slug),
+  description: "A practical guide from the Oppulence team.",
   category: "blog",
   bullets: [
     "What breaks when relationship history stays scattered across tools.",
@@ -1387,10 +1386,9 @@ export const customerPages: MarketingPage[] = customerSlugs.map((slug) => ({
 export const indexPages: MarketingPage[] = [
   {
     path: "blog",
-    eyebrow: "Resources",
-    title: "Guides for revenue memory and governed execution.",
-    description:
-      "Practical guidance for recovering warm pipeline, preserving relationship memory, and safely moving from evidence to action.",
+    eyebrow: "Blog",
+    title: "Guides on chasing silence.",
+    description: "Practical notes on follow-up, invoices, and keeping client relationships warm.",
     category: "blog",
     bullets: [
       "Alternatives and comparison pages.",

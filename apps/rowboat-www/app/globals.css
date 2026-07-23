@@ -3145,8 +3145,13 @@
     line-height: 1;
   }
 
+  .linear-plan-price {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
   .linear-plan-price span {
-    margin-left: 6px;
     color: var(--linear-text-quaternary);
     font-family: var(--font-geist-mono), ui-monospace, monospace;
     font-size: 12px;
@@ -3228,8 +3233,8 @@
 
   .linear-blog-grid {
     display: grid;
-    gap: 14px;
-    margin-top: 14px;
+    gap: 16px;
+    margin-top: 16px;
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
