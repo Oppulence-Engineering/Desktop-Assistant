@@ -25890,6 +25890,23 @@ type RevenueWorkspaceWhereInput struct {
 	LastDigestAtIsNil  bool        `json:"lastDigestAtIsNil,omitempty"`
 	LastDigestAtNotNil bool        `json:"lastDigestAtNotNil,omitempty"`
 
+	// "mail_history_id" field predicates.
+	MailHistoryID             *string  `json:"mailHistoryID,omitempty"`
+	MailHistoryIDNEQ          *string  `json:"mailHistoryIDNEQ,omitempty"`
+	MailHistoryIDIn           []string `json:"mailHistoryIDIn,omitempty"`
+	MailHistoryIDNotIn        []string `json:"mailHistoryIDNotIn,omitempty"`
+	MailHistoryIDGT           *string  `json:"mailHistoryIDGT,omitempty"`
+	MailHistoryIDGTE          *string  `json:"mailHistoryIDGTE,omitempty"`
+	MailHistoryIDLT           *string  `json:"mailHistoryIDLT,omitempty"`
+	MailHistoryIDLTE          *string  `json:"mailHistoryIDLTE,omitempty"`
+	MailHistoryIDContains     *string  `json:"mailHistoryIDContains,omitempty"`
+	MailHistoryIDHasPrefix    *string  `json:"mailHistoryIDHasPrefix,omitempty"`
+	MailHistoryIDHasSuffix    *string  `json:"mailHistoryIDHasSuffix,omitempty"`
+	MailHistoryIDIsNil        bool     `json:"mailHistoryIDIsNil,omitempty"`
+	MailHistoryIDNotNil       bool     `json:"mailHistoryIDNotNil,omitempty"`
+	MailHistoryIDEqualFold    *string  `json:"mailHistoryIDEqualFold,omitempty"`
+	MailHistoryIDContainsFold *string  `json:"mailHistoryIDContainsFold,omitempty"`
+
 	// "user" edge predicates.
 	HasUser     *bool             `json:"hasUser,omitempty"`
 	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
@@ -26346,6 +26363,51 @@ func (i *RevenueWorkspaceWhereInput) P() (predicate.RevenueWorkspace, error) {
 	}
 	if i.LastDigestAtNotNil {
 		predicates = append(predicates, revenueworkspace.LastDigestAtNotNil())
+	}
+	if i.MailHistoryID != nil {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDEQ(*i.MailHistoryID))
+	}
+	if i.MailHistoryIDNEQ != nil {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDNEQ(*i.MailHistoryIDNEQ))
+	}
+	if len(i.MailHistoryIDIn) > 0 {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDIn(i.MailHistoryIDIn...))
+	}
+	if len(i.MailHistoryIDNotIn) > 0 {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDNotIn(i.MailHistoryIDNotIn...))
+	}
+	if i.MailHistoryIDGT != nil {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDGT(*i.MailHistoryIDGT))
+	}
+	if i.MailHistoryIDGTE != nil {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDGTE(*i.MailHistoryIDGTE))
+	}
+	if i.MailHistoryIDLT != nil {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDLT(*i.MailHistoryIDLT))
+	}
+	if i.MailHistoryIDLTE != nil {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDLTE(*i.MailHistoryIDLTE))
+	}
+	if i.MailHistoryIDContains != nil {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDContains(*i.MailHistoryIDContains))
+	}
+	if i.MailHistoryIDHasPrefix != nil {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDHasPrefix(*i.MailHistoryIDHasPrefix))
+	}
+	if i.MailHistoryIDHasSuffix != nil {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDHasSuffix(*i.MailHistoryIDHasSuffix))
+	}
+	if i.MailHistoryIDIsNil {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDIsNil())
+	}
+	if i.MailHistoryIDNotNil {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDNotNil())
+	}
+	if i.MailHistoryIDEqualFold != nil {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDEqualFold(*i.MailHistoryIDEqualFold))
+	}
+	if i.MailHistoryIDContainsFold != nil {
+		predicates = append(predicates, revenueworkspace.MailHistoryIDContainsFold(*i.MailHistoryIDContainsFold))
 	}
 
 	if i.HasUser != nil {

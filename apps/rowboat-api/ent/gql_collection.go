@@ -5382,6 +5382,11 @@ func (_q *RevenueWorkspaceQuery) collectField(ctx context.Context, oneNode bool,
 				selectedFields = append(selectedFields, revenueworkspace.FieldLastDigestAt)
 				fieldSeen[revenueworkspace.FieldLastDigestAt] = struct{}{}
 			}
+		case "mailHistoryID":
+			if _, ok := fieldSeen[revenueworkspace.FieldMailHistoryID]; !ok {
+				selectedFields = append(selectedFields, revenueworkspace.FieldMailHistoryID)
+				fieldSeen[revenueworkspace.FieldMailHistoryID] = struct{}{}
+			}
 		case "id":
 		case "__typename":
 		default:

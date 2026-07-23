@@ -95,4 +95,16 @@ var (
 		Name: "revenue_digests_sent_total",
 		Help: "Proactive revenue digest emails sent.",
 	})
+
+	// MailSyncThreads counts threads upserted by push-driven Layer-1 sync.
+	MailSyncThreads = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "revenue_mail_sync_threads_total",
+		Help: "Threads indexed by push-driven Gmail history sync.",
+	})
+
+	// MailSyncGaps counts history-cursor gaps (stale cursor → deferred to scan).
+	MailSyncGaps = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "revenue_mail_sync_gaps_total",
+		Help: "Gmail history cursor gaps requiring a full re-sync.",
+	})
 )

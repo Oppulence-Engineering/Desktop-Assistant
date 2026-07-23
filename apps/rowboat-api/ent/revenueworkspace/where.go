@@ -101,6 +101,11 @@ func LastDigestAt(v time.Time) predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(sql.FieldEQ(FieldLastDigestAt, v))
 }
 
+// MailHistoryID applies equality check predicate on the "mail_history_id" field. It's identical to MailHistoryIDEQ.
+func MailHistoryID(v string) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldEQ(FieldMailHistoryID, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(sql.FieldEQ(FieldCreatedAt, v))
@@ -634,6 +639,81 @@ func LastDigestAtIsNil() predicate.RevenueWorkspace {
 // LastDigestAtNotNil applies the NotNil predicate on the "last_digest_at" field.
 func LastDigestAtNotNil() predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(sql.FieldNotNull(FieldLastDigestAt))
+}
+
+// MailHistoryIDEQ applies the EQ predicate on the "mail_history_id" field.
+func MailHistoryIDEQ(v string) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldEQ(FieldMailHistoryID, v))
+}
+
+// MailHistoryIDNEQ applies the NEQ predicate on the "mail_history_id" field.
+func MailHistoryIDNEQ(v string) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldNEQ(FieldMailHistoryID, v))
+}
+
+// MailHistoryIDIn applies the In predicate on the "mail_history_id" field.
+func MailHistoryIDIn(vs ...string) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldIn(FieldMailHistoryID, vs...))
+}
+
+// MailHistoryIDNotIn applies the NotIn predicate on the "mail_history_id" field.
+func MailHistoryIDNotIn(vs ...string) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldNotIn(FieldMailHistoryID, vs...))
+}
+
+// MailHistoryIDGT applies the GT predicate on the "mail_history_id" field.
+func MailHistoryIDGT(v string) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldGT(FieldMailHistoryID, v))
+}
+
+// MailHistoryIDGTE applies the GTE predicate on the "mail_history_id" field.
+func MailHistoryIDGTE(v string) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldGTE(FieldMailHistoryID, v))
+}
+
+// MailHistoryIDLT applies the LT predicate on the "mail_history_id" field.
+func MailHistoryIDLT(v string) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldLT(FieldMailHistoryID, v))
+}
+
+// MailHistoryIDLTE applies the LTE predicate on the "mail_history_id" field.
+func MailHistoryIDLTE(v string) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldLTE(FieldMailHistoryID, v))
+}
+
+// MailHistoryIDContains applies the Contains predicate on the "mail_history_id" field.
+func MailHistoryIDContains(v string) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldContains(FieldMailHistoryID, v))
+}
+
+// MailHistoryIDHasPrefix applies the HasPrefix predicate on the "mail_history_id" field.
+func MailHistoryIDHasPrefix(v string) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldHasPrefix(FieldMailHistoryID, v))
+}
+
+// MailHistoryIDHasSuffix applies the HasSuffix predicate on the "mail_history_id" field.
+func MailHistoryIDHasSuffix(v string) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldHasSuffix(FieldMailHistoryID, v))
+}
+
+// MailHistoryIDIsNil applies the IsNil predicate on the "mail_history_id" field.
+func MailHistoryIDIsNil() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldIsNull(FieldMailHistoryID))
+}
+
+// MailHistoryIDNotNil applies the NotNil predicate on the "mail_history_id" field.
+func MailHistoryIDNotNil() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldNotNull(FieldMailHistoryID))
+}
+
+// MailHistoryIDEqualFold applies the EqualFold predicate on the "mail_history_id" field.
+func MailHistoryIDEqualFold(v string) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldEqualFold(FieldMailHistoryID, v))
+}
+
+// MailHistoryIDContainsFold applies the ContainsFold predicate on the "mail_history_id" field.
+func MailHistoryIDContainsFold(v string) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldContainsFold(FieldMailHistoryID, v))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.
