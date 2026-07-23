@@ -62,10 +62,8 @@ const integrationGroups = [
 
 const mobileNavLinks = [
   { label: "Product", href: "/product" },
-  { label: "Revenue Leak Scan", href: "/ai-help-center" },
-  { label: "Action Queue", href: "/ai-documentation-agent" },
   { label: "Customers", href: "/customers" },
-  { label: "Plans", href: "/pricing" },
+  { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },
 ];
 
@@ -387,80 +385,6 @@ function InlineLogo({
   );
 }
 
-function MenuLink({ item }: { item: LinkItem }) {
-  const { icon, tone } = iconForLink(item);
-  const content = (
-    <>
-      <MarketingIcon compact icon={icon} tone={tone} />
-      <span className="min-w-0">
-        <span className="text-sm font-medium text-foreground">{item.label}</span>
-        {item.description ? (
-          <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
-            {item.description}
-          </span>
-        ) : null}
-      </span>
-    </>
-  );
-
-  if (item.external) {
-    return (
-      <a
-        className="group/menu flex gap-3 rounded-md border border-transparent px-2.5 py-2.5 transition-colors hover:border-primary/10 hover:bg-background-100/80"
-        href={item.href}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        {content}
-      </a>
-    );
-  }
-
-  return (
-    <Link
-      className="group/menu flex gap-3 rounded-md border border-transparent px-2.5 py-2.5 transition-colors hover:border-primary/10 hover:bg-background-100/80"
-      href={item.href}
-    >
-      {content}
-    </Link>
-  );
-}
-
-function DropdownMenu({
-  label,
-  items,
-  width = "w-[560px]",
-}: {
-  label: string;
-  items: LinkItem[];
-  width?: string;
-}) {
-  return (
-    <details className="group relative" data-marketing-dropdown>
-      <summary aria-haspopup="menu" className="linear-nav-trigger">
-        {label}
-      </summary>
-      <div className="linear-dropdown-panel invisible absolute top-full left-0 z-50 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100">
-        <div
-          className={cn(
-            "marketing-surface-strong rounded-md border border-primary/10 bg-background p-3 shadow-xl shadow-black/30",
-            width,
-          )}
-        >
-          <div className="mb-2 px-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            {label}
-          </div>
-          <div className="grid grid-cols-2 gap-1">
-            {items.map((item) => (
-              <MenuLink item={item} key={`${label}-${item.label}-${item.href}`} />
-            ))}
-          </div>
-        </div>
-      </div>
-    </details>
-  );
-}
-
 function MobileMenu() {
   return (
     <details className="relative lg:hidden" data-marketing-mobile-menu>
@@ -498,18 +422,16 @@ export function TopBar() {
         </div>
 
         <nav className="hidden items-center gap-2 lg:flex">
-          <DropdownMenu items={productLinks} label="Product" width="w-[560px]" />
-          <div className="hidden xl:block">
-            <DropdownMenu items={featureLinks} label="Features" />
-          </div>
-          <DropdownMenu items={resourceLinks} label="Resources" width="w-[420px]" />
+          <Link className="linear-nav-link" href="/product">
+            Product
+          </Link>
           <Link className="linear-nav-link" href="/customers">
             Customers
           </Link>
           <Link className="linear-nav-link" href="/pricing">
-            Plans
+            Pricing
           </Link>
-          <Link className="linear-nav-link hidden xl:inline-flex" href="/blog">
+          <Link className="linear-nav-link" href="/blog">
             Blog
           </Link>
         </nav>
