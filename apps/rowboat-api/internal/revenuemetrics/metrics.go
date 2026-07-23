@@ -82,4 +82,11 @@ var (
 		Name: "revenue_detector_candidates_total",
 		Help: "Detector evaluations during scans, by detector and result.",
 	}, []string{"detector", "result"})
+
+	// AutoScansStarted counts scans kicked off by the background auto-scan
+	// sweeper (no labels — bounded by design).
+	AutoScansStarted = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "revenue_auto_scans_started_total",
+		Help: "Revenue leak scans started by the background sweeper.",
+	})
 )
