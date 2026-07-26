@@ -17,6 +17,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
@@ -30,32 +35,42 @@ import (
 // RevenueWorkspaceQuery is the builder for querying RevenueWorkspace entities.
 type RevenueWorkspaceQuery struct {
 	config
-	ctx                    *QueryContext
-	order                  []revenueworkspace.OrderOption
-	inters                 []Interceptor
-	predicates             []predicate.RevenueWorkspace
-	withUser               *UserQuery
-	withMembers            *RevenueWorkspaceMemberQuery
-	withRelationships      *RelationshipQuery
-	withEvidences          *RevenueEvidenceQuery
-	withCommitments        *CommitmentQuery
-	withActions            *RevenueActionQuery
-	withDecisions          *PolicyDecisionSnapshotQuery
-	withOutcomes           *ActionOutcomeQuery
-	withOutboxEvents       *RevenueOutboxEventQuery
-	withScans              *RevenueLeakScanQuery
-	withFKs                bool
-	modifiers              []func(*sql.Selector)
-	loadTotal              []func(context.Context, []*RevenueWorkspace) error
-	withNamedMembers       map[string]*RevenueWorkspaceMemberQuery
-	withNamedRelationships map[string]*RelationshipQuery
-	withNamedEvidences     map[string]*RevenueEvidenceQuery
-	withNamedCommitments   map[string]*CommitmentQuery
-	withNamedActions       map[string]*RevenueActionQuery
-	withNamedDecisions     map[string]*PolicyDecisionSnapshotQuery
-	withNamedOutcomes      map[string]*ActionOutcomeQuery
-	withNamedOutboxEvents  map[string]*RevenueOutboxEventQuery
-	withNamedScans         map[string]*RevenueLeakScanQuery
+	ctx                                 *QueryContext
+	order                               []revenueworkspace.OrderOption
+	inters                              []Interceptor
+	predicates                          []predicate.RevenueWorkspace
+	withUser                            *UserQuery
+	withMembers                         *RevenueWorkspaceMemberQuery
+	withRelationships                   *RelationshipQuery
+	withEvidences                       *RevenueEvidenceQuery
+	withCommitments                     *CommitmentQuery
+	withActions                         *RevenueActionQuery
+	withDecisions                       *PolicyDecisionSnapshotQuery
+	withOutcomes                        *ActionOutcomeQuery
+	withOutboxEvents                    *RevenueOutboxEventQuery
+	withScans                           *RevenueLeakScanQuery
+	withRelationshipParticipants        *RelationshipParticipantQuery
+	withRelationshipObservations        *RelationshipObservationQuery
+	withRelationshipAssertions          *RelationshipAssertionQuery
+	withRelationshipStateSnapshots      *RelationshipStateSnapshotQuery
+	withRelationshipSourceStatuses      *RelationshipSourceStatusQuery
+	withFKs                             bool
+	modifiers                           []func(*sql.Selector)
+	loadTotal                           []func(context.Context, []*RevenueWorkspace) error
+	withNamedMembers                    map[string]*RevenueWorkspaceMemberQuery
+	withNamedRelationships              map[string]*RelationshipQuery
+	withNamedEvidences                  map[string]*RevenueEvidenceQuery
+	withNamedCommitments                map[string]*CommitmentQuery
+	withNamedActions                    map[string]*RevenueActionQuery
+	withNamedDecisions                  map[string]*PolicyDecisionSnapshotQuery
+	withNamedOutcomes                   map[string]*ActionOutcomeQuery
+	withNamedOutboxEvents               map[string]*RevenueOutboxEventQuery
+	withNamedScans                      map[string]*RevenueLeakScanQuery
+	withNamedRelationshipParticipants   map[string]*RelationshipParticipantQuery
+	withNamedRelationshipObservations   map[string]*RelationshipObservationQuery
+	withNamedRelationshipAssertions     map[string]*RelationshipAssertionQuery
+	withNamedRelationshipStateSnapshots map[string]*RelationshipStateSnapshotQuery
+	withNamedRelationshipSourceStatuses map[string]*RelationshipSourceStatusQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -312,6 +327,116 @@ func (_q *RevenueWorkspaceQuery) QueryScans() *RevenueLeakScanQuery {
 	return query
 }
 
+// QueryRelationshipParticipants chains the current query on the "relationship_participants" edge.
+func (_q *RevenueWorkspaceQuery) QueryRelationshipParticipants() *RelationshipParticipantQuery {
+	query := (&RelationshipParticipantClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(relationshipparticipant.Table, relationshipparticipant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.RelationshipParticipantsTable, revenueworkspace.RelationshipParticipantsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRelationshipObservations chains the current query on the "relationship_observations" edge.
+func (_q *RevenueWorkspaceQuery) QueryRelationshipObservations() *RelationshipObservationQuery {
+	query := (&RelationshipObservationClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(relationshipobservation.Table, relationshipobservation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.RelationshipObservationsTable, revenueworkspace.RelationshipObservationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRelationshipAssertions chains the current query on the "relationship_assertions" edge.
+func (_q *RevenueWorkspaceQuery) QueryRelationshipAssertions() *RelationshipAssertionQuery {
+	query := (&RelationshipAssertionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(relationshipassertion.Table, relationshipassertion.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.RelationshipAssertionsTable, revenueworkspace.RelationshipAssertionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRelationshipStateSnapshots chains the current query on the "relationship_state_snapshots" edge.
+func (_q *RevenueWorkspaceQuery) QueryRelationshipStateSnapshots() *RelationshipStateSnapshotQuery {
+	query := (&RelationshipStateSnapshotClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(relationshipstatesnapshot.Table, relationshipstatesnapshot.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.RelationshipStateSnapshotsTable, revenueworkspace.RelationshipStateSnapshotsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRelationshipSourceStatuses chains the current query on the "relationship_source_statuses" edge.
+func (_q *RevenueWorkspaceQuery) QueryRelationshipSourceStatuses() *RelationshipSourceStatusQuery {
+	query := (&RelationshipSourceStatusClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(relationshipsourcestatus.Table, relationshipsourcestatus.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.RelationshipSourceStatusesTable, revenueworkspace.RelationshipSourceStatusesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first RevenueWorkspace entity from the query.
 // Returns a *NotFoundError when no RevenueWorkspace was found.
 func (_q *RevenueWorkspaceQuery) First(ctx context.Context) (*RevenueWorkspace, error) {
@@ -499,21 +624,26 @@ func (_q *RevenueWorkspaceQuery) Clone() *RevenueWorkspaceQuery {
 		return nil
 	}
 	return &RevenueWorkspaceQuery{
-		config:            _q.config,
-		ctx:               _q.ctx.Clone(),
-		order:             append([]revenueworkspace.OrderOption{}, _q.order...),
-		inters:            append([]Interceptor{}, _q.inters...),
-		predicates:        append([]predicate.RevenueWorkspace{}, _q.predicates...),
-		withUser:          _q.withUser.Clone(),
-		withMembers:       _q.withMembers.Clone(),
-		withRelationships: _q.withRelationships.Clone(),
-		withEvidences:     _q.withEvidences.Clone(),
-		withCommitments:   _q.withCommitments.Clone(),
-		withActions:       _q.withActions.Clone(),
-		withDecisions:     _q.withDecisions.Clone(),
-		withOutcomes:      _q.withOutcomes.Clone(),
-		withOutboxEvents:  _q.withOutboxEvents.Clone(),
-		withScans:         _q.withScans.Clone(),
+		config:                         _q.config,
+		ctx:                            _q.ctx.Clone(),
+		order:                          append([]revenueworkspace.OrderOption{}, _q.order...),
+		inters:                         append([]Interceptor{}, _q.inters...),
+		predicates:                     append([]predicate.RevenueWorkspace{}, _q.predicates...),
+		withUser:                       _q.withUser.Clone(),
+		withMembers:                    _q.withMembers.Clone(),
+		withRelationships:              _q.withRelationships.Clone(),
+		withEvidences:                  _q.withEvidences.Clone(),
+		withCommitments:                _q.withCommitments.Clone(),
+		withActions:                    _q.withActions.Clone(),
+		withDecisions:                  _q.withDecisions.Clone(),
+		withOutcomes:                   _q.withOutcomes.Clone(),
+		withOutboxEvents:               _q.withOutboxEvents.Clone(),
+		withScans:                      _q.withScans.Clone(),
+		withRelationshipParticipants:   _q.withRelationshipParticipants.Clone(),
+		withRelationshipObservations:   _q.withRelationshipObservations.Clone(),
+		withRelationshipAssertions:     _q.withRelationshipAssertions.Clone(),
+		withRelationshipStateSnapshots: _q.withRelationshipStateSnapshots.Clone(),
+		withRelationshipSourceStatuses: _q.withRelationshipSourceStatuses.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -630,6 +760,61 @@ func (_q *RevenueWorkspaceQuery) WithScans(opts ...func(*RevenueLeakScanQuery)) 
 	return _q
 }
 
+// WithRelationshipParticipants tells the query-builder to eager-load the nodes that are connected to
+// the "relationship_participants" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithRelationshipParticipants(opts ...func(*RelationshipParticipantQuery)) *RevenueWorkspaceQuery {
+	query := (&RelationshipParticipantClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRelationshipParticipants = query
+	return _q
+}
+
+// WithRelationshipObservations tells the query-builder to eager-load the nodes that are connected to
+// the "relationship_observations" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithRelationshipObservations(opts ...func(*RelationshipObservationQuery)) *RevenueWorkspaceQuery {
+	query := (&RelationshipObservationClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRelationshipObservations = query
+	return _q
+}
+
+// WithRelationshipAssertions tells the query-builder to eager-load the nodes that are connected to
+// the "relationship_assertions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithRelationshipAssertions(opts ...func(*RelationshipAssertionQuery)) *RevenueWorkspaceQuery {
+	query := (&RelationshipAssertionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRelationshipAssertions = query
+	return _q
+}
+
+// WithRelationshipStateSnapshots tells the query-builder to eager-load the nodes that are connected to
+// the "relationship_state_snapshots" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithRelationshipStateSnapshots(opts ...func(*RelationshipStateSnapshotQuery)) *RevenueWorkspaceQuery {
+	query := (&RelationshipStateSnapshotClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRelationshipStateSnapshots = query
+	return _q
+}
+
+// WithRelationshipSourceStatuses tells the query-builder to eager-load the nodes that are connected to
+// the "relationship_source_statuses" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithRelationshipSourceStatuses(opts ...func(*RelationshipSourceStatusQuery)) *RevenueWorkspaceQuery {
+	query := (&RelationshipSourceStatusClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRelationshipSourceStatuses = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -709,7 +894,7 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		nodes       = []*RevenueWorkspace{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [10]bool{
+		loadedTypes = [15]bool{
 			_q.withUser != nil,
 			_q.withMembers != nil,
 			_q.withRelationships != nil,
@@ -720,6 +905,11 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			_q.withOutcomes != nil,
 			_q.withOutboxEvents != nil,
 			_q.withScans != nil,
+			_q.withRelationshipParticipants != nil,
+			_q.withRelationshipObservations != nil,
+			_q.withRelationshipAssertions != nil,
+			_q.withRelationshipStateSnapshots != nil,
+			_q.withRelationshipSourceStatuses != nil,
 		}
 	)
 	if _q.withUser != nil {
@@ -820,6 +1010,51 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			return nil, err
 		}
 	}
+	if query := _q.withRelationshipParticipants; query != nil {
+		if err := _q.loadRelationshipParticipants(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.RelationshipParticipants = []*RelationshipParticipant{} },
+			func(n *RevenueWorkspace, e *RelationshipParticipant) {
+				n.Edges.RelationshipParticipants = append(n.Edges.RelationshipParticipants, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRelationshipObservations; query != nil {
+		if err := _q.loadRelationshipObservations(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.RelationshipObservations = []*RelationshipObservation{} },
+			func(n *RevenueWorkspace, e *RelationshipObservation) {
+				n.Edges.RelationshipObservations = append(n.Edges.RelationshipObservations, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRelationshipAssertions; query != nil {
+		if err := _q.loadRelationshipAssertions(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.RelationshipAssertions = []*RelationshipAssertion{} },
+			func(n *RevenueWorkspace, e *RelationshipAssertion) {
+				n.Edges.RelationshipAssertions = append(n.Edges.RelationshipAssertions, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRelationshipStateSnapshots; query != nil {
+		if err := _q.loadRelationshipStateSnapshots(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.RelationshipStateSnapshots = []*RelationshipStateSnapshot{} },
+			func(n *RevenueWorkspace, e *RelationshipStateSnapshot) {
+				n.Edges.RelationshipStateSnapshots = append(n.Edges.RelationshipStateSnapshots, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRelationshipSourceStatuses; query != nil {
+		if err := _q.loadRelationshipSourceStatuses(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.RelationshipSourceStatuses = []*RelationshipSourceStatus{} },
+			func(n *RevenueWorkspace, e *RelationshipSourceStatus) {
+				n.Edges.RelationshipSourceStatuses = append(n.Edges.RelationshipSourceStatuses, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedMembers {
 		if err := _q.loadMembers(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.appendNamedMembers(name) },
@@ -880,6 +1115,45 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		if err := _q.loadScans(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.appendNamedScans(name) },
 			func(n *RevenueWorkspace, e *RevenueLeakScan) { n.appendNamedScans(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRelationshipParticipants {
+		if err := _q.loadRelationshipParticipants(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedRelationshipParticipants(name) },
+			func(n *RevenueWorkspace, e *RelationshipParticipant) { n.appendNamedRelationshipParticipants(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRelationshipObservations {
+		if err := _q.loadRelationshipObservations(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedRelationshipObservations(name) },
+			func(n *RevenueWorkspace, e *RelationshipObservation) { n.appendNamedRelationshipObservations(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRelationshipAssertions {
+		if err := _q.loadRelationshipAssertions(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedRelationshipAssertions(name) },
+			func(n *RevenueWorkspace, e *RelationshipAssertion) { n.appendNamedRelationshipAssertions(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRelationshipStateSnapshots {
+		if err := _q.loadRelationshipStateSnapshots(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedRelationshipStateSnapshots(name) },
+			func(n *RevenueWorkspace, e *RelationshipStateSnapshot) {
+				n.appendNamedRelationshipStateSnapshots(name, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRelationshipSourceStatuses {
+		if err := _q.loadRelationshipSourceStatuses(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedRelationshipSourceStatuses(name) },
+			func(n *RevenueWorkspace, e *RelationshipSourceStatus) {
+				n.appendNamedRelationshipSourceStatuses(name, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -1202,6 +1476,161 @@ func (_q *RevenueWorkspaceQuery) loadScans(ctx context.Context, query *RevenueLe
 	}
 	return nil
 }
+func (_q *RevenueWorkspaceQuery) loadRelationshipParticipants(ctx context.Context, query *RelationshipParticipantQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *RelationshipParticipant)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RelationshipParticipant(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.RelationshipParticipantsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadRelationshipObservations(ctx context.Context, query *RelationshipObservationQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *RelationshipObservation)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RelationshipObservation(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.RelationshipObservationsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadRelationshipAssertions(ctx context.Context, query *RelationshipAssertionQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *RelationshipAssertion)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RelationshipAssertion(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.RelationshipAssertionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadRelationshipStateSnapshots(ctx context.Context, query *RelationshipStateSnapshotQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *RelationshipStateSnapshot)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RelationshipStateSnapshot(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.RelationshipStateSnapshotsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadRelationshipSourceStatuses(ctx context.Context, query *RelationshipSourceStatusQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *RelationshipSourceStatus)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RelationshipSourceStatus(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.RelationshipSourceStatusesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *RevenueWorkspaceQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -1410,6 +1839,76 @@ func (_q *RevenueWorkspaceQuery) WithNamedScans(name string, opts ...func(*Reven
 		_q.withNamedScans = make(map[string]*RevenueLeakScanQuery)
 	}
 	_q.withNamedScans[name] = query
+	return _q
+}
+
+// WithNamedRelationshipParticipants tells the query-builder to eager-load the nodes that are connected to the "relationship_participants"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedRelationshipParticipants(name string, opts ...func(*RelationshipParticipantQuery)) *RevenueWorkspaceQuery {
+	query := (&RelationshipParticipantClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRelationshipParticipants == nil {
+		_q.withNamedRelationshipParticipants = make(map[string]*RelationshipParticipantQuery)
+	}
+	_q.withNamedRelationshipParticipants[name] = query
+	return _q
+}
+
+// WithNamedRelationshipObservations tells the query-builder to eager-load the nodes that are connected to the "relationship_observations"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedRelationshipObservations(name string, opts ...func(*RelationshipObservationQuery)) *RevenueWorkspaceQuery {
+	query := (&RelationshipObservationClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRelationshipObservations == nil {
+		_q.withNamedRelationshipObservations = make(map[string]*RelationshipObservationQuery)
+	}
+	_q.withNamedRelationshipObservations[name] = query
+	return _q
+}
+
+// WithNamedRelationshipAssertions tells the query-builder to eager-load the nodes that are connected to the "relationship_assertions"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedRelationshipAssertions(name string, opts ...func(*RelationshipAssertionQuery)) *RevenueWorkspaceQuery {
+	query := (&RelationshipAssertionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRelationshipAssertions == nil {
+		_q.withNamedRelationshipAssertions = make(map[string]*RelationshipAssertionQuery)
+	}
+	_q.withNamedRelationshipAssertions[name] = query
+	return _q
+}
+
+// WithNamedRelationshipStateSnapshots tells the query-builder to eager-load the nodes that are connected to the "relationship_state_snapshots"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedRelationshipStateSnapshots(name string, opts ...func(*RelationshipStateSnapshotQuery)) *RevenueWorkspaceQuery {
+	query := (&RelationshipStateSnapshotClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRelationshipStateSnapshots == nil {
+		_q.withNamedRelationshipStateSnapshots = make(map[string]*RelationshipStateSnapshotQuery)
+	}
+	_q.withNamedRelationshipStateSnapshots[name] = query
+	return _q
+}
+
+// WithNamedRelationshipSourceStatuses tells the query-builder to eager-load the nodes that are connected to the "relationship_source_statuses"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedRelationshipSourceStatuses(name string, opts ...func(*RelationshipSourceStatusQuery)) *RevenueWorkspaceQuery {
+	query := (&RelationshipSourceStatusClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRelationshipSourceStatuses == nil {
+		_q.withNamedRelationshipSourceStatuses = make(map[string]*RelationshipSourceStatusQuery)
+	}
+	_q.withNamedRelationshipSourceStatuses[name] = query
 	return _q
 }
 

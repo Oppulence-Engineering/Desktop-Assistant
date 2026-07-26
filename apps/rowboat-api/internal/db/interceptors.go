@@ -35,6 +35,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
@@ -84,6 +89,11 @@ var tenantUserColumns = map[string]string{
 	ent.TypeMailThread:                  mailthread.UserColumn,
 	ent.TypePolicyDecisionSnapshot:      policydecisionsnapshot.UserColumn,
 	ent.TypeRelationship:                relationship.UserColumn,
+	ent.TypeRelationshipAssertion:       relationshipassertion.UserColumn,
+	ent.TypeRelationshipObservation:     relationshipobservation.UserColumn,
+	ent.TypeRelationshipParticipant:     relationshipparticipant.UserColumn,
+	ent.TypeRelationshipSourceStatus:    relationshipsourcestatus.UserColumn,
+	ent.TypeRelationshipStateSnapshot:   relationshipstatesnapshot.UserColumn,
 	ent.TypeRevenueAction:               revenueaction.UserColumn,
 	ent.TypeRevenueActionRevision:       revenueactionrevision.UserColumn,
 	ent.TypeRevenueEvidence:             revenueevidence.UserColumn,
@@ -312,6 +322,41 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.RelationshipQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(relationship.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.RelationshipParticipant.Intercept(intercept.TraverseRelationshipParticipant(
+		func(ctx context.Context, q *ent.RelationshipParticipantQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(relationshipparticipant.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.RelationshipObservation.Intercept(intercept.TraverseRelationshipObservation(
+		func(ctx context.Context, q *ent.RelationshipObservationQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(relationshipobservation.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.RelationshipAssertion.Intercept(intercept.TraverseRelationshipAssertion(
+		func(ctx context.Context, q *ent.RelationshipAssertionQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(relationshipassertion.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.RelationshipStateSnapshot.Intercept(intercept.TraverseRelationshipStateSnapshot(
+		func(ctx context.Context, q *ent.RelationshipStateSnapshotQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(relationshipstatesnapshot.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.RelationshipSourceStatus.Intercept(intercept.TraverseRelationshipSourceStatus(
+		func(ctx context.Context, q *ent.RelationshipSourceStatusQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(relationshipsourcestatus.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

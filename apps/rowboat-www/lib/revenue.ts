@@ -16,6 +16,9 @@ import type {
   RevenuePolicyDecision,
   RevenueRelationship,
   RevenueWorkspace,
+  RelationshipObservation,
+  RelationshipSourceStatus,
+  RelationshipStateSnapshot,
 } from "@/types/revenue";
 
 export class RevenueAPIError extends Error {
@@ -159,12 +162,66 @@ export const createAction = (input: CreateActionInput) =>
 
 // --- relationships -----------------------------------------------------------
 
-export async function listRelationships(): Promise<RevenueRelationship[]> {
-  const body = await call<{ relationships: RevenueRelationship[] }>("/relationships");
+export interface RelationshipFilters {
+  q?: string;
+  lifecycle?: string;
+  health?: string;
+  engagement?: string;
+}
+
+export async function listRelationships(
+  filters: RelationshipFilters = {},
+): Promise<RevenueRelationship[]> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value) params.set(key, value);
+  }
+  const query = params.size ? `?${params.toString()}` : "";
+  const body = await call<{ relationships: RevenueRelationship[] }>(`/relationships${query}`);
   return body.relationships ?? [];
 }
 
 export const getRelationship = (id: string) => call<RelationshipDetail>(`/relationships/${id}`);
+
+export const getRelationshipTimeline = (id: string, limit = 50) =>
+  call<{ observations: RelationshipObservation[] }>(
+    `/relationships/${id}/timeline?limit=${limit}`,
+  ).then((body) => body.observations ?? []);
+
+export const getRelationshipChanges = (id: string) =>
+  call<{ snapshots: RelationshipStateSnapshot[] }>(`/relationships/${id}/changes`).then(
+    (body) => body.snapshots ?? [],
+  );
+
+export const getRelationshipEvidence = (relationshipId: string, evidenceId: string) =>
+  call<{ observation: RelationshipObservation; payload: unknown }>(
+    `/relationships/${relationshipId}/evidence/${evidenceId}`,
+  );
+
+export interface RelationshipCorrectionInput {
+  dimension: "lifecycle" | "engagement" | "sentiment" | "health" | "next_action";
+  value: string;
+  reason: string;
+  supersedesAssertionId?: string;
+}
+
+export const correctRelationship = (id: string, input: RelationshipCorrectionInput) =>
+  post(`/relationships/${id}/corrections`, input) as Promise<RevenueRelationship>;
+
+export const listRelationshipSourceStatuses = () =>
+  call<{ sources: RelationshipSourceStatus[] }>("/relationship-sources/status").then(
+    (body) => body.sources ?? [],
+  );
+
+export const approveRecommendation = (actionId: string, acceptRisk = false) =>
+  post(`/relationship-recommendations/${actionId}/approve`, {
+    acceptRisk,
+  }) as Promise<RevenueAction>;
+
+export const rejectRecommendation = (actionId: string, reason: string) =>
+  post(`/relationship-recommendations/${actionId}/reject`, {
+    reason,
+  }) as Promise<RevenueAction>;
 
 export interface CreateRelationshipInput {
   kind: string;

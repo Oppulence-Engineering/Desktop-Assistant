@@ -39,8 +39,28 @@ const (
 	FieldLastTouchAt = "last_touch_at"
 	// FieldNextActionAt holds the string denoting the next_action_at field in the database.
 	FieldNextActionAt = "next_action_at"
+	// FieldNextAction holds the string denoting the next_action field in the database.
+	FieldNextAction = "next_action"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldLifecycle holds the string denoting the lifecycle field in the database.
+	FieldLifecycle = "lifecycle"
+	// FieldEngagement holds the string denoting the engagement field in the database.
+	FieldEngagement = "engagement"
+	// FieldSentiment holds the string denoting the sentiment field in the database.
+	FieldSentiment = "sentiment"
+	// FieldHealth holds the string denoting the health field in the database.
+	FieldHealth = "health"
+	// FieldStateReason holds the string denoting the state_reason field in the database.
+	FieldStateReason = "state_reason"
+	// FieldStateVersion holds the string denoting the state_version field in the database.
+	FieldStateVersion = "state_version"
+	// FieldLastChangedAt holds the string denoting the last_changed_at field in the database.
+	FieldLastChangedAt = "last_changed_at"
+	// FieldRisks holds the string denoting the risks field in the database.
+	FieldRisks = "risks"
+	// FieldMilestones holds the string denoting the milestones field in the database.
+	FieldMilestones = "milestones"
 	// EdgeWorkspace holds the string denoting the workspace edge name in mutations.
 	EdgeWorkspace = "workspace"
 	// EdgeUser holds the string denoting the user edge name in mutations.
@@ -53,6 +73,14 @@ const (
 	EdgeEvidences = "evidences"
 	// EdgeMailThreads holds the string denoting the mail_threads edge name in mutations.
 	EdgeMailThreads = "mail_threads"
+	// EdgeParticipants holds the string denoting the participants edge name in mutations.
+	EdgeParticipants = "participants"
+	// EdgeObservations holds the string denoting the observations edge name in mutations.
+	EdgeObservations = "observations"
+	// EdgeAssertions holds the string denoting the assertions edge name in mutations.
+	EdgeAssertions = "assertions"
+	// EdgeSnapshots holds the string denoting the snapshots edge name in mutations.
+	EdgeSnapshots = "snapshots"
 	// Table holds the table name of the relationship in the database.
 	Table = "relationships"
 	// WorkspaceTable is the table that holds the workspace relation/edge.
@@ -95,6 +123,34 @@ const (
 	MailThreadsInverseTable = "mail_threads"
 	// MailThreadsColumn is the table column denoting the mail_threads relation/edge.
 	MailThreadsColumn = "relationship_id"
+	// ParticipantsTable is the table that holds the participants relation/edge.
+	ParticipantsTable = "relationship_participants"
+	// ParticipantsInverseTable is the table name for the RelationshipParticipant entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipparticipant" package.
+	ParticipantsInverseTable = "relationship_participants"
+	// ParticipantsColumn is the table column denoting the participants relation/edge.
+	ParticipantsColumn = "relationship_id"
+	// ObservationsTable is the table that holds the observations relation/edge.
+	ObservationsTable = "relationship_observations"
+	// ObservationsInverseTable is the table name for the RelationshipObservation entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipobservation" package.
+	ObservationsInverseTable = "relationship_observations"
+	// ObservationsColumn is the table column denoting the observations relation/edge.
+	ObservationsColumn = "relationship_id"
+	// AssertionsTable is the table that holds the assertions relation/edge.
+	AssertionsTable = "relationship_assertions"
+	// AssertionsInverseTable is the table name for the RelationshipAssertion entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipassertion" package.
+	AssertionsInverseTable = "relationship_assertions"
+	// AssertionsColumn is the table column denoting the assertions relation/edge.
+	AssertionsColumn = "relationship_id"
+	// SnapshotsTable is the table that holds the snapshots relation/edge.
+	SnapshotsTable = "relationship_state_snapshots"
+	// SnapshotsInverseTable is the table name for the RelationshipStateSnapshot entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipstatesnapshot" package.
+	SnapshotsInverseTable = "relationship_state_snapshots"
+	// SnapshotsColumn is the table column denoting the snapshots relation/edge.
+	SnapshotsColumn = "relationship_id"
 )
 
 // Columns holds all SQL columns for relationship fields.
@@ -112,7 +168,17 @@ var Columns = []string{
 	FieldSummary,
 	FieldLastTouchAt,
 	FieldNextActionAt,
+	FieldNextAction,
 	FieldStatus,
+	FieldLifecycle,
+	FieldEngagement,
+	FieldSentiment,
+	FieldHealth,
+	FieldStateReason,
+	FieldStateVersion,
+	FieldLastChangedAt,
+	FieldRisks,
+	FieldMilestones,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "relationships"
@@ -160,6 +226,30 @@ var (
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	StatusValidator func(string) error
+	// DefaultLifecycle holds the default value on creation for the "lifecycle" field.
+	DefaultLifecycle string
+	// LifecycleValidator is a validator for the "lifecycle" field. It is called by the builders before save.
+	LifecycleValidator func(string) error
+	// DefaultEngagement holds the default value on creation for the "engagement" field.
+	DefaultEngagement string
+	// EngagementValidator is a validator for the "engagement" field. It is called by the builders before save.
+	EngagementValidator func(string) error
+	// DefaultSentiment holds the default value on creation for the "sentiment" field.
+	DefaultSentiment string
+	// SentimentValidator is a validator for the "sentiment" field. It is called by the builders before save.
+	SentimentValidator func(string) error
+	// DefaultHealth holds the default value on creation for the "health" field.
+	DefaultHealth string
+	// HealthValidator is a validator for the "health" field. It is called by the builders before save.
+	HealthValidator func(string) error
+	// DefaultStateVersion holds the default value on creation for the "state_version" field.
+	DefaultStateVersion int
+	// StateVersionValidator is a validator for the "state_version" field. It is called by the builders before save.
+	StateVersionValidator func(int) error
+	// DefaultRisks holds the default value on creation for the "risks" field.
+	DefaultRisks []string
+	// DefaultMilestones holds the default value on creation for the "milestones" field.
+	DefaultMilestones []string
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -227,9 +317,49 @@ func ByNextActionAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNextActionAt, opts...).ToFunc()
 }
 
+// ByNextAction orders the results by the next_action field.
+func ByNextAction(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNextAction, opts...).ToFunc()
+}
+
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByLifecycle orders the results by the lifecycle field.
+func ByLifecycle(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLifecycle, opts...).ToFunc()
+}
+
+// ByEngagement orders the results by the engagement field.
+func ByEngagement(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEngagement, opts...).ToFunc()
+}
+
+// BySentiment orders the results by the sentiment field.
+func BySentiment(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSentiment, opts...).ToFunc()
+}
+
+// ByHealth orders the results by the health field.
+func ByHealth(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHealth, opts...).ToFunc()
+}
+
+// ByStateReason orders the results by the state_reason field.
+func ByStateReason(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStateReason, opts...).ToFunc()
+}
+
+// ByStateVersion orders the results by the state_version field.
+func ByStateVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStateVersion, opts...).ToFunc()
+}
+
+// ByLastChangedAt orders the results by the last_changed_at field.
+func ByLastChangedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastChangedAt, opts...).ToFunc()
 }
 
 // ByWorkspaceField orders the results by workspace field.
@@ -301,6 +431,62 @@ func ByMailThreads(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newMailThreadsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByParticipantsCount orders the results by participants count.
+func ByParticipantsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newParticipantsStep(), opts...)
+	}
+}
+
+// ByParticipants orders the results by participants terms.
+func ByParticipants(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newParticipantsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByObservationsCount orders the results by observations count.
+func ByObservationsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newObservationsStep(), opts...)
+	}
+}
+
+// ByObservations orders the results by observations terms.
+func ByObservations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newObservationsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByAssertionsCount orders the results by assertions count.
+func ByAssertionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAssertionsStep(), opts...)
+	}
+}
+
+// ByAssertions orders the results by assertions terms.
+func ByAssertions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAssertionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// BySnapshotsCount orders the results by snapshots count.
+func BySnapshotsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSnapshotsStep(), opts...)
+	}
+}
+
+// BySnapshots orders the results by snapshots terms.
+func BySnapshots(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSnapshotsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newWorkspaceStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -341,5 +527,33 @@ func newMailThreadsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MailThreadsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, MailThreadsTable, MailThreadsColumn),
+	)
+}
+func newParticipantsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ParticipantsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ParticipantsTable, ParticipantsColumn),
+	)
+}
+func newObservationsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ObservationsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ObservationsTable, ObservationsColumn),
+	)
+}
+func newAssertionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AssertionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AssertionsTable, AssertionsColumn),
+	)
+}
+func newSnapshotsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SnapshotsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SnapshotsTable, SnapshotsColumn),
 	)
 }

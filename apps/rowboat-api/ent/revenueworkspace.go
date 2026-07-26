@@ -68,21 +68,36 @@ type RevenueWorkspaceEdges struct {
 	OutboxEvents []*RevenueOutboxEvent `json:"outbox_events,omitempty"`
 	// Scans holds the value of the scans edge.
 	Scans []*RevenueLeakScan `json:"scans,omitempty"`
+	// RelationshipParticipants holds the value of the relationship_participants edge.
+	RelationshipParticipants []*RelationshipParticipant `json:"relationship_participants,omitempty"`
+	// RelationshipObservations holds the value of the relationship_observations edge.
+	RelationshipObservations []*RelationshipObservation `json:"relationship_observations,omitempty"`
+	// RelationshipAssertions holds the value of the relationship_assertions edge.
+	RelationshipAssertions []*RelationshipAssertion `json:"relationship_assertions,omitempty"`
+	// RelationshipStateSnapshots holds the value of the relationship_state_snapshots edge.
+	RelationshipStateSnapshots []*RelationshipStateSnapshot `json:"relationship_state_snapshots,omitempty"`
+	// RelationshipSourceStatuses holds the value of the relationship_source_statuses edge.
+	RelationshipSourceStatuses []*RelationshipSourceStatus `json:"relationship_source_statuses,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [10]bool
+	loadedTypes [15]bool
 	// totalCount holds the count of the edges above.
-	totalCount [10]map[string]int
+	totalCount [15]map[string]int
 
-	namedMembers       map[string][]*RevenueWorkspaceMember
-	namedRelationships map[string][]*Relationship
-	namedEvidences     map[string][]*RevenueEvidence
-	namedCommitments   map[string][]*Commitment
-	namedActions       map[string][]*RevenueAction
-	namedDecisions     map[string][]*PolicyDecisionSnapshot
-	namedOutcomes      map[string][]*ActionOutcome
-	namedOutboxEvents  map[string][]*RevenueOutboxEvent
-	namedScans         map[string][]*RevenueLeakScan
+	namedMembers                    map[string][]*RevenueWorkspaceMember
+	namedRelationships              map[string][]*Relationship
+	namedEvidences                  map[string][]*RevenueEvidence
+	namedCommitments                map[string][]*Commitment
+	namedActions                    map[string][]*RevenueAction
+	namedDecisions                  map[string][]*PolicyDecisionSnapshot
+	namedOutcomes                   map[string][]*ActionOutcome
+	namedOutboxEvents               map[string][]*RevenueOutboxEvent
+	namedScans                      map[string][]*RevenueLeakScan
+	namedRelationshipParticipants   map[string][]*RelationshipParticipant
+	namedRelationshipObservations   map[string][]*RelationshipObservation
+	namedRelationshipAssertions     map[string][]*RelationshipAssertion
+	namedRelationshipStateSnapshots map[string][]*RelationshipStateSnapshot
+	namedRelationshipSourceStatuses map[string][]*RelationshipSourceStatus
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -175,6 +190,51 @@ func (e RevenueWorkspaceEdges) ScansOrErr() ([]*RevenueLeakScan, error) {
 		return e.Scans, nil
 	}
 	return nil, &NotLoadedError{edge: "scans"}
+}
+
+// RelationshipParticipantsOrErr returns the RelationshipParticipants value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) RelationshipParticipantsOrErr() ([]*RelationshipParticipant, error) {
+	if e.loadedTypes[10] {
+		return e.RelationshipParticipants, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_participants"}
+}
+
+// RelationshipObservationsOrErr returns the RelationshipObservations value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) RelationshipObservationsOrErr() ([]*RelationshipObservation, error) {
+	if e.loadedTypes[11] {
+		return e.RelationshipObservations, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_observations"}
+}
+
+// RelationshipAssertionsOrErr returns the RelationshipAssertions value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) RelationshipAssertionsOrErr() ([]*RelationshipAssertion, error) {
+	if e.loadedTypes[12] {
+		return e.RelationshipAssertions, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_assertions"}
+}
+
+// RelationshipStateSnapshotsOrErr returns the RelationshipStateSnapshots value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) RelationshipStateSnapshotsOrErr() ([]*RelationshipStateSnapshot, error) {
+	if e.loadedTypes[13] {
+		return e.RelationshipStateSnapshots, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_state_snapshots"}
+}
+
+// RelationshipSourceStatusesOrErr returns the RelationshipSourceStatuses value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) RelationshipSourceStatusesOrErr() ([]*RelationshipSourceStatus, error) {
+	if e.loadedTypes[14] {
+		return e.RelationshipSourceStatuses, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_source_statuses"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -342,6 +402,31 @@ func (_m *RevenueWorkspace) QueryOutboxEvents() *RevenueOutboxEventQuery {
 // QueryScans queries the "scans" edge of the RevenueWorkspace entity.
 func (_m *RevenueWorkspace) QueryScans() *RevenueLeakScanQuery {
 	return NewRevenueWorkspaceClient(_m.config).QueryScans(_m)
+}
+
+// QueryRelationshipParticipants queries the "relationship_participants" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryRelationshipParticipants() *RelationshipParticipantQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryRelationshipParticipants(_m)
+}
+
+// QueryRelationshipObservations queries the "relationship_observations" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryRelationshipObservations() *RelationshipObservationQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryRelationshipObservations(_m)
+}
+
+// QueryRelationshipAssertions queries the "relationship_assertions" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryRelationshipAssertions() *RelationshipAssertionQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryRelationshipAssertions(_m)
+}
+
+// QueryRelationshipStateSnapshots queries the "relationship_state_snapshots" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryRelationshipStateSnapshots() *RelationshipStateSnapshotQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryRelationshipStateSnapshots(_m)
+}
+
+// QueryRelationshipSourceStatuses queries the "relationship_source_statuses" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryRelationshipSourceStatuses() *RelationshipSourceStatusQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryRelationshipSourceStatuses(_m)
 }
 
 // Update returns a builder for updating this RevenueWorkspace.
@@ -619,6 +704,126 @@ func (_m *RevenueWorkspace) appendNamedScans(name string, edges ...*RevenueLeakS
 		_m.Edges.namedScans[name] = []*RevenueLeakScan{}
 	} else {
 		_m.Edges.namedScans[name] = append(_m.Edges.namedScans[name], edges...)
+	}
+}
+
+// NamedRelationshipParticipants returns the RelationshipParticipants named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedRelationshipParticipants(name string) ([]*RelationshipParticipant, error) {
+	if _m.Edges.namedRelationshipParticipants == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipParticipants[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedRelationshipParticipants(name string, edges ...*RelationshipParticipant) {
+	if _m.Edges.namedRelationshipParticipants == nil {
+		_m.Edges.namedRelationshipParticipants = make(map[string][]*RelationshipParticipant)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipParticipants[name] = []*RelationshipParticipant{}
+	} else {
+		_m.Edges.namedRelationshipParticipants[name] = append(_m.Edges.namedRelationshipParticipants[name], edges...)
+	}
+}
+
+// NamedRelationshipObservations returns the RelationshipObservations named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedRelationshipObservations(name string) ([]*RelationshipObservation, error) {
+	if _m.Edges.namedRelationshipObservations == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipObservations[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedRelationshipObservations(name string, edges ...*RelationshipObservation) {
+	if _m.Edges.namedRelationshipObservations == nil {
+		_m.Edges.namedRelationshipObservations = make(map[string][]*RelationshipObservation)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipObservations[name] = []*RelationshipObservation{}
+	} else {
+		_m.Edges.namedRelationshipObservations[name] = append(_m.Edges.namedRelationshipObservations[name], edges...)
+	}
+}
+
+// NamedRelationshipAssertions returns the RelationshipAssertions named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedRelationshipAssertions(name string) ([]*RelationshipAssertion, error) {
+	if _m.Edges.namedRelationshipAssertions == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipAssertions[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedRelationshipAssertions(name string, edges ...*RelationshipAssertion) {
+	if _m.Edges.namedRelationshipAssertions == nil {
+		_m.Edges.namedRelationshipAssertions = make(map[string][]*RelationshipAssertion)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipAssertions[name] = []*RelationshipAssertion{}
+	} else {
+		_m.Edges.namedRelationshipAssertions[name] = append(_m.Edges.namedRelationshipAssertions[name], edges...)
+	}
+}
+
+// NamedRelationshipStateSnapshots returns the RelationshipStateSnapshots named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedRelationshipStateSnapshots(name string) ([]*RelationshipStateSnapshot, error) {
+	if _m.Edges.namedRelationshipStateSnapshots == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipStateSnapshots[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedRelationshipStateSnapshots(name string, edges ...*RelationshipStateSnapshot) {
+	if _m.Edges.namedRelationshipStateSnapshots == nil {
+		_m.Edges.namedRelationshipStateSnapshots = make(map[string][]*RelationshipStateSnapshot)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipStateSnapshots[name] = []*RelationshipStateSnapshot{}
+	} else {
+		_m.Edges.namedRelationshipStateSnapshots[name] = append(_m.Edges.namedRelationshipStateSnapshots[name], edges...)
+	}
+}
+
+// NamedRelationshipSourceStatuses returns the RelationshipSourceStatuses named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedRelationshipSourceStatuses(name string) ([]*RelationshipSourceStatus, error) {
+	if _m.Edges.namedRelationshipSourceStatuses == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipSourceStatuses[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedRelationshipSourceStatuses(name string, edges ...*RelationshipSourceStatus) {
+	if _m.Edges.namedRelationshipSourceStatuses == nil {
+		_m.Edges.namedRelationshipSourceStatuses = make(map[string][]*RelationshipSourceStatus)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipSourceStatuses[name] = []*RelationshipSourceStatus{}
+	} else {
+		_m.Edges.namedRelationshipSourceStatuses[name] = append(_m.Edges.namedRelationshipSourceStatuses[name], edges...)
 	}
 }
 

@@ -19,10 +19,9 @@ const apiDb =
   process.env.ROWBOAT_WWW_SCREENSHOT_API_DB ||
   process.env.ROWBOAT_API_DATABASE_URL ||
   process.env.DATABASE_URL ||
-  path.join(repoRoot, "apps/rowboat-api/rowboat-dev.db");
+  path.join(repoRoot, ".rowboat-kind/marketing-screenshots/relationship-demo.db");
 const outputDir =
-  process.env.ROWBOAT_WWW_SCREENSHOT_OUTPUT_DIR ||
-  path.join(appDir, "public/marketing");
+  process.env.ROWBOAT_WWW_SCREENSHOT_OUTPUT_DIR || path.join(appDir, "public/marketing");
 const apiUrl = trimTrailingSlash(
   process.env.ROWBOAT_WWW_SCREENSHOT_API_URL || "http://localhost:18080",
 );
@@ -37,6 +36,10 @@ const artifactDir =
   process.env.ROWBOAT_WWW_SCREENSHOT_ARTIFACT_DIR ||
   path.join(repoRoot, ".rowboat-kind/marketing-screenshots");
 const logFile = path.join(artifactDir, "desktop.log");
+const relationshipFixture = path.join(
+  repoRoot,
+  "fixtures/relationship-marketing-observations.json",
+);
 
 type NavCapture = {
   file: string;
@@ -46,6 +49,11 @@ type NavCapture = {
 
 const navCaptures: NavCapture[] = [
   { file: "desktop-home.png", label: "Home", waitText: "Home" },
+  {
+    file: "relationship-desktop.png",
+    label: "Relationships",
+    waitText: "Account mission control",
+  },
   { file: "desktop-email.png", label: "Email", waitText: "Email" },
   { file: "desktop-meetings.png", label: "Meetings", waitText: "Meetings" },
   { file: "desktop-knowledge.png", label: "Knowledge", waitText: "Knowledge" },
@@ -69,7 +77,8 @@ async function main() {
   run("npm", ["run", "deps"], { cwd: desktopDir });
 
   seedWorkspace();
-  await writeDevstackAuth();
+  const accessToken = await writeDevstackAuth();
+  await seedRelationshipState(accessToken);
 
   const log = fs.openSync(logFile, "w");
   const desktopEnv = getDesktopEnv();
@@ -146,6 +155,12 @@ async function main() {
       await waitForText(cdp, capture.waitText);
       await dismissTransientToasts(cdp);
       await captureScreenshot(cdp, capture.file);
+      if (capture.file === "relationship-desktop.png") {
+        await clickRelationshipRow(cdp, "Acme", "Evaluation");
+        await waitForText(cdp, "CORRECT THE MODEL");
+        await captureScreenshot(cdp, "relationship-desktop-detail.png");
+        await clickButton(cdp, "Close");
+      }
     }
 
     console.log("capturing desktop-chat.png");
@@ -172,12 +187,16 @@ async function main() {
         fs.writeFileSync(textFile, `${await getBodyText(cdp)}\n`, "utf8");
         console.error(`wrote debug body text: ${textFile}`);
       } catch (debugError) {
-        console.error(`could not write debug body text: ${debugError instanceof Error ? debugError.message : String(debugError)}`);
+        console.error(
+          `could not write debug body text: ${debugError instanceof Error ? debugError.message : String(debugError)}`,
+        );
       }
       try {
         await captureDebugScreenshot(cdp);
       } catch (debugError) {
-        console.error(`could not capture debug screenshot: ${debugError instanceof Error ? debugError.message : String(debugError)}`);
+        console.error(
+          `could not capture debug screenshot: ${debugError instanceof Error ? debugError.message : String(debugError)}`,
+        );
       }
     }
     throw error;
@@ -187,23 +206,15 @@ async function main() {
 }
 
 function seedWorkspace() {
-  run("npm", [
-    "run",
-    "seed:demo",
-    "--",
-    "--workspace-dir",
-    workspaceDir,
-    "--api-db",
-    apiDb,
-  ], {
+  run("npm", ["run", "seed:demo", "--", "--workspace-dir", workspaceDir, "--api-db", apiDb], {
     cwd: appDir,
   });
 }
 
-async function writeDevstackAuth() {
+async function writeDevstackAuth(): Promise<string> {
   await requireHttp(`${apiUrl}/healthz`, "rowboat-api health");
   const tokenResponse = await fetch(
-    `${devstackUrl}/mint?workos_user_id=user_marketing_screenshots&email=marketing-screenshots%40oppulence.io`,
+    `${devstackUrl}/mint?workos_user_id=user_dev_1&email=dev%40solomon-ai.co`,
   );
   if (!tokenResponse.ok) {
     throw new Error(
@@ -249,6 +260,68 @@ async function writeDevstackAuth() {
     )}\n`,
     "utf8",
   );
+  return tokenJson.token;
+}
+
+type RelationshipMarketingFixture = {
+  observations: unknown[];
+  actions: Array<{
+    accountDomain: string;
+    [key: string]: unknown;
+  }>;
+};
+
+async function seedRelationshipState(accessToken: string) {
+  const fixture = JSON.parse(
+    fs.readFileSync(relationshipFixture, "utf8"),
+  ) as RelationshipMarketingFixture;
+  const headers = {
+    Accept: "application/json",
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+  };
+  const observationResponse = await fetch(`${apiUrl}/v1/relationship-observations/batch`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ observations: fixture.observations }),
+  });
+  const observationBody = await observationResponse.text();
+  if (!observationResponse.ok) {
+    throw new Error(
+      `could not seed relationship observations: ${observationResponse.status} ${observationBody}`,
+    );
+  }
+  const parsed = JSON.parse(observationBody) as {
+    results?: Array<{
+      relationship?: {
+        id?: string;
+        accountDomain?: string;
+      };
+    }>;
+  };
+  const relationshipIds = new Map<string, string>();
+  for (const result of parsed.results ?? []) {
+    const domain = result.relationship?.accountDomain;
+    const id = result.relationship?.id;
+    if (domain && id) relationshipIds.set(domain, id);
+  }
+
+  for (const { accountDomain, ...action } of fixture.actions) {
+    const relationshipId = relationshipIds.get(accountDomain);
+    if (!relationshipId) {
+      throw new Error(`relationship fixture did not produce an id for ${accountDomain}`);
+    }
+    const actionResponse = await fetch(`${apiUrl}/v1/revenue-actions`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ ...action, relationshipId }),
+    });
+    if (!actionResponse.ok) {
+      throw new Error(
+        `could not seed action for ${accountDomain}: ${actionResponse.status} ${await actionResponse.text()}`,
+      );
+    }
+  }
 }
 
 async function completeOnboardingIfNeeded(cdp: CdpClient) {
@@ -265,7 +338,9 @@ async function completeOnboardingIfNeeded(cdp: CdpClient) {
 }
 
 async function clickButton(cdp: CdpClient, label: string) {
-  await evaluate(cdp, `
+  await evaluate(
+    cdp,
+    `
 (() => {
   const label = ${JSON.stringify(label)};
   const normalize = (value) => (value || '').replace(/\\s+/g, ' ').trim();
@@ -286,7 +361,29 @@ async function clickButton(cdp: CdpClient, label: string) {
   button.click();
   return true;
 })()
-`);
+`,
+  );
+  await sleep(500);
+}
+
+async function clickRelationshipRow(cdp: CdpClient, account: string, lifecycle: string) {
+  await evaluate(
+    cdp,
+    `
+(() => {
+  const prefix = ${JSON.stringify(`${account} ${lifecycle}`)};
+  const normalize = (value) => (value || '').replace(/\\s+/g, ' ').trim();
+  const row = [...document.querySelectorAll('button')].find((candidate) =>
+    normalize(candidate.innerText || candidate.textContent).startsWith(prefix)
+  );
+  if (!row) {
+    throw new Error('relationship row not found: ' + prefix);
+  }
+  row.click();
+  return true;
+})()
+`,
+  );
   await sleep(500);
 }
 
@@ -300,7 +397,9 @@ async function waitForText(cdp: CdpClient, text: string, timeoutMs = 30_000) {
 }
 
 async function fillText(cdp: CdpClient, selector: string, value: string) {
-  await evaluate(cdp, `
+  await evaluate(
+    cdp,
+    `
 (() => {
   const input = document.querySelector(${JSON.stringify(selector)});
   if (!input) {
@@ -309,7 +408,8 @@ async function fillText(cdp: CdpClient, selector: string, value: string) {
   input.focus();
   return true;
 })()
-`);
+`,
+  );
   await cdp.send("Input.insertText", { text: value });
 }
 
@@ -318,7 +418,9 @@ async function getBodyText(cdp: CdpClient) {
 }
 
 async function dismissTransientToasts(cdp: CdpClient) {
-  await evaluate(cdp, `
+  await evaluate(
+    cdp,
+    `
 (() => {
   const errorPattern = /failed|error|unauthorized|toolkit/i;
   for (const element of document.querySelectorAll('[data-sonner-toast], [role="status"]')) {
@@ -328,7 +430,8 @@ async function dismissTransientToasts(cdp: CdpClient) {
   }
   return true;
 })()
-`);
+`,
+  );
 }
 
 async function captureScreenshot(cdp: CdpClient, file: string) {
@@ -505,7 +608,11 @@ class CdpClient {
       clearTimeout(pending.timeout);
       this.pending.delete(message.id);
       if (message.error) {
-        pending.reject(new Error(`${message.error.message}${message.error.data ? `: ${message.error.data}` : ""}`));
+        pending.reject(
+          new Error(
+            `${message.error.message}${message.error.data ? `: ${message.error.data}` : ""}`,
+          ),
+        );
         return;
       }
       pending.resolve(message.result);
@@ -519,20 +626,35 @@ class CdpClient {
     const target = await getCdpTarget(port);
     const ws = new WebSocket(target.webSocketDebuggerUrl);
     await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error(`timed out connecting to ${target.webSocketDebuggerUrl}`)), 15_000);
-      ws.addEventListener("open", () => {
-        clearTimeout(timeout);
-        resolve();
-      }, { once: true });
-      ws.addEventListener("error", () => {
-        clearTimeout(timeout);
-        reject(new Error(`could not connect to ${target.webSocketDebuggerUrl}`));
-      }, { once: true });
+      const timeout = setTimeout(
+        () => reject(new Error(`timed out connecting to ${target.webSocketDebuggerUrl}`)),
+        15_000,
+      );
+      ws.addEventListener(
+        "open",
+        () => {
+          clearTimeout(timeout);
+          resolve();
+        },
+        { once: true },
+      );
+      ws.addEventListener(
+        "error",
+        () => {
+          clearTimeout(timeout);
+          reject(new Error(`could not connect to ${target.webSocketDebuggerUrl}`));
+        },
+        { once: true },
+      );
     });
     return new CdpClient(ws);
   }
 
-  send<T = unknown>(method: string, params: Record<string, unknown> = {}, timeoutMs = 30_000): Promise<T> {
+  send<T = unknown>(
+    method: string,
+    params: Record<string, unknown> = {},
+    timeoutMs = 30_000,
+  ): Promise<T> {
     const id = this.nextId++;
     return new Promise<T>((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -558,14 +680,23 @@ class CdpClient {
   }
 }
 
-async function getCdpTarget(port: string): Promise<Required<Pick<CdpTarget, "webSocketDebuggerUrl">> & CdpTarget> {
+async function getCdpTarget(
+  port: string,
+): Promise<Required<Pick<CdpTarget, "webSocketDebuggerUrl">> & CdpTarget> {
   const response = await fetch(`http://127.0.0.1:${port}/json/list`);
   if (!response.ok) {
-    throw new Error(`could not list Electron CDP targets: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `could not list Electron CDP targets: ${response.status} ${response.statusText}`,
+    );
   }
   const targets = (await response.json()) as CdpTarget[];
   const page =
-    targets.find((target) => target.type === "page" && target.url?.includes(`:${vitePort}`) && target.webSocketDebuggerUrl) ||
+    targets.find(
+      (target) =>
+        target.type === "page" &&
+        target.url?.includes(`:${vitePort}`) &&
+        target.webSocketDebuggerUrl,
+    ) ||
     targets.find((target) => target.type === "page" && target.webSocketDebuggerUrl) ||
     targets.find((target) => target.webSocketDebuggerUrl);
   if (!page?.webSocketDebuggerUrl) {

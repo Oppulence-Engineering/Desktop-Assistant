@@ -39,12 +39,12 @@ export type FeatureDetail = {
 
 export const featureLinks: LinkItem[] = [
   {
-    label: "Revenue Leak Scan",
+    label: "Relationship State Engine",
     href: "/ai-help-center",
     description: "Find missed commitments and warm opportunities in the last 60–90 days",
   },
   {
-    label: "Revenue Action Queue",
+    label: "Account Mission Control",
     href: "/ai-documentation-agent",
     description: "See who needs attention, why now, and the recommended next move",
   },
@@ -97,12 +97,12 @@ export const featureLinks: LinkItem[] = [
 
 export const productLinks: LinkItem[] = [
   {
-    label: "Product overview",
+    label: "Relationship intelligence",
     href: "/product",
-    description: "See the complete revenue memory and governed action loop",
+    description: "See how living relationship state becomes evidence-backed action",
   },
   {
-    label: "Revenue Action Queue",
+    label: "Account Mission Control",
     href: "/api-documentation-software",
     description: "Prioritize, verify, govern, approve, execute, and learn in one queue",
   },
@@ -117,14 +117,14 @@ export const productLinks: LinkItem[] = [
     description: "Choose the plan for monitored relationships, team access, and governance",
   },
   {
-    label: "Book a Revenue Leak Scan",
+    label: "Book a relationship review",
     href: "/book-a-demo",
     description: "Find the warm revenue slipping through your existing relationships",
   },
   {
     label: "Dashboard",
     href: "/app",
-    description: "Open the unified revenue action workspace",
+    description: "Open account mission control",
   },
 ];
 
@@ -930,14 +930,14 @@ export const primaryPages: MarketingPage[] = [
   {
     path: "product",
     eyebrow: "Product",
-    title: "It watches. It drafts. You approve.",
+    title: "Relationship memory that turns into action.",
     description:
-      "Oppulence watches your inbox, calendar, and billing. It finds money that is about to slip and drafts the chase in your voice. Nothing sends until you click Approve.",
+      "Oppulence remembers what was promised, what changed, and what happened next across every commercial relationship. It finds the open loops that put revenue at risk and prepares the next move for approval.",
     category: "product",
     bullets: [
-      "Recover missed commitments, dormant opportunities, former customers, and neglected referrals.",
-      "Verify the contact and apply suppression, frequency, permission, and sender-health policies.",
-      "Approve the action and let replies, meetings, edits, and revenue outcomes improve the memory.",
+      "Build a living ledger of promises, objections, chases, and outcomes from the systems you already use.",
+      "Rank the relationships that need attention by timing, evidence, value, and risk.",
+      "Approve the next action and let replies, meetings, edits, and revenue outcomes improve the memory.",
     ],
     proof: baseProof,
     ctaLabel: "Book a Revenue Leak Scan",

@@ -4,7 +4,6 @@ import * as React from "react";
 import {
   AddressBook,
   ChartLineUp,
-  CurrencyDollar,
   ListChecks,
   MagnifyingGlass,
   Plugs,
@@ -28,10 +27,10 @@ import type { RevenueLeakScan, RevenueWorkspace } from "@/types/revenue";
 type Tab = "queue" | "actions" | "impact" | "relationships" | "scans" | "workspace";
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
+  { key: "relationships", label: "Mission Control", icon: <AddressBook /> },
   { key: "queue", label: "Queue", icon: <Tray /> },
   { key: "actions", label: "Actions", icon: <ListChecks /> },
   { key: "impact", label: "Impact", icon: <ChartLineUp /> },
-  { key: "relationships", label: "Relationships", icon: <AddressBook /> },
   { key: "scans", label: "Scans", icon: <MagnifyingGlass /> },
   { key: "workspace", label: "Workspace", icon: <Plugs /> },
 ];
@@ -58,7 +57,7 @@ function saveScanIds(ids: string[]) {
 }
 
 export function RevenuePanel({ onOpenConnectors }: { onOpenConnectors?: () => void }) {
-  const [tab, setTab] = React.useState<Tab>("queue");
+  const [tab, setTab] = React.useState<Tab>("relationships");
   const [workspace, setWorkspace] = React.useState<RevenueWorkspace | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
@@ -144,13 +143,13 @@ export function RevenuePanel({ onOpenConnectors }: { onOpenConnectors?: () => vo
     <div className="mx-auto flex h-full w-full max-w-4xl flex-col gap-6 px-6 py-8">
       <header className="flex items-start gap-3">
         <div className="mt-0.5 flex size-9 items-center justify-center rounded-[2px] bg-background-200 text-primary/70 dark:bg-background-100">
-          <CurrencyDollar weight="fill" className="size-5" />
+          <AddressBook weight="fill" className="size-5" />
         </div>
         <div>
-          <h1 className="text-lg font-semibold text-primary">Revenue</h1>
+          <h1 className="text-lg font-semibold text-primary">Relationships</h1>
           <p className="max-w-lg text-sm text-primary/60">
-            The open loops in your inbox — found, ranked, drafted, and governed. Scan, review each
-            draft, then approve.
+            A living model of every customer relationship: what changed, what needs action, and the
+            evidence behind each recommendation.
           </p>
         </div>
       </header>

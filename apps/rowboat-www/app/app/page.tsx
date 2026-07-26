@@ -139,7 +139,7 @@ function PageBody() {
   const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [view, setView] = useState<"chat" | "settings" | "revenue">("chat");
-  const [settingsSection, setSettingsSection] = useState<SettingsSection>("general");
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>("overview");
   const [sessions, setSessions] = useState<SessionMeta[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
@@ -987,7 +987,11 @@ function PageBody() {
       />
       <AppShellTopbar />
       <div className="min-h-0 w-full flex-1 px-2 pb-2">
-        <section className="relative flex h-full overflow-clip rounded border bg-background dark:bg-background-50">
+        <section
+          className={`relative flex h-full overflow-clip rounded border bg-background dark:bg-background-50 ${
+            view === "settings" ? "settings-workspace" : ""
+          }`}
+        >
           <AppShellSidebar
             onCloseSettings={() => setView("chat")}
             onNavigateChat={() => {
@@ -1021,8 +1025,18 @@ function PageBody() {
             }}
             view={view}
           />
-          <main className="flex min-w-0 flex-1 flex-col">
-            <header className="flex h-14 shrink-0 items-center justify-between border-b px-3">
+          <main
+            className={`flex min-w-0 flex-1 flex-col ${
+              view === "settings" ? "settings-stage" : ""
+            }`}
+          >
+            <header
+              className={
+                view === "settings"
+                  ? "settings-stage-header"
+                  : "flex h-14 shrink-0 items-center justify-between border-b px-3"
+              }
+            >
               <div className="flex items-center gap-2">
                 <button
                   aria-label="Toggle sidebar"
@@ -1033,36 +1047,50 @@ function PageBody() {
                 >
                   <SidebarSimple className="size-4" />
                 </button>
-                <span className="text-sm font-medium text-primary">
+                <span
+                  className={
+                    view === "settings"
+                      ? "settings-stage-header-title"
+                      : "text-sm font-medium text-primary"
+                  }
+                >
                   {view === "settings"
                     ? SETTINGS_SECTIONS.find((s) => s.key === settingsSection)?.label || "Settings"
                     : view === "revenue"
-                      ? "Revenue"
+                      ? "Relationships"
                       : "Chat"}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <button
-                  className="hidden items-center gap-1 rounded-[2px] border px-1.5 py-0.5 font-mono text-[10px] uppercase text-primary/50 transition-colors hover:bg-background-100 hover:text-primary md:flex dark:hover:bg-background-300"
-                  onClick={() => setPaletteOpen(true)}
-                  title="Command palette"
-                  type="button"
-                >
-                  ⌘K
-                </button>
-                <span className="hidden font-mono text-xs text-primary/40 md:block">
-                  [oppulence console]
-                </span>
-              </div>
+              {view === "settings" ? (
+                <span className="settings-stage-header-brand">Oppulence</span>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <button
+                    className="hidden items-center gap-1 rounded-[2px] border px-1.5 py-0.5 font-mono text-[10px] uppercase text-primary/50 transition-colors hover:bg-background-100 hover:text-primary md:flex dark:hover:bg-background-300"
+                    onClick={() => setPaletteOpen(true)}
+                    title="Command palette"
+                    type="button"
+                  >
+                    ⌘K
+                  </button>
+                  <span className="hidden font-mono text-xs text-primary/40 md:block">
+                    [oppulence console]
+                  </span>
+                </div>
+              )}
             </header>
 
             {view === "settings" ? (
-              <SettingsView section={settingsSection} session={session} />
+              <SettingsView
+                onNavigate={setSettingsSection}
+                section={settingsSection}
+                session={session}
+              />
             ) : view === "revenue" ? (
               <div className="flex-1 overflow-y-auto">
                 <RevenuePanel
                   onOpenConnectors={() => {
-                    setSettingsSection("connectors");
+                    setSettingsSection("extensions");
                     setView("settings");
                   }}
                 />

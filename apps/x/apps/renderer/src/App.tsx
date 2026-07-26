@@ -4,12 +4,14 @@ import { workspace } from "@x/shared";
 import {
   DEEP_LINK_SCHEME,
   LEGACY_DEEP_LINK_SCHEME,
+  OLDEST_DEEP_LINK_SCHEME,
   PRODUCT_NAME,
   getProductProviderState,
 } from "@x/shared/dist/branding.js";
 import { RunEvent, ListRunsResponse } from "@x/shared/src/runs.js";
 import type { LanguageModelUsage, ToolUIPart } from "ai";
 import "./App.css";
+import "../../../../rowboat-www/app/product-theme.css";
 import z from "zod";
 import {
   CheckIcon,
@@ -55,6 +57,7 @@ import { KnowledgeView } from "@/components/knowledge-view";
 import { ChatHistoryView } from "@/components/chat-history-view";
 import { HomeView } from "@/components/home-view";
 import { MeetingsView } from "@/components/meetings-view";
+import { RelationshipsView } from "@/components/relationships-view";
 import { SidebarSectionProvider } from "@/contexts/sidebar-context";
 import {
   Conversation,
@@ -653,6 +656,7 @@ type ViewState =
   | { type: "live-notes" }
   | { type: "bg-tasks" }
   | { type: "email" }
+  | { type: "relationships"; id?: string }
   | { type: "workspace"; path?: string }
   | { type: "knowledge-view"; folderPath?: string }
   | { type: "chat-history" }
@@ -683,9 +687,11 @@ function viewStatesEqual(a: ViewState, b: ViewState): boolean {
  *   live-notes:       ?type=live-notes
  */
 function parseDeepLink(input: string): ViewState | null {
-  const prefix = [`${DEEP_LINK_SCHEME}://`, `${LEGACY_DEEP_LINK_SCHEME}://`].find((value) =>
-    input.startsWith(value),
-  );
+  const prefix = [
+    `${DEEP_LINK_SCHEME}://`,
+    `${LEGACY_DEEP_LINK_SCHEME}://`,
+    `${OLDEST_DEEP_LINK_SCHEME}://`,
+  ].find((value) => input.startsWith(value));
   if (!prefix) return null;
   const rest = input.slice(prefix.length);
   const queryIdx = rest.indexOf("?");
@@ -711,6 +717,12 @@ function parseDeepLink(input: string): ViewState | null {
       return { type: "meetings" };
     case "live-notes":
       return { type: "live-notes" };
+    case "relationship": {
+      const id = params.get("id");
+      return { type: "relationships", id: id ?? undefined };
+    }
+    case "relationships":
+      return { type: "relationships" };
     case "workspace": {
       const path = params.get("path");
       return { type: "workspace", path: path ?? undefined };
@@ -838,6 +850,8 @@ function App() {
   const [isLiveNotesOpen, setIsLiveNotesOpen] = useState(false);
   const [isBgTasksOpen, setIsBgTasksOpen] = useState(false);
   const [isEmailOpen, setIsEmailOpen] = useState(false);
+  const [isRelationshipsOpen, setIsRelationshipsOpen] = useState(false);
+  const [relationshipInitialId, setRelationshipInitialId] = useState<string | null>(null);
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [workspaceInitialPath, setWorkspaceInitialPath] = useState<string | null>(null);
   const [isKnowledgeViewOpen, setIsKnowledgeViewOpen] = useState(false);
@@ -3811,6 +3825,7 @@ function App() {
       isLiveNotesOpen ||
       isBgTasksOpen ||
       isEmailOpen ||
+      isRelationshipsOpen ||
       isWorkspaceOpen ||
       isKnowledgeViewOpen ||
       isChatHistoryOpen ||
@@ -3836,6 +3851,7 @@ function App() {
     setIsLiveNotesOpen(false);
     setIsBgTasksOpen(false);
     setIsEmailOpen(false);
+    setIsRelationshipsOpen(false);
     setIsWorkspaceOpen(false);
     setIsKnowledgeViewOpen(false);
     setIsChatHistoryOpen(false);
@@ -3850,6 +3866,7 @@ function App() {
     isLiveNotesOpen,
     isBgTasksOpen,
     isEmailOpen,
+    isRelationshipsOpen,
     isWorkspaceOpen,
     isKnowledgeViewOpen,
     isChatHistoryOpen,
@@ -4022,6 +4039,7 @@ function App() {
       isLiveNotesOpen ||
       isBgTasksOpen ||
       isEmailOpen ||
+      isRelationshipsOpen ||
       isWorkspaceOpen ||
       isKnowledgeViewOpen ||
       isChatHistoryOpen ||
@@ -4046,6 +4064,7 @@ function App() {
     setIsLiveNotesOpen(false);
     setIsBgTasksOpen(false);
     setIsEmailOpen(false);
+    setIsRelationshipsOpen(false);
     setIsWorkspaceOpen(false);
     setIsKnowledgeViewOpen(false);
     setIsChatHistoryOpen(false);
@@ -4058,6 +4077,7 @@ function App() {
     isLiveNotesOpen,
     isBgTasksOpen,
     isEmailOpen,
+    isRelationshipsOpen,
     isWorkspaceOpen,
     isKnowledgeViewOpen,
     isChatHistoryOpen,
@@ -4144,6 +4164,8 @@ function App() {
 
   const currentViewState = React.useMemo<ViewState>(() => {
     if (selectedBackgroundTask) return { type: "task", name: selectedBackgroundTask };
+    if (isRelationshipsOpen)
+      return { type: "relationships", id: relationshipInitialId ?? undefined };
     if (isEmailOpen) return { type: "email" };
     if (isMeetingsOpen) return { type: "meetings" };
     if (isLiveNotesOpen) return { type: "live-notes" };
@@ -4164,6 +4186,8 @@ function App() {
     return { type: "chat", runId };
   }, [
     selectedBackgroundTask,
+    isRelationshipsOpen,
+    relationshipInitialId,
     isEmailOpen,
     isMeetingsOpen,
     isLiveNotesOpen,
@@ -4337,6 +4361,7 @@ function App() {
       setIsMeetingsOpen(false);
       setIsLiveNotesOpen(false);
       setIsBgTasksOpen(false);
+      setIsRelationshipsOpen(false);
       setIsWorkspaceOpen(false);
       setIsKnowledgeViewOpen(false);
       setIsChatHistoryOpen(false);
@@ -4365,6 +4390,7 @@ function App() {
     setIsLiveNotesOpen(false);
     setIsBgTasksOpen(false);
     setIsEmailOpen(false);
+    setIsRelationshipsOpen(false);
     setIsWorkspaceOpen(false);
     setIsKnowledgeViewOpen(false);
     setIsChatHistoryOpen(false);
@@ -4387,6 +4413,7 @@ function App() {
     setIsLiveNotesOpen(false);
     setIsBgTasksOpen(false);
     setIsEmailOpen(false);
+    setIsRelationshipsOpen(false);
     setIsWorkspaceOpen(false);
     setIsKnowledgeViewOpen(false);
     setIsChatHistoryOpen(false);
@@ -4399,7 +4426,30 @@ function App() {
 
   const applyViewState = useCallback(
     async (view: ViewState) => {
+      if (view.type !== "relationships") {
+        setIsRelationshipsOpen(false);
+        setRelationshipInitialId(null);
+      }
       switch (view.type) {
+        case "relationships":
+          setSelectedPath(null);
+          setIsGraphOpen(false);
+          setIsBrowserOpen(false);
+          setExpandedFrom(null);
+          setIsRightPaneMaximized(false);
+          setSelectedBackgroundTask(null);
+          setIsSuggestedTopicsOpen(false);
+          setIsMeetingsOpen(false);
+          setIsLiveNotesOpen(false);
+          setIsBgTasksOpen(false);
+          setIsEmailOpen(false);
+          setIsWorkspaceOpen(false);
+          setIsKnowledgeViewOpen(false);
+          setIsChatHistoryOpen(false);
+          setIsHomeOpen(false);
+          setRelationshipInitialId(view.id ?? null);
+          setIsRelationshipsOpen(true);
+          return;
         case "file":
           setSelectedBackgroundTask(null);
           setIsGraphOpen(false);
@@ -5060,6 +5110,7 @@ function App() {
     !isLiveNotesOpen &&
     !isBgTasksOpen &&
     !isEmailOpen &&
+    !isRelationshipsOpen &&
     !isWorkspaceOpen &&
     !isKnowledgeViewOpen &&
     !isChatHistoryOpen &&
@@ -5158,6 +5209,7 @@ function App() {
           isLiveNotesOpen ||
           isBgTasksOpen ||
           isEmailOpen ||
+          isRelationshipsOpen ||
           isWorkspaceOpen ||
           isKnowledgeViewOpen ||
           isChatHistoryOpen ||
@@ -5179,6 +5231,7 @@ function App() {
           isLiveNotesOpen ||
           isBgTasksOpen ||
           isEmailOpen ||
+          isRelationshipsOpen ||
           isWorkspaceOpen ||
           isKnowledgeViewOpen ||
           isChatHistoryOpen ||
@@ -5266,6 +5319,7 @@ function App() {
     isLiveNotesOpen,
     isBgTasksOpen,
     isEmailOpen,
+    isRelationshipsOpen,
     isWorkspaceOpen,
     isKnowledgeViewOpen,
     isChatHistoryOpen,
@@ -5314,6 +5368,7 @@ function App() {
         !isLiveNotesOpen &&
         !isBgTasksOpen &&
         !isEmailOpen &&
+        !isRelationshipsOpen &&
         !isWorkspaceOpen &&
         !isKnowledgeViewOpen &&
         !isChatHistoryOpen &&
@@ -5468,6 +5523,7 @@ function App() {
           !isLiveNotesOpen &&
           !isBgTasksOpen &&
           !isEmailOpen &&
+          !isRelationshipsOpen &&
           !isWorkspaceOpen &&
           !isKnowledgeViewOpen &&
           !isChatHistoryOpen &&
@@ -5487,6 +5543,7 @@ function App() {
           !isLiveNotesOpen &&
           !isBgTasksOpen &&
           !isEmailOpen &&
+          !isRelationshipsOpen &&
           !isWorkspaceOpen &&
           !isKnowledgeViewOpen &&
           !isChatHistoryOpen &&
@@ -5506,6 +5563,7 @@ function App() {
           !isLiveNotesOpen &&
           !isBgTasksOpen &&
           !isEmailOpen &&
+          !isRelationshipsOpen &&
           !isWorkspaceOpen &&
           !isKnowledgeViewOpen &&
           !isChatHistoryOpen &&
@@ -6302,6 +6360,7 @@ function App() {
     isLiveNotesOpen ||
     isBgTasksOpen ||
     isEmailOpen ||
+    isRelationshipsOpen ||
     isWorkspaceOpen ||
     isKnowledgeViewOpen ||
     isChatHistoryOpen ||
@@ -6379,6 +6438,7 @@ function App() {
             !isLiveNotesOpen &&
             !isBgTasksOpen &&
             !isEmailOpen &&
+            !isRelationshipsOpen &&
             !isWorkspaceOpen &&
             !isKnowledgeViewOpen &&
             !isChatHistoryOpen &&
@@ -6396,9 +6456,11 @@ function App() {
               paddingLeft: isMac ? MACOS_TRAFFIC_LIGHTS_RESERVED_PX + 52 : 16,
             }}
           >
-            <div className="flex items-center gap-2.5">
-              <img alt="" className="size-5" src="/logo-only.png" />
-              <span className="font-display text-sm text-foreground">Oppulence</span>
+            <div className="oppulence-compact-lockup oppulence-compact-lockup--desktop">
+              <span aria-hidden="true" className="oppulence-compact-lockup__mark">
+                <img alt="" className="oppulence-compact-lockup__mark-image" src="/logo-only.png" />
+              </span>
+              <span className="oppulence-compact-lockup__wordmark">Oppulence</span>
             </div>
             <span className="titlebar-no-drag flex items-center gap-1.5 text-sm text-foreground/70">
               Assistant
@@ -6423,21 +6485,23 @@ function App() {
                 knowledgeActions={knowledgeActions}
                 bgTaskSummaries={bgTaskSummaries}
                 activeNav={
-                  isHomeOpen
-                    ? "home"
-                    : isEmailOpen
-                      ? "email"
-                      : isMeetingsOpen
-                        ? "meetings"
-                        : isKnowledgeViewOpen ||
-                            isGraphOpen ||
-                            (selectedPath != null && selectedPath.startsWith("knowledge/"))
-                          ? "knowledge"
-                          : isBgTasksOpen
-                            ? "agents"
-                            : isWorkspaceOpen
-                              ? "workspaces"
-                              : null
+                  isRelationshipsOpen
+                    ? "relationships"
+                    : isHomeOpen
+                      ? "home"
+                      : isEmailOpen
+                        ? "email"
+                        : isMeetingsOpen
+                          ? "meetings"
+                          : isKnowledgeViewOpen ||
+                              isGraphOpen ||
+                              (selectedPath != null && selectedPath.startsWith("knowledge/"))
+                            ? "knowledge"
+                            : isBgTasksOpen
+                              ? "agents"
+                              : isWorkspaceOpen
+                                ? "workspaces"
+                                : null
                 }
                 onOpenMeetings={openMeetingsView}
                 onOpenBgTasks={() => {
@@ -6453,6 +6517,7 @@ function App() {
                 recentRuns={runs}
                 onOpenRun={(rid) => void navigateToView({ type: "chat", runId: rid })}
                 onOpenEmail={(threadId) => openEmailView(threadId)}
+                onOpenRelationships={() => void navigateToView({ type: "relationships" })}
                 onOpenHome={() => void navigateToView({ type: "home" })}
                 onNewChat={handleNewChatTab}
                 onToggleBrowser={handleToggleBrowser}
@@ -6593,6 +6658,7 @@ function App() {
                     !isLiveNotesOpen &&
                     !isBgTasksOpen &&
                     !isEmailOpen &&
+                    !isRelationshipsOpen &&
                     !isWorkspaceOpen &&
                     !isKnowledgeViewOpen &&
                     !isChatHistoryOpen &&
@@ -6625,6 +6691,7 @@ function App() {
                       isLiveNotesOpen ||
                       isBgTasksOpen ||
                       isEmailOpen ||
+                      isRelationshipsOpen ||
                       isWorkspaceOpen ||
                       isKnowledgeViewOpen ||
                       isChatHistoryOpen ||
@@ -6757,6 +6824,10 @@ function App() {
                           : undefined
                       }
                     />
+                  </div>
+                ) : isRelationshipsOpen ? (
+                  <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <RelationshipsView initialId={relationshipInitialId} />
                   </div>
                 ) : isEmailOpen ? (
                   <div className="flex-1 min-h-0 flex flex-col overflow-hidden">

@@ -26,16 +26,12 @@ export function SettingsSection({
   className?: string;
 }) {
   return (
-    <section className={cn("space-y-3", className)}>
+    <section className={cn("settings-section-block", className)}>
       {(title || action) && (
-        <div className="flex items-start justify-between gap-3">
+        <div className="settings-section-heading">
           <div className="min-w-0">
-            {title && (
-              <h4 className="text-[13px] font-semibold tracking-tight text-foreground">{title}</h4>
-            )}
-            {description && (
-              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p>
-            )}
+            {title && <h4 className="settings-section-title">{title}</h4>}
+            {description && <p className="settings-section-description">{description}</p>}
           </div>
           {action && <div className="shrink-0">{action}</div>}
         </div>
@@ -66,22 +62,13 @@ export function SettingsRow({
 }) {
   return (
     <div
-      className={cn(
-        "rounded-none border bg-card px-3.5 py-3",
-        stacked ? "space-y-2" : "flex items-center justify-between gap-4",
-        className,
-      )}
+      className={cn("settings-row settings-panel", stacked ? "!block space-y-2" : "", className)}
     >
       <div className="min-w-0">
-        <label
-          htmlFor={htmlFor}
-          className="block text-[13px] font-medium leading-none text-foreground"
-        >
+        <label htmlFor={htmlFor} className="settings-row-label block">
           {label}
         </label>
-        {description && (
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>
-        )}
+        {description && <p className="settings-row-description">{description}</p>}
       </div>
       <div className={cn(stacked ? "" : "shrink-0")}>{children}</div>
     </div>

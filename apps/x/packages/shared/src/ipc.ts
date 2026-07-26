@@ -48,6 +48,15 @@ import { SolomonApiConfig } from "./solomon-account.js";
 import { BrowserStateSchema } from "./browser-control.js";
 import { BillingInfoSchema } from "./billing.js";
 import {
+  RelationshipActionSchema,
+  RelationshipDetailSchema,
+  RelationshipObservationSchema,
+  RelationshipSchema,
+  RelationshipSemanticMatchSchema,
+  RelationshipSourceStatusSchema,
+  RelationshipStateSnapshotSchema,
+} from "./relationships.js";
+import {
   GmailThreadSchema,
   MailboxAccountBlockSchema,
   MailboxActionRunBlockSchema,
@@ -1671,6 +1680,69 @@ const ipcSchemas = {
     res: z.object({
       success: z.boolean(),
     }),
+  },
+  "relationships:list": {
+    req: z.object({
+      q: z.string().optional(),
+      lifecycle: z.string().optional(),
+      health: z.string().optional(),
+      engagement: z.string().optional(),
+    }),
+    res: z.object({ relationships: z.array(RelationshipSchema) }),
+  },
+  "relationships:create": {
+    req: z.object({
+      kind: z.string().min(1),
+      displayName: z.string().min(1),
+      primaryEmail: z.string().optional(),
+      accountDomain: z.string().optional(),
+      summary: z.string().optional(),
+    }),
+    res: RelationshipSchema,
+  },
+  "relationships:search": {
+    req: z.object({ query: z.string().min(1) }),
+    res: z.object({
+      available: z.boolean(),
+      matches: z.array(RelationshipSemanticMatchSchema),
+    }),
+  },
+  "relationships:get": {
+    req: z.object({ id: z.string() }),
+    res: RelationshipDetailSchema,
+  },
+  "relationships:timeline": {
+    req: z.object({ id: z.string(), limit: z.number().int().min(1).max(100).optional() }),
+    res: z.object({ observations: z.array(RelationshipObservationSchema) }),
+  },
+  "relationships:changes": {
+    req: z.object({ id: z.string() }),
+    res: z.object({ snapshots: z.array(RelationshipStateSnapshotSchema) }),
+  },
+  "relationships:sources": {
+    req: z.null(),
+    res: z.object({ sources: z.array(RelationshipSourceStatusSchema) }),
+  },
+  "relationships:evidence": {
+    req: z.object({ relationshipId: z.string(), evidenceId: z.string() }),
+    res: z.object({ observation: RelationshipObservationSchema, payload: z.unknown() }),
+  },
+  "relationships:correct": {
+    req: z.object({
+      id: z.string(),
+      dimension: z.enum(["lifecycle", "engagement", "sentiment", "health", "next_action"]),
+      value: z.string().min(1),
+      reason: z.string().min(1),
+    }),
+    res: RelationshipSchema,
+  },
+  "relationships:approve": {
+    req: z.object({ actionId: z.string(), acceptRisk: z.boolean().optional() }),
+    res: RelationshipActionSchema,
+  },
+  "relationships:reject": {
+    req: z.object({ actionId: z.string(), reason: z.string().min(1) }),
+    res: RelationshipActionSchema,
   },
   // Feedback (relayed to Plain via the backend; signed-in only)
   "feedback:submit": {

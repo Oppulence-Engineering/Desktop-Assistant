@@ -46,6 +46,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
@@ -104,6 +109,11 @@ const (
 	TypeOAuthPending                = "OAuthPending"
 	TypePolicyDecisionSnapshot      = "PolicyDecisionSnapshot"
 	TypeRelationship                = "Relationship"
+	TypeRelationshipAssertion       = "RelationshipAssertion"
+	TypeRelationshipObservation     = "RelationshipObservation"
+	TypeRelationshipParticipant     = "RelationshipParticipant"
+	TypeRelationshipSourceStatus    = "RelationshipSourceStatus"
+	TypeRelationshipStateSnapshot   = "RelationshipStateSnapshot"
 	TypeRevenueAction               = "RevenueAction"
 	TypeRevenueActionRevision       = "RevenueActionRevision"
 	TypeRevenueEvidence             = "RevenueEvidence"
@@ -39667,7 +39677,20 @@ type RelationshipMutation struct {
 	summary              *string
 	last_touch_at        *time.Time
 	next_action_at       *time.Time
+	next_action          *string
 	status               *string
+	lifecycle            *string
+	engagement           *string
+	sentiment            *string
+	health               *string
+	state_reason         *string
+	state_version        *int
+	addstate_version     *int
+	last_changed_at      *time.Time
+	risks                *[]string
+	appendrisks          []string
+	milestones           *[]string
+	appendmilestones     []string
 	clearedFields        map[string]struct{}
 	workspace            *uuid.UUID
 	clearedworkspace     bool
@@ -39685,6 +39708,18 @@ type RelationshipMutation struct {
 	mail_threads         map[uuid.UUID]struct{}
 	removedmail_threads  map[uuid.UUID]struct{}
 	clearedmail_threads  bool
+	participants         map[uuid.UUID]struct{}
+	removedparticipants  map[uuid.UUID]struct{}
+	clearedparticipants  bool
+	observations         map[uuid.UUID]struct{}
+	removedobservations  map[uuid.UUID]struct{}
+	clearedobservations  bool
+	assertions           map[uuid.UUID]struct{}
+	removedassertions    map[uuid.UUID]struct{}
+	clearedassertions    bool
+	snapshots            map[uuid.UUID]struct{}
+	removedsnapshots     map[uuid.UUID]struct{}
+	clearedsnapshots     bool
 	done                 bool
 	oldValue             func(context.Context) (*Relationship, error)
 	predicates           []predicate.Relationship
@@ -40332,6 +40367,55 @@ func (m *RelationshipMutation) ResetNextActionAt() {
 	delete(m.clearedFields, relationship.FieldNextActionAt)
 }
 
+// SetNextAction sets the "next_action" field.
+func (m *RelationshipMutation) SetNextAction(s string) {
+	m.next_action = &s
+}
+
+// NextAction returns the value of the "next_action" field in the mutation.
+func (m *RelationshipMutation) NextAction() (r string, exists bool) {
+	v := m.next_action
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNextAction returns the old "next_action" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldNextAction(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNextAction is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNextAction requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNextAction: %w", err)
+	}
+	return oldValue.NextAction, nil
+}
+
+// ClearNextAction clears the value of the "next_action" field.
+func (m *RelationshipMutation) ClearNextAction() {
+	m.next_action = nil
+	m.clearedFields[relationship.FieldNextAction] = struct{}{}
+}
+
+// NextActionCleared returns if the "next_action" field was cleared in this mutation.
+func (m *RelationshipMutation) NextActionCleared() bool {
+	_, ok := m.clearedFields[relationship.FieldNextAction]
+	return ok
+}
+
+// ResetNextAction resets all changes to the "next_action" field.
+func (m *RelationshipMutation) ResetNextAction() {
+	m.next_action = nil
+	delete(m.clearedFields, relationship.FieldNextAction)
+}
+
 // SetStatus sets the "status" field.
 func (m *RelationshipMutation) SetStatus(s string) {
 	m.status = &s
@@ -40366,6 +40450,406 @@ func (m *RelationshipMutation) OldStatus(ctx context.Context) (v string, err err
 // ResetStatus resets all changes to the "status" field.
 func (m *RelationshipMutation) ResetStatus() {
 	m.status = nil
+}
+
+// SetLifecycle sets the "lifecycle" field.
+func (m *RelationshipMutation) SetLifecycle(s string) {
+	m.lifecycle = &s
+}
+
+// Lifecycle returns the value of the "lifecycle" field in the mutation.
+func (m *RelationshipMutation) Lifecycle() (r string, exists bool) {
+	v := m.lifecycle
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLifecycle returns the old "lifecycle" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldLifecycle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLifecycle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLifecycle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLifecycle: %w", err)
+	}
+	return oldValue.Lifecycle, nil
+}
+
+// ResetLifecycle resets all changes to the "lifecycle" field.
+func (m *RelationshipMutation) ResetLifecycle() {
+	m.lifecycle = nil
+}
+
+// SetEngagement sets the "engagement" field.
+func (m *RelationshipMutation) SetEngagement(s string) {
+	m.engagement = &s
+}
+
+// Engagement returns the value of the "engagement" field in the mutation.
+func (m *RelationshipMutation) Engagement() (r string, exists bool) {
+	v := m.engagement
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEngagement returns the old "engagement" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldEngagement(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEngagement is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEngagement requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEngagement: %w", err)
+	}
+	return oldValue.Engagement, nil
+}
+
+// ResetEngagement resets all changes to the "engagement" field.
+func (m *RelationshipMutation) ResetEngagement() {
+	m.engagement = nil
+}
+
+// SetSentiment sets the "sentiment" field.
+func (m *RelationshipMutation) SetSentiment(s string) {
+	m.sentiment = &s
+}
+
+// Sentiment returns the value of the "sentiment" field in the mutation.
+func (m *RelationshipMutation) Sentiment() (r string, exists bool) {
+	v := m.sentiment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSentiment returns the old "sentiment" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldSentiment(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSentiment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSentiment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSentiment: %w", err)
+	}
+	return oldValue.Sentiment, nil
+}
+
+// ResetSentiment resets all changes to the "sentiment" field.
+func (m *RelationshipMutation) ResetSentiment() {
+	m.sentiment = nil
+}
+
+// SetHealth sets the "health" field.
+func (m *RelationshipMutation) SetHealth(s string) {
+	m.health = &s
+}
+
+// Health returns the value of the "health" field in the mutation.
+func (m *RelationshipMutation) Health() (r string, exists bool) {
+	v := m.health
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHealth returns the old "health" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldHealth(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHealth is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHealth requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHealth: %w", err)
+	}
+	return oldValue.Health, nil
+}
+
+// ResetHealth resets all changes to the "health" field.
+func (m *RelationshipMutation) ResetHealth() {
+	m.health = nil
+}
+
+// SetStateReason sets the "state_reason" field.
+func (m *RelationshipMutation) SetStateReason(s string) {
+	m.state_reason = &s
+}
+
+// StateReason returns the value of the "state_reason" field in the mutation.
+func (m *RelationshipMutation) StateReason() (r string, exists bool) {
+	v := m.state_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStateReason returns the old "state_reason" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldStateReason(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStateReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStateReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStateReason: %w", err)
+	}
+	return oldValue.StateReason, nil
+}
+
+// ClearStateReason clears the value of the "state_reason" field.
+func (m *RelationshipMutation) ClearStateReason() {
+	m.state_reason = nil
+	m.clearedFields[relationship.FieldStateReason] = struct{}{}
+}
+
+// StateReasonCleared returns if the "state_reason" field was cleared in this mutation.
+func (m *RelationshipMutation) StateReasonCleared() bool {
+	_, ok := m.clearedFields[relationship.FieldStateReason]
+	return ok
+}
+
+// ResetStateReason resets all changes to the "state_reason" field.
+func (m *RelationshipMutation) ResetStateReason() {
+	m.state_reason = nil
+	delete(m.clearedFields, relationship.FieldStateReason)
+}
+
+// SetStateVersion sets the "state_version" field.
+func (m *RelationshipMutation) SetStateVersion(i int) {
+	m.state_version = &i
+	m.addstate_version = nil
+}
+
+// StateVersion returns the value of the "state_version" field in the mutation.
+func (m *RelationshipMutation) StateVersion() (r int, exists bool) {
+	v := m.state_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStateVersion returns the old "state_version" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldStateVersion(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStateVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStateVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStateVersion: %w", err)
+	}
+	return oldValue.StateVersion, nil
+}
+
+// AddStateVersion adds i to the "state_version" field.
+func (m *RelationshipMutation) AddStateVersion(i int) {
+	if m.addstate_version != nil {
+		*m.addstate_version += i
+	} else {
+		m.addstate_version = &i
+	}
+}
+
+// AddedStateVersion returns the value that was added to the "state_version" field in this mutation.
+func (m *RelationshipMutation) AddedStateVersion() (r int, exists bool) {
+	v := m.addstate_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStateVersion resets all changes to the "state_version" field.
+func (m *RelationshipMutation) ResetStateVersion() {
+	m.state_version = nil
+	m.addstate_version = nil
+}
+
+// SetLastChangedAt sets the "last_changed_at" field.
+func (m *RelationshipMutation) SetLastChangedAt(t time.Time) {
+	m.last_changed_at = &t
+}
+
+// LastChangedAt returns the value of the "last_changed_at" field in the mutation.
+func (m *RelationshipMutation) LastChangedAt() (r time.Time, exists bool) {
+	v := m.last_changed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastChangedAt returns the old "last_changed_at" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldLastChangedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastChangedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastChangedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastChangedAt: %w", err)
+	}
+	return oldValue.LastChangedAt, nil
+}
+
+// ClearLastChangedAt clears the value of the "last_changed_at" field.
+func (m *RelationshipMutation) ClearLastChangedAt() {
+	m.last_changed_at = nil
+	m.clearedFields[relationship.FieldLastChangedAt] = struct{}{}
+}
+
+// LastChangedAtCleared returns if the "last_changed_at" field was cleared in this mutation.
+func (m *RelationshipMutation) LastChangedAtCleared() bool {
+	_, ok := m.clearedFields[relationship.FieldLastChangedAt]
+	return ok
+}
+
+// ResetLastChangedAt resets all changes to the "last_changed_at" field.
+func (m *RelationshipMutation) ResetLastChangedAt() {
+	m.last_changed_at = nil
+	delete(m.clearedFields, relationship.FieldLastChangedAt)
+}
+
+// SetRisks sets the "risks" field.
+func (m *RelationshipMutation) SetRisks(s []string) {
+	m.risks = &s
+	m.appendrisks = nil
+}
+
+// Risks returns the value of the "risks" field in the mutation.
+func (m *RelationshipMutation) Risks() (r []string, exists bool) {
+	v := m.risks
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRisks returns the old "risks" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldRisks(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRisks is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRisks requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRisks: %w", err)
+	}
+	return oldValue.Risks, nil
+}
+
+// AppendRisks adds s to the "risks" field.
+func (m *RelationshipMutation) AppendRisks(s []string) {
+	m.appendrisks = append(m.appendrisks, s...)
+}
+
+// AppendedRisks returns the list of values that were appended to the "risks" field in this mutation.
+func (m *RelationshipMutation) AppendedRisks() ([]string, bool) {
+	if len(m.appendrisks) == 0 {
+		return nil, false
+	}
+	return m.appendrisks, true
+}
+
+// ResetRisks resets all changes to the "risks" field.
+func (m *RelationshipMutation) ResetRisks() {
+	m.risks = nil
+	m.appendrisks = nil
+}
+
+// SetMilestones sets the "milestones" field.
+func (m *RelationshipMutation) SetMilestones(s []string) {
+	m.milestones = &s
+	m.appendmilestones = nil
+}
+
+// Milestones returns the value of the "milestones" field in the mutation.
+func (m *RelationshipMutation) Milestones() (r []string, exists bool) {
+	v := m.milestones
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMilestones returns the old "milestones" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldMilestones(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMilestones is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMilestones requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMilestones: %w", err)
+	}
+	return oldValue.Milestones, nil
+}
+
+// AppendMilestones adds s to the "milestones" field.
+func (m *RelationshipMutation) AppendMilestones(s []string) {
+	m.appendmilestones = append(m.appendmilestones, s...)
+}
+
+// AppendedMilestones returns the list of values that were appended to the "milestones" field in this mutation.
+func (m *RelationshipMutation) AppendedMilestones() ([]string, bool) {
+	if len(m.appendmilestones) == 0 {
+		return nil, false
+	}
+	return m.appendmilestones, true
+}
+
+// ResetMilestones resets all changes to the "milestones" field.
+func (m *RelationshipMutation) ResetMilestones() {
+	m.milestones = nil
+	m.appendmilestones = nil
 }
 
 // SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
@@ -40662,6 +41146,222 @@ func (m *RelationshipMutation) ResetMailThreads() {
 	m.removedmail_threads = nil
 }
 
+// AddParticipantIDs adds the "participants" edge to the RelationshipParticipant entity by ids.
+func (m *RelationshipMutation) AddParticipantIDs(ids ...uuid.UUID) {
+	if m.participants == nil {
+		m.participants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.participants[ids[i]] = struct{}{}
+	}
+}
+
+// ClearParticipants clears the "participants" edge to the RelationshipParticipant entity.
+func (m *RelationshipMutation) ClearParticipants() {
+	m.clearedparticipants = true
+}
+
+// ParticipantsCleared reports if the "participants" edge to the RelationshipParticipant entity was cleared.
+func (m *RelationshipMutation) ParticipantsCleared() bool {
+	return m.clearedparticipants
+}
+
+// RemoveParticipantIDs removes the "participants" edge to the RelationshipParticipant entity by IDs.
+func (m *RelationshipMutation) RemoveParticipantIDs(ids ...uuid.UUID) {
+	if m.removedparticipants == nil {
+		m.removedparticipants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.participants, ids[i])
+		m.removedparticipants[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedParticipants returns the removed IDs of the "participants" edge to the RelationshipParticipant entity.
+func (m *RelationshipMutation) RemovedParticipantsIDs() (ids []uuid.UUID) {
+	for id := range m.removedparticipants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ParticipantsIDs returns the "participants" edge IDs in the mutation.
+func (m *RelationshipMutation) ParticipantsIDs() (ids []uuid.UUID) {
+	for id := range m.participants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetParticipants resets all changes to the "participants" edge.
+func (m *RelationshipMutation) ResetParticipants() {
+	m.participants = nil
+	m.clearedparticipants = false
+	m.removedparticipants = nil
+}
+
+// AddObservationIDs adds the "observations" edge to the RelationshipObservation entity by ids.
+func (m *RelationshipMutation) AddObservationIDs(ids ...uuid.UUID) {
+	if m.observations == nil {
+		m.observations = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.observations[ids[i]] = struct{}{}
+	}
+}
+
+// ClearObservations clears the "observations" edge to the RelationshipObservation entity.
+func (m *RelationshipMutation) ClearObservations() {
+	m.clearedobservations = true
+}
+
+// ObservationsCleared reports if the "observations" edge to the RelationshipObservation entity was cleared.
+func (m *RelationshipMutation) ObservationsCleared() bool {
+	return m.clearedobservations
+}
+
+// RemoveObservationIDs removes the "observations" edge to the RelationshipObservation entity by IDs.
+func (m *RelationshipMutation) RemoveObservationIDs(ids ...uuid.UUID) {
+	if m.removedobservations == nil {
+		m.removedobservations = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.observations, ids[i])
+		m.removedobservations[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedObservations returns the removed IDs of the "observations" edge to the RelationshipObservation entity.
+func (m *RelationshipMutation) RemovedObservationsIDs() (ids []uuid.UUID) {
+	for id := range m.removedobservations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ObservationsIDs returns the "observations" edge IDs in the mutation.
+func (m *RelationshipMutation) ObservationsIDs() (ids []uuid.UUID) {
+	for id := range m.observations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetObservations resets all changes to the "observations" edge.
+func (m *RelationshipMutation) ResetObservations() {
+	m.observations = nil
+	m.clearedobservations = false
+	m.removedobservations = nil
+}
+
+// AddAssertionIDs adds the "assertions" edge to the RelationshipAssertion entity by ids.
+func (m *RelationshipMutation) AddAssertionIDs(ids ...uuid.UUID) {
+	if m.assertions == nil {
+		m.assertions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.assertions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAssertions clears the "assertions" edge to the RelationshipAssertion entity.
+func (m *RelationshipMutation) ClearAssertions() {
+	m.clearedassertions = true
+}
+
+// AssertionsCleared reports if the "assertions" edge to the RelationshipAssertion entity was cleared.
+func (m *RelationshipMutation) AssertionsCleared() bool {
+	return m.clearedassertions
+}
+
+// RemoveAssertionIDs removes the "assertions" edge to the RelationshipAssertion entity by IDs.
+func (m *RelationshipMutation) RemoveAssertionIDs(ids ...uuid.UUID) {
+	if m.removedassertions == nil {
+		m.removedassertions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.assertions, ids[i])
+		m.removedassertions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAssertions returns the removed IDs of the "assertions" edge to the RelationshipAssertion entity.
+func (m *RelationshipMutation) RemovedAssertionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedassertions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AssertionsIDs returns the "assertions" edge IDs in the mutation.
+func (m *RelationshipMutation) AssertionsIDs() (ids []uuid.UUID) {
+	for id := range m.assertions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAssertions resets all changes to the "assertions" edge.
+func (m *RelationshipMutation) ResetAssertions() {
+	m.assertions = nil
+	m.clearedassertions = false
+	m.removedassertions = nil
+}
+
+// AddSnapshotIDs adds the "snapshots" edge to the RelationshipStateSnapshot entity by ids.
+func (m *RelationshipMutation) AddSnapshotIDs(ids ...uuid.UUID) {
+	if m.snapshots == nil {
+		m.snapshots = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.snapshots[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSnapshots clears the "snapshots" edge to the RelationshipStateSnapshot entity.
+func (m *RelationshipMutation) ClearSnapshots() {
+	m.clearedsnapshots = true
+}
+
+// SnapshotsCleared reports if the "snapshots" edge to the RelationshipStateSnapshot entity was cleared.
+func (m *RelationshipMutation) SnapshotsCleared() bool {
+	return m.clearedsnapshots
+}
+
+// RemoveSnapshotIDs removes the "snapshots" edge to the RelationshipStateSnapshot entity by IDs.
+func (m *RelationshipMutation) RemoveSnapshotIDs(ids ...uuid.UUID) {
+	if m.removedsnapshots == nil {
+		m.removedsnapshots = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.snapshots, ids[i])
+		m.removedsnapshots[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSnapshots returns the removed IDs of the "snapshots" edge to the RelationshipStateSnapshot entity.
+func (m *RelationshipMutation) RemovedSnapshotsIDs() (ids []uuid.UUID) {
+	for id := range m.removedsnapshots {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SnapshotsIDs returns the "snapshots" edge IDs in the mutation.
+func (m *RelationshipMutation) SnapshotsIDs() (ids []uuid.UUID) {
+	for id := range m.snapshots {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSnapshots resets all changes to the "snapshots" edge.
+func (m *RelationshipMutation) ResetSnapshots() {
+	m.snapshots = nil
+	m.clearedsnapshots = false
+	m.removedsnapshots = nil
+}
+
 // Where appends a list predicates to the RelationshipMutation builder.
 func (m *RelationshipMutation) Where(ps ...predicate.Relationship) {
 	m.predicates = append(m.predicates, ps...)
@@ -40696,7 +41396,7 @@ func (m *RelationshipMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RelationshipMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 23)
 	if m.created_at != nil {
 		fields = append(fields, relationship.FieldCreatedAt)
 	}
@@ -40733,8 +41433,38 @@ func (m *RelationshipMutation) Fields() []string {
 	if m.next_action_at != nil {
 		fields = append(fields, relationship.FieldNextActionAt)
 	}
+	if m.next_action != nil {
+		fields = append(fields, relationship.FieldNextAction)
+	}
 	if m.status != nil {
 		fields = append(fields, relationship.FieldStatus)
+	}
+	if m.lifecycle != nil {
+		fields = append(fields, relationship.FieldLifecycle)
+	}
+	if m.engagement != nil {
+		fields = append(fields, relationship.FieldEngagement)
+	}
+	if m.sentiment != nil {
+		fields = append(fields, relationship.FieldSentiment)
+	}
+	if m.health != nil {
+		fields = append(fields, relationship.FieldHealth)
+	}
+	if m.state_reason != nil {
+		fields = append(fields, relationship.FieldStateReason)
+	}
+	if m.state_version != nil {
+		fields = append(fields, relationship.FieldStateVersion)
+	}
+	if m.last_changed_at != nil {
+		fields = append(fields, relationship.FieldLastChangedAt)
+	}
+	if m.risks != nil {
+		fields = append(fields, relationship.FieldRisks)
+	}
+	if m.milestones != nil {
+		fields = append(fields, relationship.FieldMilestones)
 	}
 	return fields
 }
@@ -40768,8 +41498,28 @@ func (m *RelationshipMutation) Field(name string) (ent.Value, bool) {
 		return m.LastTouchAt()
 	case relationship.FieldNextActionAt:
 		return m.NextActionAt()
+	case relationship.FieldNextAction:
+		return m.NextAction()
 	case relationship.FieldStatus:
 		return m.Status()
+	case relationship.FieldLifecycle:
+		return m.Lifecycle()
+	case relationship.FieldEngagement:
+		return m.Engagement()
+	case relationship.FieldSentiment:
+		return m.Sentiment()
+	case relationship.FieldHealth:
+		return m.Health()
+	case relationship.FieldStateReason:
+		return m.StateReason()
+	case relationship.FieldStateVersion:
+		return m.StateVersion()
+	case relationship.FieldLastChangedAt:
+		return m.LastChangedAt()
+	case relationship.FieldRisks:
+		return m.Risks()
+	case relationship.FieldMilestones:
+		return m.Milestones()
 	}
 	return nil, false
 }
@@ -40803,8 +41553,28 @@ func (m *RelationshipMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldLastTouchAt(ctx)
 	case relationship.FieldNextActionAt:
 		return m.OldNextActionAt(ctx)
+	case relationship.FieldNextAction:
+		return m.OldNextAction(ctx)
 	case relationship.FieldStatus:
 		return m.OldStatus(ctx)
+	case relationship.FieldLifecycle:
+		return m.OldLifecycle(ctx)
+	case relationship.FieldEngagement:
+		return m.OldEngagement(ctx)
+	case relationship.FieldSentiment:
+		return m.OldSentiment(ctx)
+	case relationship.FieldHealth:
+		return m.OldHealth(ctx)
+	case relationship.FieldStateReason:
+		return m.OldStateReason(ctx)
+	case relationship.FieldStateVersion:
+		return m.OldStateVersion(ctx)
+	case relationship.FieldLastChangedAt:
+		return m.OldLastChangedAt(ctx)
+	case relationship.FieldRisks:
+		return m.OldRisks(ctx)
+	case relationship.FieldMilestones:
+		return m.OldMilestones(ctx)
 	}
 	return nil, fmt.Errorf("unknown Relationship field %s", name)
 }
@@ -40898,12 +41668,82 @@ func (m *RelationshipMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetNextActionAt(v)
 		return nil
+	case relationship.FieldNextAction:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNextAction(v)
+		return nil
 	case relationship.FieldStatus:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
+		return nil
+	case relationship.FieldLifecycle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLifecycle(v)
+		return nil
+	case relationship.FieldEngagement:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEngagement(v)
+		return nil
+	case relationship.FieldSentiment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSentiment(v)
+		return nil
+	case relationship.FieldHealth:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHealth(v)
+		return nil
+	case relationship.FieldStateReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStateReason(v)
+		return nil
+	case relationship.FieldStateVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStateVersion(v)
+		return nil
+	case relationship.FieldLastChangedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastChangedAt(v)
+		return nil
+	case relationship.FieldRisks:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRisks(v)
+		return nil
+	case relationship.FieldMilestones:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMilestones(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Relationship field %s", name)
@@ -40912,13 +41752,21 @@ func (m *RelationshipMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *RelationshipMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addstate_version != nil {
+		fields = append(fields, relationship.FieldStateVersion)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *RelationshipMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case relationship.FieldStateVersion:
+		return m.AddedStateVersion()
+	}
 	return nil, false
 }
 
@@ -40927,6 +41775,13 @@ func (m *RelationshipMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *RelationshipMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case relationship.FieldStateVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStateVersion(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Relationship numeric field %s", name)
 }
@@ -40955,6 +41810,15 @@ func (m *RelationshipMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(relationship.FieldNextActionAt) {
 		fields = append(fields, relationship.FieldNextActionAt)
+	}
+	if m.FieldCleared(relationship.FieldNextAction) {
+		fields = append(fields, relationship.FieldNextAction)
+	}
+	if m.FieldCleared(relationship.FieldStateReason) {
+		fields = append(fields, relationship.FieldStateReason)
+	}
+	if m.FieldCleared(relationship.FieldLastChangedAt) {
+		fields = append(fields, relationship.FieldLastChangedAt)
 	}
 	return fields
 }
@@ -40990,6 +41854,15 @@ func (m *RelationshipMutation) ClearField(name string) error {
 		return nil
 	case relationship.FieldNextActionAt:
 		m.ClearNextActionAt()
+		return nil
+	case relationship.FieldNextAction:
+		m.ClearNextAction()
+		return nil
+	case relationship.FieldStateReason:
+		m.ClearStateReason()
+		return nil
+	case relationship.FieldLastChangedAt:
+		m.ClearLastChangedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Relationship nullable field %s", name)
@@ -41035,8 +41908,38 @@ func (m *RelationshipMutation) ResetField(name string) error {
 	case relationship.FieldNextActionAt:
 		m.ResetNextActionAt()
 		return nil
+	case relationship.FieldNextAction:
+		m.ResetNextAction()
+		return nil
 	case relationship.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case relationship.FieldLifecycle:
+		m.ResetLifecycle()
+		return nil
+	case relationship.FieldEngagement:
+		m.ResetEngagement()
+		return nil
+	case relationship.FieldSentiment:
+		m.ResetSentiment()
+		return nil
+	case relationship.FieldHealth:
+		m.ResetHealth()
+		return nil
+	case relationship.FieldStateReason:
+		m.ResetStateReason()
+		return nil
+	case relationship.FieldStateVersion:
+		m.ResetStateVersion()
+		return nil
+	case relationship.FieldLastChangedAt:
+		m.ResetLastChangedAt()
+		return nil
+	case relationship.FieldRisks:
+		m.ResetRisks()
+		return nil
+	case relationship.FieldMilestones:
+		m.ResetMilestones()
 		return nil
 	}
 	return fmt.Errorf("unknown Relationship field %s", name)
@@ -41044,7 +41947,7 @@ func (m *RelationshipMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RelationshipMutation) AddedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 10)
 	if m.workspace != nil {
 		edges = append(edges, relationship.EdgeWorkspace)
 	}
@@ -41062,6 +41965,18 @@ func (m *RelationshipMutation) AddedEdges() []string {
 	}
 	if m.mail_threads != nil {
 		edges = append(edges, relationship.EdgeMailThreads)
+	}
+	if m.participants != nil {
+		edges = append(edges, relationship.EdgeParticipants)
+	}
+	if m.observations != nil {
+		edges = append(edges, relationship.EdgeObservations)
+	}
+	if m.assertions != nil {
+		edges = append(edges, relationship.EdgeAssertions)
+	}
+	if m.snapshots != nil {
+		edges = append(edges, relationship.EdgeSnapshots)
 	}
 	return edges
 }
@@ -41102,13 +42017,37 @@ func (m *RelationshipMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case relationship.EdgeParticipants:
+		ids := make([]ent.Value, 0, len(m.participants))
+		for id := range m.participants {
+			ids = append(ids, id)
+		}
+		return ids
+	case relationship.EdgeObservations:
+		ids := make([]ent.Value, 0, len(m.observations))
+		for id := range m.observations {
+			ids = append(ids, id)
+		}
+		return ids
+	case relationship.EdgeAssertions:
+		ids := make([]ent.Value, 0, len(m.assertions))
+		for id := range m.assertions {
+			ids = append(ids, id)
+		}
+		return ids
+	case relationship.EdgeSnapshots:
+		ids := make([]ent.Value, 0, len(m.snapshots))
+		for id := range m.snapshots {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RelationshipMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 10)
 	if m.removedcommitments != nil {
 		edges = append(edges, relationship.EdgeCommitments)
 	}
@@ -41120,6 +42059,18 @@ func (m *RelationshipMutation) RemovedEdges() []string {
 	}
 	if m.removedmail_threads != nil {
 		edges = append(edges, relationship.EdgeMailThreads)
+	}
+	if m.removedparticipants != nil {
+		edges = append(edges, relationship.EdgeParticipants)
+	}
+	if m.removedobservations != nil {
+		edges = append(edges, relationship.EdgeObservations)
+	}
+	if m.removedassertions != nil {
+		edges = append(edges, relationship.EdgeAssertions)
+	}
+	if m.removedsnapshots != nil {
+		edges = append(edges, relationship.EdgeSnapshots)
 	}
 	return edges
 }
@@ -41152,13 +42103,37 @@ func (m *RelationshipMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case relationship.EdgeParticipants:
+		ids := make([]ent.Value, 0, len(m.removedparticipants))
+		for id := range m.removedparticipants {
+			ids = append(ids, id)
+		}
+		return ids
+	case relationship.EdgeObservations:
+		ids := make([]ent.Value, 0, len(m.removedobservations))
+		for id := range m.removedobservations {
+			ids = append(ids, id)
+		}
+		return ids
+	case relationship.EdgeAssertions:
+		ids := make([]ent.Value, 0, len(m.removedassertions))
+		for id := range m.removedassertions {
+			ids = append(ids, id)
+		}
+		return ids
+	case relationship.EdgeSnapshots:
+		ids := make([]ent.Value, 0, len(m.removedsnapshots))
+		for id := range m.removedsnapshots {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RelationshipMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 10)
 	if m.clearedworkspace {
 		edges = append(edges, relationship.EdgeWorkspace)
 	}
@@ -41176,6 +42151,18 @@ func (m *RelationshipMutation) ClearedEdges() []string {
 	}
 	if m.clearedmail_threads {
 		edges = append(edges, relationship.EdgeMailThreads)
+	}
+	if m.clearedparticipants {
+		edges = append(edges, relationship.EdgeParticipants)
+	}
+	if m.clearedobservations {
+		edges = append(edges, relationship.EdgeObservations)
+	}
+	if m.clearedassertions {
+		edges = append(edges, relationship.EdgeAssertions)
+	}
+	if m.clearedsnapshots {
+		edges = append(edges, relationship.EdgeSnapshots)
 	}
 	return edges
 }
@@ -41196,6 +42183,14 @@ func (m *RelationshipMutation) EdgeCleared(name string) bool {
 		return m.clearedevidences
 	case relationship.EdgeMailThreads:
 		return m.clearedmail_threads
+	case relationship.EdgeParticipants:
+		return m.clearedparticipants
+	case relationship.EdgeObservations:
+		return m.clearedobservations
+	case relationship.EdgeAssertions:
+		return m.clearedassertions
+	case relationship.EdgeSnapshots:
+		return m.clearedsnapshots
 	}
 	return false
 }
@@ -41236,8 +42231,5261 @@ func (m *RelationshipMutation) ResetEdge(name string) error {
 	case relationship.EdgeMailThreads:
 		m.ResetMailThreads()
 		return nil
+	case relationship.EdgeParticipants:
+		m.ResetParticipants()
+		return nil
+	case relationship.EdgeObservations:
+		m.ResetObservations()
+		return nil
+	case relationship.EdgeAssertions:
+		m.ResetAssertions()
+		return nil
+	case relationship.EdgeSnapshots:
+		m.ResetSnapshots()
+		return nil
 	}
 	return fmt.Errorf("unknown Relationship edge %s", name)
+}
+
+// RelationshipAssertionMutation represents an operation that mutates the RelationshipAssertion nodes in the graph.
+type RelationshipAssertionMutation struct {
+	config
+	op                               Op
+	typ                              string
+	id                               *uuid.UUID
+	created_at                       *time.Time
+	updated_at                       *time.Time
+	dimension                        *string
+	value                            *string
+	source_type                      *string
+	confidence                       *float64
+	addconfidence                    *float64
+	reason                           *string
+	valid_from                       *time.Time
+	supersedes_assertion_id          *string
+	supporting_observation_ids       *[]string
+	appendsupporting_observation_ids []string
+	clearedFields                    map[string]struct{}
+	workspace                        *uuid.UUID
+	clearedworkspace                 bool
+	relationship                     *uuid.UUID
+	clearedrelationship              bool
+	observation                      *uuid.UUID
+	clearedobservation               bool
+	user                             *uuid.UUID
+	cleareduser                      bool
+	done                             bool
+	oldValue                         func(context.Context) (*RelationshipAssertion, error)
+	predicates                       []predicate.RelationshipAssertion
+}
+
+var _ ent.Mutation = (*RelationshipAssertionMutation)(nil)
+
+// relationshipassertionOption allows management of the mutation configuration using functional options.
+type relationshipassertionOption func(*RelationshipAssertionMutation)
+
+// newRelationshipAssertionMutation creates new mutation for the RelationshipAssertion entity.
+func newRelationshipAssertionMutation(c config, op Op, opts ...relationshipassertionOption) *RelationshipAssertionMutation {
+	m := &RelationshipAssertionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRelationshipAssertion,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRelationshipAssertionID sets the ID field of the mutation.
+func withRelationshipAssertionID(id uuid.UUID) relationshipassertionOption {
+	return func(m *RelationshipAssertionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RelationshipAssertion
+		)
+		m.oldValue = func(ctx context.Context) (*RelationshipAssertion, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RelationshipAssertion.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRelationshipAssertion sets the old RelationshipAssertion of the mutation.
+func withRelationshipAssertion(node *RelationshipAssertion) relationshipassertionOption {
+	return func(m *RelationshipAssertionMutation) {
+		m.oldValue = func(context.Context) (*RelationshipAssertion, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RelationshipAssertionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RelationshipAssertionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of RelationshipAssertion entities.
+func (m *RelationshipAssertionMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RelationshipAssertionMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RelationshipAssertionMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RelationshipAssertion.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RelationshipAssertionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RelationshipAssertionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RelationshipAssertionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RelationshipAssertionMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RelationshipAssertionMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RelationshipAssertionMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetDimension sets the "dimension" field.
+func (m *RelationshipAssertionMutation) SetDimension(s string) {
+	m.dimension = &s
+}
+
+// Dimension returns the value of the "dimension" field in the mutation.
+func (m *RelationshipAssertionMutation) Dimension() (r string, exists bool) {
+	v := m.dimension
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDimension returns the old "dimension" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldDimension(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDimension is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDimension requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDimension: %w", err)
+	}
+	return oldValue.Dimension, nil
+}
+
+// ResetDimension resets all changes to the "dimension" field.
+func (m *RelationshipAssertionMutation) ResetDimension() {
+	m.dimension = nil
+}
+
+// SetValue sets the "value" field.
+func (m *RelationshipAssertionMutation) SetValue(s string) {
+	m.value = &s
+}
+
+// Value returns the value of the "value" field in the mutation.
+func (m *RelationshipAssertionMutation) Value() (r string, exists bool) {
+	v := m.value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValue returns the old "value" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldValue(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValue: %w", err)
+	}
+	return oldValue.Value, nil
+}
+
+// ResetValue resets all changes to the "value" field.
+func (m *RelationshipAssertionMutation) ResetValue() {
+	m.value = nil
+}
+
+// SetSourceType sets the "source_type" field.
+func (m *RelationshipAssertionMutation) SetSourceType(s string) {
+	m.source_type = &s
+}
+
+// SourceType returns the value of the "source_type" field in the mutation.
+func (m *RelationshipAssertionMutation) SourceType() (r string, exists bool) {
+	v := m.source_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceType returns the old "source_type" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldSourceType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceType: %w", err)
+	}
+	return oldValue.SourceType, nil
+}
+
+// ResetSourceType resets all changes to the "source_type" field.
+func (m *RelationshipAssertionMutation) ResetSourceType() {
+	m.source_type = nil
+}
+
+// SetConfidence sets the "confidence" field.
+func (m *RelationshipAssertionMutation) SetConfidence(f float64) {
+	m.confidence = &f
+	m.addconfidence = nil
+}
+
+// Confidence returns the value of the "confidence" field in the mutation.
+func (m *RelationshipAssertionMutation) Confidence() (r float64, exists bool) {
+	v := m.confidence
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConfidence returns the old "confidence" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldConfidence(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConfidence is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConfidence requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConfidence: %w", err)
+	}
+	return oldValue.Confidence, nil
+}
+
+// AddConfidence adds f to the "confidence" field.
+func (m *RelationshipAssertionMutation) AddConfidence(f float64) {
+	if m.addconfidence != nil {
+		*m.addconfidence += f
+	} else {
+		m.addconfidence = &f
+	}
+}
+
+// AddedConfidence returns the value that was added to the "confidence" field in this mutation.
+func (m *RelationshipAssertionMutation) AddedConfidence() (r float64, exists bool) {
+	v := m.addconfidence
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetConfidence resets all changes to the "confidence" field.
+func (m *RelationshipAssertionMutation) ResetConfidence() {
+	m.confidence = nil
+	m.addconfidence = nil
+}
+
+// SetReason sets the "reason" field.
+func (m *RelationshipAssertionMutation) SetReason(s string) {
+	m.reason = &s
+}
+
+// Reason returns the value of the "reason" field in the mutation.
+func (m *RelationshipAssertionMutation) Reason() (r string, exists bool) {
+	v := m.reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReason returns the old "reason" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldReason(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReason: %w", err)
+	}
+	return oldValue.Reason, nil
+}
+
+// ClearReason clears the value of the "reason" field.
+func (m *RelationshipAssertionMutation) ClearReason() {
+	m.reason = nil
+	m.clearedFields[relationshipassertion.FieldReason] = struct{}{}
+}
+
+// ReasonCleared returns if the "reason" field was cleared in this mutation.
+func (m *RelationshipAssertionMutation) ReasonCleared() bool {
+	_, ok := m.clearedFields[relationshipassertion.FieldReason]
+	return ok
+}
+
+// ResetReason resets all changes to the "reason" field.
+func (m *RelationshipAssertionMutation) ResetReason() {
+	m.reason = nil
+	delete(m.clearedFields, relationshipassertion.FieldReason)
+}
+
+// SetValidFrom sets the "valid_from" field.
+func (m *RelationshipAssertionMutation) SetValidFrom(t time.Time) {
+	m.valid_from = &t
+}
+
+// ValidFrom returns the value of the "valid_from" field in the mutation.
+func (m *RelationshipAssertionMutation) ValidFrom() (r time.Time, exists bool) {
+	v := m.valid_from
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValidFrom returns the old "valid_from" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldValidFrom(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValidFrom is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValidFrom requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValidFrom: %w", err)
+	}
+	return oldValue.ValidFrom, nil
+}
+
+// ResetValidFrom resets all changes to the "valid_from" field.
+func (m *RelationshipAssertionMutation) ResetValidFrom() {
+	m.valid_from = nil
+}
+
+// SetSupersedesAssertionID sets the "supersedes_assertion_id" field.
+func (m *RelationshipAssertionMutation) SetSupersedesAssertionID(s string) {
+	m.supersedes_assertion_id = &s
+}
+
+// SupersedesAssertionID returns the value of the "supersedes_assertion_id" field in the mutation.
+func (m *RelationshipAssertionMutation) SupersedesAssertionID() (r string, exists bool) {
+	v := m.supersedes_assertion_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSupersedesAssertionID returns the old "supersedes_assertion_id" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldSupersedesAssertionID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSupersedesAssertionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSupersedesAssertionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSupersedesAssertionID: %w", err)
+	}
+	return oldValue.SupersedesAssertionID, nil
+}
+
+// ClearSupersedesAssertionID clears the value of the "supersedes_assertion_id" field.
+func (m *RelationshipAssertionMutation) ClearSupersedesAssertionID() {
+	m.supersedes_assertion_id = nil
+	m.clearedFields[relationshipassertion.FieldSupersedesAssertionID] = struct{}{}
+}
+
+// SupersedesAssertionIDCleared returns if the "supersedes_assertion_id" field was cleared in this mutation.
+func (m *RelationshipAssertionMutation) SupersedesAssertionIDCleared() bool {
+	_, ok := m.clearedFields[relationshipassertion.FieldSupersedesAssertionID]
+	return ok
+}
+
+// ResetSupersedesAssertionID resets all changes to the "supersedes_assertion_id" field.
+func (m *RelationshipAssertionMutation) ResetSupersedesAssertionID() {
+	m.supersedes_assertion_id = nil
+	delete(m.clearedFields, relationshipassertion.FieldSupersedesAssertionID)
+}
+
+// SetSupportingObservationIds sets the "supporting_observation_ids" field.
+func (m *RelationshipAssertionMutation) SetSupportingObservationIds(s []string) {
+	m.supporting_observation_ids = &s
+	m.appendsupporting_observation_ids = nil
+}
+
+// SupportingObservationIds returns the value of the "supporting_observation_ids" field in the mutation.
+func (m *RelationshipAssertionMutation) SupportingObservationIds() (r []string, exists bool) {
+	v := m.supporting_observation_ids
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSupportingObservationIds returns the old "supporting_observation_ids" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldSupportingObservationIds(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSupportingObservationIds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSupportingObservationIds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSupportingObservationIds: %w", err)
+	}
+	return oldValue.SupportingObservationIds, nil
+}
+
+// AppendSupportingObservationIds adds s to the "supporting_observation_ids" field.
+func (m *RelationshipAssertionMutation) AppendSupportingObservationIds(s []string) {
+	m.appendsupporting_observation_ids = append(m.appendsupporting_observation_ids, s...)
+}
+
+// AppendedSupportingObservationIds returns the list of values that were appended to the "supporting_observation_ids" field in this mutation.
+func (m *RelationshipAssertionMutation) AppendedSupportingObservationIds() ([]string, bool) {
+	if len(m.appendsupporting_observation_ids) == 0 {
+		return nil, false
+	}
+	return m.appendsupporting_observation_ids, true
+}
+
+// ResetSupportingObservationIds resets all changes to the "supporting_observation_ids" field.
+func (m *RelationshipAssertionMutation) ResetSupportingObservationIds() {
+	m.supporting_observation_ids = nil
+	m.appendsupporting_observation_ids = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *RelationshipAssertionMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *RelationshipAssertionMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *RelationshipAssertionMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *RelationshipAssertionMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *RelationshipAssertionMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *RelationshipAssertionMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetRelationshipID sets the "relationship" edge to the Relationship entity by id.
+func (m *RelationshipAssertionMutation) SetRelationshipID(id uuid.UUID) {
+	m.relationship = &id
+}
+
+// ClearRelationship clears the "relationship" edge to the Relationship entity.
+func (m *RelationshipAssertionMutation) ClearRelationship() {
+	m.clearedrelationship = true
+}
+
+// RelationshipCleared reports if the "relationship" edge to the Relationship entity was cleared.
+func (m *RelationshipAssertionMutation) RelationshipCleared() bool {
+	return m.clearedrelationship
+}
+
+// RelationshipID returns the "relationship" edge ID in the mutation.
+func (m *RelationshipAssertionMutation) RelationshipID() (id uuid.UUID, exists bool) {
+	if m.relationship != nil {
+		return *m.relationship, true
+	}
+	return
+}
+
+// RelationshipIDs returns the "relationship" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RelationshipID instead. It exists only for internal usage by the builders.
+func (m *RelationshipAssertionMutation) RelationshipIDs() (ids []uuid.UUID) {
+	if id := m.relationship; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRelationship resets all changes to the "relationship" edge.
+func (m *RelationshipAssertionMutation) ResetRelationship() {
+	m.relationship = nil
+	m.clearedrelationship = false
+}
+
+// SetObservationID sets the "observation" edge to the RelationshipObservation entity by id.
+func (m *RelationshipAssertionMutation) SetObservationID(id uuid.UUID) {
+	m.observation = &id
+}
+
+// ClearObservation clears the "observation" edge to the RelationshipObservation entity.
+func (m *RelationshipAssertionMutation) ClearObservation() {
+	m.clearedobservation = true
+}
+
+// ObservationCleared reports if the "observation" edge to the RelationshipObservation entity was cleared.
+func (m *RelationshipAssertionMutation) ObservationCleared() bool {
+	return m.clearedobservation
+}
+
+// ObservationID returns the "observation" edge ID in the mutation.
+func (m *RelationshipAssertionMutation) ObservationID() (id uuid.UUID, exists bool) {
+	if m.observation != nil {
+		return *m.observation, true
+	}
+	return
+}
+
+// ObservationIDs returns the "observation" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ObservationID instead. It exists only for internal usage by the builders.
+func (m *RelationshipAssertionMutation) ObservationIDs() (ids []uuid.UUID) {
+	if id := m.observation; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetObservation resets all changes to the "observation" edge.
+func (m *RelationshipAssertionMutation) ResetObservation() {
+	m.observation = nil
+	m.clearedobservation = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *RelationshipAssertionMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *RelationshipAssertionMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *RelationshipAssertionMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *RelationshipAssertionMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *RelationshipAssertionMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *RelationshipAssertionMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the RelationshipAssertionMutation builder.
+func (m *RelationshipAssertionMutation) Where(ps ...predicate.RelationshipAssertion) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RelationshipAssertionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RelationshipAssertionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RelationshipAssertion, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RelationshipAssertionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RelationshipAssertionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RelationshipAssertion).
+func (m *RelationshipAssertionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RelationshipAssertionMutation) Fields() []string {
+	fields := make([]string, 0, 10)
+	if m.created_at != nil {
+		fields = append(fields, relationshipassertion.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, relationshipassertion.FieldUpdatedAt)
+	}
+	if m.dimension != nil {
+		fields = append(fields, relationshipassertion.FieldDimension)
+	}
+	if m.value != nil {
+		fields = append(fields, relationshipassertion.FieldValue)
+	}
+	if m.source_type != nil {
+		fields = append(fields, relationshipassertion.FieldSourceType)
+	}
+	if m.confidence != nil {
+		fields = append(fields, relationshipassertion.FieldConfidence)
+	}
+	if m.reason != nil {
+		fields = append(fields, relationshipassertion.FieldReason)
+	}
+	if m.valid_from != nil {
+		fields = append(fields, relationshipassertion.FieldValidFrom)
+	}
+	if m.supersedes_assertion_id != nil {
+		fields = append(fields, relationshipassertion.FieldSupersedesAssertionID)
+	}
+	if m.supporting_observation_ids != nil {
+		fields = append(fields, relationshipassertion.FieldSupportingObservationIds)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RelationshipAssertionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case relationshipassertion.FieldCreatedAt:
+		return m.CreatedAt()
+	case relationshipassertion.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case relationshipassertion.FieldDimension:
+		return m.Dimension()
+	case relationshipassertion.FieldValue:
+		return m.Value()
+	case relationshipassertion.FieldSourceType:
+		return m.SourceType()
+	case relationshipassertion.FieldConfidence:
+		return m.Confidence()
+	case relationshipassertion.FieldReason:
+		return m.Reason()
+	case relationshipassertion.FieldValidFrom:
+		return m.ValidFrom()
+	case relationshipassertion.FieldSupersedesAssertionID:
+		return m.SupersedesAssertionID()
+	case relationshipassertion.FieldSupportingObservationIds:
+		return m.SupportingObservationIds()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RelationshipAssertionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case relationshipassertion.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case relationshipassertion.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case relationshipassertion.FieldDimension:
+		return m.OldDimension(ctx)
+	case relationshipassertion.FieldValue:
+		return m.OldValue(ctx)
+	case relationshipassertion.FieldSourceType:
+		return m.OldSourceType(ctx)
+	case relationshipassertion.FieldConfidence:
+		return m.OldConfidence(ctx)
+	case relationshipassertion.FieldReason:
+		return m.OldReason(ctx)
+	case relationshipassertion.FieldValidFrom:
+		return m.OldValidFrom(ctx)
+	case relationshipassertion.FieldSupersedesAssertionID:
+		return m.OldSupersedesAssertionID(ctx)
+	case relationshipassertion.FieldSupportingObservationIds:
+		return m.OldSupportingObservationIds(ctx)
+	}
+	return nil, fmt.Errorf("unknown RelationshipAssertion field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RelationshipAssertionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case relationshipassertion.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case relationshipassertion.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case relationshipassertion.FieldDimension:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDimension(v)
+		return nil
+	case relationshipassertion.FieldValue:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValue(v)
+		return nil
+	case relationshipassertion.FieldSourceType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceType(v)
+		return nil
+	case relationshipassertion.FieldConfidence:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConfidence(v)
+		return nil
+	case relationshipassertion.FieldReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReason(v)
+		return nil
+	case relationshipassertion.FieldValidFrom:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValidFrom(v)
+		return nil
+	case relationshipassertion.FieldSupersedesAssertionID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSupersedesAssertionID(v)
+		return nil
+	case relationshipassertion.FieldSupportingObservationIds:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSupportingObservationIds(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipAssertion field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RelationshipAssertionMutation) AddedFields() []string {
+	var fields []string
+	if m.addconfidence != nil {
+		fields = append(fields, relationshipassertion.FieldConfidence)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RelationshipAssertionMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case relationshipassertion.FieldConfidence:
+		return m.AddedConfidence()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RelationshipAssertionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case relationshipassertion.FieldConfidence:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddConfidence(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipAssertion numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RelationshipAssertionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(relationshipassertion.FieldReason) {
+		fields = append(fields, relationshipassertion.FieldReason)
+	}
+	if m.FieldCleared(relationshipassertion.FieldSupersedesAssertionID) {
+		fields = append(fields, relationshipassertion.FieldSupersedesAssertionID)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RelationshipAssertionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RelationshipAssertionMutation) ClearField(name string) error {
+	switch name {
+	case relationshipassertion.FieldReason:
+		m.ClearReason()
+		return nil
+	case relationshipassertion.FieldSupersedesAssertionID:
+		m.ClearSupersedesAssertionID()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipAssertion nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RelationshipAssertionMutation) ResetField(name string) error {
+	switch name {
+	case relationshipassertion.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case relationshipassertion.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case relationshipassertion.FieldDimension:
+		m.ResetDimension()
+		return nil
+	case relationshipassertion.FieldValue:
+		m.ResetValue()
+		return nil
+	case relationshipassertion.FieldSourceType:
+		m.ResetSourceType()
+		return nil
+	case relationshipassertion.FieldConfidence:
+		m.ResetConfidence()
+		return nil
+	case relationshipassertion.FieldReason:
+		m.ResetReason()
+		return nil
+	case relationshipassertion.FieldValidFrom:
+		m.ResetValidFrom()
+		return nil
+	case relationshipassertion.FieldSupersedesAssertionID:
+		m.ResetSupersedesAssertionID()
+		return nil
+	case relationshipassertion.FieldSupportingObservationIds:
+		m.ResetSupportingObservationIds()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipAssertion field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RelationshipAssertionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.workspace != nil {
+		edges = append(edges, relationshipassertion.EdgeWorkspace)
+	}
+	if m.relationship != nil {
+		edges = append(edges, relationshipassertion.EdgeRelationship)
+	}
+	if m.observation != nil {
+		edges = append(edges, relationshipassertion.EdgeObservation)
+	}
+	if m.user != nil {
+		edges = append(edges, relationshipassertion.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RelationshipAssertionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case relationshipassertion.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case relationshipassertion.EdgeRelationship:
+		if id := m.relationship; id != nil {
+			return []ent.Value{*id}
+		}
+	case relationshipassertion.EdgeObservation:
+		if id := m.observation; id != nil {
+			return []ent.Value{*id}
+		}
+	case relationshipassertion.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RelationshipAssertionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 4)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RelationshipAssertionMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RelationshipAssertionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.clearedworkspace {
+		edges = append(edges, relationshipassertion.EdgeWorkspace)
+	}
+	if m.clearedrelationship {
+		edges = append(edges, relationshipassertion.EdgeRelationship)
+	}
+	if m.clearedobservation {
+		edges = append(edges, relationshipassertion.EdgeObservation)
+	}
+	if m.cleareduser {
+		edges = append(edges, relationshipassertion.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RelationshipAssertionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case relationshipassertion.EdgeWorkspace:
+		return m.clearedworkspace
+	case relationshipassertion.EdgeRelationship:
+		return m.clearedrelationship
+	case relationshipassertion.EdgeObservation:
+		return m.clearedobservation
+	case relationshipassertion.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RelationshipAssertionMutation) ClearEdge(name string) error {
+	switch name {
+	case relationshipassertion.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case relationshipassertion.EdgeRelationship:
+		m.ClearRelationship()
+		return nil
+	case relationshipassertion.EdgeObservation:
+		m.ClearObservation()
+		return nil
+	case relationshipassertion.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipAssertion unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RelationshipAssertionMutation) ResetEdge(name string) error {
+	switch name {
+	case relationshipassertion.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case relationshipassertion.EdgeRelationship:
+		m.ResetRelationship()
+		return nil
+	case relationshipassertion.EdgeObservation:
+		m.ResetObservation()
+		return nil
+	case relationshipassertion.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipAssertion edge %s", name)
+}
+
+// RelationshipObservationMutation represents an operation that mutates the RelationshipObservation nodes in the graph.
+type RelationshipObservationMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *uuid.UUID
+	created_at            *time.Time
+	updated_at            *time.Time
+	source                *string
+	source_account_id     *string
+	external_id           *string
+	source_version        *string
+	event_type            *string
+	occurred_at           *time.Time
+	received_at           *time.Time
+	summary               *string
+	normalized_facts_json *string
+	content_hash          *string
+	payload_ciphertext    *[]byte
+	clearedFields         map[string]struct{}
+	workspace             *uuid.UUID
+	clearedworkspace      bool
+	relationship          *uuid.UUID
+	clearedrelationship   bool
+	user                  *uuid.UUID
+	cleareduser           bool
+	assertions            map[uuid.UUID]struct{}
+	removedassertions     map[uuid.UUID]struct{}
+	clearedassertions     bool
+	done                  bool
+	oldValue              func(context.Context) (*RelationshipObservation, error)
+	predicates            []predicate.RelationshipObservation
+}
+
+var _ ent.Mutation = (*RelationshipObservationMutation)(nil)
+
+// relationshipobservationOption allows management of the mutation configuration using functional options.
+type relationshipobservationOption func(*RelationshipObservationMutation)
+
+// newRelationshipObservationMutation creates new mutation for the RelationshipObservation entity.
+func newRelationshipObservationMutation(c config, op Op, opts ...relationshipobservationOption) *RelationshipObservationMutation {
+	m := &RelationshipObservationMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRelationshipObservation,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRelationshipObservationID sets the ID field of the mutation.
+func withRelationshipObservationID(id uuid.UUID) relationshipobservationOption {
+	return func(m *RelationshipObservationMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RelationshipObservation
+		)
+		m.oldValue = func(ctx context.Context) (*RelationshipObservation, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RelationshipObservation.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRelationshipObservation sets the old RelationshipObservation of the mutation.
+func withRelationshipObservation(node *RelationshipObservation) relationshipobservationOption {
+	return func(m *RelationshipObservationMutation) {
+		m.oldValue = func(context.Context) (*RelationshipObservation, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RelationshipObservationMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RelationshipObservationMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of RelationshipObservation entities.
+func (m *RelationshipObservationMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RelationshipObservationMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RelationshipObservationMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RelationshipObservation.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RelationshipObservationMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RelationshipObservationMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RelationshipObservation entity.
+// If the RelationshipObservation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipObservationMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RelationshipObservationMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RelationshipObservationMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RelationshipObservationMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RelationshipObservation entity.
+// If the RelationshipObservation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipObservationMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RelationshipObservationMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetSource sets the "source" field.
+func (m *RelationshipObservationMutation) SetSource(s string) {
+	m.source = &s
+}
+
+// Source returns the value of the "source" field in the mutation.
+func (m *RelationshipObservationMutation) Source() (r string, exists bool) {
+	v := m.source
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSource returns the old "source" field's value of the RelationshipObservation entity.
+// If the RelationshipObservation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipObservationMutation) OldSource(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSource is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSource requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSource: %w", err)
+	}
+	return oldValue.Source, nil
+}
+
+// ResetSource resets all changes to the "source" field.
+func (m *RelationshipObservationMutation) ResetSource() {
+	m.source = nil
+}
+
+// SetSourceAccountID sets the "source_account_id" field.
+func (m *RelationshipObservationMutation) SetSourceAccountID(s string) {
+	m.source_account_id = &s
+}
+
+// SourceAccountID returns the value of the "source_account_id" field in the mutation.
+func (m *RelationshipObservationMutation) SourceAccountID() (r string, exists bool) {
+	v := m.source_account_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceAccountID returns the old "source_account_id" field's value of the RelationshipObservation entity.
+// If the RelationshipObservation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipObservationMutation) OldSourceAccountID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceAccountID: %w", err)
+	}
+	return oldValue.SourceAccountID, nil
+}
+
+// ClearSourceAccountID clears the value of the "source_account_id" field.
+func (m *RelationshipObservationMutation) ClearSourceAccountID() {
+	m.source_account_id = nil
+	m.clearedFields[relationshipobservation.FieldSourceAccountID] = struct{}{}
+}
+
+// SourceAccountIDCleared returns if the "source_account_id" field was cleared in this mutation.
+func (m *RelationshipObservationMutation) SourceAccountIDCleared() bool {
+	_, ok := m.clearedFields[relationshipobservation.FieldSourceAccountID]
+	return ok
+}
+
+// ResetSourceAccountID resets all changes to the "source_account_id" field.
+func (m *RelationshipObservationMutation) ResetSourceAccountID() {
+	m.source_account_id = nil
+	delete(m.clearedFields, relationshipobservation.FieldSourceAccountID)
+}
+
+// SetExternalID sets the "external_id" field.
+func (m *RelationshipObservationMutation) SetExternalID(s string) {
+	m.external_id = &s
+}
+
+// ExternalID returns the value of the "external_id" field in the mutation.
+func (m *RelationshipObservationMutation) ExternalID() (r string, exists bool) {
+	v := m.external_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalID returns the old "external_id" field's value of the RelationshipObservation entity.
+// If the RelationshipObservation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipObservationMutation) OldExternalID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalID: %w", err)
+	}
+	return oldValue.ExternalID, nil
+}
+
+// ResetExternalID resets all changes to the "external_id" field.
+func (m *RelationshipObservationMutation) ResetExternalID() {
+	m.external_id = nil
+}
+
+// SetSourceVersion sets the "source_version" field.
+func (m *RelationshipObservationMutation) SetSourceVersion(s string) {
+	m.source_version = &s
+}
+
+// SourceVersion returns the value of the "source_version" field in the mutation.
+func (m *RelationshipObservationMutation) SourceVersion() (r string, exists bool) {
+	v := m.source_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceVersion returns the old "source_version" field's value of the RelationshipObservation entity.
+// If the RelationshipObservation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipObservationMutation) OldSourceVersion(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceVersion: %w", err)
+	}
+	return oldValue.SourceVersion, nil
+}
+
+// ResetSourceVersion resets all changes to the "source_version" field.
+func (m *RelationshipObservationMutation) ResetSourceVersion() {
+	m.source_version = nil
+}
+
+// SetEventType sets the "event_type" field.
+func (m *RelationshipObservationMutation) SetEventType(s string) {
+	m.event_type = &s
+}
+
+// EventType returns the value of the "event_type" field in the mutation.
+func (m *RelationshipObservationMutation) EventType() (r string, exists bool) {
+	v := m.event_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventType returns the old "event_type" field's value of the RelationshipObservation entity.
+// If the RelationshipObservation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipObservationMutation) OldEventType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventType: %w", err)
+	}
+	return oldValue.EventType, nil
+}
+
+// ResetEventType resets all changes to the "event_type" field.
+func (m *RelationshipObservationMutation) ResetEventType() {
+	m.event_type = nil
+}
+
+// SetOccurredAt sets the "occurred_at" field.
+func (m *RelationshipObservationMutation) SetOccurredAt(t time.Time) {
+	m.occurred_at = &t
+}
+
+// OccurredAt returns the value of the "occurred_at" field in the mutation.
+func (m *RelationshipObservationMutation) OccurredAt() (r time.Time, exists bool) {
+	v := m.occurred_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOccurredAt returns the old "occurred_at" field's value of the RelationshipObservation entity.
+// If the RelationshipObservation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipObservationMutation) OldOccurredAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOccurredAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOccurredAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOccurredAt: %w", err)
+	}
+	return oldValue.OccurredAt, nil
+}
+
+// ResetOccurredAt resets all changes to the "occurred_at" field.
+func (m *RelationshipObservationMutation) ResetOccurredAt() {
+	m.occurred_at = nil
+}
+
+// SetReceivedAt sets the "received_at" field.
+func (m *RelationshipObservationMutation) SetReceivedAt(t time.Time) {
+	m.received_at = &t
+}
+
+// ReceivedAt returns the value of the "received_at" field in the mutation.
+func (m *RelationshipObservationMutation) ReceivedAt() (r time.Time, exists bool) {
+	v := m.received_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReceivedAt returns the old "received_at" field's value of the RelationshipObservation entity.
+// If the RelationshipObservation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipObservationMutation) OldReceivedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReceivedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReceivedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReceivedAt: %w", err)
+	}
+	return oldValue.ReceivedAt, nil
+}
+
+// ResetReceivedAt resets all changes to the "received_at" field.
+func (m *RelationshipObservationMutation) ResetReceivedAt() {
+	m.received_at = nil
+}
+
+// SetSummary sets the "summary" field.
+func (m *RelationshipObservationMutation) SetSummary(s string) {
+	m.summary = &s
+}
+
+// Summary returns the value of the "summary" field in the mutation.
+func (m *RelationshipObservationMutation) Summary() (r string, exists bool) {
+	v := m.summary
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSummary returns the old "summary" field's value of the RelationshipObservation entity.
+// If the RelationshipObservation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipObservationMutation) OldSummary(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSummary is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSummary requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSummary: %w", err)
+	}
+	return oldValue.Summary, nil
+}
+
+// ClearSummary clears the value of the "summary" field.
+func (m *RelationshipObservationMutation) ClearSummary() {
+	m.summary = nil
+	m.clearedFields[relationshipobservation.FieldSummary] = struct{}{}
+}
+
+// SummaryCleared returns if the "summary" field was cleared in this mutation.
+func (m *RelationshipObservationMutation) SummaryCleared() bool {
+	_, ok := m.clearedFields[relationshipobservation.FieldSummary]
+	return ok
+}
+
+// ResetSummary resets all changes to the "summary" field.
+func (m *RelationshipObservationMutation) ResetSummary() {
+	m.summary = nil
+	delete(m.clearedFields, relationshipobservation.FieldSummary)
+}
+
+// SetNormalizedFactsJSON sets the "normalized_facts_json" field.
+func (m *RelationshipObservationMutation) SetNormalizedFactsJSON(s string) {
+	m.normalized_facts_json = &s
+}
+
+// NormalizedFactsJSON returns the value of the "normalized_facts_json" field in the mutation.
+func (m *RelationshipObservationMutation) NormalizedFactsJSON() (r string, exists bool) {
+	v := m.normalized_facts_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNormalizedFactsJSON returns the old "normalized_facts_json" field's value of the RelationshipObservation entity.
+// If the RelationshipObservation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipObservationMutation) OldNormalizedFactsJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNormalizedFactsJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNormalizedFactsJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNormalizedFactsJSON: %w", err)
+	}
+	return oldValue.NormalizedFactsJSON, nil
+}
+
+// ResetNormalizedFactsJSON resets all changes to the "normalized_facts_json" field.
+func (m *RelationshipObservationMutation) ResetNormalizedFactsJSON() {
+	m.normalized_facts_json = nil
+}
+
+// SetContentHash sets the "content_hash" field.
+func (m *RelationshipObservationMutation) SetContentHash(s string) {
+	m.content_hash = &s
+}
+
+// ContentHash returns the value of the "content_hash" field in the mutation.
+func (m *RelationshipObservationMutation) ContentHash() (r string, exists bool) {
+	v := m.content_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContentHash returns the old "content_hash" field's value of the RelationshipObservation entity.
+// If the RelationshipObservation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipObservationMutation) OldContentHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldContentHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldContentHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContentHash: %w", err)
+	}
+	return oldValue.ContentHash, nil
+}
+
+// ResetContentHash resets all changes to the "content_hash" field.
+func (m *RelationshipObservationMutation) ResetContentHash() {
+	m.content_hash = nil
+}
+
+// SetPayloadCiphertext sets the "payload_ciphertext" field.
+func (m *RelationshipObservationMutation) SetPayloadCiphertext(b []byte) {
+	m.payload_ciphertext = &b
+}
+
+// PayloadCiphertext returns the value of the "payload_ciphertext" field in the mutation.
+func (m *RelationshipObservationMutation) PayloadCiphertext() (r []byte, exists bool) {
+	v := m.payload_ciphertext
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPayloadCiphertext returns the old "payload_ciphertext" field's value of the RelationshipObservation entity.
+// If the RelationshipObservation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipObservationMutation) OldPayloadCiphertext(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPayloadCiphertext is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPayloadCiphertext requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayloadCiphertext: %w", err)
+	}
+	return oldValue.PayloadCiphertext, nil
+}
+
+// ClearPayloadCiphertext clears the value of the "payload_ciphertext" field.
+func (m *RelationshipObservationMutation) ClearPayloadCiphertext() {
+	m.payload_ciphertext = nil
+	m.clearedFields[relationshipobservation.FieldPayloadCiphertext] = struct{}{}
+}
+
+// PayloadCiphertextCleared returns if the "payload_ciphertext" field was cleared in this mutation.
+func (m *RelationshipObservationMutation) PayloadCiphertextCleared() bool {
+	_, ok := m.clearedFields[relationshipobservation.FieldPayloadCiphertext]
+	return ok
+}
+
+// ResetPayloadCiphertext resets all changes to the "payload_ciphertext" field.
+func (m *RelationshipObservationMutation) ResetPayloadCiphertext() {
+	m.payload_ciphertext = nil
+	delete(m.clearedFields, relationshipobservation.FieldPayloadCiphertext)
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *RelationshipObservationMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *RelationshipObservationMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *RelationshipObservationMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *RelationshipObservationMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *RelationshipObservationMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *RelationshipObservationMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetRelationshipID sets the "relationship" edge to the Relationship entity by id.
+func (m *RelationshipObservationMutation) SetRelationshipID(id uuid.UUID) {
+	m.relationship = &id
+}
+
+// ClearRelationship clears the "relationship" edge to the Relationship entity.
+func (m *RelationshipObservationMutation) ClearRelationship() {
+	m.clearedrelationship = true
+}
+
+// RelationshipCleared reports if the "relationship" edge to the Relationship entity was cleared.
+func (m *RelationshipObservationMutation) RelationshipCleared() bool {
+	return m.clearedrelationship
+}
+
+// RelationshipID returns the "relationship" edge ID in the mutation.
+func (m *RelationshipObservationMutation) RelationshipID() (id uuid.UUID, exists bool) {
+	if m.relationship != nil {
+		return *m.relationship, true
+	}
+	return
+}
+
+// RelationshipIDs returns the "relationship" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RelationshipID instead. It exists only for internal usage by the builders.
+func (m *RelationshipObservationMutation) RelationshipIDs() (ids []uuid.UUID) {
+	if id := m.relationship; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRelationship resets all changes to the "relationship" edge.
+func (m *RelationshipObservationMutation) ResetRelationship() {
+	m.relationship = nil
+	m.clearedrelationship = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *RelationshipObservationMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *RelationshipObservationMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *RelationshipObservationMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *RelationshipObservationMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *RelationshipObservationMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *RelationshipObservationMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// AddAssertionIDs adds the "assertions" edge to the RelationshipAssertion entity by ids.
+func (m *RelationshipObservationMutation) AddAssertionIDs(ids ...uuid.UUID) {
+	if m.assertions == nil {
+		m.assertions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.assertions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAssertions clears the "assertions" edge to the RelationshipAssertion entity.
+func (m *RelationshipObservationMutation) ClearAssertions() {
+	m.clearedassertions = true
+}
+
+// AssertionsCleared reports if the "assertions" edge to the RelationshipAssertion entity was cleared.
+func (m *RelationshipObservationMutation) AssertionsCleared() bool {
+	return m.clearedassertions
+}
+
+// RemoveAssertionIDs removes the "assertions" edge to the RelationshipAssertion entity by IDs.
+func (m *RelationshipObservationMutation) RemoveAssertionIDs(ids ...uuid.UUID) {
+	if m.removedassertions == nil {
+		m.removedassertions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.assertions, ids[i])
+		m.removedassertions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAssertions returns the removed IDs of the "assertions" edge to the RelationshipAssertion entity.
+func (m *RelationshipObservationMutation) RemovedAssertionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedassertions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AssertionsIDs returns the "assertions" edge IDs in the mutation.
+func (m *RelationshipObservationMutation) AssertionsIDs() (ids []uuid.UUID) {
+	for id := range m.assertions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAssertions resets all changes to the "assertions" edge.
+func (m *RelationshipObservationMutation) ResetAssertions() {
+	m.assertions = nil
+	m.clearedassertions = false
+	m.removedassertions = nil
+}
+
+// Where appends a list predicates to the RelationshipObservationMutation builder.
+func (m *RelationshipObservationMutation) Where(ps ...predicate.RelationshipObservation) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RelationshipObservationMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RelationshipObservationMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RelationshipObservation, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RelationshipObservationMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RelationshipObservationMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RelationshipObservation).
+func (m *RelationshipObservationMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RelationshipObservationMutation) Fields() []string {
+	fields := make([]string, 0, 13)
+	if m.created_at != nil {
+		fields = append(fields, relationshipobservation.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, relationshipobservation.FieldUpdatedAt)
+	}
+	if m.source != nil {
+		fields = append(fields, relationshipobservation.FieldSource)
+	}
+	if m.source_account_id != nil {
+		fields = append(fields, relationshipobservation.FieldSourceAccountID)
+	}
+	if m.external_id != nil {
+		fields = append(fields, relationshipobservation.FieldExternalID)
+	}
+	if m.source_version != nil {
+		fields = append(fields, relationshipobservation.FieldSourceVersion)
+	}
+	if m.event_type != nil {
+		fields = append(fields, relationshipobservation.FieldEventType)
+	}
+	if m.occurred_at != nil {
+		fields = append(fields, relationshipobservation.FieldOccurredAt)
+	}
+	if m.received_at != nil {
+		fields = append(fields, relationshipobservation.FieldReceivedAt)
+	}
+	if m.summary != nil {
+		fields = append(fields, relationshipobservation.FieldSummary)
+	}
+	if m.normalized_facts_json != nil {
+		fields = append(fields, relationshipobservation.FieldNormalizedFactsJSON)
+	}
+	if m.content_hash != nil {
+		fields = append(fields, relationshipobservation.FieldContentHash)
+	}
+	if m.payload_ciphertext != nil {
+		fields = append(fields, relationshipobservation.FieldPayloadCiphertext)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RelationshipObservationMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case relationshipobservation.FieldCreatedAt:
+		return m.CreatedAt()
+	case relationshipobservation.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case relationshipobservation.FieldSource:
+		return m.Source()
+	case relationshipobservation.FieldSourceAccountID:
+		return m.SourceAccountID()
+	case relationshipobservation.FieldExternalID:
+		return m.ExternalID()
+	case relationshipobservation.FieldSourceVersion:
+		return m.SourceVersion()
+	case relationshipobservation.FieldEventType:
+		return m.EventType()
+	case relationshipobservation.FieldOccurredAt:
+		return m.OccurredAt()
+	case relationshipobservation.FieldReceivedAt:
+		return m.ReceivedAt()
+	case relationshipobservation.FieldSummary:
+		return m.Summary()
+	case relationshipobservation.FieldNormalizedFactsJSON:
+		return m.NormalizedFactsJSON()
+	case relationshipobservation.FieldContentHash:
+		return m.ContentHash()
+	case relationshipobservation.FieldPayloadCiphertext:
+		return m.PayloadCiphertext()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RelationshipObservationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case relationshipobservation.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case relationshipobservation.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case relationshipobservation.FieldSource:
+		return m.OldSource(ctx)
+	case relationshipobservation.FieldSourceAccountID:
+		return m.OldSourceAccountID(ctx)
+	case relationshipobservation.FieldExternalID:
+		return m.OldExternalID(ctx)
+	case relationshipobservation.FieldSourceVersion:
+		return m.OldSourceVersion(ctx)
+	case relationshipobservation.FieldEventType:
+		return m.OldEventType(ctx)
+	case relationshipobservation.FieldOccurredAt:
+		return m.OldOccurredAt(ctx)
+	case relationshipobservation.FieldReceivedAt:
+		return m.OldReceivedAt(ctx)
+	case relationshipobservation.FieldSummary:
+		return m.OldSummary(ctx)
+	case relationshipobservation.FieldNormalizedFactsJSON:
+		return m.OldNormalizedFactsJSON(ctx)
+	case relationshipobservation.FieldContentHash:
+		return m.OldContentHash(ctx)
+	case relationshipobservation.FieldPayloadCiphertext:
+		return m.OldPayloadCiphertext(ctx)
+	}
+	return nil, fmt.Errorf("unknown RelationshipObservation field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RelationshipObservationMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case relationshipobservation.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case relationshipobservation.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case relationshipobservation.FieldSource:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSource(v)
+		return nil
+	case relationshipobservation.FieldSourceAccountID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceAccountID(v)
+		return nil
+	case relationshipobservation.FieldExternalID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalID(v)
+		return nil
+	case relationshipobservation.FieldSourceVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceVersion(v)
+		return nil
+	case relationshipobservation.FieldEventType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventType(v)
+		return nil
+	case relationshipobservation.FieldOccurredAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOccurredAt(v)
+		return nil
+	case relationshipobservation.FieldReceivedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReceivedAt(v)
+		return nil
+	case relationshipobservation.FieldSummary:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSummary(v)
+		return nil
+	case relationshipobservation.FieldNormalizedFactsJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNormalizedFactsJSON(v)
+		return nil
+	case relationshipobservation.FieldContentHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContentHash(v)
+		return nil
+	case relationshipobservation.FieldPayloadCiphertext:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPayloadCiphertext(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipObservation field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RelationshipObservationMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RelationshipObservationMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RelationshipObservationMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown RelationshipObservation numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RelationshipObservationMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(relationshipobservation.FieldSourceAccountID) {
+		fields = append(fields, relationshipobservation.FieldSourceAccountID)
+	}
+	if m.FieldCleared(relationshipobservation.FieldSummary) {
+		fields = append(fields, relationshipobservation.FieldSummary)
+	}
+	if m.FieldCleared(relationshipobservation.FieldPayloadCiphertext) {
+		fields = append(fields, relationshipobservation.FieldPayloadCiphertext)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RelationshipObservationMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RelationshipObservationMutation) ClearField(name string) error {
+	switch name {
+	case relationshipobservation.FieldSourceAccountID:
+		m.ClearSourceAccountID()
+		return nil
+	case relationshipobservation.FieldSummary:
+		m.ClearSummary()
+		return nil
+	case relationshipobservation.FieldPayloadCiphertext:
+		m.ClearPayloadCiphertext()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipObservation nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RelationshipObservationMutation) ResetField(name string) error {
+	switch name {
+	case relationshipobservation.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case relationshipobservation.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case relationshipobservation.FieldSource:
+		m.ResetSource()
+		return nil
+	case relationshipobservation.FieldSourceAccountID:
+		m.ResetSourceAccountID()
+		return nil
+	case relationshipobservation.FieldExternalID:
+		m.ResetExternalID()
+		return nil
+	case relationshipobservation.FieldSourceVersion:
+		m.ResetSourceVersion()
+		return nil
+	case relationshipobservation.FieldEventType:
+		m.ResetEventType()
+		return nil
+	case relationshipobservation.FieldOccurredAt:
+		m.ResetOccurredAt()
+		return nil
+	case relationshipobservation.FieldReceivedAt:
+		m.ResetReceivedAt()
+		return nil
+	case relationshipobservation.FieldSummary:
+		m.ResetSummary()
+		return nil
+	case relationshipobservation.FieldNormalizedFactsJSON:
+		m.ResetNormalizedFactsJSON()
+		return nil
+	case relationshipobservation.FieldContentHash:
+		m.ResetContentHash()
+		return nil
+	case relationshipobservation.FieldPayloadCiphertext:
+		m.ResetPayloadCiphertext()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipObservation field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RelationshipObservationMutation) AddedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.workspace != nil {
+		edges = append(edges, relationshipobservation.EdgeWorkspace)
+	}
+	if m.relationship != nil {
+		edges = append(edges, relationshipobservation.EdgeRelationship)
+	}
+	if m.user != nil {
+		edges = append(edges, relationshipobservation.EdgeUser)
+	}
+	if m.assertions != nil {
+		edges = append(edges, relationshipobservation.EdgeAssertions)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RelationshipObservationMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case relationshipobservation.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case relationshipobservation.EdgeRelationship:
+		if id := m.relationship; id != nil {
+			return []ent.Value{*id}
+		}
+	case relationshipobservation.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case relationshipobservation.EdgeAssertions:
+		ids := make([]ent.Value, 0, len(m.assertions))
+		for id := range m.assertions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RelationshipObservationMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.removedassertions != nil {
+		edges = append(edges, relationshipobservation.EdgeAssertions)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RelationshipObservationMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case relationshipobservation.EdgeAssertions:
+		ids := make([]ent.Value, 0, len(m.removedassertions))
+		for id := range m.removedassertions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RelationshipObservationMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.clearedworkspace {
+		edges = append(edges, relationshipobservation.EdgeWorkspace)
+	}
+	if m.clearedrelationship {
+		edges = append(edges, relationshipobservation.EdgeRelationship)
+	}
+	if m.cleareduser {
+		edges = append(edges, relationshipobservation.EdgeUser)
+	}
+	if m.clearedassertions {
+		edges = append(edges, relationshipobservation.EdgeAssertions)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RelationshipObservationMutation) EdgeCleared(name string) bool {
+	switch name {
+	case relationshipobservation.EdgeWorkspace:
+		return m.clearedworkspace
+	case relationshipobservation.EdgeRelationship:
+		return m.clearedrelationship
+	case relationshipobservation.EdgeUser:
+		return m.cleareduser
+	case relationshipobservation.EdgeAssertions:
+		return m.clearedassertions
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RelationshipObservationMutation) ClearEdge(name string) error {
+	switch name {
+	case relationshipobservation.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case relationshipobservation.EdgeRelationship:
+		m.ClearRelationship()
+		return nil
+	case relationshipobservation.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipObservation unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RelationshipObservationMutation) ResetEdge(name string) error {
+	switch name {
+	case relationshipobservation.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case relationshipobservation.EdgeRelationship:
+		m.ResetRelationship()
+		return nil
+	case relationshipobservation.EdgeUser:
+		m.ResetUser()
+		return nil
+	case relationshipobservation.EdgeAssertions:
+		m.ResetAssertions()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipObservation edge %s", name)
+}
+
+// RelationshipParticipantMutation represents an operation that mutates the RelationshipParticipant nodes in the graph.
+type RelationshipParticipantMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *uuid.UUID
+	created_at          *time.Time
+	updated_at          *time.Time
+	display_name        *string
+	email               *string
+	role                *string
+	title               *string
+	active              *bool
+	external_refs       *[]string
+	appendexternal_refs []string
+	clearedFields       map[string]struct{}
+	workspace           *uuid.UUID
+	clearedworkspace    bool
+	relationship        *uuid.UUID
+	clearedrelationship bool
+	user                *uuid.UUID
+	cleareduser         bool
+	done                bool
+	oldValue            func(context.Context) (*RelationshipParticipant, error)
+	predicates          []predicate.RelationshipParticipant
+}
+
+var _ ent.Mutation = (*RelationshipParticipantMutation)(nil)
+
+// relationshipparticipantOption allows management of the mutation configuration using functional options.
+type relationshipparticipantOption func(*RelationshipParticipantMutation)
+
+// newRelationshipParticipantMutation creates new mutation for the RelationshipParticipant entity.
+func newRelationshipParticipantMutation(c config, op Op, opts ...relationshipparticipantOption) *RelationshipParticipantMutation {
+	m := &RelationshipParticipantMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRelationshipParticipant,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRelationshipParticipantID sets the ID field of the mutation.
+func withRelationshipParticipantID(id uuid.UUID) relationshipparticipantOption {
+	return func(m *RelationshipParticipantMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RelationshipParticipant
+		)
+		m.oldValue = func(ctx context.Context) (*RelationshipParticipant, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RelationshipParticipant.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRelationshipParticipant sets the old RelationshipParticipant of the mutation.
+func withRelationshipParticipant(node *RelationshipParticipant) relationshipparticipantOption {
+	return func(m *RelationshipParticipantMutation) {
+		m.oldValue = func(context.Context) (*RelationshipParticipant, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RelationshipParticipantMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RelationshipParticipantMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of RelationshipParticipant entities.
+func (m *RelationshipParticipantMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RelationshipParticipantMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RelationshipParticipantMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RelationshipParticipant.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RelationshipParticipantMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RelationshipParticipantMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RelationshipParticipant entity.
+// If the RelationshipParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipParticipantMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RelationshipParticipantMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RelationshipParticipantMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RelationshipParticipantMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RelationshipParticipant entity.
+// If the RelationshipParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipParticipantMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RelationshipParticipantMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetDisplayName sets the "display_name" field.
+func (m *RelationshipParticipantMutation) SetDisplayName(s string) {
+	m.display_name = &s
+}
+
+// DisplayName returns the value of the "display_name" field in the mutation.
+func (m *RelationshipParticipantMutation) DisplayName() (r string, exists bool) {
+	v := m.display_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDisplayName returns the old "display_name" field's value of the RelationshipParticipant entity.
+// If the RelationshipParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipParticipantMutation) OldDisplayName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDisplayName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDisplayName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDisplayName: %w", err)
+	}
+	return oldValue.DisplayName, nil
+}
+
+// ResetDisplayName resets all changes to the "display_name" field.
+func (m *RelationshipParticipantMutation) ResetDisplayName() {
+	m.display_name = nil
+}
+
+// SetEmail sets the "email" field.
+func (m *RelationshipParticipantMutation) SetEmail(s string) {
+	m.email = &s
+}
+
+// Email returns the value of the "email" field in the mutation.
+func (m *RelationshipParticipantMutation) Email() (r string, exists bool) {
+	v := m.email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEmail returns the old "email" field's value of the RelationshipParticipant entity.
+// If the RelationshipParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipParticipantMutation) OldEmail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEmail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEmail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEmail: %w", err)
+	}
+	return oldValue.Email, nil
+}
+
+// ClearEmail clears the value of the "email" field.
+func (m *RelationshipParticipantMutation) ClearEmail() {
+	m.email = nil
+	m.clearedFields[relationshipparticipant.FieldEmail] = struct{}{}
+}
+
+// EmailCleared returns if the "email" field was cleared in this mutation.
+func (m *RelationshipParticipantMutation) EmailCleared() bool {
+	_, ok := m.clearedFields[relationshipparticipant.FieldEmail]
+	return ok
+}
+
+// ResetEmail resets all changes to the "email" field.
+func (m *RelationshipParticipantMutation) ResetEmail() {
+	m.email = nil
+	delete(m.clearedFields, relationshipparticipant.FieldEmail)
+}
+
+// SetRole sets the "role" field.
+func (m *RelationshipParticipantMutation) SetRole(s string) {
+	m.role = &s
+}
+
+// Role returns the value of the "role" field in the mutation.
+func (m *RelationshipParticipantMutation) Role() (r string, exists bool) {
+	v := m.role
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRole returns the old "role" field's value of the RelationshipParticipant entity.
+// If the RelationshipParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipParticipantMutation) OldRole(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRole is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRole requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRole: %w", err)
+	}
+	return oldValue.Role, nil
+}
+
+// ResetRole resets all changes to the "role" field.
+func (m *RelationshipParticipantMutation) ResetRole() {
+	m.role = nil
+}
+
+// SetTitle sets the "title" field.
+func (m *RelationshipParticipantMutation) SetTitle(s string) {
+	m.title = &s
+}
+
+// Title returns the value of the "title" field in the mutation.
+func (m *RelationshipParticipantMutation) Title() (r string, exists bool) {
+	v := m.title
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTitle returns the old "title" field's value of the RelationshipParticipant entity.
+// If the RelationshipParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipParticipantMutation) OldTitle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTitle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
+	}
+	return oldValue.Title, nil
+}
+
+// ClearTitle clears the value of the "title" field.
+func (m *RelationshipParticipantMutation) ClearTitle() {
+	m.title = nil
+	m.clearedFields[relationshipparticipant.FieldTitle] = struct{}{}
+}
+
+// TitleCleared returns if the "title" field was cleared in this mutation.
+func (m *RelationshipParticipantMutation) TitleCleared() bool {
+	_, ok := m.clearedFields[relationshipparticipant.FieldTitle]
+	return ok
+}
+
+// ResetTitle resets all changes to the "title" field.
+func (m *RelationshipParticipantMutation) ResetTitle() {
+	m.title = nil
+	delete(m.clearedFields, relationshipparticipant.FieldTitle)
+}
+
+// SetActive sets the "active" field.
+func (m *RelationshipParticipantMutation) SetActive(b bool) {
+	m.active = &b
+}
+
+// Active returns the value of the "active" field in the mutation.
+func (m *RelationshipParticipantMutation) Active() (r bool, exists bool) {
+	v := m.active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActive returns the old "active" field's value of the RelationshipParticipant entity.
+// If the RelationshipParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipParticipantMutation) OldActive(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActive is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActive requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActive: %w", err)
+	}
+	return oldValue.Active, nil
+}
+
+// ResetActive resets all changes to the "active" field.
+func (m *RelationshipParticipantMutation) ResetActive() {
+	m.active = nil
+}
+
+// SetExternalRefs sets the "external_refs" field.
+func (m *RelationshipParticipantMutation) SetExternalRefs(s []string) {
+	m.external_refs = &s
+	m.appendexternal_refs = nil
+}
+
+// ExternalRefs returns the value of the "external_refs" field in the mutation.
+func (m *RelationshipParticipantMutation) ExternalRefs() (r []string, exists bool) {
+	v := m.external_refs
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalRefs returns the old "external_refs" field's value of the RelationshipParticipant entity.
+// If the RelationshipParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipParticipantMutation) OldExternalRefs(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalRefs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalRefs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalRefs: %w", err)
+	}
+	return oldValue.ExternalRefs, nil
+}
+
+// AppendExternalRefs adds s to the "external_refs" field.
+func (m *RelationshipParticipantMutation) AppendExternalRefs(s []string) {
+	m.appendexternal_refs = append(m.appendexternal_refs, s...)
+}
+
+// AppendedExternalRefs returns the list of values that were appended to the "external_refs" field in this mutation.
+func (m *RelationshipParticipantMutation) AppendedExternalRefs() ([]string, bool) {
+	if len(m.appendexternal_refs) == 0 {
+		return nil, false
+	}
+	return m.appendexternal_refs, true
+}
+
+// ResetExternalRefs resets all changes to the "external_refs" field.
+func (m *RelationshipParticipantMutation) ResetExternalRefs() {
+	m.external_refs = nil
+	m.appendexternal_refs = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *RelationshipParticipantMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *RelationshipParticipantMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *RelationshipParticipantMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *RelationshipParticipantMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *RelationshipParticipantMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *RelationshipParticipantMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetRelationshipID sets the "relationship" edge to the Relationship entity by id.
+func (m *RelationshipParticipantMutation) SetRelationshipID(id uuid.UUID) {
+	m.relationship = &id
+}
+
+// ClearRelationship clears the "relationship" edge to the Relationship entity.
+func (m *RelationshipParticipantMutation) ClearRelationship() {
+	m.clearedrelationship = true
+}
+
+// RelationshipCleared reports if the "relationship" edge to the Relationship entity was cleared.
+func (m *RelationshipParticipantMutation) RelationshipCleared() bool {
+	return m.clearedrelationship
+}
+
+// RelationshipID returns the "relationship" edge ID in the mutation.
+func (m *RelationshipParticipantMutation) RelationshipID() (id uuid.UUID, exists bool) {
+	if m.relationship != nil {
+		return *m.relationship, true
+	}
+	return
+}
+
+// RelationshipIDs returns the "relationship" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RelationshipID instead. It exists only for internal usage by the builders.
+func (m *RelationshipParticipantMutation) RelationshipIDs() (ids []uuid.UUID) {
+	if id := m.relationship; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRelationship resets all changes to the "relationship" edge.
+func (m *RelationshipParticipantMutation) ResetRelationship() {
+	m.relationship = nil
+	m.clearedrelationship = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *RelationshipParticipantMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *RelationshipParticipantMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *RelationshipParticipantMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *RelationshipParticipantMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *RelationshipParticipantMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *RelationshipParticipantMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the RelationshipParticipantMutation builder.
+func (m *RelationshipParticipantMutation) Where(ps ...predicate.RelationshipParticipant) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RelationshipParticipantMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RelationshipParticipantMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RelationshipParticipant, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RelationshipParticipantMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RelationshipParticipantMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RelationshipParticipant).
+func (m *RelationshipParticipantMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RelationshipParticipantMutation) Fields() []string {
+	fields := make([]string, 0, 8)
+	if m.created_at != nil {
+		fields = append(fields, relationshipparticipant.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, relationshipparticipant.FieldUpdatedAt)
+	}
+	if m.display_name != nil {
+		fields = append(fields, relationshipparticipant.FieldDisplayName)
+	}
+	if m.email != nil {
+		fields = append(fields, relationshipparticipant.FieldEmail)
+	}
+	if m.role != nil {
+		fields = append(fields, relationshipparticipant.FieldRole)
+	}
+	if m.title != nil {
+		fields = append(fields, relationshipparticipant.FieldTitle)
+	}
+	if m.active != nil {
+		fields = append(fields, relationshipparticipant.FieldActive)
+	}
+	if m.external_refs != nil {
+		fields = append(fields, relationshipparticipant.FieldExternalRefs)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RelationshipParticipantMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case relationshipparticipant.FieldCreatedAt:
+		return m.CreatedAt()
+	case relationshipparticipant.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case relationshipparticipant.FieldDisplayName:
+		return m.DisplayName()
+	case relationshipparticipant.FieldEmail:
+		return m.Email()
+	case relationshipparticipant.FieldRole:
+		return m.Role()
+	case relationshipparticipant.FieldTitle:
+		return m.Title()
+	case relationshipparticipant.FieldActive:
+		return m.Active()
+	case relationshipparticipant.FieldExternalRefs:
+		return m.ExternalRefs()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RelationshipParticipantMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case relationshipparticipant.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case relationshipparticipant.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case relationshipparticipant.FieldDisplayName:
+		return m.OldDisplayName(ctx)
+	case relationshipparticipant.FieldEmail:
+		return m.OldEmail(ctx)
+	case relationshipparticipant.FieldRole:
+		return m.OldRole(ctx)
+	case relationshipparticipant.FieldTitle:
+		return m.OldTitle(ctx)
+	case relationshipparticipant.FieldActive:
+		return m.OldActive(ctx)
+	case relationshipparticipant.FieldExternalRefs:
+		return m.OldExternalRefs(ctx)
+	}
+	return nil, fmt.Errorf("unknown RelationshipParticipant field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RelationshipParticipantMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case relationshipparticipant.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case relationshipparticipant.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case relationshipparticipant.FieldDisplayName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDisplayName(v)
+		return nil
+	case relationshipparticipant.FieldEmail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEmail(v)
+		return nil
+	case relationshipparticipant.FieldRole:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRole(v)
+		return nil
+	case relationshipparticipant.FieldTitle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTitle(v)
+		return nil
+	case relationshipparticipant.FieldActive:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActive(v)
+		return nil
+	case relationshipparticipant.FieldExternalRefs:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalRefs(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipParticipant field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RelationshipParticipantMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RelationshipParticipantMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RelationshipParticipantMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown RelationshipParticipant numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RelationshipParticipantMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(relationshipparticipant.FieldEmail) {
+		fields = append(fields, relationshipparticipant.FieldEmail)
+	}
+	if m.FieldCleared(relationshipparticipant.FieldTitle) {
+		fields = append(fields, relationshipparticipant.FieldTitle)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RelationshipParticipantMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RelationshipParticipantMutation) ClearField(name string) error {
+	switch name {
+	case relationshipparticipant.FieldEmail:
+		m.ClearEmail()
+		return nil
+	case relationshipparticipant.FieldTitle:
+		m.ClearTitle()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipParticipant nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RelationshipParticipantMutation) ResetField(name string) error {
+	switch name {
+	case relationshipparticipant.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case relationshipparticipant.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case relationshipparticipant.FieldDisplayName:
+		m.ResetDisplayName()
+		return nil
+	case relationshipparticipant.FieldEmail:
+		m.ResetEmail()
+		return nil
+	case relationshipparticipant.FieldRole:
+		m.ResetRole()
+		return nil
+	case relationshipparticipant.FieldTitle:
+		m.ResetTitle()
+		return nil
+	case relationshipparticipant.FieldActive:
+		m.ResetActive()
+		return nil
+	case relationshipparticipant.FieldExternalRefs:
+		m.ResetExternalRefs()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipParticipant field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RelationshipParticipantMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.workspace != nil {
+		edges = append(edges, relationshipparticipant.EdgeWorkspace)
+	}
+	if m.relationship != nil {
+		edges = append(edges, relationshipparticipant.EdgeRelationship)
+	}
+	if m.user != nil {
+		edges = append(edges, relationshipparticipant.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RelationshipParticipantMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case relationshipparticipant.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case relationshipparticipant.EdgeRelationship:
+		if id := m.relationship; id != nil {
+			return []ent.Value{*id}
+		}
+	case relationshipparticipant.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RelationshipParticipantMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RelationshipParticipantMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RelationshipParticipantMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedworkspace {
+		edges = append(edges, relationshipparticipant.EdgeWorkspace)
+	}
+	if m.clearedrelationship {
+		edges = append(edges, relationshipparticipant.EdgeRelationship)
+	}
+	if m.cleareduser {
+		edges = append(edges, relationshipparticipant.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RelationshipParticipantMutation) EdgeCleared(name string) bool {
+	switch name {
+	case relationshipparticipant.EdgeWorkspace:
+		return m.clearedworkspace
+	case relationshipparticipant.EdgeRelationship:
+		return m.clearedrelationship
+	case relationshipparticipant.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RelationshipParticipantMutation) ClearEdge(name string) error {
+	switch name {
+	case relationshipparticipant.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case relationshipparticipant.EdgeRelationship:
+		m.ClearRelationship()
+		return nil
+	case relationshipparticipant.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipParticipant unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RelationshipParticipantMutation) ResetEdge(name string) error {
+	switch name {
+	case relationshipparticipant.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case relationshipparticipant.EdgeRelationship:
+		m.ResetRelationship()
+		return nil
+	case relationshipparticipant.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipParticipant edge %s", name)
+}
+
+// RelationshipSourceStatusMutation represents an operation that mutates the RelationshipSourceStatus nodes in the graph.
+type RelationshipSourceStatusMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *uuid.UUID
+	created_at          *time.Time
+	updated_at          *time.Time
+	source              *string
+	source_account_id   *string
+	status              *string
+	cursor              *string
+	last_success_at     *time.Time
+	last_observation_at *time.Time
+	last_error          *string
+	clearedFields       map[string]struct{}
+	workspace           *uuid.UUID
+	clearedworkspace    bool
+	user                *uuid.UUID
+	cleareduser         bool
+	done                bool
+	oldValue            func(context.Context) (*RelationshipSourceStatus, error)
+	predicates          []predicate.RelationshipSourceStatus
+}
+
+var _ ent.Mutation = (*RelationshipSourceStatusMutation)(nil)
+
+// relationshipsourcestatusOption allows management of the mutation configuration using functional options.
+type relationshipsourcestatusOption func(*RelationshipSourceStatusMutation)
+
+// newRelationshipSourceStatusMutation creates new mutation for the RelationshipSourceStatus entity.
+func newRelationshipSourceStatusMutation(c config, op Op, opts ...relationshipsourcestatusOption) *RelationshipSourceStatusMutation {
+	m := &RelationshipSourceStatusMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRelationshipSourceStatus,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRelationshipSourceStatusID sets the ID field of the mutation.
+func withRelationshipSourceStatusID(id uuid.UUID) relationshipsourcestatusOption {
+	return func(m *RelationshipSourceStatusMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RelationshipSourceStatus
+		)
+		m.oldValue = func(ctx context.Context) (*RelationshipSourceStatus, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RelationshipSourceStatus.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRelationshipSourceStatus sets the old RelationshipSourceStatus of the mutation.
+func withRelationshipSourceStatus(node *RelationshipSourceStatus) relationshipsourcestatusOption {
+	return func(m *RelationshipSourceStatusMutation) {
+		m.oldValue = func(context.Context) (*RelationshipSourceStatus, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RelationshipSourceStatusMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RelationshipSourceStatusMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of RelationshipSourceStatus entities.
+func (m *RelationshipSourceStatusMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RelationshipSourceStatusMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RelationshipSourceStatusMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RelationshipSourceStatus.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RelationshipSourceStatusMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RelationshipSourceStatusMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RelationshipSourceStatus entity.
+// If the RelationshipSourceStatus object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipSourceStatusMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RelationshipSourceStatusMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RelationshipSourceStatusMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RelationshipSourceStatusMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RelationshipSourceStatus entity.
+// If the RelationshipSourceStatus object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipSourceStatusMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RelationshipSourceStatusMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetSource sets the "source" field.
+func (m *RelationshipSourceStatusMutation) SetSource(s string) {
+	m.source = &s
+}
+
+// Source returns the value of the "source" field in the mutation.
+func (m *RelationshipSourceStatusMutation) Source() (r string, exists bool) {
+	v := m.source
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSource returns the old "source" field's value of the RelationshipSourceStatus entity.
+// If the RelationshipSourceStatus object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipSourceStatusMutation) OldSource(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSource is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSource requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSource: %w", err)
+	}
+	return oldValue.Source, nil
+}
+
+// ResetSource resets all changes to the "source" field.
+func (m *RelationshipSourceStatusMutation) ResetSource() {
+	m.source = nil
+}
+
+// SetSourceAccountID sets the "source_account_id" field.
+func (m *RelationshipSourceStatusMutation) SetSourceAccountID(s string) {
+	m.source_account_id = &s
+}
+
+// SourceAccountID returns the value of the "source_account_id" field in the mutation.
+func (m *RelationshipSourceStatusMutation) SourceAccountID() (r string, exists bool) {
+	v := m.source_account_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceAccountID returns the old "source_account_id" field's value of the RelationshipSourceStatus entity.
+// If the RelationshipSourceStatus object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipSourceStatusMutation) OldSourceAccountID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceAccountID: %w", err)
+	}
+	return oldValue.SourceAccountID, nil
+}
+
+// ResetSourceAccountID resets all changes to the "source_account_id" field.
+func (m *RelationshipSourceStatusMutation) ResetSourceAccountID() {
+	m.source_account_id = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *RelationshipSourceStatusMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *RelationshipSourceStatusMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the RelationshipSourceStatus entity.
+// If the RelationshipSourceStatus object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipSourceStatusMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *RelationshipSourceStatusMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetCursor sets the "cursor" field.
+func (m *RelationshipSourceStatusMutation) SetCursor(s string) {
+	m.cursor = &s
+}
+
+// Cursor returns the value of the "cursor" field in the mutation.
+func (m *RelationshipSourceStatusMutation) Cursor() (r string, exists bool) {
+	v := m.cursor
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCursor returns the old "cursor" field's value of the RelationshipSourceStatus entity.
+// If the RelationshipSourceStatus object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipSourceStatusMutation) OldCursor(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCursor is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCursor requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCursor: %w", err)
+	}
+	return oldValue.Cursor, nil
+}
+
+// ClearCursor clears the value of the "cursor" field.
+func (m *RelationshipSourceStatusMutation) ClearCursor() {
+	m.cursor = nil
+	m.clearedFields[relationshipsourcestatus.FieldCursor] = struct{}{}
+}
+
+// CursorCleared returns if the "cursor" field was cleared in this mutation.
+func (m *RelationshipSourceStatusMutation) CursorCleared() bool {
+	_, ok := m.clearedFields[relationshipsourcestatus.FieldCursor]
+	return ok
+}
+
+// ResetCursor resets all changes to the "cursor" field.
+func (m *RelationshipSourceStatusMutation) ResetCursor() {
+	m.cursor = nil
+	delete(m.clearedFields, relationshipsourcestatus.FieldCursor)
+}
+
+// SetLastSuccessAt sets the "last_success_at" field.
+func (m *RelationshipSourceStatusMutation) SetLastSuccessAt(t time.Time) {
+	m.last_success_at = &t
+}
+
+// LastSuccessAt returns the value of the "last_success_at" field in the mutation.
+func (m *RelationshipSourceStatusMutation) LastSuccessAt() (r time.Time, exists bool) {
+	v := m.last_success_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastSuccessAt returns the old "last_success_at" field's value of the RelationshipSourceStatus entity.
+// If the RelationshipSourceStatus object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipSourceStatusMutation) OldLastSuccessAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastSuccessAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastSuccessAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastSuccessAt: %w", err)
+	}
+	return oldValue.LastSuccessAt, nil
+}
+
+// ClearLastSuccessAt clears the value of the "last_success_at" field.
+func (m *RelationshipSourceStatusMutation) ClearLastSuccessAt() {
+	m.last_success_at = nil
+	m.clearedFields[relationshipsourcestatus.FieldLastSuccessAt] = struct{}{}
+}
+
+// LastSuccessAtCleared returns if the "last_success_at" field was cleared in this mutation.
+func (m *RelationshipSourceStatusMutation) LastSuccessAtCleared() bool {
+	_, ok := m.clearedFields[relationshipsourcestatus.FieldLastSuccessAt]
+	return ok
+}
+
+// ResetLastSuccessAt resets all changes to the "last_success_at" field.
+func (m *RelationshipSourceStatusMutation) ResetLastSuccessAt() {
+	m.last_success_at = nil
+	delete(m.clearedFields, relationshipsourcestatus.FieldLastSuccessAt)
+}
+
+// SetLastObservationAt sets the "last_observation_at" field.
+func (m *RelationshipSourceStatusMutation) SetLastObservationAt(t time.Time) {
+	m.last_observation_at = &t
+}
+
+// LastObservationAt returns the value of the "last_observation_at" field in the mutation.
+func (m *RelationshipSourceStatusMutation) LastObservationAt() (r time.Time, exists bool) {
+	v := m.last_observation_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastObservationAt returns the old "last_observation_at" field's value of the RelationshipSourceStatus entity.
+// If the RelationshipSourceStatus object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipSourceStatusMutation) OldLastObservationAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastObservationAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastObservationAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastObservationAt: %w", err)
+	}
+	return oldValue.LastObservationAt, nil
+}
+
+// ClearLastObservationAt clears the value of the "last_observation_at" field.
+func (m *RelationshipSourceStatusMutation) ClearLastObservationAt() {
+	m.last_observation_at = nil
+	m.clearedFields[relationshipsourcestatus.FieldLastObservationAt] = struct{}{}
+}
+
+// LastObservationAtCleared returns if the "last_observation_at" field was cleared in this mutation.
+func (m *RelationshipSourceStatusMutation) LastObservationAtCleared() bool {
+	_, ok := m.clearedFields[relationshipsourcestatus.FieldLastObservationAt]
+	return ok
+}
+
+// ResetLastObservationAt resets all changes to the "last_observation_at" field.
+func (m *RelationshipSourceStatusMutation) ResetLastObservationAt() {
+	m.last_observation_at = nil
+	delete(m.clearedFields, relationshipsourcestatus.FieldLastObservationAt)
+}
+
+// SetLastError sets the "last_error" field.
+func (m *RelationshipSourceStatusMutation) SetLastError(s string) {
+	m.last_error = &s
+}
+
+// LastError returns the value of the "last_error" field in the mutation.
+func (m *RelationshipSourceStatusMutation) LastError() (r string, exists bool) {
+	v := m.last_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastError returns the old "last_error" field's value of the RelationshipSourceStatus entity.
+// If the RelationshipSourceStatus object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipSourceStatusMutation) OldLastError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastError: %w", err)
+	}
+	return oldValue.LastError, nil
+}
+
+// ClearLastError clears the value of the "last_error" field.
+func (m *RelationshipSourceStatusMutation) ClearLastError() {
+	m.last_error = nil
+	m.clearedFields[relationshipsourcestatus.FieldLastError] = struct{}{}
+}
+
+// LastErrorCleared returns if the "last_error" field was cleared in this mutation.
+func (m *RelationshipSourceStatusMutation) LastErrorCleared() bool {
+	_, ok := m.clearedFields[relationshipsourcestatus.FieldLastError]
+	return ok
+}
+
+// ResetLastError resets all changes to the "last_error" field.
+func (m *RelationshipSourceStatusMutation) ResetLastError() {
+	m.last_error = nil
+	delete(m.clearedFields, relationshipsourcestatus.FieldLastError)
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *RelationshipSourceStatusMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *RelationshipSourceStatusMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *RelationshipSourceStatusMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *RelationshipSourceStatusMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *RelationshipSourceStatusMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *RelationshipSourceStatusMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *RelationshipSourceStatusMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *RelationshipSourceStatusMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *RelationshipSourceStatusMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *RelationshipSourceStatusMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *RelationshipSourceStatusMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *RelationshipSourceStatusMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the RelationshipSourceStatusMutation builder.
+func (m *RelationshipSourceStatusMutation) Where(ps ...predicate.RelationshipSourceStatus) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RelationshipSourceStatusMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RelationshipSourceStatusMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RelationshipSourceStatus, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RelationshipSourceStatusMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RelationshipSourceStatusMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RelationshipSourceStatus).
+func (m *RelationshipSourceStatusMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RelationshipSourceStatusMutation) Fields() []string {
+	fields := make([]string, 0, 9)
+	if m.created_at != nil {
+		fields = append(fields, relationshipsourcestatus.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, relationshipsourcestatus.FieldUpdatedAt)
+	}
+	if m.source != nil {
+		fields = append(fields, relationshipsourcestatus.FieldSource)
+	}
+	if m.source_account_id != nil {
+		fields = append(fields, relationshipsourcestatus.FieldSourceAccountID)
+	}
+	if m.status != nil {
+		fields = append(fields, relationshipsourcestatus.FieldStatus)
+	}
+	if m.cursor != nil {
+		fields = append(fields, relationshipsourcestatus.FieldCursor)
+	}
+	if m.last_success_at != nil {
+		fields = append(fields, relationshipsourcestatus.FieldLastSuccessAt)
+	}
+	if m.last_observation_at != nil {
+		fields = append(fields, relationshipsourcestatus.FieldLastObservationAt)
+	}
+	if m.last_error != nil {
+		fields = append(fields, relationshipsourcestatus.FieldLastError)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RelationshipSourceStatusMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case relationshipsourcestatus.FieldCreatedAt:
+		return m.CreatedAt()
+	case relationshipsourcestatus.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case relationshipsourcestatus.FieldSource:
+		return m.Source()
+	case relationshipsourcestatus.FieldSourceAccountID:
+		return m.SourceAccountID()
+	case relationshipsourcestatus.FieldStatus:
+		return m.Status()
+	case relationshipsourcestatus.FieldCursor:
+		return m.Cursor()
+	case relationshipsourcestatus.FieldLastSuccessAt:
+		return m.LastSuccessAt()
+	case relationshipsourcestatus.FieldLastObservationAt:
+		return m.LastObservationAt()
+	case relationshipsourcestatus.FieldLastError:
+		return m.LastError()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RelationshipSourceStatusMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case relationshipsourcestatus.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case relationshipsourcestatus.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case relationshipsourcestatus.FieldSource:
+		return m.OldSource(ctx)
+	case relationshipsourcestatus.FieldSourceAccountID:
+		return m.OldSourceAccountID(ctx)
+	case relationshipsourcestatus.FieldStatus:
+		return m.OldStatus(ctx)
+	case relationshipsourcestatus.FieldCursor:
+		return m.OldCursor(ctx)
+	case relationshipsourcestatus.FieldLastSuccessAt:
+		return m.OldLastSuccessAt(ctx)
+	case relationshipsourcestatus.FieldLastObservationAt:
+		return m.OldLastObservationAt(ctx)
+	case relationshipsourcestatus.FieldLastError:
+		return m.OldLastError(ctx)
+	}
+	return nil, fmt.Errorf("unknown RelationshipSourceStatus field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RelationshipSourceStatusMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case relationshipsourcestatus.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case relationshipsourcestatus.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case relationshipsourcestatus.FieldSource:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSource(v)
+		return nil
+	case relationshipsourcestatus.FieldSourceAccountID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceAccountID(v)
+		return nil
+	case relationshipsourcestatus.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case relationshipsourcestatus.FieldCursor:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCursor(v)
+		return nil
+	case relationshipsourcestatus.FieldLastSuccessAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastSuccessAt(v)
+		return nil
+	case relationshipsourcestatus.FieldLastObservationAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastObservationAt(v)
+		return nil
+	case relationshipsourcestatus.FieldLastError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastError(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipSourceStatus field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RelationshipSourceStatusMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RelationshipSourceStatusMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RelationshipSourceStatusMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown RelationshipSourceStatus numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RelationshipSourceStatusMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(relationshipsourcestatus.FieldCursor) {
+		fields = append(fields, relationshipsourcestatus.FieldCursor)
+	}
+	if m.FieldCleared(relationshipsourcestatus.FieldLastSuccessAt) {
+		fields = append(fields, relationshipsourcestatus.FieldLastSuccessAt)
+	}
+	if m.FieldCleared(relationshipsourcestatus.FieldLastObservationAt) {
+		fields = append(fields, relationshipsourcestatus.FieldLastObservationAt)
+	}
+	if m.FieldCleared(relationshipsourcestatus.FieldLastError) {
+		fields = append(fields, relationshipsourcestatus.FieldLastError)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RelationshipSourceStatusMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RelationshipSourceStatusMutation) ClearField(name string) error {
+	switch name {
+	case relationshipsourcestatus.FieldCursor:
+		m.ClearCursor()
+		return nil
+	case relationshipsourcestatus.FieldLastSuccessAt:
+		m.ClearLastSuccessAt()
+		return nil
+	case relationshipsourcestatus.FieldLastObservationAt:
+		m.ClearLastObservationAt()
+		return nil
+	case relationshipsourcestatus.FieldLastError:
+		m.ClearLastError()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipSourceStatus nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RelationshipSourceStatusMutation) ResetField(name string) error {
+	switch name {
+	case relationshipsourcestatus.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case relationshipsourcestatus.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case relationshipsourcestatus.FieldSource:
+		m.ResetSource()
+		return nil
+	case relationshipsourcestatus.FieldSourceAccountID:
+		m.ResetSourceAccountID()
+		return nil
+	case relationshipsourcestatus.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case relationshipsourcestatus.FieldCursor:
+		m.ResetCursor()
+		return nil
+	case relationshipsourcestatus.FieldLastSuccessAt:
+		m.ResetLastSuccessAt()
+		return nil
+	case relationshipsourcestatus.FieldLastObservationAt:
+		m.ResetLastObservationAt()
+		return nil
+	case relationshipsourcestatus.FieldLastError:
+		m.ResetLastError()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipSourceStatus field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RelationshipSourceStatusMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.workspace != nil {
+		edges = append(edges, relationshipsourcestatus.EdgeWorkspace)
+	}
+	if m.user != nil {
+		edges = append(edges, relationshipsourcestatus.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RelationshipSourceStatusMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case relationshipsourcestatus.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case relationshipsourcestatus.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RelationshipSourceStatusMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RelationshipSourceStatusMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RelationshipSourceStatusMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedworkspace {
+		edges = append(edges, relationshipsourcestatus.EdgeWorkspace)
+	}
+	if m.cleareduser {
+		edges = append(edges, relationshipsourcestatus.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RelationshipSourceStatusMutation) EdgeCleared(name string) bool {
+	switch name {
+	case relationshipsourcestatus.EdgeWorkspace:
+		return m.clearedworkspace
+	case relationshipsourcestatus.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RelationshipSourceStatusMutation) ClearEdge(name string) error {
+	switch name {
+	case relationshipsourcestatus.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case relationshipsourcestatus.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipSourceStatus unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RelationshipSourceStatusMutation) ResetEdge(name string) error {
+	switch name {
+	case relationshipsourcestatus.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case relationshipsourcestatus.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipSourceStatus edge %s", name)
+}
+
+// RelationshipStateSnapshotMutation represents an operation that mutates the RelationshipStateSnapshot nodes in the graph.
+type RelationshipStateSnapshotMutation struct {
+	config
+	op                       Op
+	typ                      string
+	id                       *uuid.UUID
+	created_at               *time.Time
+	updated_at               *time.Time
+	version                  *int
+	addversion               *int
+	state_json               *string
+	changed_dimensions       *[]string
+	appendchanged_dimensions []string
+	assertion_ids            *[]string
+	appendassertion_ids      []string
+	clearedFields            map[string]struct{}
+	workspace                *uuid.UUID
+	clearedworkspace         bool
+	relationship             *uuid.UUID
+	clearedrelationship      bool
+	user                     *uuid.UUID
+	cleareduser              bool
+	done                     bool
+	oldValue                 func(context.Context) (*RelationshipStateSnapshot, error)
+	predicates               []predicate.RelationshipStateSnapshot
+}
+
+var _ ent.Mutation = (*RelationshipStateSnapshotMutation)(nil)
+
+// relationshipstatesnapshotOption allows management of the mutation configuration using functional options.
+type relationshipstatesnapshotOption func(*RelationshipStateSnapshotMutation)
+
+// newRelationshipStateSnapshotMutation creates new mutation for the RelationshipStateSnapshot entity.
+func newRelationshipStateSnapshotMutation(c config, op Op, opts ...relationshipstatesnapshotOption) *RelationshipStateSnapshotMutation {
+	m := &RelationshipStateSnapshotMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRelationshipStateSnapshot,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRelationshipStateSnapshotID sets the ID field of the mutation.
+func withRelationshipStateSnapshotID(id uuid.UUID) relationshipstatesnapshotOption {
+	return func(m *RelationshipStateSnapshotMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RelationshipStateSnapshot
+		)
+		m.oldValue = func(ctx context.Context) (*RelationshipStateSnapshot, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RelationshipStateSnapshot.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRelationshipStateSnapshot sets the old RelationshipStateSnapshot of the mutation.
+func withRelationshipStateSnapshot(node *RelationshipStateSnapshot) relationshipstatesnapshotOption {
+	return func(m *RelationshipStateSnapshotMutation) {
+		m.oldValue = func(context.Context) (*RelationshipStateSnapshot, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RelationshipStateSnapshotMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RelationshipStateSnapshotMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of RelationshipStateSnapshot entities.
+func (m *RelationshipStateSnapshotMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RelationshipStateSnapshotMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RelationshipStateSnapshotMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RelationshipStateSnapshot.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RelationshipStateSnapshotMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RelationshipStateSnapshotMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RelationshipStateSnapshot entity.
+// If the RelationshipStateSnapshot object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipStateSnapshotMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RelationshipStateSnapshotMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RelationshipStateSnapshotMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RelationshipStateSnapshotMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RelationshipStateSnapshot entity.
+// If the RelationshipStateSnapshot object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipStateSnapshotMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RelationshipStateSnapshotMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetVersion sets the "version" field.
+func (m *RelationshipStateSnapshotMutation) SetVersion(i int) {
+	m.version = &i
+	m.addversion = nil
+}
+
+// Version returns the value of the "version" field in the mutation.
+func (m *RelationshipStateSnapshotMutation) Version() (r int, exists bool) {
+	v := m.version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVersion returns the old "version" field's value of the RelationshipStateSnapshot entity.
+// If the RelationshipStateSnapshot object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipStateSnapshotMutation) OldVersion(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// AddVersion adds i to the "version" field.
+func (m *RelationshipStateSnapshotMutation) AddVersion(i int) {
+	if m.addversion != nil {
+		*m.addversion += i
+	} else {
+		m.addversion = &i
+	}
+}
+
+// AddedVersion returns the value that was added to the "version" field in this mutation.
+func (m *RelationshipStateSnapshotMutation) AddedVersion() (r int, exists bool) {
+	v := m.addversion
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetVersion resets all changes to the "version" field.
+func (m *RelationshipStateSnapshotMutation) ResetVersion() {
+	m.version = nil
+	m.addversion = nil
+}
+
+// SetStateJSON sets the "state_json" field.
+func (m *RelationshipStateSnapshotMutation) SetStateJSON(s string) {
+	m.state_json = &s
+}
+
+// StateJSON returns the value of the "state_json" field in the mutation.
+func (m *RelationshipStateSnapshotMutation) StateJSON() (r string, exists bool) {
+	v := m.state_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStateJSON returns the old "state_json" field's value of the RelationshipStateSnapshot entity.
+// If the RelationshipStateSnapshot object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipStateSnapshotMutation) OldStateJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStateJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStateJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStateJSON: %w", err)
+	}
+	return oldValue.StateJSON, nil
+}
+
+// ResetStateJSON resets all changes to the "state_json" field.
+func (m *RelationshipStateSnapshotMutation) ResetStateJSON() {
+	m.state_json = nil
+}
+
+// SetChangedDimensions sets the "changed_dimensions" field.
+func (m *RelationshipStateSnapshotMutation) SetChangedDimensions(s []string) {
+	m.changed_dimensions = &s
+	m.appendchanged_dimensions = nil
+}
+
+// ChangedDimensions returns the value of the "changed_dimensions" field in the mutation.
+func (m *RelationshipStateSnapshotMutation) ChangedDimensions() (r []string, exists bool) {
+	v := m.changed_dimensions
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldChangedDimensions returns the old "changed_dimensions" field's value of the RelationshipStateSnapshot entity.
+// If the RelationshipStateSnapshot object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipStateSnapshotMutation) OldChangedDimensions(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldChangedDimensions is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldChangedDimensions requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChangedDimensions: %w", err)
+	}
+	return oldValue.ChangedDimensions, nil
+}
+
+// AppendChangedDimensions adds s to the "changed_dimensions" field.
+func (m *RelationshipStateSnapshotMutation) AppendChangedDimensions(s []string) {
+	m.appendchanged_dimensions = append(m.appendchanged_dimensions, s...)
+}
+
+// AppendedChangedDimensions returns the list of values that were appended to the "changed_dimensions" field in this mutation.
+func (m *RelationshipStateSnapshotMutation) AppendedChangedDimensions() ([]string, bool) {
+	if len(m.appendchanged_dimensions) == 0 {
+		return nil, false
+	}
+	return m.appendchanged_dimensions, true
+}
+
+// ResetChangedDimensions resets all changes to the "changed_dimensions" field.
+func (m *RelationshipStateSnapshotMutation) ResetChangedDimensions() {
+	m.changed_dimensions = nil
+	m.appendchanged_dimensions = nil
+}
+
+// SetAssertionIds sets the "assertion_ids" field.
+func (m *RelationshipStateSnapshotMutation) SetAssertionIds(s []string) {
+	m.assertion_ids = &s
+	m.appendassertion_ids = nil
+}
+
+// AssertionIds returns the value of the "assertion_ids" field in the mutation.
+func (m *RelationshipStateSnapshotMutation) AssertionIds() (r []string, exists bool) {
+	v := m.assertion_ids
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAssertionIds returns the old "assertion_ids" field's value of the RelationshipStateSnapshot entity.
+// If the RelationshipStateSnapshot object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipStateSnapshotMutation) OldAssertionIds(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAssertionIds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAssertionIds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAssertionIds: %w", err)
+	}
+	return oldValue.AssertionIds, nil
+}
+
+// AppendAssertionIds adds s to the "assertion_ids" field.
+func (m *RelationshipStateSnapshotMutation) AppendAssertionIds(s []string) {
+	m.appendassertion_ids = append(m.appendassertion_ids, s...)
+}
+
+// AppendedAssertionIds returns the list of values that were appended to the "assertion_ids" field in this mutation.
+func (m *RelationshipStateSnapshotMutation) AppendedAssertionIds() ([]string, bool) {
+	if len(m.appendassertion_ids) == 0 {
+		return nil, false
+	}
+	return m.appendassertion_ids, true
+}
+
+// ResetAssertionIds resets all changes to the "assertion_ids" field.
+func (m *RelationshipStateSnapshotMutation) ResetAssertionIds() {
+	m.assertion_ids = nil
+	m.appendassertion_ids = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *RelationshipStateSnapshotMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *RelationshipStateSnapshotMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *RelationshipStateSnapshotMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *RelationshipStateSnapshotMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *RelationshipStateSnapshotMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *RelationshipStateSnapshotMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetRelationshipID sets the "relationship" edge to the Relationship entity by id.
+func (m *RelationshipStateSnapshotMutation) SetRelationshipID(id uuid.UUID) {
+	m.relationship = &id
+}
+
+// ClearRelationship clears the "relationship" edge to the Relationship entity.
+func (m *RelationshipStateSnapshotMutation) ClearRelationship() {
+	m.clearedrelationship = true
+}
+
+// RelationshipCleared reports if the "relationship" edge to the Relationship entity was cleared.
+func (m *RelationshipStateSnapshotMutation) RelationshipCleared() bool {
+	return m.clearedrelationship
+}
+
+// RelationshipID returns the "relationship" edge ID in the mutation.
+func (m *RelationshipStateSnapshotMutation) RelationshipID() (id uuid.UUID, exists bool) {
+	if m.relationship != nil {
+		return *m.relationship, true
+	}
+	return
+}
+
+// RelationshipIDs returns the "relationship" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RelationshipID instead. It exists only for internal usage by the builders.
+func (m *RelationshipStateSnapshotMutation) RelationshipIDs() (ids []uuid.UUID) {
+	if id := m.relationship; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRelationship resets all changes to the "relationship" edge.
+func (m *RelationshipStateSnapshotMutation) ResetRelationship() {
+	m.relationship = nil
+	m.clearedrelationship = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *RelationshipStateSnapshotMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *RelationshipStateSnapshotMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *RelationshipStateSnapshotMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *RelationshipStateSnapshotMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *RelationshipStateSnapshotMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *RelationshipStateSnapshotMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the RelationshipStateSnapshotMutation builder.
+func (m *RelationshipStateSnapshotMutation) Where(ps ...predicate.RelationshipStateSnapshot) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RelationshipStateSnapshotMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RelationshipStateSnapshotMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RelationshipStateSnapshot, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RelationshipStateSnapshotMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RelationshipStateSnapshotMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RelationshipStateSnapshot).
+func (m *RelationshipStateSnapshotMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RelationshipStateSnapshotMutation) Fields() []string {
+	fields := make([]string, 0, 6)
+	if m.created_at != nil {
+		fields = append(fields, relationshipstatesnapshot.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, relationshipstatesnapshot.FieldUpdatedAt)
+	}
+	if m.version != nil {
+		fields = append(fields, relationshipstatesnapshot.FieldVersion)
+	}
+	if m.state_json != nil {
+		fields = append(fields, relationshipstatesnapshot.FieldStateJSON)
+	}
+	if m.changed_dimensions != nil {
+		fields = append(fields, relationshipstatesnapshot.FieldChangedDimensions)
+	}
+	if m.assertion_ids != nil {
+		fields = append(fields, relationshipstatesnapshot.FieldAssertionIds)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RelationshipStateSnapshotMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case relationshipstatesnapshot.FieldCreatedAt:
+		return m.CreatedAt()
+	case relationshipstatesnapshot.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case relationshipstatesnapshot.FieldVersion:
+		return m.Version()
+	case relationshipstatesnapshot.FieldStateJSON:
+		return m.StateJSON()
+	case relationshipstatesnapshot.FieldChangedDimensions:
+		return m.ChangedDimensions()
+	case relationshipstatesnapshot.FieldAssertionIds:
+		return m.AssertionIds()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RelationshipStateSnapshotMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case relationshipstatesnapshot.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case relationshipstatesnapshot.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case relationshipstatesnapshot.FieldVersion:
+		return m.OldVersion(ctx)
+	case relationshipstatesnapshot.FieldStateJSON:
+		return m.OldStateJSON(ctx)
+	case relationshipstatesnapshot.FieldChangedDimensions:
+		return m.OldChangedDimensions(ctx)
+	case relationshipstatesnapshot.FieldAssertionIds:
+		return m.OldAssertionIds(ctx)
+	}
+	return nil, fmt.Errorf("unknown RelationshipStateSnapshot field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RelationshipStateSnapshotMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case relationshipstatesnapshot.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case relationshipstatesnapshot.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case relationshipstatesnapshot.FieldVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVersion(v)
+		return nil
+	case relationshipstatesnapshot.FieldStateJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStateJSON(v)
+		return nil
+	case relationshipstatesnapshot.FieldChangedDimensions:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChangedDimensions(v)
+		return nil
+	case relationshipstatesnapshot.FieldAssertionIds:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAssertionIds(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipStateSnapshot field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RelationshipStateSnapshotMutation) AddedFields() []string {
+	var fields []string
+	if m.addversion != nil {
+		fields = append(fields, relationshipstatesnapshot.FieldVersion)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RelationshipStateSnapshotMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case relationshipstatesnapshot.FieldVersion:
+		return m.AddedVersion()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RelationshipStateSnapshotMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case relationshipstatesnapshot.FieldVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddVersion(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipStateSnapshot numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RelationshipStateSnapshotMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RelationshipStateSnapshotMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RelationshipStateSnapshotMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown RelationshipStateSnapshot nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RelationshipStateSnapshotMutation) ResetField(name string) error {
+	switch name {
+	case relationshipstatesnapshot.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case relationshipstatesnapshot.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case relationshipstatesnapshot.FieldVersion:
+		m.ResetVersion()
+		return nil
+	case relationshipstatesnapshot.FieldStateJSON:
+		m.ResetStateJSON()
+		return nil
+	case relationshipstatesnapshot.FieldChangedDimensions:
+		m.ResetChangedDimensions()
+		return nil
+	case relationshipstatesnapshot.FieldAssertionIds:
+		m.ResetAssertionIds()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipStateSnapshot field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RelationshipStateSnapshotMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.workspace != nil {
+		edges = append(edges, relationshipstatesnapshot.EdgeWorkspace)
+	}
+	if m.relationship != nil {
+		edges = append(edges, relationshipstatesnapshot.EdgeRelationship)
+	}
+	if m.user != nil {
+		edges = append(edges, relationshipstatesnapshot.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RelationshipStateSnapshotMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case relationshipstatesnapshot.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case relationshipstatesnapshot.EdgeRelationship:
+		if id := m.relationship; id != nil {
+			return []ent.Value{*id}
+		}
+	case relationshipstatesnapshot.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RelationshipStateSnapshotMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RelationshipStateSnapshotMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RelationshipStateSnapshotMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedworkspace {
+		edges = append(edges, relationshipstatesnapshot.EdgeWorkspace)
+	}
+	if m.clearedrelationship {
+		edges = append(edges, relationshipstatesnapshot.EdgeRelationship)
+	}
+	if m.cleareduser {
+		edges = append(edges, relationshipstatesnapshot.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RelationshipStateSnapshotMutation) EdgeCleared(name string) bool {
+	switch name {
+	case relationshipstatesnapshot.EdgeWorkspace:
+		return m.clearedworkspace
+	case relationshipstatesnapshot.EdgeRelationship:
+		return m.clearedrelationship
+	case relationshipstatesnapshot.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RelationshipStateSnapshotMutation) ClearEdge(name string) error {
+	switch name {
+	case relationshipstatesnapshot.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case relationshipstatesnapshot.EdgeRelationship:
+		m.ClearRelationship()
+		return nil
+	case relationshipstatesnapshot.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipStateSnapshot unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RelationshipStateSnapshotMutation) ResetEdge(name string) error {
+	switch name {
+	case relationshipstatesnapshot.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case relationshipstatesnapshot.EdgeRelationship:
+		m.ResetRelationship()
+		return nil
+	case relationshipstatesnapshot.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipStateSnapshot edge %s", name)
 }
 
 // RevenueActionMutation represents an operation that mutates the RevenueAction nodes in the graph.
@@ -49932,52 +56180,67 @@ func (m *RevenueOutboxEventMutation) ResetEdge(name string) error {
 // RevenueWorkspaceMutation represents an operation that mutates the RevenueWorkspace nodes in the graph.
 type RevenueWorkspaceMutation struct {
 	config
-	op                       Op
-	typ                      string
-	id                       *uuid.UUID
-	created_at               *time.Time
-	updated_at               *time.Time
-	workos_org_id            *string
-	outbound_organization_id *string
-	outbound_workspace_id    *string
-	mode                     *string
-	status                   *string
-	last_verified_at         *time.Time
-	last_digest_at           *time.Time
-	mail_history_id          *string
-	clearedFields            map[string]struct{}
-	user                     *uuid.UUID
-	cleareduser              bool
-	members                  map[uuid.UUID]struct{}
-	removedmembers           map[uuid.UUID]struct{}
-	clearedmembers           bool
-	relationships            map[uuid.UUID]struct{}
-	removedrelationships     map[uuid.UUID]struct{}
-	clearedrelationships     bool
-	evidences                map[uuid.UUID]struct{}
-	removedevidences         map[uuid.UUID]struct{}
-	clearedevidences         bool
-	commitments              map[uuid.UUID]struct{}
-	removedcommitments       map[uuid.UUID]struct{}
-	clearedcommitments       bool
-	actions                  map[uuid.UUID]struct{}
-	removedactions           map[uuid.UUID]struct{}
-	clearedactions           bool
-	decisions                map[uuid.UUID]struct{}
-	removeddecisions         map[uuid.UUID]struct{}
-	cleareddecisions         bool
-	outcomes                 map[uuid.UUID]struct{}
-	removedoutcomes          map[uuid.UUID]struct{}
-	clearedoutcomes          bool
-	outbox_events            map[uuid.UUID]struct{}
-	removedoutbox_events     map[uuid.UUID]struct{}
-	clearedoutbox_events     bool
-	scans                    map[uuid.UUID]struct{}
-	removedscans             map[uuid.UUID]struct{}
-	clearedscans             bool
-	done                     bool
-	oldValue                 func(context.Context) (*RevenueWorkspace, error)
-	predicates               []predicate.RevenueWorkspace
+	op                                  Op
+	typ                                 string
+	id                                  *uuid.UUID
+	created_at                          *time.Time
+	updated_at                          *time.Time
+	workos_org_id                       *string
+	outbound_organization_id            *string
+	outbound_workspace_id               *string
+	mode                                *string
+	status                              *string
+	last_verified_at                    *time.Time
+	last_digest_at                      *time.Time
+	mail_history_id                     *string
+	clearedFields                       map[string]struct{}
+	user                                *uuid.UUID
+	cleareduser                         bool
+	members                             map[uuid.UUID]struct{}
+	removedmembers                      map[uuid.UUID]struct{}
+	clearedmembers                      bool
+	relationships                       map[uuid.UUID]struct{}
+	removedrelationships                map[uuid.UUID]struct{}
+	clearedrelationships                bool
+	evidences                           map[uuid.UUID]struct{}
+	removedevidences                    map[uuid.UUID]struct{}
+	clearedevidences                    bool
+	commitments                         map[uuid.UUID]struct{}
+	removedcommitments                  map[uuid.UUID]struct{}
+	clearedcommitments                  bool
+	actions                             map[uuid.UUID]struct{}
+	removedactions                      map[uuid.UUID]struct{}
+	clearedactions                      bool
+	decisions                           map[uuid.UUID]struct{}
+	removeddecisions                    map[uuid.UUID]struct{}
+	cleareddecisions                    bool
+	outcomes                            map[uuid.UUID]struct{}
+	removedoutcomes                     map[uuid.UUID]struct{}
+	clearedoutcomes                     bool
+	outbox_events                       map[uuid.UUID]struct{}
+	removedoutbox_events                map[uuid.UUID]struct{}
+	clearedoutbox_events                bool
+	scans                               map[uuid.UUID]struct{}
+	removedscans                        map[uuid.UUID]struct{}
+	clearedscans                        bool
+	relationship_participants           map[uuid.UUID]struct{}
+	removedrelationship_participants    map[uuid.UUID]struct{}
+	clearedrelationship_participants    bool
+	relationship_observations           map[uuid.UUID]struct{}
+	removedrelationship_observations    map[uuid.UUID]struct{}
+	clearedrelationship_observations    bool
+	relationship_assertions             map[uuid.UUID]struct{}
+	removedrelationship_assertions      map[uuid.UUID]struct{}
+	clearedrelationship_assertions      bool
+	relationship_state_snapshots        map[uuid.UUID]struct{}
+	removedrelationship_state_snapshots map[uuid.UUID]struct{}
+	clearedrelationship_state_snapshots bool
+	relationship_source_statuses        map[uuid.UUID]struct{}
+	removedrelationship_source_statuses map[uuid.UUID]struct{}
+	clearedrelationship_source_statuses bool
+	done                                bool
+	oldValue                            func(context.Context) (*RevenueWorkspace, error)
+	predicates                          []predicate.RevenueWorkspace
 }
 
 var _ ent.Mutation = (*RevenueWorkspaceMutation)(nil)
@@ -51047,6 +57310,276 @@ func (m *RevenueWorkspaceMutation) ResetScans() {
 	m.removedscans = nil
 }
 
+// AddRelationshipParticipantIDs adds the "relationship_participants" edge to the RelationshipParticipant entity by ids.
+func (m *RevenueWorkspaceMutation) AddRelationshipParticipantIDs(ids ...uuid.UUID) {
+	if m.relationship_participants == nil {
+		m.relationship_participants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.relationship_participants[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRelationshipParticipants clears the "relationship_participants" edge to the RelationshipParticipant entity.
+func (m *RevenueWorkspaceMutation) ClearRelationshipParticipants() {
+	m.clearedrelationship_participants = true
+}
+
+// RelationshipParticipantsCleared reports if the "relationship_participants" edge to the RelationshipParticipant entity was cleared.
+func (m *RevenueWorkspaceMutation) RelationshipParticipantsCleared() bool {
+	return m.clearedrelationship_participants
+}
+
+// RemoveRelationshipParticipantIDs removes the "relationship_participants" edge to the RelationshipParticipant entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveRelationshipParticipantIDs(ids ...uuid.UUID) {
+	if m.removedrelationship_participants == nil {
+		m.removedrelationship_participants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.relationship_participants, ids[i])
+		m.removedrelationship_participants[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelationshipParticipants returns the removed IDs of the "relationship_participants" edge to the RelationshipParticipant entity.
+func (m *RevenueWorkspaceMutation) RemovedRelationshipParticipantsIDs() (ids []uuid.UUID) {
+	for id := range m.removedrelationship_participants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelationshipParticipantsIDs returns the "relationship_participants" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) RelationshipParticipantsIDs() (ids []uuid.UUID) {
+	for id := range m.relationship_participants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelationshipParticipants resets all changes to the "relationship_participants" edge.
+func (m *RevenueWorkspaceMutation) ResetRelationshipParticipants() {
+	m.relationship_participants = nil
+	m.clearedrelationship_participants = false
+	m.removedrelationship_participants = nil
+}
+
+// AddRelationshipObservationIDs adds the "relationship_observations" edge to the RelationshipObservation entity by ids.
+func (m *RevenueWorkspaceMutation) AddRelationshipObservationIDs(ids ...uuid.UUID) {
+	if m.relationship_observations == nil {
+		m.relationship_observations = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.relationship_observations[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRelationshipObservations clears the "relationship_observations" edge to the RelationshipObservation entity.
+func (m *RevenueWorkspaceMutation) ClearRelationshipObservations() {
+	m.clearedrelationship_observations = true
+}
+
+// RelationshipObservationsCleared reports if the "relationship_observations" edge to the RelationshipObservation entity was cleared.
+func (m *RevenueWorkspaceMutation) RelationshipObservationsCleared() bool {
+	return m.clearedrelationship_observations
+}
+
+// RemoveRelationshipObservationIDs removes the "relationship_observations" edge to the RelationshipObservation entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveRelationshipObservationIDs(ids ...uuid.UUID) {
+	if m.removedrelationship_observations == nil {
+		m.removedrelationship_observations = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.relationship_observations, ids[i])
+		m.removedrelationship_observations[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelationshipObservations returns the removed IDs of the "relationship_observations" edge to the RelationshipObservation entity.
+func (m *RevenueWorkspaceMutation) RemovedRelationshipObservationsIDs() (ids []uuid.UUID) {
+	for id := range m.removedrelationship_observations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelationshipObservationsIDs returns the "relationship_observations" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) RelationshipObservationsIDs() (ids []uuid.UUID) {
+	for id := range m.relationship_observations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelationshipObservations resets all changes to the "relationship_observations" edge.
+func (m *RevenueWorkspaceMutation) ResetRelationshipObservations() {
+	m.relationship_observations = nil
+	m.clearedrelationship_observations = false
+	m.removedrelationship_observations = nil
+}
+
+// AddRelationshipAssertionIDs adds the "relationship_assertions" edge to the RelationshipAssertion entity by ids.
+func (m *RevenueWorkspaceMutation) AddRelationshipAssertionIDs(ids ...uuid.UUID) {
+	if m.relationship_assertions == nil {
+		m.relationship_assertions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.relationship_assertions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRelationshipAssertions clears the "relationship_assertions" edge to the RelationshipAssertion entity.
+func (m *RevenueWorkspaceMutation) ClearRelationshipAssertions() {
+	m.clearedrelationship_assertions = true
+}
+
+// RelationshipAssertionsCleared reports if the "relationship_assertions" edge to the RelationshipAssertion entity was cleared.
+func (m *RevenueWorkspaceMutation) RelationshipAssertionsCleared() bool {
+	return m.clearedrelationship_assertions
+}
+
+// RemoveRelationshipAssertionIDs removes the "relationship_assertions" edge to the RelationshipAssertion entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveRelationshipAssertionIDs(ids ...uuid.UUID) {
+	if m.removedrelationship_assertions == nil {
+		m.removedrelationship_assertions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.relationship_assertions, ids[i])
+		m.removedrelationship_assertions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelationshipAssertions returns the removed IDs of the "relationship_assertions" edge to the RelationshipAssertion entity.
+func (m *RevenueWorkspaceMutation) RemovedRelationshipAssertionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedrelationship_assertions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelationshipAssertionsIDs returns the "relationship_assertions" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) RelationshipAssertionsIDs() (ids []uuid.UUID) {
+	for id := range m.relationship_assertions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelationshipAssertions resets all changes to the "relationship_assertions" edge.
+func (m *RevenueWorkspaceMutation) ResetRelationshipAssertions() {
+	m.relationship_assertions = nil
+	m.clearedrelationship_assertions = false
+	m.removedrelationship_assertions = nil
+}
+
+// AddRelationshipStateSnapshotIDs adds the "relationship_state_snapshots" edge to the RelationshipStateSnapshot entity by ids.
+func (m *RevenueWorkspaceMutation) AddRelationshipStateSnapshotIDs(ids ...uuid.UUID) {
+	if m.relationship_state_snapshots == nil {
+		m.relationship_state_snapshots = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.relationship_state_snapshots[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRelationshipStateSnapshots clears the "relationship_state_snapshots" edge to the RelationshipStateSnapshot entity.
+func (m *RevenueWorkspaceMutation) ClearRelationshipStateSnapshots() {
+	m.clearedrelationship_state_snapshots = true
+}
+
+// RelationshipStateSnapshotsCleared reports if the "relationship_state_snapshots" edge to the RelationshipStateSnapshot entity was cleared.
+func (m *RevenueWorkspaceMutation) RelationshipStateSnapshotsCleared() bool {
+	return m.clearedrelationship_state_snapshots
+}
+
+// RemoveRelationshipStateSnapshotIDs removes the "relationship_state_snapshots" edge to the RelationshipStateSnapshot entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveRelationshipStateSnapshotIDs(ids ...uuid.UUID) {
+	if m.removedrelationship_state_snapshots == nil {
+		m.removedrelationship_state_snapshots = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.relationship_state_snapshots, ids[i])
+		m.removedrelationship_state_snapshots[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelationshipStateSnapshots returns the removed IDs of the "relationship_state_snapshots" edge to the RelationshipStateSnapshot entity.
+func (m *RevenueWorkspaceMutation) RemovedRelationshipStateSnapshotsIDs() (ids []uuid.UUID) {
+	for id := range m.removedrelationship_state_snapshots {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelationshipStateSnapshotsIDs returns the "relationship_state_snapshots" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) RelationshipStateSnapshotsIDs() (ids []uuid.UUID) {
+	for id := range m.relationship_state_snapshots {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelationshipStateSnapshots resets all changes to the "relationship_state_snapshots" edge.
+func (m *RevenueWorkspaceMutation) ResetRelationshipStateSnapshots() {
+	m.relationship_state_snapshots = nil
+	m.clearedrelationship_state_snapshots = false
+	m.removedrelationship_state_snapshots = nil
+}
+
+// AddRelationshipSourceStatusIDs adds the "relationship_source_statuses" edge to the RelationshipSourceStatus entity by ids.
+func (m *RevenueWorkspaceMutation) AddRelationshipSourceStatusIDs(ids ...uuid.UUID) {
+	if m.relationship_source_statuses == nil {
+		m.relationship_source_statuses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.relationship_source_statuses[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRelationshipSourceStatuses clears the "relationship_source_statuses" edge to the RelationshipSourceStatus entity.
+func (m *RevenueWorkspaceMutation) ClearRelationshipSourceStatuses() {
+	m.clearedrelationship_source_statuses = true
+}
+
+// RelationshipSourceStatusesCleared reports if the "relationship_source_statuses" edge to the RelationshipSourceStatus entity was cleared.
+func (m *RevenueWorkspaceMutation) RelationshipSourceStatusesCleared() bool {
+	return m.clearedrelationship_source_statuses
+}
+
+// RemoveRelationshipSourceStatusIDs removes the "relationship_source_statuses" edge to the RelationshipSourceStatus entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveRelationshipSourceStatusIDs(ids ...uuid.UUID) {
+	if m.removedrelationship_source_statuses == nil {
+		m.removedrelationship_source_statuses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.relationship_source_statuses, ids[i])
+		m.removedrelationship_source_statuses[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelationshipSourceStatuses returns the removed IDs of the "relationship_source_statuses" edge to the RelationshipSourceStatus entity.
+func (m *RevenueWorkspaceMutation) RemovedRelationshipSourceStatusesIDs() (ids []uuid.UUID) {
+	for id := range m.removedrelationship_source_statuses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelationshipSourceStatusesIDs returns the "relationship_source_statuses" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) RelationshipSourceStatusesIDs() (ids []uuid.UUID) {
+	for id := range m.relationship_source_statuses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelationshipSourceStatuses resets all changes to the "relationship_source_statuses" edge.
+func (m *RevenueWorkspaceMutation) ResetRelationshipSourceStatuses() {
+	m.relationship_source_statuses = nil
+	m.clearedrelationship_source_statuses = false
+	m.removedrelationship_source_statuses = nil
+}
+
 // Where appends a list predicates to the RevenueWorkspaceMutation builder.
 func (m *RevenueWorkspaceMutation) Where(ps ...predicate.RevenueWorkspace) {
 	m.predicates = append(m.predicates, ps...)
@@ -51372,7 +57905,7 @@ func (m *RevenueWorkspaceMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RevenueWorkspaceMutation) AddedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 15)
 	if m.user != nil {
 		edges = append(edges, revenueworkspace.EdgeUser)
 	}
@@ -51402,6 +57935,21 @@ func (m *RevenueWorkspaceMutation) AddedEdges() []string {
 	}
 	if m.scans != nil {
 		edges = append(edges, revenueworkspace.EdgeScans)
+	}
+	if m.relationship_participants != nil {
+		edges = append(edges, revenueworkspace.EdgeRelationshipParticipants)
+	}
+	if m.relationship_observations != nil {
+		edges = append(edges, revenueworkspace.EdgeRelationshipObservations)
+	}
+	if m.relationship_assertions != nil {
+		edges = append(edges, revenueworkspace.EdgeRelationshipAssertions)
+	}
+	if m.relationship_state_snapshots != nil {
+		edges = append(edges, revenueworkspace.EdgeRelationshipStateSnapshots)
+	}
+	if m.relationship_source_statuses != nil {
+		edges = append(edges, revenueworkspace.EdgeRelationshipSourceStatuses)
 	}
 	return edges
 }
@@ -51468,13 +58016,43 @@ func (m *RevenueWorkspaceMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgeRelationshipParticipants:
+		ids := make([]ent.Value, 0, len(m.relationship_participants))
+		for id := range m.relationship_participants {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeRelationshipObservations:
+		ids := make([]ent.Value, 0, len(m.relationship_observations))
+		for id := range m.relationship_observations {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeRelationshipAssertions:
+		ids := make([]ent.Value, 0, len(m.relationship_assertions))
+		for id := range m.relationship_assertions {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeRelationshipStateSnapshots:
+		ids := make([]ent.Value, 0, len(m.relationship_state_snapshots))
+		for id := range m.relationship_state_snapshots {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeRelationshipSourceStatuses:
+		ids := make([]ent.Value, 0, len(m.relationship_source_statuses))
+		for id := range m.relationship_source_statuses {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 15)
 	if m.removedmembers != nil {
 		edges = append(edges, revenueworkspace.EdgeMembers)
 	}
@@ -51501,6 +58079,21 @@ func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
 	}
 	if m.removedscans != nil {
 		edges = append(edges, revenueworkspace.EdgeScans)
+	}
+	if m.removedrelationship_participants != nil {
+		edges = append(edges, revenueworkspace.EdgeRelationshipParticipants)
+	}
+	if m.removedrelationship_observations != nil {
+		edges = append(edges, revenueworkspace.EdgeRelationshipObservations)
+	}
+	if m.removedrelationship_assertions != nil {
+		edges = append(edges, revenueworkspace.EdgeRelationshipAssertions)
+	}
+	if m.removedrelationship_state_snapshots != nil {
+		edges = append(edges, revenueworkspace.EdgeRelationshipStateSnapshots)
+	}
+	if m.removedrelationship_source_statuses != nil {
+		edges = append(edges, revenueworkspace.EdgeRelationshipSourceStatuses)
 	}
 	return edges
 }
@@ -51563,13 +58156,43 @@ func (m *RevenueWorkspaceMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgeRelationshipParticipants:
+		ids := make([]ent.Value, 0, len(m.removedrelationship_participants))
+		for id := range m.removedrelationship_participants {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeRelationshipObservations:
+		ids := make([]ent.Value, 0, len(m.removedrelationship_observations))
+		for id := range m.removedrelationship_observations {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeRelationshipAssertions:
+		ids := make([]ent.Value, 0, len(m.removedrelationship_assertions))
+		for id := range m.removedrelationship_assertions {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeRelationshipStateSnapshots:
+		ids := make([]ent.Value, 0, len(m.removedrelationship_state_snapshots))
+		for id := range m.removedrelationship_state_snapshots {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeRelationshipSourceStatuses:
+		ids := make([]ent.Value, 0, len(m.removedrelationship_source_statuses))
+		for id := range m.removedrelationship_source_statuses {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 15)
 	if m.cleareduser {
 		edges = append(edges, revenueworkspace.EdgeUser)
 	}
@@ -51600,6 +58223,21 @@ func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
 	if m.clearedscans {
 		edges = append(edges, revenueworkspace.EdgeScans)
 	}
+	if m.clearedrelationship_participants {
+		edges = append(edges, revenueworkspace.EdgeRelationshipParticipants)
+	}
+	if m.clearedrelationship_observations {
+		edges = append(edges, revenueworkspace.EdgeRelationshipObservations)
+	}
+	if m.clearedrelationship_assertions {
+		edges = append(edges, revenueworkspace.EdgeRelationshipAssertions)
+	}
+	if m.clearedrelationship_state_snapshots {
+		edges = append(edges, revenueworkspace.EdgeRelationshipStateSnapshots)
+	}
+	if m.clearedrelationship_source_statuses {
+		edges = append(edges, revenueworkspace.EdgeRelationshipSourceStatuses)
+	}
 	return edges
 }
 
@@ -51627,6 +58265,16 @@ func (m *RevenueWorkspaceMutation) EdgeCleared(name string) bool {
 		return m.clearedoutbox_events
 	case revenueworkspace.EdgeScans:
 		return m.clearedscans
+	case revenueworkspace.EdgeRelationshipParticipants:
+		return m.clearedrelationship_participants
+	case revenueworkspace.EdgeRelationshipObservations:
+		return m.clearedrelationship_observations
+	case revenueworkspace.EdgeRelationshipAssertions:
+		return m.clearedrelationship_assertions
+	case revenueworkspace.EdgeRelationshipStateSnapshots:
+		return m.clearedrelationship_state_snapshots
+	case revenueworkspace.EdgeRelationshipSourceStatuses:
+		return m.clearedrelationship_source_statuses
 	}
 	return false
 }
@@ -51675,6 +58323,21 @@ func (m *RevenueWorkspaceMutation) ResetEdge(name string) error {
 		return nil
 	case revenueworkspace.EdgeScans:
 		m.ResetScans()
+		return nil
+	case revenueworkspace.EdgeRelationshipParticipants:
+		m.ResetRelationshipParticipants()
+		return nil
+	case revenueworkspace.EdgeRelationshipObservations:
+		m.ResetRelationshipObservations()
+		return nil
+	case revenueworkspace.EdgeRelationshipAssertions:
+		m.ResetRelationshipAssertions()
+		return nil
+	case revenueworkspace.EdgeRelationshipStateSnapshots:
+		m.ResetRelationshipStateSnapshots()
+		return nil
+	case revenueworkspace.EdgeRelationshipSourceStatuses:
+		m.ResetRelationshipSourceStatuses()
 		return nil
 	}
 	return fmt.Errorf("unknown RevenueWorkspace edge %s", name)
@@ -54352,6 +61015,21 @@ type UserMutation struct {
 	mail_signals                           map[uuid.UUID]struct{}
 	removedmail_signals                    map[uuid.UUID]struct{}
 	clearedmail_signals                    bool
+	relationship_participants              map[uuid.UUID]struct{}
+	removedrelationship_participants       map[uuid.UUID]struct{}
+	clearedrelationship_participants       bool
+	relationship_observations              map[uuid.UUID]struct{}
+	removedrelationship_observations       map[uuid.UUID]struct{}
+	clearedrelationship_observations       bool
+	relationship_assertions                map[uuid.UUID]struct{}
+	removedrelationship_assertions         map[uuid.UUID]struct{}
+	clearedrelationship_assertions         bool
+	relationship_state_snapshots           map[uuid.UUID]struct{}
+	removedrelationship_state_snapshots    map[uuid.UUID]struct{}
+	clearedrelationship_state_snapshots    bool
+	relationship_source_statuses           map[uuid.UUID]struct{}
+	removedrelationship_source_statuses    map[uuid.UUID]struct{}
+	clearedrelationship_source_statuses    bool
 	action_proposals                       map[uuid.UUID]struct{}
 	removedaction_proposals                map[uuid.UUID]struct{}
 	clearedaction_proposals                bool
@@ -56548,6 +63226,276 @@ func (m *UserMutation) ResetMailSignals() {
 	m.removedmail_signals = nil
 }
 
+// AddRelationshipParticipantIDs adds the "relationship_participants" edge to the RelationshipParticipant entity by ids.
+func (m *UserMutation) AddRelationshipParticipantIDs(ids ...uuid.UUID) {
+	if m.relationship_participants == nil {
+		m.relationship_participants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.relationship_participants[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRelationshipParticipants clears the "relationship_participants" edge to the RelationshipParticipant entity.
+func (m *UserMutation) ClearRelationshipParticipants() {
+	m.clearedrelationship_participants = true
+}
+
+// RelationshipParticipantsCleared reports if the "relationship_participants" edge to the RelationshipParticipant entity was cleared.
+func (m *UserMutation) RelationshipParticipantsCleared() bool {
+	return m.clearedrelationship_participants
+}
+
+// RemoveRelationshipParticipantIDs removes the "relationship_participants" edge to the RelationshipParticipant entity by IDs.
+func (m *UserMutation) RemoveRelationshipParticipantIDs(ids ...uuid.UUID) {
+	if m.removedrelationship_participants == nil {
+		m.removedrelationship_participants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.relationship_participants, ids[i])
+		m.removedrelationship_participants[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelationshipParticipants returns the removed IDs of the "relationship_participants" edge to the RelationshipParticipant entity.
+func (m *UserMutation) RemovedRelationshipParticipantsIDs() (ids []uuid.UUID) {
+	for id := range m.removedrelationship_participants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelationshipParticipantsIDs returns the "relationship_participants" edge IDs in the mutation.
+func (m *UserMutation) RelationshipParticipantsIDs() (ids []uuid.UUID) {
+	for id := range m.relationship_participants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelationshipParticipants resets all changes to the "relationship_participants" edge.
+func (m *UserMutation) ResetRelationshipParticipants() {
+	m.relationship_participants = nil
+	m.clearedrelationship_participants = false
+	m.removedrelationship_participants = nil
+}
+
+// AddRelationshipObservationIDs adds the "relationship_observations" edge to the RelationshipObservation entity by ids.
+func (m *UserMutation) AddRelationshipObservationIDs(ids ...uuid.UUID) {
+	if m.relationship_observations == nil {
+		m.relationship_observations = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.relationship_observations[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRelationshipObservations clears the "relationship_observations" edge to the RelationshipObservation entity.
+func (m *UserMutation) ClearRelationshipObservations() {
+	m.clearedrelationship_observations = true
+}
+
+// RelationshipObservationsCleared reports if the "relationship_observations" edge to the RelationshipObservation entity was cleared.
+func (m *UserMutation) RelationshipObservationsCleared() bool {
+	return m.clearedrelationship_observations
+}
+
+// RemoveRelationshipObservationIDs removes the "relationship_observations" edge to the RelationshipObservation entity by IDs.
+func (m *UserMutation) RemoveRelationshipObservationIDs(ids ...uuid.UUID) {
+	if m.removedrelationship_observations == nil {
+		m.removedrelationship_observations = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.relationship_observations, ids[i])
+		m.removedrelationship_observations[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelationshipObservations returns the removed IDs of the "relationship_observations" edge to the RelationshipObservation entity.
+func (m *UserMutation) RemovedRelationshipObservationsIDs() (ids []uuid.UUID) {
+	for id := range m.removedrelationship_observations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelationshipObservationsIDs returns the "relationship_observations" edge IDs in the mutation.
+func (m *UserMutation) RelationshipObservationsIDs() (ids []uuid.UUID) {
+	for id := range m.relationship_observations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelationshipObservations resets all changes to the "relationship_observations" edge.
+func (m *UserMutation) ResetRelationshipObservations() {
+	m.relationship_observations = nil
+	m.clearedrelationship_observations = false
+	m.removedrelationship_observations = nil
+}
+
+// AddRelationshipAssertionIDs adds the "relationship_assertions" edge to the RelationshipAssertion entity by ids.
+func (m *UserMutation) AddRelationshipAssertionIDs(ids ...uuid.UUID) {
+	if m.relationship_assertions == nil {
+		m.relationship_assertions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.relationship_assertions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRelationshipAssertions clears the "relationship_assertions" edge to the RelationshipAssertion entity.
+func (m *UserMutation) ClearRelationshipAssertions() {
+	m.clearedrelationship_assertions = true
+}
+
+// RelationshipAssertionsCleared reports if the "relationship_assertions" edge to the RelationshipAssertion entity was cleared.
+func (m *UserMutation) RelationshipAssertionsCleared() bool {
+	return m.clearedrelationship_assertions
+}
+
+// RemoveRelationshipAssertionIDs removes the "relationship_assertions" edge to the RelationshipAssertion entity by IDs.
+func (m *UserMutation) RemoveRelationshipAssertionIDs(ids ...uuid.UUID) {
+	if m.removedrelationship_assertions == nil {
+		m.removedrelationship_assertions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.relationship_assertions, ids[i])
+		m.removedrelationship_assertions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelationshipAssertions returns the removed IDs of the "relationship_assertions" edge to the RelationshipAssertion entity.
+func (m *UserMutation) RemovedRelationshipAssertionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedrelationship_assertions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelationshipAssertionsIDs returns the "relationship_assertions" edge IDs in the mutation.
+func (m *UserMutation) RelationshipAssertionsIDs() (ids []uuid.UUID) {
+	for id := range m.relationship_assertions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelationshipAssertions resets all changes to the "relationship_assertions" edge.
+func (m *UserMutation) ResetRelationshipAssertions() {
+	m.relationship_assertions = nil
+	m.clearedrelationship_assertions = false
+	m.removedrelationship_assertions = nil
+}
+
+// AddRelationshipStateSnapshotIDs adds the "relationship_state_snapshots" edge to the RelationshipStateSnapshot entity by ids.
+func (m *UserMutation) AddRelationshipStateSnapshotIDs(ids ...uuid.UUID) {
+	if m.relationship_state_snapshots == nil {
+		m.relationship_state_snapshots = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.relationship_state_snapshots[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRelationshipStateSnapshots clears the "relationship_state_snapshots" edge to the RelationshipStateSnapshot entity.
+func (m *UserMutation) ClearRelationshipStateSnapshots() {
+	m.clearedrelationship_state_snapshots = true
+}
+
+// RelationshipStateSnapshotsCleared reports if the "relationship_state_snapshots" edge to the RelationshipStateSnapshot entity was cleared.
+func (m *UserMutation) RelationshipStateSnapshotsCleared() bool {
+	return m.clearedrelationship_state_snapshots
+}
+
+// RemoveRelationshipStateSnapshotIDs removes the "relationship_state_snapshots" edge to the RelationshipStateSnapshot entity by IDs.
+func (m *UserMutation) RemoveRelationshipStateSnapshotIDs(ids ...uuid.UUID) {
+	if m.removedrelationship_state_snapshots == nil {
+		m.removedrelationship_state_snapshots = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.relationship_state_snapshots, ids[i])
+		m.removedrelationship_state_snapshots[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelationshipStateSnapshots returns the removed IDs of the "relationship_state_snapshots" edge to the RelationshipStateSnapshot entity.
+func (m *UserMutation) RemovedRelationshipStateSnapshotsIDs() (ids []uuid.UUID) {
+	for id := range m.removedrelationship_state_snapshots {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelationshipStateSnapshotsIDs returns the "relationship_state_snapshots" edge IDs in the mutation.
+func (m *UserMutation) RelationshipStateSnapshotsIDs() (ids []uuid.UUID) {
+	for id := range m.relationship_state_snapshots {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelationshipStateSnapshots resets all changes to the "relationship_state_snapshots" edge.
+func (m *UserMutation) ResetRelationshipStateSnapshots() {
+	m.relationship_state_snapshots = nil
+	m.clearedrelationship_state_snapshots = false
+	m.removedrelationship_state_snapshots = nil
+}
+
+// AddRelationshipSourceStatusIDs adds the "relationship_source_statuses" edge to the RelationshipSourceStatus entity by ids.
+func (m *UserMutation) AddRelationshipSourceStatusIDs(ids ...uuid.UUID) {
+	if m.relationship_source_statuses == nil {
+		m.relationship_source_statuses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.relationship_source_statuses[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRelationshipSourceStatuses clears the "relationship_source_statuses" edge to the RelationshipSourceStatus entity.
+func (m *UserMutation) ClearRelationshipSourceStatuses() {
+	m.clearedrelationship_source_statuses = true
+}
+
+// RelationshipSourceStatusesCleared reports if the "relationship_source_statuses" edge to the RelationshipSourceStatus entity was cleared.
+func (m *UserMutation) RelationshipSourceStatusesCleared() bool {
+	return m.clearedrelationship_source_statuses
+}
+
+// RemoveRelationshipSourceStatusIDs removes the "relationship_source_statuses" edge to the RelationshipSourceStatus entity by IDs.
+func (m *UserMutation) RemoveRelationshipSourceStatusIDs(ids ...uuid.UUID) {
+	if m.removedrelationship_source_statuses == nil {
+		m.removedrelationship_source_statuses = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.relationship_source_statuses, ids[i])
+		m.removedrelationship_source_statuses[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelationshipSourceStatuses returns the removed IDs of the "relationship_source_statuses" edge to the RelationshipSourceStatus entity.
+func (m *UserMutation) RemovedRelationshipSourceStatusesIDs() (ids []uuid.UUID) {
+	for id := range m.removedrelationship_source_statuses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelationshipSourceStatusesIDs returns the "relationship_source_statuses" edge IDs in the mutation.
+func (m *UserMutation) RelationshipSourceStatusesIDs() (ids []uuid.UUID) {
+	for id := range m.relationship_source_statuses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelationshipSourceStatuses resets all changes to the "relationship_source_statuses" edge.
+func (m *UserMutation) ResetRelationshipSourceStatuses() {
+	m.relationship_source_statuses = nil
+	m.clearedrelationship_source_statuses = false
+	m.removedrelationship_source_statuses = nil
+}
+
 // AddActionProposalIDs adds the "action_proposals" edge to the ActionProposal entity by ids.
 func (m *UserMutation) AddActionProposalIDs(ids ...uuid.UUID) {
 	if m.action_proposals == nil {
@@ -56872,7 +63820,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 37)
+	edges := make([]string, 0, 42)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -56977,6 +63925,21 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.mail_signals != nil {
 		edges = append(edges, user.EdgeMailSignals)
+	}
+	if m.relationship_participants != nil {
+		edges = append(edges, user.EdgeRelationshipParticipants)
+	}
+	if m.relationship_observations != nil {
+		edges = append(edges, user.EdgeRelationshipObservations)
+	}
+	if m.relationship_assertions != nil {
+		edges = append(edges, user.EdgeRelationshipAssertions)
+	}
+	if m.relationship_state_snapshots != nil {
+		edges = append(edges, user.EdgeRelationshipStateSnapshots)
+	}
+	if m.relationship_source_statuses != nil {
+		edges = append(edges, user.EdgeRelationshipSourceStatuses)
 	}
 	if m.action_proposals != nil {
 		edges = append(edges, user.EdgeActionProposals)
@@ -57199,6 +64162,36 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeRelationshipParticipants:
+		ids := make([]ent.Value, 0, len(m.relationship_participants))
+		for id := range m.relationship_participants {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeRelationshipObservations:
+		ids := make([]ent.Value, 0, len(m.relationship_observations))
+		for id := range m.relationship_observations {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeRelationshipAssertions:
+		ids := make([]ent.Value, 0, len(m.relationship_assertions))
+		for id := range m.relationship_assertions {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeRelationshipStateSnapshots:
+		ids := make([]ent.Value, 0, len(m.relationship_state_snapshots))
+		for id := range m.relationship_state_snapshots {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeRelationshipSourceStatuses:
+		ids := make([]ent.Value, 0, len(m.relationship_source_statuses))
+		for id := range m.relationship_source_statuses {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeActionProposals:
 		ids := make([]ent.Value, 0, len(m.action_proposals))
 		for id := range m.action_proposals {
@@ -57217,7 +64210,7 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 37)
+	edges := make([]string, 0, 42)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -57319,6 +64312,21 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedmail_signals != nil {
 		edges = append(edges, user.EdgeMailSignals)
+	}
+	if m.removedrelationship_participants != nil {
+		edges = append(edges, user.EdgeRelationshipParticipants)
+	}
+	if m.removedrelationship_observations != nil {
+		edges = append(edges, user.EdgeRelationshipObservations)
+	}
+	if m.removedrelationship_assertions != nil {
+		edges = append(edges, user.EdgeRelationshipAssertions)
+	}
+	if m.removedrelationship_state_snapshots != nil {
+		edges = append(edges, user.EdgeRelationshipStateSnapshots)
+	}
+	if m.removedrelationship_source_statuses != nil {
+		edges = append(edges, user.EdgeRelationshipSourceStatuses)
 	}
 	if m.removedaction_proposals != nil {
 		edges = append(edges, user.EdgeActionProposals)
@@ -57537,6 +64545,36 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeRelationshipParticipants:
+		ids := make([]ent.Value, 0, len(m.removedrelationship_participants))
+		for id := range m.removedrelationship_participants {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeRelationshipObservations:
+		ids := make([]ent.Value, 0, len(m.removedrelationship_observations))
+		for id := range m.removedrelationship_observations {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeRelationshipAssertions:
+		ids := make([]ent.Value, 0, len(m.removedrelationship_assertions))
+		for id := range m.removedrelationship_assertions {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeRelationshipStateSnapshots:
+		ids := make([]ent.Value, 0, len(m.removedrelationship_state_snapshots))
+		for id := range m.removedrelationship_state_snapshots {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeRelationshipSourceStatuses:
+		ids := make([]ent.Value, 0, len(m.removedrelationship_source_statuses))
+		for id := range m.removedrelationship_source_statuses {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeActionProposals:
 		ids := make([]ent.Value, 0, len(m.removedaction_proposals))
 		for id := range m.removedaction_proposals {
@@ -57555,7 +64593,7 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 37)
+	edges := make([]string, 0, 42)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -57661,6 +64699,21 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedmail_signals {
 		edges = append(edges, user.EdgeMailSignals)
 	}
+	if m.clearedrelationship_participants {
+		edges = append(edges, user.EdgeRelationshipParticipants)
+	}
+	if m.clearedrelationship_observations {
+		edges = append(edges, user.EdgeRelationshipObservations)
+	}
+	if m.clearedrelationship_assertions {
+		edges = append(edges, user.EdgeRelationshipAssertions)
+	}
+	if m.clearedrelationship_state_snapshots {
+		edges = append(edges, user.EdgeRelationshipStateSnapshots)
+	}
+	if m.clearedrelationship_source_statuses {
+		edges = append(edges, user.EdgeRelationshipSourceStatuses)
+	}
 	if m.clearedaction_proposals {
 		edges = append(edges, user.EdgeActionProposals)
 	}
@@ -57744,6 +64797,16 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedmail_body_caches
 	case user.EdgeMailSignals:
 		return m.clearedmail_signals
+	case user.EdgeRelationshipParticipants:
+		return m.clearedrelationship_participants
+	case user.EdgeRelationshipObservations:
+		return m.clearedrelationship_observations
+	case user.EdgeRelationshipAssertions:
+		return m.clearedrelationship_assertions
+	case user.EdgeRelationshipStateSnapshots:
+		return m.clearedrelationship_state_snapshots
+	case user.EdgeRelationshipSourceStatuses:
+		return m.clearedrelationship_source_statuses
 	case user.EdgeActionProposals:
 		return m.clearedaction_proposals
 	case user.EdgeApprovalTokens:
@@ -57871,6 +64934,21 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeMailSignals:
 		m.ResetMailSignals()
+		return nil
+	case user.EdgeRelationshipParticipants:
+		m.ResetRelationshipParticipants()
+		return nil
+	case user.EdgeRelationshipObservations:
+		m.ResetRelationshipObservations()
+		return nil
+	case user.EdgeRelationshipAssertions:
+		m.ResetRelationshipAssertions()
+		return nil
+	case user.EdgeRelationshipStateSnapshots:
+		m.ResetRelationshipStateSnapshots()
+		return nil
+	case user.EdgeRelationshipSourceStatuses:
+		m.ResetRelationshipSourceStatuses()
 		return nil
 	case user.EdgeActionProposals:
 		m.ResetActionProposals()

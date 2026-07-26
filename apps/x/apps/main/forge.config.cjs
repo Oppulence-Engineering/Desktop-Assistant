@@ -5,10 +5,10 @@
 const path = require("path");
 const pkg = require("./package.json");
 
-const PRODUCT_NAME = "Solomon AI";
-const PRODUCT_SLUG = "solomon-ai";
-const PRODUCT_ARTIFACT_NAME = "Solomon-AI";
-const LEGACY_DEEP_LINK_SCHEME = "rowboat";
+const PRODUCT_NAME = "Oppulence";
+const PRODUCT_SLUG = "oppulence";
+const PRODUCT_ARTIFACT_NAME = "Oppulence";
+const LEGACY_DEEP_LINK_SCHEMES = ["solomon-ai", "rowboat"];
 const appleSigningConfigured = Boolean(
   process.env.APPLE_ID?.trim() &&
   process.env.APPLE_PASSWORD?.trim() &&
@@ -22,7 +22,7 @@ const packagerConfig = {
   icon: "./icons/icon", // .icns extension added automatically
   appBundleId: "co.solomon-ai.desktop",
   appCategoryType: "public.app-category.productivity",
-  protocols: [{ name: PRODUCT_NAME, schemes: [PRODUCT_SLUG, LEGACY_DEEP_LINK_SCHEME] }],
+  protocols: [{ name: PRODUCT_NAME, schemes: [PRODUCT_SLUG, ...LEGACY_DEEP_LINK_SCHEMES] }],
   extendInfo: {
     NSMicrophoneUsageDescription: `${PRODUCT_NAME} needs microphone access to transcribe voice input and meeting audio.`,
     NSAudioCaptureUsageDescription: `${PRODUCT_NAME} needs access to system audio to transcribe meetings from other apps (Zoom, Meet, etc.)`,
@@ -62,13 +62,13 @@ module.exports = {
         format: "ULFO",
         title: PRODUCT_NAME,
         name: `${PRODUCT_ARTIFACT_NAME}-darwin-${arch}-${pkg.version}`, // Architecture-specific name to avoid conflicts
-        volumeName: "Solomon AI", // short (<27 chars) — long names break the macOS DMG build
+        volumeName: PRODUCT_NAME,
       }),
     },
     {
       name: "@electron-forge/maker-squirrel",
       config: (arch) => ({
-        authors: "Solomon AI",
+        authors: "Playbook Media",
         description: "AI coworker with memory",
         name: `${PRODUCT_ARTIFACT_NAME}-win32-${arch}`,
         setupExe: `${PRODUCT_ARTIFACT_NAME}-win32-${arch}-${pkg.version}-setup.exe`,
@@ -82,12 +82,12 @@ module.exports = {
           name: `${PRODUCT_ARTIFACT_NAME}-linux`,
           bin: PRODUCT_SLUG,
           description: "AI coworker with memory",
-          maintainer: "Solomon AI",
-          homepage: "https://solomon-ai.co",
+          maintainer: "Playbook Media",
+          homepage: "https://oppulence.io",
           icon: path.join(__dirname, "icons/icon.png"),
           mimeType: [
             `x-scheme-handler/${PRODUCT_SLUG}`,
-            `x-scheme-handler/${LEGACY_DEEP_LINK_SCHEME}`,
+            ...LEGACY_DEEP_LINK_SCHEMES.map((scheme) => `x-scheme-handler/${scheme}`),
           ],
         },
       }),
@@ -99,11 +99,11 @@ module.exports = {
           name: `${PRODUCT_ARTIFACT_NAME}-linux`,
           bin: PRODUCT_SLUG,
           description: "AI coworker with memory",
-          homepage: "https://solomon-ai.co",
+          homepage: "https://oppulence.io",
           icon: path.join(__dirname, "icons/icon.png"),
           mimeType: [
             `x-scheme-handler/${PRODUCT_SLUG}`,
-            `x-scheme-handler/${LEGACY_DEEP_LINK_SCHEME}`,
+            ...LEGACY_DEEP_LINK_SCHEMES.map((scheme) => `x-scheme-handler/${scheme}`),
           ],
         },
       },

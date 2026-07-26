@@ -15,3 +15,6 @@ export * as voice from "./voice/voice.js";
 
 // Provider-neutral mailbox foundation, rules engine, and reply tracking
 export * as mailbox from "./mailbox/mailbox.js";
+
+// Canonical relationship-intelligence API shared by the desktop mission control.
+export * as relationships from "./relationships/client.js";

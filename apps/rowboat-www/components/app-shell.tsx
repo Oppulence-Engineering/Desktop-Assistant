@@ -4,25 +4,33 @@ import * as React from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  AddressBook,
+  Bell,
+  Brain,
   BookOpen,
   CaretRight,
   CaretUpDown,
   ChatsCircle,
   Clock,
   Cpu,
-  CurrencyDollar,
   DotsThree,
   Folder,
   GearSix,
+  HardDrives,
   Monitor,
   Moon,
   Palette,
   Play,
   Plugs,
   Plus,
+  Question,
   Rocket,
+  ShieldCheck,
   SignOut,
   Sun,
+  Tag,
+  TerminalWindow,
+  Waveform,
   Wallet,
   type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
@@ -46,15 +54,202 @@ import { cn } from "@/lib/utils";
 
 export type ResourceKind = "agent" | "config" | "run" | "task" | "taskrun";
 
-export type SettingsSection = "general" | "appearance" | "models" | "connectors" | "plan";
+export type SettingsSection =
+  | "overview"
+  | "preferences"
+  | "notifications"
+  | "permissions"
+  | "security"
+  | "extensions"
+  | "connections"
+  | "transcription"
+  | "note-tagging"
+  | "advanced"
+  | "models"
+  | "code-mode"
+  | "customization"
+  | "appearance"
+  | "mcp"
+  | "environment"
+  | "updates"
+  | "memory"
+  | "recovery"
+  | "account"
+  | "connect"
+  | "help";
 
-export const SETTINGS_SECTIONS: { key: SettingsSection; label: string; icon: PhosphorIcon }[] = [
-  { key: "general", label: "General", icon: GearSix },
-  { key: "appearance", label: "Appearance", icon: Palette },
-  { key: "models", label: "Models", icon: Cpu },
-  { key: "connectors", label: "Connectors", icon: Plugs },
-  { key: "plan", label: "Plan & Usage", icon: Wallet },
+export type SettingsGroup = "workspace" | "global" | "cloud" | "support";
+
+export const SETTINGS_SECTIONS: {
+  key: SettingsSection;
+  label: string;
+  icon: PhosphorIcon;
+  group?: SettingsGroup;
+  description: string;
+  beta?: boolean;
+}[] = [
+  {
+    key: "overview",
+    label: "Settings",
+    icon: GearSix,
+    description: "Everything that shapes your workspace and account.",
+  },
+  {
+    key: "preferences",
+    label: "Preferences",
+    icon: Clock,
+    group: "workspace",
+    description: "Default agent, reasoning, notifications, privacy, and memory.",
+  },
+  {
+    key: "notifications",
+    label: "Notifications",
+    icon: Bell,
+    group: "workspace",
+    description: "Configure browser and relationship notification preferences.",
+  },
+  {
+    key: "permissions",
+    label: "Permissions",
+    icon: AddressBook,
+    group: "workspace",
+    description: "Control identity, access, and authorized workspace resources.",
+  },
+  {
+    key: "security",
+    label: "Security",
+    icon: ShieldCheck,
+    group: "workspace",
+    description: "Review session security and authorized evidence access.",
+  },
+  {
+    key: "extensions",
+    label: "Extensions",
+    icon: Plugs,
+    group: "workspace",
+    description: "Connect the services and tools your relationships live in.",
+  },
+  {
+    key: "connections",
+    label: "Connections",
+    icon: Plugs,
+    group: "workspace",
+    description: "Manage connected accounts and available tools.",
+  },
+  {
+    key: "transcription",
+    label: "Transcription",
+    icon: Waveform,
+    group: "workspace",
+    description: "Review speech-to-text availability and desktop configuration.",
+  },
+  {
+    key: "note-tagging",
+    label: "Note Tagging",
+    icon: Tag,
+    group: "workspace",
+    description: "Manage the note and email taxonomy used by the desktop app.",
+  },
+  {
+    key: "advanced",
+    label: "Advanced",
+    icon: Rocket,
+    group: "workspace",
+    description: "Inspect endpoints, diagnostics, and advanced workspace controls.",
+  },
+  {
+    key: "models",
+    label: "AI Providers",
+    icon: Cpu,
+    group: "global",
+    description: "Choose the models that reason over relationship evidence.",
+  },
+  {
+    key: "code-mode",
+    label: "Code Mode",
+    icon: TerminalWindow,
+    group: "global",
+    description: "Review governed agent execution and approval behavior.",
+  },
+  {
+    key: "customization",
+    label: "Customization",
+    icon: Folder,
+    group: "global",
+    description: "Tune product branding, navigation, and workspace layout.",
+  },
+  {
+    key: "appearance",
+    label: "Appearance",
+    icon: Palette,
+    group: "global",
+    description: "Set theme, language, and window preferences.",
+  },
+  {
+    key: "mcp",
+    label: "MCP Servers",
+    icon: HardDrives,
+    group: "global",
+    description: "Review the tool servers available to desktop agents.",
+  },
+  {
+    key: "environment",
+    label: "Environment",
+    icon: Monitor,
+    group: "global",
+    description: "Review the browser, runtime, and API environment.",
+  },
+  {
+    key: "updates",
+    label: "Updates",
+    icon: Play,
+    group: "global",
+    description: "Keep the product current with controlled release settings.",
+  },
+  {
+    key: "memory",
+    label: "Memory",
+    icon: Brain,
+    group: "global",
+    description: "Manage private semantic memory preferences.",
+  },
+  {
+    key: "recovery",
+    label: "Recovery",
+    icon: BookOpen,
+    group: "global",
+    description: "Reset local preferences or recover your workspace session.",
+  },
+  {
+    key: "account",
+    label: "Account",
+    icon: Wallet,
+    group: "cloud",
+    description: "Manage your identity, organization, plan, and active session.",
+  },
+  {
+    key: "connect",
+    label: "Oppulence Connect",
+    icon: Plus,
+    group: "cloud",
+    description: "Manage organization-approved, shared cloud connections.",
+    beta: true,
+  },
+  {
+    key: "help",
+    label: "Help",
+    icon: Question,
+    group: "support",
+    description: "Get help, report a problem, or read the documentation.",
+  },
 ];
+
+const SETTINGS_GROUP_LABELS: Record<SettingsGroup, string> = {
+  workspace: "Workspace",
+  global: "Global",
+  cloud: "Cloud",
+  support: "Support",
+};
 
 export type ThemePreference = "light" | "dark" | "system";
 
@@ -236,7 +431,7 @@ export function AppShellSidebar({
   onNavigateChat,
   onNavigateRevenue,
   view = "chat",
-  settingsSection = "general",
+  settingsSection = "overview",
   onOpenSettings,
   onCloseSettings,
   sessions = [],
@@ -395,30 +590,52 @@ export function AppShellSidebar({
       className={cn(
         "relative flex h-full shrink-0 overflow-hidden border-r transition-all duration-200 ease-in-out",
         open ? "w-72" : "w-0 border-r-0",
+        view === "settings" && "settings-rail",
       )}
     >
       <div className="flex h-full w-72 shrink-0 flex-col">
         {view === "settings" ? (
-          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2">
-            <div className="mb-1 flex items-center gap-1.5 px-1 pt-1">
-              <button
-                aria-label="Back to chat"
-                className="flex size-7 items-center justify-center rounded-md text-primary/60 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-300"
-                onClick={onCloseSettings}
-                type="button"
-              >
-                <ArrowLeft className="size-4" />
-              </button>
-              <span className="text-sm font-medium text-primary">Settings</span>
-            </div>
-            {SETTINGS_SECTIONS.map((section) => (
-              <SidebarNavItem
-                active={settingsSection === section.key}
-                icon={section.icon}
-                key={section.key}
-                label={section.label}
-                onClick={() => onOpenSettings?.(section.key)}
-              />
+          <nav className="settings-rail-scroll flex flex-1 flex-col overflow-y-auto px-2 pb-3 pt-2">
+            <button className="settings-back" onClick={onCloseSettings} type="button">
+              <ArrowLeft className="size-3.5" />
+              <span>Back to app</span>
+            </button>
+            <button
+              className="settings-identity"
+              onClick={() => onOpenSettings?.("overview")}
+              type="button"
+            >
+              <span>Oppulence</span>
+              <CaretRight className="size-3.5 rotate-90" />
+            </button>
+            <button
+              className="settings-nav-item mt-1"
+              data-active={settingsSection === "overview"}
+              onClick={() => onOpenSettings?.("overview")}
+              type="button"
+            >
+              <GearSix />
+              <span>Settings</span>
+            </button>
+            {(["workspace", "global", "cloud", "support"] as SettingsGroup[]).map((group) => (
+              <div key={group}>
+                <div className="settings-rail-heading">{SETTINGS_GROUP_LABELS[group]}</div>
+                <div className="space-y-0.5">
+                  {SETTINGS_SECTIONS.filter((section) => section.group === group).map((section) => (
+                    <button
+                      className="settings-nav-item"
+                      data-active={settingsSection === section.key}
+                      key={section.key}
+                      onClick={() => onOpenSettings?.(section.key)}
+                      type="button"
+                    >
+                      <section.icon />
+                      <span className="truncate">{section.label}</span>
+                      {section.beta ? <span className="settings-beta">Beta</span> : null}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </nav>
         ) : (
@@ -431,8 +648,8 @@ export function AppShellSidebar({
             />
             <SidebarNavItem
               active={view === "revenue"}
-              icon={CurrencyDollar}
-              label="Revenue"
+              icon={AddressBook}
+              label="Relationships"
               onClick={onNavigateRevenue}
             />
             {groups.map((group) => (
@@ -525,7 +742,7 @@ export function AppShellSidebar({
             active={view === "settings"}
             icon={GearSix}
             label="Settings"
-            onClick={() => onOpenSettings?.("general")}
+            onClick={() => onOpenSettings?.("overview")}
           />
           <Separator className="my-1 opacity-30" />
           <DropdownMenu>

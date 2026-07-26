@@ -16,6 +16,10 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
@@ -222,6 +226,26 @@ func (_u *RelationshipUpdate) ClearNextActionAt() *RelationshipUpdate {
 	return _u
 }
 
+// SetNextAction sets the "next_action" field.
+func (_u *RelationshipUpdate) SetNextAction(v string) *RelationshipUpdate {
+	_u.mutation.SetNextAction(v)
+	return _u
+}
+
+// SetNillableNextAction sets the "next_action" field if the given value is not nil.
+func (_u *RelationshipUpdate) SetNillableNextAction(v *string) *RelationshipUpdate {
+	if v != nil {
+		_u.SetNextAction(*v)
+	}
+	return _u
+}
+
+// ClearNextAction clears the value of the "next_action" field.
+func (_u *RelationshipUpdate) ClearNextAction() *RelationshipUpdate {
+	_u.mutation.ClearNextAction()
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *RelationshipUpdate) SetStatus(v string) *RelationshipUpdate {
 	_u.mutation.SetStatus(v)
@@ -233,6 +257,147 @@ func (_u *RelationshipUpdate) SetNillableStatus(v *string) *RelationshipUpdate {
 	if v != nil {
 		_u.SetStatus(*v)
 	}
+	return _u
+}
+
+// SetLifecycle sets the "lifecycle" field.
+func (_u *RelationshipUpdate) SetLifecycle(v string) *RelationshipUpdate {
+	_u.mutation.SetLifecycle(v)
+	return _u
+}
+
+// SetNillableLifecycle sets the "lifecycle" field if the given value is not nil.
+func (_u *RelationshipUpdate) SetNillableLifecycle(v *string) *RelationshipUpdate {
+	if v != nil {
+		_u.SetLifecycle(*v)
+	}
+	return _u
+}
+
+// SetEngagement sets the "engagement" field.
+func (_u *RelationshipUpdate) SetEngagement(v string) *RelationshipUpdate {
+	_u.mutation.SetEngagement(v)
+	return _u
+}
+
+// SetNillableEngagement sets the "engagement" field if the given value is not nil.
+func (_u *RelationshipUpdate) SetNillableEngagement(v *string) *RelationshipUpdate {
+	if v != nil {
+		_u.SetEngagement(*v)
+	}
+	return _u
+}
+
+// SetSentiment sets the "sentiment" field.
+func (_u *RelationshipUpdate) SetSentiment(v string) *RelationshipUpdate {
+	_u.mutation.SetSentiment(v)
+	return _u
+}
+
+// SetNillableSentiment sets the "sentiment" field if the given value is not nil.
+func (_u *RelationshipUpdate) SetNillableSentiment(v *string) *RelationshipUpdate {
+	if v != nil {
+		_u.SetSentiment(*v)
+	}
+	return _u
+}
+
+// SetHealth sets the "health" field.
+func (_u *RelationshipUpdate) SetHealth(v string) *RelationshipUpdate {
+	_u.mutation.SetHealth(v)
+	return _u
+}
+
+// SetNillableHealth sets the "health" field if the given value is not nil.
+func (_u *RelationshipUpdate) SetNillableHealth(v *string) *RelationshipUpdate {
+	if v != nil {
+		_u.SetHealth(*v)
+	}
+	return _u
+}
+
+// SetStateReason sets the "state_reason" field.
+func (_u *RelationshipUpdate) SetStateReason(v string) *RelationshipUpdate {
+	_u.mutation.SetStateReason(v)
+	return _u
+}
+
+// SetNillableStateReason sets the "state_reason" field if the given value is not nil.
+func (_u *RelationshipUpdate) SetNillableStateReason(v *string) *RelationshipUpdate {
+	if v != nil {
+		_u.SetStateReason(*v)
+	}
+	return _u
+}
+
+// ClearStateReason clears the value of the "state_reason" field.
+func (_u *RelationshipUpdate) ClearStateReason() *RelationshipUpdate {
+	_u.mutation.ClearStateReason()
+	return _u
+}
+
+// SetStateVersion sets the "state_version" field.
+func (_u *RelationshipUpdate) SetStateVersion(v int) *RelationshipUpdate {
+	_u.mutation.ResetStateVersion()
+	_u.mutation.SetStateVersion(v)
+	return _u
+}
+
+// SetNillableStateVersion sets the "state_version" field if the given value is not nil.
+func (_u *RelationshipUpdate) SetNillableStateVersion(v *int) *RelationshipUpdate {
+	if v != nil {
+		_u.SetStateVersion(*v)
+	}
+	return _u
+}
+
+// AddStateVersion adds value to the "state_version" field.
+func (_u *RelationshipUpdate) AddStateVersion(v int) *RelationshipUpdate {
+	_u.mutation.AddStateVersion(v)
+	return _u
+}
+
+// SetLastChangedAt sets the "last_changed_at" field.
+func (_u *RelationshipUpdate) SetLastChangedAt(v time.Time) *RelationshipUpdate {
+	_u.mutation.SetLastChangedAt(v)
+	return _u
+}
+
+// SetNillableLastChangedAt sets the "last_changed_at" field if the given value is not nil.
+func (_u *RelationshipUpdate) SetNillableLastChangedAt(v *time.Time) *RelationshipUpdate {
+	if v != nil {
+		_u.SetLastChangedAt(*v)
+	}
+	return _u
+}
+
+// ClearLastChangedAt clears the value of the "last_changed_at" field.
+func (_u *RelationshipUpdate) ClearLastChangedAt() *RelationshipUpdate {
+	_u.mutation.ClearLastChangedAt()
+	return _u
+}
+
+// SetRisks sets the "risks" field.
+func (_u *RelationshipUpdate) SetRisks(v []string) *RelationshipUpdate {
+	_u.mutation.SetRisks(v)
+	return _u
+}
+
+// AppendRisks appends value to the "risks" field.
+func (_u *RelationshipUpdate) AppendRisks(v []string) *RelationshipUpdate {
+	_u.mutation.AppendRisks(v)
+	return _u
+}
+
+// SetMilestones sets the "milestones" field.
+func (_u *RelationshipUpdate) SetMilestones(v []string) *RelationshipUpdate {
+	_u.mutation.SetMilestones(v)
+	return _u
+}
+
+// AppendMilestones appends value to the "milestones" field.
+func (_u *RelationshipUpdate) AppendMilestones(v []string) *RelationshipUpdate {
+	_u.mutation.AppendMilestones(v)
 	return _u
 }
 
@@ -316,6 +481,66 @@ func (_u *RelationshipUpdate) AddMailThreads(v ...*MailThread) *RelationshipUpda
 		ids[i] = v[i].ID
 	}
 	return _u.AddMailThreadIDs(ids...)
+}
+
+// AddParticipantIDs adds the "participants" edge to the RelationshipParticipant entity by IDs.
+func (_u *RelationshipUpdate) AddParticipantIDs(ids ...uuid.UUID) *RelationshipUpdate {
+	_u.mutation.AddParticipantIDs(ids...)
+	return _u
+}
+
+// AddParticipants adds the "participants" edges to the RelationshipParticipant entity.
+func (_u *RelationshipUpdate) AddParticipants(v ...*RelationshipParticipant) *RelationshipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddParticipantIDs(ids...)
+}
+
+// AddObservationIDs adds the "observations" edge to the RelationshipObservation entity by IDs.
+func (_u *RelationshipUpdate) AddObservationIDs(ids ...uuid.UUID) *RelationshipUpdate {
+	_u.mutation.AddObservationIDs(ids...)
+	return _u
+}
+
+// AddObservations adds the "observations" edges to the RelationshipObservation entity.
+func (_u *RelationshipUpdate) AddObservations(v ...*RelationshipObservation) *RelationshipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddObservationIDs(ids...)
+}
+
+// AddAssertionIDs adds the "assertions" edge to the RelationshipAssertion entity by IDs.
+func (_u *RelationshipUpdate) AddAssertionIDs(ids ...uuid.UUID) *RelationshipUpdate {
+	_u.mutation.AddAssertionIDs(ids...)
+	return _u
+}
+
+// AddAssertions adds the "assertions" edges to the RelationshipAssertion entity.
+func (_u *RelationshipUpdate) AddAssertions(v ...*RelationshipAssertion) *RelationshipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAssertionIDs(ids...)
+}
+
+// AddSnapshotIDs adds the "snapshots" edge to the RelationshipStateSnapshot entity by IDs.
+func (_u *RelationshipUpdate) AddSnapshotIDs(ids ...uuid.UUID) *RelationshipUpdate {
+	_u.mutation.AddSnapshotIDs(ids...)
+	return _u
+}
+
+// AddSnapshots adds the "snapshots" edges to the RelationshipStateSnapshot entity.
+func (_u *RelationshipUpdate) AddSnapshots(v ...*RelationshipStateSnapshot) *RelationshipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSnapshotIDs(ids...)
 }
 
 // Mutation returns the RelationshipMutation object of the builder.
@@ -419,6 +644,90 @@ func (_u *RelationshipUpdate) RemoveMailThreads(v ...*MailThread) *RelationshipU
 	return _u.RemoveMailThreadIDs(ids...)
 }
 
+// ClearParticipants clears all "participants" edges to the RelationshipParticipant entity.
+func (_u *RelationshipUpdate) ClearParticipants() *RelationshipUpdate {
+	_u.mutation.ClearParticipants()
+	return _u
+}
+
+// RemoveParticipantIDs removes the "participants" edge to RelationshipParticipant entities by IDs.
+func (_u *RelationshipUpdate) RemoveParticipantIDs(ids ...uuid.UUID) *RelationshipUpdate {
+	_u.mutation.RemoveParticipantIDs(ids...)
+	return _u
+}
+
+// RemoveParticipants removes "participants" edges to RelationshipParticipant entities.
+func (_u *RelationshipUpdate) RemoveParticipants(v ...*RelationshipParticipant) *RelationshipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveParticipantIDs(ids...)
+}
+
+// ClearObservations clears all "observations" edges to the RelationshipObservation entity.
+func (_u *RelationshipUpdate) ClearObservations() *RelationshipUpdate {
+	_u.mutation.ClearObservations()
+	return _u
+}
+
+// RemoveObservationIDs removes the "observations" edge to RelationshipObservation entities by IDs.
+func (_u *RelationshipUpdate) RemoveObservationIDs(ids ...uuid.UUID) *RelationshipUpdate {
+	_u.mutation.RemoveObservationIDs(ids...)
+	return _u
+}
+
+// RemoveObservations removes "observations" edges to RelationshipObservation entities.
+func (_u *RelationshipUpdate) RemoveObservations(v ...*RelationshipObservation) *RelationshipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveObservationIDs(ids...)
+}
+
+// ClearAssertions clears all "assertions" edges to the RelationshipAssertion entity.
+func (_u *RelationshipUpdate) ClearAssertions() *RelationshipUpdate {
+	_u.mutation.ClearAssertions()
+	return _u
+}
+
+// RemoveAssertionIDs removes the "assertions" edge to RelationshipAssertion entities by IDs.
+func (_u *RelationshipUpdate) RemoveAssertionIDs(ids ...uuid.UUID) *RelationshipUpdate {
+	_u.mutation.RemoveAssertionIDs(ids...)
+	return _u
+}
+
+// RemoveAssertions removes "assertions" edges to RelationshipAssertion entities.
+func (_u *RelationshipUpdate) RemoveAssertions(v ...*RelationshipAssertion) *RelationshipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAssertionIDs(ids...)
+}
+
+// ClearSnapshots clears all "snapshots" edges to the RelationshipStateSnapshot entity.
+func (_u *RelationshipUpdate) ClearSnapshots() *RelationshipUpdate {
+	_u.mutation.ClearSnapshots()
+	return _u
+}
+
+// RemoveSnapshotIDs removes the "snapshots" edge to RelationshipStateSnapshot entities by IDs.
+func (_u *RelationshipUpdate) RemoveSnapshotIDs(ids ...uuid.UUID) *RelationshipUpdate {
+	_u.mutation.RemoveSnapshotIDs(ids...)
+	return _u
+}
+
+// RemoveSnapshots removes "snapshots" edges to RelationshipStateSnapshot entities.
+func (_u *RelationshipUpdate) RemoveSnapshots(v ...*RelationshipStateSnapshot) *RelationshipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSnapshotIDs(ids...)
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *RelationshipUpdate) Save(ctx context.Context) (int, error) {
 	_u.defaults()
@@ -470,6 +779,31 @@ func (_u *RelationshipUpdate) check() error {
 	if v, ok := _u.mutation.Status(); ok {
 		if err := relationship.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Relationship.status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Lifecycle(); ok {
+		if err := relationship.LifecycleValidator(v); err != nil {
+			return &ValidationError{Name: "lifecycle", err: fmt.Errorf(`ent: validator failed for field "Relationship.lifecycle": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Engagement(); ok {
+		if err := relationship.EngagementValidator(v); err != nil {
+			return &ValidationError{Name: "engagement", err: fmt.Errorf(`ent: validator failed for field "Relationship.engagement": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Sentiment(); ok {
+		if err := relationship.SentimentValidator(v); err != nil {
+			return &ValidationError{Name: "sentiment", err: fmt.Errorf(`ent: validator failed for field "Relationship.sentiment": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Health(); ok {
+		if err := relationship.HealthValidator(v); err != nil {
+			return &ValidationError{Name: "health", err: fmt.Errorf(`ent: validator failed for field "Relationship.health": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.StateVersion(); ok {
+		if err := relationship.StateVersionValidator(v); err != nil {
+			return &ValidationError{Name: "state_version", err: fmt.Errorf(`ent: validator failed for field "Relationship.state_version": %w`, err)}
 		}
 	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
@@ -552,8 +886,60 @@ func (_u *RelationshipUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if _u.mutation.NextActionAtCleared() {
 		_spec.ClearField(relationship.FieldNextActionAt, field.TypeTime)
 	}
+	if value, ok := _u.mutation.NextAction(); ok {
+		_spec.SetField(relationship.FieldNextAction, field.TypeString, value)
+	}
+	if _u.mutation.NextActionCleared() {
+		_spec.ClearField(relationship.FieldNextAction, field.TypeString)
+	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(relationship.FieldStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Lifecycle(); ok {
+		_spec.SetField(relationship.FieldLifecycle, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Engagement(); ok {
+		_spec.SetField(relationship.FieldEngagement, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Sentiment(); ok {
+		_spec.SetField(relationship.FieldSentiment, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Health(); ok {
+		_spec.SetField(relationship.FieldHealth, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.StateReason(); ok {
+		_spec.SetField(relationship.FieldStateReason, field.TypeString, value)
+	}
+	if _u.mutation.StateReasonCleared() {
+		_spec.ClearField(relationship.FieldStateReason, field.TypeString)
+	}
+	if value, ok := _u.mutation.StateVersion(); ok {
+		_spec.SetField(relationship.FieldStateVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedStateVersion(); ok {
+		_spec.AddField(relationship.FieldStateVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.LastChangedAt(); ok {
+		_spec.SetField(relationship.FieldLastChangedAt, field.TypeTime, value)
+	}
+	if _u.mutation.LastChangedAtCleared() {
+		_spec.ClearField(relationship.FieldLastChangedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Risks(); ok {
+		_spec.SetField(relationship.FieldRisks, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRisks(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, relationship.FieldRisks, value)
+		})
+	}
+	if value, ok := _u.mutation.Milestones(); ok {
+		_spec.SetField(relationship.FieldMilestones, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedMilestones(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, relationship.FieldMilestones, value)
+		})
 	}
 	if _u.mutation.WorkspaceCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -786,6 +1172,186 @@ func (_u *RelationshipUpdate) sqlSave(ctx context.Context) (_node int, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ParticipantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ParticipantsTable,
+			Columns: []string{relationship.ParticipantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipparticipant.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedParticipantsIDs(); len(nodes) > 0 && !_u.mutation.ParticipantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ParticipantsTable,
+			Columns: []string{relationship.ParticipantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipparticipant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ParticipantsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ParticipantsTable,
+			Columns: []string{relationship.ParticipantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipparticipant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ObservationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ObservationsTable,
+			Columns: []string{relationship.ObservationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipobservation.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedObservationsIDs(); len(nodes) > 0 && !_u.mutation.ObservationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ObservationsTable,
+			Columns: []string{relationship.ObservationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipobservation.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ObservationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ObservationsTable,
+			Columns: []string{relationship.ObservationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipobservation.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AssertionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.AssertionsTable,
+			Columns: []string{relationship.AssertionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipassertion.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAssertionsIDs(); len(nodes) > 0 && !_u.mutation.AssertionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.AssertionsTable,
+			Columns: []string{relationship.AssertionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipassertion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AssertionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.AssertionsTable,
+			Columns: []string{relationship.AssertionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipassertion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SnapshotsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.SnapshotsTable,
+			Columns: []string{relationship.SnapshotsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipstatesnapshot.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSnapshotsIDs(); len(nodes) > 0 && !_u.mutation.SnapshotsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.SnapshotsTable,
+			Columns: []string{relationship.SnapshotsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipstatesnapshot.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SnapshotsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.SnapshotsTable,
+			Columns: []string{relationship.SnapshotsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipstatesnapshot.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -999,6 +1565,26 @@ func (_u *RelationshipUpdateOne) ClearNextActionAt() *RelationshipUpdateOne {
 	return _u
 }
 
+// SetNextAction sets the "next_action" field.
+func (_u *RelationshipUpdateOne) SetNextAction(v string) *RelationshipUpdateOne {
+	_u.mutation.SetNextAction(v)
+	return _u
+}
+
+// SetNillableNextAction sets the "next_action" field if the given value is not nil.
+func (_u *RelationshipUpdateOne) SetNillableNextAction(v *string) *RelationshipUpdateOne {
+	if v != nil {
+		_u.SetNextAction(*v)
+	}
+	return _u
+}
+
+// ClearNextAction clears the value of the "next_action" field.
+func (_u *RelationshipUpdateOne) ClearNextAction() *RelationshipUpdateOne {
+	_u.mutation.ClearNextAction()
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *RelationshipUpdateOne) SetStatus(v string) *RelationshipUpdateOne {
 	_u.mutation.SetStatus(v)
@@ -1010,6 +1596,147 @@ func (_u *RelationshipUpdateOne) SetNillableStatus(v *string) *RelationshipUpdat
 	if v != nil {
 		_u.SetStatus(*v)
 	}
+	return _u
+}
+
+// SetLifecycle sets the "lifecycle" field.
+func (_u *RelationshipUpdateOne) SetLifecycle(v string) *RelationshipUpdateOne {
+	_u.mutation.SetLifecycle(v)
+	return _u
+}
+
+// SetNillableLifecycle sets the "lifecycle" field if the given value is not nil.
+func (_u *RelationshipUpdateOne) SetNillableLifecycle(v *string) *RelationshipUpdateOne {
+	if v != nil {
+		_u.SetLifecycle(*v)
+	}
+	return _u
+}
+
+// SetEngagement sets the "engagement" field.
+func (_u *RelationshipUpdateOne) SetEngagement(v string) *RelationshipUpdateOne {
+	_u.mutation.SetEngagement(v)
+	return _u
+}
+
+// SetNillableEngagement sets the "engagement" field if the given value is not nil.
+func (_u *RelationshipUpdateOne) SetNillableEngagement(v *string) *RelationshipUpdateOne {
+	if v != nil {
+		_u.SetEngagement(*v)
+	}
+	return _u
+}
+
+// SetSentiment sets the "sentiment" field.
+func (_u *RelationshipUpdateOne) SetSentiment(v string) *RelationshipUpdateOne {
+	_u.mutation.SetSentiment(v)
+	return _u
+}
+
+// SetNillableSentiment sets the "sentiment" field if the given value is not nil.
+func (_u *RelationshipUpdateOne) SetNillableSentiment(v *string) *RelationshipUpdateOne {
+	if v != nil {
+		_u.SetSentiment(*v)
+	}
+	return _u
+}
+
+// SetHealth sets the "health" field.
+func (_u *RelationshipUpdateOne) SetHealth(v string) *RelationshipUpdateOne {
+	_u.mutation.SetHealth(v)
+	return _u
+}
+
+// SetNillableHealth sets the "health" field if the given value is not nil.
+func (_u *RelationshipUpdateOne) SetNillableHealth(v *string) *RelationshipUpdateOne {
+	if v != nil {
+		_u.SetHealth(*v)
+	}
+	return _u
+}
+
+// SetStateReason sets the "state_reason" field.
+func (_u *RelationshipUpdateOne) SetStateReason(v string) *RelationshipUpdateOne {
+	_u.mutation.SetStateReason(v)
+	return _u
+}
+
+// SetNillableStateReason sets the "state_reason" field if the given value is not nil.
+func (_u *RelationshipUpdateOne) SetNillableStateReason(v *string) *RelationshipUpdateOne {
+	if v != nil {
+		_u.SetStateReason(*v)
+	}
+	return _u
+}
+
+// ClearStateReason clears the value of the "state_reason" field.
+func (_u *RelationshipUpdateOne) ClearStateReason() *RelationshipUpdateOne {
+	_u.mutation.ClearStateReason()
+	return _u
+}
+
+// SetStateVersion sets the "state_version" field.
+func (_u *RelationshipUpdateOne) SetStateVersion(v int) *RelationshipUpdateOne {
+	_u.mutation.ResetStateVersion()
+	_u.mutation.SetStateVersion(v)
+	return _u
+}
+
+// SetNillableStateVersion sets the "state_version" field if the given value is not nil.
+func (_u *RelationshipUpdateOne) SetNillableStateVersion(v *int) *RelationshipUpdateOne {
+	if v != nil {
+		_u.SetStateVersion(*v)
+	}
+	return _u
+}
+
+// AddStateVersion adds value to the "state_version" field.
+func (_u *RelationshipUpdateOne) AddStateVersion(v int) *RelationshipUpdateOne {
+	_u.mutation.AddStateVersion(v)
+	return _u
+}
+
+// SetLastChangedAt sets the "last_changed_at" field.
+func (_u *RelationshipUpdateOne) SetLastChangedAt(v time.Time) *RelationshipUpdateOne {
+	_u.mutation.SetLastChangedAt(v)
+	return _u
+}
+
+// SetNillableLastChangedAt sets the "last_changed_at" field if the given value is not nil.
+func (_u *RelationshipUpdateOne) SetNillableLastChangedAt(v *time.Time) *RelationshipUpdateOne {
+	if v != nil {
+		_u.SetLastChangedAt(*v)
+	}
+	return _u
+}
+
+// ClearLastChangedAt clears the value of the "last_changed_at" field.
+func (_u *RelationshipUpdateOne) ClearLastChangedAt() *RelationshipUpdateOne {
+	_u.mutation.ClearLastChangedAt()
+	return _u
+}
+
+// SetRisks sets the "risks" field.
+func (_u *RelationshipUpdateOne) SetRisks(v []string) *RelationshipUpdateOne {
+	_u.mutation.SetRisks(v)
+	return _u
+}
+
+// AppendRisks appends value to the "risks" field.
+func (_u *RelationshipUpdateOne) AppendRisks(v []string) *RelationshipUpdateOne {
+	_u.mutation.AppendRisks(v)
+	return _u
+}
+
+// SetMilestones sets the "milestones" field.
+func (_u *RelationshipUpdateOne) SetMilestones(v []string) *RelationshipUpdateOne {
+	_u.mutation.SetMilestones(v)
+	return _u
+}
+
+// AppendMilestones appends value to the "milestones" field.
+func (_u *RelationshipUpdateOne) AppendMilestones(v []string) *RelationshipUpdateOne {
+	_u.mutation.AppendMilestones(v)
 	return _u
 }
 
@@ -1093,6 +1820,66 @@ func (_u *RelationshipUpdateOne) AddMailThreads(v ...*MailThread) *RelationshipU
 		ids[i] = v[i].ID
 	}
 	return _u.AddMailThreadIDs(ids...)
+}
+
+// AddParticipantIDs adds the "participants" edge to the RelationshipParticipant entity by IDs.
+func (_u *RelationshipUpdateOne) AddParticipantIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
+	_u.mutation.AddParticipantIDs(ids...)
+	return _u
+}
+
+// AddParticipants adds the "participants" edges to the RelationshipParticipant entity.
+func (_u *RelationshipUpdateOne) AddParticipants(v ...*RelationshipParticipant) *RelationshipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddParticipantIDs(ids...)
+}
+
+// AddObservationIDs adds the "observations" edge to the RelationshipObservation entity by IDs.
+func (_u *RelationshipUpdateOne) AddObservationIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
+	_u.mutation.AddObservationIDs(ids...)
+	return _u
+}
+
+// AddObservations adds the "observations" edges to the RelationshipObservation entity.
+func (_u *RelationshipUpdateOne) AddObservations(v ...*RelationshipObservation) *RelationshipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddObservationIDs(ids...)
+}
+
+// AddAssertionIDs adds the "assertions" edge to the RelationshipAssertion entity by IDs.
+func (_u *RelationshipUpdateOne) AddAssertionIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
+	_u.mutation.AddAssertionIDs(ids...)
+	return _u
+}
+
+// AddAssertions adds the "assertions" edges to the RelationshipAssertion entity.
+func (_u *RelationshipUpdateOne) AddAssertions(v ...*RelationshipAssertion) *RelationshipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAssertionIDs(ids...)
+}
+
+// AddSnapshotIDs adds the "snapshots" edge to the RelationshipStateSnapshot entity by IDs.
+func (_u *RelationshipUpdateOne) AddSnapshotIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
+	_u.mutation.AddSnapshotIDs(ids...)
+	return _u
+}
+
+// AddSnapshots adds the "snapshots" edges to the RelationshipStateSnapshot entity.
+func (_u *RelationshipUpdateOne) AddSnapshots(v ...*RelationshipStateSnapshot) *RelationshipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSnapshotIDs(ids...)
 }
 
 // Mutation returns the RelationshipMutation object of the builder.
@@ -1196,6 +1983,90 @@ func (_u *RelationshipUpdateOne) RemoveMailThreads(v ...*MailThread) *Relationsh
 	return _u.RemoveMailThreadIDs(ids...)
 }
 
+// ClearParticipants clears all "participants" edges to the RelationshipParticipant entity.
+func (_u *RelationshipUpdateOne) ClearParticipants() *RelationshipUpdateOne {
+	_u.mutation.ClearParticipants()
+	return _u
+}
+
+// RemoveParticipantIDs removes the "participants" edge to RelationshipParticipant entities by IDs.
+func (_u *RelationshipUpdateOne) RemoveParticipantIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
+	_u.mutation.RemoveParticipantIDs(ids...)
+	return _u
+}
+
+// RemoveParticipants removes "participants" edges to RelationshipParticipant entities.
+func (_u *RelationshipUpdateOne) RemoveParticipants(v ...*RelationshipParticipant) *RelationshipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveParticipantIDs(ids...)
+}
+
+// ClearObservations clears all "observations" edges to the RelationshipObservation entity.
+func (_u *RelationshipUpdateOne) ClearObservations() *RelationshipUpdateOne {
+	_u.mutation.ClearObservations()
+	return _u
+}
+
+// RemoveObservationIDs removes the "observations" edge to RelationshipObservation entities by IDs.
+func (_u *RelationshipUpdateOne) RemoveObservationIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
+	_u.mutation.RemoveObservationIDs(ids...)
+	return _u
+}
+
+// RemoveObservations removes "observations" edges to RelationshipObservation entities.
+func (_u *RelationshipUpdateOne) RemoveObservations(v ...*RelationshipObservation) *RelationshipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveObservationIDs(ids...)
+}
+
+// ClearAssertions clears all "assertions" edges to the RelationshipAssertion entity.
+func (_u *RelationshipUpdateOne) ClearAssertions() *RelationshipUpdateOne {
+	_u.mutation.ClearAssertions()
+	return _u
+}
+
+// RemoveAssertionIDs removes the "assertions" edge to RelationshipAssertion entities by IDs.
+func (_u *RelationshipUpdateOne) RemoveAssertionIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
+	_u.mutation.RemoveAssertionIDs(ids...)
+	return _u
+}
+
+// RemoveAssertions removes "assertions" edges to RelationshipAssertion entities.
+func (_u *RelationshipUpdateOne) RemoveAssertions(v ...*RelationshipAssertion) *RelationshipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAssertionIDs(ids...)
+}
+
+// ClearSnapshots clears all "snapshots" edges to the RelationshipStateSnapshot entity.
+func (_u *RelationshipUpdateOne) ClearSnapshots() *RelationshipUpdateOne {
+	_u.mutation.ClearSnapshots()
+	return _u
+}
+
+// RemoveSnapshotIDs removes the "snapshots" edge to RelationshipStateSnapshot entities by IDs.
+func (_u *RelationshipUpdateOne) RemoveSnapshotIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
+	_u.mutation.RemoveSnapshotIDs(ids...)
+	return _u
+}
+
+// RemoveSnapshots removes "snapshots" edges to RelationshipStateSnapshot entities.
+func (_u *RelationshipUpdateOne) RemoveSnapshots(v ...*RelationshipStateSnapshot) *RelationshipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSnapshotIDs(ids...)
+}
+
 // Where appends a list predicates to the RelationshipUpdate builder.
 func (_u *RelationshipUpdateOne) Where(ps ...predicate.Relationship) *RelationshipUpdateOne {
 	_u.mutation.Where(ps...)
@@ -1260,6 +2131,31 @@ func (_u *RelationshipUpdateOne) check() error {
 	if v, ok := _u.mutation.Status(); ok {
 		if err := relationship.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Relationship.status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Lifecycle(); ok {
+		if err := relationship.LifecycleValidator(v); err != nil {
+			return &ValidationError{Name: "lifecycle", err: fmt.Errorf(`ent: validator failed for field "Relationship.lifecycle": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Engagement(); ok {
+		if err := relationship.EngagementValidator(v); err != nil {
+			return &ValidationError{Name: "engagement", err: fmt.Errorf(`ent: validator failed for field "Relationship.engagement": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Sentiment(); ok {
+		if err := relationship.SentimentValidator(v); err != nil {
+			return &ValidationError{Name: "sentiment", err: fmt.Errorf(`ent: validator failed for field "Relationship.sentiment": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Health(); ok {
+		if err := relationship.HealthValidator(v); err != nil {
+			return &ValidationError{Name: "health", err: fmt.Errorf(`ent: validator failed for field "Relationship.health": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.StateVersion(); ok {
+		if err := relationship.StateVersionValidator(v); err != nil {
+			return &ValidationError{Name: "state_version", err: fmt.Errorf(`ent: validator failed for field "Relationship.state_version": %w`, err)}
 		}
 	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
@@ -1359,8 +2255,60 @@ func (_u *RelationshipUpdateOne) sqlSave(ctx context.Context) (_node *Relationsh
 	if _u.mutation.NextActionAtCleared() {
 		_spec.ClearField(relationship.FieldNextActionAt, field.TypeTime)
 	}
+	if value, ok := _u.mutation.NextAction(); ok {
+		_spec.SetField(relationship.FieldNextAction, field.TypeString, value)
+	}
+	if _u.mutation.NextActionCleared() {
+		_spec.ClearField(relationship.FieldNextAction, field.TypeString)
+	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(relationship.FieldStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Lifecycle(); ok {
+		_spec.SetField(relationship.FieldLifecycle, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Engagement(); ok {
+		_spec.SetField(relationship.FieldEngagement, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Sentiment(); ok {
+		_spec.SetField(relationship.FieldSentiment, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Health(); ok {
+		_spec.SetField(relationship.FieldHealth, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.StateReason(); ok {
+		_spec.SetField(relationship.FieldStateReason, field.TypeString, value)
+	}
+	if _u.mutation.StateReasonCleared() {
+		_spec.ClearField(relationship.FieldStateReason, field.TypeString)
+	}
+	if value, ok := _u.mutation.StateVersion(); ok {
+		_spec.SetField(relationship.FieldStateVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedStateVersion(); ok {
+		_spec.AddField(relationship.FieldStateVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.LastChangedAt(); ok {
+		_spec.SetField(relationship.FieldLastChangedAt, field.TypeTime, value)
+	}
+	if _u.mutation.LastChangedAtCleared() {
+		_spec.ClearField(relationship.FieldLastChangedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Risks(); ok {
+		_spec.SetField(relationship.FieldRisks, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRisks(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, relationship.FieldRisks, value)
+		})
+	}
+	if value, ok := _u.mutation.Milestones(); ok {
+		_spec.SetField(relationship.FieldMilestones, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedMilestones(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, relationship.FieldMilestones, value)
+		})
 	}
 	if _u.mutation.WorkspaceCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1593,6 +2541,186 @@ func (_u *RelationshipUpdateOne) sqlSave(ctx context.Context) (_node *Relationsh
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ParticipantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ParticipantsTable,
+			Columns: []string{relationship.ParticipantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipparticipant.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedParticipantsIDs(); len(nodes) > 0 && !_u.mutation.ParticipantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ParticipantsTable,
+			Columns: []string{relationship.ParticipantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipparticipant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ParticipantsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ParticipantsTable,
+			Columns: []string{relationship.ParticipantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipparticipant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ObservationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ObservationsTable,
+			Columns: []string{relationship.ObservationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipobservation.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedObservationsIDs(); len(nodes) > 0 && !_u.mutation.ObservationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ObservationsTable,
+			Columns: []string{relationship.ObservationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipobservation.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ObservationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ObservationsTable,
+			Columns: []string{relationship.ObservationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipobservation.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AssertionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.AssertionsTable,
+			Columns: []string{relationship.AssertionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipassertion.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAssertionsIDs(); len(nodes) > 0 && !_u.mutation.AssertionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.AssertionsTable,
+			Columns: []string{relationship.AssertionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipassertion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AssertionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.AssertionsTable,
+			Columns: []string{relationship.AssertionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipassertion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SnapshotsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.SnapshotsTable,
+			Columns: []string{relationship.SnapshotsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipstatesnapshot.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSnapshotsIDs(); len(nodes) > 0 && !_u.mutation.SnapshotsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.SnapshotsTable,
+			Columns: []string{relationship.SnapshotsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipstatesnapshot.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SnapshotsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.SnapshotsTable,
+			Columns: []string{relationship.SnapshotsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipstatesnapshot.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

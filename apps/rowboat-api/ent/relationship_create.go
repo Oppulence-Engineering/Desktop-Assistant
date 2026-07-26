@@ -15,6 +15,10 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
@@ -174,6 +178,20 @@ func (_c *RelationshipCreate) SetNillableNextActionAt(v *time.Time) *Relationshi
 	return _c
 }
 
+// SetNextAction sets the "next_action" field.
+func (_c *RelationshipCreate) SetNextAction(v string) *RelationshipCreate {
+	_c.mutation.SetNextAction(v)
+	return _c
+}
+
+// SetNillableNextAction sets the "next_action" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableNextAction(v *string) *RelationshipCreate {
+	if v != nil {
+		_c.SetNextAction(*v)
+	}
+	return _c
+}
+
 // SetStatus sets the "status" field.
 func (_c *RelationshipCreate) SetStatus(v string) *RelationshipCreate {
 	_c.mutation.SetStatus(v)
@@ -185,6 +203,116 @@ func (_c *RelationshipCreate) SetNillableStatus(v *string) *RelationshipCreate {
 	if v != nil {
 		_c.SetStatus(*v)
 	}
+	return _c
+}
+
+// SetLifecycle sets the "lifecycle" field.
+func (_c *RelationshipCreate) SetLifecycle(v string) *RelationshipCreate {
+	_c.mutation.SetLifecycle(v)
+	return _c
+}
+
+// SetNillableLifecycle sets the "lifecycle" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableLifecycle(v *string) *RelationshipCreate {
+	if v != nil {
+		_c.SetLifecycle(*v)
+	}
+	return _c
+}
+
+// SetEngagement sets the "engagement" field.
+func (_c *RelationshipCreate) SetEngagement(v string) *RelationshipCreate {
+	_c.mutation.SetEngagement(v)
+	return _c
+}
+
+// SetNillableEngagement sets the "engagement" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableEngagement(v *string) *RelationshipCreate {
+	if v != nil {
+		_c.SetEngagement(*v)
+	}
+	return _c
+}
+
+// SetSentiment sets the "sentiment" field.
+func (_c *RelationshipCreate) SetSentiment(v string) *RelationshipCreate {
+	_c.mutation.SetSentiment(v)
+	return _c
+}
+
+// SetNillableSentiment sets the "sentiment" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableSentiment(v *string) *RelationshipCreate {
+	if v != nil {
+		_c.SetSentiment(*v)
+	}
+	return _c
+}
+
+// SetHealth sets the "health" field.
+func (_c *RelationshipCreate) SetHealth(v string) *RelationshipCreate {
+	_c.mutation.SetHealth(v)
+	return _c
+}
+
+// SetNillableHealth sets the "health" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableHealth(v *string) *RelationshipCreate {
+	if v != nil {
+		_c.SetHealth(*v)
+	}
+	return _c
+}
+
+// SetStateReason sets the "state_reason" field.
+func (_c *RelationshipCreate) SetStateReason(v string) *RelationshipCreate {
+	_c.mutation.SetStateReason(v)
+	return _c
+}
+
+// SetNillableStateReason sets the "state_reason" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableStateReason(v *string) *RelationshipCreate {
+	if v != nil {
+		_c.SetStateReason(*v)
+	}
+	return _c
+}
+
+// SetStateVersion sets the "state_version" field.
+func (_c *RelationshipCreate) SetStateVersion(v int) *RelationshipCreate {
+	_c.mutation.SetStateVersion(v)
+	return _c
+}
+
+// SetNillableStateVersion sets the "state_version" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableStateVersion(v *int) *RelationshipCreate {
+	if v != nil {
+		_c.SetStateVersion(*v)
+	}
+	return _c
+}
+
+// SetLastChangedAt sets the "last_changed_at" field.
+func (_c *RelationshipCreate) SetLastChangedAt(v time.Time) *RelationshipCreate {
+	_c.mutation.SetLastChangedAt(v)
+	return _c
+}
+
+// SetNillableLastChangedAt sets the "last_changed_at" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableLastChangedAt(v *time.Time) *RelationshipCreate {
+	if v != nil {
+		_c.SetLastChangedAt(*v)
+	}
+	return _c
+}
+
+// SetRisks sets the "risks" field.
+func (_c *RelationshipCreate) SetRisks(v []string) *RelationshipCreate {
+	_c.mutation.SetRisks(v)
+	return _c
+}
+
+// SetMilestones sets the "milestones" field.
+func (_c *RelationshipCreate) SetMilestones(v []string) *RelationshipCreate {
+	_c.mutation.SetMilestones(v)
 	return _c
 }
 
@@ -284,6 +412,66 @@ func (_c *RelationshipCreate) AddMailThreads(v ...*MailThread) *RelationshipCrea
 	return _c.AddMailThreadIDs(ids...)
 }
 
+// AddParticipantIDs adds the "participants" edge to the RelationshipParticipant entity by IDs.
+func (_c *RelationshipCreate) AddParticipantIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddParticipantIDs(ids...)
+	return _c
+}
+
+// AddParticipants adds the "participants" edges to the RelationshipParticipant entity.
+func (_c *RelationshipCreate) AddParticipants(v ...*RelationshipParticipant) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddParticipantIDs(ids...)
+}
+
+// AddObservationIDs adds the "observations" edge to the RelationshipObservation entity by IDs.
+func (_c *RelationshipCreate) AddObservationIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddObservationIDs(ids...)
+	return _c
+}
+
+// AddObservations adds the "observations" edges to the RelationshipObservation entity.
+func (_c *RelationshipCreate) AddObservations(v ...*RelationshipObservation) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddObservationIDs(ids...)
+}
+
+// AddAssertionIDs adds the "assertions" edge to the RelationshipAssertion entity by IDs.
+func (_c *RelationshipCreate) AddAssertionIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddAssertionIDs(ids...)
+	return _c
+}
+
+// AddAssertions adds the "assertions" edges to the RelationshipAssertion entity.
+func (_c *RelationshipCreate) AddAssertions(v ...*RelationshipAssertion) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAssertionIDs(ids...)
+}
+
+// AddSnapshotIDs adds the "snapshots" edge to the RelationshipStateSnapshot entity by IDs.
+func (_c *RelationshipCreate) AddSnapshotIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddSnapshotIDs(ids...)
+	return _c
+}
+
+// AddSnapshots adds the "snapshots" edges to the RelationshipStateSnapshot entity.
+func (_c *RelationshipCreate) AddSnapshots(v ...*RelationshipStateSnapshot) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddSnapshotIDs(ids...)
+}
+
 // Mutation returns the RelationshipMutation object of the builder.
 func (_c *RelationshipCreate) Mutation() *RelationshipMutation {
 	return _c.mutation
@@ -335,6 +523,34 @@ func (_c *RelationshipCreate) defaults() {
 		v := relationship.DefaultStatus
 		_c.mutation.SetStatus(v)
 	}
+	if _, ok := _c.mutation.Lifecycle(); !ok {
+		v := relationship.DefaultLifecycle
+		_c.mutation.SetLifecycle(v)
+	}
+	if _, ok := _c.mutation.Engagement(); !ok {
+		v := relationship.DefaultEngagement
+		_c.mutation.SetEngagement(v)
+	}
+	if _, ok := _c.mutation.Sentiment(); !ok {
+		v := relationship.DefaultSentiment
+		_c.mutation.SetSentiment(v)
+	}
+	if _, ok := _c.mutation.Health(); !ok {
+		v := relationship.DefaultHealth
+		_c.mutation.SetHealth(v)
+	}
+	if _, ok := _c.mutation.StateVersion(); !ok {
+		v := relationship.DefaultStateVersion
+		_c.mutation.SetStateVersion(v)
+	}
+	if _, ok := _c.mutation.Risks(); !ok {
+		v := relationship.DefaultRisks
+		_c.mutation.SetRisks(v)
+	}
+	if _, ok := _c.mutation.Milestones(); !ok {
+		v := relationship.DefaultMilestones
+		_c.mutation.SetMilestones(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := relationship.DefaultID()
 		_c.mutation.SetID(v)
@@ -375,6 +591,52 @@ func (_c *RelationshipCreate) check() error {
 		if err := relationship.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Relationship.status": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.Lifecycle(); !ok {
+		return &ValidationError{Name: "lifecycle", err: errors.New(`ent: missing required field "Relationship.lifecycle"`)}
+	}
+	if v, ok := _c.mutation.Lifecycle(); ok {
+		if err := relationship.LifecycleValidator(v); err != nil {
+			return &ValidationError{Name: "lifecycle", err: fmt.Errorf(`ent: validator failed for field "Relationship.lifecycle": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Engagement(); !ok {
+		return &ValidationError{Name: "engagement", err: errors.New(`ent: missing required field "Relationship.engagement"`)}
+	}
+	if v, ok := _c.mutation.Engagement(); ok {
+		if err := relationship.EngagementValidator(v); err != nil {
+			return &ValidationError{Name: "engagement", err: fmt.Errorf(`ent: validator failed for field "Relationship.engagement": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Sentiment(); !ok {
+		return &ValidationError{Name: "sentiment", err: errors.New(`ent: missing required field "Relationship.sentiment"`)}
+	}
+	if v, ok := _c.mutation.Sentiment(); ok {
+		if err := relationship.SentimentValidator(v); err != nil {
+			return &ValidationError{Name: "sentiment", err: fmt.Errorf(`ent: validator failed for field "Relationship.sentiment": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Health(); !ok {
+		return &ValidationError{Name: "health", err: errors.New(`ent: missing required field "Relationship.health"`)}
+	}
+	if v, ok := _c.mutation.Health(); ok {
+		if err := relationship.HealthValidator(v); err != nil {
+			return &ValidationError{Name: "health", err: fmt.Errorf(`ent: validator failed for field "Relationship.health": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.StateVersion(); !ok {
+		return &ValidationError{Name: "state_version", err: errors.New(`ent: missing required field "Relationship.state_version"`)}
+	}
+	if v, ok := _c.mutation.StateVersion(); ok {
+		if err := relationship.StateVersionValidator(v); err != nil {
+			return &ValidationError{Name: "state_version", err: fmt.Errorf(`ent: validator failed for field "Relationship.state_version": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Risks(); !ok {
+		return &ValidationError{Name: "risks", err: errors.New(`ent: missing required field "Relationship.risks"`)}
+	}
+	if _, ok := _c.mutation.Milestones(); !ok {
+		return &ValidationError{Name: "milestones", err: errors.New(`ent: missing required field "Relationship.milestones"`)}
 	}
 	if len(_c.mutation.WorkspaceIDs()) == 0 {
 		return &ValidationError{Name: "workspace", err: errors.New(`ent: missing required edge "Relationship.workspace"`)}
@@ -466,9 +728,49 @@ func (_c *RelationshipCreate) createSpec() (*Relationship, *sqlgraph.CreateSpec)
 		_spec.SetField(relationship.FieldNextActionAt, field.TypeTime, value)
 		_node.NextActionAt = &value
 	}
+	if value, ok := _c.mutation.NextAction(); ok {
+		_spec.SetField(relationship.FieldNextAction, field.TypeString, value)
+		_node.NextAction = value
+	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(relationship.FieldStatus, field.TypeString, value)
 		_node.Status = value
+	}
+	if value, ok := _c.mutation.Lifecycle(); ok {
+		_spec.SetField(relationship.FieldLifecycle, field.TypeString, value)
+		_node.Lifecycle = value
+	}
+	if value, ok := _c.mutation.Engagement(); ok {
+		_spec.SetField(relationship.FieldEngagement, field.TypeString, value)
+		_node.Engagement = value
+	}
+	if value, ok := _c.mutation.Sentiment(); ok {
+		_spec.SetField(relationship.FieldSentiment, field.TypeString, value)
+		_node.Sentiment = value
+	}
+	if value, ok := _c.mutation.Health(); ok {
+		_spec.SetField(relationship.FieldHealth, field.TypeString, value)
+		_node.Health = value
+	}
+	if value, ok := _c.mutation.StateReason(); ok {
+		_spec.SetField(relationship.FieldStateReason, field.TypeString, value)
+		_node.StateReason = value
+	}
+	if value, ok := _c.mutation.StateVersion(); ok {
+		_spec.SetField(relationship.FieldStateVersion, field.TypeInt, value)
+		_node.StateVersion = value
+	}
+	if value, ok := _c.mutation.LastChangedAt(); ok {
+		_spec.SetField(relationship.FieldLastChangedAt, field.TypeTime, value)
+		_node.LastChangedAt = &value
+	}
+	if value, ok := _c.mutation.Risks(); ok {
+		_spec.SetField(relationship.FieldRisks, field.TypeJSON, value)
+		_node.Risks = value
+	}
+	if value, ok := _c.mutation.Milestones(); ok {
+		_spec.SetField(relationship.FieldMilestones, field.TypeJSON, value)
+		_node.Milestones = value
 	}
 	if nodes := _c.mutation.WorkspaceIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -561,6 +863,70 @@ func (_c *RelationshipCreate) createSpec() (*Relationship, *sqlgraph.CreateSpec)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ParticipantsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ParticipantsTable,
+			Columns: []string{relationship.ParticipantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipparticipant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ObservationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ObservationsTable,
+			Columns: []string{relationship.ObservationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipobservation.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AssertionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.AssertionsTable,
+			Columns: []string{relationship.AssertionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipassertion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.SnapshotsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.SnapshotsTable,
+			Columns: []string{relationship.SnapshotsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipstatesnapshot.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -794,6 +1160,24 @@ func (u *RelationshipUpsert) ClearNextActionAt() *RelationshipUpsert {
 	return u
 }
 
+// SetNextAction sets the "next_action" field.
+func (u *RelationshipUpsert) SetNextAction(v string) *RelationshipUpsert {
+	u.Set(relationship.FieldNextAction, v)
+	return u
+}
+
+// UpdateNextAction sets the "next_action" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateNextAction() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldNextAction)
+	return u
+}
+
+// ClearNextAction clears the value of the "next_action" field.
+func (u *RelationshipUpsert) ClearNextAction() *RelationshipUpsert {
+	u.SetNull(relationship.FieldNextAction)
+	return u
+}
+
 // SetStatus sets the "status" field.
 func (u *RelationshipUpsert) SetStatus(v string) *RelationshipUpsert {
 	u.Set(relationship.FieldStatus, v)
@@ -803,6 +1187,132 @@ func (u *RelationshipUpsert) SetStatus(v string) *RelationshipUpsert {
 // UpdateStatus sets the "status" field to the value that was provided on create.
 func (u *RelationshipUpsert) UpdateStatus() *RelationshipUpsert {
 	u.SetExcluded(relationship.FieldStatus)
+	return u
+}
+
+// SetLifecycle sets the "lifecycle" field.
+func (u *RelationshipUpsert) SetLifecycle(v string) *RelationshipUpsert {
+	u.Set(relationship.FieldLifecycle, v)
+	return u
+}
+
+// UpdateLifecycle sets the "lifecycle" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateLifecycle() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldLifecycle)
+	return u
+}
+
+// SetEngagement sets the "engagement" field.
+func (u *RelationshipUpsert) SetEngagement(v string) *RelationshipUpsert {
+	u.Set(relationship.FieldEngagement, v)
+	return u
+}
+
+// UpdateEngagement sets the "engagement" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateEngagement() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldEngagement)
+	return u
+}
+
+// SetSentiment sets the "sentiment" field.
+func (u *RelationshipUpsert) SetSentiment(v string) *RelationshipUpsert {
+	u.Set(relationship.FieldSentiment, v)
+	return u
+}
+
+// UpdateSentiment sets the "sentiment" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateSentiment() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldSentiment)
+	return u
+}
+
+// SetHealth sets the "health" field.
+func (u *RelationshipUpsert) SetHealth(v string) *RelationshipUpsert {
+	u.Set(relationship.FieldHealth, v)
+	return u
+}
+
+// UpdateHealth sets the "health" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateHealth() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldHealth)
+	return u
+}
+
+// SetStateReason sets the "state_reason" field.
+func (u *RelationshipUpsert) SetStateReason(v string) *RelationshipUpsert {
+	u.Set(relationship.FieldStateReason, v)
+	return u
+}
+
+// UpdateStateReason sets the "state_reason" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateStateReason() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldStateReason)
+	return u
+}
+
+// ClearStateReason clears the value of the "state_reason" field.
+func (u *RelationshipUpsert) ClearStateReason() *RelationshipUpsert {
+	u.SetNull(relationship.FieldStateReason)
+	return u
+}
+
+// SetStateVersion sets the "state_version" field.
+func (u *RelationshipUpsert) SetStateVersion(v int) *RelationshipUpsert {
+	u.Set(relationship.FieldStateVersion, v)
+	return u
+}
+
+// UpdateStateVersion sets the "state_version" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateStateVersion() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldStateVersion)
+	return u
+}
+
+// AddStateVersion adds v to the "state_version" field.
+func (u *RelationshipUpsert) AddStateVersion(v int) *RelationshipUpsert {
+	u.Add(relationship.FieldStateVersion, v)
+	return u
+}
+
+// SetLastChangedAt sets the "last_changed_at" field.
+func (u *RelationshipUpsert) SetLastChangedAt(v time.Time) *RelationshipUpsert {
+	u.Set(relationship.FieldLastChangedAt, v)
+	return u
+}
+
+// UpdateLastChangedAt sets the "last_changed_at" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateLastChangedAt() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldLastChangedAt)
+	return u
+}
+
+// ClearLastChangedAt clears the value of the "last_changed_at" field.
+func (u *RelationshipUpsert) ClearLastChangedAt() *RelationshipUpsert {
+	u.SetNull(relationship.FieldLastChangedAt)
+	return u
+}
+
+// SetRisks sets the "risks" field.
+func (u *RelationshipUpsert) SetRisks(v []string) *RelationshipUpsert {
+	u.Set(relationship.FieldRisks, v)
+	return u
+}
+
+// UpdateRisks sets the "risks" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateRisks() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldRisks)
+	return u
+}
+
+// SetMilestones sets the "milestones" field.
+func (u *RelationshipUpsert) SetMilestones(v []string) *RelationshipUpsert {
+	u.Set(relationship.FieldMilestones, v)
+	return u
+}
+
+// UpdateMilestones sets the "milestones" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateMilestones() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldMilestones)
 	return u
 }
 
@@ -1060,6 +1570,27 @@ func (u *RelationshipUpsertOne) ClearNextActionAt() *RelationshipUpsertOne {
 	})
 }
 
+// SetNextAction sets the "next_action" field.
+func (u *RelationshipUpsertOne) SetNextAction(v string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetNextAction(v)
+	})
+}
+
+// UpdateNextAction sets the "next_action" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateNextAction() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateNextAction()
+	})
+}
+
+// ClearNextAction clears the value of the "next_action" field.
+func (u *RelationshipUpsertOne) ClearNextAction() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearNextAction()
+	})
+}
+
 // SetStatus sets the "status" field.
 func (u *RelationshipUpsertOne) SetStatus(v string) *RelationshipUpsertOne {
 	return u.Update(func(s *RelationshipUpsert) {
@@ -1071,6 +1602,153 @@ func (u *RelationshipUpsertOne) SetStatus(v string) *RelationshipUpsertOne {
 func (u *RelationshipUpsertOne) UpdateStatus() *RelationshipUpsertOne {
 	return u.Update(func(s *RelationshipUpsert) {
 		s.UpdateStatus()
+	})
+}
+
+// SetLifecycle sets the "lifecycle" field.
+func (u *RelationshipUpsertOne) SetLifecycle(v string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetLifecycle(v)
+	})
+}
+
+// UpdateLifecycle sets the "lifecycle" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateLifecycle() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateLifecycle()
+	})
+}
+
+// SetEngagement sets the "engagement" field.
+func (u *RelationshipUpsertOne) SetEngagement(v string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetEngagement(v)
+	})
+}
+
+// UpdateEngagement sets the "engagement" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateEngagement() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateEngagement()
+	})
+}
+
+// SetSentiment sets the "sentiment" field.
+func (u *RelationshipUpsertOne) SetSentiment(v string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetSentiment(v)
+	})
+}
+
+// UpdateSentiment sets the "sentiment" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateSentiment() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateSentiment()
+	})
+}
+
+// SetHealth sets the "health" field.
+func (u *RelationshipUpsertOne) SetHealth(v string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetHealth(v)
+	})
+}
+
+// UpdateHealth sets the "health" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateHealth() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateHealth()
+	})
+}
+
+// SetStateReason sets the "state_reason" field.
+func (u *RelationshipUpsertOne) SetStateReason(v string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetStateReason(v)
+	})
+}
+
+// UpdateStateReason sets the "state_reason" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateStateReason() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateStateReason()
+	})
+}
+
+// ClearStateReason clears the value of the "state_reason" field.
+func (u *RelationshipUpsertOne) ClearStateReason() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearStateReason()
+	})
+}
+
+// SetStateVersion sets the "state_version" field.
+func (u *RelationshipUpsertOne) SetStateVersion(v int) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetStateVersion(v)
+	})
+}
+
+// AddStateVersion adds v to the "state_version" field.
+func (u *RelationshipUpsertOne) AddStateVersion(v int) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.AddStateVersion(v)
+	})
+}
+
+// UpdateStateVersion sets the "state_version" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateStateVersion() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateStateVersion()
+	})
+}
+
+// SetLastChangedAt sets the "last_changed_at" field.
+func (u *RelationshipUpsertOne) SetLastChangedAt(v time.Time) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetLastChangedAt(v)
+	})
+}
+
+// UpdateLastChangedAt sets the "last_changed_at" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateLastChangedAt() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateLastChangedAt()
+	})
+}
+
+// ClearLastChangedAt clears the value of the "last_changed_at" field.
+func (u *RelationshipUpsertOne) ClearLastChangedAt() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearLastChangedAt()
+	})
+}
+
+// SetRisks sets the "risks" field.
+func (u *RelationshipUpsertOne) SetRisks(v []string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetRisks(v)
+	})
+}
+
+// UpdateRisks sets the "risks" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateRisks() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateRisks()
+	})
+}
+
+// SetMilestones sets the "milestones" field.
+func (u *RelationshipUpsertOne) SetMilestones(v []string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetMilestones(v)
+	})
+}
+
+// UpdateMilestones sets the "milestones" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateMilestones() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateMilestones()
 	})
 }
 
@@ -1495,6 +2173,27 @@ func (u *RelationshipUpsertBulk) ClearNextActionAt() *RelationshipUpsertBulk {
 	})
 }
 
+// SetNextAction sets the "next_action" field.
+func (u *RelationshipUpsertBulk) SetNextAction(v string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetNextAction(v)
+	})
+}
+
+// UpdateNextAction sets the "next_action" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateNextAction() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateNextAction()
+	})
+}
+
+// ClearNextAction clears the value of the "next_action" field.
+func (u *RelationshipUpsertBulk) ClearNextAction() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearNextAction()
+	})
+}
+
 // SetStatus sets the "status" field.
 func (u *RelationshipUpsertBulk) SetStatus(v string) *RelationshipUpsertBulk {
 	return u.Update(func(s *RelationshipUpsert) {
@@ -1506,6 +2205,153 @@ func (u *RelationshipUpsertBulk) SetStatus(v string) *RelationshipUpsertBulk {
 func (u *RelationshipUpsertBulk) UpdateStatus() *RelationshipUpsertBulk {
 	return u.Update(func(s *RelationshipUpsert) {
 		s.UpdateStatus()
+	})
+}
+
+// SetLifecycle sets the "lifecycle" field.
+func (u *RelationshipUpsertBulk) SetLifecycle(v string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetLifecycle(v)
+	})
+}
+
+// UpdateLifecycle sets the "lifecycle" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateLifecycle() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateLifecycle()
+	})
+}
+
+// SetEngagement sets the "engagement" field.
+func (u *RelationshipUpsertBulk) SetEngagement(v string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetEngagement(v)
+	})
+}
+
+// UpdateEngagement sets the "engagement" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateEngagement() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateEngagement()
+	})
+}
+
+// SetSentiment sets the "sentiment" field.
+func (u *RelationshipUpsertBulk) SetSentiment(v string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetSentiment(v)
+	})
+}
+
+// UpdateSentiment sets the "sentiment" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateSentiment() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateSentiment()
+	})
+}
+
+// SetHealth sets the "health" field.
+func (u *RelationshipUpsertBulk) SetHealth(v string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetHealth(v)
+	})
+}
+
+// UpdateHealth sets the "health" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateHealth() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateHealth()
+	})
+}
+
+// SetStateReason sets the "state_reason" field.
+func (u *RelationshipUpsertBulk) SetStateReason(v string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetStateReason(v)
+	})
+}
+
+// UpdateStateReason sets the "state_reason" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateStateReason() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateStateReason()
+	})
+}
+
+// ClearStateReason clears the value of the "state_reason" field.
+func (u *RelationshipUpsertBulk) ClearStateReason() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearStateReason()
+	})
+}
+
+// SetStateVersion sets the "state_version" field.
+func (u *RelationshipUpsertBulk) SetStateVersion(v int) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetStateVersion(v)
+	})
+}
+
+// AddStateVersion adds v to the "state_version" field.
+func (u *RelationshipUpsertBulk) AddStateVersion(v int) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.AddStateVersion(v)
+	})
+}
+
+// UpdateStateVersion sets the "state_version" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateStateVersion() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateStateVersion()
+	})
+}
+
+// SetLastChangedAt sets the "last_changed_at" field.
+func (u *RelationshipUpsertBulk) SetLastChangedAt(v time.Time) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetLastChangedAt(v)
+	})
+}
+
+// UpdateLastChangedAt sets the "last_changed_at" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateLastChangedAt() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateLastChangedAt()
+	})
+}
+
+// ClearLastChangedAt clears the value of the "last_changed_at" field.
+func (u *RelationshipUpsertBulk) ClearLastChangedAt() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearLastChangedAt()
+	})
+}
+
+// SetRisks sets the "risks" field.
+func (u *RelationshipUpsertBulk) SetRisks(v []string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetRisks(v)
+	})
+}
+
+// UpdateRisks sets the "risks" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateRisks() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateRisks()
+	})
+}
+
+// SetMilestones sets the "milestones" field.
+func (u *RelationshipUpsertBulk) SetMilestones(v []string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetMilestones(v)
+	})
+}
+
+// UpdateMilestones sets the "milestones" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateMilestones() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateMilestones()
 	})
 }
 

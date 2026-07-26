@@ -7,5 +7,9 @@ data/
 .claude/
 .rowboat-kind/
 
+# Local product-design review artifacts
+/.design-qa/
+/design-qa.md
+
 # Root tooling package (git hooks / formatter / commit linting)
 /node_modules/

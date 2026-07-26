@@ -126,6 +126,19 @@ import { liveNoteBus } from "@x/core/dist/knowledge/live-note/bus.js";
 import { getInstallationId } from "@x/core/dist/analytics/installation.js";
 import { API_URL } from "@x/core/dist/config/env.js";
 import {
+  approveRelationshipRecommendation,
+  correctRelationship,
+  createRelationship,
+  getRelationship,
+  getRelationshipChanges,
+  getRelationshipEvidence,
+  getRelationshipSources,
+  getRelationshipTimeline,
+  listRelationships,
+  rejectRelationshipRecommendation,
+  searchRelationships,
+} from "@x/core/dist/relationships/client.js";
+import {
   fetchLiveNote,
   setLiveNote,
   setLiveNoteActive,
@@ -778,6 +791,25 @@ export function setupIpcHandlers() {
         appVersion: app.getVersion(),
       };
     },
+    "relationships:list": async (_event, args) => listRelationships(args),
+    "relationships:create": async (_event, args) => createRelationship(args),
+    "relationships:search": async (_event, args) => searchRelationships(args.query),
+    "relationships:get": async (_event, args) => getRelationship(args.id),
+    "relationships:timeline": async (_event, args) => getRelationshipTimeline(args.id, args.limit),
+    "relationships:changes": async (_event, args) => getRelationshipChanges(args.id),
+    "relationships:sources": async () => getRelationshipSources(),
+    "relationships:evidence": async (_event, args) =>
+      getRelationshipEvidence(args.relationshipId, args.evidenceId),
+    "relationships:correct": async (_event, args) =>
+      correctRelationship(args.id, {
+        dimension: args.dimension,
+        value: args.value,
+        reason: args.reason,
+      }),
+    "relationships:approve": async (_event, args) =>
+      approveRelationshipRecommendation(args.actionId, args.acceptRisk),
+    "relationships:reject": async (_event, args) =>
+      rejectRelationshipRecommendation(args.actionId, args.reason),
     "workspace:getRoot": async () => {
       return workspace.getRoot();
     },

@@ -95,6 +95,16 @@ const (
 	EdgeMailBodyCaches = "mail_body_caches"
 	// EdgeMailSignals holds the string denoting the mail_signals edge name in mutations.
 	EdgeMailSignals = "mail_signals"
+	// EdgeRelationshipParticipants holds the string denoting the relationship_participants edge name in mutations.
+	EdgeRelationshipParticipants = "relationship_participants"
+	// EdgeRelationshipObservations holds the string denoting the relationship_observations edge name in mutations.
+	EdgeRelationshipObservations = "relationship_observations"
+	// EdgeRelationshipAssertions holds the string denoting the relationship_assertions edge name in mutations.
+	EdgeRelationshipAssertions = "relationship_assertions"
+	// EdgeRelationshipStateSnapshots holds the string denoting the relationship_state_snapshots edge name in mutations.
+	EdgeRelationshipStateSnapshots = "relationship_state_snapshots"
+	// EdgeRelationshipSourceStatuses holds the string denoting the relationship_source_statuses edge name in mutations.
+	EdgeRelationshipSourceStatuses = "relationship_source_statuses"
 	// EdgeActionProposals holds the string denoting the action_proposals edge name in mutations.
 	EdgeActionProposals = "action_proposals"
 	// EdgeApprovalTokens holds the string denoting the approval_tokens edge name in mutations.
@@ -346,6 +356,41 @@ const (
 	MailSignalsInverseTable = "mail_signals"
 	// MailSignalsColumn is the table column denoting the mail_signals relation/edge.
 	MailSignalsColumn = "user_mail_signals"
+	// RelationshipParticipantsTable is the table that holds the relationship_participants relation/edge.
+	RelationshipParticipantsTable = "relationship_participants"
+	// RelationshipParticipantsInverseTable is the table name for the RelationshipParticipant entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipparticipant" package.
+	RelationshipParticipantsInverseTable = "relationship_participants"
+	// RelationshipParticipantsColumn is the table column denoting the relationship_participants relation/edge.
+	RelationshipParticipantsColumn = "user_relationship_participants"
+	// RelationshipObservationsTable is the table that holds the relationship_observations relation/edge.
+	RelationshipObservationsTable = "relationship_observations"
+	// RelationshipObservationsInverseTable is the table name for the RelationshipObservation entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipobservation" package.
+	RelationshipObservationsInverseTable = "relationship_observations"
+	// RelationshipObservationsColumn is the table column denoting the relationship_observations relation/edge.
+	RelationshipObservationsColumn = "user_relationship_observations"
+	// RelationshipAssertionsTable is the table that holds the relationship_assertions relation/edge.
+	RelationshipAssertionsTable = "relationship_assertions"
+	// RelationshipAssertionsInverseTable is the table name for the RelationshipAssertion entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipassertion" package.
+	RelationshipAssertionsInverseTable = "relationship_assertions"
+	// RelationshipAssertionsColumn is the table column denoting the relationship_assertions relation/edge.
+	RelationshipAssertionsColumn = "user_relationship_assertions"
+	// RelationshipStateSnapshotsTable is the table that holds the relationship_state_snapshots relation/edge.
+	RelationshipStateSnapshotsTable = "relationship_state_snapshots"
+	// RelationshipStateSnapshotsInverseTable is the table name for the RelationshipStateSnapshot entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipstatesnapshot" package.
+	RelationshipStateSnapshotsInverseTable = "relationship_state_snapshots"
+	// RelationshipStateSnapshotsColumn is the table column denoting the relationship_state_snapshots relation/edge.
+	RelationshipStateSnapshotsColumn = "user_relationship_state_snapshots"
+	// RelationshipSourceStatusesTable is the table that holds the relationship_source_statuses relation/edge.
+	RelationshipSourceStatusesTable = "relationship_source_status"
+	// RelationshipSourceStatusesInverseTable is the table name for the RelationshipSourceStatus entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipsourcestatus" package.
+	RelationshipSourceStatusesInverseTable = "relationship_source_status"
+	// RelationshipSourceStatusesColumn is the table column denoting the relationship_source_statuses relation/edge.
+	RelationshipSourceStatusesColumn = "user_relationship_source_statuses"
 	// ActionProposalsTable is the table that holds the action_proposals relation/edge.
 	ActionProposalsTable = "action_proposals"
 	// ActionProposalsInverseTable is the table name for the ActionProposal entity.
@@ -911,6 +956,76 @@ func ByMailSignals(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByRelationshipParticipantsCount orders the results by relationship_participants count.
+func ByRelationshipParticipantsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipParticipantsStep(), opts...)
+	}
+}
+
+// ByRelationshipParticipants orders the results by relationship_participants terms.
+func ByRelationshipParticipants(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipParticipantsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRelationshipObservationsCount orders the results by relationship_observations count.
+func ByRelationshipObservationsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipObservationsStep(), opts...)
+	}
+}
+
+// ByRelationshipObservations orders the results by relationship_observations terms.
+func ByRelationshipObservations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipObservationsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRelationshipAssertionsCount orders the results by relationship_assertions count.
+func ByRelationshipAssertionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipAssertionsStep(), opts...)
+	}
+}
+
+// ByRelationshipAssertions orders the results by relationship_assertions terms.
+func ByRelationshipAssertions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipAssertionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRelationshipStateSnapshotsCount orders the results by relationship_state_snapshots count.
+func ByRelationshipStateSnapshotsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipStateSnapshotsStep(), opts...)
+	}
+}
+
+// ByRelationshipStateSnapshots orders the results by relationship_state_snapshots terms.
+func ByRelationshipStateSnapshots(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipStateSnapshotsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRelationshipSourceStatusesCount orders the results by relationship_source_statuses count.
+func ByRelationshipSourceStatusesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipSourceStatusesStep(), opts...)
+	}
+}
+
+// ByRelationshipSourceStatuses orders the results by relationship_source_statuses terms.
+func ByRelationshipSourceStatuses(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipSourceStatusesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByActionProposalsCount orders the results by action_proposals count.
 func ByActionProposalsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -1181,6 +1296,41 @@ func newMailSignalsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MailSignalsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, MailSignalsTable, MailSignalsColumn),
+	)
+}
+func newRelationshipParticipantsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipParticipantsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipParticipantsTable, RelationshipParticipantsColumn),
+	)
+}
+func newRelationshipObservationsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipObservationsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipObservationsTable, RelationshipObservationsColumn),
+	)
+}
+func newRelationshipAssertionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipAssertionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipAssertionsTable, RelationshipAssertionsColumn),
+	)
+}
+func newRelationshipStateSnapshotsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipStateSnapshotsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipStateSnapshotsTable, RelationshipStateSnapshotsColumn),
+	)
+}
+func newRelationshipSourceStatusesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipSourceStatusesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipSourceStatusesTable, RelationshipSourceStatusesColumn),
 	)
 }
 func newActionProposalsStep() *sqlgraph.Step {

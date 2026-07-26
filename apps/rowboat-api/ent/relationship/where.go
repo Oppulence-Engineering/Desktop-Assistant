@@ -111,9 +111,49 @@ func NextActionAt(v time.Time) predicate.Relationship {
 	return predicate.Relationship(sql.FieldEQ(FieldNextActionAt, v))
 }
 
+// NextAction applies equality check predicate on the "next_action" field. It's identical to NextActionEQ.
+func NextAction(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldNextAction, v))
+}
+
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v string) predicate.Relationship {
 	return predicate.Relationship(sql.FieldEQ(FieldStatus, v))
+}
+
+// Lifecycle applies equality check predicate on the "lifecycle" field. It's identical to LifecycleEQ.
+func Lifecycle(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldLifecycle, v))
+}
+
+// Engagement applies equality check predicate on the "engagement" field. It's identical to EngagementEQ.
+func Engagement(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldEngagement, v))
+}
+
+// Sentiment applies equality check predicate on the "sentiment" field. It's identical to SentimentEQ.
+func Sentiment(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldSentiment, v))
+}
+
+// Health applies equality check predicate on the "health" field. It's identical to HealthEQ.
+func Health(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldHealth, v))
+}
+
+// StateReason applies equality check predicate on the "state_reason" field. It's identical to StateReasonEQ.
+func StateReason(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldStateReason, v))
+}
+
+// StateVersion applies equality check predicate on the "state_version" field. It's identical to StateVersionEQ.
+func StateVersion(v int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldStateVersion, v))
+}
+
+// LastChangedAt applies equality check predicate on the "last_changed_at" field. It's identical to LastChangedAtEQ.
+func LastChangedAt(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldLastChangedAt, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -801,6 +841,81 @@ func NextActionAtNotNil() predicate.Relationship {
 	return predicate.Relationship(sql.FieldNotNull(FieldNextActionAt))
 }
 
+// NextActionEQ applies the EQ predicate on the "next_action" field.
+func NextActionEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldNextAction, v))
+}
+
+// NextActionNEQ applies the NEQ predicate on the "next_action" field.
+func NextActionNEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldNextAction, v))
+}
+
+// NextActionIn applies the In predicate on the "next_action" field.
+func NextActionIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldNextAction, vs...))
+}
+
+// NextActionNotIn applies the NotIn predicate on the "next_action" field.
+func NextActionNotIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldNextAction, vs...))
+}
+
+// NextActionGT applies the GT predicate on the "next_action" field.
+func NextActionGT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldNextAction, v))
+}
+
+// NextActionGTE applies the GTE predicate on the "next_action" field.
+func NextActionGTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldNextAction, v))
+}
+
+// NextActionLT applies the LT predicate on the "next_action" field.
+func NextActionLT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldNextAction, v))
+}
+
+// NextActionLTE applies the LTE predicate on the "next_action" field.
+func NextActionLTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldNextAction, v))
+}
+
+// NextActionContains applies the Contains predicate on the "next_action" field.
+func NextActionContains(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContains(FieldNextAction, v))
+}
+
+// NextActionHasPrefix applies the HasPrefix predicate on the "next_action" field.
+func NextActionHasPrefix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasPrefix(FieldNextAction, v))
+}
+
+// NextActionHasSuffix applies the HasSuffix predicate on the "next_action" field.
+func NextActionHasSuffix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasSuffix(FieldNextAction, v))
+}
+
+// NextActionIsNil applies the IsNil predicate on the "next_action" field.
+func NextActionIsNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldIsNull(FieldNextAction))
+}
+
+// NextActionNotNil applies the NotNil predicate on the "next_action" field.
+func NextActionNotNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotNull(FieldNextAction))
+}
+
+// NextActionEqualFold applies the EqualFold predicate on the "next_action" field.
+func NextActionEqualFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEqualFold(FieldNextAction, v))
+}
+
+// NextActionContainsFold applies the ContainsFold predicate on the "next_action" field.
+func NextActionContainsFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContainsFold(FieldNextAction, v))
+}
+
 // StatusEQ applies the EQ predicate on the "status" field.
 func StatusEQ(v string) predicate.Relationship {
 	return predicate.Relationship(sql.FieldEQ(FieldStatus, v))
@@ -864,6 +979,431 @@ func StatusEqualFold(v string) predicate.Relationship {
 // StatusContainsFold applies the ContainsFold predicate on the "status" field.
 func StatusContainsFold(v string) predicate.Relationship {
 	return predicate.Relationship(sql.FieldContainsFold(FieldStatus, v))
+}
+
+// LifecycleEQ applies the EQ predicate on the "lifecycle" field.
+func LifecycleEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldLifecycle, v))
+}
+
+// LifecycleNEQ applies the NEQ predicate on the "lifecycle" field.
+func LifecycleNEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldLifecycle, v))
+}
+
+// LifecycleIn applies the In predicate on the "lifecycle" field.
+func LifecycleIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldLifecycle, vs...))
+}
+
+// LifecycleNotIn applies the NotIn predicate on the "lifecycle" field.
+func LifecycleNotIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldLifecycle, vs...))
+}
+
+// LifecycleGT applies the GT predicate on the "lifecycle" field.
+func LifecycleGT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldLifecycle, v))
+}
+
+// LifecycleGTE applies the GTE predicate on the "lifecycle" field.
+func LifecycleGTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldLifecycle, v))
+}
+
+// LifecycleLT applies the LT predicate on the "lifecycle" field.
+func LifecycleLT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldLifecycle, v))
+}
+
+// LifecycleLTE applies the LTE predicate on the "lifecycle" field.
+func LifecycleLTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldLifecycle, v))
+}
+
+// LifecycleContains applies the Contains predicate on the "lifecycle" field.
+func LifecycleContains(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContains(FieldLifecycle, v))
+}
+
+// LifecycleHasPrefix applies the HasPrefix predicate on the "lifecycle" field.
+func LifecycleHasPrefix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasPrefix(FieldLifecycle, v))
+}
+
+// LifecycleHasSuffix applies the HasSuffix predicate on the "lifecycle" field.
+func LifecycleHasSuffix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasSuffix(FieldLifecycle, v))
+}
+
+// LifecycleEqualFold applies the EqualFold predicate on the "lifecycle" field.
+func LifecycleEqualFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEqualFold(FieldLifecycle, v))
+}
+
+// LifecycleContainsFold applies the ContainsFold predicate on the "lifecycle" field.
+func LifecycleContainsFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContainsFold(FieldLifecycle, v))
+}
+
+// EngagementEQ applies the EQ predicate on the "engagement" field.
+func EngagementEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldEngagement, v))
+}
+
+// EngagementNEQ applies the NEQ predicate on the "engagement" field.
+func EngagementNEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldEngagement, v))
+}
+
+// EngagementIn applies the In predicate on the "engagement" field.
+func EngagementIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldEngagement, vs...))
+}
+
+// EngagementNotIn applies the NotIn predicate on the "engagement" field.
+func EngagementNotIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldEngagement, vs...))
+}
+
+// EngagementGT applies the GT predicate on the "engagement" field.
+func EngagementGT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldEngagement, v))
+}
+
+// EngagementGTE applies the GTE predicate on the "engagement" field.
+func EngagementGTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldEngagement, v))
+}
+
+// EngagementLT applies the LT predicate on the "engagement" field.
+func EngagementLT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldEngagement, v))
+}
+
+// EngagementLTE applies the LTE predicate on the "engagement" field.
+func EngagementLTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldEngagement, v))
+}
+
+// EngagementContains applies the Contains predicate on the "engagement" field.
+func EngagementContains(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContains(FieldEngagement, v))
+}
+
+// EngagementHasPrefix applies the HasPrefix predicate on the "engagement" field.
+func EngagementHasPrefix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasPrefix(FieldEngagement, v))
+}
+
+// EngagementHasSuffix applies the HasSuffix predicate on the "engagement" field.
+func EngagementHasSuffix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasSuffix(FieldEngagement, v))
+}
+
+// EngagementEqualFold applies the EqualFold predicate on the "engagement" field.
+func EngagementEqualFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEqualFold(FieldEngagement, v))
+}
+
+// EngagementContainsFold applies the ContainsFold predicate on the "engagement" field.
+func EngagementContainsFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContainsFold(FieldEngagement, v))
+}
+
+// SentimentEQ applies the EQ predicate on the "sentiment" field.
+func SentimentEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldSentiment, v))
+}
+
+// SentimentNEQ applies the NEQ predicate on the "sentiment" field.
+func SentimentNEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldSentiment, v))
+}
+
+// SentimentIn applies the In predicate on the "sentiment" field.
+func SentimentIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldSentiment, vs...))
+}
+
+// SentimentNotIn applies the NotIn predicate on the "sentiment" field.
+func SentimentNotIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldSentiment, vs...))
+}
+
+// SentimentGT applies the GT predicate on the "sentiment" field.
+func SentimentGT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldSentiment, v))
+}
+
+// SentimentGTE applies the GTE predicate on the "sentiment" field.
+func SentimentGTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldSentiment, v))
+}
+
+// SentimentLT applies the LT predicate on the "sentiment" field.
+func SentimentLT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldSentiment, v))
+}
+
+// SentimentLTE applies the LTE predicate on the "sentiment" field.
+func SentimentLTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldSentiment, v))
+}
+
+// SentimentContains applies the Contains predicate on the "sentiment" field.
+func SentimentContains(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContains(FieldSentiment, v))
+}
+
+// SentimentHasPrefix applies the HasPrefix predicate on the "sentiment" field.
+func SentimentHasPrefix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasPrefix(FieldSentiment, v))
+}
+
+// SentimentHasSuffix applies the HasSuffix predicate on the "sentiment" field.
+func SentimentHasSuffix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasSuffix(FieldSentiment, v))
+}
+
+// SentimentEqualFold applies the EqualFold predicate on the "sentiment" field.
+func SentimentEqualFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEqualFold(FieldSentiment, v))
+}
+
+// SentimentContainsFold applies the ContainsFold predicate on the "sentiment" field.
+func SentimentContainsFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContainsFold(FieldSentiment, v))
+}
+
+// HealthEQ applies the EQ predicate on the "health" field.
+func HealthEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldHealth, v))
+}
+
+// HealthNEQ applies the NEQ predicate on the "health" field.
+func HealthNEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldHealth, v))
+}
+
+// HealthIn applies the In predicate on the "health" field.
+func HealthIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldHealth, vs...))
+}
+
+// HealthNotIn applies the NotIn predicate on the "health" field.
+func HealthNotIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldHealth, vs...))
+}
+
+// HealthGT applies the GT predicate on the "health" field.
+func HealthGT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldHealth, v))
+}
+
+// HealthGTE applies the GTE predicate on the "health" field.
+func HealthGTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldHealth, v))
+}
+
+// HealthLT applies the LT predicate on the "health" field.
+func HealthLT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldHealth, v))
+}
+
+// HealthLTE applies the LTE predicate on the "health" field.
+func HealthLTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldHealth, v))
+}
+
+// HealthContains applies the Contains predicate on the "health" field.
+func HealthContains(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContains(FieldHealth, v))
+}
+
+// HealthHasPrefix applies the HasPrefix predicate on the "health" field.
+func HealthHasPrefix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasPrefix(FieldHealth, v))
+}
+
+// HealthHasSuffix applies the HasSuffix predicate on the "health" field.
+func HealthHasSuffix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasSuffix(FieldHealth, v))
+}
+
+// HealthEqualFold applies the EqualFold predicate on the "health" field.
+func HealthEqualFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEqualFold(FieldHealth, v))
+}
+
+// HealthContainsFold applies the ContainsFold predicate on the "health" field.
+func HealthContainsFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContainsFold(FieldHealth, v))
+}
+
+// StateReasonEQ applies the EQ predicate on the "state_reason" field.
+func StateReasonEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldStateReason, v))
+}
+
+// StateReasonNEQ applies the NEQ predicate on the "state_reason" field.
+func StateReasonNEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldStateReason, v))
+}
+
+// StateReasonIn applies the In predicate on the "state_reason" field.
+func StateReasonIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldStateReason, vs...))
+}
+
+// StateReasonNotIn applies the NotIn predicate on the "state_reason" field.
+func StateReasonNotIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldStateReason, vs...))
+}
+
+// StateReasonGT applies the GT predicate on the "state_reason" field.
+func StateReasonGT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldStateReason, v))
+}
+
+// StateReasonGTE applies the GTE predicate on the "state_reason" field.
+func StateReasonGTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldStateReason, v))
+}
+
+// StateReasonLT applies the LT predicate on the "state_reason" field.
+func StateReasonLT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldStateReason, v))
+}
+
+// StateReasonLTE applies the LTE predicate on the "state_reason" field.
+func StateReasonLTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldStateReason, v))
+}
+
+// StateReasonContains applies the Contains predicate on the "state_reason" field.
+func StateReasonContains(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContains(FieldStateReason, v))
+}
+
+// StateReasonHasPrefix applies the HasPrefix predicate on the "state_reason" field.
+func StateReasonHasPrefix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasPrefix(FieldStateReason, v))
+}
+
+// StateReasonHasSuffix applies the HasSuffix predicate on the "state_reason" field.
+func StateReasonHasSuffix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasSuffix(FieldStateReason, v))
+}
+
+// StateReasonIsNil applies the IsNil predicate on the "state_reason" field.
+func StateReasonIsNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldIsNull(FieldStateReason))
+}
+
+// StateReasonNotNil applies the NotNil predicate on the "state_reason" field.
+func StateReasonNotNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotNull(FieldStateReason))
+}
+
+// StateReasonEqualFold applies the EqualFold predicate on the "state_reason" field.
+func StateReasonEqualFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEqualFold(FieldStateReason, v))
+}
+
+// StateReasonContainsFold applies the ContainsFold predicate on the "state_reason" field.
+func StateReasonContainsFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContainsFold(FieldStateReason, v))
+}
+
+// StateVersionEQ applies the EQ predicate on the "state_version" field.
+func StateVersionEQ(v int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldStateVersion, v))
+}
+
+// StateVersionNEQ applies the NEQ predicate on the "state_version" field.
+func StateVersionNEQ(v int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldStateVersion, v))
+}
+
+// StateVersionIn applies the In predicate on the "state_version" field.
+func StateVersionIn(vs ...int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldStateVersion, vs...))
+}
+
+// StateVersionNotIn applies the NotIn predicate on the "state_version" field.
+func StateVersionNotIn(vs ...int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldStateVersion, vs...))
+}
+
+// StateVersionGT applies the GT predicate on the "state_version" field.
+func StateVersionGT(v int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldStateVersion, v))
+}
+
+// StateVersionGTE applies the GTE predicate on the "state_version" field.
+func StateVersionGTE(v int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldStateVersion, v))
+}
+
+// StateVersionLT applies the LT predicate on the "state_version" field.
+func StateVersionLT(v int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldStateVersion, v))
+}
+
+// StateVersionLTE applies the LTE predicate on the "state_version" field.
+func StateVersionLTE(v int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldStateVersion, v))
+}
+
+// LastChangedAtEQ applies the EQ predicate on the "last_changed_at" field.
+func LastChangedAtEQ(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldLastChangedAt, v))
+}
+
+// LastChangedAtNEQ applies the NEQ predicate on the "last_changed_at" field.
+func LastChangedAtNEQ(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldLastChangedAt, v))
+}
+
+// LastChangedAtIn applies the In predicate on the "last_changed_at" field.
+func LastChangedAtIn(vs ...time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldLastChangedAt, vs...))
+}
+
+// LastChangedAtNotIn applies the NotIn predicate on the "last_changed_at" field.
+func LastChangedAtNotIn(vs ...time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldLastChangedAt, vs...))
+}
+
+// LastChangedAtGT applies the GT predicate on the "last_changed_at" field.
+func LastChangedAtGT(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldLastChangedAt, v))
+}
+
+// LastChangedAtGTE applies the GTE predicate on the "last_changed_at" field.
+func LastChangedAtGTE(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldLastChangedAt, v))
+}
+
+// LastChangedAtLT applies the LT predicate on the "last_changed_at" field.
+func LastChangedAtLT(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldLastChangedAt, v))
+}
+
+// LastChangedAtLTE applies the LTE predicate on the "last_changed_at" field.
+func LastChangedAtLTE(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldLastChangedAt, v))
+}
+
+// LastChangedAtIsNil applies the IsNil predicate on the "last_changed_at" field.
+func LastChangedAtIsNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldIsNull(FieldLastChangedAt))
+}
+
+// LastChangedAtNotNil applies the NotNil predicate on the "last_changed_at" field.
+func LastChangedAtNotNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotNull(FieldLastChangedAt))
 }
 
 // HasWorkspace applies the HasEdge predicate on the "workspace" edge.
@@ -996,6 +1536,98 @@ func HasMailThreads() predicate.Relationship {
 func HasMailThreadsWith(preds ...predicate.MailThread) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		step := newMailThreadsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasParticipants applies the HasEdge predicate on the "participants" edge.
+func HasParticipants() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ParticipantsTable, ParticipantsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasParticipantsWith applies the HasEdge predicate on the "participants" edge with a given conditions (other predicates).
+func HasParticipantsWith(preds ...predicate.RelationshipParticipant) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := newParticipantsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasObservations applies the HasEdge predicate on the "observations" edge.
+func HasObservations() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ObservationsTable, ObservationsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasObservationsWith applies the HasEdge predicate on the "observations" edge with a given conditions (other predicates).
+func HasObservationsWith(preds ...predicate.RelationshipObservation) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := newObservationsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasAssertions applies the HasEdge predicate on the "assertions" edge.
+func HasAssertions() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, AssertionsTable, AssertionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAssertionsWith applies the HasEdge predicate on the "assertions" edge with a given conditions (other predicates).
+func HasAssertionsWith(preds ...predicate.RelationshipAssertion) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := newAssertionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasSnapshots applies the HasEdge predicate on the "snapshots" edge.
+func HasSnapshots() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SnapshotsTable, SnapshotsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSnapshotsWith applies the HasEdge predicate on the "snapshots" edge with a given conditions (other predicates).
+func HasSnapshotsWith(preds ...predicate.RelationshipStateSnapshot) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := newSnapshotsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

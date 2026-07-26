@@ -1,0 +1,760 @@
+/*
+ * Canonical web product theme, imported directly by Electron. Keep product
+ * color, border, radius, and dark-mode changes here so the two surfaces cannot
+ * drift independently.
+ */
+
+:root {
+  --polar-50: #d7d8da;
+  --polar-100: #c7c8cc;
+  --polar-200: #aaabb1;
+  --polar-300: #9a9ba2;
+  --polar-400: #808189;
+  --polar-500: #71727a;
+  --polar-600: #27282a;
+  --polar-700: #1d1e20;
+  --polar-800: #171719;
+  --polar-900: #101011;
+  --polar-950: #090909;
+  --background: var(--bg-color, #f9fafb);
+  --background-50: #f7f8f9;
+  --background-100: #f3f4f6;
+  --background-200: #edeef1;
+  --background-300: #e5e7eb;
+  --background-400: #d7d8da;
+  --background-500: #c7c8cc;
+  --background-600: #aaabb1;
+  --background-700: #9a9ba2;
+  --foreground: var(--text-color, oklch(14.5% 0 0));
+  --card: oklch(1 0 0);
+  --card-foreground: var(--text-color, oklch(14.5% 0 0));
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--text-color, oklch(14.5% 0 0));
+  --primary: var(--main-color, oklch(20.5% 0 0));
+  --primary-foreground: oklch(98.5% 0 0);
+  --secondary: var(--background-100);
+  --secondary-foreground: var(--text-color, oklch(20.5% 0 0));
+  --muted: var(--background-100);
+  --muted-foreground: var(--sub-color, #6a7282);
+  --accent: var(--background-200);
+  --accent-foreground: var(--text-color, oklch(20.5% 0 0));
+  --destructive: var(--error-color, oklch(80% 0.22 31));
+  --destructive-foreground: var(--error-color, oklch(80% 0.22 31));
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: var(--main-color, oklch(70.8% 0 0));
+  --radius: 0.25rem;
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(240 5.9% 10%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(240 4.8% 95.9%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --oppulence-pink: hsla(314, 100%, 80%, 1);
+  --oppulence-yellow: hsla(38, 92%, 50%, 1);
+  --oppulence-yellow-100: hsla(45, 70%, 88%, 1);
+  --oppulence-yellow-600: hsla(40, 90%, 28%, 1);
+  --oppulence-blue: hsla(214, 72%, 51%, 1);
+  --oppulence-orange: hsla(19, 90%, 48%, 1);
+  --oppulence-green: hsla(96, 48%, 38%, 1);
+  --brand: hsla(96, 48%, 38%, 1);
+  --brand-bar: hsla(86, 52%, 64%, 1);
+  --surface: oklch(0.98 0 0);
+  --surface-foreground: var(--foreground);
+  --code: var(--surface);
+  --code-foreground: var(--surface-foreground);
+  --code-highlight: oklch(0.96 0 0);
+  --code-number: oklch(0.56 0 0);
+  --selection: oklch(0.145 0 0);
+  --selection-foreground: oklch(1 0 0);
+}
+
+.dark {
+  --background: var(--bg-color, var(--polar-950));
+  --background-50: var(--polar-900);
+  --background-100: var(--polar-800);
+  --background-200: var(--polar-700);
+  --background-300: var(--polar-600);
+  --background-400: #303134;
+  --background-500: #3c3d41;
+  --background-600: #4c4d53;
+  --background-700: #606168;
+  --foreground: var(--text-color, #f7f7f8);
+  --card: var(--polar-900);
+  --card-foreground: var(--polar-50);
+  --popover: var(--polar-900);
+  --popover-foreground: var(--polar-50);
+  --primary: #ffffff;
+  --primary-foreground: var(--polar-950);
+  --secondary: var(--polar-800);
+  --secondary-foreground: var(--polar-50);
+  --muted: var(--polar-800);
+  --muted-foreground: var(--polar-300);
+  --accent: var(--polar-700);
+  --accent-foreground: var(--polar-50);
+  --destructive: var(--error-color, oklch(80% 0.22 31));
+  --destructive-foreground: var(--error-color, oklch(80% 0.22 31));
+  --border: var(--polar-700);
+  --input: var(--polar-700);
+  --ring: var(--polar-500);
+  --sidebar: var(--polar-950);
+  --sidebar-foreground: var(--polar-50);
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: var(--polar-950);
+  --sidebar-accent: var(--polar-800);
+  --sidebar-accent-foreground: var(--polar-50);
+  --sidebar-border: var(--polar-700);
+  --sidebar-ring: var(--polar-500);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --oppulence-pink: hsla(314, 100%, 85%, 1);
+  --oppulence-yellow: hsla(58, 92%, 79%, 1);
+  --oppulence-yellow-100: hsla(58, 70%, 20%, 1);
+  --oppulence-yellow-600: hsla(58, 92%, 79%, 1);
+  --oppulence-blue: hsla(218, 91%, 78%, 1);
+  --oppulence-orange: hsla(19, 99%, 50%, 1);
+  --oppulence-green: hsla(156, 86%, 64%, 1);
+  --brand: hsla(96, 48%, 58%, 1);
+  --brand-bar: hsla(86, 52%, 44%, 1);
+  --surface: oklch(0.2 0 0);
+  --surface-foreground: oklch(0.708 0 0);
+  --code: var(--surface);
+  --code-foreground: var(--surface-foreground);
+  --code-highlight: oklch(0.27 0 0);
+  --code-number: oklch(0.72 0 0);
+  --selection: oklch(0.922 0 0);
+  --selection-foreground: oklch(0.205 0 0);
+}
+
+.app-shell {
+  --radius: 2px;
+}
+
+/*
+ * Settings workspace
+ * ------------------
+ * This is the canonical settings skin for both the web console and Electron.
+ * The desktop renderer imports this file directly; keep every settings-specific
+ * visual decision here instead of recreating it in App.css.
+ */
+:root {
+  --settings-canvas: var(--background);
+  --settings-rail: var(--background);
+  --settings-rail-hover: color-mix(in srgb, var(--foreground) 4%, transparent);
+  --settings-rail-active: color-mix(in srgb, var(--foreground) 7%, transparent);
+  --settings-panel: var(--card);
+  --settings-line: color-mix(in srgb, var(--foreground) 8%, transparent);
+  --settings-line-strong: color-mix(in srgb, var(--foreground) 14%, transparent);
+  --settings-copy: var(--foreground);
+  --settings-muted: var(--muted-foreground);
+  --settings-faint: color-mix(in srgb, var(--foreground) 46%, transparent);
+  --settings-accent: var(--foreground);
+  --settings-accent-soft: var(--background-100);
+  --settings-danger: #b64235;
+  --settings-warning: #9a6511;
+  --settings-warning-soft: #fff6dc;
+  --settings-success: var(--foreground);
+  --settings-success-soft: var(--background-100);
+}
+
+.dark {
+  --settings-warning: #e8be70;
+  --settings-warning-soft: #332a17;
+}
+
+.settings-workspace {
+  color: var(--settings-copy);
+  background: var(--settings-canvas);
+}
+
+.settings-workspace .text-lg {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.settings-workspace .text-sm {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.settings-workspace .text-xs {
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.settings-workspace .rounded,
+.settings-workspace .rounded-md,
+.settings-workspace .rounded-lg,
+.settings-workspace .rounded-xl {
+  border-radius: 2px;
+}
+
+.settings-rail {
+  background: var(--settings-rail);
+  border-color: var(--settings-line);
+  color: var(--settings-copy);
+}
+
+.settings-rail-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--settings-muted) 28%, transparent) transparent;
+}
+
+.settings-rail-heading {
+  color: var(--settings-faint);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.075em;
+  line-height: 1;
+  padding: 13px 12px 6px;
+  text-transform: uppercase;
+}
+
+.settings-back,
+.settings-identity,
+.settings-nav-item {
+  align-items: center;
+  border: 0;
+  color: var(--settings-muted);
+  display: flex;
+  font: inherit;
+  text-align: left;
+}
+
+.settings-back {
+  font-size: 11px;
+  gap: 7px;
+  min-height: 32px;
+  padding: 0 12px;
+  width: 100%;
+}
+
+.settings-back:hover {
+  color: var(--settings-copy);
+}
+
+.settings-identity {
+  color: var(--settings-copy);
+  font-size: 12px;
+  font-weight: 600;
+  justify-content: space-between;
+  min-height: 36px;
+  padding: 0 12px;
+  width: 100%;
+}
+
+.settings-nav-item {
+  border-radius: 2px;
+  font-size: 12px;
+  gap: 8px;
+  min-height: 30px;
+  padding: 5px 9px;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+  width: 100%;
+}
+
+.settings-nav-item:hover {
+  background: var(--settings-rail-hover);
+  color: var(--settings-copy);
+}
+
+.settings-nav-item[data-active="true"] {
+  background: var(--settings-rail-active);
+  color: var(--settings-copy);
+  font-weight: 580;
+}
+
+.settings-nav-item svg {
+  height: 14px;
+  opacity: 0.85;
+  width: 14px;
+}
+
+.settings-beta {
+  background: var(--settings-warning-soft);
+  border-radius: 999px;
+  color: var(--settings-warning);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-left: auto;
+  padding: 2px 5px;
+  text-transform: uppercase;
+}
+
+.settings-stage {
+  background: var(--settings-canvas);
+  color: var(--settings-copy);
+  min-width: 0;
+}
+
+.settings-stage-header {
+  align-items: center;
+  border-bottom: 1px solid var(--settings-line);
+  display: flex;
+  flex: 0 0 46px;
+  gap: 8px;
+  justify-content: space-between;
+  min-height: 46px;
+  padding: 0 18px;
+}
+
+.settings-stage-header-title {
+  color: var(--settings-copy);
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.settings-stage-header-brand {
+  color: var(--settings-faint);
+  font-size: 10px;
+  font-weight: 450;
+}
+
+.settings-page-scroll {
+  background: var(--settings-canvas);
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--settings-muted) 24%, transparent) transparent;
+}
+
+.settings-page {
+  margin: 0 auto;
+  max-width: 920px;
+  padding: 54px 44px 80px;
+  width: 100%;
+}
+
+.settings-page--wide {
+  max-width: 1040px;
+}
+
+.settings-page-title {
+  color: var(--settings-copy);
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.settings-page-description {
+  color: var(--settings-muted);
+  font-size: 11px;
+  line-height: 1.55;
+  margin-top: 5px;
+  max-width: 620px;
+}
+
+.settings-divider {
+  border: 0;
+  border-top: 1px solid var(--settings-line);
+  margin: 25px 0;
+}
+
+.settings-overview-group + .settings-overview-group {
+  margin-top: 28px;
+}
+
+.settings-overview-label,
+.settings-section-kicker {
+  color: var(--settings-muted);
+  font-size: 11px;
+  font-weight: 610;
+  margin-bottom: 10px;
+}
+
+.settings-card-grid {
+  display: grid;
+  gap: 9px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-card {
+  align-items: center;
+  background: var(--settings-panel);
+  border: 1px solid var(--settings-line);
+  border-radius: 2px;
+  color: var(--settings-copy);
+  display: flex;
+  gap: 11px;
+  min-height: 68px;
+  padding: 12px;
+  text-align: left;
+  transition: border-color 140ms ease;
+  width: 100%;
+}
+
+.settings-card:hover {
+  border-color: var(--settings-line-strong);
+}
+
+.settings-card-icon {
+  align-items: center;
+  background: var(--settings-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--settings-accent) 12%, transparent);
+  border-radius: 2px;
+  color: var(--settings-accent);
+  display: flex;
+  flex: 0 0 31px;
+  height: 31px;
+  justify-content: center;
+}
+
+.settings-card-icon svg {
+  height: 14px;
+  width: 14px;
+}
+
+.settings-card-copy {
+  min-width: 0;
+}
+
+.settings-card-title {
+  display: block;
+  font-size: 11px;
+  font-weight: 620;
+}
+
+.settings-card-description {
+  color: var(--settings-muted);
+  display: block;
+  font-size: 10px;
+  line-height: 1.4;
+  margin-top: 3px;
+}
+
+.settings-section-block {
+  margin-top: 27px;
+}
+
+.settings-section-block:first-of-type {
+  margin-top: 0;
+}
+
+.settings-section-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.settings-section-title {
+  color: var(--settings-copy);
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.settings-section-description {
+  color: var(--settings-muted);
+  font-size: 10px;
+  line-height: 1.5;
+  margin-top: 3px;
+  max-width: 630px;
+}
+
+.settings-panel {
+  background: var(--settings-panel);
+  border: 1px solid var(--settings-line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.settings-row {
+  align-items: center;
+  border-top: 1px solid var(--settings-line);
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  min-height: 58px;
+  padding: 12px 14px;
+}
+
+.settings-row:first-child {
+  border-top: 0;
+}
+
+.settings-row-copy {
+  min-width: 0;
+}
+
+.settings-row-label {
+  color: var(--settings-copy);
+  font-size: 11px;
+  font-weight: 580;
+}
+
+.settings-row-description {
+  color: var(--settings-muted);
+  font-size: 10px;
+  line-height: 1.45;
+  margin-top: 3px;
+  max-width: 560px;
+}
+
+.settings-status {
+  align-items: center;
+  display: inline-flex;
+  font-size: 10px;
+  gap: 5px;
+}
+
+.settings-status::before {
+  background: currentColor;
+  border-radius: 50%;
+  content: "";
+  height: 5px;
+  width: 5px;
+}
+
+.settings-status--ok {
+  color: var(--settings-success);
+}
+
+.settings-status--warn {
+  color: var(--settings-warning);
+}
+
+.settings-inline-notice {
+  background: var(--settings-success-soft);
+  border: 1px solid color-mix(in srgb, var(--settings-success) 18%, transparent);
+  border-radius: 2px;
+  color: var(--settings-success);
+  font-size: 10px;
+  margin-top: 14px;
+  padding: 10px 12px;
+}
+
+.settings-preview {
+  background: var(--settings-panel);
+  border: 1px solid var(--settings-line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.settings-preview img {
+  display: block;
+  height: auto;
+  max-height: 330px;
+  object-fit: cover;
+  object-position: top;
+  width: 100%;
+}
+
+.settings-choice-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.settings-choice {
+  background: var(--settings-panel);
+  border: 1px solid var(--settings-line);
+  border-radius: 2px;
+  color: var(--settings-copy);
+  padding: 8px;
+  text-align: left;
+  transition: border-color 140ms ease;
+}
+
+.settings-choice:hover,
+.settings-choice[data-selected="true"] {
+  border-color: color-mix(in srgb, var(--settings-accent) 52%, var(--settings-line));
+}
+
+.settings-choice[data-selected="true"] {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--settings-accent) 12%, transparent);
+}
+
+.settings-choice-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 610;
+  padding: 8px 2px 2px;
+}
+
+.settings-control,
+.settings-select,
+.settings-button {
+  border-radius: 2px;
+  font: inherit;
+  font-size: 10px;
+  min-height: 31px;
+}
+
+.settings-control,
+.settings-select {
+  background: var(--settings-panel);
+  border: 1px solid var(--settings-line-strong);
+  color: var(--settings-copy);
+  outline: 0;
+  padding: 0 10px;
+}
+
+.settings-control:focus,
+.settings-select:focus {
+  border-color: color-mix(in srgb, var(--settings-accent) 55%, var(--settings-line));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--settings-accent) 10%, transparent);
+}
+
+.settings-button {
+  align-items: center;
+  background: var(--settings-panel);
+  border: 1px solid var(--settings-line-strong);
+  color: var(--settings-copy);
+  display: inline-flex;
+  font-weight: 570;
+  gap: 6px;
+  justify-content: center;
+  padding: 0 11px;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.settings-button:hover {
+  background: color-mix(in srgb, var(--settings-rail) 54%, var(--settings-panel));
+  border-color: color-mix(in srgb, var(--settings-copy) 22%, var(--settings-line));
+}
+
+.settings-button--primary {
+  background: var(--settings-copy);
+  border-color: var(--settings-copy);
+  color: var(--settings-panel);
+}
+
+.settings-button--primary:hover {
+  background: color-mix(in srgb, var(--settings-copy) 88%, var(--settings-panel));
+}
+
+.settings-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.settings-switch {
+  background: color-mix(in srgb, var(--settings-muted) 22%, transparent);
+  border: 0;
+  border-radius: 999px;
+  height: 18px;
+  padding: 2px;
+  transition: background-color 140ms ease;
+  width: 32px;
+}
+
+.settings-switch::after {
+  background: var(--settings-panel);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(24, 35, 39, 0.2);
+  content: "";
+  display: block;
+  height: 14px;
+  transform: translateX(0);
+  transition: transform 140ms ease;
+  width: 14px;
+}
+
+.settings-switch[aria-checked="true"] {
+  background: var(--settings-accent);
+}
+
+.settings-switch[aria-checked="true"]::after {
+  transform: translateX(14px);
+}
+
+/*
+ * Shared compact brand lockup used by the web and Electron titlebars.
+ * The source PNG has large transparent margins, so the mark is optically
+ * cropped here instead of letting each surface compensate independently.
+ */
+.oppulence-compact-lockup {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.oppulence-compact-lockup__mark {
+  display: block;
+  flex: 0 0 auto;
+  height: 20px;
+  overflow: hidden;
+  position: relative;
+  width: 14px;
+}
+
+.oppulence-compact-lockup__mark-image {
+  border-radius: 0;
+  height: 38px;
+  left: -13px;
+  max-width: none;
+  position: absolute;
+  top: -9px;
+  width: 38px;
+}
+
+.dark .oppulence-compact-lockup__mark-image {
+  filter: invert(1);
+}
+
+.oppulence-compact-lockup__wordmark {
+  color: var(--foreground);
+  font-family: var(--font-geist-sans, "Geist Variable"), ui-sans-serif, sans-serif;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+/*
+ * The Electron titlebar is only 48px tall, so it uses the same lockup at a
+ * denser optical size. The web header keeps the roomier default above.
+ */
+.oppulence-compact-lockup--desktop {
+  gap: 6px;
+}
+
+.oppulence-compact-lockup--desktop .oppulence-compact-lockup__mark {
+  height: 15px;
+  width: 11px;
+}
+
+.oppulence-compact-lockup--desktop .oppulence-compact-lockup__mark-image {
+  height: 29px;
+  left: -10px;
+  top: -7px;
+  width: 29px;
+}
+
+.oppulence-compact-lockup--desktop .oppulence-compact-lockup__wordmark {
+  font-size: 14px;
+  line-height: 14px;
+}
+
+@media (max-width: 900px) {
+  .settings-page {
+    padding: 38px 28px 64px;
+  }
+}
+
+@media (max-width: 720px) {
+  .settings-card-grid,
+  .settings-choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-page {
+    padding: 30px 20px 56px;
+  }
+}

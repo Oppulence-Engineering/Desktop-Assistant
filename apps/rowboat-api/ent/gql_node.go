@@ -39,6 +39,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
@@ -211,6 +216,31 @@ var relationshipImplementors = []string{"Relationship", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*Relationship) IsNode() {}
+
+var relationshipassertionImplementors = []string{"RelationshipAssertion", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelationshipAssertion) IsNode() {}
+
+var relationshipobservationImplementors = []string{"RelationshipObservation", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelationshipObservation) IsNode() {}
+
+var relationshipparticipantImplementors = []string{"RelationshipParticipant", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelationshipParticipant) IsNode() {}
+
+var relationshipsourcestatusImplementors = []string{"RelationshipSourceStatus", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelationshipSourceStatus) IsNode() {}
+
+var relationshipstatesnapshotImplementors = []string{"RelationshipStateSnapshot", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelationshipStateSnapshot) IsNode() {}
 
 var revenueactionImplementors = []string{"RevenueAction", "Node"}
 
@@ -590,6 +620,51 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(relationship.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relationshipassertion.Table:
+		query := c.RelationshipAssertion.Query().
+			Where(relationshipassertion.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipassertionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relationshipobservation.Table:
+		query := c.RelationshipObservation.Query().
+			Where(relationshipobservation.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipobservationImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relationshipparticipant.Table:
+		query := c.RelationshipParticipant.Query().
+			Where(relationshipparticipant.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipparticipantImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relationshipsourcestatus.Table:
+		query := c.RelationshipSourceStatus.Query().
+			Where(relationshipsourcestatus.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipsourcestatusImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relationshipstatesnapshot.Table:
+		query := c.RelationshipStateSnapshot.Query().
+			Where(relationshipstatesnapshot.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipstatesnapshotImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -1232,6 +1307,86 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.Relationship.Query().
 			Where(relationship.IDIn(ids...))
 		query, err := query.CollectFields(ctx, relationshipImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relationshipassertion.Table:
+		query := c.RelationshipAssertion.Query().
+			Where(relationshipassertion.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relationshipassertionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relationshipobservation.Table:
+		query := c.RelationshipObservation.Query().
+			Where(relationshipobservation.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relationshipobservationImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relationshipparticipant.Table:
+		query := c.RelationshipParticipant.Query().
+			Where(relationshipparticipant.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relationshipparticipantImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relationshipsourcestatus.Table:
+		query := c.RelationshipSourceStatus.Query().
+			Where(relationshipsourcestatus.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relationshipsourcestatusImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relationshipstatesnapshot.Table:
+		query := c.RelationshipStateSnapshot.Query().
+			Where(relationshipstatesnapshot.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relationshipstatesnapshotImplementors...)
 		if err != nil {
 			return nil, err
 		}

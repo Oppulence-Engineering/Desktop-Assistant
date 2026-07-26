@@ -19,6 +19,7 @@ import {
   MessageSquare,
   Settings,
   Square,
+  UsersRound,
   Video,
 } from "@/lib/icons";
 import {
@@ -169,12 +170,21 @@ type SidebarContentPanelProps = {
   recentRuns?: { id: string; title?: string; createdAt: string }[];
   onOpenRun?: (runId: string) => void;
   onOpenEmail?: (threadId?: string) => void;
+  onOpenRelationships?: () => void;
   onOpenHome?: () => void;
   onNewChat?: () => void;
   onToggleBrowser?: () => void;
   onVoiceNoteCreated?: (path: string) => void;
   /** Which primary destination is currently active, for nav highlighting. */
-  activeNav?: "home" | "email" | "meetings" | "knowledge" | "agents" | "workspaces" | null;
+  activeNav?:
+    | "home"
+    | "relationships"
+    | "email"
+    | "meetings"
+    | "knowledge"
+    | "agents"
+    | "workspaces"
+    | null;
   /** Live meeting recording state, so the recording row can show its indicator/stop. */
   meetingRecordingState?: "idle" | "connecting" | "recording" | "stopping";
   recordingMeetingSource?: string | null;
@@ -420,6 +430,7 @@ export function SidebarContentPanel({
   recentRuns = [],
   onOpenRun,
   onOpenEmail,
+  onOpenRelationships,
   onOpenHome,
   onNewChat,
   onToggleBrowser,
@@ -792,6 +803,21 @@ export function SidebarContentPanel({
                 <SidebarMenuButton isActive={activeNav === "home"} onClick={onOpenHome}>
                   <Home className="size-4 shrink-0" />
                   <span className="flex-1 truncate">Home</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={activeNav === "relationships"}
+                  onClick={onOpenRelationships}
+                  className="h-auto py-1.5"
+                >
+                  <UsersRound className="size-4 shrink-0" />
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate">Relationships</span>
+                    <span className="truncate text-[11px] text-muted-foreground">
+                      Account mission control
+                    </span>
+                  </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>

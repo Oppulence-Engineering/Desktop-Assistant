@@ -31,6 +31,12 @@ import {
   ExternalLink,
   AudioLines,
   Bell,
+  ArrowLeft,
+  Cloud,
+  Download,
+  LayoutGridIcon,
+  RotateCcw,
+  Settings,
 } from "@/lib/icons";
 
 import {
@@ -46,7 +52,6 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { AccountSettings } from "@/components/settings/account-settings";
 import { ConnectedAccountsSettings } from "@/components/settings/connected-accounts-settings";
 import { TranscriptionSettings } from "@/components/settings/transcription-settings";
@@ -62,22 +67,33 @@ import { useConnectors } from "@/hooks/useConnectors";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
 import { PRODUCT_NAME, getProductProviderState } from "@x/shared/dist/branding.js";
 import type { ApprovalPolicy } from "@x/shared/src/code-mode.js";
+import settingsWorkspacePreview from "../../../../../rowboat-www/public/marketing/desktop-home.png";
 
 type ConfigTab =
-  | "account"
-  | "connections"
-  | "models"
-  | "transcription"
+  | "overview"
+  | "preferences"
   | "notifications"
-  | "mcp"
+  | "permissions"
   | "security"
-  | "code-mode"
-  | "appearance"
+  | "extensions"
+  | "connections"
+  | "transcription"
   | "note-tagging"
+  | "advanced"
+  | "customization"
+  | "code-mode"
+  | "mcp"
+  | "environment"
+  | "updates"
   | "memory"
+  | "recovery"
+  | "account"
+  | "connect"
+  | "models"
+  | "appearance"
   | "help";
 
-type SettingsGroup = "account" | "workspace" | "advanced" | "help";
+type SettingsGroup = "workspace" | "global" | "cloud" | "support";
 
 interface TabConfig {
   id: ConfigTab;
@@ -85,46 +101,74 @@ interface TabConfig {
   icon: React.ElementType;
   path?: string;
   description: string;
-  group: SettingsGroup;
+  group?: SettingsGroup;
+  beta?: boolean;
 }
 
-const GROUP_LABELS: Record<SettingsGroup, string | null> = {
-  account: "Account",
+const GROUP_LABELS: Record<SettingsGroup, string> = {
   workspace: "Workspace",
-  advanced: "Advanced",
-  help: null,
+  global: "Global",
+  cloud: "Cloud",
+  support: "Support",
 };
 
-const GROUP_ORDER: SettingsGroup[] = ["account", "workspace", "advanced", "help"];
+const GROUP_ORDER: SettingsGroup[] = ["workspace", "global", "cloud", "support"];
 
 const tabs: TabConfig[] = [
   {
-    id: "account",
-    label: "Account",
-    icon: User,
-    description: `Manage your ${PRODUCT_NAME} account`,
-    group: "account",
+    id: "overview",
+    label: "Settings",
+    icon: Settings,
+    description: "Everything that shapes your workspace and account.",
+  },
+  {
+    id: "preferences",
+    label: "Preferences",
+    icon: Bell,
+    description: "Default model, reasoning, notifications, privacy, and memory.",
+    group: "workspace",
+  },
+  {
+    id: "notifications",
+    label: "Notifications",
+    icon: Bell,
+    description: "Configure system notification preferences.",
+    group: "workspace",
+  },
+  {
+    id: "permissions",
+    label: "Permissions",
+    icon: Shield,
+    description: "Control file, command, and workspace access.",
+    group: "workspace",
+  },
+  {
+    id: "security",
+    label: "Security",
+    icon: Shield,
+    path: "config/security.json",
+    description: "Configure allowed shell commands and file access.",
+    group: "workspace",
+  },
+  {
+    id: "extensions",
+    label: "Extensions",
+    icon: Plug,
+    description: "Connect services, skills, and local MCP servers.",
+    group: "workspace",
   },
   {
     id: "connections",
     label: "Connections",
     icon: Plug,
-    description: "Manage accounts and tools",
-    group: "account",
-  },
-  {
-    id: "models",
-    label: "Models",
-    icon: Key,
-    path: "config/models.json",
-    description: "Configure LLM providers and API keys",
+    description: "Manage connected accounts and available tools.",
     group: "workspace",
   },
   {
     id: "transcription",
     label: "Transcription",
     icon: AudioLines,
-    description: "Choose on-device or cloud speech-to-text",
+    description: "Choose on-device or cloud speech-to-text.",
     group: "workspace",
   },
   {
@@ -132,67 +176,110 @@ const tabs: TabConfig[] = [
     label: "Note Tagging",
     icon: Tags,
     path: "config/tags.json",
-    description: "Configure tags for notes and emails",
+    description: "Configure tags for notes and emails.",
     group: "workspace",
   },
   {
-    id: "memory",
-    label: "Memory",
-    icon: BrainIcon,
-    path: "config/index.json",
-    description: "Semantic index over your knowledge vault",
+    id: "advanced",
+    label: "Advanced",
+    icon: Terminal,
+    description: "Configure desktop intelligence and agent execution.",
     group: "workspace",
   },
   {
-    id: "notifications",
-    label: "Notifications",
-    icon: Bell,
-    description: "System notification preferences",
-    group: "workspace",
+    id: "models",
+    label: "AI Providers",
+    icon: Key,
+    path: "config/models.json",
+    description: "Choose the models that reason over relationship evidence.",
+    group: "global",
+  },
+  {
+    id: "code-mode",
+    label: "Code Mode",
+    icon: Terminal,
+    description: "Delegate coding tasks to Claude Code or Codex.",
+    group: "global",
+  },
+  {
+    id: "customization",
+    label: "Customization",
+    icon: LayoutGridIcon,
+    description: "Tune product branding, navigation, and workspace layout.",
+    group: "global",
   },
   {
     id: "appearance",
     label: "Appearance",
     icon: Palette,
-    description: "Customize the look and feel",
-    group: "workspace",
+    description: "Set theme, layout, and window preferences.",
+    group: "global",
   },
   {
     id: "mcp",
     label: "MCP Servers",
     icon: Server,
     path: "config/mcp.json",
-    description: "Configure MCP server connections",
-    group: "advanced",
+    description: "Configure MCP server connections.",
+    group: "global",
   },
   {
-    id: "security",
-    label: "Security",
-    icon: Shield,
-    path: "config/security.json",
-    description: "Configure allowed shell commands and file access",
-    group: "advanced",
+    id: "environment",
+    label: "Environment",
+    icon: Server,
+    description: "Review the local runtime and service endpoints.",
+    group: "global",
   },
   {
-    id: "code-mode",
-    label: "Code Mode",
-    icon: Terminal,
-    description: "Delegate coding tasks to Claude Code or Codex",
-    group: "advanced",
+    id: "updates",
+    label: "Updates",
+    icon: Download,
+    description: "Keep the desktop app current with controlled releases.",
+    group: "global",
+  },
+  {
+    id: "memory",
+    label: "Memory",
+    icon: BrainIcon,
+    path: "config/index.json",
+    description: "Manage the semantic index over your knowledge vault.",
+    group: "global",
+  },
+  {
+    id: "recovery",
+    label: "Recovery",
+    icon: RotateCcw,
+    description: "Repair local settings and recover semantic memory.",
+    group: "global",
+  },
+  {
+    id: "account",
+    label: "Account",
+    icon: User,
+    description: `Manage your ${PRODUCT_NAME} account`,
+    group: "cloud",
+  },
+  {
+    id: "connect",
+    label: "Oppulence Connect",
+    icon: Cloud,
+    description: "Use organization-approved shared cloud connections.",
+    group: "cloud",
+    beta: true,
   },
   {
     id: "help",
     label: "Help",
     icon: HelpCircle,
-    description: "Get help and support",
-    group: "help",
+    description: "Get help and support.",
+    group: "support",
   },
 ];
 
 interface SettingsDialogProps {
   /** Optional trigger element. Omit when controlling `open` externally. */
   children?: React.ReactNode;
-  /** Tab to open on when the dialog is shown. Defaults to "account". */
+  /** Section to open on when the dialog is shown. Defaults to the overview. */
   defaultTab?: ConfigTab;
   /** Controlled open state. When provided, the dialog is fully controlled. */
   open?: boolean;
@@ -223,8 +310,8 @@ function HelpSettings() {
       icon: Mail,
       wrap: "bg-muted text-foreground",
       title: "Contact us",
-      subtitle: "contact@solomon-ai.co",
-      href: "mailto:contact@solomon-ai.co",
+      subtitle: "hello@oppulence.io",
+      href: "mailto:hello@oppulence.io",
     },
   ];
   return (
@@ -279,7 +366,7 @@ function HelpSettings() {
       <SettingsSection title="About">
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <a
-            href="https://www.solomon-ai.co/terms-of-service"
+            href="https://oppulence.io/terms"
             target="_blank"
             rel="noopener noreferrer"
             className="transition-colors hover:text-foreground"
@@ -288,7 +375,7 @@ function HelpSettings() {
           </a>
           <span>·</span>
           <a
-            href="https://www.solomon-ai.co/privacy-policy"
+            href="https://oppulence.io/privacy"
             target="_blank"
             rel="noopener noreferrer"
             className="transition-colors hover:text-foreground"
@@ -1138,6 +1225,387 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
   );
 }
 
+function useStoredBoolean(key: string, initial: boolean) {
+  const [value, setValue] = useState(() => {
+    const stored = localStorage.getItem(key);
+    return stored === null ? initial : stored === "true";
+  });
+
+  const update = useCallback(
+    (next: boolean) => {
+      setValue(next);
+      localStorage.setItem(key, String(next));
+    },
+    [key],
+  );
+
+  return [value, update] as const;
+}
+
+function SettingsPage({
+  title,
+  description,
+  wide,
+  children,
+}: {
+  title: string;
+  description: string;
+  wide?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={cn("settings-page", wide && "settings-page--wide")}>
+      <h1 className="settings-page-title">{title}</h1>
+      <p className="settings-page-description">{description}</p>
+      <hr className="settings-divider" />
+      {children}
+    </div>
+  );
+}
+
+function SettingsOverview({ onNavigate }: { onNavigate: (tab: ConfigTab) => void }) {
+  return (
+    <SettingsPage
+      description="Configure how Oppulence reasons, connects, and acts across every customer relationship."
+      title="Settings"
+      wide
+    >
+      {GROUP_ORDER.map((group) => (
+        <section className="settings-overview-group" key={group}>
+          <h2 className="settings-overview-label">{GROUP_LABELS[group]}</h2>
+          <div className="settings-card-grid">
+            {tabs
+              .filter((tab) => tab.group === group)
+              .map((tab) => (
+                <button
+                  className="settings-card"
+                  key={tab.id}
+                  onClick={() => onNavigate(tab.id)}
+                  type="button"
+                >
+                  <span className="settings-card-icon">
+                    <tab.icon />
+                  </span>
+                  <span className="settings-card-copy">
+                    <span className="settings-card-title">{tab.label}</span>
+                    <span className="settings-card-description">{tab.description}</span>
+                  </span>
+                  <ChevronRight className="ml-auto size-3.5 shrink-0 text-muted-foreground/50" />
+                </button>
+              ))}
+          </div>
+        </section>
+      ))}
+      <section className="settings-overview-group">
+        <h2 className="settings-overview-label">Help</h2>
+        <div className="settings-card-grid">
+          <button
+            className="settings-card"
+            onClick={() => window.open("mailto:hello@oppulence.io?subject=Oppulence%20feedback")}
+            type="button"
+          >
+            <span className="settings-card-icon">
+              <MessageSquare />
+            </span>
+            <span className="settings-card-copy">
+              <span className="settings-card-title">Send feedback</span>
+              <span className="settings-card-description">
+                Tell us where relationship intelligence should go next.
+              </span>
+            </span>
+            <ChevronRight className="ml-auto size-3.5 text-muted-foreground/50" />
+          </button>
+          <button
+            className="settings-card"
+            onClick={() => window.open("https://oppulence.io", "_blank")}
+            type="button"
+          >
+            <span className="settings-card-icon">
+              <BookOpen />
+            </span>
+            <span className="settings-card-copy">
+              <span className="settings-card-title">Read the documentation</span>
+              <span className="settings-card-description">
+                Review the relationship model and product guides.
+              </span>
+            </span>
+            <ExternalLink className="ml-auto size-3.5 text-muted-foreground/50" />
+          </button>
+        </div>
+      </section>
+      <div className="mt-8">
+        <HelpSettings />
+      </div>
+    </SettingsPage>
+  );
+}
+
+function DesktopPreferenceToggles() {
+  const [reasoning, setReasoning] = useStoredBoolean("settings-show-model-reasoning", true);
+  const [compaction, setCompaction] = useStoredBoolean("settings-auto-context-compaction", true);
+  const [analytics, setAnalytics] = useStoredBoolean("settings-share-usage", true);
+  const [memory, setMemory] = useStoredBoolean("settings-memory-bank", false);
+  const options = [
+    {
+      value: reasoning,
+      setValue: setReasoning,
+      label: "Show model reasoning",
+      description: "Show the reasoning trace behind relationship recommendations.",
+    },
+    {
+      value: compaction,
+      setValue: setCompaction,
+      label: "Auto context compaction",
+      description: "Compress older evidence automatically as working context grows.",
+    },
+    {
+      value: analytics,
+      setValue: setAnalytics,
+      label: "Share anonymous usage data",
+      description: "Help improve the product without sharing relationship content.",
+    },
+    {
+      value: memory,
+      setValue: setMemory,
+      label: "Memory Bank (preview)",
+      description: "Build a private semantic memory from approved relationship evidence.",
+    },
+  ];
+
+  return (
+    <div className="settings-panel">
+      {options.map((option) => (
+        <div className="settings-row" key={option.label}>
+          <div className="settings-row-copy">
+            <p className="settings-row-label">{option.label}</p>
+            <p className="settings-row-description">{option.description}</p>
+          </div>
+          <button
+            aria-checked={option.value}
+            aria-label={option.label}
+            className="settings-switch shrink-0"
+            onClick={() => option.setValue(!option.value)}
+            role="switch"
+            type="button"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CustomizationSettings() {
+  const [appName, setAppName] = useState(PRODUCT_NAME);
+  const [savedName, setSavedName] = useState(PRODUCT_NAME);
+  const [sidebar, setSidebar] = useStoredBoolean("settings-display-sidebar", true);
+  const [statusBar, setStatusBar] = useStoredBoolean("settings-display-status-bar", true);
+  const [docs, setDocs] = useStoredBoolean("settings-display-docs", true);
+  const [feedback, setFeedback] = useStoredBoolean("settings-display-feedback", true);
+  const options = [
+    {
+      value: sidebar,
+      setValue: setSidebar,
+      label: "Display sidebar",
+      description: "Keep relationship navigation visible.",
+    },
+    {
+      value: statusBar,
+      setValue: setStatusBar,
+      label: "Display status bar",
+      description: "Show local service and synchronization state.",
+    },
+    {
+      value: docs,
+      setValue: setDocs,
+      label: "Display documentation link",
+      description: "Keep product documentation available from the app rail.",
+    },
+    {
+      value: feedback,
+      setValue: setFeedback,
+      label: "Display feedback button",
+      description: "Make feedback available to everyone using this device.",
+    },
+  ];
+
+  useEffect(() => {
+    const stored = localStorage.getItem("settings-app-name") || PRODUCT_NAME;
+    setAppName(stored);
+    setSavedName(stored);
+  }, []);
+
+  return (
+    <div className="space-y-7">
+      <SettingsSection title="Branding" description="Set the local workspace label on this device.">
+        <div className="settings-panel p-4">
+          <label className="settings-row-label" htmlFor="desktop-settings-app-name">
+            App name
+          </label>
+          <div className="mt-2 flex gap-2">
+            <input
+              className="settings-control min-w-0 flex-1"
+              id="desktop-settings-app-name"
+              onChange={(event) => setAppName(event.target.value)}
+              value={appName}
+            />
+            <button
+              className="settings-button settings-button--primary"
+              disabled={appName.trim() === savedName}
+              onClick={() => {
+                const next = appName.trim() || PRODUCT_NAME;
+                localStorage.setItem("settings-app-name", next);
+                setAppName(next);
+                setSavedName(next);
+              }}
+              type="button"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      </SettingsSection>
+      <SettingsSection
+        title="Layout"
+        description="Preview the same relationship workspace available in the web app."
+      >
+        <div className="settings-preview">
+          <img alt="Oppulence relationship workspace" src={settingsWorkspacePreview} />
+        </div>
+        <div className="settings-panel mt-3">
+          {options.map((option) => (
+            <div className="settings-row" key={option.label}>
+              <div className="settings-row-copy">
+                <p className="settings-row-label">{option.label}</p>
+                <p className="settings-row-description">{option.description}</p>
+              </div>
+              <button
+                aria-checked={option.value}
+                aria-label={option.label}
+                className="settings-switch"
+                onClick={() => option.setValue(!option.value)}
+                role="switch"
+                type="button"
+              />
+            </div>
+          ))}
+        </div>
+      </SettingsSection>
+    </div>
+  );
+}
+
+function DesktopEnvironmentSettings() {
+  const [versions, setVersions] = useState<{
+    chrome: string;
+    node: string;
+    electron: string;
+  } | null>(null);
+
+  useEffect(() => {
+    void window.ipc.invoke("app:getVersions", null).then(setVersions);
+  }, []);
+
+  return (
+    <div className="space-y-7">
+      <SettingsSection
+        title="Runtime"
+        description="Status for the local renderer and Electron environment."
+      >
+        <div className="settings-panel">
+          {[
+            ["Electron", versions?.electron || "Loading…"],
+            ["Chrome", versions?.chrome || "Loading…"],
+            ["Node", versions?.node || "Loading…"],
+          ].map(([label, value]) => (
+            <div className="settings-row" key={label}>
+              <div className="settings-row-copy">
+                <p className="settings-row-label">{label}</p>
+                <p className="settings-row-description font-mono">{value}</p>
+              </div>
+              <span className="settings-status settings-status--ok">Connected</span>
+            </div>
+          ))}
+        </div>
+      </SettingsSection>
+      <SettingsSection
+        title="Local services"
+        description="MCP servers and organization endpoints used by desktop agents."
+      >
+        <McpSettings dialogOpen />
+      </SettingsSection>
+    </div>
+  );
+}
+
+function DesktopUpdatesSettings() {
+  const [automatic, setAutomatic] = useStoredBoolean("settings-update-checks", true);
+  const [download, setDownload] = useStoredBoolean("settings-update-downloads", false);
+  const [versions, setVersions] = useState<{
+    chrome: string;
+    node: string;
+    electron: string;
+  } | null>(null);
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    void window.ipc.invoke("app:getVersions", null).then(setVersions);
+  }, []);
+
+  return (
+    <div className="settings-panel">
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <p className="settings-row-label">Current desktop runtime</p>
+          <p className="settings-row-description">
+            Electron {versions?.electron || "…"} · Stable channel
+          </p>
+        </div>
+        <button className="settings-button" onClick={() => setChecked(true)} type="button">
+          {checked ? "Up to date" : "Check now"}
+        </button>
+      </div>
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <p className="settings-row-label">Release channel</p>
+          <p className="settings-row-description">Stable releases are recommended.</p>
+        </div>
+        <select className="settings-select w-32" defaultValue="stable">
+          <option value="stable">Stable</option>
+        </select>
+      </div>
+      {[
+        {
+          value: automatic,
+          setValue: setAutomatic,
+          label: "Check automatically",
+          description: "Look for new desktop releases in the background.",
+        },
+        {
+          value: download,
+          setValue: setDownload,
+          label: "Download automatically",
+          description: "Download new releases and ask before restarting.",
+        },
+      ].map((option) => (
+        <div className="settings-row" key={option.label}>
+          <div className="settings-row-copy">
+            <p className="settings-row-label">{option.label}</p>
+            <p className="settings-row-description">{option.description}</p>
+          </div>
+          <button
+            aria-checked={option.value}
+            aria-label={option.label}
+            className="settings-switch"
+            onClick={() => option.setValue(!option.value)}
+            role="switch"
+            type="button"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // --- Main Settings Dialog ---
 
 function NotificationSettings() {
@@ -1197,7 +1665,7 @@ function NotificationSettings() {
 
 export function SettingsDialog({
   children,
-  defaultTab = "account",
+  defaultTab = "overview",
   open: controlledOpen,
   onOpenChange,
 }: SettingsDialogProps) {
@@ -1245,107 +1713,148 @@ export function SettingsDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
-      <DialogContent className="rowboat-settings w-[1000px]! max-w-[96vw]! h-[660px] max-h-[88vh] p-0 gap-0 overflow-hidden">
+      <DialogContent
+        className="rowboat-settings settings-workspace h-[85vh] max-h-[85vh] w-[85vw]! max-w-[85vw]! gap-0 overflow-hidden p-0"
+        showCloseButton={false}
+      >
         <DialogTitle className="sr-only">Settings</DialogTitle>
         <DialogDescription className="sr-only">
-          Manage account, connections, models, transcription, appearance, security, and memory
-          settings.
+          Manage account, connections, models, transcription, tags, notifications, appearance,
+          security, tools, memory, and support settings.
         </DialogDescription>
         <div className="flex h-full overflow-hidden">
-          {/* Sidebar nav — grouped, ElevenLabs developer-console rail */}
-          <div className="flex w-60 shrink-0 flex-col border-r bg-muted/20">
-            <div className="px-4 pb-1 pt-4">
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Settings
-              </h2>
-            </div>
-            <ScrollArea className="flex-1 px-2.5 pb-3">
-              {GROUP_ORDER.map((group) => {
-                const groupTabs = visibleTabs.filter((t) => t.group === group);
-                if (groupTabs.length === 0) return null;
-                const groupLabel = GROUP_LABELS[group];
-                return (
-                  <div key={group} className="mb-1 mt-2 first:mt-1">
-                    {groupLabel && (
-                      <div className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                        {groupLabel}
-                      </div>
-                    )}
-                    <nav className="flex flex-col gap-0.5">
-                      {groupTabs.map((tab) => {
-                        const active = activeTab === tab.id;
-                        return (
-                          <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={cn(
-                              "group flex items-center gap-2.5 rounded-none px-2.5 py-2 text-sm font-medium text-left transition-colors",
-                              active
-                                ? "bg-background text-foreground ring-1 ring-border shadow-[0_1px_2px_rgb(16_24_40_/_0.06)]"
-                                : "text-muted-foreground hover:text-foreground hover:bg-background/60",
-                            )}
-                          >
-                            <tab.icon
-                              className={cn(
-                                "size-4 shrink-0 transition-colors",
-                                active
-                                  ? "text-foreground"
-                                  : "text-muted-foreground group-hover:text-foreground",
-                              )}
-                            />
-                            {tab.label}
-                          </button>
-                        );
-                      })}
-                    </nav>
+          <div className="settings-rail flex w-60 shrink-0 flex-col border-r">
+            <nav className="settings-rail-scroll flex-1 overflow-y-auto px-2 pb-3 pt-2">
+              <button className="settings-back" onClick={() => setOpen(false)} type="button">
+                <ArrowLeft className="size-3.5" />
+                <span>Back to app</span>
+              </button>
+              <button
+                className="settings-identity"
+                onClick={() => setActiveTab("overview")}
+                type="button"
+              >
+                <span>{PRODUCT_NAME}</span>
+                <ChevronRight className="size-3.5 rotate-90" />
+              </button>
+              <button
+                className="settings-nav-item mt-1"
+                data-active={activeTab === "overview"}
+                onClick={() => setActiveTab("overview")}
+                type="button"
+              >
+                <Settings />
+                <span>Settings</span>
+              </button>
+              {GROUP_ORDER.map((group) => (
+                <div key={group}>
+                  <div className="settings-rail-heading">{GROUP_LABELS[group]}</div>
+                  <div className="space-y-0.5">
+                    {visibleTabs
+                      .filter((tab) => tab.group === group)
+                      .map((tab) => (
+                        <button
+                          className="settings-nav-item"
+                          data-active={activeTab === tab.id}
+                          key={tab.id}
+                          onClick={() => setActiveTab(tab.id)}
+                          type="button"
+                        >
+                          <tab.icon />
+                          <span className="truncate">{tab.label}</span>
+                          {tab.beta ? <span className="settings-beta">Beta</span> : null}
+                        </button>
+                      ))}
                   </div>
-                );
-              })}
-            </ScrollArea>
+                </div>
+              ))}
+            </nav>
           </div>
 
-          {/* Main content */}
-          <div className="flex min-w-0 flex-1 flex-col">
-            {/* Header */}
-            <div className="flex items-center gap-3 border-b px-6 py-4">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-none border bg-card text-foreground">
-                <ActiveIcon className="size-[18px]" />
+          <div className="settings-stage flex min-w-0 flex-1 flex-col">
+            <div className="settings-stage-header">
+              <div className="flex min-w-0 items-center gap-2">
+                <ActiveIcon className="size-3.5 shrink-0 opacity-60" />
+                <span className="settings-stage-header-title">{activeTabConfig.label}</span>
               </div>
-              <div className="min-w-0">
-                <h3 className="text-[15px] font-semibold tracking-tight">
-                  {activeTabConfig.label}
-                </h3>
-                <p className="mt-0.5 text-[13px] text-muted-foreground">
-                  {activeTab === "models" && solomonConnected
-                    ? "Select your default models"
-                    : activeTabConfig.description}
-                </p>
-              </div>
+              <span className="settings-stage-header-brand">{PRODUCT_NAME}</span>
             </div>
 
-            {/* Content */}
-            <div className="flex min-h-0 flex-1 flex-col">
-              {activeTab === "note-tagging" ? (
-                // NoteTaggingSettings owns its own internal scroll.
-                <div className="flex min-h-0 flex-1 flex-col px-6 py-5">
-                  <NoteTaggingSettings dialogOpen={open} />
-                </div>
+            <div className="settings-page-scroll min-h-0 flex-1">
+              {activeTab === "overview" ? (
+                <SettingsOverview onNavigate={setActiveTab} />
               ) : (
-                <ScrollArea className="flex-1 px-6 py-5">
-                  {activeTab === "account" ? (
-                    <AccountSettings dialogOpen={open} />
-                  ) : activeTab === "connections" ? (
-                    <div className="space-y-6">
+                <SettingsPage
+                  description={
+                    activeTab === "models" && solomonConnected
+                      ? "Select the default models used across relationship workflows."
+                      : activeTabConfig.description
+                  }
+                  title={activeTabConfig.label}
+                >
+                  {activeTab === "preferences" ? (
+                    <div className="space-y-7">
+                      <SettingsSection
+                        title="Model"
+                        description="Control reasoning visibility, context, privacy, and memory."
+                      >
+                        <DesktopPreferenceToggles />
+                      </SettingsSection>
+                      <NotificationSettings />
+                    </div>
+                  ) : activeTab === "notifications" ? (
+                    <NotificationSettings />
+                  ) : activeTab === "permissions" ? (
+                    <SecuritySettings dialogOpen={open} />
+                  ) : activeTab === "security" ? (
+                    <SecuritySettings dialogOpen={open} />
+                  ) : activeTab === "extensions" ? (
+                    <div className="space-y-7">
                       <SettingsSection title="Primary accounts">
                         <ConnectedAccountsSettings dialogOpen={open} />
                       </SettingsSection>
-                      <Separator />
-                      <SettingsSection title="Library">
+                      <SettingsSection
+                        title="Available extensions"
+                        description="Connect the services your relationship model can observe."
+                      >
                         <ToolsLibrarySettings
                           dialogOpen={open}
                           rowboatConnected={solomonConnected}
                         />
                       </SettingsSection>
+                      <SettingsSection
+                        title="Custom MCP servers"
+                        description="Add local or remote agent tools."
+                      >
+                        <McpSettings dialogOpen={open} />
+                      </SettingsSection>
+                    </div>
+                  ) : activeTab === "connections" ? (
+                    <div className="space-y-7">
+                      <SettingsSection title="Connected accounts">
+                        <ConnectedAccountsSettings dialogOpen={open} />
+                      </SettingsSection>
+                      <SettingsSection
+                        title="Available tools"
+                        description="Connect tools your relationship model can observe and act through."
+                      >
+                        <ToolsLibrarySettings
+                          dialogOpen={open}
+                          rowboatConnected={solomonConnected}
+                        />
+                      </SettingsSection>
+                    </div>
+                  ) : activeTab === "transcription" ? (
+                    <TranscriptionSettings dialogOpen={open} />
+                  ) : activeTab === "note-tagging" ? (
+                    <NoteTaggingSettings dialogOpen={open} />
+                  ) : activeTab === "advanced" ? (
+                    <div className="space-y-9">
+                      <CodeModeSettings dialogOpen={open} />
+                      <Separator />
+                      <TranscriptionSettings dialogOpen={open} />
+                      <Separator />
+                      <NoteTaggingSettings dialogOpen={open} />
                     </div>
                   ) : activeTab === "models" ? (
                     solomonConnected ? (
@@ -1353,24 +1862,43 @@ export function SettingsDialog({
                     ) : (
                       <ModelSettings dialogOpen={open} />
                     )
-                  ) : activeTab === "transcription" ? (
-                    <TranscriptionSettings dialogOpen={open} />
-                  ) : activeTab === "notifications" ? (
-                    <NotificationSettings />
-                  ) : activeTab === "appearance" ? (
-                    <AppearanceSettings />
-                  ) : activeTab === "help" ? (
-                    <HelpSettings />
                   ) : activeTab === "code-mode" ? (
                     <CodeModeSettings dialogOpen={open} />
+                  ) : activeTab === "customization" ? (
+                    <CustomizationSettings />
+                  ) : activeTab === "appearance" ? (
+                    <AppearanceSettings />
                   ) : activeTab === "mcp" ? (
                     <McpSettings dialogOpen={open} />
-                  ) : activeTab === "security" ? (
-                    <SecuritySettings dialogOpen={open} />
+                  ) : activeTab === "environment" ? (
+                    <DesktopEnvironmentSettings />
+                  ) : activeTab === "updates" ? (
+                    <DesktopUpdatesSettings />
                   ) : activeTab === "memory" ? (
                     <MemorySettings dialogOpen={open} />
+                  ) : activeTab === "recovery" ? (
+                    <MemorySettings dialogOpen={open} />
+                  ) : activeTab === "account" ? (
+                    <AccountSettings dialogOpen={open} />
+                  ) : activeTab === "connect" ? (
+                    <div className="space-y-7">
+                      <div className="settings-inline-notice">
+                        Cloud connections remain shared through your signed-in Oppulence account.
+                      </div>
+                      <SettingsSection title="Connected services">
+                        <ConnectedAccountsSettings dialogOpen={open} />
+                      </SettingsSection>
+                      <SettingsSection title="From your organization">
+                        <ToolsLibrarySettings
+                          dialogOpen={open}
+                          rowboatConnected={solomonConnected}
+                        />
+                      </SettingsSection>
+                    </div>
+                  ) : activeTab === "help" ? (
+                    <HelpSettings />
                   ) : null}
-                </ScrollArea>
+                </SettingsPage>
               )}
             </div>
           </div>

@@ -417,6 +417,66 @@ func (f RelationshipFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipMutation", m)
 }
 
+// The RelationshipAssertionFunc type is an adapter to allow the use of ordinary
+// function as RelationshipAssertion mutator.
+type RelationshipAssertionFunc func(context.Context, *ent.RelationshipAssertionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationshipAssertionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelationshipAssertionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipAssertionMutation", m)
+}
+
+// The RelationshipObservationFunc type is an adapter to allow the use of ordinary
+// function as RelationshipObservation mutator.
+type RelationshipObservationFunc func(context.Context, *ent.RelationshipObservationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationshipObservationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelationshipObservationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipObservationMutation", m)
+}
+
+// The RelationshipParticipantFunc type is an adapter to allow the use of ordinary
+// function as RelationshipParticipant mutator.
+type RelationshipParticipantFunc func(context.Context, *ent.RelationshipParticipantMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationshipParticipantFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelationshipParticipantMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipParticipantMutation", m)
+}
+
+// The RelationshipSourceStatusFunc type is an adapter to allow the use of ordinary
+// function as RelationshipSourceStatus mutator.
+type RelationshipSourceStatusFunc func(context.Context, *ent.RelationshipSourceStatusMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationshipSourceStatusFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelationshipSourceStatusMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipSourceStatusMutation", m)
+}
+
+// The RelationshipStateSnapshotFunc type is an adapter to allow the use of ordinary
+// function as RelationshipStateSnapshot mutator.
+type RelationshipStateSnapshotFunc func(context.Context, *ent.RelationshipStateSnapshotMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationshipStateSnapshotFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelationshipStateSnapshotMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipStateSnapshotMutation", m)
+}
+
 // The RevenueActionFunc type is an adapter to allow the use of ordinary
 // function as RevenueAction mutator.
 type RevenueActionFunc func(context.Context, *ent.RevenueActionMutation) (ent.Value, error)

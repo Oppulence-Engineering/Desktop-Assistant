@@ -1,8 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { AddressBook, CircleNotch, MagnifyingGlass, Plus, Sparkle } from "@phosphor-icons/react";
+import {
+  AddressBook,
+  ArrowClockwise,
+  Check,
+  CircleNotch,
+  ClockCounterClockwise,
+  MagnifyingGlass,
+  Plus,
+  Sparkle,
+  Warning,
+  X,
+} from "@phosphor-icons/react";
 
+import { EmptyBlock, errMessage, ListSkeleton, ModeChip } from "@/components/revenue/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,26 +42,52 @@ import {
 } from "@/components/ui/sheet";
 import {
   ACTION_TYPE_LABELS,
+  approveRecommendation,
+  correctRelationship,
   createRelationship,
   DETECTOR_LABELS,
   getRelationship,
+  getRelationshipChanges,
+  getRelationshipEvidence,
+  getRelationshipTimeline,
   listRelationships,
+  listRelationshipSourceStatuses,
+  rejectRecommendation,
   RELATIONSHIP_KIND_LABELS,
   relativeTime,
   semanticSearch,
   type SemanticMatch,
 } from "@/lib/revenue";
-import { EmptyBlock, errMessage, ListSkeleton, ModeChip } from "@/components/revenue/shared";
-import type { RelationshipDetail, RevenueRelationship } from "@/types/revenue";
+import type {
+  RelationshipDetail,
+  RelationshipObservation,
+  RelationshipSourceStatus,
+  RelationshipStateSnapshot,
+  RevenueRelationship,
+} from "@/types/revenue";
 
 const KIND_OPTIONS = ["person", "company", "customer", "opportunity", "referral", "partner"];
+const LIFECYCLE_OPTIONS = [
+  "prospect",
+  "evaluation",
+  "contracting",
+  "onboarding",
+  "active_customer",
+  "renewal",
+  "churned",
+  "former_customer",
+];
+const HEALTH_OPTIONS = ["unknown", "healthy", "needs_attention", "critical"];
+const ENGAGEMENT_OPTIONS = ["unknown", "increasing", "steady", "declining", "dormant"];
 
-const STATUS_TONE: Record<string, string> = {
-  active: "border-emerald-500/30 text-emerald-600 dark:text-emerald-400",
-  dormant: "border-amber-500/30 text-amber-600 dark:text-amber-400",
-  closed: "text-primary/45",
-  archived: "text-primary/45",
+const HEALTH_TONE: Record<string, string> = {
+  healthy: "border-emerald-500/30 text-emerald-600 dark:text-emerald-400",
+  needs_attention: "border-amber-500/30 text-amber-600 dark:text-amber-400",
+  critical: "border-red-500/30 text-red-600 dark:text-red-400",
+  unknown: "text-primary/45",
 };
+
+const humanize = (value?: string) => (value || "unknown").replaceAll("_", " ");
 
 export function RelationshipsView({
   onError,
@@ -59,32 +97,107 @@ export function RelationshipsView({
   onNotice: (m: string) => void;
 }) {
   const [rows, setRows] = React.useState<RevenueRelationship[]>([]);
+  const [sources, setSources] = React.useState<RelationshipSourceStatus[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [detail, setDetail] = React.useState<string | null>(null);
   const [creating, setCreating] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+  const [health, setHealth] = React.useState("all");
+  const [lifecycle, setLifecycle] = React.useState("all");
 
   const load = React.useCallback(async () => {
     setLoading(true);
     try {
-      setRows(await listRelationships());
+      const [relationships, sourceStatuses] = await Promise.all([
+        listRelationships({
+          q: query.trim() || undefined,
+          health: health === "all" ? undefined : health,
+          lifecycle: lifecycle === "all" ? undefined : lifecycle,
+        }),
+        listRelationshipSourceStatuses(),
+      ]);
+      setRows(relationships);
+      setSources(sourceStatuses);
     } catch (e) {
-      onError(errMessage(e, "Could not load relationships."));
+      onError(errMessage(e, "Could not load relationship intelligence."));
     } finally {
       setLoading(false);
     }
-  }, [onError]);
+  }, [health, lifecycle, onError, query]);
 
   React.useEffect(() => {
-    void load();
+    const timer = window.setTimeout(() => void load(), 180);
+    return () => window.clearTimeout(timer);
   }, [load]);
 
   return (
     <div className="flex flex-col gap-4">
+      <section className="rounded-[2px] border border-border bg-background-50 p-4 dark:bg-background-100/30">
+        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
+              Account mission control
+            </p>
+            <h2 className="mt-1 text-base font-semibold text-primary">
+              Which relationship needs action now?
+            </h2>
+            <p className="mt-1 max-w-2xl text-xs text-primary/55">
+              One living state across email, meetings, Slack, CRM, and revenue evidence. Every
+              recommendation explains what changed and waits for approval.
+            </p>
+          </div>
+          <SourceHealth statuses={sources} />
+        </div>
+      </section>
+
       <SemanticSearch onError={onError} />
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative min-w-0 flex-1">
+          <MagnifyingGlass className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-primary/40" />
+          <Input
+            aria-label="Filter relationships"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Filter by account, domain, or contact"
+            className="pl-8"
+          />
+        </div>
+        <Select value={health} onValueChange={setHealth}>
+          <SelectTrigger className="w-full sm:w-44" size="sm">
+            <SelectValue placeholder="Health" />
+          </SelectTrigger>
+          <SelectContent className="app-shell rounded-[2px]">
+            <SelectItem value="all">All health</SelectItem>
+            {HEALTH_OPTIONS.map((value) => (
+              <SelectItem key={value} value={value}>
+                {humanize(value)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={lifecycle} onValueChange={setLifecycle}>
+          <SelectTrigger className="w-full sm:w-44" size="sm">
+            <SelectValue placeholder="Lifecycle" />
+          </SelectTrigger>
+          <SelectContent className="app-shell rounded-[2px]">
+            <SelectItem value="all">All lifecycle</SelectItem>
+            {LIFECYCLE_OPTIONS.map((value) => (
+              <SelectItem key={value} value={value}>
+                {humanize(value)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button variant="outline" size="sm" onClick={() => setCreating(true)}>
+          <Plus /> New
+        </Button>
+      </div>
+
       <div className="flex items-center justify-between">
         <span className="text-xs text-primary/45">{rows.length} relationships</span>
-        <Button variant="outline" size="sm" onClick={() => setCreating(true)}>
-          <Plus /> New relationship
+        <Button variant="ghost" size="sm" onClick={() => void load()} disabled={loading}>
+          <ArrowClockwise className={loading ? "animate-spin" : ""} /> Refresh
         </Button>
       </div>
 
@@ -93,8 +206,8 @@ export function RelationshipsView({
       ) : rows.length === 0 ? (
         <EmptyBlock
           icon={<AddressBook className="size-6" />}
-          title="No relationships yet"
-          body="A leak scan creates these automatically from your sent mail, or add one by hand."
+          title="No matching relationships"
+          body="Connect a source to build living relationship state, or add an account by hand."
         >
           <Button size="sm" onClick={() => setCreating(true)}>
             <Plus /> Add relationship
@@ -102,43 +215,52 @@ export function RelationshipsView({
         </EmptyBlock>
       ) : (
         <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
-          {rows.map((r) => (
-            <li key={r.id}>
+          {rows.map((relationship) => (
+            <li key={relationship.id}>
               <button
                 type="button"
-                onClick={() => setDetail(r.id)}
+                onClick={() => setDetail(relationship.id)}
                 className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-background-100/60 dark:hover:bg-background-100/40"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="truncate text-sm font-medium text-primary">
-                      {r.displayName}
+                      {relationship.displayName}
                     </span>
-                    <Badge variant="outline" className="rounded-[2px] font-normal">
-                      {RELATIONSHIP_KIND_LABELS[r.kind] ?? r.kind}
+                    <Badge variant="outline" className="rounded-[2px] font-normal capitalize">
+                      {humanize(relationship.lifecycle)}
                     </Badge>
+                    <span
+                      className={`rounded-full border px-2 py-0.5 text-[11px] capitalize ${
+                        HEALTH_TONE[relationship.health] ?? HEALTH_TONE.unknown
+                      }`}
+                    >
+                      {humanize(relationship.health)}
+                    </span>
                   </div>
-                  {r.primaryEmail ? (
-                    <span className="text-xs text-primary/45">{r.primaryEmail}</span>
-                  ) : null}
+                  <p className="mt-1 truncate text-xs text-primary/55">
+                    {relationship.nextAction ||
+                      relationship.stateReason ||
+                      relationship.summary ||
+                      "Waiting for enough evidence to recommend a next action."}
+                  </p>
                 </div>
-                {r.openActions ? (
+                <div className="hidden shrink-0 text-right md:block">
+                  <p className="text-xs capitalize text-primary/55">
+                    {humanize(relationship.engagement)}
+                  </p>
+                  <p className="text-[11px] text-primary/35">
+                    {relationship.lastChangedAt
+                      ? `changed ${relativeTime(relationship.lastChangedAt)}`
+                      : relationship.lastTouchAt
+                        ? `touched ${relativeTime(relationship.lastTouchAt)}`
+                        : `state v${relationship.stateVersion}`}
+                  </p>
+                </div>
+                {relationship.openActions ? (
                   <Badge variant="secondary" className="shrink-0">
-                    {r.openActions} open
+                    {relationship.openActions} action{relationship.openActions === 1 ? "" : "s"}
                   </Badge>
-                ) : null}
-                <span
-                  className={
-                    "hidden shrink-0 rounded-full border px-2 py-0.5 text-xs sm:inline " +
-                    (STATUS_TONE[r.status] ?? "text-primary/45")
-                  }
-                >
-                  {r.status}
-                </span>
-                {r.lastTouchAt ? (
-                  <span className="hidden shrink-0 text-xs text-primary/40 md:inline">
-                    {relativeTime(r.lastTouchAt)}
-                  </span>
                 ) : null}
               </button>
             </li>
@@ -147,7 +269,15 @@ export function RelationshipsView({
       )}
 
       {detail ? (
-        <RelationshipSheet id={detail} onClose={() => setDetail(null)} onError={onError} />
+        <RelationshipSheet
+          id={detail}
+          onClose={() => setDetail(null)}
+          onError={onError}
+          onChanged={() => {
+            onNotice("Relationship state updated.");
+            void load();
+          }}
+        />
       ) : null}
 
       {creating ? (
@@ -165,8 +295,38 @@ export function RelationshipsView({
   );
 }
 
-// SemanticSearch is the RFC 031 Layer-2 recall box. It quietly hides itself
-// when semantic memory is not configured on the backend.
+function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
+  if (statuses.length === 0) {
+    return (
+      <Badge variant="outline" className="w-fit rounded-[2px] font-normal text-primary/45">
+        No evidence sources yet
+      </Badge>
+    );
+  }
+  const stale = statuses.filter((source) => source.status !== "connected").length;
+  return (
+    <div className="flex max-w-sm flex-wrap justify-end gap-1.5">
+      {statuses.slice(0, 4).map((source) => (
+        <Badge
+          key={`${source.source}:${source.sourceAccountId}`}
+          variant="outline"
+          title={source.lastError || source.lastObservationAt}
+          className={`rounded-[2px] font-normal capitalize ${
+            source.status === "connected" ? "border-emerald-500/30" : "border-amber-500/30"
+          }`}
+        >
+          {source.source} · {source.status}
+        </Badge>
+      ))}
+      {stale > 0 ? (
+        <span className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+          <Warning /> {stale} need attention
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 function SemanticSearch({ onError }: { onError: (m: string) => void }) {
   const [query, setQuery] = React.useState("");
   const [matches, setMatches] = React.useState<SemanticMatch[] | null>(null);
@@ -175,20 +335,20 @@ function SemanticSearch({ onError }: { onError: (m: string) => void }) {
 
   if (unavailable) return null;
 
-  const run = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const run = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!query.trim()) return;
     setBusy(true);
     onError("");
     try {
-      const res = await semanticSearch(query.trim());
-      if (!res.available) {
+      const result = await semanticSearch(query.trim());
+      if (!result.available) {
         setUnavailable(true);
         return;
       }
-      setMatches(res.matches);
-    } catch (err) {
-      onError(errMessage(err, "Search failed."));
+      setMatches(result.matches);
+    } catch (error) {
+      onError(errMessage(error, "Search failed."));
     } finally {
       setBusy(false);
     }
@@ -198,38 +358,36 @@ function SemanticSearch({ onError }: { onError: (m: string) => void }) {
     <form onSubmit={run} className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <MagnifyingGlass className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-primary/40" />
+          <Sparkle className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-oppulence-orange" />
           <Input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search your relationships in plain language — e.g. 'proposals waiting on pricing'"
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Ask across relationships — “Which renewals lost engagement this month?”"
             className="pl-8"
           />
         </div>
         <Button type="submit" size="sm" disabled={busy || !query.trim()}>
-          {busy ? <CircleNotch className="animate-spin" /> : <Sparkle />} Search
+          {busy ? <CircleNotch className="animate-spin" /> : <Sparkle />} Ask
         </Button>
       </div>
       {matches !== null ? (
         matches.length === 0 ? (
-          <p className="text-xs text-primary/45">No matches.</p>
+          <p className="text-xs text-primary/45">No evidence matched that question.</p>
         ) : (
           <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
-            {matches.map((m) => (
-              <li key={m.threadId} className="flex items-center gap-3 px-3 py-2">
+            {matches.map((match) => (
+              <li key={match.threadId} className="flex items-center gap-3 px-3 py-2">
                 <Badge variant="outline" className="rounded-[2px] font-normal capitalize">
-                  {m.classification}
+                  {match.classification}
                 </Badge>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm text-primary/80">
-                    {m.subject || m.counterparty}
+                    {match.subject || match.counterparty}
                   </div>
-                  {m.summary ? (
-                    <div className="truncate text-xs text-primary/45">{m.summary}</div>
-                  ) : null}
+                  <div className="truncate text-xs text-primary/45">{match.summary}</div>
                 </div>
-                <span className="shrink-0 text-xs tabular-nums text-primary/40">
-                  {Math.round(m.score * 100)}%
+                <span className="text-xs tabular-nums text-primary/40">
+                  {Math.round(match.score * 100)}%
                 </span>
               </li>
             ))}
@@ -244,22 +402,71 @@ function RelationshipSheet({
   id,
   onClose,
   onError,
+  onChanged,
 }: {
   id: string;
   onClose: () => void;
   onError: (m: string) => void;
+  onChanged: () => void;
 }) {
   const [data, setData] = React.useState<RelationshipDetail | null>(null);
+  const [timeline, setTimeline] = React.useState<RelationshipObservation[]>([]);
+  const [changes, setChanges] = React.useState<RelationshipStateSnapshot[]>([]);
+  const [busy, setBusy] = React.useState<string | null>(null);
+  const [evidence, setEvidence] = React.useState<Record<string, unknown>>({});
 
-  React.useEffect(() => {
-    void getRelationship(id)
-      .then(setData)
-      .catch((e) => onError(errMessage(e, "Could not load the relationship.")));
+  const load = React.useCallback(async () => {
+    try {
+      const [nextData, nextTimeline, nextChanges] = await Promise.all([
+        getRelationship(id),
+        getRelationshipTimeline(id),
+        getRelationshipChanges(id),
+      ]);
+      setData(nextData);
+      setTimeline(nextTimeline);
+      setChanges(nextChanges);
+    } catch (error) {
+      onError(errMessage(error, "Could not load the relationship."));
+    }
   }, [id, onError]);
 
+  React.useEffect(() => {
+    void load();
+  }, [load]);
+
+  const act = async (key: string, operation: () => Promise<unknown>) => {
+    setBusy(key);
+    try {
+      await operation();
+      await load();
+      onChanged();
+    } catch (error) {
+      onError(errMessage(error, "Could not update this relationship."));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const revealEvidence = async (observation: RelationshipObservation) => {
+    if (observation.id in evidence) {
+      setEvidence((current) => {
+        const next = { ...current };
+        delete next[observation.id];
+        return next;
+      });
+      return;
+    }
+    try {
+      const result = await getRelationshipEvidence(id, observation.id);
+      setEvidence((current) => ({ ...current, [observation.id]: result.payload }));
+    } catch (error) {
+      onError(errMessage(error, "Could not open source evidence."));
+    }
+  };
+
   return (
-    <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-lg">
+    <Sheet open onOpenChange={(open) => !open && onClose()}>
+      <SheetContent className="flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-2xl">
         <SheetHeader className="border-b border-border">
           <SheetTitle>{data?.relationship.displayName ?? "Relationship"}</SheetTitle>
           <SheetDescription>
@@ -268,53 +475,322 @@ function RelationshipSheet({
           </SheetDescription>
         </SheetHeader>
         {!data ? (
-          <p className="px-4 py-6 text-sm text-primary/50">Loading…</p>
+          <p className="px-4 py-6 text-sm text-primary/50">Loading living state…</p>
         ) : (
-          <div className="flex flex-col gap-5 px-4 py-5">
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className="rounded-[2px]">
-                {RELATIONSHIP_KIND_LABELS[data.relationship.kind] ?? data.relationship.kind}
-              </Badge>
-              <Badge variant="secondary">{data.relationship.status}</Badge>
-            </div>
-            {data.relationship.summary ? (
-              <p className="text-sm text-primary/70">{data.relationship.summary}</p>
-            ) : null}
-            <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-primary/45">
-                Actions ({data.actions.length})
-              </h3>
-              {data.actions.length === 0 ? (
-                <p className="text-xs text-primary/45">No queue actions for this relationship.</p>
+          <div className="flex flex-col gap-6 px-4 py-5">
+            <section>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline" className="rounded-[2px] capitalize">
+                  {humanize(data.relationship.lifecycle)}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className={`rounded-[2px] capitalize ${HEALTH_TONE[data.relationship.health]}`}
+                >
+                  {humanize(data.relationship.health)}
+                </Badge>
+                <Badge variant="secondary" className="capitalize">
+                  {humanize(data.relationship.engagement)}
+                </Badge>
+                <Badge variant="secondary" className="capitalize">
+                  {humanize(data.relationship.sentiment)}
+                </Badge>
+              </div>
+              <p className="mt-3 text-sm text-primary/75">
+                {data.relationship.stateReason ||
+                  data.relationship.summary ||
+                  "The state engine is waiting for more evidence."}
+              </p>
+              <p className="mt-1 text-[11px] text-primary/40">
+                State v{data.relationship.stateVersion}
+                {data.relationship.lastChangedAt
+                  ? ` · changed ${relativeTime(data.relationship.lastChangedAt)}`
+                  : ""}
+              </p>
+            </section>
+
+            <StateCorrection
+              key={data.relationship.stateVersion}
+              relationship={data.relationship}
+              disabled={Boolean(busy)}
+              onCorrect={(dimension, value, reason) =>
+                act(`correct:${dimension}`, () =>
+                  correctRelationship(id, { dimension, value, reason }),
+                )
+              }
+            />
+
+            <TwoColumnList
+              leftTitle="Risks"
+              left={data.relationship.risks}
+              rightTitle="Milestones"
+              right={data.relationship.milestones}
+            />
+
+            <section>
+              <SectionTitle title={`Recommendations (${data.recommendations.length})`} />
+              {data.recommendations.length === 0 ? (
+                <EmptyText>No action is currently recommended.</EmptyText>
               ) : (
                 <ul className="flex flex-col gap-2">
-                  {data.actions.map((a) => (
-                    <li key={a.id} className="rounded-[2px] border border-border p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm text-primary">
-                          {ACTION_TYPE_LABELS[a.actionType] ?? a.actionType}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <ModeChip mode={a.executionMode} />
-                          <Badge variant="secondary" className="font-normal">
-                            {a.queueStatus}
-                          </Badge>
+                  {data.recommendations.map((action) => (
+                    <li key={action.id} className="rounded-[2px] border border-border p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-medium text-primary">
+                            {ACTION_TYPE_LABELS[action.actionType] ?? action.actionType}
+                          </p>
+                          <p className="mt-1 text-xs text-primary/60">{action.reason}</p>
                         </div>
+                        <ModeChip mode={action.executionMode} />
                       </div>
-                      <p className="mt-1 line-clamp-2 text-xs text-primary/55">{a.reason}</p>
-                      <div className="mt-1 flex items-center gap-2 text-[11px] text-primary/40">
-                        <span>{DETECTOR_LABELS[a.detector] ?? a.detector}</span>
-                        <span>· priority {a.priorityScore}</span>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-primary/40">
+                        <span>{DETECTOR_LABELS[action.detector] ?? action.detector}</span>
+                        <span>priority {action.priorityScore}</span>
+                        <span>{action.policyStatus}</span>
+                      </div>
+                      {action.approvalStatus === "pending" ? (
+                        <div className="mt-3 flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              void act(`approve:${action.id}`, () =>
+                                approveRecommendation(action.id),
+                              )
+                            }
+                            disabled={Boolean(busy)}
+                          >
+                            {busy === `approve:${action.id}` ? (
+                              <CircleNotch className="animate-spin" />
+                            ) : (
+                              <Check />
+                            )}
+                            Approve
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              void act(`reject:${action.id}`, () =>
+                                rejectRecommendation(action.id, "Not the right next move"),
+                              )
+                            }
+                            disabled={Boolean(busy)}
+                          >
+                            <X /> Reject
+                          </Button>
+                        </div>
+                      ) : (
+                        <Badge variant="secondary" className="mt-3 capitalize">
+                          {action.approvalStatus}
+                        </Badge>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <TwoColumnList
+              leftTitle={`People (${data.participants.length})`}
+              left={data.participants.map((person) =>
+                [person.displayName, person.role, person.title].filter(Boolean).join(" · "),
+              )}
+              rightTitle={`Commitments (${data.commitments.length})`}
+              right={data.commitments.map(
+                (commitment) =>
+                  `${commitment.text}${commitment.dueAt ? ` · ${relativeTime(commitment.dueAt)}` : ""}`,
+              )}
+            />
+
+            <section>
+              <SectionTitle title={`What changed (${changes.length})`} />
+              {changes.length === 0 ? (
+                <EmptyText>No projected state changes yet.</EmptyText>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {changes.map((snapshot) => (
+                    <li key={snapshot.id} className="flex gap-3 border-l border-border pl-3">
+                      <ClockCounterClockwise className="mt-0.5 size-4 shrink-0 text-primary/35" />
+                      <div>
+                        <p className="text-xs text-primary/70">
+                          {snapshot.changedDimensions.map(humanize).join(", ")}
+                        </p>
+                        <p className="text-[11px] text-primary/35">
+                          v{snapshot.version} · {relativeTime(snapshot.createdAt)}
+                        </p>
                       </div>
                     </li>
                   ))}
                 </ul>
               )}
-            </div>
+            </section>
+
+            <section>
+              <SectionTitle title={`Evidence timeline (${timeline.length})`} />
+              {timeline.length === 0 ? (
+                <EmptyText>No observations yet.</EmptyText>
+              ) : (
+                <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
+                  {timeline.map((observation) => (
+                    <li key={observation.id} className="p-3">
+                      <button
+                        type="button"
+                        onClick={() => void revealEvidence(observation)}
+                        className="w-full text-left"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-medium capitalize text-primary">
+                            {observation.source} · {humanize(observation.eventType)}
+                          </span>
+                          <span className="text-[11px] text-primary/35">
+                            {relativeTime(observation.occurredAt)}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-primary/55">
+                          {observation.summary || "Open the source evidence"}
+                        </p>
+                      </button>
+                      {observation.id in evidence ? (
+                        <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap rounded-[2px] bg-background-100 p-2 text-[11px] text-primary/60 dark:bg-background-200">
+                          {JSON.stringify(evidence[observation.id], null, 2)}
+                        </pre>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+function StateCorrection({
+  relationship,
+  disabled,
+  onCorrect,
+}: {
+  relationship: RevenueRelationship;
+  disabled: boolean;
+  onCorrect: (
+    dimension: "lifecycle" | "engagement" | "sentiment" | "health",
+    value: string,
+    reason: string,
+  ) => void;
+}) {
+  const [dimension, setDimension] = React.useState<
+    "lifecycle" | "engagement" | "sentiment" | "health"
+  >("health");
+  const [value, setValue] = React.useState<string>(relationship.health);
+  const [reason, setReason] = React.useState("");
+  const options =
+    dimension === "lifecycle"
+      ? LIFECYCLE_OPTIONS
+      : dimension === "engagement"
+        ? ENGAGEMENT_OPTIONS
+        : dimension === "sentiment"
+          ? ["unknown", "positive", "mixed", "negative"]
+          : HEALTH_OPTIONS;
+
+  return (
+    <section className="rounded-[2px] border border-dashed border-border p-3">
+      <SectionTitle title="Correct the model" />
+      <div className="grid gap-2 sm:grid-cols-[130px_150px_1fr_auto]">
+        <Select
+          value={dimension}
+          onValueChange={(next) => {
+            const nextDimension = next as typeof dimension;
+            setDimension(nextDimension);
+            setValue(relationship[nextDimension]);
+          }}
+        >
+          <SelectTrigger size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="app-shell rounded-[2px]">
+            {["health", "lifecycle", "engagement", "sentiment"].map((item) => (
+              <SelectItem key={item} value={item}>
+                {humanize(item)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={value} onValueChange={setValue}>
+          <SelectTrigger size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="app-shell rounded-[2px]">
+            {options.map((item) => (
+              <SelectItem key={item} value={item}>
+                {humanize(item)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder="Why is the model wrong?"
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={disabled || !reason.trim() || value === relationship[dimension]}
+          onClick={() => onCorrect(dimension, value, reason.trim())}
+        >
+          Correct
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+function SectionTitle({ title }: { title: string }) {
+  return (
+    <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-primary/45">{title}</h3>
+  );
+}
+
+function EmptyText({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs text-primary/45">{children}</p>;
+}
+
+function TwoColumnList({
+  leftTitle,
+  left,
+  rightTitle,
+  right,
+}: {
+  leftTitle: string;
+  left: string[];
+  rightTitle: string;
+  right: string[];
+}) {
+  return (
+    <div className="grid gap-5 sm:grid-cols-2">
+      {[
+        [leftTitle, left],
+        [rightTitle, right],
+      ].map(([title, items]) => (
+        <section key={title as string}>
+          <SectionTitle title={title as string} />
+          {(items as string[]).length === 0 ? (
+            <EmptyText>None recorded.</EmptyText>
+          ) : (
+            <ul className="flex flex-col gap-1.5">
+              {(items as string[]).map((item, index) => (
+                <li key={`${item}:${index}`} className="text-xs text-primary/65">
+                  · {item}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ))}
+    </div>
   );
 }
 
@@ -327,9 +803,10 @@ function CreateRelationshipDialog({
   onCreated: () => void;
   onError: (m: string) => void;
 }) {
-  const [kind, setKind] = React.useState("person");
+  const [kind, setKind] = React.useState("company");
   const [displayName, setDisplayName] = React.useState("");
   const [primaryEmail, setPrimaryEmail] = React.useState("");
+  const [accountDomain, setAccountDomain] = React.useState("");
   const [summary, setSummary] = React.useState("");
   const [busy, setBusy] = React.useState(false);
 
@@ -342,22 +819,25 @@ function CreateRelationshipDialog({
         kind,
         displayName: displayName.trim(),
         primaryEmail: primaryEmail.trim() || undefined,
+        accountDomain: accountDomain.trim() || undefined,
         summary: summary.trim() || undefined,
       });
       onCreated();
-    } catch (e) {
-      onError(errMessage(e, "Could not create the relationship."));
+    } catch (error) {
+      onError(errMessage(error, "Could not create the relationship."));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>New relationship</DialogTitle>
-          <DialogDescription>Track a contact, account, or opportunity by hand.</DialogDescription>
+          <DialogDescription>
+            Create a canonical account or contact. Connected evidence will enrich its state.
+          </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
           <Select value={kind} onValueChange={setKind}>
@@ -365,27 +845,32 @@ function CreateRelationshipDialog({
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="app-shell rounded-[2px]">
-              {KIND_OPTIONS.map((k) => (
-                <SelectItem key={k} value={k}>
-                  {RELATIONSHIP_KIND_LABELS[k] ?? k}
+              {KIND_OPTIONS.map((item) => (
+                <SelectItem key={item} value={item}>
+                  {RELATIONSHIP_KIND_LABELS[item] ?? item}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Input
             value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Name"
+            onChange={(event) => setDisplayName(event.target.value)}
+            placeholder="Account or person name"
+          />
+          <Input
+            value={accountDomain}
+            onChange={(event) => setAccountDomain(event.target.value)}
+            placeholder="Account domain (optional)"
           />
           <Input
             value={primaryEmail}
-            onChange={(e) => setPrimaryEmail(e.target.value)}
-            placeholder="Email (optional)"
+            onChange={(event) => setPrimaryEmail(event.target.value)}
+            placeholder="Primary email (optional)"
           />
           <Input
             value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            placeholder="Summary (optional)"
+            onChange={(event) => setSummary(event.target.value)}
+            placeholder="Relationship context (optional)"
           />
         </div>
         <DialogFooter>

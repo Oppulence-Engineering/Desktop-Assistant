@@ -4937,6 +4937,12 @@
             },
             "type": "array"
           },
+          "assertions": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipAssertion"
+            },
+            "type": "array"
+          },
           "commitments": {
             "items": {
               "$ref": "#/components/schemas/Commitment"
@@ -4952,11 +4958,17 @@
           "display_name": {
             "type": "string"
           },
+          "engagement": {
+            "type": "string"
+          },
           "evidences": {
             "items": {
               "$ref": "#/components/schemas/RevenueEvidence"
             },
             "type": "array"
+          },
+          "health": {
+            "type": "string"
           },
           "id": {
             "description": "Stable UUID primary key.",
@@ -4967,8 +4979,15 @@
           "kind": {
             "type": "string"
           },
+          "last_changed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
           "last_touch_at": {
             "format": "date-time",
+            "type": "string"
+          },
+          "lifecycle": {
             "type": "string"
           },
           "mail_threads": {
@@ -4977,15 +4996,36 @@
             },
             "type": "array"
           },
+          "milestones": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "next_action": {
+            "type": "string"
+          },
           "next_action_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "observations": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipObservation"
+            },
+            "type": "array"
           },
           "outbound_account_ref": {
             "type": "string"
           },
           "outbound_lead_id": {
             "type": "string"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipParticipant"
+            },
+            "type": "array"
           },
           "primary_email": {
             "type": "string"
@@ -4995,6 +5035,27 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "risks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sentiment": {
+            "type": "string"
+          },
+          "snapshots": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipStateSnapshot"
+            },
+            "type": "array"
+          },
+          "state_reason": {
+            "type": "string"
+          },
+          "state_version": {
+            "type": "integer"
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
@@ -5026,9 +5087,362 @@
           "display_name",
           "resource_refs",
           "status",
+          "lifecycle",
+          "engagement",
+          "sentiment",
+          "health",
+          "state_version",
+          "risks",
+          "milestones",
           "workspace",
           "user"
         ],
+        "type": "object"
+      },
+      "RelationshipAssertion": {
+        "properties": {
+          "confidence": {
+            "format": "double",
+            "type": "number"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "dimension": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "observation": {
+            "$ref": "#/components/schemas/RelationshipObservation"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "type": "string"
+          },
+          "relationship": {
+            "$ref": "#/components/schemas/Relationship"
+          },
+          "source_type": {
+            "type": "string"
+          },
+          "supersedes_assertion_id": {
+            "type": "string"
+          },
+          "supporting_observation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "valid_from": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "dimension",
+          "value",
+          "source_type",
+          "confidence",
+          "valid_from",
+          "supporting_observation_ids",
+          "workspace",
+          "relationship",
+          "user"
+        ],
+        "type": "object"
+      },
+      "RelationshipCommitment": {
+        "description": "An open or completed promise attached to the relationship.",
+        "properties": {
+          "confidence": {
+            "description": "Extraction confidence.",
+            "example": 0.94,
+            "type": "number"
+          },
+          "direction": {
+            "description": "Who owes the commitment.",
+            "example": "us_to_them",
+            "type": "string"
+          },
+          "dueAt": {
+            "description": "Due time.",
+            "example": "2026-07-22T17:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "text": {
+            "description": "Commitment text.",
+            "example": "Send the security packet.",
+            "type": "string"
+          },
+          "userConfirmed": {
+            "description": "Whether a human confirmed it.",
+            "example": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["id", "direction", "text", "status", "confidence", "userConfirmed"],
+        "type": "object"
+      },
+      "RelationshipObservation": {
+        "description": "Immutable, idempotent provider evidence used to project relationship state.",
+        "properties": {
+          "contentHash": {
+            "description": "Hash of summary, facts, and sealed payload.",
+            "example": "ab12cd34",
+            "type": "string"
+          },
+          "eventType": {
+            "description": "Normalized event type.",
+            "example": "commitment_created",
+            "type": "string"
+          },
+          "externalId": {
+            "description": "Provider event id.",
+            "example": "message-123",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "normalizedFacts": {
+            "additionalProperties": true,
+            "description": "Provider-neutral normalized facts.",
+            "type": "object"
+          },
+          "occurredAt": {
+            "description": "Provider occurrence time.",
+            "example": "2026-07-18T17:30:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "receivedAt": {
+            "description": "Ingestion time.",
+            "example": "2026-07-18T17:31:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "source": {
+            "description": "Evidence source.",
+            "example": "gmail",
+            "type": "string"
+          },
+          "sourceAccountId": {
+            "description": "Provider account id.",
+            "example": "me@company.com",
+            "type": "string"
+          },
+          "sourceVersion": {
+            "description": "Provider event version.",
+            "example": "1",
+            "type": "string"
+          },
+          "summary": {
+            "description": "Bounded evidence summary.",
+            "example": "We promised to send the security packet.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "externalId",
+          "sourceVersion",
+          "eventType",
+          "occurredAt",
+          "receivedAt",
+          "normalizedFacts",
+          "contentHash"
+        ],
+        "type": "object"
+      },
+      "RelationshipParticipant": {
+        "description": "A person participating in the relationship, resolved across provider identities.",
+        "properties": {
+          "active": {
+            "description": "Whether the participant is active.",
+            "example": true,
+            "type": "boolean"
+          },
+          "displayName": {
+            "description": "Display name.",
+            "example": "Avery Chen",
+            "type": "string"
+          },
+          "email": {
+            "description": "Best-known WorkOS primary email for the user.",
+            "example": "user@example.com",
+            "type": "string"
+          },
+          "externalRefs": {
+            "description": "Provider identity references.",
+            "items": {
+              "description": "External reference.",
+              "example": "hubspot:contact:123",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "role": {
+            "description": "Relationship role.",
+            "example": "champion",
+            "type": "string"
+          },
+          "title": {
+            "description": "Current title.",
+            "example": "VP Operations",
+            "type": "string"
+          }
+        },
+        "required": ["id", "displayName", "role", "active", "externalRefs"],
+        "type": "object"
+      },
+      "RelationshipSourceStatus": {
+        "description": "Freshness and failure state for one relationship evidence source.",
+        "properties": {
+          "lastError": {
+            "description": "Bounded provider error.",
+            "example": "",
+            "type": "string"
+          },
+          "lastObservationAt": {
+            "description": "Newest provider event seen.",
+            "example": "2026-07-26T11:58:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "lastSuccessAt": {
+            "description": "Last successful ingestion.",
+            "example": "2026-07-26T12:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "source": {
+            "description": "Source name.",
+            "example": "gmail",
+            "type": "string"
+          },
+          "sourceAccountId": {
+            "description": "Provider account id.",
+            "example": "me@company.com",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          }
+        },
+        "required": ["source", "sourceAccountId", "status"],
+        "type": "object"
+      },
+      "RelationshipStateSnapshot": {
+        "description": "Immutable projection snapshot created only when material relationship state changes.",
+        "properties": {
+          "assertionIds": {
+            "description": "Assertions selected by deterministic precedence.",
+            "items": {
+              "description": "Assertion id.",
+              "example": "assertion-123",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "changedDimensions": {
+            "description": "Material dimensions that changed.",
+            "items": {
+              "description": "Dimension.",
+              "example": "health",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "createdAt": {
+            "description": "Snapshot creation time.",
+            "example": "2026-07-25T16:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "state": {
+            "additionalProperties": true,
+            "description": "Opaque one-time OAuth state/session ticket.",
+            "example": "state_abc123",
+            "type": "object"
+          },
+          "version": {
+            "description": "Relationship state version.",
+            "example": 4,
+            "type": "integer"
+          }
+        },
+        "required": ["id", "version", "state", "changedDimensions", "assertionIds", "createdAt"],
         "type": "object"
       },
       "RevenueAction": {
@@ -5886,7 +6300,7 @@
         "type": "object"
       },
       "RevenueRelationship": {
-        "description": "Longitudinal revenue-memory relationship. The enriched commercial lead stays canonical in OutboundConsole and is referenced, never duplicated.",
+        "description": "Canonical, living relationship state projected from append-only evidence. CRM and communication systems remain evidence sources; this object is the shared model rendered by web and desktop.",
         "properties": {
           "accountDomain": {
             "description": "Account domain.",
@@ -5896,6 +6310,18 @@
           "displayName": {
             "description": "Human display name.",
             "example": "Jordan Buyer",
+            "type": "string"
+          },
+          "engagement": {
+            "description": "Direction of engagement.",
+            "enum": ["unknown", "increasing", "steady", "declining", "dormant"],
+            "example": "declining",
+            "type": "string"
+          },
+          "health": {
+            "description": "Explainable health state; never a magic score.",
+            "enum": ["unknown", "healthy", "needs_attention", "critical"],
+            "example": "needs_attention",
             "type": "string"
           },
           "id": {
@@ -5910,11 +6336,47 @@
             "example": "person",
             "type": "string"
           },
+          "lastChangedAt": {
+            "description": "Last material state change.",
+            "example": "2026-07-25T16:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
           "lastTouchAt": {
             "description": "Last observed touch.",
             "example": "2026-04-10T15:00:00Z",
             "format": "date-time",
             "nullable": true,
+            "type": "string"
+          },
+          "lifecycle": {
+            "description": "Commercial lifecycle.",
+            "enum": [
+              "prospect",
+              "evaluation",
+              "contracting",
+              "onboarding",
+              "active_customer",
+              "renewal",
+              "churned",
+              "former_customer"
+            ],
+            "example": "evaluation",
+            "type": "string"
+          },
+          "milestones": {
+            "description": "Reached relationship milestones.",
+            "items": {
+              "description": "Milestone.",
+              "example": "Proposal shared.",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "nextAction": {
+            "description": "Recommended next action.",
+            "example": "Confirm the security review owner.",
             "type": "string"
           },
           "nextActionAt": {
@@ -5934,6 +6396,31 @@
             "example": "buyer@example.com",
             "type": "string"
           },
+          "risks": {
+            "description": "Current relationship risks.",
+            "items": {
+              "description": "Risk.",
+              "example": "Security review has no owner.",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sentiment": {
+            "description": "Observed sentiment.",
+            "enum": ["unknown", "positive", "mixed", "negative"],
+            "example": "mixed",
+            "type": "string"
+          },
+          "stateReason": {
+            "description": "Evidence-backed explanation of the projected state.",
+            "example": "Security review was promised, but no owner or meeting exists.",
+            "type": "string"
+          },
+          "stateVersion": {
+            "description": "Monotonic projection version.",
+            "example": 4,
+            "type": "integer"
+          },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
             "enum": ["active", "dormant", "closed", "archived"],
@@ -5946,7 +6433,19 @@
             "type": "string"
           }
         },
-        "required": ["id", "kind", "displayName", "status"],
+        "required": [
+          "id",
+          "kind",
+          "displayName",
+          "status",
+          "lifecycle",
+          "engagement",
+          "sentiment",
+          "health",
+          "stateVersion",
+          "risks",
+          "milestones"
+        ],
         "type": "object"
       },
       "RevenueWorkspace": {
@@ -6691,6 +7190,36 @@
           "policy_decision_snapshots": {
             "items": {
               "$ref": "#/components/schemas/PolicyDecisionSnapshot"
+            },
+            "type": "array"
+          },
+          "relationship_assertions": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipAssertion"
+            },
+            "type": "array"
+          },
+          "relationship_observations": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipObservation"
+            },
+            "type": "array"
+          },
+          "relationship_participants": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipParticipant"
+            },
+            "type": "array"
+          },
+          "relationship_source_statuses": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipSourceStatus"
+            },
+            "type": "array"
+          },
+          "relationship_state_snapshots": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipStateSnapshot"
             },
             "type": "array"
           },
@@ -11020,10 +11549,360 @@
         "tags": ["Billing"]
       }
     },
+    "/v1/relationship-observations/batch": {
+      "post": {
+        "description": "Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.",
+        "operationId": "ingestRelationshipObservations",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "observations": [
+                  {
+                    "accountDomain": "acme.com",
+                    "displayName": "Acme",
+                    "eventType": "commitment_created",
+                    "externalId": "message-123",
+                    "source": "gmail"
+                  }
+                ]
+              },
+              "schema": {
+                "description": "Observation batch.",
+                "properties": {
+                  "observations": {
+                    "description": "Provider-neutral observations.",
+                    "items": {
+                      "description": "Observation input.",
+                      "properties": {
+                        "accountDomain": {
+                          "description": "Exact account domain.",
+                          "example": "acme.com",
+                          "type": "string"
+                        },
+                        "displayName": {
+                          "description": "Account display name for first ingestion.",
+                          "example": "Acme",
+                          "type": "string"
+                        },
+                        "eventType": {
+                          "description": "Normalized event type.",
+                          "example": "commitment_created",
+                          "type": "string"
+                        },
+                        "externalId": {
+                          "description": "Provider event id.",
+                          "example": "message-123",
+                          "type": "string"
+                        },
+                        "normalizedFacts": {
+                          "additionalProperties": true,
+                          "description": "Provider-neutral facts.",
+                          "type": "object"
+                        },
+                        "occurredAt": {
+                          "description": "Occurrence time.",
+                          "example": "2026-07-18T17:30:00Z",
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "payload": {
+                          "additionalProperties": true,
+                          "description": "Raw provider payload, sealed at rest.",
+                          "type": "object"
+                        },
+                        "primaryEmail": {
+                          "description": "Primary contact email.",
+                          "example": "avery@acme.com",
+                          "type": "string"
+                        },
+                        "relationshipId": {
+                          "description": "Known relationship id.",
+                          "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "source": {
+                          "description": "Evidence source.",
+                          "example": "gmail",
+                          "type": "string"
+                        },
+                        "sourceAccountId": {
+                          "description": "Provider account id.",
+                          "example": "me@company.com",
+                          "type": "string"
+                        },
+                        "sourceVersion": {
+                          "description": "Provider event version.",
+                          "example": "1",
+                          "type": "string"
+                        },
+                        "summary": {
+                          "description": "Bounded evidence summary.",
+                          "example": "We promised the security packet.",
+                          "type": "string"
+                        }
+                      },
+                      "required": ["source", "externalId", "eventType"],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": ["observations"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Observation batch.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Observation, relationship, and duplicate status per input.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Ingestion results."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Ingest relationship observations",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationship-recommendations/{actionId}/approve": {
+      "post": {
+        "description": "Relationship-intelligence alias for the governed action approval transition.",
+        "operationId": "approveRelationshipRecommendation",
+        "parameters": [
+          {
+            "description": "Recommendation/action id.",
+            "in": "path",
+            "name": "actionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "acceptRisk": false
+              },
+              "schema": {
+                "description": "Approve request.",
+                "properties": {
+                  "acceptRisk": {
+                    "description": "Explicitly accept a review-required decision.",
+                    "example": false,
+                    "type": "boolean"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "description": "Approval options.",
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueAction"
+                }
+              }
+            },
+            "description": "Approved recommendation."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Approve a recommendation",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationship-recommendations/{actionId}/reject": {
+      "post": {
+        "description": "Relationship-intelligence alias for rejecting the current action revision.",
+        "operationId": "rejectRelationshipRecommendation",
+        "parameters": [
+          {
+            "description": "Recommendation/action id.",
+            "in": "path",
+            "name": "actionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "reason": "Not the right next move."
+              },
+              "schema": {
+                "description": "Reject request.",
+                "properties": {
+                  "reason": {
+                    "description": "Rejection reason.",
+                    "example": "Not the right next move.",
+                    "type": "string"
+                  }
+                },
+                "required": ["reason"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Rejection.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueAction"
+                }
+              }
+            },
+            "description": "Rejected recommendation."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Reject a recommendation",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationship-sources/status": {
+      "get": {
+        "description": "Returns freshness and failure state for each relationship evidence source.",
+        "operationId": "getRelationshipSourceStatuses",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Source status list.",
+                  "properties": {
+                    "sources": {
+                      "description": "Sources.",
+                      "items": {
+                        "$ref": "#/components/schemas/RelationshipSourceStatus"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Evidence source health."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get source health",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
     "/v1/relationships": {
       "get": {
-        "description": "Lists relationship summaries with open-loop counts.",
-        "operationId": "listRevenueRelationships",
+        "description": "Lists canonical relationship state with optional text, lifecycle, health, and engagement filters.",
+        "operationId": "listRelationships",
+        "parameters": [
+          {
+            "description": "Account, domain, or contact search.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Lifecycle filter.",
+            "in": "query",
+            "name": "lifecycle",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Health filter.",
+            "in": "query",
+            "name": "health",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Engagement filter.",
+            "in": "query",
+            "name": "engagement",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -11055,11 +11934,11 @@
           }
         ],
         "summary": "List relationships",
-        "tags": ["Revenue"]
+        "tags": ["Relationship Intelligence"]
       },
       "post": {
-        "description": "Records a relationship in the caller's workspace.",
-        "operationId": "createRevenueRelationship",
+        "description": "Records a canonical relationship in the caller's workspace.",
+        "operationId": "createRelationship",
         "requestBody": {
           "content": {
             "application/json": {
@@ -11130,13 +12009,13 @@
           }
         ],
         "summary": "Create a relationship",
-        "tags": ["Revenue"]
+        "tags": ["Relationship Intelligence"]
       }
     },
     "/v1/relationships/{relationshipId}": {
       "get": {
-        "description": "Returns one relationship with its commitments and actions.",
-        "operationId": "getRevenueRelationship",
+        "description": "Returns living relationship state, governed recommendations, participants, and commitments.",
+        "operationId": "getRelationship",
         "parameters": [
           {
             "description": "Relationship id.",
@@ -11158,6 +12037,27 @@
                   "properties": {
                     "actions": {
                       "description": "Actions for this relationship.",
+                      "items": {
+                        "$ref": "#/components/schemas/RevenueAction"
+                      },
+                      "type": "array"
+                    },
+                    "commitments": {
+                      "description": "Open and completed commitments.",
+                      "items": {
+                        "$ref": "#/components/schemas/RelationshipCommitment"
+                      },
+                      "type": "array"
+                    },
+                    "participants": {
+                      "description": "Relationship participants.",
+                      "items": {
+                        "$ref": "#/components/schemas/RelationshipParticipant"
+                      },
+                      "type": "array"
+                    },
+                    "recommendations": {
+                      "description": "Governed recommendations.",
                       "items": {
                         "$ref": "#/components/schemas/RevenueAction"
                       },
@@ -11185,8 +12085,269 @@
             "BearerAuth": []
           }
         ],
-        "summary": "Get a relationship",
-        "tags": ["Revenue"]
+        "summary": "Get relationship mission control",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/changes": {
+      "get": {
+        "description": "Returns immutable projection snapshots so operators can see what changed and why.",
+        "operationId": "getRelationshipChanges",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Snapshot list.",
+                  "properties": {
+                    "snapshots": {
+                      "description": "Snapshots.",
+                      "items": {
+                        "$ref": "#/components/schemas/RelationshipStateSnapshot"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "State changes."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get relationship changes",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/corrections": {
+      "post": {
+        "description": "Appends a user correction assertion and deterministically reprojects the relationship. Source evidence is never overwritten.",
+        "operationId": "correctRelationship",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "dimension": "health",
+                "reason": "The review happened yesterday.",
+                "value": "healthy"
+              },
+              "schema": {
+                "description": "Relationship correction.",
+                "properties": {
+                  "dimension": {
+                    "description": "Corrected state dimension.",
+                    "enum": ["lifecycle", "engagement", "sentiment", "health", "next_action"],
+                    "example": "health",
+                    "type": "string"
+                  },
+                  "reason": {
+                    "description": "Why the model is wrong.",
+                    "example": "The review happened yesterday.",
+                    "type": "string"
+                  },
+                  "value": {
+                    "description": "Correct value.",
+                    "example": "healthy",
+                    "type": "string"
+                  }
+                },
+                "required": ["dimension", "value", "reason"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Correction.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueRelationship"
+                }
+              }
+            },
+            "description": "Reprojected relationship."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Correct relationship state",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/evidence/{evidenceId}": {
+      "get": {
+        "description": "Returns one observation plus its decrypted raw payload. Tenant ownership is enforced before decryption.",
+        "operationId": "getRelationshipEvidence",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Observation id.",
+            "in": "path",
+            "name": "evidenceId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Evidence result.",
+                  "properties": {
+                    "observation": {
+                      "$ref": "#/components/schemas/RelationshipObservation"
+                    },
+                    "payload": {
+                      "additionalProperties": true,
+                      "description": "Decrypted provider payload.",
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Source evidence."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Open source evidence",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/timeline": {
+      "get": {
+        "description": "Returns the latest immutable observations for a relationship.",
+        "operationId": "getRelationshipTimeline",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Maximum observations (1-100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Observation list.",
+                  "properties": {
+                    "observations": {
+                      "description": "Observations.",
+                      "items": {
+                        "$ref": "#/components/schemas/RelationshipObservation"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Evidence timeline."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get evidence timeline",
+        "tags": ["Relationship Intelligence"]
       }
     },
     "/v1/revenue-actions": {
@@ -13345,6 +14506,10 @@
     {
       "description": "Shared-secret webhooks from OAuth infrastructure.",
       "name": "Webhooks"
+    },
+    {
+      "description": "Living relationship state, append-only evidence, deterministic projections, corrections, source health, and governed recommendations (RFC 036).",
+      "name": "Relationship Intelligence"
     },
     {
       "description": "Revenue Action Queue: relationships, evidence-backed actions, OutboundConsole policy preflight, approval, and governed execution (RFC 030).",

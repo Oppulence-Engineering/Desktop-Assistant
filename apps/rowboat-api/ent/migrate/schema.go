@@ -1489,7 +1489,17 @@ var (
 		{Name: "summary", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "last_touch_at", Type: field.TypeTime, Nullable: true},
 		{Name: "next_action_at", Type: field.TypeTime, Nullable: true},
+		{Name: "next_action", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "status", Type: field.TypeString, Default: "active"},
+		{Name: "lifecycle", Type: field.TypeString, Default: "prospect"},
+		{Name: "engagement", Type: field.TypeString, Default: "unknown"},
+		{Name: "sentiment", Type: field.TypeString, Default: "unknown"},
+		{Name: "health", Type: field.TypeString, Default: "unknown"},
+		{Name: "state_reason", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "state_version", Type: field.TypeInt, Default: 0},
+		{Name: "last_changed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "risks", Type: field.TypeJSON},
+		{Name: "milestones", Type: field.TypeJSON},
 		{Name: "revenue_workspace_id", Type: field.TypeUUID},
 		{Name: "user_relationships", Type: field.TypeUUID},
 	}
@@ -1501,13 +1511,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "relationships_revenue_workspaces_relationships",
-				Columns:    []*schema.Column{RelationshipsColumns[14]},
+				Columns:    []*schema.Column{RelationshipsColumns[24]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "relationships_users_relationships",
-				Columns:    []*schema.Column{RelationshipsColumns[15]},
+				Columns:    []*schema.Column{RelationshipsColumns[25]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1516,12 +1526,268 @@ var (
 			{
 				Name:    "relationship_primary_email_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipsColumns[5], RelationshipsColumns[14]},
+				Columns: []*schema.Column{RelationshipsColumns[5], RelationshipsColumns[24]},
 			},
 			{
 				Name:    "relationship_status_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipsColumns[13], RelationshipsColumns[14]},
+				Columns: []*schema.Column{RelationshipsColumns[14], RelationshipsColumns[24]},
+			},
+		},
+	}
+	// RelationshipAssertionsColumns holds the columns for the "relationship_assertions" table.
+	RelationshipAssertionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "dimension", Type: field.TypeString},
+		{Name: "value", Type: field.TypeString, Size: 2147483647},
+		{Name: "source_type", Type: field.TypeString},
+		{Name: "confidence", Type: field.TypeFloat64, Default: 1},
+		{Name: "reason", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "valid_from", Type: field.TypeTime},
+		{Name: "supersedes_assertion_id", Type: field.TypeString, Nullable: true},
+		{Name: "supporting_observation_ids", Type: field.TypeJSON},
+		{Name: "relationship_id", Type: field.TypeUUID},
+		{Name: "observation_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_relationship_assertions", Type: field.TypeUUID},
+	}
+	// RelationshipAssertionsTable holds the schema information for the "relationship_assertions" table.
+	RelationshipAssertionsTable = &schema.Table{
+		Name:       "relationship_assertions",
+		Columns:    RelationshipAssertionsColumns,
+		PrimaryKey: []*schema.Column{RelationshipAssertionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relationship_assertions_relationships_assertions",
+				Columns:    []*schema.Column{RelationshipAssertionsColumns[11]},
+				RefColumns: []*schema.Column{RelationshipsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relationship_assertions_relationship_observations_assertions",
+				Columns:    []*schema.Column{RelationshipAssertionsColumns[12]},
+				RefColumns: []*schema.Column{RelationshipObservationsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "relationship_assertions_revenue_workspaces_relationship_assertions",
+				Columns:    []*schema.Column{RelationshipAssertionsColumns[13]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relationship_assertions_users_relationship_assertions",
+				Columns:    []*schema.Column{RelationshipAssertionsColumns[14]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "relationshipassertion_dimension_valid_from_relationship_id",
+				Unique:  false,
+				Columns: []*schema.Column{RelationshipAssertionsColumns[3], RelationshipAssertionsColumns[8], RelationshipAssertionsColumns[11]},
+			},
+		},
+	}
+	// RelationshipObservationsColumns holds the columns for the "relationship_observations" table.
+	RelationshipObservationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "source", Type: field.TypeString},
+		{Name: "source_account_id", Type: field.TypeString, Nullable: true},
+		{Name: "external_id", Type: field.TypeString},
+		{Name: "source_version", Type: field.TypeString, Default: "1"},
+		{Name: "event_type", Type: field.TypeString},
+		{Name: "occurred_at", Type: field.TypeTime},
+		{Name: "received_at", Type: field.TypeTime},
+		{Name: "summary", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "normalized_facts_json", Type: field.TypeString, Size: 2147483647, Default: "{}"},
+		{Name: "content_hash", Type: field.TypeString},
+		{Name: "payload_ciphertext", Type: field.TypeBytes, Nullable: true},
+		{Name: "relationship_id", Type: field.TypeUUID},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_relationship_observations", Type: field.TypeUUID},
+	}
+	// RelationshipObservationsTable holds the schema information for the "relationship_observations" table.
+	RelationshipObservationsTable = &schema.Table{
+		Name:       "relationship_observations",
+		Columns:    RelationshipObservationsColumns,
+		PrimaryKey: []*schema.Column{RelationshipObservationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relationship_observations_relationships_observations",
+				Columns:    []*schema.Column{RelationshipObservationsColumns[14]},
+				RefColumns: []*schema.Column{RelationshipsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relationship_observations_revenue_workspaces_relationship_observations",
+				Columns:    []*schema.Column{RelationshipObservationsColumns[15]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relationship_observations_users_relationship_observations",
+				Columns:    []*schema.Column{RelationshipObservationsColumns[16]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "relationshipobservation_source_external_id_source_version_revenue_workspace_id",
+				Unique:  true,
+				Columns: []*schema.Column{RelationshipObservationsColumns[3], RelationshipObservationsColumns[5], RelationshipObservationsColumns[6], RelationshipObservationsColumns[15]},
+			},
+			{
+				Name:    "relationshipobservation_occurred_at_relationship_id",
+				Unique:  false,
+				Columns: []*schema.Column{RelationshipObservationsColumns[8], RelationshipObservationsColumns[14]},
+			},
+		},
+	}
+	// RelationshipParticipantsColumns holds the columns for the "relationship_participants" table.
+	RelationshipParticipantsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "display_name", Type: field.TypeString},
+		{Name: "email", Type: field.TypeString, Nullable: true},
+		{Name: "role", Type: field.TypeString, Default: "contact"},
+		{Name: "title", Type: field.TypeString, Nullable: true},
+		{Name: "active", Type: field.TypeBool, Default: true},
+		{Name: "external_refs", Type: field.TypeJSON},
+		{Name: "relationship_id", Type: field.TypeUUID},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_relationship_participants", Type: field.TypeUUID},
+	}
+	// RelationshipParticipantsTable holds the schema information for the "relationship_participants" table.
+	RelationshipParticipantsTable = &schema.Table{
+		Name:       "relationship_participants",
+		Columns:    RelationshipParticipantsColumns,
+		PrimaryKey: []*schema.Column{RelationshipParticipantsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relationship_participants_relationships_participants",
+				Columns:    []*schema.Column{RelationshipParticipantsColumns[9]},
+				RefColumns: []*schema.Column{RelationshipsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relationship_participants_revenue_workspaces_relationship_participants",
+				Columns:    []*schema.Column{RelationshipParticipantsColumns[10]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relationship_participants_users_relationship_participants",
+				Columns:    []*schema.Column{RelationshipParticipantsColumns[11]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "relationshipparticipant_email_relationship_id",
+				Unique:  false,
+				Columns: []*schema.Column{RelationshipParticipantsColumns[4], RelationshipParticipantsColumns[9]},
+			},
+			{
+				Name:    "relationshipparticipant_email_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{RelationshipParticipantsColumns[4], RelationshipParticipantsColumns[10]},
+			},
+		},
+	}
+	// RelationshipSourceStatusColumns holds the columns for the "relationship_source_status" table.
+	RelationshipSourceStatusColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "source", Type: field.TypeString},
+		{Name: "source_account_id", Type: field.TypeString, Default: "default"},
+		{Name: "status", Type: field.TypeString, Default: "connected"},
+		{Name: "cursor", Type: field.TypeString, Nullable: true},
+		{Name: "last_success_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_observation_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_error", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_relationship_source_statuses", Type: field.TypeUUID},
+	}
+	// RelationshipSourceStatusTable holds the schema information for the "relationship_source_status" table.
+	RelationshipSourceStatusTable = &schema.Table{
+		Name:       "relationship_source_status",
+		Columns:    RelationshipSourceStatusColumns,
+		PrimaryKey: []*schema.Column{RelationshipSourceStatusColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relationship_source_status_revenue_workspaces_relationship_source_statuses",
+				Columns:    []*schema.Column{RelationshipSourceStatusColumns[10]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relationship_source_status_users_relationship_source_statuses",
+				Columns:    []*schema.Column{RelationshipSourceStatusColumns[11]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "relationshipsourcestatus_source_source_account_id_revenue_workspace_id",
+				Unique:  true,
+				Columns: []*schema.Column{RelationshipSourceStatusColumns[3], RelationshipSourceStatusColumns[4], RelationshipSourceStatusColumns[10]},
+			},
+		},
+	}
+	// RelationshipStateSnapshotsColumns holds the columns for the "relationship_state_snapshots" table.
+	RelationshipStateSnapshotsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "version", Type: field.TypeInt},
+		{Name: "state_json", Type: field.TypeString, Size: 2147483647, Default: "{}"},
+		{Name: "changed_dimensions", Type: field.TypeJSON},
+		{Name: "assertion_ids", Type: field.TypeJSON},
+		{Name: "relationship_id", Type: field.TypeUUID},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_relationship_state_snapshots", Type: field.TypeUUID},
+	}
+	// RelationshipStateSnapshotsTable holds the schema information for the "relationship_state_snapshots" table.
+	RelationshipStateSnapshotsTable = &schema.Table{
+		Name:       "relationship_state_snapshots",
+		Columns:    RelationshipStateSnapshotsColumns,
+		PrimaryKey: []*schema.Column{RelationshipStateSnapshotsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relationship_state_snapshots_relationships_snapshots",
+				Columns:    []*schema.Column{RelationshipStateSnapshotsColumns[7]},
+				RefColumns: []*schema.Column{RelationshipsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relationship_state_snapshots_revenue_workspaces_relationship_state_snapshots",
+				Columns:    []*schema.Column{RelationshipStateSnapshotsColumns[8]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relationship_state_snapshots_users_relationship_state_snapshots",
+				Columns:    []*schema.Column{RelationshipStateSnapshotsColumns[9]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "relationshipstatesnapshot_version_relationship_id",
+				Unique:  true,
+				Columns: []*schema.Column{RelationshipStateSnapshotsColumns[3], RelationshipStateSnapshotsColumns[7]},
 			},
 		},
 	}
@@ -2071,6 +2337,11 @@ var (
 		OauthPendingsTable,
 		PolicyDecisionSnapshotsTable,
 		RelationshipsTable,
+		RelationshipAssertionsTable,
+		RelationshipObservationsTable,
+		RelationshipParticipantsTable,
+		RelationshipSourceStatusTable,
+		RelationshipStateSnapshotsTable,
 		RevenueActionsTable,
 		RevenueActionRevisionsTable,
 		RevenueEvidencesTable,
@@ -2142,6 +2413,21 @@ func init() {
 	PolicyDecisionSnapshotsTable.ForeignKeys[2].RefTable = UsersTable
 	RelationshipsTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
 	RelationshipsTable.ForeignKeys[1].RefTable = UsersTable
+	RelationshipAssertionsTable.ForeignKeys[0].RefTable = RelationshipsTable
+	RelationshipAssertionsTable.ForeignKeys[1].RefTable = RelationshipObservationsTable
+	RelationshipAssertionsTable.ForeignKeys[2].RefTable = RevenueWorkspacesTable
+	RelationshipAssertionsTable.ForeignKeys[3].RefTable = UsersTable
+	RelationshipObservationsTable.ForeignKeys[0].RefTable = RelationshipsTable
+	RelationshipObservationsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
+	RelationshipObservationsTable.ForeignKeys[2].RefTable = UsersTable
+	RelationshipParticipantsTable.ForeignKeys[0].RefTable = RelationshipsTable
+	RelationshipParticipantsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
+	RelationshipParticipantsTable.ForeignKeys[2].RefTable = UsersTable
+	RelationshipSourceStatusTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
+	RelationshipSourceStatusTable.ForeignKeys[1].RefTable = UsersTable
+	RelationshipStateSnapshotsTable.ForeignKeys[0].RefTable = RelationshipsTable
+	RelationshipStateSnapshotsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
+	RelationshipStateSnapshotsTable.ForeignKeys[2].RefTable = UsersTable
 	RevenueActionsTable.ForeignKeys[0].RefTable = RelationshipsTable
 	RevenueActionsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
 	RevenueActionsTable.ForeignKeys[2].RefTable = UsersTable
