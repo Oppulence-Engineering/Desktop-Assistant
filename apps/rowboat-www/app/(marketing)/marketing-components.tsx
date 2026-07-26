@@ -45,6 +45,7 @@ import {
   type LinkItem,
   type MarketingPage,
 } from "./marketing-data";
+import { DesktopDownloadChooser } from "./desktop-download-chooser";
 import { MarketingEffects } from "./marketing-effects";
 import { RelationshipProductWindow, RelationshipSystemSection } from "./relationship-system";
 
@@ -616,19 +617,10 @@ function HomeHero() {
       <p className="linear-body mt-6 max-w-[680px] text-[16px]">
         Oppulence maintains a living model across email, meetings, Slack, CRM, and revenue systems:
         who matters, what was promised, what changed, and what should happen next. Every
-        recommendation shows its evidence. You approve every action.
+        recommendation shows its evidence. You approve every action. Use the same relationship
+        intelligence on the web or from the desktop app.
       </p>
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Link
-          className="linear-button-primary !h-12 !px-6 !text-[14px] sm:!w-[250px]"
-          href="/book-a-demo"
-        >
-          See account mission control
-        </Link>
-        <Link className="linear-button-ghost !h-12 !px-5 !text-[14px]" href="/product">
-          How relationship intelligence works <span className="ml-2 text-foreground/40">→</span>
-        </Link>
-      </div>
+      <DesktopDownloadChooser />
       <div className="linear-hero-band">
         <RelationshipProductWindow surface="desktop" view="prioritize" />
       </div>
