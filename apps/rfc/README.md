@@ -15,92 +15,88 @@ This RFC set is the canonical architecture and implementation-design record.
 Older planning docs that were folded into these RFCs were removed from `docs/`
 to avoid parallel sources of truth.
 
-> **The thesis in one sentence:** today an `executionTarget: api` task is _executed_ in the
-> cloud (Temporal worker) but _initiated_ by the desktop's 15-second poll — so closing the
-> laptop silently pauses every scheduled and event-driven cloud job. These RFCs move
-> initiation (cron, windows, events) and a real execution runtime into the Oppulence API,
-> and turn the desktop into the **control plane** that observes it.
+> **The thesis in one sentence:** Oppulence maintains an accurate, living,
+> evidence-backed model of every customer relationship and tells the team what
+> needs action. Connectors, identity, memory, runtimes, approvals, web, and
+> desktop exist to make that loop accurate, explainable, governed, and always
+> available.
 
 ## Product priority ranking (July 2026)
 
 Ranking of the **active (non-complete)** RFCs against the product direction in
-[`docs/one-pager.md`](../../docs/one-pager.md): the governed revenue-recovery loop
-(**Scan → Queue → Approve → Receipt**), web-primary with the desktop as bundled context
-engine, law firms as the first vertical preset. Complete RFCs (001–006, 009–011, 017,
-021, 027) are excluded.
+[`docs/one-pager.md`](../../docs/one-pager.md). RFC 036 is the canonical product
+and implementation contract. Web and desktop are equal clients. Revenue
+recovery, meeting follow-through, email assistance, and other workflows are
+applications of the relationship model, not substitutes for it. Complete RFCs
+(001–006, 009–011, 017, 021, 027, 030) are excluded from the active ranking but
+remain reusable foundations.
 
-### Tier 1 — The wedge itself
+### Tier 1 — Relationship-intelligence critical path
 
-| Rank | RFC                                                         | Why                                                                                                                                                               |
-| ---- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | [030](./complete-030-revenue-memory-outbound-governance.md) | Literally the product: the RevenueAction queue, approval-gated execution, durable outcomes. Every other ranking flows from unblocking this.                       |
-| 2    | [023](./023-closed-loop-actions.md)                         | The **Approve** mechanism — propose → approve → execute → watch with single-use scoped approval tokens. 030 specializes it; its deps are complete except 012.     |
-| 3    | [022](./022-unified-entity-graph.md)                        | The **ledger's spine** — stable Company/Person IDs across email/billing. Without it "the memory dies with one laptop"; no unrebuildable moat.                     |
-| 4    | [031](./031-tiered-mail-storage-for-revenue-memory.md)      | What makes cloud **Scan** sellable to a law firm: metadata-not-mailbox-copy, sealed short-TTL bodies, permanent evidence snapshots. Trust posture.                |
-| 5    | [029](./029-founder-operating-memory.md)                    | The product wrapper (brief, follow-up queue, relationship memory). Implement its **revenue slice** — the one-pager narrows "nothing slips" to "no revenue slips". |
+| Rank | RFC                                                    | Why                                                                                                                                                                               |
+| ---- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | [036](./036-relationship-state-engine.md)              | The product contract: identity, evidence, temporal assertions, deterministic projection, Account Mission Control, recommendations, approval, action, learning, and equal clients. |
+| 2    | [022](./022-unified-entity-graph.md)                   | Stable company/person identity, aliases, reconciliation, merge/split lineage, and the shared spine every source must resolve against. RFC 036 tightens its authority rules.       |
+| 3    | [020](./020-native-third-party-action-engine.md)       | The third-party connector platform and SDK: repeatable packages, safe execution, durable ingestion, relationship mapping, certification, and catalog scale.                       |
+| 4    | [012](./012-connector-suite-and-consent-broker.md)     | Consent, scoped authorization, credential custody, revocation, and the connection substrate used by RFC 020.                                                                      |
+| 5    | [031](./031-tiered-mail-storage-for-revenue-memory.md) | Evidence storage, sealed short-TTL content, and permanent source-backed snapshots without turning Oppulence into a mailbox copy.                                                  |
 
-### Tier 2 — Rails the wedge can't ship without
+### Tier 2 — Production correctness and governed action
 
-| Rank | RFC                                                         | Why                                                                                                                                        |
-| ---- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 6    | [012](./012-connector-suite-and-consent-broker.md)          | The critical-path unblocker: 023, 029, 030, **and** 032 all depend on it (consent UI, money-touching approval tokens). **Build-order #1.** |
-| 7    | [019](./019-google-push-infrastructure.md)                  | Event-driven Gmail detection. Batch polling can bootstrap the free Scan; push makes "watches your inbox" true.                             |
-| 8    | [007](./007-production-cloud-enablement.md)                 | "Runs while the laptop is closed" isn't sellable until Temporal Cloud + SLOs are on in production.                                         |
-| 9    | [015](./015-rowboat-platform-workos-fga-and-widget-auth.md) | Web-primary auth + the **billing wiring** + org scoping that 022 references.                                                               |
-| 10   | [020](./020-native-third-party-action-engine.md)            | Connector/action catalog at sane unit economics — where a Clio connector for the law-firm preset gets built.                               |
+| Rank | RFC                                                         | Why                                                                                                              |
+| ---- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 6    | [023](./023-closed-loop-actions.md)                         | Exact-revision propose → approve → execute → watch semantics for every consequential recommendation.             |
+| 7    | [007](./007-production-cloud-enablement.md)                 | Production Temporal, SLOs, alerts, and runbooks so observation and projection continue while clients are closed. |
+| 8    | [019](./019-google-push-infrastructure.md)                  | Production Gmail and Calendar push delivery for the first high-value observers.                                  |
+| 9    | [015](./015-rowboat-platform-workos-fga-and-widget-auth.md) | Organization identity, project and relationship authorization, billing, and team-safe sharing.                   |
+| 10   | [025](./025-desktop-runtime-durability.md)                  | Crash-safe desktop observation outbox, backpressure, and multi-workspace behavior.                               |
+| 11   | [014](./014-live-note-observability-cost-and-provenance.md) | Source-to-state provenance, reliability, cost, and trust-facing diagnostics.                                     |
 
-### Tier 3 — Vertical preset + selective context-engine depth
+### Tier 3 — High-value observers and relationship applications
 
-| Rank | RFC                                                                 | Why                                                                                                    |
-| ---- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| 11   | [032](./032-detection-sensor-integrations.md)                       | Post-Gmail sensor order (e-sign, QBO/Xero, scheduling, CRM-as-enrichment); law-firm preset slots here. |
-| 12   | [email-004](./email-004-reply-zero-and-drafting.md)                 | Needs-reply/awaiting-reply tracking + nudge drafts = chase drafting on the desktop side.               |
-| 13   | [email-013](./email-013-meeting-briefs-and-relationship-context.md) | Relationship evidence feeding the ledger.                                                              |
-| 14   | [email-014](./email-014-sync-reliability-rate-limits-and-repair.md) | The context engine must be dependable.                                                                 |
-| 15   | [email-015](./email-015-email-privacy-security-and-governance.md)   | Trust posture on the desktop side; pairs with 031.                                                     |
-| 16   | [025](./025-desktop-runtime-durability.md)                          | Crash-safe local queue for the context engine.                                                         |
-| 17   | [email-016](./email-016-email-evaluation-and-quality-gates.md)      | Draft-quality gates are what make one-click Approve feel safe.                                         |
+| Rank | RFC                                                                 | Why                                                                                          |
+| ---- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 12   | [035](./035-meeting-intelligence-commitment-ledger.md)              | Spoken commitments and meeting evidence become first-class relationship inputs.              |
+| 13   | [033](./033-integration-parity-surface.md)                          | Packages connector breadth for users once RFC 020’s authoring and certification rails exist. |
+| 14   | [032](./032-detection-sensor-integrations.md)                       | Prioritizes e-sign, finance, scheduling, CRM, support, and other high-signal observers.      |
+| 15   | [029](./029-founder-operating-memory.md)                            | Daily review and follow-through experience over the living relationship model.               |
+| 16   | [email-013](./email-013-meeting-briefs-and-relationship-context.md) | Meeting preparation and relationship evidence across calendar and communication history.     |
+| 17   | [email-014](./email-014-sync-reliability-rate-limits-and-repair.md) | Provider cursor, rate-limit, and repair behavior required for trustworthy source freshness.  |
+| 18   | [email-015](./email-015-email-privacy-security-and-governance.md)   | Content governance and trust for the highest-volume relationship evidence source.            |
+| 19   | [email-016](./email-016-email-evaluation-and-quality-gates.md)      | Evaluation gates for email extraction, drafting, and action quality.                         |
 
-### Tier 4 — Valuable, not wedge-critical
+### Tier 4 — Useful extensions after the critical path
 
-[014](./014-live-note-observability-cost-and-provenance.md) ·
+[034](./034-floating-overlay-assistant.md) ·
 [024](./024-cold-primitives-ga.md) ·
 [028](./028-declarative-agent-definitions.md) ·
 [016](./016-app-family-consolidation.md) ·
-mailbox depth beyond the chase loop
+mailbox command-center and assistant depth
 ([email-001](./email-001-mailbox-provider-foundation.md),
 [email-002](./email-002-mailbox-command-center.md),
 [email-003](./email-003-ai-rules-and-action-engine.md),
+[email-004](./email-004-reply-zero-and-drafting.md),
 [email-010](./email-010-ai-mail-assistant-chat.md),
 [email-012](./email-012-mail-search-semantic-memory-and-knowledge.md),
 [email-017](./email-017-onboarding-permissions-and-feature-adoption.md)).
 
-### Tier 5 — Defer, per the one-pager's rejections
+### Tier 5 — Portfolio and protocol expansion
 
-[013](./013-oppulence-product-connector-fabric.md) and
-[026](./026-finance-command-center.md) — the AR+AP+cash cockpit is the full-back-office
-breadth the one-pager rejects for the wedge; revisit as expansion.
-[008](./008-conduit-eigen-faculties.md) — portfolio-plane expansion.
-[018](./018-a2a-delegation-and-agent-identity.md) — future protocol.
-[email-005](./email-005-newsletter-cleanup-and-cold-email-defense.md) /
-[email-006](./email-006-digest-analytics-and-insights.md) /
-[email-011](./email-011-smart-categories-tabs-and-labels.md) /
-[email-020](./email-020-email-debug-console-and-operator-tools.md) — horizontal
-"better email app" features, the graveyard's kill zone.
+[013](./013-oppulence-product-connector-fabric.md),
+[026](./026-finance-command-center.md),
+[008](./008-conduit-eigen-faculties.md), and
+[018](./018-a2a-delegation-and-agent-identity.md) remain valid expansion
+architectures but do not outrank the relationship model, connector platform,
+identity correctness, and governed action loop.
 
-> **Build-order inversion:** strategic importance and build order invert at the top —
-> 030 is the most important RFC, but the dependency graph says
-> **012 → 023 + 022 → 031 → 030 → 029-slice → 032** is the path that ships it.
-> Two framings in this set should be read through the revenue-wedge lens for now:
-> 029's horizontal "everything that slips" promise and 026's command-center umbrella.
+> **Required build order:** RFC 036 correctness and authority → RFC 022 identity
+> reconciliation → RFC 020/012 connector packages and credentials → RFC 031
+> evidence governance → production observers and source health → equal client
+> parity → RFC 023 governed actions → learning and enterprise scale.
 >
-> **Littlebird parity track (033–035), placed in the same lens:**
-> [035](./035-meeting-intelligence-commitment-ledger.md) lands **Tier 3** (it _is_ the
-> spoken-commitment sensor from 032, ranked alongside email-004/email-013);
-> [033](./033-integration-parity-surface.md) is **Tier 3** packaging over already-ranked
-> rails (020/032) and explicitly interruptible by Tier 1–2 work;
-> [034](./034-floating-overlay-assistant.md) is **Tier 4** desktop polish carrying one
-> Tier-1 hook — approve-from-anywhere — which is why its Approve verb ships first.
+> Revenue recovery in RFC 030, meeting intelligence in RFC 035, and founder
+> follow-through in RFC 029 are proof applications. Their useful detectors and
+> actions feed the category-level system defined by RFC 036.
 
 ## Cloud workflow RFCs
 
@@ -126,20 +122,20 @@ codebase, mermaid diagrams, a **Decisions** section (resolved forks), and a test
 
 Not part of the cloud-workflows set above, but living here under the same RFC conventions:
 
-| #                                                           | Title                                         | Layer                | What it adds                                                                                                                                                                                                                                                                                                   |
-| ----------------------------------------------------------- | --------------------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [009](./complete-009-local-on-device-transcription.md)      | Local On-Device Transcription (whisper.cpp)   | apps/x               | An on-device STT provider (whisper.cpp) as a cheaper, private alternative to Deepgram streaming; tiers local vs cloud **by feature** (voice -> local, meetings -> cloud-with-quota).                                                                                                                           |
-| [010](./complete-010-rowboat-api-service-plane.md)          | Oppulence API Service Plane                   | rowboat-api          | Canonical Go backend boundary for desktop cloud features: config/me, LLM gateway, billing/credits, Google OAuth broker, provider proxies, ent schemas, kind/deploy, and observability.                                                                                                                         |
-| [011](./complete-011-identity-and-authorization-plane.md)   | Identity and Authorization Plane              | auth / platform      | Resolves the WorkOS-direct-now vs Hydra/Ory-later split; defines token modes, user/org identity, service-to-service auth, step-up, and migration rules.                                                                                                                                                        |
-| [012](./012-connector-suite-and-consent-broker.md)          | Connector Suite and Consent Broker            | rowboat-api / OAuth  | Account linking, scope catalog, consent UI, token broker, resource-server libraries, entitlement gates, money-touching approval tokens, revocation, and connector observability.                                                                                                                               |
-| [013](./013-oppulence-product-connector-fabric.md)          | Oppulence Product Connector Fabric            | apps/x + products    | Canvas, Cadence, Corinthian, Conduit, and Eigen product connectors using read/mirror/watch/act semantics over the shared connector and cloud-runtime fabric.                                                                                                                                                   |
-| [014](./014-live-note-observability-cost-and-provenance.md) | Live-Note Observability, Cost, and Provenance | apps/x + api         | Per-live-note run history, trigger health, cost, budget controls, provenance sidecars, generated-vs-source-backed labeling, silent-trigger detection, and trust-facing error taxonomy.                                                                                                                         |
-| [015](./015-rowboat-platform-workos-fga-and-widget-auth.md) | Rowboat Platform WorkOS FGA and Widget Auth   | apps/rowboat         | Hosted platform WorkOS migration: AuthKit, organizations, FGA project resources, org/project API key semantics, widget session JWTs, billing hooks, and Auth0 migration.                                                                                                                                       |
-| [016](./016-app-family-consolidation.md)                    | App Family Consolidation                      | repo / apps          | Canonical app tiers and contract ownership across desktop, hosted platform, Go service plane, SDK, CLI, static frontends, widgets, experiments, simulation runner, and docs.                                                                                                                                   |
-| [017](./complete-017-on-device-meeting-diarization.md)      | On-Device Meeting Diarization                 | apps/x               | A local speaker diarization follow-up to RFC 009: VAD, speaker embeddings, clustering, alignment, provenance, quality gates, and a beta meetings mode that does not replace cloud diarization until it passes product gates.                                                                                   |
-| [018](./018-a2a-delegation-and-agent-identity.md)           | A2A Delegation and Agent Identity             | future protocol      | User-bound agent identity, scoped delegation tokens, A2A/MCP adapter boundaries, approval policy, connector-scope enforcement, and delegation-chain provenance for future cross-agent workflows.                                                                                                               |
-| [019](./019-google-push-infrastructure.md)                  | Google Push Infrastructure                    | GCP / infra          | The operator-provisioned GCP half of RFC 003: Pub/Sub topic + Gmail publish grant + push subscription, Calendar domain verification, token rotation, verification, and the OIDC push-auth follow-up.                                                                                                           |
-| [020](./020-native-third-party-action-engine.md)            | Native Third-Party Tool & Connector Engine    | rowboat-api + apps/x | A native, in-house replacement for legacy integration vendor: a provider/action catalog (declarative manifests, OpenAPI-bootstrapped), an OAuth broker (reusing RFC 012), and a server-side execution engine — all exposed to the agent over MCP, to cut per-call vendor cost and keep tool metadata in-house. |
+| #                                                           | Title                                         | Layer                       | What it adds                                                                                                                                                                                                                            |
+| ----------------------------------------------------------- | --------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [009](./complete-009-local-on-device-transcription.md)      | Local On-Device Transcription (whisper.cpp)   | apps/x                      | An on-device STT provider (whisper.cpp) as a cheaper, private alternative to Deepgram streaming; tiers local vs cloud **by feature** (voice -> local, meetings -> cloud-with-quota).                                                    |
+| [010](./complete-010-rowboat-api-service-plane.md)          | Oppulence API Service Plane                   | rowboat-api                 | Canonical Go backend boundary for desktop cloud features: config/me, LLM gateway, billing/credits, Google OAuth broker, provider proxies, ent schemas, kind/deploy, and observability.                                                  |
+| [011](./complete-011-identity-and-authorization-plane.md)   | Identity and Authorization Plane              | auth / platform             | Resolves the WorkOS-direct-now vs Hydra/Ory-later split; defines token modes, user/org identity, service-to-service auth, step-up, and migration rules.                                                                                 |
+| [012](./012-connector-suite-and-consent-broker.md)          | Connector Suite and Consent Broker            | rowboat-api / OAuth         | Account linking, scope catalog, consent UI, token broker, resource-server libraries, entitlement gates, money-touching approval tokens, revocation, and connector observability.                                                        |
+| [013](./013-oppulence-product-connector-fabric.md)          | Oppulence Product Connector Fabric            | apps/x + products           | Canvas, Cadence, Corinthian, Conduit, and Eigen product connectors using read/mirror/watch/act semantics over the shared connector and cloud-runtime fabric.                                                                            |
+| [014](./014-live-note-observability-cost-and-provenance.md) | Live-Note Observability, Cost, and Provenance | apps/x + api                | Per-live-note run history, trigger health, cost, budget controls, provenance sidecars, generated-vs-source-backed labeling, silent-trigger detection, and trust-facing error taxonomy.                                                  |
+| [015](./015-rowboat-platform-workos-fga-and-widget-auth.md) | Rowboat Platform WorkOS FGA and Widget Auth   | apps/rowboat                | Hosted platform WorkOS migration: AuthKit, organizations, FGA project resources, org/project API key semantics, widget session JWTs, billing hooks, and Auth0 migration.                                                                |
+| [016](./016-app-family-consolidation.md)                    | App Family Consolidation                      | repo / apps                 | Canonical app tiers and contract ownership across desktop, hosted platform, Go service plane, SDK, CLI, static frontends, widgets, experiments, simulation runner, and docs.                                                            |
+| [017](./complete-017-on-device-meeting-diarization.md)      | On-Device Meeting Diarization                 | apps/x                      | A local speaker diarization follow-up to RFC 009: VAD, speaker embeddings, clustering, alignment, provenance, quality gates, and a beta meetings mode that does not replace cloud diarization until it passes product gates.            |
+| [018](./018-a2a-delegation-and-agent-identity.md)           | A2A Delegation and Agent Identity             | future protocol             | User-bound agent identity, scoped delegation tokens, A2A/MCP adapter boundaries, approval policy, connector-scope enforcement, and delegation-chain provenance for future cross-agent workflows.                                        |
+| [019](./019-google-push-infrastructure.md)                  | Google Push Infrastructure                    | GCP / infra                 | The operator-provisioned GCP half of RFC 003: Pub/Sub topic + Gmail publish grant + push subscription, Calendar domain verification, token rotation, verification, and the OIDC push-auth follow-up.                                    |
+| [020](./020-native-third-party-action-engine.md)            | Third-Party Connector Platform and SDK        | rowboat-api + web + desktop | A Sim-inspired but relationship-native package system for rapidly adding providers: generated catalogs, auth, actions, triggers, pollers, mappings, safe runtimes, certification, equal-client metadata, and RFC 036 evidence emission. |
 
 ## Finance command center & desktop foundations
 
@@ -165,35 +161,36 @@ RFC 027 generalizes the cloud runtime ([004](./complete-004-cloud-agent-runtime.
 
 ## Product strategy
 
-RFC 029 is the product wedge that turns the runtime and memory primitives into a
-specific buyer-facing promise: founder/operator follow-through. RFC 030 turns
-that wedge into a cross-product revenue loop with OutboundConsole research and
-governance plus the email-verification backend, while preserving independent
-repositories and databases. RFC 036 establishes the category-level foundation:
-shared relationship state, evidence-backed projection, and equal web/desktop
-clients. The living relationship model is the main product point, with queues,
-agents, graphs, runtimes, research, and verification as capabilities beneath it.
+RFC 036 is the canonical category and implementation contract: Oppulence owns a
+living, evidence-backed model of each customer relationship and tells the team
+what needs action. RFC 020 supplies the repeatable connector substrate that
+turns third-party systems into governed observers and actuators. RFC 029, RFC
+030, RFC 032, and RFC 035 are applications, detector portfolios, and source
+strategies over that foundation rather than competing product definitions.
 
-| #                                                           | Title                                              | Layer                                              | What it adds                                                                                                                                                                                                                            |
-| ----------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [029](./029-founder-operating-memory.md)                    | Founder Operating Memory and Control Tower         | product + apps/x + rowboat-api                     | Daily founder brief, follow-up queue, relationship/deal memory, approval-gated actions, job portfolio, metrics, and build order around the "nothing important slips" wedge.                                                             |
-| [030](./complete-030-revenue-memory-outbound-governance.md) | Revenue Memory and Outbound Governance Integration | rowboat-api + OutboundConsole + email verification | Three-service warm-revenue loop: relationship memory and RevenueAction queue in Rowboat, composed research/verification policy in OutboundConsole, approval-gated Gmail execution, durable outcomes, identity, privacy, and rollout.    |
-| [031](./031-tiered-mail-storage-for-revenue-memory.md)      | Tiered Mail Storage for Revenue Memory             | rowboat-api                                        | Four-layer cloud mail model for RFC 030's detection: metadata for every thread, derived signals for relevant ones, bodies by reference with a sealed short-TTL cache, permanent evidence snapshots — no mailbox copy at rest.           |
-| [032](./032-detection-sensor-integrations.md)               | Detection Sensor Integrations for Revenue Memory   | rowboat-api                                        | Post-Gmail/Outlook connector order ranked by slip-signal value: one e-sign, QBO/Xero behind the Stage-2 trigger, Slack channels, scheduling, CRM-as-enrichment, transcript import, docs engagement — LinkedIn cloud-side is a non-goal. |
-| [036](./036-relationship-state-engine.md)                   | Relationship State Engine and Client Parity        | product + rowboat-api + rowboat-www + apps/x       | Canonical customer-account state, append-only observations, precedence-bearing assertions, deterministic snapshots, evidence, corrections, source health, and web/desktop capability parity.                                            |
+| #                                                           | Title                                              | Layer                                        | What it adds                                                                                                                                                                                                                                        |
+| ----------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [036](./036-relationship-state-engine.md)                   | Relationship Intelligence System                   | product + rowboat-api + rowboat-www + apps/x | The complete category contract: identity, evidence, temporal assertions, deterministic state, first-class participants/commitments/risks/milestones, recommendations, approval, actions, learning, governance, SLOs, and equal web/desktop clients. |
+| [020](./020-native-third-party-action-engine.md)            | Third-Party Connector Platform and SDK             | connector platform + rowboat-api + clients   | Versioned connector packages, SDK/compiler, generated catalog, auth, actions, triggers, pollers, relationship mappings, safe runtimes, certification, and a path to broad integrations without bespoke implementation debt.                         |
+| [029](./029-founder-operating-memory.md)                    | Founder Operating Memory and Control Tower         | product application + clients + API          | Daily review, follow-up, and operating-memory workflows over the relationship model.                                                                                                                                                                |
+| [030](./complete-030-revenue-memory-outbound-governance.md) | Revenue Memory and Outbound Governance Integration | product application + cross-service          | A governed warm-revenue detector and action loop that proves the broader relationship architecture while preserving repository and data ownership boundaries.                                                                                       |
+| [031](./031-tiered-mail-storage-for-revenue-memory.md)      | Tiered Mail Storage for Relationship Evidence      | rowboat-api                                  | Metadata, derived signals, sealed short-TTL bodies, and durable evidence snapshots without building a mailbox copy.                                                                                                                                 |
+| [032](./032-detection-sensor-integrations.md)               | High-Signal Detection Sensor Integrations          | connector and detector strategy              | Prioritizes e-sign, financial, messaging, scheduling, CRM, transcript, and engagement sources by relationship signal value.                                                                                                                         |
 
 ## Littlebird parity track
 
 RFCs 033–035 answer the horizontal-assistant comparison (littlebird.ai — see the
-competitive note in [`docs/one-pager.md`](../../docs/one-pager.md)) without abandoning the
-sensor-first build rule: parity where it is cheap packaging over shipped rails, past-parity
-where the ledger turns a notetaker feature into follow-through. All **Draft**.
+competitive note in [`docs/one-pager.md`](../../docs/one-pager.md)) without
+abandoning evidence-first product discipline. RFC 033 packages certified RFC
+020 releases into a coherent catalog, RFC 034 defines a desktop-native
+affordance, and RFC 035 turns meeting capture into relationship evidence and
+follow-through. Each RFC carries its own current status.
 
-| #                                                      | Title                                                    | Layer                | What it adds                                                                                                                                                                                                                         |
-| ------------------------------------------------------ | -------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [033](./033-integration-parity-surface.md)             | Integration Parity Surface                               | rowboat-api + apps/x | Littlebird-class connector coverage as packaging: expose the shipped broker connectors, add task tools (Asana/ClickUp/Todoist/TickTick) as RFC 020 manifests powering the slipping-commitment detector, market MCP as the long tail. |
-| [034](./034-floating-overlay-assistant.md)             | Floating Overlay Assistant (Hummingbird-class)           | apps/x               | A global summonable panel over any app — Ask/Capture/**Approve** — with consented per-invocation context instead of screen recording; approving a revenue action from anywhere is the wedge hook.                                    |
-| [035](./035-meeting-intelligence-commitment-ledger.md) | Meeting Intelligence — Parity Plus the Commitment Ledger | apps/x + rowboat-api | Composes shipped on-device STT (009) + diarization (017) + email-013 briefs into bot-free every-call notes, then past parity: spoken commitments extracted into the RFC 030 ledger; unmet promises become chases.                    |
+| #                                                      | Title                                                    | Layer                 | What it adds                                                                                                                                                            |
+| ------------------------------------------------------ | -------------------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [033](./033-integration-parity-surface.md)             | Integration Parity Surface                               | rowboat-api + clients | Packages RFC 020’s connector catalog for users and prioritizes task, communication, and knowledge sources that improve relationship evidence.                           |
+| [034](./034-floating-overlay-assistant.md)             | Floating Overlay Assistant (Hummingbird-class)           | apps/x                | A global summonable Ask/Capture/Approve panel with consented per-invocation context; it is one desktop affordance over the shared RFC 036 intelligence and action loop. |
+| [035](./035-meeting-intelligence-commitment-ledger.md) | Meeting Intelligence — Parity Plus the Commitment Ledger | apps/x + rowboat-api  | Composes local transcription, diarization, and meeting context into evidence-backed participants, commitments, risks, and follow-through in RFC 036.                    |
 
 ## Email feature RFCs
 
@@ -291,11 +288,18 @@ flowchart TD
     R014 --> R018
     R013 --> R018
 
-    R012 --> R020[RFC 020 · Native third-party action engine]
+    R012 --> R020[RFC 020 · Third-party connector platform]
     R010 --> R020
+    R022[RFC 022 · Entity identity] --> R036[RFC 036 · Relationship intelligence]
+    R020 --> R036
+    R023[RFC 023 · Governed actions] --> R036
 ```
 
-## Implementation order
+## Cloud-workflow implementation order
+
+The sequence below records how the cloud execution foundation was built. The
+current product critical path is the relationship-intelligence build order at
+the top of this index and the delivery programs in RFC 036 and RFC 020.
 
 Two tracks run in parallel: **Track A** builds capabilities; **Track B** lights up the
 environment they soak in. Each phase ends in a hard gate.
@@ -502,6 +506,10 @@ The forks each RFC raised, resolved. (Each RFC's own **Decisions** section links
   anonymous and meeting-scoped, and cloud meetings remain the default until quality gates pass.
 - **018** — Agent delegation is user-bound, scope-bound, audience-bound, short-lived, and
   auditable; protocol adapters translate A2A/MCP messages but never own policy.
+- **020** — Third-party breadth comes from versioned connector packages compiled
+  into signed runtime plans and shared client metadata. Declarative HTTP is the
+  common path, MCP is policy-wrapped, complex adapters are isolated, credentials
+  remain server-side, and connectors emit evidence rather than canonical state.
 - **027** — The reason→act loop moves **out of the single activity and into workflow code**
   (per-step durable; RFC 004's in-activity loop becomes the legacy/`Noop` path); agents are a
   **hybrid** (type-safe Go tool registry + declarative `AgentDefinition` ent rows + embedded
@@ -516,6 +524,10 @@ The forks each RFC raised, resolved. (Each RFC's own **Decisions** section links
   tools only via RFC 020 manifests (trust-gated). **Secrets never in YAML** (scopes only);
   definitions are **immutable + revision-pinned** (sessions pin `agent_revision`); GitOps uses the
   RFC 005 reconciler pattern (`managed_by=gitops` is authoritative). Behind `AGENT_YAML_ENABLED=false`.
+- **036** — The living customer-relationship model is the product authority.
+  Deterministic code owns projection, AI proposes evidence-backed candidates and
+  recommendations, ambiguous identity fails closed, actions require approval,
+  and web/desktop are equal clients of one backend contract.
 
 ## Conventions
 
