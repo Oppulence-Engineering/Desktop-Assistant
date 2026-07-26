@@ -3,11 +3,12 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
+import "./product-theme.css";
 
 export const metadata: Metadata = {
-  title: "Oppulence — Revenue Memory and Execution OS",
+  title: "Oppulence — Relationship Intelligence",
   description:
-    "Oppulence remembers every commercial relationship, identifies who needs attention and why, then safely prepares the next revenue action for approval.",
+    "Oppulence maintains a living model of every customer relationship and shows what changed, what needs action, and the evidence behind every recommendation.",
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",

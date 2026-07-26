@@ -42,6 +42,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
@@ -7849,6 +7854,1251 @@ func (_m *Relationship) ToEdge(order *RelationshipOrder) *RelationshipEdge {
 		order = DefaultRelationshipOrder
 	}
 	return &RelationshipEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// RelationshipAssertionEdge is the edge representation of RelationshipAssertion.
+type RelationshipAssertionEdge struct {
+	Node   *RelationshipAssertion `json:"node"`
+	Cursor Cursor                 `json:"cursor"`
+}
+
+// RelationshipAssertionConnection is the connection containing edges to RelationshipAssertion.
+type RelationshipAssertionConnection struct {
+	Edges      []*RelationshipAssertionEdge `json:"edges"`
+	PageInfo   PageInfo                     `json:"pageInfo"`
+	TotalCount int                          `json:"totalCount"`
+}
+
+func (c *RelationshipAssertionConnection) build(nodes []*RelationshipAssertion, pager *relationshipassertionPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *RelationshipAssertion
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *RelationshipAssertion {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *RelationshipAssertion {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*RelationshipAssertionEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &RelationshipAssertionEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// RelationshipAssertionPaginateOption enables pagination customization.
+type RelationshipAssertionPaginateOption func(*relationshipassertionPager) error
+
+// WithRelationshipAssertionOrder configures pagination ordering.
+func WithRelationshipAssertionOrder(order *RelationshipAssertionOrder) RelationshipAssertionPaginateOption {
+	if order == nil {
+		order = DefaultRelationshipAssertionOrder
+	}
+	o := *order
+	return func(pager *relationshipassertionPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultRelationshipAssertionOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithRelationshipAssertionFilter configures pagination filter.
+func WithRelationshipAssertionFilter(filter func(*RelationshipAssertionQuery) (*RelationshipAssertionQuery, error)) RelationshipAssertionPaginateOption {
+	return func(pager *relationshipassertionPager) error {
+		if filter == nil {
+			return errors.New("RelationshipAssertionQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type relationshipassertionPager struct {
+	reverse bool
+	order   *RelationshipAssertionOrder
+	filter  func(*RelationshipAssertionQuery) (*RelationshipAssertionQuery, error)
+}
+
+func newRelationshipAssertionPager(opts []RelationshipAssertionPaginateOption, reverse bool) (*relationshipassertionPager, error) {
+	pager := &relationshipassertionPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultRelationshipAssertionOrder
+	}
+	return pager, nil
+}
+
+func (p *relationshipassertionPager) applyFilter(query *RelationshipAssertionQuery) (*RelationshipAssertionQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *relationshipassertionPager) toCursor(_m *RelationshipAssertion) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *relationshipassertionPager) applyCursors(query *RelationshipAssertionQuery, after, before *Cursor) (*RelationshipAssertionQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultRelationshipAssertionOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *relationshipassertionPager) applyOrder(query *RelationshipAssertionQuery) *RelationshipAssertionQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultRelationshipAssertionOrder.Field {
+		query = query.Order(DefaultRelationshipAssertionOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *relationshipassertionPager) orderExpr(query *RelationshipAssertionQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultRelationshipAssertionOrder.Field {
+			b.Comma().Ident(DefaultRelationshipAssertionOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to RelationshipAssertion.
+func (_m *RelationshipAssertionQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...RelationshipAssertionPaginateOption,
+) (*RelationshipAssertionConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newRelationshipAssertionPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &RelationshipAssertionConnection{Edges: []*RelationshipAssertionEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// RelationshipAssertionOrderField defines the ordering field of RelationshipAssertion.
+type RelationshipAssertionOrderField struct {
+	// Value extracts the ordering value from the given RelationshipAssertion.
+	Value    func(*RelationshipAssertion) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) relationshipassertion.OrderOption
+	toCursor func(*RelationshipAssertion) Cursor
+}
+
+// RelationshipAssertionOrder defines the ordering of RelationshipAssertion.
+type RelationshipAssertionOrder struct {
+	Direction OrderDirection                   `json:"direction"`
+	Field     *RelationshipAssertionOrderField `json:"field"`
+}
+
+// DefaultRelationshipAssertionOrder is the default ordering of RelationshipAssertion.
+var DefaultRelationshipAssertionOrder = &RelationshipAssertionOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &RelationshipAssertionOrderField{
+		Value: func(_m *RelationshipAssertion) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: relationshipassertion.FieldID,
+		toTerm: relationshipassertion.ByID,
+		toCursor: func(_m *RelationshipAssertion) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts RelationshipAssertion into RelationshipAssertionEdge.
+func (_m *RelationshipAssertion) ToEdge(order *RelationshipAssertionOrder) *RelationshipAssertionEdge {
+	if order == nil {
+		order = DefaultRelationshipAssertionOrder
+	}
+	return &RelationshipAssertionEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// RelationshipObservationEdge is the edge representation of RelationshipObservation.
+type RelationshipObservationEdge struct {
+	Node   *RelationshipObservation `json:"node"`
+	Cursor Cursor                   `json:"cursor"`
+}
+
+// RelationshipObservationConnection is the connection containing edges to RelationshipObservation.
+type RelationshipObservationConnection struct {
+	Edges      []*RelationshipObservationEdge `json:"edges"`
+	PageInfo   PageInfo                       `json:"pageInfo"`
+	TotalCount int                            `json:"totalCount"`
+}
+
+func (c *RelationshipObservationConnection) build(nodes []*RelationshipObservation, pager *relationshipobservationPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *RelationshipObservation
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *RelationshipObservation {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *RelationshipObservation {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*RelationshipObservationEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &RelationshipObservationEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// RelationshipObservationPaginateOption enables pagination customization.
+type RelationshipObservationPaginateOption func(*relationshipobservationPager) error
+
+// WithRelationshipObservationOrder configures pagination ordering.
+func WithRelationshipObservationOrder(order *RelationshipObservationOrder) RelationshipObservationPaginateOption {
+	if order == nil {
+		order = DefaultRelationshipObservationOrder
+	}
+	o := *order
+	return func(pager *relationshipobservationPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultRelationshipObservationOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithRelationshipObservationFilter configures pagination filter.
+func WithRelationshipObservationFilter(filter func(*RelationshipObservationQuery) (*RelationshipObservationQuery, error)) RelationshipObservationPaginateOption {
+	return func(pager *relationshipobservationPager) error {
+		if filter == nil {
+			return errors.New("RelationshipObservationQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type relationshipobservationPager struct {
+	reverse bool
+	order   *RelationshipObservationOrder
+	filter  func(*RelationshipObservationQuery) (*RelationshipObservationQuery, error)
+}
+
+func newRelationshipObservationPager(opts []RelationshipObservationPaginateOption, reverse bool) (*relationshipobservationPager, error) {
+	pager := &relationshipobservationPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultRelationshipObservationOrder
+	}
+	return pager, nil
+}
+
+func (p *relationshipobservationPager) applyFilter(query *RelationshipObservationQuery) (*RelationshipObservationQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *relationshipobservationPager) toCursor(_m *RelationshipObservation) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *relationshipobservationPager) applyCursors(query *RelationshipObservationQuery, after, before *Cursor) (*RelationshipObservationQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultRelationshipObservationOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *relationshipobservationPager) applyOrder(query *RelationshipObservationQuery) *RelationshipObservationQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultRelationshipObservationOrder.Field {
+		query = query.Order(DefaultRelationshipObservationOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *relationshipobservationPager) orderExpr(query *RelationshipObservationQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultRelationshipObservationOrder.Field {
+			b.Comma().Ident(DefaultRelationshipObservationOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to RelationshipObservation.
+func (_m *RelationshipObservationQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...RelationshipObservationPaginateOption,
+) (*RelationshipObservationConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newRelationshipObservationPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &RelationshipObservationConnection{Edges: []*RelationshipObservationEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// RelationshipObservationOrderField defines the ordering field of RelationshipObservation.
+type RelationshipObservationOrderField struct {
+	// Value extracts the ordering value from the given RelationshipObservation.
+	Value    func(*RelationshipObservation) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) relationshipobservation.OrderOption
+	toCursor func(*RelationshipObservation) Cursor
+}
+
+// RelationshipObservationOrder defines the ordering of RelationshipObservation.
+type RelationshipObservationOrder struct {
+	Direction OrderDirection                     `json:"direction"`
+	Field     *RelationshipObservationOrderField `json:"field"`
+}
+
+// DefaultRelationshipObservationOrder is the default ordering of RelationshipObservation.
+var DefaultRelationshipObservationOrder = &RelationshipObservationOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &RelationshipObservationOrderField{
+		Value: func(_m *RelationshipObservation) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: relationshipobservation.FieldID,
+		toTerm: relationshipobservation.ByID,
+		toCursor: func(_m *RelationshipObservation) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts RelationshipObservation into RelationshipObservationEdge.
+func (_m *RelationshipObservation) ToEdge(order *RelationshipObservationOrder) *RelationshipObservationEdge {
+	if order == nil {
+		order = DefaultRelationshipObservationOrder
+	}
+	return &RelationshipObservationEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// RelationshipParticipantEdge is the edge representation of RelationshipParticipant.
+type RelationshipParticipantEdge struct {
+	Node   *RelationshipParticipant `json:"node"`
+	Cursor Cursor                   `json:"cursor"`
+}
+
+// RelationshipParticipantConnection is the connection containing edges to RelationshipParticipant.
+type RelationshipParticipantConnection struct {
+	Edges      []*RelationshipParticipantEdge `json:"edges"`
+	PageInfo   PageInfo                       `json:"pageInfo"`
+	TotalCount int                            `json:"totalCount"`
+}
+
+func (c *RelationshipParticipantConnection) build(nodes []*RelationshipParticipant, pager *relationshipparticipantPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *RelationshipParticipant
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *RelationshipParticipant {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *RelationshipParticipant {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*RelationshipParticipantEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &RelationshipParticipantEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// RelationshipParticipantPaginateOption enables pagination customization.
+type RelationshipParticipantPaginateOption func(*relationshipparticipantPager) error
+
+// WithRelationshipParticipantOrder configures pagination ordering.
+func WithRelationshipParticipantOrder(order *RelationshipParticipantOrder) RelationshipParticipantPaginateOption {
+	if order == nil {
+		order = DefaultRelationshipParticipantOrder
+	}
+	o := *order
+	return func(pager *relationshipparticipantPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultRelationshipParticipantOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithRelationshipParticipantFilter configures pagination filter.
+func WithRelationshipParticipantFilter(filter func(*RelationshipParticipantQuery) (*RelationshipParticipantQuery, error)) RelationshipParticipantPaginateOption {
+	return func(pager *relationshipparticipantPager) error {
+		if filter == nil {
+			return errors.New("RelationshipParticipantQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type relationshipparticipantPager struct {
+	reverse bool
+	order   *RelationshipParticipantOrder
+	filter  func(*RelationshipParticipantQuery) (*RelationshipParticipantQuery, error)
+}
+
+func newRelationshipParticipantPager(opts []RelationshipParticipantPaginateOption, reverse bool) (*relationshipparticipantPager, error) {
+	pager := &relationshipparticipantPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultRelationshipParticipantOrder
+	}
+	return pager, nil
+}
+
+func (p *relationshipparticipantPager) applyFilter(query *RelationshipParticipantQuery) (*RelationshipParticipantQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *relationshipparticipantPager) toCursor(_m *RelationshipParticipant) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *relationshipparticipantPager) applyCursors(query *RelationshipParticipantQuery, after, before *Cursor) (*RelationshipParticipantQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultRelationshipParticipantOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *relationshipparticipantPager) applyOrder(query *RelationshipParticipantQuery) *RelationshipParticipantQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultRelationshipParticipantOrder.Field {
+		query = query.Order(DefaultRelationshipParticipantOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *relationshipparticipantPager) orderExpr(query *RelationshipParticipantQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultRelationshipParticipantOrder.Field {
+			b.Comma().Ident(DefaultRelationshipParticipantOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to RelationshipParticipant.
+func (_m *RelationshipParticipantQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...RelationshipParticipantPaginateOption,
+) (*RelationshipParticipantConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newRelationshipParticipantPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &RelationshipParticipantConnection{Edges: []*RelationshipParticipantEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// RelationshipParticipantOrderField defines the ordering field of RelationshipParticipant.
+type RelationshipParticipantOrderField struct {
+	// Value extracts the ordering value from the given RelationshipParticipant.
+	Value    func(*RelationshipParticipant) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) relationshipparticipant.OrderOption
+	toCursor func(*RelationshipParticipant) Cursor
+}
+
+// RelationshipParticipantOrder defines the ordering of RelationshipParticipant.
+type RelationshipParticipantOrder struct {
+	Direction OrderDirection                     `json:"direction"`
+	Field     *RelationshipParticipantOrderField `json:"field"`
+}
+
+// DefaultRelationshipParticipantOrder is the default ordering of RelationshipParticipant.
+var DefaultRelationshipParticipantOrder = &RelationshipParticipantOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &RelationshipParticipantOrderField{
+		Value: func(_m *RelationshipParticipant) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: relationshipparticipant.FieldID,
+		toTerm: relationshipparticipant.ByID,
+		toCursor: func(_m *RelationshipParticipant) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts RelationshipParticipant into RelationshipParticipantEdge.
+func (_m *RelationshipParticipant) ToEdge(order *RelationshipParticipantOrder) *RelationshipParticipantEdge {
+	if order == nil {
+		order = DefaultRelationshipParticipantOrder
+	}
+	return &RelationshipParticipantEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// RelationshipSourceStatusEdge is the edge representation of RelationshipSourceStatus.
+type RelationshipSourceStatusEdge struct {
+	Node   *RelationshipSourceStatus `json:"node"`
+	Cursor Cursor                    `json:"cursor"`
+}
+
+// RelationshipSourceStatusConnection is the connection containing edges to RelationshipSourceStatus.
+type RelationshipSourceStatusConnection struct {
+	Edges      []*RelationshipSourceStatusEdge `json:"edges"`
+	PageInfo   PageInfo                        `json:"pageInfo"`
+	TotalCount int                             `json:"totalCount"`
+}
+
+func (c *RelationshipSourceStatusConnection) build(nodes []*RelationshipSourceStatus, pager *relationshipsourcestatusPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *RelationshipSourceStatus
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *RelationshipSourceStatus {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *RelationshipSourceStatus {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*RelationshipSourceStatusEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &RelationshipSourceStatusEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// RelationshipSourceStatusPaginateOption enables pagination customization.
+type RelationshipSourceStatusPaginateOption func(*relationshipsourcestatusPager) error
+
+// WithRelationshipSourceStatusOrder configures pagination ordering.
+func WithRelationshipSourceStatusOrder(order *RelationshipSourceStatusOrder) RelationshipSourceStatusPaginateOption {
+	if order == nil {
+		order = DefaultRelationshipSourceStatusOrder
+	}
+	o := *order
+	return func(pager *relationshipsourcestatusPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultRelationshipSourceStatusOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithRelationshipSourceStatusFilter configures pagination filter.
+func WithRelationshipSourceStatusFilter(filter func(*RelationshipSourceStatusQuery) (*RelationshipSourceStatusQuery, error)) RelationshipSourceStatusPaginateOption {
+	return func(pager *relationshipsourcestatusPager) error {
+		if filter == nil {
+			return errors.New("RelationshipSourceStatusQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type relationshipsourcestatusPager struct {
+	reverse bool
+	order   *RelationshipSourceStatusOrder
+	filter  func(*RelationshipSourceStatusQuery) (*RelationshipSourceStatusQuery, error)
+}
+
+func newRelationshipSourceStatusPager(opts []RelationshipSourceStatusPaginateOption, reverse bool) (*relationshipsourcestatusPager, error) {
+	pager := &relationshipsourcestatusPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultRelationshipSourceStatusOrder
+	}
+	return pager, nil
+}
+
+func (p *relationshipsourcestatusPager) applyFilter(query *RelationshipSourceStatusQuery) (*RelationshipSourceStatusQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *relationshipsourcestatusPager) toCursor(_m *RelationshipSourceStatus) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *relationshipsourcestatusPager) applyCursors(query *RelationshipSourceStatusQuery, after, before *Cursor) (*RelationshipSourceStatusQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultRelationshipSourceStatusOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *relationshipsourcestatusPager) applyOrder(query *RelationshipSourceStatusQuery) *RelationshipSourceStatusQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultRelationshipSourceStatusOrder.Field {
+		query = query.Order(DefaultRelationshipSourceStatusOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *relationshipsourcestatusPager) orderExpr(query *RelationshipSourceStatusQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultRelationshipSourceStatusOrder.Field {
+			b.Comma().Ident(DefaultRelationshipSourceStatusOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to RelationshipSourceStatus.
+func (_m *RelationshipSourceStatusQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...RelationshipSourceStatusPaginateOption,
+) (*RelationshipSourceStatusConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newRelationshipSourceStatusPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &RelationshipSourceStatusConnection{Edges: []*RelationshipSourceStatusEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// RelationshipSourceStatusOrderField defines the ordering field of RelationshipSourceStatus.
+type RelationshipSourceStatusOrderField struct {
+	// Value extracts the ordering value from the given RelationshipSourceStatus.
+	Value    func(*RelationshipSourceStatus) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) relationshipsourcestatus.OrderOption
+	toCursor func(*RelationshipSourceStatus) Cursor
+}
+
+// RelationshipSourceStatusOrder defines the ordering of RelationshipSourceStatus.
+type RelationshipSourceStatusOrder struct {
+	Direction OrderDirection                      `json:"direction"`
+	Field     *RelationshipSourceStatusOrderField `json:"field"`
+}
+
+// DefaultRelationshipSourceStatusOrder is the default ordering of RelationshipSourceStatus.
+var DefaultRelationshipSourceStatusOrder = &RelationshipSourceStatusOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &RelationshipSourceStatusOrderField{
+		Value: func(_m *RelationshipSourceStatus) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: relationshipsourcestatus.FieldID,
+		toTerm: relationshipsourcestatus.ByID,
+		toCursor: func(_m *RelationshipSourceStatus) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts RelationshipSourceStatus into RelationshipSourceStatusEdge.
+func (_m *RelationshipSourceStatus) ToEdge(order *RelationshipSourceStatusOrder) *RelationshipSourceStatusEdge {
+	if order == nil {
+		order = DefaultRelationshipSourceStatusOrder
+	}
+	return &RelationshipSourceStatusEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// RelationshipStateSnapshotEdge is the edge representation of RelationshipStateSnapshot.
+type RelationshipStateSnapshotEdge struct {
+	Node   *RelationshipStateSnapshot `json:"node"`
+	Cursor Cursor                     `json:"cursor"`
+}
+
+// RelationshipStateSnapshotConnection is the connection containing edges to RelationshipStateSnapshot.
+type RelationshipStateSnapshotConnection struct {
+	Edges      []*RelationshipStateSnapshotEdge `json:"edges"`
+	PageInfo   PageInfo                         `json:"pageInfo"`
+	TotalCount int                              `json:"totalCount"`
+}
+
+func (c *RelationshipStateSnapshotConnection) build(nodes []*RelationshipStateSnapshot, pager *relationshipstatesnapshotPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *RelationshipStateSnapshot
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *RelationshipStateSnapshot {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *RelationshipStateSnapshot {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*RelationshipStateSnapshotEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &RelationshipStateSnapshotEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// RelationshipStateSnapshotPaginateOption enables pagination customization.
+type RelationshipStateSnapshotPaginateOption func(*relationshipstatesnapshotPager) error
+
+// WithRelationshipStateSnapshotOrder configures pagination ordering.
+func WithRelationshipStateSnapshotOrder(order *RelationshipStateSnapshotOrder) RelationshipStateSnapshotPaginateOption {
+	if order == nil {
+		order = DefaultRelationshipStateSnapshotOrder
+	}
+	o := *order
+	return func(pager *relationshipstatesnapshotPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultRelationshipStateSnapshotOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithRelationshipStateSnapshotFilter configures pagination filter.
+func WithRelationshipStateSnapshotFilter(filter func(*RelationshipStateSnapshotQuery) (*RelationshipStateSnapshotQuery, error)) RelationshipStateSnapshotPaginateOption {
+	return func(pager *relationshipstatesnapshotPager) error {
+		if filter == nil {
+			return errors.New("RelationshipStateSnapshotQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type relationshipstatesnapshotPager struct {
+	reverse bool
+	order   *RelationshipStateSnapshotOrder
+	filter  func(*RelationshipStateSnapshotQuery) (*RelationshipStateSnapshotQuery, error)
+}
+
+func newRelationshipStateSnapshotPager(opts []RelationshipStateSnapshotPaginateOption, reverse bool) (*relationshipstatesnapshotPager, error) {
+	pager := &relationshipstatesnapshotPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultRelationshipStateSnapshotOrder
+	}
+	return pager, nil
+}
+
+func (p *relationshipstatesnapshotPager) applyFilter(query *RelationshipStateSnapshotQuery) (*RelationshipStateSnapshotQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *relationshipstatesnapshotPager) toCursor(_m *RelationshipStateSnapshot) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *relationshipstatesnapshotPager) applyCursors(query *RelationshipStateSnapshotQuery, after, before *Cursor) (*RelationshipStateSnapshotQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultRelationshipStateSnapshotOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *relationshipstatesnapshotPager) applyOrder(query *RelationshipStateSnapshotQuery) *RelationshipStateSnapshotQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultRelationshipStateSnapshotOrder.Field {
+		query = query.Order(DefaultRelationshipStateSnapshotOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *relationshipstatesnapshotPager) orderExpr(query *RelationshipStateSnapshotQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultRelationshipStateSnapshotOrder.Field {
+			b.Comma().Ident(DefaultRelationshipStateSnapshotOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to RelationshipStateSnapshot.
+func (_m *RelationshipStateSnapshotQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...RelationshipStateSnapshotPaginateOption,
+) (*RelationshipStateSnapshotConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newRelationshipStateSnapshotPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &RelationshipStateSnapshotConnection{Edges: []*RelationshipStateSnapshotEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// RelationshipStateSnapshotOrderField defines the ordering field of RelationshipStateSnapshot.
+type RelationshipStateSnapshotOrderField struct {
+	// Value extracts the ordering value from the given RelationshipStateSnapshot.
+	Value    func(*RelationshipStateSnapshot) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) relationshipstatesnapshot.OrderOption
+	toCursor func(*RelationshipStateSnapshot) Cursor
+}
+
+// RelationshipStateSnapshotOrder defines the ordering of RelationshipStateSnapshot.
+type RelationshipStateSnapshotOrder struct {
+	Direction OrderDirection                       `json:"direction"`
+	Field     *RelationshipStateSnapshotOrderField `json:"field"`
+}
+
+// DefaultRelationshipStateSnapshotOrder is the default ordering of RelationshipStateSnapshot.
+var DefaultRelationshipStateSnapshotOrder = &RelationshipStateSnapshotOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &RelationshipStateSnapshotOrderField{
+		Value: func(_m *RelationshipStateSnapshot) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: relationshipstatesnapshot.FieldID,
+		toTerm: relationshipstatesnapshot.ByID,
+		toCursor: func(_m *RelationshipStateSnapshot) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts RelationshipStateSnapshot into RelationshipStateSnapshotEdge.
+func (_m *RelationshipStateSnapshot) ToEdge(order *RelationshipStateSnapshotOrder) *RelationshipStateSnapshotEdge {
+	if order == nil {
+		order = DefaultRelationshipStateSnapshotOrder
+	}
+	return &RelationshipStateSnapshotEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

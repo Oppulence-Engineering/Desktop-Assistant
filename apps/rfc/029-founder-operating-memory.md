@@ -7,14 +7,14 @@
 | **Track**        | Product strategy - wedge, jobs, and productization                                                                                                                                                                                                                                                                                                                                                                          |
 | **Owners**       | `apps/x` desktop experience, `apps/rowboat-api` execution plane, `apps/rowboatx` next control-tower UI                                                                                                                                                                                                                                                                                                                      |
 | **Created**      | 2026-06-26                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| **Last updated** | 2026-06-26                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Last updated** | 2026-07-26                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | **Depends on**   | [RFC 006](./complete-006-desktop-cloud-control-plane.md), [RFC 010](./complete-010-rowboat-api-service-plane.md), [RFC 012](./012-connector-suite-and-consent-broker.md), [RFC 014](./014-live-note-observability-cost-and-provenance.md), [RFC 021](./complete-021-semantic-memory-index.md), [RFC 027](./complete-027-durable-agent-runtime.md)                                                                           |
 | **Related**      | [RFC 016](./016-app-family-consolidation.md), [RFC 023](./023-closed-loop-actions.md), [RFC 028](./028-declarative-agent-definitions.md), [email-013](./email-013-meeting-briefs-and-relationship-context.md), [email-014](./email-014-sync-reliability-rate-limits-and-repair.md), [email-016](./email-016-email-evaluation-and-quality-gates.md), [email-017](./email-017-onboarding-permissions-and-feature-adoption.md) |
 | **Supersedes**   | none                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 ## Main point
 
-**Rowboat should be built and sold as the founder/operator control tower that prevents critical follow-ups, meeting context, relationship memory, and commitments from slipping across email, calendar, meetings, Slack, and notes.**
+**Oppulence should be built and sold as relationship intelligence for customer-facing teams: a living, evidence-backed model of every customer account that explains what changed and what needs action.**
 
 The agent builder, knowledge graph, MCP layer, model gateway, and Temporal runtime are infrastructure. They matter because they make the product promise credible, but they are not the wedge. The wedge is simpler and sharper:
 
@@ -24,15 +24,15 @@ This RFC turns that positioning into a product surface and build order.
 
 ## Summary
 
-Rowboat already has enough substrate to become a live operating memory: a local Markdown vault, Gmail/calendar/meeting ingestion, live notes, semantic memory, background tasks, connector OAuth, an LLM gateway, Temporal-backed jobs, durable agent sessions, and approval primitives. The product problem is not missing infrastructure. The product problem is focus.
+Oppulence already has enough substrate to become a live operating memory: a local Markdown vault, Gmail/calendar/meeting ingestion, live notes, semantic memory, background tasks, connector OAuth, an LLM gateway, Temporal-backed jobs, durable agent sessions, and approval primitives. RFC 036 adds the missing shared relationship-state engine and makes web and desktop equal product surfaces.
 
 The near-term product should not lead with "build agents" or "AI knowledge graph." It should lead with a concrete operator outcome: **never walk into a meeting cold, never forget a high-value follow-up, never lose the thread on an important person, customer, investor, vendor, or project.**
 
 This RFC defines the first opinionated product layer over the existing runtime:
 
-1. **Daily Founder Brief** - what matters today, sourced from calendar, email, meetings, Slack, and active notes.
-2. **Follow-Up Queue** - unanswered asks, stale commitments, waiting-on threads, and draftable next actions.
-3. **Relationship and Deal Memory** - source-linked person/company/project pages kept current by jobs.
+1. **Account Mission Control** - current state, what changed, evidence, participants, commitments, risks, and next action.
+2. **Daily Team Brief** - what matters today, sourced from calendar, email, meetings, Slack, CRM, and active notes.
+3. **Relationship Action Queue** - unanswered asks, stale commitments, risks, and approval-ready next actions.
 4. **Approval-Gated Action Queue** - draft emails, calendar actions, CRM/task updates, and other actions that require review.
 5. **Reliability and Trust Surface** - every item has provenance, job state, and a repair path when sync or AI judgment fails.
 
@@ -225,7 +225,7 @@ flowchart TD
 
 ### Boundary decisions
 
-1. **Desktop remains the trust anchor.** The local Markdown vault is the user's inspectable memory and the strongest privacy differentiator.
+1. **Web and desktop are equal trust surfaces.** The backend owns shared relationship state; the local Markdown vault remains inspectable working memory, evidence, and offline context.
 2. **`rowboat-api` owns always-on execution.** Jobs that must run while the laptop is closed should use the API scheduler, Temporal worker, event routing, and connector broker.
 3. **`apps/rowboatx` can become the next control-tower UI.** Its artifact, task, queue, tool, and conversation components are closer to the required interaction model than a blank chat.
 4. **`apps/rowboat` is not the wedge.** The hosted visual agent builder remains a platform surface, but the founder/operator product should not depend on users building workflows from scratch.
@@ -319,7 +319,7 @@ flowchart TD
 2. **Follow-up is the first mission-critical problem.** It is urgent, concrete, and tied to revenue and reputation.
 3. **Every claim needs provenance.** A brief without source links is not acceptable for this category.
 4. **Draft before action.** External writes are approval-gated until the product proves reliability.
-5. **Local-first remains a differentiator.** The cloud runtime exists to run jobs and broker connectors, not to erase the user's owned memory layer.
+5. **Federated ownership is the differentiator.** Shared relationship truth lives in the backend while user-authored knowledge and ambient desktop context remain locally owned.
 6. **Builder features are secondary.** First-party jobs and templates should cover the wedge before exposing broad agent construction.
 
 ## Risks and mitigations

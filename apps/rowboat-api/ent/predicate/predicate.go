@@ -108,6 +108,21 @@ type PolicyDecisionSnapshot func(*sql.Selector)
 // Relationship is the predicate function for relationship builders.
 type Relationship func(*sql.Selector)
 
+// RelationshipAssertion is the predicate function for relationshipassertion builders.
+type RelationshipAssertion func(*sql.Selector)
+
+// RelationshipObservation is the predicate function for relationshipobservation builders.
+type RelationshipObservation func(*sql.Selector)
+
+// RelationshipParticipant is the predicate function for relationshipparticipant builders.
+type RelationshipParticipant func(*sql.Selector)
+
+// RelationshipSourceStatus is the predicate function for relationshipsourcestatus builders.
+type RelationshipSourceStatus func(*sql.Selector)
+
+// RelationshipStateSnapshot is the predicate function for relationshipstatesnapshot builders.
+type RelationshipStateSnapshot func(*sql.Selector)
+
 // RevenueAction is the predicate function for revenueaction builders.
 type RevenueAction func(*sql.Selector)
 

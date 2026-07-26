@@ -107,15 +107,25 @@ type UserEdges struct {
 	MailBodyCaches []*MailBodyCache `json:"mail_body_caches,omitempty"`
 	// MailSignals holds the value of the mail_signals edge.
 	MailSignals []*MailSignal `json:"mail_signals,omitempty"`
+	// RelationshipParticipants holds the value of the relationship_participants edge.
+	RelationshipParticipants []*RelationshipParticipant `json:"relationship_participants,omitempty"`
+	// RelationshipObservations holds the value of the relationship_observations edge.
+	RelationshipObservations []*RelationshipObservation `json:"relationship_observations,omitempty"`
+	// RelationshipAssertions holds the value of the relationship_assertions edge.
+	RelationshipAssertions []*RelationshipAssertion `json:"relationship_assertions,omitempty"`
+	// RelationshipStateSnapshots holds the value of the relationship_state_snapshots edge.
+	RelationshipStateSnapshots []*RelationshipStateSnapshot `json:"relationship_state_snapshots,omitempty"`
+	// RelationshipSourceStatuses holds the value of the relationship_source_statuses edge.
+	RelationshipSourceStatuses []*RelationshipSourceStatus `json:"relationship_source_statuses,omitempty"`
 	// ActionProposals holds the value of the action_proposals edge.
 	ActionProposals []*ActionProposal `json:"action_proposals,omitempty"`
 	// ApprovalTokens holds the value of the approval_tokens edge.
 	ApprovalTokens []*ApprovalToken `json:"approval_tokens,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [37]bool
+	loadedTypes [42]bool
 	// totalCount holds the count of the edges above.
-	totalCount [37]map[string]int
+	totalCount [42]map[string]int
 
 	namedLedgerEntries                map[string][]*CreditLedger
 	namedMeetingMinuteUsages          map[string][]*MeetingMinuteUsage
@@ -151,6 +161,11 @@ type UserEdges struct {
 	namedMailMessageMetas             map[string][]*MailMessageMeta
 	namedMailBodyCaches               map[string][]*MailBodyCache
 	namedMailSignals                  map[string][]*MailSignal
+	namedRelationshipParticipants     map[string][]*RelationshipParticipant
+	namedRelationshipObservations     map[string][]*RelationshipObservation
+	namedRelationshipAssertions       map[string][]*RelationshipAssertion
+	namedRelationshipStateSnapshots   map[string][]*RelationshipStateSnapshot
+	namedRelationshipSourceStatuses   map[string][]*RelationshipSourceStatus
 	namedActionProposals              map[string][]*ActionProposal
 	namedApprovalTokens               map[string][]*ApprovalToken
 }
@@ -472,10 +487,55 @@ func (e UserEdges) MailSignalsOrErr() ([]*MailSignal, error) {
 	return nil, &NotLoadedError{edge: "mail_signals"}
 }
 
+// RelationshipParticipantsOrErr returns the RelationshipParticipants value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RelationshipParticipantsOrErr() ([]*RelationshipParticipant, error) {
+	if e.loadedTypes[35] {
+		return e.RelationshipParticipants, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_participants"}
+}
+
+// RelationshipObservationsOrErr returns the RelationshipObservations value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RelationshipObservationsOrErr() ([]*RelationshipObservation, error) {
+	if e.loadedTypes[36] {
+		return e.RelationshipObservations, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_observations"}
+}
+
+// RelationshipAssertionsOrErr returns the RelationshipAssertions value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RelationshipAssertionsOrErr() ([]*RelationshipAssertion, error) {
+	if e.loadedTypes[37] {
+		return e.RelationshipAssertions, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_assertions"}
+}
+
+// RelationshipStateSnapshotsOrErr returns the RelationshipStateSnapshots value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RelationshipStateSnapshotsOrErr() ([]*RelationshipStateSnapshot, error) {
+	if e.loadedTypes[38] {
+		return e.RelationshipStateSnapshots, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_state_snapshots"}
+}
+
+// RelationshipSourceStatusesOrErr returns the RelationshipSourceStatuses value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RelationshipSourceStatusesOrErr() ([]*RelationshipSourceStatus, error) {
+	if e.loadedTypes[39] {
+		return e.RelationshipSourceStatuses, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_source_statuses"}
+}
+
 // ActionProposalsOrErr returns the ActionProposals value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ActionProposalsOrErr() ([]*ActionProposal, error) {
-	if e.loadedTypes[35] {
+	if e.loadedTypes[40] {
 		return e.ActionProposals, nil
 	}
 	return nil, &NotLoadedError{edge: "action_proposals"}
@@ -484,7 +544,7 @@ func (e UserEdges) ActionProposalsOrErr() ([]*ActionProposal, error) {
 // ApprovalTokensOrErr returns the ApprovalTokens value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ApprovalTokensOrErr() ([]*ApprovalToken, error) {
-	if e.loadedTypes[36] {
+	if e.loadedTypes[41] {
 		return e.ApprovalTokens, nil
 	}
 	return nil, &NotLoadedError{edge: "approval_tokens"}
@@ -738,6 +798,31 @@ func (_m *User) QueryMailBodyCaches() *MailBodyCacheQuery {
 // QueryMailSignals queries the "mail_signals" edge of the User entity.
 func (_m *User) QueryMailSignals() *MailSignalQuery {
 	return NewUserClient(_m.config).QueryMailSignals(_m)
+}
+
+// QueryRelationshipParticipants queries the "relationship_participants" edge of the User entity.
+func (_m *User) QueryRelationshipParticipants() *RelationshipParticipantQuery {
+	return NewUserClient(_m.config).QueryRelationshipParticipants(_m)
+}
+
+// QueryRelationshipObservations queries the "relationship_observations" edge of the User entity.
+func (_m *User) QueryRelationshipObservations() *RelationshipObservationQuery {
+	return NewUserClient(_m.config).QueryRelationshipObservations(_m)
+}
+
+// QueryRelationshipAssertions queries the "relationship_assertions" edge of the User entity.
+func (_m *User) QueryRelationshipAssertions() *RelationshipAssertionQuery {
+	return NewUserClient(_m.config).QueryRelationshipAssertions(_m)
+}
+
+// QueryRelationshipStateSnapshots queries the "relationship_state_snapshots" edge of the User entity.
+func (_m *User) QueryRelationshipStateSnapshots() *RelationshipStateSnapshotQuery {
+	return NewUserClient(_m.config).QueryRelationshipStateSnapshots(_m)
+}
+
+// QueryRelationshipSourceStatuses queries the "relationship_source_statuses" edge of the User entity.
+func (_m *User) QueryRelationshipSourceStatuses() *RelationshipSourceStatusQuery {
+	return NewUserClient(_m.config).QueryRelationshipSourceStatuses(_m)
 }
 
 // QueryActionProposals queries the "action_proposals" edge of the User entity.
@@ -1604,6 +1689,126 @@ func (_m *User) appendNamedMailSignals(name string, edges ...*MailSignal) {
 		_m.Edges.namedMailSignals[name] = []*MailSignal{}
 	} else {
 		_m.Edges.namedMailSignals[name] = append(_m.Edges.namedMailSignals[name], edges...)
+	}
+}
+
+// NamedRelationshipParticipants returns the RelationshipParticipants named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedRelationshipParticipants(name string) ([]*RelationshipParticipant, error) {
+	if _m.Edges.namedRelationshipParticipants == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipParticipants[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedRelationshipParticipants(name string, edges ...*RelationshipParticipant) {
+	if _m.Edges.namedRelationshipParticipants == nil {
+		_m.Edges.namedRelationshipParticipants = make(map[string][]*RelationshipParticipant)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipParticipants[name] = []*RelationshipParticipant{}
+	} else {
+		_m.Edges.namedRelationshipParticipants[name] = append(_m.Edges.namedRelationshipParticipants[name], edges...)
+	}
+}
+
+// NamedRelationshipObservations returns the RelationshipObservations named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedRelationshipObservations(name string) ([]*RelationshipObservation, error) {
+	if _m.Edges.namedRelationshipObservations == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipObservations[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedRelationshipObservations(name string, edges ...*RelationshipObservation) {
+	if _m.Edges.namedRelationshipObservations == nil {
+		_m.Edges.namedRelationshipObservations = make(map[string][]*RelationshipObservation)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipObservations[name] = []*RelationshipObservation{}
+	} else {
+		_m.Edges.namedRelationshipObservations[name] = append(_m.Edges.namedRelationshipObservations[name], edges...)
+	}
+}
+
+// NamedRelationshipAssertions returns the RelationshipAssertions named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedRelationshipAssertions(name string) ([]*RelationshipAssertion, error) {
+	if _m.Edges.namedRelationshipAssertions == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipAssertions[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedRelationshipAssertions(name string, edges ...*RelationshipAssertion) {
+	if _m.Edges.namedRelationshipAssertions == nil {
+		_m.Edges.namedRelationshipAssertions = make(map[string][]*RelationshipAssertion)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipAssertions[name] = []*RelationshipAssertion{}
+	} else {
+		_m.Edges.namedRelationshipAssertions[name] = append(_m.Edges.namedRelationshipAssertions[name], edges...)
+	}
+}
+
+// NamedRelationshipStateSnapshots returns the RelationshipStateSnapshots named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedRelationshipStateSnapshots(name string) ([]*RelationshipStateSnapshot, error) {
+	if _m.Edges.namedRelationshipStateSnapshots == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipStateSnapshots[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedRelationshipStateSnapshots(name string, edges ...*RelationshipStateSnapshot) {
+	if _m.Edges.namedRelationshipStateSnapshots == nil {
+		_m.Edges.namedRelationshipStateSnapshots = make(map[string][]*RelationshipStateSnapshot)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipStateSnapshots[name] = []*RelationshipStateSnapshot{}
+	} else {
+		_m.Edges.namedRelationshipStateSnapshots[name] = append(_m.Edges.namedRelationshipStateSnapshots[name], edges...)
+	}
+}
+
+// NamedRelationshipSourceStatuses returns the RelationshipSourceStatuses named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedRelationshipSourceStatuses(name string) ([]*RelationshipSourceStatus, error) {
+	if _m.Edges.namedRelationshipSourceStatuses == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipSourceStatuses[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedRelationshipSourceStatuses(name string, edges ...*RelationshipSourceStatus) {
+	if _m.Edges.namedRelationshipSourceStatuses == nil {
+		_m.Edges.namedRelationshipSourceStatuses = make(map[string][]*RelationshipSourceStatus)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipSourceStatuses[name] = []*RelationshipSourceStatus{}
+	} else {
+		_m.Edges.namedRelationshipSourceStatuses[name] = append(_m.Edges.namedRelationshipSourceStatuses[name], edges...)
 	}
 }
 

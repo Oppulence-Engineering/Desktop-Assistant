@@ -43,6 +43,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
@@ -1030,6 +1035,141 @@ func (f TraverseRelationship) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.RelationshipQuery", q)
 }
 
+// The RelationshipAssertionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RelationshipAssertionFunc func(context.Context, *ent.RelationshipAssertionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RelationshipAssertionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RelationshipAssertionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RelationshipAssertionQuery", q)
+}
+
+// The TraverseRelationshipAssertion type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRelationshipAssertion func(context.Context, *ent.RelationshipAssertionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRelationshipAssertion) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRelationshipAssertion) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelationshipAssertionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RelationshipAssertionQuery", q)
+}
+
+// The RelationshipObservationFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RelationshipObservationFunc func(context.Context, *ent.RelationshipObservationQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RelationshipObservationFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RelationshipObservationQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RelationshipObservationQuery", q)
+}
+
+// The TraverseRelationshipObservation type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRelationshipObservation func(context.Context, *ent.RelationshipObservationQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRelationshipObservation) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRelationshipObservation) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelationshipObservationQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RelationshipObservationQuery", q)
+}
+
+// The RelationshipParticipantFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RelationshipParticipantFunc func(context.Context, *ent.RelationshipParticipantQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RelationshipParticipantFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RelationshipParticipantQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RelationshipParticipantQuery", q)
+}
+
+// The TraverseRelationshipParticipant type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRelationshipParticipant func(context.Context, *ent.RelationshipParticipantQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRelationshipParticipant) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRelationshipParticipant) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelationshipParticipantQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RelationshipParticipantQuery", q)
+}
+
+// The RelationshipSourceStatusFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RelationshipSourceStatusFunc func(context.Context, *ent.RelationshipSourceStatusQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RelationshipSourceStatusFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RelationshipSourceStatusQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RelationshipSourceStatusQuery", q)
+}
+
+// The TraverseRelationshipSourceStatus type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRelationshipSourceStatus func(context.Context, *ent.RelationshipSourceStatusQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRelationshipSourceStatus) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRelationshipSourceStatus) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelationshipSourceStatusQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RelationshipSourceStatusQuery", q)
+}
+
+// The RelationshipStateSnapshotFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RelationshipStateSnapshotFunc func(context.Context, *ent.RelationshipStateSnapshotQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RelationshipStateSnapshotFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RelationshipStateSnapshotQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RelationshipStateSnapshotQuery", q)
+}
+
+// The TraverseRelationshipStateSnapshot type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRelationshipStateSnapshot func(context.Context, *ent.RelationshipStateSnapshotQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRelationshipStateSnapshot) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRelationshipStateSnapshot) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelationshipStateSnapshotQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RelationshipStateSnapshotQuery", q)
+}
+
 // The RevenueActionFunc type is an adapter to allow the use of ordinary function as a Querier.
 type RevenueActionFunc func(context.Context, *ent.RevenueActionQuery) (ent.Value, error)
 
@@ -1398,6 +1538,16 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.PolicyDecisionSnapshotQuery, predicate.PolicyDecisionSnapshot, policydecisionsnapshot.OrderOption]{typ: ent.TypePolicyDecisionSnapshot, tq: q}, nil
 	case *ent.RelationshipQuery:
 		return &query[*ent.RelationshipQuery, predicate.Relationship, relationship.OrderOption]{typ: ent.TypeRelationship, tq: q}, nil
+	case *ent.RelationshipAssertionQuery:
+		return &query[*ent.RelationshipAssertionQuery, predicate.RelationshipAssertion, relationshipassertion.OrderOption]{typ: ent.TypeRelationshipAssertion, tq: q}, nil
+	case *ent.RelationshipObservationQuery:
+		return &query[*ent.RelationshipObservationQuery, predicate.RelationshipObservation, relationshipobservation.OrderOption]{typ: ent.TypeRelationshipObservation, tq: q}, nil
+	case *ent.RelationshipParticipantQuery:
+		return &query[*ent.RelationshipParticipantQuery, predicate.RelationshipParticipant, relationshipparticipant.OrderOption]{typ: ent.TypeRelationshipParticipant, tq: q}, nil
+	case *ent.RelationshipSourceStatusQuery:
+		return &query[*ent.RelationshipSourceStatusQuery, predicate.RelationshipSourceStatus, relationshipsourcestatus.OrderOption]{typ: ent.TypeRelationshipSourceStatus, tq: q}, nil
+	case *ent.RelationshipStateSnapshotQuery:
+		return &query[*ent.RelationshipStateSnapshotQuery, predicate.RelationshipStateSnapshot, relationshipstatesnapshot.OrderOption]{typ: ent.TypeRelationshipStateSnapshot, tq: q}, nil
 	case *ent.RevenueActionQuery:
 		return &query[*ent.RevenueActionQuery, predicate.RevenueAction, revenueaction.OrderOption]{typ: ent.TypeRevenueAction, tq: q}, nil
 	case *ent.RevenueActionRevisionQuery:

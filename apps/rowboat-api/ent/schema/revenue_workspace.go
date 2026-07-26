@@ -92,6 +92,16 @@ func (RevenueWorkspace) Edges() []ent.Edge {
 			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("scans", RevenueLeakScan.Type).
 			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("relationship_participants", RelationshipParticipant.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("relationship_observations", RelationshipObservation.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("relationship_assertions", RelationshipAssertion.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("relationship_state_snapshots", RelationshipStateSnapshot.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("relationship_source_statuses", RelationshipSourceStatus.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
 	}
 }
 

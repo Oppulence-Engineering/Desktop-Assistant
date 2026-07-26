@@ -89,6 +89,12 @@ func (User) Edges() []ent.Edge {
 		edge.To("mail_message_metas", MailMessageMeta.Type).Annotations(entproto.Skip()),
 		edge.To("mail_body_caches", MailBodyCache.Type).Annotations(entproto.Skip()),
 		edge.To("mail_signals", MailSignal.Type).Annotations(entproto.Skip()),
+		// Relationship intelligence state machine (RFC 036).
+		edge.To("relationship_participants", RelationshipParticipant.Type).Annotations(entproto.Skip()),
+		edge.To("relationship_observations", RelationshipObservation.Type).Annotations(entproto.Skip()),
+		edge.To("relationship_assertions", RelationshipAssertion.Type).Annotations(entproto.Skip()),
+		edge.To("relationship_state_snapshots", RelationshipStateSnapshot.Type).Annotations(entproto.Skip()),
+		edge.To("relationship_source_statuses", RelationshipSourceStatus.Type).Annotations(entproto.Skip()),
 		// RFC 023 closed-loop actions.
 		edge.To("action_proposals", ActionProposal.Type).Annotations(entproto.Skip()),
 		edge.To("approval_tokens", ApprovalToken.Type).Annotations(entproto.Skip()),

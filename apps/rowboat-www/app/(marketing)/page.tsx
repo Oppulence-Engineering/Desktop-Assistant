@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 
 import { HomePage } from "./marketing-components";
 
-const TITLE = "Oppulence — Turn silence back into revenue";
+const TITLE = "Oppulence — Relationship Intelligence for Customer-Facing Teams";
 const DESCRIPTION =
-  "Oppulence watches your inbox, calendar, and billing. It finds the deals, invoices, and clients that go quiet. It writes the chase in your voice. You approve every send.";
+  "Oppulence maintains a living model of every customer relationship across email, meetings, Slack, CRM, and revenue systems—then shows what changed, what needs action, and why.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -38,7 +38,8 @@ const jsonLd = {
     {
       "@type": "Organization",
       "@id": "https://oppulence.io/#organization",
-      name: "Oppulence",
+      name: "Playbook Media",
+      alternateName: "Oppulence",
       url: "https://oppulence.io",
       logo: "https://oppulence.io/icon.png",
     },
@@ -46,13 +47,9 @@ const jsonLd = {
       "@type": "SoftwareApplication",
       name: "Oppulence",
       applicationCategory: "BusinessApplication",
-      operatingSystem: "Web",
+      operatingSystem: "Web, macOS, Windows, Linux",
       description: DESCRIPTION,
       url: "https://oppulence.io",
-      offers: [
-        { "@type": "Offer", name: "Watch", price: "0", priceCurrency: "USD" },
-        { "@type": "Offer", name: "Chase", price: "99", priceCurrency: "USD" },
-      ],
       publisher: { "@id": "https://oppulence.io/#organization" },
     },
   ],

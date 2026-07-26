@@ -80,6 +80,16 @@ type Tx struct {
 	PolicyDecisionSnapshot *PolicyDecisionSnapshotClient
 	// Relationship is the client for interacting with the Relationship builders.
 	Relationship *RelationshipClient
+	// RelationshipAssertion is the client for interacting with the RelationshipAssertion builders.
+	RelationshipAssertion *RelationshipAssertionClient
+	// RelationshipObservation is the client for interacting with the RelationshipObservation builders.
+	RelationshipObservation *RelationshipObservationClient
+	// RelationshipParticipant is the client for interacting with the RelationshipParticipant builders.
+	RelationshipParticipant *RelationshipParticipantClient
+	// RelationshipSourceStatus is the client for interacting with the RelationshipSourceStatus builders.
+	RelationshipSourceStatus *RelationshipSourceStatusClient
+	// RelationshipStateSnapshot is the client for interacting with the RelationshipStateSnapshot builders.
+	RelationshipStateSnapshot *RelationshipStateSnapshotClient
 	// RevenueAction is the client for interacting with the RevenueAction builders.
 	RevenueAction *RevenueActionClient
 	// RevenueActionRevision is the client for interacting with the RevenueActionRevision builders.
@@ -267,6 +277,11 @@ func (tx *Tx) init() {
 	tx.OAuthPending = NewOAuthPendingClient(tx.config)
 	tx.PolicyDecisionSnapshot = NewPolicyDecisionSnapshotClient(tx.config)
 	tx.Relationship = NewRelationshipClient(tx.config)
+	tx.RelationshipAssertion = NewRelationshipAssertionClient(tx.config)
+	tx.RelationshipObservation = NewRelationshipObservationClient(tx.config)
+	tx.RelationshipParticipant = NewRelationshipParticipantClient(tx.config)
+	tx.RelationshipSourceStatus = NewRelationshipSourceStatusClient(tx.config)
+	tx.RelationshipStateSnapshot = NewRelationshipStateSnapshotClient(tx.config)
 	tx.RevenueAction = NewRevenueActionClient(tx.config)
 	tx.RevenueActionRevision = NewRevenueActionRevisionClient(tx.config)
 	tx.RevenueEvidence = NewRevenueEvidenceClient(tx.config)

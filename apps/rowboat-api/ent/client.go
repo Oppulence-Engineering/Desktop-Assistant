@@ -51,6 +51,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
@@ -137,6 +142,16 @@ type Client struct {
 	PolicyDecisionSnapshot *PolicyDecisionSnapshotClient
 	// Relationship is the client for interacting with the Relationship builders.
 	Relationship *RelationshipClient
+	// RelationshipAssertion is the client for interacting with the RelationshipAssertion builders.
+	RelationshipAssertion *RelationshipAssertionClient
+	// RelationshipObservation is the client for interacting with the RelationshipObservation builders.
+	RelationshipObservation *RelationshipObservationClient
+	// RelationshipParticipant is the client for interacting with the RelationshipParticipant builders.
+	RelationshipParticipant *RelationshipParticipantClient
+	// RelationshipSourceStatus is the client for interacting with the RelationshipSourceStatus builders.
+	RelationshipSourceStatus *RelationshipSourceStatusClient
+	// RelationshipStateSnapshot is the client for interacting with the RelationshipStateSnapshot builders.
+	RelationshipStateSnapshot *RelationshipStateSnapshotClient
 	// RevenueAction is the client for interacting with the RevenueAction builders.
 	RevenueAction *RevenueActionClient
 	// RevenueActionRevision is the client for interacting with the RevenueActionRevision builders.
@@ -209,6 +224,11 @@ func (c *Client) init() {
 	c.OAuthPending = NewOAuthPendingClient(c.config)
 	c.PolicyDecisionSnapshot = NewPolicyDecisionSnapshotClient(c.config)
 	c.Relationship = NewRelationshipClient(c.config)
+	c.RelationshipAssertion = NewRelationshipAssertionClient(c.config)
+	c.RelationshipObservation = NewRelationshipObservationClient(c.config)
+	c.RelationshipParticipant = NewRelationshipParticipantClient(c.config)
+	c.RelationshipSourceStatus = NewRelationshipSourceStatusClient(c.config)
+	c.RelationshipStateSnapshot = NewRelationshipStateSnapshotClient(c.config)
 	c.RevenueAction = NewRevenueActionClient(c.config)
 	c.RevenueActionRevision = NewRevenueActionRevisionClient(c.config)
 	c.RevenueEvidence = NewRevenueEvidenceClient(c.config)
@@ -384,6 +404,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		OAuthPending:                NewOAuthPendingClient(cfg),
 		PolicyDecisionSnapshot:      NewPolicyDecisionSnapshotClient(cfg),
 		Relationship:                NewRelationshipClient(cfg),
+		RelationshipAssertion:       NewRelationshipAssertionClient(cfg),
+		RelationshipObservation:     NewRelationshipObservationClient(cfg),
+		RelationshipParticipant:     NewRelationshipParticipantClient(cfg),
+		RelationshipSourceStatus:    NewRelationshipSourceStatusClient(cfg),
+		RelationshipStateSnapshot:   NewRelationshipStateSnapshotClient(cfg),
 		RevenueAction:               NewRevenueActionClient(cfg),
 		RevenueActionRevision:       NewRevenueActionRevisionClient(cfg),
 		RevenueEvidence:             NewRevenueEvidenceClient(cfg),
@@ -448,6 +473,11 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		OAuthPending:                NewOAuthPendingClient(cfg),
 		PolicyDecisionSnapshot:      NewPolicyDecisionSnapshotClient(cfg),
 		Relationship:                NewRelationshipClient(cfg),
+		RelationshipAssertion:       NewRelationshipAssertionClient(cfg),
+		RelationshipObservation:     NewRelationshipObservationClient(cfg),
+		RelationshipParticipant:     NewRelationshipParticipantClient(cfg),
+		RelationshipSourceStatus:    NewRelationshipSourceStatusClient(cfg),
+		RelationshipStateSnapshot:   NewRelationshipStateSnapshotClient(cfg),
 		RevenueAction:               NewRevenueActionClient(cfg),
 		RevenueActionRevision:       NewRevenueActionRevisionClient(cfg),
 		RevenueEvidence:             NewRevenueEvidenceClient(cfg),
@@ -497,8 +527,10 @@ func (c *Client) Use(hooks ...Hook) {
 		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
 		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
 		c.OAuthConnectionHistory, c.OAuthPending, c.PolicyDecisionSnapshot,
-		c.Relationship, c.RevenueAction, c.RevenueActionRevision, c.RevenueEvidence,
-		c.RevenueLeakScan, c.RevenueOutboxEvent, c.RevenueWorkspace,
+		c.Relationship, c.RelationshipAssertion, c.RelationshipObservation,
+		c.RelationshipParticipant, c.RelationshipSourceStatus,
+		c.RelationshipStateSnapshot, c.RevenueAction, c.RevenueActionRevision,
+		c.RevenueEvidence, c.RevenueLeakScan, c.RevenueOutboxEvent, c.RevenueWorkspace,
 		c.RevenueWorkspaceMember, c.Subscription, c.SubscriptionHistory, c.User,
 		c.UserHistory,
 	} {
@@ -519,8 +551,10 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
 		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
 		c.OAuthConnectionHistory, c.OAuthPending, c.PolicyDecisionSnapshot,
-		c.Relationship, c.RevenueAction, c.RevenueActionRevision, c.RevenueEvidence,
-		c.RevenueLeakScan, c.RevenueOutboxEvent, c.RevenueWorkspace,
+		c.Relationship, c.RelationshipAssertion, c.RelationshipObservation,
+		c.RelationshipParticipant, c.RelationshipSourceStatus,
+		c.RelationshipStateSnapshot, c.RevenueAction, c.RevenueActionRevision,
+		c.RevenueEvidence, c.RevenueLeakScan, c.RevenueOutboxEvent, c.RevenueWorkspace,
 		c.RevenueWorkspaceMember, c.Subscription, c.SubscriptionHistory, c.User,
 		c.UserHistory,
 	} {
@@ -599,6 +633,16 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.PolicyDecisionSnapshot.mutate(ctx, m)
 	case *RelationshipMutation:
 		return c.Relationship.mutate(ctx, m)
+	case *RelationshipAssertionMutation:
+		return c.RelationshipAssertion.mutate(ctx, m)
+	case *RelationshipObservationMutation:
+		return c.RelationshipObservation.mutate(ctx, m)
+	case *RelationshipParticipantMutation:
+		return c.RelationshipParticipant.mutate(ctx, m)
+	case *RelationshipSourceStatusMutation:
+		return c.RelationshipSourceStatus.mutate(ctx, m)
+	case *RelationshipStateSnapshotMutation:
+		return c.RelationshipStateSnapshot.mutate(ctx, m)
 	case *RevenueActionMutation:
 		return c.RevenueAction.mutate(ctx, m)
 	case *RevenueActionRevisionMutation:
@@ -6211,6 +6255,70 @@ func (c *RelationshipClient) QueryMailThreads(_m *Relationship) *MailThreadQuery
 	return query
 }
 
+// QueryParticipants queries the participants edge of a Relationship.
+func (c *RelationshipClient) QueryParticipants(_m *Relationship) *RelationshipParticipantQuery {
+	query := (&RelationshipParticipantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, id),
+			sqlgraph.To(relationshipparticipant.Table, relationshipparticipant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.ParticipantsTable, relationship.ParticipantsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryObservations queries the observations edge of a Relationship.
+func (c *RelationshipClient) QueryObservations(_m *Relationship) *RelationshipObservationQuery {
+	query := (&RelationshipObservationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, id),
+			sqlgraph.To(relationshipobservation.Table, relationshipobservation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.ObservationsTable, relationship.ObservationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAssertions queries the assertions edge of a Relationship.
+func (c *RelationshipClient) QueryAssertions(_m *Relationship) *RelationshipAssertionQuery {
+	query := (&RelationshipAssertionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, id),
+			sqlgraph.To(relationshipassertion.Table, relationshipassertion.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.AssertionsTable, relationship.AssertionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySnapshots queries the snapshots edge of a Relationship.
+func (c *RelationshipClient) QuerySnapshots(_m *Relationship) *RelationshipStateSnapshotQuery {
+	query := (&RelationshipStateSnapshotClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, id),
+			sqlgraph.To(relationshipstatesnapshot.Table, relationshipstatesnapshot.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.SnapshotsTable, relationship.SnapshotsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *RelationshipClient) Hooks() []Hook {
 	return c.hooks.Relationship
@@ -6233,6 +6341,927 @@ func (c *RelationshipClient) mutate(ctx context.Context, m *RelationshipMutation
 		return (&RelationshipDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Relationship mutation op: %q", m.Op())
+	}
+}
+
+// RelationshipAssertionClient is a client for the RelationshipAssertion schema.
+type RelationshipAssertionClient struct {
+	config
+}
+
+// NewRelationshipAssertionClient returns a client for the RelationshipAssertion from the given config.
+func NewRelationshipAssertionClient(c config) *RelationshipAssertionClient {
+	return &RelationshipAssertionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `relationshipassertion.Hooks(f(g(h())))`.
+func (c *RelationshipAssertionClient) Use(hooks ...Hook) {
+	c.hooks.RelationshipAssertion = append(c.hooks.RelationshipAssertion, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `relationshipassertion.Intercept(f(g(h())))`.
+func (c *RelationshipAssertionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RelationshipAssertion = append(c.inters.RelationshipAssertion, interceptors...)
+}
+
+// Create returns a builder for creating a RelationshipAssertion entity.
+func (c *RelationshipAssertionClient) Create() *RelationshipAssertionCreate {
+	mutation := newRelationshipAssertionMutation(c.config, OpCreate)
+	return &RelationshipAssertionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RelationshipAssertion entities.
+func (c *RelationshipAssertionClient) CreateBulk(builders ...*RelationshipAssertionCreate) *RelationshipAssertionCreateBulk {
+	return &RelationshipAssertionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RelationshipAssertionClient) MapCreateBulk(slice any, setFunc func(*RelationshipAssertionCreate, int)) *RelationshipAssertionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RelationshipAssertionCreateBulk{err: fmt.Errorf("calling to RelationshipAssertionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RelationshipAssertionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RelationshipAssertionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RelationshipAssertion.
+func (c *RelationshipAssertionClient) Update() *RelationshipAssertionUpdate {
+	mutation := newRelationshipAssertionMutation(c.config, OpUpdate)
+	return &RelationshipAssertionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RelationshipAssertionClient) UpdateOne(_m *RelationshipAssertion) *RelationshipAssertionUpdateOne {
+	mutation := newRelationshipAssertionMutation(c.config, OpUpdateOne, withRelationshipAssertion(_m))
+	return &RelationshipAssertionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RelationshipAssertionClient) UpdateOneID(id uuid.UUID) *RelationshipAssertionUpdateOne {
+	mutation := newRelationshipAssertionMutation(c.config, OpUpdateOne, withRelationshipAssertionID(id))
+	return &RelationshipAssertionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RelationshipAssertion.
+func (c *RelationshipAssertionClient) Delete() *RelationshipAssertionDelete {
+	mutation := newRelationshipAssertionMutation(c.config, OpDelete)
+	return &RelationshipAssertionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RelationshipAssertionClient) DeleteOne(_m *RelationshipAssertion) *RelationshipAssertionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RelationshipAssertionClient) DeleteOneID(id uuid.UUID) *RelationshipAssertionDeleteOne {
+	builder := c.Delete().Where(relationshipassertion.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RelationshipAssertionDeleteOne{builder}
+}
+
+// Query returns a query builder for RelationshipAssertion.
+func (c *RelationshipAssertionClient) Query() *RelationshipAssertionQuery {
+	return &RelationshipAssertionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRelationshipAssertion},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RelationshipAssertion entity by its id.
+func (c *RelationshipAssertionClient) Get(ctx context.Context, id uuid.UUID) (*RelationshipAssertion, error) {
+	return c.Query().Where(relationshipassertion.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RelationshipAssertionClient) GetX(ctx context.Context, id uuid.UUID) *RelationshipAssertion {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a RelationshipAssertion.
+func (c *RelationshipAssertionClient) QueryWorkspace(_m *RelationshipAssertion) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipassertion.Table, relationshipassertion.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipassertion.WorkspaceTable, relationshipassertion.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationship queries the relationship edge of a RelationshipAssertion.
+func (c *RelationshipAssertionClient) QueryRelationship(_m *RelationshipAssertion) *RelationshipQuery {
+	query := (&RelationshipClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipassertion.Table, relationshipassertion.FieldID, id),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipassertion.RelationshipTable, relationshipassertion.RelationshipColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryObservation queries the observation edge of a RelationshipAssertion.
+func (c *RelationshipAssertionClient) QueryObservation(_m *RelationshipAssertion) *RelationshipObservationQuery {
+	query := (&RelationshipObservationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipassertion.Table, relationshipassertion.FieldID, id),
+			sqlgraph.To(relationshipobservation.Table, relationshipobservation.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipassertion.ObservationTable, relationshipassertion.ObservationColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a RelationshipAssertion.
+func (c *RelationshipAssertionClient) QueryUser(_m *RelationshipAssertion) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipassertion.Table, relationshipassertion.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipassertion.UserTable, relationshipassertion.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RelationshipAssertionClient) Hooks() []Hook {
+	return c.hooks.RelationshipAssertion
+}
+
+// Interceptors returns the client interceptors.
+func (c *RelationshipAssertionClient) Interceptors() []Interceptor {
+	return c.inters.RelationshipAssertion
+}
+
+func (c *RelationshipAssertionClient) mutate(ctx context.Context, m *RelationshipAssertionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RelationshipAssertionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RelationshipAssertionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RelationshipAssertionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RelationshipAssertionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RelationshipAssertion mutation op: %q", m.Op())
+	}
+}
+
+// RelationshipObservationClient is a client for the RelationshipObservation schema.
+type RelationshipObservationClient struct {
+	config
+}
+
+// NewRelationshipObservationClient returns a client for the RelationshipObservation from the given config.
+func NewRelationshipObservationClient(c config) *RelationshipObservationClient {
+	return &RelationshipObservationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `relationshipobservation.Hooks(f(g(h())))`.
+func (c *RelationshipObservationClient) Use(hooks ...Hook) {
+	c.hooks.RelationshipObservation = append(c.hooks.RelationshipObservation, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `relationshipobservation.Intercept(f(g(h())))`.
+func (c *RelationshipObservationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RelationshipObservation = append(c.inters.RelationshipObservation, interceptors...)
+}
+
+// Create returns a builder for creating a RelationshipObservation entity.
+func (c *RelationshipObservationClient) Create() *RelationshipObservationCreate {
+	mutation := newRelationshipObservationMutation(c.config, OpCreate)
+	return &RelationshipObservationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RelationshipObservation entities.
+func (c *RelationshipObservationClient) CreateBulk(builders ...*RelationshipObservationCreate) *RelationshipObservationCreateBulk {
+	return &RelationshipObservationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RelationshipObservationClient) MapCreateBulk(slice any, setFunc func(*RelationshipObservationCreate, int)) *RelationshipObservationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RelationshipObservationCreateBulk{err: fmt.Errorf("calling to RelationshipObservationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RelationshipObservationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RelationshipObservationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RelationshipObservation.
+func (c *RelationshipObservationClient) Update() *RelationshipObservationUpdate {
+	mutation := newRelationshipObservationMutation(c.config, OpUpdate)
+	return &RelationshipObservationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RelationshipObservationClient) UpdateOne(_m *RelationshipObservation) *RelationshipObservationUpdateOne {
+	mutation := newRelationshipObservationMutation(c.config, OpUpdateOne, withRelationshipObservation(_m))
+	return &RelationshipObservationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RelationshipObservationClient) UpdateOneID(id uuid.UUID) *RelationshipObservationUpdateOne {
+	mutation := newRelationshipObservationMutation(c.config, OpUpdateOne, withRelationshipObservationID(id))
+	return &RelationshipObservationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RelationshipObservation.
+func (c *RelationshipObservationClient) Delete() *RelationshipObservationDelete {
+	mutation := newRelationshipObservationMutation(c.config, OpDelete)
+	return &RelationshipObservationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RelationshipObservationClient) DeleteOne(_m *RelationshipObservation) *RelationshipObservationDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RelationshipObservationClient) DeleteOneID(id uuid.UUID) *RelationshipObservationDeleteOne {
+	builder := c.Delete().Where(relationshipobservation.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RelationshipObservationDeleteOne{builder}
+}
+
+// Query returns a query builder for RelationshipObservation.
+func (c *RelationshipObservationClient) Query() *RelationshipObservationQuery {
+	return &RelationshipObservationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRelationshipObservation},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RelationshipObservation entity by its id.
+func (c *RelationshipObservationClient) Get(ctx context.Context, id uuid.UUID) (*RelationshipObservation, error) {
+	return c.Query().Where(relationshipobservation.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RelationshipObservationClient) GetX(ctx context.Context, id uuid.UUID) *RelationshipObservation {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a RelationshipObservation.
+func (c *RelationshipObservationClient) QueryWorkspace(_m *RelationshipObservation) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipobservation.Table, relationshipobservation.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipobservation.WorkspaceTable, relationshipobservation.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationship queries the relationship edge of a RelationshipObservation.
+func (c *RelationshipObservationClient) QueryRelationship(_m *RelationshipObservation) *RelationshipQuery {
+	query := (&RelationshipClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipobservation.Table, relationshipobservation.FieldID, id),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipobservation.RelationshipTable, relationshipobservation.RelationshipColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a RelationshipObservation.
+func (c *RelationshipObservationClient) QueryUser(_m *RelationshipObservation) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipobservation.Table, relationshipobservation.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipobservation.UserTable, relationshipobservation.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAssertions queries the assertions edge of a RelationshipObservation.
+func (c *RelationshipObservationClient) QueryAssertions(_m *RelationshipObservation) *RelationshipAssertionQuery {
+	query := (&RelationshipAssertionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipobservation.Table, relationshipobservation.FieldID, id),
+			sqlgraph.To(relationshipassertion.Table, relationshipassertion.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationshipobservation.AssertionsTable, relationshipobservation.AssertionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RelationshipObservationClient) Hooks() []Hook {
+	return c.hooks.RelationshipObservation
+}
+
+// Interceptors returns the client interceptors.
+func (c *RelationshipObservationClient) Interceptors() []Interceptor {
+	return c.inters.RelationshipObservation
+}
+
+func (c *RelationshipObservationClient) mutate(ctx context.Context, m *RelationshipObservationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RelationshipObservationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RelationshipObservationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RelationshipObservationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RelationshipObservationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RelationshipObservation mutation op: %q", m.Op())
+	}
+}
+
+// RelationshipParticipantClient is a client for the RelationshipParticipant schema.
+type RelationshipParticipantClient struct {
+	config
+}
+
+// NewRelationshipParticipantClient returns a client for the RelationshipParticipant from the given config.
+func NewRelationshipParticipantClient(c config) *RelationshipParticipantClient {
+	return &RelationshipParticipantClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `relationshipparticipant.Hooks(f(g(h())))`.
+func (c *RelationshipParticipantClient) Use(hooks ...Hook) {
+	c.hooks.RelationshipParticipant = append(c.hooks.RelationshipParticipant, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `relationshipparticipant.Intercept(f(g(h())))`.
+func (c *RelationshipParticipantClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RelationshipParticipant = append(c.inters.RelationshipParticipant, interceptors...)
+}
+
+// Create returns a builder for creating a RelationshipParticipant entity.
+func (c *RelationshipParticipantClient) Create() *RelationshipParticipantCreate {
+	mutation := newRelationshipParticipantMutation(c.config, OpCreate)
+	return &RelationshipParticipantCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RelationshipParticipant entities.
+func (c *RelationshipParticipantClient) CreateBulk(builders ...*RelationshipParticipantCreate) *RelationshipParticipantCreateBulk {
+	return &RelationshipParticipantCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RelationshipParticipantClient) MapCreateBulk(slice any, setFunc func(*RelationshipParticipantCreate, int)) *RelationshipParticipantCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RelationshipParticipantCreateBulk{err: fmt.Errorf("calling to RelationshipParticipantClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RelationshipParticipantCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RelationshipParticipantCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RelationshipParticipant.
+func (c *RelationshipParticipantClient) Update() *RelationshipParticipantUpdate {
+	mutation := newRelationshipParticipantMutation(c.config, OpUpdate)
+	return &RelationshipParticipantUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RelationshipParticipantClient) UpdateOne(_m *RelationshipParticipant) *RelationshipParticipantUpdateOne {
+	mutation := newRelationshipParticipantMutation(c.config, OpUpdateOne, withRelationshipParticipant(_m))
+	return &RelationshipParticipantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RelationshipParticipantClient) UpdateOneID(id uuid.UUID) *RelationshipParticipantUpdateOne {
+	mutation := newRelationshipParticipantMutation(c.config, OpUpdateOne, withRelationshipParticipantID(id))
+	return &RelationshipParticipantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RelationshipParticipant.
+func (c *RelationshipParticipantClient) Delete() *RelationshipParticipantDelete {
+	mutation := newRelationshipParticipantMutation(c.config, OpDelete)
+	return &RelationshipParticipantDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RelationshipParticipantClient) DeleteOne(_m *RelationshipParticipant) *RelationshipParticipantDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RelationshipParticipantClient) DeleteOneID(id uuid.UUID) *RelationshipParticipantDeleteOne {
+	builder := c.Delete().Where(relationshipparticipant.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RelationshipParticipantDeleteOne{builder}
+}
+
+// Query returns a query builder for RelationshipParticipant.
+func (c *RelationshipParticipantClient) Query() *RelationshipParticipantQuery {
+	return &RelationshipParticipantQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRelationshipParticipant},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RelationshipParticipant entity by its id.
+func (c *RelationshipParticipantClient) Get(ctx context.Context, id uuid.UUID) (*RelationshipParticipant, error) {
+	return c.Query().Where(relationshipparticipant.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RelationshipParticipantClient) GetX(ctx context.Context, id uuid.UUID) *RelationshipParticipant {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a RelationshipParticipant.
+func (c *RelationshipParticipantClient) QueryWorkspace(_m *RelationshipParticipant) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipparticipant.Table, relationshipparticipant.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipparticipant.WorkspaceTable, relationshipparticipant.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationship queries the relationship edge of a RelationshipParticipant.
+func (c *RelationshipParticipantClient) QueryRelationship(_m *RelationshipParticipant) *RelationshipQuery {
+	query := (&RelationshipClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipparticipant.Table, relationshipparticipant.FieldID, id),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipparticipant.RelationshipTable, relationshipparticipant.RelationshipColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a RelationshipParticipant.
+func (c *RelationshipParticipantClient) QueryUser(_m *RelationshipParticipant) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipparticipant.Table, relationshipparticipant.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipparticipant.UserTable, relationshipparticipant.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RelationshipParticipantClient) Hooks() []Hook {
+	return c.hooks.RelationshipParticipant
+}
+
+// Interceptors returns the client interceptors.
+func (c *RelationshipParticipantClient) Interceptors() []Interceptor {
+	return c.inters.RelationshipParticipant
+}
+
+func (c *RelationshipParticipantClient) mutate(ctx context.Context, m *RelationshipParticipantMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RelationshipParticipantCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RelationshipParticipantUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RelationshipParticipantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RelationshipParticipantDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RelationshipParticipant mutation op: %q", m.Op())
+	}
+}
+
+// RelationshipSourceStatusClient is a client for the RelationshipSourceStatus schema.
+type RelationshipSourceStatusClient struct {
+	config
+}
+
+// NewRelationshipSourceStatusClient returns a client for the RelationshipSourceStatus from the given config.
+func NewRelationshipSourceStatusClient(c config) *RelationshipSourceStatusClient {
+	return &RelationshipSourceStatusClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `relationshipsourcestatus.Hooks(f(g(h())))`.
+func (c *RelationshipSourceStatusClient) Use(hooks ...Hook) {
+	c.hooks.RelationshipSourceStatus = append(c.hooks.RelationshipSourceStatus, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `relationshipsourcestatus.Intercept(f(g(h())))`.
+func (c *RelationshipSourceStatusClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RelationshipSourceStatus = append(c.inters.RelationshipSourceStatus, interceptors...)
+}
+
+// Create returns a builder for creating a RelationshipSourceStatus entity.
+func (c *RelationshipSourceStatusClient) Create() *RelationshipSourceStatusCreate {
+	mutation := newRelationshipSourceStatusMutation(c.config, OpCreate)
+	return &RelationshipSourceStatusCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RelationshipSourceStatus entities.
+func (c *RelationshipSourceStatusClient) CreateBulk(builders ...*RelationshipSourceStatusCreate) *RelationshipSourceStatusCreateBulk {
+	return &RelationshipSourceStatusCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RelationshipSourceStatusClient) MapCreateBulk(slice any, setFunc func(*RelationshipSourceStatusCreate, int)) *RelationshipSourceStatusCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RelationshipSourceStatusCreateBulk{err: fmt.Errorf("calling to RelationshipSourceStatusClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RelationshipSourceStatusCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RelationshipSourceStatusCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RelationshipSourceStatus.
+func (c *RelationshipSourceStatusClient) Update() *RelationshipSourceStatusUpdate {
+	mutation := newRelationshipSourceStatusMutation(c.config, OpUpdate)
+	return &RelationshipSourceStatusUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RelationshipSourceStatusClient) UpdateOne(_m *RelationshipSourceStatus) *RelationshipSourceStatusUpdateOne {
+	mutation := newRelationshipSourceStatusMutation(c.config, OpUpdateOne, withRelationshipSourceStatus(_m))
+	return &RelationshipSourceStatusUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RelationshipSourceStatusClient) UpdateOneID(id uuid.UUID) *RelationshipSourceStatusUpdateOne {
+	mutation := newRelationshipSourceStatusMutation(c.config, OpUpdateOne, withRelationshipSourceStatusID(id))
+	return &RelationshipSourceStatusUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RelationshipSourceStatus.
+func (c *RelationshipSourceStatusClient) Delete() *RelationshipSourceStatusDelete {
+	mutation := newRelationshipSourceStatusMutation(c.config, OpDelete)
+	return &RelationshipSourceStatusDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RelationshipSourceStatusClient) DeleteOne(_m *RelationshipSourceStatus) *RelationshipSourceStatusDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RelationshipSourceStatusClient) DeleteOneID(id uuid.UUID) *RelationshipSourceStatusDeleteOne {
+	builder := c.Delete().Where(relationshipsourcestatus.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RelationshipSourceStatusDeleteOne{builder}
+}
+
+// Query returns a query builder for RelationshipSourceStatus.
+func (c *RelationshipSourceStatusClient) Query() *RelationshipSourceStatusQuery {
+	return &RelationshipSourceStatusQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRelationshipSourceStatus},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RelationshipSourceStatus entity by its id.
+func (c *RelationshipSourceStatusClient) Get(ctx context.Context, id uuid.UUID) (*RelationshipSourceStatus, error) {
+	return c.Query().Where(relationshipsourcestatus.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RelationshipSourceStatusClient) GetX(ctx context.Context, id uuid.UUID) *RelationshipSourceStatus {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a RelationshipSourceStatus.
+func (c *RelationshipSourceStatusClient) QueryWorkspace(_m *RelationshipSourceStatus) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipsourcestatus.Table, relationshipsourcestatus.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipsourcestatus.WorkspaceTable, relationshipsourcestatus.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a RelationshipSourceStatus.
+func (c *RelationshipSourceStatusClient) QueryUser(_m *RelationshipSourceStatus) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipsourcestatus.Table, relationshipsourcestatus.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipsourcestatus.UserTable, relationshipsourcestatus.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RelationshipSourceStatusClient) Hooks() []Hook {
+	return c.hooks.RelationshipSourceStatus
+}
+
+// Interceptors returns the client interceptors.
+func (c *RelationshipSourceStatusClient) Interceptors() []Interceptor {
+	return c.inters.RelationshipSourceStatus
+}
+
+func (c *RelationshipSourceStatusClient) mutate(ctx context.Context, m *RelationshipSourceStatusMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RelationshipSourceStatusCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RelationshipSourceStatusUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RelationshipSourceStatusUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RelationshipSourceStatusDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RelationshipSourceStatus mutation op: %q", m.Op())
+	}
+}
+
+// RelationshipStateSnapshotClient is a client for the RelationshipStateSnapshot schema.
+type RelationshipStateSnapshotClient struct {
+	config
+}
+
+// NewRelationshipStateSnapshotClient returns a client for the RelationshipStateSnapshot from the given config.
+func NewRelationshipStateSnapshotClient(c config) *RelationshipStateSnapshotClient {
+	return &RelationshipStateSnapshotClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `relationshipstatesnapshot.Hooks(f(g(h())))`.
+func (c *RelationshipStateSnapshotClient) Use(hooks ...Hook) {
+	c.hooks.RelationshipStateSnapshot = append(c.hooks.RelationshipStateSnapshot, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `relationshipstatesnapshot.Intercept(f(g(h())))`.
+func (c *RelationshipStateSnapshotClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RelationshipStateSnapshot = append(c.inters.RelationshipStateSnapshot, interceptors...)
+}
+
+// Create returns a builder for creating a RelationshipStateSnapshot entity.
+func (c *RelationshipStateSnapshotClient) Create() *RelationshipStateSnapshotCreate {
+	mutation := newRelationshipStateSnapshotMutation(c.config, OpCreate)
+	return &RelationshipStateSnapshotCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RelationshipStateSnapshot entities.
+func (c *RelationshipStateSnapshotClient) CreateBulk(builders ...*RelationshipStateSnapshotCreate) *RelationshipStateSnapshotCreateBulk {
+	return &RelationshipStateSnapshotCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RelationshipStateSnapshotClient) MapCreateBulk(slice any, setFunc func(*RelationshipStateSnapshotCreate, int)) *RelationshipStateSnapshotCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RelationshipStateSnapshotCreateBulk{err: fmt.Errorf("calling to RelationshipStateSnapshotClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RelationshipStateSnapshotCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RelationshipStateSnapshotCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RelationshipStateSnapshot.
+func (c *RelationshipStateSnapshotClient) Update() *RelationshipStateSnapshotUpdate {
+	mutation := newRelationshipStateSnapshotMutation(c.config, OpUpdate)
+	return &RelationshipStateSnapshotUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RelationshipStateSnapshotClient) UpdateOne(_m *RelationshipStateSnapshot) *RelationshipStateSnapshotUpdateOne {
+	mutation := newRelationshipStateSnapshotMutation(c.config, OpUpdateOne, withRelationshipStateSnapshot(_m))
+	return &RelationshipStateSnapshotUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RelationshipStateSnapshotClient) UpdateOneID(id uuid.UUID) *RelationshipStateSnapshotUpdateOne {
+	mutation := newRelationshipStateSnapshotMutation(c.config, OpUpdateOne, withRelationshipStateSnapshotID(id))
+	return &RelationshipStateSnapshotUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RelationshipStateSnapshot.
+func (c *RelationshipStateSnapshotClient) Delete() *RelationshipStateSnapshotDelete {
+	mutation := newRelationshipStateSnapshotMutation(c.config, OpDelete)
+	return &RelationshipStateSnapshotDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RelationshipStateSnapshotClient) DeleteOne(_m *RelationshipStateSnapshot) *RelationshipStateSnapshotDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RelationshipStateSnapshotClient) DeleteOneID(id uuid.UUID) *RelationshipStateSnapshotDeleteOne {
+	builder := c.Delete().Where(relationshipstatesnapshot.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RelationshipStateSnapshotDeleteOne{builder}
+}
+
+// Query returns a query builder for RelationshipStateSnapshot.
+func (c *RelationshipStateSnapshotClient) Query() *RelationshipStateSnapshotQuery {
+	return &RelationshipStateSnapshotQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRelationshipStateSnapshot},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RelationshipStateSnapshot entity by its id.
+func (c *RelationshipStateSnapshotClient) Get(ctx context.Context, id uuid.UUID) (*RelationshipStateSnapshot, error) {
+	return c.Query().Where(relationshipstatesnapshot.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RelationshipStateSnapshotClient) GetX(ctx context.Context, id uuid.UUID) *RelationshipStateSnapshot {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a RelationshipStateSnapshot.
+func (c *RelationshipStateSnapshotClient) QueryWorkspace(_m *RelationshipStateSnapshot) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipstatesnapshot.Table, relationshipstatesnapshot.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipstatesnapshot.WorkspaceTable, relationshipstatesnapshot.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationship queries the relationship edge of a RelationshipStateSnapshot.
+func (c *RelationshipStateSnapshotClient) QueryRelationship(_m *RelationshipStateSnapshot) *RelationshipQuery {
+	query := (&RelationshipClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipstatesnapshot.Table, relationshipstatesnapshot.FieldID, id),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipstatesnapshot.RelationshipTable, relationshipstatesnapshot.RelationshipColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a RelationshipStateSnapshot.
+func (c *RelationshipStateSnapshotClient) QueryUser(_m *RelationshipStateSnapshot) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipstatesnapshot.Table, relationshipstatesnapshot.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipstatesnapshot.UserTable, relationshipstatesnapshot.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RelationshipStateSnapshotClient) Hooks() []Hook {
+	return c.hooks.RelationshipStateSnapshot
+}
+
+// Interceptors returns the client interceptors.
+func (c *RelationshipStateSnapshotClient) Interceptors() []Interceptor {
+	return c.inters.RelationshipStateSnapshot
+}
+
+func (c *RelationshipStateSnapshotClient) mutate(ctx context.Context, m *RelationshipStateSnapshotMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RelationshipStateSnapshotCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RelationshipStateSnapshotUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RelationshipStateSnapshotUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RelationshipStateSnapshotDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RelationshipStateSnapshot mutation op: %q", m.Op())
 	}
 }
 
@@ -7457,6 +8486,86 @@ func (c *RevenueWorkspaceClient) QueryScans(_m *RevenueWorkspace) *RevenueLeakSc
 	return query
 }
 
+// QueryRelationshipParticipants queries the relationship_participants edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryRelationshipParticipants(_m *RevenueWorkspace) *RelationshipParticipantQuery {
+	query := (&RelationshipParticipantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(relationshipparticipant.Table, relationshipparticipant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.RelationshipParticipantsTable, revenueworkspace.RelationshipParticipantsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationshipObservations queries the relationship_observations edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryRelationshipObservations(_m *RevenueWorkspace) *RelationshipObservationQuery {
+	query := (&RelationshipObservationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(relationshipobservation.Table, relationshipobservation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.RelationshipObservationsTable, revenueworkspace.RelationshipObservationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationshipAssertions queries the relationship_assertions edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryRelationshipAssertions(_m *RevenueWorkspace) *RelationshipAssertionQuery {
+	query := (&RelationshipAssertionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(relationshipassertion.Table, relationshipassertion.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.RelationshipAssertionsTable, revenueworkspace.RelationshipAssertionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationshipStateSnapshots queries the relationship_state_snapshots edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryRelationshipStateSnapshots(_m *RevenueWorkspace) *RelationshipStateSnapshotQuery {
+	query := (&RelationshipStateSnapshotClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(relationshipstatesnapshot.Table, relationshipstatesnapshot.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.RelationshipStateSnapshotsTable, revenueworkspace.RelationshipStateSnapshotsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationshipSourceStatuses queries the relationship_source_statuses edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryRelationshipSourceStatuses(_m *RevenueWorkspace) *RelationshipSourceStatusQuery {
+	query := (&RelationshipSourceStatusClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(relationshipsourcestatus.Table, relationshipsourcestatus.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.RelationshipSourceStatusesTable, revenueworkspace.RelationshipSourceStatusesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *RevenueWorkspaceClient) Hooks() []Hook {
 	return c.hooks.RevenueWorkspace
@@ -8597,6 +9706,86 @@ func (c *UserClient) QueryMailSignals(_m *User) *MailSignalQuery {
 	return query
 }
 
+// QueryRelationshipParticipants queries the relationship_participants edge of a User.
+func (c *UserClient) QueryRelationshipParticipants(_m *User) *RelationshipParticipantQuery {
+	query := (&RelationshipParticipantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(relationshipparticipant.Table, relationshipparticipant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RelationshipParticipantsTable, user.RelationshipParticipantsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationshipObservations queries the relationship_observations edge of a User.
+func (c *UserClient) QueryRelationshipObservations(_m *User) *RelationshipObservationQuery {
+	query := (&RelationshipObservationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(relationshipobservation.Table, relationshipobservation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RelationshipObservationsTable, user.RelationshipObservationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationshipAssertions queries the relationship_assertions edge of a User.
+func (c *UserClient) QueryRelationshipAssertions(_m *User) *RelationshipAssertionQuery {
+	query := (&RelationshipAssertionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(relationshipassertion.Table, relationshipassertion.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RelationshipAssertionsTable, user.RelationshipAssertionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationshipStateSnapshots queries the relationship_state_snapshots edge of a User.
+func (c *UserClient) QueryRelationshipStateSnapshots(_m *User) *RelationshipStateSnapshotQuery {
+	query := (&RelationshipStateSnapshotClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(relationshipstatesnapshot.Table, relationshipstatesnapshot.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RelationshipStateSnapshotsTable, user.RelationshipStateSnapshotsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationshipSourceStatuses queries the relationship_source_statuses edge of a User.
+func (c *UserClient) QueryRelationshipSourceStatuses(_m *User) *RelationshipSourceStatusQuery {
+	query := (&RelationshipSourceStatusClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(relationshipsourcestatus.Table, relationshipsourcestatus.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RelationshipSourceStatusesTable, user.RelationshipSourceStatusesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryActionProposals queries the action_proposals edge of a User.
 func (c *UserClient) QueryActionProposals(_m *User) *ActionProposalQuery {
 	query := (&ActionProposalClient{config: c.config}).Query()
@@ -8798,9 +9987,11 @@ type (
 		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
 		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
 		OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot, Relationship,
-		RevenueAction, RevenueActionRevision, RevenueEvidence, RevenueLeakScan,
-		RevenueOutboxEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
-		SubscriptionHistory, User, UserHistory []ent.Hook
+		RelationshipAssertion, RelationshipObservation, RelationshipParticipant,
+		RelationshipSourceStatus, RelationshipStateSnapshot, RevenueAction,
+		RevenueActionRevision, RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent,
+		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
+		User, UserHistory []ent.Hook
 	}
 	inters struct {
 		ActionOutcome, ActionProposal, AgentApproval, AgentDefinition,
@@ -8811,8 +10002,10 @@ type (
 		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
 		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
 		OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot, Relationship,
-		RevenueAction, RevenueActionRevision, RevenueEvidence, RevenueLeakScan,
-		RevenueOutboxEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
-		SubscriptionHistory, User, UserHistory []ent.Interceptor
+		RelationshipAssertion, RelationshipObservation, RelationshipParticipant,
+		RelationshipSourceStatus, RelationshipStateSnapshot, RevenueAction,
+		RevenueActionRevision, RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent,
+		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
+		User, UserHistory []ent.Interceptor
 	}
 )

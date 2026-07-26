@@ -169,9 +169,10 @@ RFC 029 is the product wedge that turns the runtime and memory primitives into a
 specific buyer-facing promise: founder/operator follow-through. RFC 030 turns
 that wedge into a cross-product revenue loop with OutboundConsole research and
 governance plus the email-verification backend, while preserving independent
-repositories and databases. The control tower remains the main product point,
-with the agent builder, graph, MCP layer, Temporal runtime, research sessions,
-and verification pipelines as infrastructure underneath that promise.
+repositories and databases. RFC 036 establishes the category-level foundation:
+shared relationship state, evidence-backed projection, and equal web/desktop
+clients. The living relationship model is the main product point, with queues,
+agents, graphs, runtimes, research, and verification as capabilities beneath it.
 
 | #                                                           | Title                                              | Layer                                              | What it adds                                                                                                                                                                                                                            |
 | ----------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -179,6 +180,7 @@ and verification pipelines as infrastructure underneath that promise.
 | [030](./complete-030-revenue-memory-outbound-governance.md) | Revenue Memory and Outbound Governance Integration | rowboat-api + OutboundConsole + email verification | Three-service warm-revenue loop: relationship memory and RevenueAction queue in Rowboat, composed research/verification policy in OutboundConsole, approval-gated Gmail execution, durable outcomes, identity, privacy, and rollout.    |
 | [031](./031-tiered-mail-storage-for-revenue-memory.md)      | Tiered Mail Storage for Revenue Memory             | rowboat-api                                        | Four-layer cloud mail model for RFC 030's detection: metadata for every thread, derived signals for relevant ones, bodies by reference with a sealed short-TTL cache, permanent evidence snapshots — no mailbox copy at rest.           |
 | [032](./032-detection-sensor-integrations.md)               | Detection Sensor Integrations for Revenue Memory   | rowboat-api                                        | Post-Gmail/Outlook connector order ranked by slip-signal value: one e-sign, QBO/Xero behind the Stage-2 trigger, Slack channels, scheduling, CRM-as-enrichment, transcript import, docs engagement — LinkedIn cloud-side is a non-goal. |
+| [036](./036-relationship-state-engine.md)                   | Relationship State Engine and Client Parity        | product + rowboat-api + rowboat-www + apps/x       | Canonical customer-account state, append-only observations, precedence-bearing assertions, deterministic snapshots, evidence, corrections, source health, and web/desktop capability parity.                                            |
 
 ## Littlebird parity track
 

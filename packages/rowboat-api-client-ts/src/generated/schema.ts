@@ -996,6 +996,86 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/relationship-observations/batch": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Ingest relationship observations
+     * @description Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.
+     */
+    post: operations["ingestRelationshipObservations"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship-recommendations/{actionId}/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve a recommendation
+     * @description Relationship-intelligence alias for the governed action approval transition.
+     */
+    post: operations["approveRelationshipRecommendation"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship-recommendations/{actionId}/reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Reject a recommendation
+     * @description Relationship-intelligence alias for rejecting the current action revision.
+     */
+    post: operations["rejectRelationshipRecommendation"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship-sources/status": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get source health
+     * @description Returns freshness and failure state for each relationship evidence source.
+     */
+    get: operations["getRelationshipSourceStatuses"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/relationships": {
     parameters: {
       query?: never;
@@ -1005,15 +1085,15 @@ export interface paths {
     };
     /**
      * List relationships
-     * @description Lists relationship summaries with open-loop counts.
+     * @description Lists canonical relationship state with optional text, lifecycle, health, and engagement filters.
      */
-    get: operations["listRevenueRelationships"];
+    get: operations["listRelationships"];
     put?: never;
     /**
      * Create a relationship
-     * @description Records a relationship in the caller's workspace.
+     * @description Records a canonical relationship in the caller's workspace.
      */
-    post: operations["createRevenueRelationship"];
+    post: operations["createRelationship"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1028,10 +1108,90 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get a relationship
-     * @description Returns one relationship with its commitments and actions.
+     * Get relationship mission control
+     * @description Returns living relationship state, governed recommendations, participants, and commitments.
      */
-    get: operations["getRevenueRelationship"];
+    get: operations["getRelationship"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/changes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get relationship changes
+     * @description Returns immutable projection snapshots so operators can see what changed and why.
+     */
+    get: operations["getRelationshipChanges"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/corrections": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Correct relationship state
+     * @description Appends a user correction assertion and deterministically reprojects the relationship. Source evidence is never overwritten.
+     */
+    post: operations["correctRelationship"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/evidence/{evidenceId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Open source evidence
+     * @description Returns one observation plus its decrypted raw payload. Tenant ownership is enforced before decryption.
+     */
+    get: operations["getRelationshipEvidence"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/timeline": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get evidence timeline
+     * @description Returns the latest immutable observations for a relationship.
+     */
+    get: operations["getRelationshipTimeline"];
     put?: never;
     post?: never;
     delete?: never;
@@ -4929,6 +5089,7 @@ export interface components {
     Relationship: {
       account_domain?: string;
       actions?: components["schemas"]["RevenueAction"][];
+      assertions?: components["schemas"]["RelationshipAssertion"][];
       commitments?: components["schemas"]["Commitment"][];
       /**
        * Format: date-time
@@ -4937,7 +5098,9 @@ export interface components {
        */
       created_at: string;
       display_name: string;
+      engagement: string;
       evidences?: components["schemas"]["RevenueEvidence"][];
+      health: string;
       /**
        * Format: uuid
        * @description Stable UUID primary key.
@@ -4946,14 +5109,26 @@ export interface components {
       id: string;
       kind: string;
       /** Format: date-time */
+      last_changed_at?: string;
+      /** Format: date-time */
       last_touch_at?: string;
+      lifecycle: string;
       mail_threads?: components["schemas"]["MailThread"][];
+      milestones: string[];
+      next_action?: string;
       /** Format: date-time */
       next_action_at?: string;
+      observations?: components["schemas"]["RelationshipObservation"][];
       outbound_account_ref?: string;
       outbound_lead_id?: string;
+      participants?: components["schemas"]["RelationshipParticipant"][];
       primary_email?: string;
       resource_refs: string[];
+      risks: string[];
+      sentiment: string;
+      snapshots?: components["schemas"]["RelationshipStateSnapshot"][];
+      state_reason?: string;
+      state_version: number;
       /**
        * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
        * @example active
@@ -4969,6 +5144,255 @@ export interface components {
       /** @description User that owns this row. */
       user: components["schemas"]["User"];
       workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    RelationshipAssertion: {
+      /** Format: double */
+      confidence: number;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      dimension: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      observation?: components["schemas"]["RelationshipObservation"];
+      /**
+       * @description Reason code for the ledger entry.
+       * @example llm_settle
+       * @enum {string}
+       */
+      reason?:
+        | "llm_call"
+        | "llm_call_reserve"
+        | "llm_settle"
+        | "voice_tts"
+        | "exa_search"
+        | "grant"
+        | "refund";
+      relationship: components["schemas"]["Relationship"];
+      source_type: string;
+      supersedes_assertion_id?: string;
+      supporting_observation_ids: string[];
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      /** Format: date-time */
+      valid_from: string;
+      value: string;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description An open or completed promise attached to the relationship. */
+    RelationshipCommitment: {
+      /**
+       * @description Extraction confidence.
+       * @example 0.94
+       */
+      confidence: number;
+      /**
+       * @description Who owes the commitment.
+       * @example us_to_them
+       */
+      direction: string;
+      /**
+       * Format: date-time
+       * @description Due time.
+       * @example 2026-07-22T17:00:00Z
+       */
+      dueAt?: string | null;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      /**
+       * @description Commitment text.
+       * @example Send the security packet.
+       */
+      text: string;
+      /**
+       * @description Whether a human confirmed it.
+       * @example false
+       */
+      userConfirmed: boolean;
+    };
+    /** @description Immutable, idempotent provider evidence used to project relationship state. */
+    RelationshipObservation: {
+      /**
+       * @description Hash of summary, facts, and sealed payload.
+       * @example ab12cd34
+       */
+      contentHash: string;
+      /**
+       * @description Normalized event type.
+       * @example commitment_created
+       */
+      eventType: string;
+      /**
+       * @description Provider event id.
+       * @example message-123
+       */
+      externalId: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /** @description Provider-neutral normalized facts. */
+      normalizedFacts: {
+        [key: string]: unknown;
+      };
+      /**
+       * Format: date-time
+       * @description Provider occurrence time.
+       * @example 2026-07-18T17:30:00Z
+       */
+      occurredAt: string;
+      /**
+       * Format: date-time
+       * @description Ingestion time.
+       * @example 2026-07-18T17:31:00Z
+       */
+      receivedAt: string;
+      /**
+       * @description Evidence source.
+       * @example gmail
+       */
+      source: string;
+      /**
+       * @description Provider account id.
+       * @example me@company.com
+       */
+      sourceAccountId?: string;
+      /**
+       * @description Provider event version.
+       * @example 1
+       */
+      sourceVersion: string;
+      /**
+       * @description Bounded evidence summary.
+       * @example We promised to send the security packet.
+       */
+      summary?: string;
+    };
+    /** @description A person participating in the relationship, resolved across provider identities. */
+    RelationshipParticipant: {
+      /**
+       * @description Whether the participant is active.
+       * @example true
+       */
+      active: boolean;
+      /**
+       * @description Display name.
+       * @example Avery Chen
+       */
+      displayName: string;
+      /**
+       * @description Best-known WorkOS primary email for the user.
+       * @example user@example.com
+       */
+      email?: string;
+      /** @description Provider identity references. */
+      externalRefs: string[];
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Relationship role.
+       * @example champion
+       */
+      role: string;
+      /**
+       * @description Current title.
+       * @example VP Operations
+       */
+      title?: string;
+    };
+    /** @description Freshness and failure state for one relationship evidence source. */
+    RelationshipSourceStatus: {
+      /**
+       * @description Bounded provider error.
+       * @example
+       */
+      lastError?: string;
+      /**
+       * Format: date-time
+       * @description Newest provider event seen.
+       * @example 2026-07-26T11:58:00Z
+       */
+      lastObservationAt?: string | null;
+      /**
+       * Format: date-time
+       * @description Last successful ingestion.
+       * @example 2026-07-26T12:00:00Z
+       */
+      lastSuccessAt?: string | null;
+      /**
+       * @description Source name.
+       * @example gmail
+       */
+      source: string;
+      /**
+       * @description Provider account id.
+       * @example me@company.com
+       */
+      sourceAccountId: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+    };
+    /** @description Immutable projection snapshot created only when material relationship state changes. */
+    RelationshipStateSnapshot: {
+      /** @description Assertions selected by deterministic precedence. */
+      assertionIds: string[];
+      /** @description Material dimensions that changed. */
+      changedDimensions: string[];
+      /**
+       * Format: date-time
+       * @description Snapshot creation time.
+       * @example 2026-07-25T16:00:00Z
+       */
+      createdAt: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Opaque one-time OAuth state/session ticket.
+       * @example state_abc123
+       */
+      state: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Relationship state version.
+       * @example 4
+       */
+      version: number;
     };
     /** @description One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval. */
     RevenueAction: {
@@ -5602,7 +6026,7 @@ export interface components {
         [key: string]: unknown;
       };
     };
-    /** @description Longitudinal revenue-memory relationship. The enriched commercial lead stays canonical in OutboundConsole and is referenced, never duplicated. */
+    /** @description Canonical, living relationship state projected from append-only evidence. CRM and communication systems remain evidence sources; this object is the shared model rendered by web and desktop. */
     RevenueRelationship: {
       /**
        * @description Account domain.
@@ -5614,6 +6038,18 @@ export interface components {
        * @example Jordan Buyer
        */
       displayName: string;
+      /**
+       * @description Direction of engagement.
+       * @example declining
+       * @enum {string}
+       */
+      engagement: "unknown" | "increasing" | "steady" | "declining" | "dormant";
+      /**
+       * @description Explainable health state; never a magic score.
+       * @example needs_attention
+       * @enum {string}
+       */
+      health: "unknown" | "healthy" | "needs_attention" | "critical";
       /**
        * Format: uuid
        * @description Stable UUID primary key.
@@ -5628,10 +6064,37 @@ export interface components {
       kind: "person" | "company" | "customer" | "opportunity" | "referral" | "partner";
       /**
        * Format: date-time
+       * @description Last material state change.
+       * @example 2026-07-25T16:00:00Z
+       */
+      lastChangedAt?: string | null;
+      /**
+       * Format: date-time
        * @description Last observed touch.
        * @example 2026-04-10T15:00:00Z
        */
       lastTouchAt?: string | null;
+      /**
+       * @description Commercial lifecycle.
+       * @example evaluation
+       * @enum {string}
+       */
+      lifecycle:
+        | "prospect"
+        | "evaluation"
+        | "contracting"
+        | "onboarding"
+        | "active_customer"
+        | "renewal"
+        | "churned"
+        | "former_customer";
+      /** @description Reached relationship milestones. */
+      milestones: string[];
+      /**
+       * @description Recommended next action.
+       * @example Confirm the security review owner.
+       */
+      nextAction?: string;
       /**
        * Format: date-time
        * @description Next planned action.
@@ -5648,6 +6111,24 @@ export interface components {
        * @example buyer@example.com
        */
       primaryEmail?: string;
+      /** @description Current relationship risks. */
+      risks: string[];
+      /**
+       * @description Observed sentiment.
+       * @example mixed
+       * @enum {string}
+       */
+      sentiment: "unknown" | "positive" | "mixed" | "negative";
+      /**
+       * @description Evidence-backed explanation of the projected state.
+       * @example Security review was promised, but no owner or meeting exists.
+       */
+      stateReason?: string;
+      /**
+       * @description Monotonic projection version.
+       * @example 4
+       */
+      stateVersion: number;
       /**
        * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
        * @example active
@@ -6152,6 +6633,11 @@ export interface components {
       /** @description Third-party OAuth connections for the user. */
       oauth_connections?: components["schemas"]["OAuthConnection"][];
       policy_decision_snapshots?: components["schemas"]["PolicyDecisionSnapshot"][];
+      relationship_assertions?: components["schemas"]["RelationshipAssertion"][];
+      relationship_observations?: components["schemas"]["RelationshipObservation"][];
+      relationship_participants?: components["schemas"]["RelationshipParticipant"][];
+      relationship_source_statuses?: components["schemas"]["RelationshipSourceStatus"][];
+      relationship_state_snapshots?: components["schemas"]["RelationshipStateSnapshot"][];
       relationships?: components["schemas"]["Relationship"][];
       revenue_action_revisions?: components["schemas"]["RevenueActionRevision"][];
       revenue_actions?: components["schemas"]["RevenueAction"][];
@@ -9319,9 +9805,237 @@ export interface operations {
       503: components["responses"]["503"];
     };
   };
-  listRevenueRelationships: {
+  ingestRelationshipObservations: {
     parameters: {
       query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Observation batch. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "observations": [
+         *         {
+         *           "accountDomain": "acme.com",
+         *           "displayName": "Acme",
+         *           "eventType": "commitment_created",
+         *           "externalId": "message-123",
+         *           "source": "gmail"
+         *         }
+         *       ]
+         *     }
+         */
+        "application/json": {
+          /** @description Provider-neutral observations. */
+          observations: {
+            /**
+             * @description Exact account domain.
+             * @example acme.com
+             */
+            accountDomain?: string;
+            /**
+             * @description Account display name for first ingestion.
+             * @example Acme
+             */
+            displayName?: string;
+            /**
+             * @description Normalized event type.
+             * @example commitment_created
+             */
+            eventType: string;
+            /**
+             * @description Provider event id.
+             * @example message-123
+             */
+            externalId: string;
+            /** @description Provider-neutral facts. */
+            normalizedFacts?: {
+              [key: string]: unknown;
+            };
+            /**
+             * Format: date-time
+             * @description Occurrence time.
+             * @example 2026-07-18T17:30:00Z
+             */
+            occurredAt?: string;
+            /** @description Raw provider payload, sealed at rest. */
+            payload?: {
+              [key: string]: unknown;
+            };
+            /**
+             * @description Primary contact email.
+             * @example avery@acme.com
+             */
+            primaryEmail?: string;
+            /**
+             * Format: uuid
+             * @description Known relationship id.
+             * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            relationshipId?: string;
+            /**
+             * @description Evidence source.
+             * @example gmail
+             */
+            source: string;
+            /**
+             * @description Provider account id.
+             * @example me@company.com
+             */
+            sourceAccountId?: string;
+            /**
+             * @description Provider event version.
+             * @example 1
+             */
+            sourceVersion?: string;
+            /**
+             * @description Bounded evidence summary.
+             * @example We promised the security packet.
+             */
+            summary?: string;
+          }[];
+        };
+      };
+    };
+    responses: {
+      /** @description Ingestion results. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      409: components["responses"]["409"];
+    };
+  };
+  approveRelationshipRecommendation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Recommendation/action id. */
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Approval options. */
+    requestBody?: {
+      content: {
+        /**
+         * @example {
+         *       "acceptRisk": false
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Explicitly accept a review-required decision.
+           * @example false
+           */
+          acceptRisk?: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description Approved recommendation. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueAction"];
+        };
+      };
+      401: components["responses"]["401"];
+      409: components["responses"]["409"];
+    };
+  };
+  rejectRelationshipRecommendation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Recommendation/action id. */
+        actionId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Rejection. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "reason": "Not the right next move."
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Rejection reason.
+           * @example Not the right next move.
+           */
+          reason: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Rejected recommendation. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueAction"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      409: components["responses"]["409"];
+    };
+  };
+  getRelationshipSourceStatuses: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Evidence source health. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Sources. */
+            sources?: components["schemas"]["RelationshipSourceStatus"][];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+    };
+  };
+  listRelationships: {
+    parameters: {
+      query?: {
+        /** @description Account, domain, or contact search. */
+        q?: string;
+        /** @description Lifecycle filter. */
+        lifecycle?: string;
+        /** @description Health filter. */
+        health?: string;
+        /** @description Engagement filter. */
+        engagement?: string;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -9343,7 +10057,7 @@ export interface operations {
       401: components["responses"]["401"];
     };
   };
-  createRevenueRelationship: {
+  createRelationship: {
     parameters: {
       query?: never;
       header?: never;
@@ -9404,7 +10118,7 @@ export interface operations {
       401: components["responses"]["401"];
     };
   };
-  getRevenueRelationship: {
+  getRelationship: {
     parameters: {
       query?: never;
       header?: never;
@@ -9425,7 +10139,160 @@ export interface operations {
           "application/json": {
             /** @description Actions for this relationship. */
             actions?: components["schemas"]["RevenueAction"][];
+            /** @description Open and completed commitments. */
+            commitments?: components["schemas"]["RelationshipCommitment"][];
+            /** @description Relationship participants. */
+            participants?: components["schemas"]["RelationshipParticipant"][];
+            /** @description Governed recommendations. */
+            recommendations?: components["schemas"]["RevenueAction"][];
             relationship?: components["schemas"]["RevenueRelationship"];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  getRelationshipChanges: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description State changes. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Snapshots. */
+            snapshots?: components["schemas"]["RelationshipStateSnapshot"][];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  correctRelationship: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Correction. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "dimension": "health",
+         *       "reason": "The review happened yesterday.",
+         *       "value": "healthy"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Corrected state dimension.
+           * @example health
+           * @enum {string}
+           */
+          dimension: "lifecycle" | "engagement" | "sentiment" | "health" | "next_action";
+          /**
+           * @description Why the model is wrong.
+           * @example The review happened yesterday.
+           */
+          reason: string;
+          /**
+           * @description Correct value.
+           * @example healthy
+           */
+          value: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Reprojected relationship. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueRelationship"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  getRelationshipEvidence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+        /** @description Observation id. */
+        evidenceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Source evidence. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            observation?: components["schemas"]["RelationshipObservation"];
+            /** @description Decrypted provider payload. */
+            payload?: {
+              [key: string]: unknown;
+            };
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  getRelationshipTimeline: {
+    parameters: {
+      query?: {
+        /** @description Maximum observations (1-100). */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Evidence timeline. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Observations. */
+            observations?: components["schemas"]["RelationshipObservation"][];
           };
         };
       };

@@ -1,66 +1,118 @@
-# Oppulence — Product Direction One-Pager
+# Oppulence — Relationship Intelligence for Customer-Facing Teams
 
-**The governed revenue-recovery agent for law firms — it remembers every promise in your practice and chases the money, with your approval.**
+**Oppulence maintains an accurate, living model of every customer relationship and tells the team what needs action.**
 
-_July 2026 · Synthesis of validated strategy, current build state, and analysis of 1,749 dead-startup autopsies (loot-drop.io dataset)_
+_A Playbook Media product · July 2026_
 
----
+## The problem
 
-## The product: one loop, sold as an outcome
+Relationship state is fragmented.
 
-**Scan → Queue → Approve → Receipt.**
+Email knows what was said. Calendar knows what was scheduled. Slack knows what
+changed informally. The CRM knows the declared stage. Meeting notes know what
+was promised. Individual teammates know the rest.
 
-1. **Scan** — watch email, calendar, and billing; find the money going quiet (ghosted proposals, unpaid invoices, dormant clients), each finding with a dollar amount and source evidence.
-2. **Queue** — 3–5 drafted chases per week, in the owner's voice, ranked by value and urgency.
-3. **Approve** — one click, policy-gated. Nothing sends without it; money actions need step-up confirmation.
-4. **Receipt** — a monthly statement of what came back.
+Every tool owns a slice, but no system owns the relationship. The result is not
+merely missed follow-up. Teams act from stale state: a champion changed roles,
+an objection was never resolved, an onboarding promise is late, or a healthy
+customer has quietly become a renewal risk.
 
-Demand is proven: of 218 dead startups in this problem space, only ~11% died of "no market need." The battle is differentiation — and the differentiator is the **relationship ledger** (every promise, chase, objection, and outcome), the one asset a competitor cannot rebuild.
+## The product
 
-## The wedge: law firms first
+Oppulence models customer relationships directly.
 
-Triple-confirmed strongest entry point:
+Integrations are evidence streams. They append observations to a durable
+account history. Oppulence reconciles those observations into an explainable
+state: lifecycle, engagement, sentiment, health, participants, commitments,
+risks, milestones, and the next recommended action.
 
-- Highest positive demand signal in B2B ops ideas (legal workflow/doc/coordination tools lead the vote clusters).
-- Near-zero incumbent density in revenue-chasing — Clio/MyCase own practice management; we **integrate**, never compete.
-- ICP fit: high-value relationships, chronic unbilled/unchased work, owner-operators who feel every lost $40k.
+The first experience is **Account Mission Control**:
 
-The "law firm preset" is not a new product: chase templates (unbilled hours, stale engagement letters, dormant referral sources), a Clio/QuickBooks connector, and a compliance posture — we never touch trust accounts. **No money movement is a feature here.** Agencies and trades follow on the same engine.
+- what the relationship is now;
+- what changed since the last review;
+- the evidence supporting every material claim;
+- which commitments and risks remain open;
+- who matters and what role they play;
+- what action should happen next;
+- whether each source is connected and current.
 
-## The architecture: two surfaces, one product
+There is no opaque relationship score. Health is qualitative, evidence-backed,
+and correctable.
 
-| Surface                     | Role                                                                                                                                                                             |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Dashboard (web-primary)** | The buying surface: queue, approvals, receipts. This is what the $99 buys.                                                                                                       |
-| **Desktop app**             | The context engine: mailbox, meetings, knowledge graph, Live Notes — feeding the ledger richer evidence than any web-only competitor. Bundled depth moat; never sold standalone. |
+## Two equal clients
 
-The graveyard is unambiguous on form factor: standalone email/calendar/notes apps get absorbed by platforms (Mailbox, Sunrise, Xobni), and plugin-on-platform architectures get obsolesced (Xobni, Niles, Threadable). **Own surface + own ledger is the survivable shape.**
+| Web                                                                                           | Desktop                                                                                                                                           |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Portfolio review, team coordination, account mission control, approvals, and broad questions. | The same account state and workflows, plus ambient context, local knowledge, meeting capture, voice notes, browser context, and native execution. |
 
-## Pricing
+Web and desktop are at capability parity for relationship work. Platform-native
+affordances differ, but state, evidence, corrections, recommendations, and
+approvals synchronize through the same backend.
 
-**Watch free · Chase $99/mo + metered on executed chases.** Failed-startup rebuild data runs 187 subscription vs 27 usage-metered — the hybrid is aligned with what works and differentiated where it counts: we charge on recovered-revenue actions, the one meter a services principal never resents.
+The desktop is not a secondary viewer. It is a high-value observation and
+action node: the account being viewed can become assistant context, a recorded
+meeting can become evidence, and an approved action can execute through the
+native workspace.
 
-## Build sequence
+## The operating loop
 
-Connect + Execute rails exist; Scan, Queue, and billing wiring don't.
+**Observe → Assert → Project → Explain → Recommend → Approve → Act → Learn**
 
-1. **Scan** on existing Connect rails — a batch weekly slip report unlocks the free tier and the demo motion ("Book a Revenue Leak Scan" is already the CTA).
-2. **Queue + approvals** — the paid loop.
-3. **Billing wiring** — metered execution.
-4. **Law-firm preset** — templates + Clio connector; first GTM push.
-5. Defer Teams/ROI dashboards — expansion, not wedge.
+1. **Observe** — Gmail, Calendar, Slack, HubSpot, meetings, notes, voice, and
+   desktop context emit immutable observations.
+2. **Assert** — explicit source facts, deterministic rules, AI inferences, and
+   user corrections become provenance-bearing claims.
+3. **Project** — deterministic code produces the current relationship state.
+4. **Explain** — every state and change links to supporting evidence.
+5. **Recommend** — Oppulence proposes the safest valuable next action.
+6. **Approve** — external actions wait for a human decision.
+7. **Act** — approved email, Slack, and CRM actions execute idempotently.
+8. **Learn** — replies, meetings, edits, corrections, and outcomes update the
+   same relationship history.
 
-## Explicitly rejected
+## Initial customer and boundary
 
-- Horizontal "AI assistant" positioning — the competition kill zone ($5M-median graveyard, 56% of lane deaths).
-- Full back-office/accounting scope — killed NetBooks ($33M), Kyte.
-- Money movement or regulated collections — killed Plastiq ($226M), GetBack ($600M).
-- Any Gmail-add-on form factor.
+The first buyer is a customer-facing team that manages valuable relationships
+across fragmented systems: founder-led sales, account management, customer
+success, partnerships, and high-touch services.
 
-## Competitive note: Littlebird (littlebird.ai)
+V1 models customer accounts from prospect through former customer. It is not a
+general social graph and it does not replace the CRM. The CRM remains
+authoritative for its records; Oppulence owns the longitudinal relationship
+state and the evidence explaining what should happen next.
 
-Littlebird ("Remember everything: the AI search engine for your life") overlaps only with the **context-engine half** — screen observation, meeting notes, chat-with-context, briefings — sold horizontally to seven personas at $17–100/mo usage credits. It has **none of the wedge**: no leak detection with dollar amounts, no proactive queue, no approval-gated execution (their pages confirm no autonomous sends), no recovery receipts, no commercial ledger, no vertical, no outcome pricing. It _validates_ the decision to never sell the desktop standalone — that layer is contested by Littlebird, Rewind-style recorders, OS-level recall, and big-lab memory features. Their screen-recording posture is a liability in our vertical (privilege/confidentiality review blocks it at law firms); our consented, evidence-snapshot model is the sellable posture. **Watch trigger:** they already integrate Stripe/Mercury/Ramp/Close — if Littlebird ships a proactive queue + governed sending + money outcomes, reassess. Until then: validator of the layer, not a competitor to the wedge.
+## Defensibility
 
----
+Summaries and drafts are commodities. The compounding asset is the permissioned
+history connecting:
 
-_Evidence base: loot-drop.io dataset — 1,749 dead-startup autopsies (~8,700 extracted insights), 1,000 rebuild ideas, 944 community votes. Top convergent lesson across the corpus: verticalize (62% of autopsies), focus, distribute through partners, lead with trust. Access + full findings: memory notes `loot-drop-dataset` / `loot-drop-graveyard-findings`._
+> evidence → assertion → state change → commitment → recommendation → human
+> decision → execution → outcome
+
+Each correction improves the relationship model. Each approved or rejected
+recommendation teaches the system how the team operates. Each outcome makes the
+next recommendation more useful. A competitor can copy a feature; it cannot
+reconstruct that longitudinal, governed history.
+
+## Product discipline
+
+- AI proposes assertions; deterministic code owns canonical state.
+- User corrections outrank source facts, derivations, and AI inference.
+- Ambiguous identities require review and never auto-merge.
+- Raw evidence is encrypted and tenant-isolated.
+- Every external action is approval-gated and audited.
+- Revenue recovery is a detector over relationship state, not the category.
+- Neither web nor desktop ships a core relationship workflow alone.
+
+## Success
+
+The first proof is not the number of summaries generated. It is whether a team
+can open an account and trust the answer to four questions:
+
+1. What is the state of this relationship?
+2. What changed?
+3. What evidence supports that?
+4. What needs action now?
+
+If Oppulence can maintain those answers more accurately over time, it becomes
+the relationship intelligence layer that customer-facing work currently lacks.

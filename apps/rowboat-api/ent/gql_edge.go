@@ -616,6 +616,186 @@ func (_m *Relationship) MailThreads(ctx context.Context) (result []*MailThread, 
 	return result, err
 }
 
+func (_m *Relationship) Participants(ctx context.Context) (result []*RelationshipParticipant, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedParticipants(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ParticipantsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryParticipants().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Relationship) Observations(ctx context.Context) (result []*RelationshipObservation, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedObservations(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ObservationsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryObservations().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Relationship) Assertions(ctx context.Context) (result []*RelationshipAssertion, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedAssertions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.AssertionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAssertions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Relationship) Snapshots(ctx context.Context) (result []*RelationshipStateSnapshot, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedSnapshots(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.SnapshotsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QuerySnapshots().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipAssertion) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipAssertion) Relationship(ctx context.Context) (*Relationship, error) {
+	result, err := _m.Edges.RelationshipOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationship().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipAssertion) Observation(ctx context.Context) (*RelationshipObservation, error) {
+	result, err := _m.Edges.ObservationOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryObservation().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *RelationshipAssertion) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipObservation) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipObservation) Relationship(ctx context.Context) (*Relationship, error) {
+	result, err := _m.Edges.RelationshipOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationship().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipObservation) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipObservation) Assertions(ctx context.Context) (result []*RelationshipAssertion, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedAssertions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.AssertionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAssertions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipParticipant) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipParticipant) Relationship(ctx context.Context) (*Relationship, error) {
+	result, err := _m.Edges.RelationshipOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationship().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipParticipant) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipSourceStatus) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipSourceStatus) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipStateSnapshot) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipStateSnapshot) Relationship(ctx context.Context) (*Relationship, error) {
+	result, err := _m.Edges.RelationshipOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationship().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipStateSnapshot) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *RevenueAction) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
 	result, err := _m.Edges.WorkspaceOrErr()
 	if IsNotLoaded(err) {
@@ -900,6 +1080,66 @@ func (_m *RevenueWorkspace) Scans(ctx context.Context) (result []*RevenueLeakSca
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryScans().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) RelationshipParticipants(ctx context.Context) (result []*RelationshipParticipant, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationshipParticipants(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipParticipantsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationshipParticipants().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) RelationshipObservations(ctx context.Context) (result []*RelationshipObservation, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationshipObservations(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipObservationsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationshipObservations().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) RelationshipAssertions(ctx context.Context) (result []*RelationshipAssertion, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationshipAssertions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipAssertionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationshipAssertions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) RelationshipStateSnapshots(ctx context.Context) (result []*RelationshipStateSnapshot, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationshipStateSnapshots(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipStateSnapshotsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationshipStateSnapshots().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) RelationshipSourceStatuses(ctx context.Context) (result []*RelationshipSourceStatus, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationshipSourceStatuses(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipSourceStatusesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationshipSourceStatuses().All(ctx)
 	}
 	return result, err
 }
@@ -1340,6 +1580,66 @@ func (_m *User) MailSignals(ctx context.Context) (result []*MailSignal, err erro
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryMailSignals().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RelationshipParticipants(ctx context.Context) (result []*RelationshipParticipant, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationshipParticipants(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipParticipantsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationshipParticipants().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RelationshipObservations(ctx context.Context) (result []*RelationshipObservation, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationshipObservations(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipObservationsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationshipObservations().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RelationshipAssertions(ctx context.Context) (result []*RelationshipAssertion, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationshipAssertions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipAssertionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationshipAssertions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RelationshipStateSnapshots(ctx context.Context) (result []*RelationshipStateSnapshot, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationshipStateSnapshots(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipStateSnapshotsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationshipStateSnapshots().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RelationshipSourceStatuses(ctx context.Context) (result []*RelationshipSourceStatus, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationshipSourceStatuses(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipSourceStatusesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationshipSourceStatuses().All(ctx)
 	}
 	return result, err
 }

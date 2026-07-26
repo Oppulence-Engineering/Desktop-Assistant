@@ -1,0 +1,373 @@
+{
+  "observations": [
+    {
+      "displayName": "Acme",
+      "primaryEmail": "avery@acme.com",
+      "accountDomain": "acme.com",
+      "source": "hubspot",
+      "sourceAccountId": "marketing-demo",
+      "externalId": "acme-deal-evaluation",
+      "sourceVersion": "1",
+      "eventType": "deal_stage_changed",
+      "occurredAt": "2026-07-18T15:00:00Z",
+      "receivedAt": "2026-07-18T15:01:00Z",
+      "summary": "Acme moved into evaluation after pricing review.",
+      "normalizedFacts": {
+        "dealValue": 40000,
+        "currency": "USD",
+        "stage": "evaluation"
+      },
+      "participants": [
+        {
+          "displayName": "Avery Chen",
+          "email": "avery@acme.com",
+          "role": "champion",
+          "title": "VP Operations",
+          "externalRefs": ["hubspot:contact:acme-avery"]
+        },
+        {
+          "displayName": "Morgan Lee",
+          "email": "morgan@acme.com",
+          "role": "decision_maker",
+          "title": "CFO",
+          "externalRefs": ["hubspot:contact:acme-morgan"]
+        }
+      ],
+      "assertions": [
+        {
+          "dimension": "lifecycle",
+          "value": "evaluation",
+          "sourceType": "source_fact",
+          "confidence": 1,
+          "validFrom": "2026-07-18T15:00:00Z"
+        },
+        {
+          "dimension": "engagement",
+          "value": "declining",
+          "sourceType": "deterministic",
+          "confidence": 0.92,
+          "validFrom": "2026-07-25T16:00:00Z"
+        },
+        {
+          "dimension": "sentiment",
+          "value": "mixed",
+          "sourceType": "ai_inference",
+          "confidence": 0.84,
+          "validFrom": "2026-07-25T16:00:00Z"
+        },
+        {
+          "dimension": "health",
+          "value": "needs_attention",
+          "sourceType": "deterministic",
+          "confidence": 0.96,
+          "reason": "The security review was promised for July 22, but no owner or meeting exists.",
+          "validFrom": "2026-07-25T16:00:00Z"
+        },
+        {
+          "dimension": "summary",
+          "value": "A $40k evaluation is waiting on a security review after pricing approval.",
+          "sourceType": "ai_inference",
+          "confidence": 0.91,
+          "validFrom": "2026-07-25T16:00:00Z"
+        },
+        {
+          "dimension": "next_action",
+          "value": "Ask Avery to confirm the security-review owner and offer two meeting times.",
+          "sourceType": "ai_inference",
+          "confidence": 0.93,
+          "validFrom": "2026-07-25T16:00:00Z"
+        },
+        {
+          "dimension": "risk",
+          "value": "Security review has no owner",
+          "sourceType": "deterministic",
+          "confidence": 0.97,
+          "validFrom": "2026-07-25T16:00:00Z"
+        },
+        {
+          "dimension": "milestone",
+          "value": "Pricing approved",
+          "sourceType": "source_fact",
+          "confidence": 1,
+          "validFrom": "2026-07-18T15:00:00Z"
+        }
+      ]
+    },
+    {
+      "displayName": "Acme",
+      "primaryEmail": "avery@acme.com",
+      "accountDomain": "acme.com",
+      "source": "gmail",
+      "sourceAccountId": "marketing-demo",
+      "externalId": "acme-security-promise",
+      "sourceVersion": "1",
+      "eventType": "commitment_created",
+      "occurredAt": "2026-07-20T17:30:00Z",
+      "receivedAt": "2026-07-20T17:31:00Z",
+      "summary": "We promised to send the revised security packet by July 22.",
+      "normalizedFacts": {
+        "promise": "Send revised security packet",
+        "dueAt": "2026-07-22T17:00:00Z"
+      }
+    },
+    {
+      "displayName": "Acme",
+      "primaryEmail": "avery@acme.com",
+      "accountDomain": "acme.com",
+      "source": "calendar",
+      "sourceAccountId": "marketing-demo",
+      "externalId": "acme-security-meeting-missing",
+      "sourceVersion": "1",
+      "eventType": "meeting_missing",
+      "occurredAt": "2026-07-23T13:00:00Z",
+      "receivedAt": "2026-07-23T13:02:00Z",
+      "summary": "No security-review meeting was scheduled after the promise.",
+      "normalizedFacts": {
+        "expectedMeeting": "Security review",
+        "scheduled": false
+      }
+    },
+    {
+      "displayName": "Acme",
+      "primaryEmail": "avery@acme.com",
+      "accountDomain": "acme.com",
+      "source": "slack",
+      "sourceAccountId": "marketing-demo",
+      "externalId": "acme-champion-quiet",
+      "sourceVersion": "1",
+      "eventType": "engagement_declined",
+      "occurredAt": "2026-07-25T16:00:00Z",
+      "receivedAt": "2026-07-25T16:01:00Z",
+      "summary": "No champion reply after the pricing follow-up.",
+      "normalizedFacts": {
+        "quietDays": 6,
+        "channel": "deal-acme"
+      }
+    },
+    {
+      "displayName": "Beta Corp",
+      "primaryEmail": "samira@betacorp.com",
+      "accountDomain": "betacorp.com",
+      "source": "crm",
+      "sourceAccountId": "marketing-demo",
+      "externalId": "beta-invoice-overdue",
+      "sourceVersion": "1",
+      "eventType": "invoice_overdue",
+      "occurredAt": "2026-07-24T14:00:00Z",
+      "receivedAt": "2026-07-24T14:02:00Z",
+      "summary": "The $14k implementation invoice is 21 days overdue.",
+      "normalizedFacts": {
+        "amount": 14000,
+        "currency": "USD",
+        "overdueDays": 21
+      },
+      "participants": [
+        {
+          "displayName": "Samira Patel",
+          "email": "samira@betacorp.com",
+          "role": "owner",
+          "title": "Controller",
+          "externalRefs": ["stripe:customer:beta"]
+        }
+      ],
+      "assertions": [
+        {
+          "dimension": "lifecycle",
+          "value": "active_customer",
+          "sourceType": "source_fact",
+          "confidence": 1,
+          "validFrom": "2026-07-03T14:00:00Z"
+        },
+        {
+          "dimension": "engagement",
+          "value": "dormant",
+          "sourceType": "deterministic",
+          "confidence": 0.94,
+          "validFrom": "2026-07-24T14:00:00Z"
+        },
+        {
+          "dimension": "sentiment",
+          "value": "unknown",
+          "sourceType": "ai_inference",
+          "confidence": 0.62,
+          "validFrom": "2026-07-24T14:00:00Z"
+        },
+        {
+          "dimension": "health",
+          "value": "critical",
+          "sourceType": "deterministic",
+          "confidence": 0.99,
+          "reason": "The implementation invoice is 21 days overdue and no payment owner is active.",
+          "validFrom": "2026-07-24T14:00:00Z"
+        },
+        {
+          "dimension": "summary",
+          "value": "A $14k implementation invoice is overdue with no current payment plan.",
+          "sourceType": "ai_inference",
+          "confidence": 0.9,
+          "validFrom": "2026-07-24T14:00:00Z"
+        },
+        {
+          "dimension": "next_action",
+          "value": "Confirm the payment owner and ask for a dated payment plan.",
+          "sourceType": "ai_inference",
+          "confidence": 0.94,
+          "validFrom": "2026-07-24T14:00:00Z"
+        },
+        {
+          "dimension": "risk",
+          "value": "Invoice is 21 days overdue",
+          "sourceType": "source_fact",
+          "confidence": 1,
+          "validFrom": "2026-07-24T14:00:00Z"
+        },
+        {
+          "dimension": "milestone",
+          "value": "Implementation delivered",
+          "sourceType": "source_fact",
+          "confidence": 1,
+          "validFrom": "2026-07-03T14:00:00Z"
+        }
+      ]
+    },
+    {
+      "displayName": "Northstar Labs",
+      "primaryEmail": "dana@northstar.example",
+      "accountDomain": "northstar.example",
+      "source": "hubspot",
+      "sourceAccountId": "marketing-demo",
+      "externalId": "northstar-renewal-window",
+      "sourceVersion": "1",
+      "eventType": "renewal_window_opened",
+      "occurredAt": "2026-07-25T11:00:00Z",
+      "receivedAt": "2026-07-25T11:01:00Z",
+      "summary": "The $28k renewal window opens Friday.",
+      "normalizedFacts": {
+        "renewalValue": 28000,
+        "currency": "USD",
+        "renewalDate": "2026-08-28"
+      },
+      "participants": [
+        {
+          "displayName": "Dana Ortiz",
+          "email": "dana@northstar.example",
+          "role": "champion",
+          "title": "Director of Operations",
+          "externalRefs": ["hubspot:contact:northstar-dana"]
+        }
+      ],
+      "assertions": [
+        {
+          "dimension": "lifecycle",
+          "value": "renewal",
+          "sourceType": "source_fact",
+          "confidence": 1,
+          "validFrom": "2026-07-25T11:00:00Z"
+        },
+        {
+          "dimension": "engagement",
+          "value": "steady",
+          "sourceType": "deterministic",
+          "confidence": 0.89,
+          "validFrom": "2026-07-25T11:00:00Z"
+        },
+        {
+          "dimension": "sentiment",
+          "value": "positive",
+          "sourceType": "ai_inference",
+          "confidence": 0.88,
+          "validFrom": "2026-07-25T11:00:00Z"
+        },
+        {
+          "dimension": "health",
+          "value": "healthy",
+          "sourceType": "deterministic",
+          "confidence": 0.93,
+          "reason": "The renewal has an active champion, recent engagement, and no overdue commitment.",
+          "validFrom": "2026-07-25T11:00:00Z"
+        },
+        {
+          "dimension": "summary",
+          "value": "A $28k renewal enters planning with an active champion and clear timing.",
+          "sourceType": "ai_inference",
+          "confidence": 0.9,
+          "validFrom": "2026-07-25T11:00:00Z"
+        },
+        {
+          "dimension": "next_action",
+          "value": "Book the renewal planning session and confirm the stakeholder map.",
+          "sourceType": "ai_inference",
+          "confidence": 0.91,
+          "validFrom": "2026-07-25T11:00:00Z"
+        },
+        {
+          "dimension": "risk",
+          "value": "Champion changes teams next month",
+          "sourceType": "source_fact",
+          "confidence": 0.86,
+          "validFrom": "2026-07-25T11:00:00Z"
+        },
+        {
+          "dimension": "milestone",
+          "value": "Renewal window opened",
+          "sourceType": "source_fact",
+          "confidence": 1,
+          "validFrom": "2026-07-25T11:00:00Z"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "accountDomain": "acme.com",
+      "actionType": "proposal_nudge",
+      "channel": "email",
+      "reason": "Six quiet days after a dated promise, and legal approval removed the last known blocker.",
+      "recipientEmail": "avery@acme.com",
+      "proposedSubject": "Acme security review — next steps",
+      "proposedMessage": "Hi Avery — I have the revised security packet ready. Can we confirm the review owner and use Tuesday at 10:00 or Wednesday at 14:00 to close the remaining questions?",
+      "executionMode": "draft",
+      "priorityScore": 94,
+      "priorityComponents": {
+        "value": 35,
+        "urgency": 34,
+        "relationship": 25
+      },
+      "dueAt": "2026-07-27T14:00:00Z"
+    },
+    {
+      "accountDomain": "betacorp.com",
+      "actionType": "customer_risk",
+      "channel": "email",
+      "reason": "The $14k implementation invoice is 21 days overdue without a dated payment plan.",
+      "recipientEmail": "samira@betacorp.com",
+      "proposedSubject": "Beta Corp payment plan",
+      "proposedMessage": "Hi Samira — could you confirm the payment owner and share a dated plan for the outstanding implementation invoice?",
+      "executionMode": "draft",
+      "priorityScore": 89,
+      "priorityComponents": {
+        "value": 29,
+        "urgency": 40,
+        "relationship": 20
+      },
+      "dueAt": "2026-07-27T15:00:00Z"
+    },
+    {
+      "accountDomain": "northstar.example",
+      "actionType": "warm_follow_up",
+      "channel": "email",
+      "reason": "The $28k renewal window opens Friday and the stakeholder map should be refreshed before Dana changes teams.",
+      "recipientEmail": "dana@northstar.example",
+      "proposedSubject": "Northstar renewal planning",
+      "proposedMessage": "Hi Dana — before the renewal window opens, can we refresh the stakeholder map and book the planning session?",
+      "executionMode": "draft",
+      "priorityScore": 72,
+      "priorityComponents": {
+        "value": 32,
+        "urgency": 18,
+        "relationship": 22
+      },
+      "dueAt": "2026-07-31T16:00:00Z"
+    }
+  ]
+}

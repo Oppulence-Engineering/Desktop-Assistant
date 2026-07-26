@@ -1,7 +1,7 @@
 {
-  "name": "solomon-ai",
-  "productName": "Solomon AI",
-  "description": "AI coworker with memory",
+  "name": "oppulence",
+  "productName": "Oppulence",
+  "description": "Relationship intelligence for customer-facing teams",
   "type": "module",
   "version": "0.1.21",
   "main": ".package/dist/main.cjs",

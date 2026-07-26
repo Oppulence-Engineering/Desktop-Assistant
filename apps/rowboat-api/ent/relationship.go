@@ -45,8 +45,28 @@ type Relationship struct {
 	LastTouchAt *time.Time `json:"last_touch_at,omitempty"`
 	// NextActionAt holds the value of the "next_action_at" field.
 	NextActionAt *time.Time `json:"next_action_at,omitempty"`
+	// NextAction holds the value of the "next_action" field.
+	NextAction string `json:"next_action,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
+	// Lifecycle holds the value of the "lifecycle" field.
+	Lifecycle string `json:"lifecycle,omitempty"`
+	// Engagement holds the value of the "engagement" field.
+	Engagement string `json:"engagement,omitempty"`
+	// Sentiment holds the value of the "sentiment" field.
+	Sentiment string `json:"sentiment,omitempty"`
+	// Health holds the value of the "health" field.
+	Health string `json:"health,omitempty"`
+	// StateReason holds the value of the "state_reason" field.
+	StateReason string `json:"state_reason,omitempty"`
+	// StateVersion holds the value of the "state_version" field.
+	StateVersion int `json:"state_version,omitempty"`
+	// LastChangedAt holds the value of the "last_changed_at" field.
+	LastChangedAt *time.Time `json:"last_changed_at,omitempty"`
+	// Risks holds the value of the "risks" field.
+	Risks []string `json:"risks,omitempty"`
+	// Milestones holds the value of the "milestones" field.
+	Milestones []string `json:"milestones,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RelationshipQuery when eager-loading is set.
 	Edges                RelationshipEdges `json:"edges"`
@@ -69,16 +89,28 @@ type RelationshipEdges struct {
 	Evidences []*RevenueEvidence `json:"evidences,omitempty"`
 	// MailThreads holds the value of the mail_threads edge.
 	MailThreads []*MailThread `json:"mail_threads,omitempty"`
+	// Participants holds the value of the participants edge.
+	Participants []*RelationshipParticipant `json:"participants,omitempty"`
+	// Observations holds the value of the observations edge.
+	Observations []*RelationshipObservation `json:"observations,omitempty"`
+	// Assertions holds the value of the assertions edge.
+	Assertions []*RelationshipAssertion `json:"assertions,omitempty"`
+	// Snapshots holds the value of the snapshots edge.
+	Snapshots []*RelationshipStateSnapshot `json:"snapshots,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [10]bool
 	// totalCount holds the count of the edges above.
-	totalCount [6]map[string]int
+	totalCount [10]map[string]int
 
-	namedCommitments map[string][]*Commitment
-	namedActions     map[string][]*RevenueAction
-	namedEvidences   map[string][]*RevenueEvidence
-	namedMailThreads map[string][]*MailThread
+	namedCommitments  map[string][]*Commitment
+	namedActions      map[string][]*RevenueAction
+	namedEvidences    map[string][]*RevenueEvidence
+	namedMailThreads  map[string][]*MailThread
+	namedParticipants map[string][]*RelationshipParticipant
+	namedObservations map[string][]*RelationshipObservation
+	namedAssertions   map[string][]*RelationshipAssertion
+	namedSnapshots    map[string][]*RelationshipStateSnapshot
 }
 
 // WorkspaceOrErr returns the Workspace value or an error if the edge
@@ -139,16 +171,54 @@ func (e RelationshipEdges) MailThreadsOrErr() ([]*MailThread, error) {
 	return nil, &NotLoadedError{edge: "mail_threads"}
 }
 
+// ParticipantsOrErr returns the Participants value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) ParticipantsOrErr() ([]*RelationshipParticipant, error) {
+	if e.loadedTypes[6] {
+		return e.Participants, nil
+	}
+	return nil, &NotLoadedError{edge: "participants"}
+}
+
+// ObservationsOrErr returns the Observations value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) ObservationsOrErr() ([]*RelationshipObservation, error) {
+	if e.loadedTypes[7] {
+		return e.Observations, nil
+	}
+	return nil, &NotLoadedError{edge: "observations"}
+}
+
+// AssertionsOrErr returns the Assertions value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) AssertionsOrErr() ([]*RelationshipAssertion, error) {
+	if e.loadedTypes[8] {
+		return e.Assertions, nil
+	}
+	return nil, &NotLoadedError{edge: "assertions"}
+}
+
+// SnapshotsOrErr returns the Snapshots value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) SnapshotsOrErr() ([]*RelationshipStateSnapshot, error) {
+	if e.loadedTypes[9] {
+		return e.Snapshots, nil
+	}
+	return nil, &NotLoadedError{edge: "snapshots"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Relationship) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case relationship.FieldResourceRefs:
+		case relationship.FieldResourceRefs, relationship.FieldRisks, relationship.FieldMilestones:
 			values[i] = new([]byte)
-		case relationship.FieldKind, relationship.FieldDisplayName, relationship.FieldPrimaryEmail, relationship.FieldAccountDomain, relationship.FieldOutboundLeadID, relationship.FieldOutboundAccountRef, relationship.FieldSummary, relationship.FieldStatus:
+		case relationship.FieldStateVersion:
+			values[i] = new(sql.NullInt64)
+		case relationship.FieldKind, relationship.FieldDisplayName, relationship.FieldPrimaryEmail, relationship.FieldAccountDomain, relationship.FieldOutboundLeadID, relationship.FieldOutboundAccountRef, relationship.FieldSummary, relationship.FieldNextAction, relationship.FieldStatus, relationship.FieldLifecycle, relationship.FieldEngagement, relationship.FieldSentiment, relationship.FieldHealth, relationship.FieldStateReason:
 			values[i] = new(sql.NullString)
-		case relationship.FieldCreatedAt, relationship.FieldUpdatedAt, relationship.FieldLastTouchAt, relationship.FieldNextActionAt:
+		case relationship.FieldCreatedAt, relationship.FieldUpdatedAt, relationship.FieldLastTouchAt, relationship.FieldNextActionAt, relationship.FieldLastChangedAt:
 			values[i] = new(sql.NullTime)
 		case relationship.FieldID:
 			values[i] = new(uuid.UUID)
@@ -253,11 +323,76 @@ func (_m *Relationship) assignValues(columns []string, values []any) error {
 				_m.NextActionAt = new(time.Time)
 				*_m.NextActionAt = value.Time
 			}
+		case relationship.FieldNextAction:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field next_action", values[i])
+			} else if value.Valid {
+				_m.NextAction = value.String
+			}
 		case relationship.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				_m.Status = value.String
+			}
+		case relationship.FieldLifecycle:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field lifecycle", values[i])
+			} else if value.Valid {
+				_m.Lifecycle = value.String
+			}
+		case relationship.FieldEngagement:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field engagement", values[i])
+			} else if value.Valid {
+				_m.Engagement = value.String
+			}
+		case relationship.FieldSentiment:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field sentiment", values[i])
+			} else if value.Valid {
+				_m.Sentiment = value.String
+			}
+		case relationship.FieldHealth:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field health", values[i])
+			} else if value.Valid {
+				_m.Health = value.String
+			}
+		case relationship.FieldStateReason:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field state_reason", values[i])
+			} else if value.Valid {
+				_m.StateReason = value.String
+			}
+		case relationship.FieldStateVersion:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field state_version", values[i])
+			} else if value.Valid {
+				_m.StateVersion = int(value.Int64)
+			}
+		case relationship.FieldLastChangedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field last_changed_at", values[i])
+			} else if value.Valid {
+				_m.LastChangedAt = new(time.Time)
+				*_m.LastChangedAt = value.Time
+			}
+		case relationship.FieldRisks:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field risks", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Risks); err != nil {
+					return fmt.Errorf("unmarshal field risks: %w", err)
+				}
+			}
+		case relationship.FieldMilestones:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field milestones", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Milestones); err != nil {
+					return fmt.Errorf("unmarshal field milestones: %w", err)
+				}
 			}
 		case relationship.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -314,6 +449,26 @@ func (_m *Relationship) QueryEvidences() *RevenueEvidenceQuery {
 // QueryMailThreads queries the "mail_threads" edge of the Relationship entity.
 func (_m *Relationship) QueryMailThreads() *MailThreadQuery {
 	return NewRelationshipClient(_m.config).QueryMailThreads(_m)
+}
+
+// QueryParticipants queries the "participants" edge of the Relationship entity.
+func (_m *Relationship) QueryParticipants() *RelationshipParticipantQuery {
+	return NewRelationshipClient(_m.config).QueryParticipants(_m)
+}
+
+// QueryObservations queries the "observations" edge of the Relationship entity.
+func (_m *Relationship) QueryObservations() *RelationshipObservationQuery {
+	return NewRelationshipClient(_m.config).QueryObservations(_m)
+}
+
+// QueryAssertions queries the "assertions" edge of the Relationship entity.
+func (_m *Relationship) QueryAssertions() *RelationshipAssertionQuery {
+	return NewRelationshipClient(_m.config).QueryAssertions(_m)
+}
+
+// QuerySnapshots queries the "snapshots" edge of the Relationship entity.
+func (_m *Relationship) QuerySnapshots() *RelationshipStateSnapshotQuery {
+	return NewRelationshipClient(_m.config).QuerySnapshots(_m)
 }
 
 // Update returns a builder for updating this Relationship.
@@ -378,8 +533,40 @@ func (_m *Relationship) String() string {
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
+	builder.WriteString("next_action=")
+	builder.WriteString(_m.NextAction)
+	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)
+	builder.WriteString(", ")
+	builder.WriteString("lifecycle=")
+	builder.WriteString(_m.Lifecycle)
+	builder.WriteString(", ")
+	builder.WriteString("engagement=")
+	builder.WriteString(_m.Engagement)
+	builder.WriteString(", ")
+	builder.WriteString("sentiment=")
+	builder.WriteString(_m.Sentiment)
+	builder.WriteString(", ")
+	builder.WriteString("health=")
+	builder.WriteString(_m.Health)
+	builder.WriteString(", ")
+	builder.WriteString("state_reason=")
+	builder.WriteString(_m.StateReason)
+	builder.WriteString(", ")
+	builder.WriteString("state_version=")
+	builder.WriteString(fmt.Sprintf("%v", _m.StateVersion))
+	builder.WriteString(", ")
+	if v := _m.LastChangedAt; v != nil {
+		builder.WriteString("last_changed_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("risks=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Risks))
+	builder.WriteString(", ")
+	builder.WriteString("milestones=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Milestones))
 	builder.WriteByte(')')
 	return builder.String()
 }
@@ -477,6 +664,102 @@ func (_m *Relationship) appendNamedMailThreads(name string, edges ...*MailThread
 		_m.Edges.namedMailThreads[name] = []*MailThread{}
 	} else {
 		_m.Edges.namedMailThreads[name] = append(_m.Edges.namedMailThreads[name], edges...)
+	}
+}
+
+// NamedParticipants returns the Participants named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedParticipants(name string) ([]*RelationshipParticipant, error) {
+	if _m.Edges.namedParticipants == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedParticipants[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedParticipants(name string, edges ...*RelationshipParticipant) {
+	if _m.Edges.namedParticipants == nil {
+		_m.Edges.namedParticipants = make(map[string][]*RelationshipParticipant)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedParticipants[name] = []*RelationshipParticipant{}
+	} else {
+		_m.Edges.namedParticipants[name] = append(_m.Edges.namedParticipants[name], edges...)
+	}
+}
+
+// NamedObservations returns the Observations named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedObservations(name string) ([]*RelationshipObservation, error) {
+	if _m.Edges.namedObservations == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedObservations[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedObservations(name string, edges ...*RelationshipObservation) {
+	if _m.Edges.namedObservations == nil {
+		_m.Edges.namedObservations = make(map[string][]*RelationshipObservation)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedObservations[name] = []*RelationshipObservation{}
+	} else {
+		_m.Edges.namedObservations[name] = append(_m.Edges.namedObservations[name], edges...)
+	}
+}
+
+// NamedAssertions returns the Assertions named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedAssertions(name string) ([]*RelationshipAssertion, error) {
+	if _m.Edges.namedAssertions == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedAssertions[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedAssertions(name string, edges ...*RelationshipAssertion) {
+	if _m.Edges.namedAssertions == nil {
+		_m.Edges.namedAssertions = make(map[string][]*RelationshipAssertion)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedAssertions[name] = []*RelationshipAssertion{}
+	} else {
+		_m.Edges.namedAssertions[name] = append(_m.Edges.namedAssertions[name], edges...)
+	}
+}
+
+// NamedSnapshots returns the Snapshots named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedSnapshots(name string) ([]*RelationshipStateSnapshot, error) {
+	if _m.Edges.namedSnapshots == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedSnapshots[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedSnapshots(name string, edges ...*RelationshipStateSnapshot) {
+	if _m.Edges.namedSnapshots == nil {
+		_m.Edges.namedSnapshots = make(map[string][]*RelationshipStateSnapshot)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedSnapshots[name] = []*RelationshipStateSnapshot{}
+	} else {
+		_m.Edges.namedSnapshots[name] = append(_m.Edges.namedSnapshots[name], edges...)
 	}
 }
 

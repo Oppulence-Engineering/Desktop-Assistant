@@ -280,8 +280,42 @@ const relationshipListLimit = 200
 // each with its open queue actions eager-loaded so the caller can report
 // open-loop counts.
 func (s *Service) ListRelationships(ctx context.Context, u *ent.User) ([]*ent.Relationship, error) {
-	return s.client.Relationship.Query().
-		Where(relationship.HasUserWith(user.IDEQ(u.ID))).
+	return s.ListRelationshipsFiltered(ctx, u, RelationshipListFilter{})
+}
+
+type RelationshipListFilter struct {
+	Query      string
+	Lifecycle  string
+	Health     string
+	Engagement string
+}
+
+// ListRelationshipsFiltered returns account mission-control rows with
+// explainable-state filters shared by web and desktop.
+func (s *Service) ListRelationshipsFiltered(
+	ctx context.Context,
+	u *ent.User,
+	filter RelationshipListFilter,
+) ([]*ent.Relationship, error) {
+	q := s.client.Relationship.Query().
+		Where(relationship.HasUserWith(user.IDEQ(u.ID)))
+	if value := strings.TrimSpace(filter.Lifecycle); value != "" {
+		q.Where(relationship.LifecycleEQ(value))
+	}
+	if value := strings.TrimSpace(filter.Health); value != "" {
+		q.Where(relationship.HealthEQ(value))
+	}
+	if value := strings.TrimSpace(filter.Engagement); value != "" {
+		q.Where(relationship.EngagementEQ(value))
+	}
+	if value := strings.ToLower(strings.TrimSpace(filter.Query)); value != "" {
+		q.Where(relationship.Or(
+			relationship.DisplayNameContainsFold(value),
+			relationship.AccountDomainContainsFold(value),
+			relationship.PrimaryEmailContainsFold(value),
+		))
+	}
+	return q.
 		WithActions(func(q *ent.RevenueActionQuery) {
 			q.Where(revenueaction.QueueStatusEQ(QueueOpen))
 		}).
@@ -295,6 +329,7 @@ func (s *Service) GetRelationship(ctx context.Context, id uuid.UUID) (*ent.Relat
 	rel, err := s.client.Relationship.Query().
 		Where(relationship.IDEQ(id)).
 		WithCommitments().
+		WithParticipants().
 		WithActions(func(q *ent.RevenueActionQuery) {
 			q.Order(ent.Desc(revenueaction.FieldPriorityScore))
 		}).

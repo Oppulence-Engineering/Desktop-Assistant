@@ -27,9 +27,9 @@ function GoogleLogo() {
 }
 
 const FEATURES = [
-  "Remembers every commercial relationship",
-  "Surfaces who needs attention, and why",
-  "Prepares the next action for your approval",
+  "Maintains living customer relationship state",
+  "Shows what changed and why it matters",
+  "Prepares evidence-backed actions for approval",
 ];
 
 export function AuthShell({
@@ -110,9 +110,7 @@ export function AuthShell({
         </div>
 
         {/* Mobile-only tagline (brand panel is hidden below lg) */}
-        <p className="font-mono text-xs text-primary/40 lg:hidden">
-          revenue memory and execution os
-        </p>
+        <p className="font-mono text-xs text-primary/40 lg:hidden">relationship intelligence</p>
       </div>
 
       {/* Brand panel — always dark, regardless of theme */}
@@ -139,11 +137,9 @@ export function AuthShell({
         </div>
 
         <div className="relative max-w-md space-y-6">
-          <p className="font-mono text-xs text-oppulence-orange">
-            [revenue memory and execution os]
-          </p>
+          <p className="font-mono text-xs text-oppulence-orange">[relationship intelligence]</p>
           <h2 className="font-display text-4xl leading-tight text-white">
-            Turn forgotten relationships into revenue.
+            Know every customer relationship. Know what needs action.
           </h2>
           <ul className="space-y-3">
             {FEATURES.map((feature) => (
@@ -155,7 +151,9 @@ export function AuthShell({
           </ul>
         </div>
 
-        <p className="relative font-mono text-xs text-white/30">oppulence.io</p>
+        <p className="relative font-mono text-xs text-white/30">
+          A Playbook Media product · oppulence.io
+        </p>
       </div>
     </main>
   );

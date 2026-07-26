@@ -1,0 +1,54 @@
+{
+  "account": {
+    "displayName": "Acme",
+    "accountDomain": "acme.com",
+    "lifecycle": "evaluation",
+    "engagement": "declining",
+    "sentiment": "mixed",
+    "health": "needs_attention",
+    "stateReason": "The security review was promised for July 22, but no owner or meeting exists.",
+    "nextAction": "Ask Avery to confirm the security-review owner and offer two meeting times.",
+    "risks": ["Security review has no owner", "Champion engagement declined after pricing"],
+    "milestones": ["Proposal shared", "Pricing reviewed"]
+  },
+  "participants": [
+    {
+      "displayName": "Avery Chen",
+      "email": "avery@acme.com",
+      "role": "champion",
+      "title": "VP Operations"
+    },
+    {
+      "displayName": "Morgan Lee",
+      "email": "morgan@acme.com",
+      "role": "decision_maker",
+      "title": "CFO"
+    }
+  ],
+  "timeline": [
+    {
+      "source": "hubspot",
+      "eventType": "deal_stage_changed",
+      "summary": "Acme moved into evaluation.",
+      "occurredAt": "2026-07-08T15:00:00Z"
+    },
+    {
+      "source": "gmail",
+      "eventType": "commitment_created",
+      "summary": "We promised to send the security packet by July 22.",
+      "occurredAt": "2026-07-18T17:30:00Z"
+    },
+    {
+      "source": "calendar",
+      "eventType": "meeting_missing",
+      "summary": "No security-review meeting was scheduled.",
+      "occurredAt": "2026-07-23T13:00:00Z"
+    },
+    {
+      "source": "slack",
+      "eventType": "engagement_declined",
+      "summary": "No champion reply after the pricing follow-up.",
+      "occurredAt": "2026-07-25T16:00:00Z"
+    }
+  ]
+}

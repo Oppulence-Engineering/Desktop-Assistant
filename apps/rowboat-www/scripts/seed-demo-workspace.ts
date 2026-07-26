@@ -790,8 +790,8 @@ Create a background task that scans customer emails and meeting notes for unreso
   api: {
     user: {
       id: uuid("user:oppulence-demo"),
-      email: "demo@oppulence.ai",
-      workosUserId: "user_oppulence_demo",
+      email: "dev@solomon-ai.co",
+      workosUserId: "user_dev_1",
       workosOrgId: "org_oppulence_demo",
     },
     subscription: {

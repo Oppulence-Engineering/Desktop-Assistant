@@ -9,10 +9,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
 )
 
-// Relationship is Rowboat's longitudinal revenue-memory object (RFC 030). It
-// stores warm-relationship context and stable external references; the
-// enriched commercial lead stays canonical in OutboundConsole and is only
-// referenced here, never duplicated.
+// Relationship is Oppulence's canonical customer-account identity (RFC 036).
+// Source systems remain authoritative for their own records; this object owns
+// the longitudinal, explainable state projected from their observations.
 type Relationship struct{ ent.Schema }
 
 // Mixin of the Relationship.
@@ -36,9 +35,32 @@ func (Relationship) Fields() []ent.Field {
 		field.Text("summary").Optional(),
 		field.Time("last_touch_at").Optional().Nillable(),
 		field.Time("next_action_at").Optional().Nillable(),
+		field.Text("next_action").Optional(),
 		field.String("status").
 			Default("active").
 			Validate(oneOfRevenue("status", "active", "dormant", "closed", "archived")),
+		field.String("lifecycle").
+			Default("prospect").
+			Validate(oneOfRevenue("lifecycle",
+				"prospect", "evaluation", "contracting", "onboarding",
+				"active_customer", "renewal", "churned", "former_customer")),
+		field.String("engagement").
+			Default("unknown").
+			Validate(oneOfRevenue("engagement",
+				"unknown", "increasing", "steady", "declining", "dormant")),
+		field.String("sentiment").
+			Default("unknown").
+			Validate(oneOfRevenue("sentiment",
+				"unknown", "positive", "mixed", "negative")),
+		field.String("health").
+			Default("unknown").
+			Validate(oneOfRevenue("health",
+				"unknown", "healthy", "needs_attention", "critical")),
+		field.Text("state_reason").Optional(),
+		field.Int("state_version").Default(0).NonNegative(),
+		field.Time("last_changed_at").Optional().Nillable(),
+		field.JSON("risks", []string{}).Default([]string{}),
+		field.JSON("milestones", []string{}).Default([]string{}),
 	}
 }
 
@@ -54,6 +76,14 @@ func (Relationship) Edges() []ent.Edge {
 			StorageKey(edge.Column("relationship_id")),
 		edge.To("evidences", RevenueEvidence.Type),
 		edge.To("mail_threads", MailThread.Type).
+			StorageKey(edge.Column("relationship_id")),
+		edge.To("participants", RelationshipParticipant.Type).
+			StorageKey(edge.Column("relationship_id")),
+		edge.To("observations", RelationshipObservation.Type).
+			StorageKey(edge.Column("relationship_id")),
+		edge.To("assertions", RelationshipAssertion.Type).
+			StorageKey(edge.Column("relationship_id")),
+		edge.To("snapshots", RelationshipStateSnapshot.Type).
 			StorageKey(edge.Column("relationship_id")),
 	}
 }

@@ -48,6 +48,16 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Get("/", h.ListRelationships)
 		r.Post("/", h.CreateRelationship)
 		r.Get("/{relationshipId}", h.GetRelationship)
+		r.Get("/{relationshipId}/timeline", h.RelationshipTimeline)
+		r.Get("/{relationshipId}/changes", h.RelationshipChanges)
+		r.Get("/{relationshipId}/evidence/{evidenceId}", h.RelationshipEvidence)
+		r.Post("/{relationshipId}/corrections", h.CorrectRelationship)
+	})
+	r.Post("/v1/relationship-observations/batch", h.IngestRelationshipObservations)
+	r.Get("/v1/relationship-sources/status", h.RelationshipSourceStatuses)
+	r.Route("/v1/relationship-recommendations", func(r chi.Router) {
+		r.Post("/{recommendationId}/approve", h.ApproveRecommendation)
+		r.Post("/{recommendationId}/reject", h.RejectRecommendation)
 	})
 	r.Route("/v1/revenue-actions", func(r chi.Router) {
 		r.Get("/", h.ListActions)
@@ -108,6 +118,16 @@ type relationshipDTO struct {
 	LastTouchAt   *time.Time `json:"lastTouchAt,omitempty"`
 	NextActionAt  *time.Time `json:"nextActionAt,omitempty"`
 	OpenActions   int        `json:"openActions,omitempty"`
+	NextAction    string     `json:"nextAction,omitempty"`
+	Lifecycle     string     `json:"lifecycle"`
+	Engagement    string     `json:"engagement"`
+	Sentiment     string     `json:"sentiment"`
+	Health        string     `json:"health"`
+	StateReason   string     `json:"stateReason,omitempty"`
+	StateVersion  int        `json:"stateVersion"`
+	LastChangedAt *time.Time `json:"lastChangedAt,omitempty"`
+	Risks         []string   `json:"risks"`
+	Milestones    []string   `json:"milestones"`
 }
 
 func relationshipToDTO(rel *ent.Relationship) relationshipDTO {
@@ -121,7 +141,124 @@ func relationshipToDTO(rel *ent.Relationship) relationshipDTO {
 		Status:        rel.Status,
 		LastTouchAt:   rel.LastTouchAt,
 		NextActionAt:  rel.NextActionAt,
+		NextAction:    rel.NextAction,
+		Lifecycle:     rel.Lifecycle,
+		Engagement:    rel.Engagement,
+		Sentiment:     rel.Sentiment,
+		Health:        rel.Health,
+		StateReason:   rel.StateReason,
+		StateVersion:  rel.StateVersion,
+		LastChangedAt: rel.LastChangedAt,
+		Risks:         rel.Risks,
+		Milestones:    rel.Milestones,
 	}
+}
+
+type participantDTO struct {
+	ID           string   `json:"id"`
+	DisplayName  string   `json:"displayName"`
+	Email        string   `json:"email,omitempty"`
+	Role         string   `json:"role"`
+	Title        string   `json:"title,omitempty"`
+	Active       bool     `json:"active"`
+	ExternalRefs []string `json:"externalRefs"`
+}
+
+func participantToDTO(participant *ent.RelationshipParticipant) participantDTO {
+	return participantDTO{
+		ID:           participant.ID.String(),
+		DisplayName:  participant.DisplayName,
+		Email:        participant.Email,
+		Role:         participant.Role,
+		Title:        participant.Title,
+		Active:       participant.Active,
+		ExternalRefs: participant.ExternalRefs,
+	}
+}
+
+type commitmentDTO struct {
+	ID            string     `json:"id"`
+	Direction     string     `json:"direction"`
+	Text          string     `json:"text"`
+	Status        string     `json:"status"`
+	DueAt         *time.Time `json:"dueAt,omitempty"`
+	Confidence    float64    `json:"confidence"`
+	UserConfirmed bool       `json:"userConfirmed"`
+}
+
+func commitmentToDTO(commitment *ent.Commitment) commitmentDTO {
+	return commitmentDTO{
+		ID:            commitment.ID.String(),
+		Direction:     commitment.Direction,
+		Text:          commitment.Text,
+		Status:        commitment.Status,
+		DueAt:         commitment.DueAt,
+		Confidence:    commitment.Confidence,
+		UserConfirmed: commitment.UserConfirmed,
+	}
+}
+
+type observationDTO struct {
+	ID              string         `json:"id"`
+	Source          string         `json:"source"`
+	SourceAccountID string         `json:"sourceAccountId,omitempty"`
+	ExternalID      string         `json:"externalId"`
+	SourceVersion   string         `json:"sourceVersion"`
+	EventType       string         `json:"eventType"`
+	OccurredAt      time.Time      `json:"occurredAt"`
+	ReceivedAt      time.Time      `json:"receivedAt"`
+	Summary         string         `json:"summary,omitempty"`
+	NormalizedFacts map[string]any `json:"normalizedFacts"`
+	ContentHash     string         `json:"contentHash"`
+}
+
+func observationToDTO(observation *ent.RelationshipObservation) observationDTO {
+	facts := map[string]any{}
+	_ = json.Unmarshal([]byte(observation.NormalizedFactsJSON), &facts)
+	return observationDTO{
+		ID:              observation.ID.String(),
+		Source:          observation.Source,
+		SourceAccountID: observation.SourceAccountID,
+		ExternalID:      observation.ExternalID,
+		SourceVersion:   observation.SourceVersion,
+		EventType:       observation.EventType,
+		OccurredAt:      observation.OccurredAt,
+		ReceivedAt:      observation.ReceivedAt,
+		Summary:         observation.Summary,
+		NormalizedFacts: facts,
+		ContentHash:     observation.ContentHash,
+	}
+}
+
+type snapshotDTO struct {
+	ID                string         `json:"id"`
+	Version           int            `json:"version"`
+	State             map[string]any `json:"state"`
+	ChangedDimensions []string       `json:"changedDimensions"`
+	AssertionIDs      []string       `json:"assertionIds"`
+	CreatedAt         time.Time      `json:"createdAt"`
+}
+
+func snapshotToDTO(snapshot *ent.RelationshipStateSnapshot) snapshotDTO {
+	state := map[string]any{}
+	_ = json.Unmarshal([]byte(snapshot.StateJSON), &state)
+	return snapshotDTO{
+		ID:                snapshot.ID.String(),
+		Version:           snapshot.Version,
+		State:             state,
+		ChangedDimensions: snapshot.ChangedDimensions,
+		AssertionIDs:      snapshot.AssertionIds,
+		CreatedAt:         snapshot.CreatedAt,
+	}
+}
+
+type sourceStatusDTO struct {
+	Source            string     `json:"source"`
+	SourceAccountID   string     `json:"sourceAccountId"`
+	Status            string     `json:"status"`
+	LastSuccessAt     *time.Time `json:"lastSuccessAt,omitempty"`
+	LastObservationAt *time.Time `json:"lastObservationAt,omitempty"`
+	LastError         string     `json:"lastError,omitempty"`
 }
 
 // relationshipToDTOWithOpen is relationshipToDTO plus the open-loop count,
@@ -573,7 +710,12 @@ func (h *Handler) ListRelationships(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	rels, err := h.svc.ListRelationships(r.Context(), u)
+	rels, err := h.svc.ListRelationshipsFiltered(r.Context(), u, RelationshipListFilter{
+		Query:      r.URL.Query().Get("q"),
+		Lifecycle:  r.URL.Query().Get("lifecycle"),
+		Health:     r.URL.Query().Get("health"),
+		Engagement: r.URL.Query().Get("engagement"),
+	})
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
@@ -639,10 +781,236 @@ func (h *Handler) GetRelationship(w http.ResponseWriter, r *http.Request) {
 			actions = append(actions, actionToDTO(a))
 		}
 	}
+	participants := make([]participantDTO, 0)
+	if list, err := rel.Edges.ParticipantsOrErr(); err == nil {
+		for _, participant := range list {
+			participants = append(participants, participantToDTO(participant))
+		}
+	}
+	commitments := make([]commitmentDTO, 0)
+	if list, err := rel.Edges.CommitmentsOrErr(); err == nil {
+		for _, commitment := range list {
+			commitments = append(commitments, commitmentToDTO(commitment))
+		}
+	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{
-		"relationship": dto,
-		"actions":      actions,
+		"relationship":    dto,
+		"actions":         actions,
+		"recommendations": actions,
+		"participants":    participants,
+		"commitments":     commitments,
 	})
+}
+
+// IngestRelationshipObservations is the shared adapter/desktop append-only
+// ingestion contract.
+func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Observations []struct {
+			RelationshipID  string                         `json:"relationshipId"`
+			DisplayName     string                         `json:"displayName"`
+			PrimaryEmail    string                         `json:"primaryEmail"`
+			AccountDomain   string                         `json:"accountDomain"`
+			Source          string                         `json:"source"`
+			SourceAccountID string                         `json:"sourceAccountId"`
+			ExternalID      string                         `json:"externalId"`
+			SourceVersion   string                         `json:"sourceVersion"`
+			EventType       string                         `json:"eventType"`
+			OccurredAt      *time.Time                     `json:"occurredAt"`
+			ReceivedAt      *time.Time                     `json:"receivedAt"`
+			Summary         string                         `json:"summary"`
+			Facts           map[string]any                 `json:"normalizedFacts"`
+			Payload         json.RawMessage                `json:"payload"`
+			Participants    []RelationshipParticipantInput `json:"participants"`
+			Assertions      []RelationshipAssertionInput   `json:"assertions"`
+		} `json:"observations"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	inputs := make([]RelationshipObservationInput, 0, len(body.Observations))
+	for _, observation := range body.Observations {
+		input := RelationshipObservationInput{
+			DisplayName:     observation.DisplayName,
+			PrimaryEmail:    observation.PrimaryEmail,
+			AccountDomain:   observation.AccountDomain,
+			Source:          observation.Source,
+			SourceAccountID: observation.SourceAccountID,
+			ExternalID:      observation.ExternalID,
+			SourceVersion:   observation.SourceVersion,
+			EventType:       observation.EventType,
+			Summary:         observation.Summary,
+			Facts:           observation.Facts,
+			Payload:         observation.Payload,
+			Participants:    observation.Participants,
+			Assertions:      observation.Assertions,
+		}
+		if observation.RelationshipID != "" {
+			id, err := uuid.Parse(observation.RelationshipID)
+			if err != nil {
+				httpx.Error(w, http.StatusBadRequest, "invalid relationshipId", "invalid_id")
+				return
+			}
+			input.RelationshipID = id
+		}
+		if observation.OccurredAt != nil {
+			input.OccurredAt = *observation.OccurredAt
+		}
+		if observation.ReceivedAt != nil {
+			input.ReceivedAt = *observation.ReceivedAt
+		}
+		inputs = append(inputs, input)
+	}
+	results, err := h.svc.IngestRelationshipObservations(r.Context(), u, inputs)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	out := make([]map[string]any, 0, len(results))
+	for _, result := range results {
+		out = append(out, map[string]any{
+			"observation":  observationToDTO(result.Observation),
+			"relationship": relationshipToDTO(result.Relationship),
+			"duplicate":    result.Duplicate,
+		})
+	}
+	httpx.WriteJSON(w, http.StatusCreated, map[string]any{"results": out})
+}
+
+func (h *Handler) RelationshipTimeline(w http.ResponseWriter, r *http.Request) {
+	if _, ok := h.viewer(w, r); !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	limit := 50
+	if value := r.URL.Query().Get("limit"); value != "" {
+		if parsed, err := strconv.Atoi(value); err == nil {
+			limit = parsed
+		}
+	}
+	observations, err := h.svc.RelationshipTimeline(r.Context(), id, limit)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	out := make([]observationDTO, 0, len(observations))
+	for _, observation := range observations {
+		out = append(out, observationToDTO(observation))
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"observations": out})
+}
+
+func (h *Handler) RelationshipChanges(w http.ResponseWriter, r *http.Request) {
+	if _, ok := h.viewer(w, r); !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	snapshots, err := h.svc.RelationshipChanges(r.Context(), id)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	out := make([]snapshotDTO, 0, len(snapshots))
+	for _, snapshot := range snapshots {
+		out = append(out, snapshotToDTO(snapshot))
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"snapshots": out})
+}
+
+func (h *Handler) RelationshipEvidence(w http.ResponseWriter, r *http.Request) {
+	if _, ok := h.viewer(w, r); !ok {
+		return
+	}
+	relationshipID, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	evidenceID, ok := pathUUID(w, r, "evidenceId")
+	if !ok {
+		return
+	}
+	observation, payload, err := h.svc.RelationshipObservationPayload(
+		r.Context(), relationshipID, evidenceID,
+	)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	var decoded any
+	if len(payload) > 0 {
+		if err := json.Unmarshal(payload, &decoded); err != nil {
+			decoded = string(payload)
+		}
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{
+		"observation": observationToDTO(observation),
+		"payload":     decoded,
+	})
+}
+
+func (h *Handler) CorrectRelationship(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	var body struct {
+		Dimension             string `json:"dimension"`
+		Value                 string `json:"value"`
+		Reason                string `json:"reason"`
+		SupersedesAssertionID string `json:"supersedesAssertionId"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	rel, err := h.svc.CorrectRelationship(r.Context(), u, id, RelationshipCorrectionInput{
+		Dimension:             body.Dimension,
+		Value:                 body.Value,
+		Reason:                body.Reason,
+		SupersedesAssertionID: body.SupersedesAssertionID,
+	})
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, relationshipToDTO(rel))
+}
+
+func (h *Handler) RelationshipSourceStatuses(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	statuses, err := h.svc.RelationshipSourceStatuses(r.Context(), u)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	out := make([]sourceStatusDTO, 0, len(statuses))
+	for _, status := range statuses {
+		out = append(out, sourceStatusDTO{
+			Source:            status.Source,
+			SourceAccountID:   status.SourceAccountID,
+			Status:            status.Status,
+			LastSuccessAt:     status.LastSuccessAt,
+			LastObservationAt: status.LastObservationAt,
+			LastError:         status.LastError,
+		})
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"sources": out})
 }
 
 // --- action endpoints --------------------------------------------------------
@@ -921,6 +1289,54 @@ func (h *Handler) Reject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id, ok := pathUUID(w, r, "actionId")
+	if !ok {
+		return
+	}
+	var body struct {
+		Reason string `json:"reason"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	action, err := h.svc.Reject(r.Context(), u, id, body.Reason)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, actionToDTO(action))
+}
+
+// ApproveRecommendation is the relationship-intelligence alias for the
+// existing governed RevenueAction approval lifecycle.
+func (h *Handler) ApproveRecommendation(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "recommendationId")
+	if !ok {
+		return
+	}
+	var body struct {
+		AcceptRisk bool `json:"acceptRisk"`
+	}
+	if r.ContentLength != 0 && !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	action, err := h.svc.Approve(r.Context(), u, id, body.AcceptRisk)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, actionToDTO(action))
+}
+
+func (h *Handler) RejectRecommendation(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "recommendationId")
 	if !ok {
 		return
 	}

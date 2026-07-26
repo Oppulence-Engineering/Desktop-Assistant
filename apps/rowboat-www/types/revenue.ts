@@ -88,6 +88,19 @@ export type RelationshipKind =
   | "referral"
   | "partner";
 
+export type RelationshipLifecycle =
+  | "prospect"
+  | "evaluation"
+  | "contracting"
+  | "onboarding"
+  | "active_customer"
+  | "renewal"
+  | "churned"
+  | "former_customer";
+export type RelationshipEngagement = "unknown" | "increasing" | "steady" | "declining" | "dormant";
+export type RelationshipSentiment = "unknown" | "positive" | "mixed" | "negative";
+export type RelationshipHealth = "unknown" | "healthy" | "needs_attention" | "critical";
+
 export interface RevenueRelationship {
   id: string;
   kind: RelationshipKind;
@@ -99,6 +112,68 @@ export interface RevenueRelationship {
   lastTouchAt?: string;
   nextActionAt?: string;
   openActions?: number;
+  nextAction?: string;
+  lifecycle: RelationshipLifecycle;
+  engagement: RelationshipEngagement;
+  sentiment: RelationshipSentiment;
+  health: RelationshipHealth;
+  stateReason?: string;
+  stateVersion: number;
+  lastChangedAt?: string;
+  risks: string[];
+  milestones: string[];
+}
+
+export interface RelationshipParticipant {
+  id: string;
+  displayName: string;
+  email?: string;
+  role: string;
+  title?: string;
+  active: boolean;
+  externalRefs: string[];
+}
+
+export interface RelationshipCommitment {
+  id: string;
+  direction: string;
+  text: string;
+  status: string;
+  dueAt?: string;
+  confidence: number;
+  userConfirmed: boolean;
+}
+
+export interface RelationshipObservation {
+  id: string;
+  source: string;
+  sourceAccountId?: string;
+  externalId: string;
+  sourceVersion: string;
+  eventType: string;
+  occurredAt: string;
+  receivedAt: string;
+  summary?: string;
+  normalizedFacts: Record<string, unknown>;
+  contentHash: string;
+}
+
+export interface RelationshipStateSnapshot {
+  id: string;
+  version: number;
+  state: Record<string, unknown>;
+  changedDimensions: string[];
+  assertionIds: string[];
+  createdAt: string;
+}
+
+export interface RelationshipSourceStatus {
+  source: string;
+  sourceAccountId: string;
+  status: string;
+  lastSuccessAt?: string;
+  lastObservationAt?: string;
+  lastError?: string;
 }
 
 export type ScanStatus = "pending" | "running" | "completed" | "failed";
@@ -170,6 +245,9 @@ export interface ActionAudit {
 export interface RelationshipDetail {
   relationship: RevenueRelationship;
   actions: RevenueAction[];
+  recommendations: RevenueAction[];
+  participants: RelationshipParticipant[];
+  commitments: RelationshipCommitment[];
 }
 
 export interface DetectorStat {

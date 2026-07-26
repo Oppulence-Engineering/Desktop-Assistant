@@ -20,7 +20,7 @@ export function renderOAuthSuccessPage(): string {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Return to Solomon AI</title>
+        <title>Return to Oppulence</title>
         <style>
           body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
           .shell { max-width: 520px; margin: 0 auto; }
@@ -30,11 +30,11 @@ export function renderOAuthSuccessPage(): string {
       </head>
       <body>
         <main class="shell">
-          <p class="eyebrow">Solomon AI</p>
-          <h1 class="status">Return to Solomon AI</h1>
+          <p class="eyebrow">Oppulence</p>
+          <h1 class="status">Return to Oppulence</h1>
           <p>Your AI coworker, with memory</p>
           <p>Private · on your machine</p>
-          <p>We received the sign-in response. Solomon AI will finish the connection in the app.</p>
+          <p>We received the sign-in response. Oppulence will finish the connection in the app.</p>
         </main>
         <script>setTimeout(() => window.close(), 2000);</script>
       </body>
@@ -47,7 +47,7 @@ export function renderOAuthErrorPage(error: string): string {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Return to Solomon AI</title>
+        <title>Return to Oppulence</title>
         <style>
           body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
           .shell { max-width: 520px; margin: 0 auto; }
@@ -57,12 +57,12 @@ export function renderOAuthErrorPage(error: string): string {
       </head>
       <body>
         <main class="shell">
-          <p class="eyebrow">Solomon AI</p>
+          <p class="eyebrow">Oppulence</p>
           <h1 class="error">Sign-in could not be completed</h1>
           <p>Your AI coworker, with memory</p>
           <p>Private · on your machine</p>
           <p>Error: ${escapeHtml(error)}</p>
-          <p>Return to Solomon AI.</p>
+          <p>Return to Oppulence.</p>
         </main>
         <script>setTimeout(() => window.close(), 3000);</script>
       </body>

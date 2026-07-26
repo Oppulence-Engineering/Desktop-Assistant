@@ -16,11 +16,7 @@ import {
 } from "@/lib/icons";
 
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { formatRelativeTime } from "@/lib/relative-time";
 import { extractConferenceLink } from "@/lib/calendar-event";
@@ -47,16 +43,12 @@ type MeetingsViewProps = {
 
 function isMeetingPath(path: string | undefined): boolean {
   return (
-    typeof path === "string" &&
-    (path === MEETINGS_ROOT || path.startsWith(`${MEETINGS_ROOT}/`))
+    typeof path === "string" && (path === MEETINGS_ROOT || path.startsWith(`${MEETINGS_ROOT}/`))
   );
 }
 
 function isCalendarPath(path: string | undefined): boolean {
-  return (
-    typeof path === "string" &&
-    (path === CALENDAR_DIR || path.startsWith(`${CALENDAR_DIR}/`))
-  );
+  return typeof path === "string" && (path === CALENDAR_DIR || path.startsWith(`${CALENDAR_DIR}/`));
 }
 
 type RawCalendarEvent = {
@@ -144,13 +136,9 @@ function parseAllDayDate(s: string): Date | null {
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
 }
 
-function normalizeEvent(
-  raw: RawCalendarEvent,
-  sourcePath: string,
-): UpcomingEvent | null {
+function normalizeEvent(raw: RawCalendarEvent, sourcePath: string): UpcomingEvent | null {
   if (raw.status === "cancelled") return null;
-  const declined =
-    raw.attendees?.find((a) => a.self)?.responseStatus === "declined";
+  const declined = raw.attendees?.find((a) => a.self)?.responseStatus === "declined";
   if (declined) return null;
 
   const allDayStart = raw.start?.date;
@@ -169,8 +157,7 @@ function normalizeEvent(
   }
   if (!start || Number.isNaN(start.getTime())) return null;
 
-  const conferenceLink =
-    extractConferenceLink(raw as unknown as Record<string, unknown>) ?? null;
+  const conferenceLink = extractConferenceLink(raw as unknown as Record<string, unknown>) ?? null;
 
   return {
     id: raw.id ?? sourcePath,
@@ -321,8 +308,7 @@ function formatEventDetailTime(event: UpcomingEvent): string {
   if (!event.end) return `${start}, all day`;
 
   const exclusiveEnd = addDays(event.end, -1);
-  if (localDateKey(exclusiveEnd) === localDateKey(event.start))
-    return `${start}, all day`;
+  if (localDateKey(exclusiveEnd) === localDateKey(event.start)) return `${start}, all day`;
 
   const end = exclusiveEnd.toLocaleDateString([], {
     weekday: "long",
@@ -344,9 +330,7 @@ function attendeeLabel(attendee: CalendarAttendee): string | null {
   return label;
 }
 
-function normalizeDescriptionParts(
-  parts: DescriptionPart[],
-): DescriptionPart[] {
+function normalizeDescriptionParts(parts: DescriptionPart[]): DescriptionPart[] {
   const normalized: DescriptionPart[] = [];
   for (const part of parts) {
     const text = part.text.replace(/\n{3,}/g, "\n\n");
@@ -366,11 +350,7 @@ function normalizeDescriptionParts(
 function isSafeDescriptionHref(value: string): boolean {
   try {
     const url = new URL(value, window.location.href);
-    return (
-      url.protocol === "http:" ||
-      url.protocol === "https:" ||
-      url.protocol === "mailto:"
-    );
+    return url.protocol === "http:" || url.protocol === "https:" || url.protocol === "mailto:";
   } catch {
     return false;
   }
@@ -383,14 +363,12 @@ function linkifyText(value: string): DescriptionPart[] {
   for (const match of value.matchAll(urlRe)) {
     const raw = match[0];
     const index = match.index ?? 0;
-    if (index > lastIndex)
-      parts.push({ type: "text", text: value.slice(lastIndex, index) });
+    if (index > lastIndex) parts.push({ type: "text", text: value.slice(lastIndex, index) });
     const href = raw.startsWith("www.") ? `https://${raw}` : raw;
     parts.push({ type: "link", text: raw, href });
     lastIndex = index + raw.length;
   }
-  if (lastIndex < value.length)
-    parts.push({ type: "text", text: value.slice(lastIndex) });
+  if (lastIndex < value.length) parts.push({ type: "text", text: value.slice(lastIndex) });
   return parts;
 }
 
@@ -399,9 +377,7 @@ function parseDescriptionParts(value: string): DescriptionPart[] {
     .replace(/<\s*br\s*\/?>/gi, "\n")
     .replace(/<\/\s*(p|div|li|tr|h[1-6])\s*>/gi, "\n");
   if (typeof DOMParser === "undefined") {
-    return normalizeDescriptionParts(
-      linkifyText(withLineBreaks.replace(/<[^>]*>/g, "").trim()),
-    );
+    return normalizeDescriptionParts(linkifyText(withLineBreaks.replace(/<[^>]*>/g, "").trim()));
   }
   const doc = new DOMParser().parseFromString(withLineBreaks, "text/html");
   const parts: DescriptionPart[] = [];
@@ -433,8 +409,7 @@ function parseDescriptionParts(value: string): DescriptionPart[] {
   doc.body.childNodes.forEach(visit);
   return normalizeDescriptionParts(parts)
     .map((part, index, all) => {
-      if (index === 0 || index === all.length - 1)
-        return { ...part, text: part.text.trim() };
+      if (index === 0 || index === all.length - 1) return { ...part, text: part.text.trim() };
       return part;
     })
     .filter((part) => part.text.length > 0);
@@ -446,9 +421,7 @@ function UpcomingEvents() {
   const [error, setError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
   // Calendar sync uses the native Google OAuth connection.
-  const [calendarConnected, setCalendarConnected] = useState<boolean | null>(
-    null,
-  );
+  const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
@@ -456,8 +429,7 @@ function UpcomingEvents() {
     const check = async () => {
       try {
         const oauthState = await window.ipc.invoke("oauth:getState", null);
-        if (!cancelled)
-          setCalendarConnected(oauthState.config?.google?.connected ?? false);
+        if (!cancelled) setCalendarConnected(oauthState.config?.google?.connected ?? false);
       } catch {
         if (!cancelled) setCalendarConnected(false);
       }
@@ -487,9 +459,7 @@ function UpcomingEvents() {
         path: CALENDAR_DIR,
         opts: { recursive: false, includeHidden: false, includeStats: false },
       });
-      const jsonEntries = entries.filter(
-        (e) => e.kind === "file" && e.name.endsWith(".json"),
-      );
+      const jsonEntries = entries.filter((e) => e.kind === "file" && e.name.endsWith(".json"));
 
       const now = new Date();
       const todayStart = startOfDay(now);
@@ -506,8 +476,7 @@ function UpcomingEvents() {
           if (!ev) return null;
           // Event must overlap the [now, windowEnd) range — i.e. not already ended,
           // and not start after the window closes.
-          const effectiveEnd =
-            ev.end ?? (ev.isAllDay ? addDays(ev.start, 1) : ev.start);
+          const effectiveEnd = ev.end ?? (ev.isAllDay ? addDays(ev.start, 1) : ev.start);
           if (effectiveEnd <= now) return null;
           if (ev.start >= windowEnd) return null;
           return ev;
@@ -553,12 +522,10 @@ function UpcomingEvents() {
           if (isCalendarPath(event.path)) scheduleReload();
           break;
         case "moved":
-          if (isCalendarPath(event.from) || isCalendarPath(event.to))
-            scheduleReload();
+          if (isCalendarPath(event.from) || isCalendarPath(event.to)) scheduleReload();
           break;
         case "bulkChanged":
-          if (!event.paths || event.paths.some(isCalendarPath))
-            scheduleReload();
+          if (!event.paths || event.paths.some(isCalendarPath)) scheduleReload();
           break;
       }
     });
@@ -624,31 +591,17 @@ function UpcomingEvents() {
         ) : (
           <div className="flex flex-col gap-3">
             {visibleDays.map((day) => (
-              <UpcomingDayCard
-                key={day.dateKey}
-                day={day}
-                isToday={day.dateKey === todayKey}
-              />
+              <UpcomingDayCard key={day.dateKey} day={day} isToday={day.dateKey === todayKey} />
             ))}
           </div>
         )}
       </div>
-      <SettingsDialog
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        defaultTab="connections"
-      />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} defaultTab="connections" />
     </section>
   );
 }
 
-function UpcomingDayCard({
-  day,
-  isToday,
-}: {
-  day: DayGroup;
-  isToday: boolean;
-}) {
+function UpcomingDayCard({ day, isToday }: { day: DayGroup; isToday: boolean }) {
   const dayNum = day.date.getDate();
   const month = day.date.toLocaleDateString([], { month: "short" });
   const weekday = day.date.toLocaleDateString([], { weekday: "short" });
@@ -658,9 +611,7 @@ function UpcomingDayCard({
     <div className="overflow-hidden rounded-none border bg-card">
       <div className="flex items-center justify-between gap-3 border-b bg-muted px-5 py-3.5">
         <div className="flex min-w-0 items-baseline gap-2">
-          <span className="text-[22px] font-bold leading-none text-foreground">
-            {dayNum}
-          </span>
+          <span className="text-[22px] font-bold leading-none text-foreground">{dayNum}</span>
           <span className="truncate text-[13px] text-muted-foreground">
             {month} · {weekday}
           </span>
@@ -681,11 +632,7 @@ function UpcomingDayCard({
         </div>
       ) : (
         day.events.map((ev, idx) => (
-          <UpcomingEventItem
-            key={ev.id}
-            event={ev}
-            isLast={idx === count - 1}
-          />
+          <UpcomingEventItem key={ev.id} event={ev} isLast={idx === count - 1} />
         ))
       )}
     </div>
@@ -700,20 +647,12 @@ function NowBadge() {
   );
 }
 
-function UpcomingEventItem({
-  event,
-  isLast,
-}: {
-  event: UpcomingEvent;
-  isLast: boolean;
-}) {
+function UpcomingEventItem({ event, isLast }: { event: UpcomingEvent; isLast: boolean }) {
   const [open, setOpen] = useState(false);
   const isNow = isEventNow(event);
   const platform = meetingPlatformLabel(event.conferenceLink);
   const subtitle = platform ?? event.location;
-  const titleAndLocation = event.location
-    ? `${event.summary} · ${event.location}`
-    : event.summary;
+  const titleAndLocation = event.location ? `${event.summary} · ${event.location}` : event.summary;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -780,20 +719,12 @@ function UpcomingEventItem({
   );
 }
 
-function EventDetailsPopover({
-  event,
-  onClose,
-}: {
-  event: UpcomingEvent;
-  onClose: () => void;
-}) {
+function EventDetailsPopover({ event, onClose }: { event: UpcomingEvent; onClose: () => void }) {
   const organizer = personLabel(event.organizer) ?? personLabel(event.creator);
   const attendees = event.attendees
     .map(attendeeLabel)
     .filter((label): label is string => Boolean(label));
-  const descriptionParts = event.description
-    ? parseDescriptionParts(event.description)
-    : [];
+  const descriptionParts = event.description ? parseDescriptionParts(event.description) : [];
   const handleMeetingCapture = (openConference: boolean) => {
     onClose();
     triggerMeetingCapture(event, openConference);
@@ -828,8 +759,7 @@ function EventDetailsPopover({
                 "var(--background, #ffffff)";
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background =
-                "transparent";
+              (e.currentTarget as HTMLButtonElement).style.background = "transparent";
             }}
           >
             <ExternalLink className="size-4" />
@@ -843,12 +773,10 @@ function EventDetailsPopover({
           aria-label="Close event details"
           title="Close"
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background =
-              "var(--background, #ffffff)";
+            (e.currentTarget as HTMLButtonElement).style.background = "var(--background, #ffffff)";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background =
-              "transparent";
+            (e.currentTarget as HTMLButtonElement).style.background = "transparent";
           }}
         >
           <X className="size-4" />
@@ -871,15 +799,9 @@ function EventDetailsPopover({
           </div>
         </div>
 
-        <EventDetailRow
-          icon={<Clock className="size-4" />}
-          value={formatEventDetailTime(event)}
-        />
+        <EventDetailRow icon={<Clock className="size-4" />} value={formatEventDetailTime(event)} />
         {event.location ? (
-          <EventDetailRow
-            icon={<MapPin className="size-4" />}
-            value={event.location}
-          />
+          <EventDetailRow icon={<MapPin className="size-4" />} value={event.location} />
         ) : null}
         {organizer ? (
           <EventDetailRow
@@ -904,11 +826,7 @@ function EventDetailsPopover({
               style={{ color: "var(--muted-foreground, #71717a)" }}
             />
             <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => handleMeetingCapture(true)}
-              >
+              <Button type="button" size="sm" onClick={() => handleMeetingCapture(true)}>
                 Join & take notes
               </Button>
               <Button
@@ -946,8 +864,7 @@ function EventDetailsPopover({
               style={{ color: "var(--foreground, #27272a)" }}
             >
               {descriptionParts.map((part, index) => {
-                if (part.type === "text")
-                  return <span key={index}>{part.text}</span>;
+                if (part.type === "text") return <span key={index}>{part.text}</span>;
                 return (
                   <a
                     key={index}
@@ -971,25 +888,13 @@ function EventDetailsPopover({
   );
 }
 
-function EventDetailRow({
-  icon,
-  value,
-}: {
-  icon: React.ReactNode;
-  value: string;
-}) {
+function EventDetailRow({ icon, value }: { icon: React.ReactNode; value: string }) {
   return (
     <div className="flex gap-3 text-sm leading-5">
-      <span
-        className="mt-0.5 shrink-0"
-        style={{ color: "var(--muted-foreground, #71717a)" }}
-      >
+      <span className="mt-0.5 shrink-0" style={{ color: "var(--muted-foreground, #71717a)" }}>
         {icon}
       </span>
-      <span
-        className="min-w-0 break-words"
-        style={{ color: "var(--foreground, #27272a)" }}
-      >
+      <span className="min-w-0 break-words" style={{ color: "var(--foreground, #27272a)" }}>
         {value}
       </span>
     </div>
@@ -1008,9 +913,7 @@ function SplitJoinButton({
   const menuRef = useRef<HTMLDivElement>(null);
   // Fixed-position coords for the portaled menu so it isn't clipped by the
   // calendar card's `overflow-hidden`.
-  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(
-    null,
-  );
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
 
   const updatePos = useCallback(() => {
     const rect = containerRef.current?.getBoundingClientRect();
@@ -1024,11 +927,7 @@ function SplitJoinButton({
     const handler = (e: MouseEvent) => {
       const target = e.target;
       if (!(target instanceof globalThis.Node)) return;
-      if (
-        containerRef.current?.contains(target) ||
-        menuRef.current?.contains(target)
-      )
-        return;
+      if (containerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
       setOpen(false);
     };
     document.addEventListener("mousedown", handler);
@@ -1165,8 +1064,7 @@ export function MeetingsView({
         .map((entry) => {
           const relative = entry.path.slice(`${MEETINGS_ROOT}/`.length);
           const parts = relative.split("/");
-          const dateFolder =
-            parts.find((part) => /^\d{4}-\d{2}-\d{2}$/.test(part)) ?? "";
+          const dateFolder = parts.find((part) => /^\d{4}-\d{2}-\d{2}$/.test(part)) ?? "";
           return {
             path: entry.path,
             name: formatMeetingName(entry.name),
@@ -1230,10 +1128,7 @@ export function MeetingsView({
     };
   }, [loadNotes]);
 
-  const isBusy =
-    meetingState === "connecting" ||
-    meetingState === "stopping" ||
-    meetingSummarizing;
+  const isBusy = meetingState === "connecting" || meetingState === "stopping" || meetingSummarizing;
   const isRecording = meetingState === "recording";
 
   return (
@@ -1242,9 +1137,7 @@ export function MeetingsView({
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Mic className="size-5 text-primary" />
-            <h2 className="text-base font-semibold text-foreground">
-              Meetings
-            </h2>
+            <h2 className="text-base font-semibold text-foreground">Meetings</h2>
           </div>
           <Button
             type="button"
@@ -1253,23 +1146,17 @@ export function MeetingsView({
             disabled={isBusy}
             onClick={onTakeMeetingNotes}
           >
-            {meetingSummarizing ||
-            meetingState === "connecting" ||
-            meetingState === "stopping" ? (
+            {meetingSummarizing || meetingState === "connecting" || meetingState === "stopping" ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : isRecording ? (
               <Square className="mr-2 size-3.5" />
             ) : (
               <Mic className="mr-2 size-4" />
             )}
-            {meetingSummarizing
-              ? "Generating notes..."
-              : getMeetingButtonLabel(meetingState)}
+            {meetingSummarizing ? "Generating notes..." : getMeetingButtonLabel(meetingState)}
           </Button>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Upcoming events and meeting notes.
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">Upcoming events and meeting notes.</p>
       </div>
       <div className="flex-1 overflow-auto">
         <UpcomingEvents />
@@ -1288,8 +1175,7 @@ export function MeetingsView({
                 <Mic className="size-6 text-muted-foreground" />
               </div>
               <p className="text-sm text-muted-foreground">
-                No meeting notes yet. Use <strong>Take meeting notes</strong> to
-                start one.
+                No meeting notes yet. Use <strong>Take meeting notes</strong> to start one.
               </p>
             </div>
           ) : (
@@ -1333,9 +1219,7 @@ export function MeetingsView({
                       </td>
                       <td className="px-4 py-3 align-top text-sm text-muted-foreground">
                         {note.mtimeMs > 0
-                          ? formatRelativeTime(
-                              new Date(note.mtimeMs).toISOString(),
-                            ) || "—"
+                          ? formatRelativeTime(new Date(note.mtimeMs).toISOString()) || "—"
                           : "—"}
                       </td>
                     </tr>

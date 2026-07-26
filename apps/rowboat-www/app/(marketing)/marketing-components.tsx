@@ -46,6 +46,7 @@ import {
   type MarketingPage,
 } from "./marketing-data";
 import { MarketingEffects } from "./marketing-effects";
+import { RelationshipProductWindow, RelationshipSystemSection } from "./relationship-system";
 
 const integrationGroups = [
   "Email",
@@ -352,28 +353,48 @@ function screenshotForPage(page: MarketingPage) {
 
 function InlineLogo({
   compact = false,
+  header = false,
   prominent = false,
 }: {
   compact?: boolean;
+  header?: boolean;
   prominent?: boolean;
 }) {
-  const iconSize = compact ? 20 : prominent ? 40 : 28;
+  const iconSize = header ? 38 : compact ? 20 : prominent ? 40 : 28;
 
   return (
-    <span className="flex items-center gap-2">
-      <Image
-        alt=""
-        className={cn(
-          "rounded-[3px] dark:invert",
-          compact ? "size-5" : prominent ? "size-10" : "size-7",
-        )}
-        height={iconSize}
-        src="/marketing/oppulence-icon.png"
-        width={iconSize}
-      />
+    <span className={header ? "oppulence-compact-lockup" : "flex items-center gap-2"}>
+      {header ? (
+        <span aria-hidden="true" className="oppulence-compact-lockup__mark">
+          <Image
+            alt=""
+            className="oppulence-compact-lockup__mark-image"
+            height={iconSize}
+            src="/marketing/oppulence-icon.png"
+            width={iconSize}
+          />
+        </span>
+      ) : (
+        <Image
+          alt=""
+          className={cn(
+            "rounded-[3px] dark:invert",
+            compact ? "size-5" : prominent ? "size-10" : "size-7",
+          )}
+          height={iconSize}
+          src="/marketing/oppulence-icon.png"
+          width={iconSize}
+        />
+      )}
       {!compact ? (
-        <span className="font-display text-[24px] leading-6 font-medium text-primary">
-          oppulence
+        <span
+          className={cn(
+            header
+              ? "oppulence-compact-lockup__wordmark"
+              : "font-display text-[24px] leading-6 font-medium text-primary",
+          )}
+        >
+          {header ? "Oppulence" : "oppulence"}
         </span>
       ) : null}
     </span>
@@ -411,8 +432,8 @@ export function TopBar() {
     <header className="linear-header">
       <div className="linear-header-inner">
         <div className="flex flex-1 justify-start">
-          <Link aria-label="Oppulence home" className="linear-logo" href="/">
-            <InlineLogo />
+          <Link aria-label="Oppulence home" className="linear-logo linear-header-logo" href="/">
+            <InlineLogo header />
           </Link>
         </div>
 
@@ -486,8 +507,8 @@ export function Footer() {
             title="Company"
           />
           <p className="linear-footer-note">
-            Oppulence finds the money slipping away in your inbox and chases it in your voice, with
-            your approval. © 2026 Oppulence.
+            Oppulence maintains a living model of every customer relationship and tells your team
+            what needs action. A Playbook Media product. © 2026 Playbook Media.
           </p>
         </div>
       </div>
@@ -520,16 +541,16 @@ function LinearFooterGroup({ title, items }: { title: string; items: LinkItem[] 
 
 const homeSteps = [
   {
-    title: "Connect your inbox",
-    body: "Link Gmail in two minutes. Access is read-only at the start. Your mail stays yours.",
+    title: "Connect the relationship history",
+    body: "Link Gmail in two minutes, then add calendar and billing context. Access is read-only at the start. Your mail stays yours.",
   },
   {
-    title: "Watch the leak",
-    body: "Get a weekly report of each deal, invoice, and relationship going quiet, with dollar amounts attached.",
+    title: "Ask the Monday question",
+    body: "See which relationship could cost you money if ignored this week, why it matters now, and the evidence behind it.",
   },
   {
-    title: "Approve the chase",
-    body: "Review each drafted nudge and approve it with one click. A monthly receipt shows what came back.",
+    title: "Close the loop",
+    body: "Review the next move, approve it with one click, and let the reply, meeting, or payment make the relationship memory sharper.",
   },
 ];
 
@@ -576,10 +597,7 @@ export function HomePage() {
     <div className="flex flex-col">
       <HomeHero />
       <ProblemSection />
-      {linearHomeSections.map((section, index) => (
-        <LinearProductSection index={index} key={section.title} section={section} />
-      ))}
-      <HomeUpdates />
+      <RelationshipSystemSection />
       <HomeProofBand />
       <HomeFaqSection />
       <FinalCta />
@@ -590,24 +608,29 @@ export function HomePage() {
 function HomeHero() {
   return (
     <section className="linear-hero linear-inset">
-      <p className="mb-5 font-mono text-xs text-oppulence-orange">[revenue memory and execution]</p>
+      <p className="mb-5 font-mono text-xs text-oppulence-orange">[relationship intelligence]</p>
       <h1 className="linear-hero-title">
-        The most expensive thing
-        <br className="hidden sm:block" /> in your pipeline is silence.
+        Know every customer relationship.
+        <br className="hidden sm:block" /> Know what needs action.
       </h1>
+      <p className="linear-body mt-6 max-w-[680px] text-[16px]">
+        Oppulence maintains a living model across email, meetings, Slack, CRM, and revenue systems:
+        who matters, what was promised, what changed, and what should happen next. Every
+        recommendation shows its evidence. You approve every action.
+      </p>
       <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
         <Link
           className="linear-button-primary !h-12 !px-6 !text-[14px] sm:!w-[250px]"
           href="/book-a-demo"
         >
-          See what is slipping
+          See account mission control
         </Link>
         <Link className="linear-button-ghost !h-12 !px-5 !text-[14px]" href="/product">
-          How it works <span className="ml-2 text-foreground/40">→</span>
+          How relationship intelligence works <span className="ml-2 text-foreground/40">→</span>
         </Link>
       </div>
       <div className="linear-hero-band">
-        <HeroQueueCard />
+        <RelationshipProductWindow surface="desktop" view="prioritize" />
       </div>
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <p className="font-mono text-xs text-[var(--linear-text-tertiary)]">
@@ -622,50 +645,23 @@ function HomeHero() {
   );
 }
 
-function HeroQueueCard() {
-  const rows = [
-    { amount: "$40k", what: "Acme proposal · quiet for 6 days", note: "nudge drafted" },
-    { amount: "$14k", what: "Beta Corp invoice · 3 weeks overdue", note: "reminder drafted" },
-    { amount: "$8k", what: "Star client · gone quiet", note: "check-in drafted" },
-  ];
-
-  return (
-    <aside aria-label="Example weekly slip report" className="linear-hero-card">
-      <p className="linear-hero-card-title">[this week: $62,000 slipping]</p>
-      <ul>
-        {rows.map((row) => (
-          <li key={row.amount}>
-            <span className="linear-hero-card-amt">{row.amount}</span>
-            <span className="linear-hero-card-what">
-              {row.what}
-              <em>{row.note}</em>
-            </span>
-            <span aria-hidden="true" className="linear-hero-card-act">
-              approve
-            </span>
-          </li>
-        ))}
-      </ul>
-      <p className="linear-hero-card-foot">nothing sends until you click approve</p>
-    </aside>
-  );
-}
-
 function ProblemSection() {
   return (
     <section className="linear-manifesto linear-inset">
       <h2>
-        <strong>Few deals die from a &ldquo;no.&rdquo; Most die waiting.</strong>
+        <strong>
+          Every Monday, your team should know which relationship needs action—and why.
+        </strong>
         <br />
         <br />
-        Oppulence watches your inbox, calendar, and billing. It finds the money that is about to
-        slip: <strong>the proposal with no reply</strong>,{" "}
-        <strong>the invoice with no payment</strong>, <strong>the client who has gone quiet</strong>
-        .
+        CRMs record contacts and transactions. They do not remember the promise buried in a thread,
+        the objection raised in a meeting, or the reason a good client went quiet. That history
+        stays scattered until a relationship failure becomes a revenue failure.
         <br />
         <br />
-        It writes the chase in your voice, matched to the relationship.{" "}
-        <strong>Nothing sends until you click Approve.</strong>
+        Oppulence keeps living relationship state across{" "}
+        <strong>promises, objections, chases, and outcomes.</strong> Then it turns that memory into
+        the next safe action. <strong>Nothing sends until you click Approve.</strong>
       </h2>
     </section>
   );
@@ -673,38 +669,38 @@ function ProblemSection() {
 
 const linearHomeSections = [
   {
-    title: "See the money that is slipping.",
+    title: "Turn fragmented evidence into living relationship state.",
     description:
-      "Oppulence scans your last 60–90 days of email, calendar, and billing. It finds ghosted proposals, dormant clients, unbilled work, and unpaid invoices. Each finding shows a dollar amount and a link to its source.",
-    label: "Revenue Leak Scan",
+      "Oppulence scans the last 60–90 days of email, calendar, and billing to build a living ledger of promises, proposals, invoices, and open loops. It finds where a valuable relationship lost its next step, with the dollar amount and source attached.",
+    label: "Relationship State Engine",
     href: "/ai-help-center",
     src: desktopScreenshots.knowledge,
-    alt: "Oppulence Revenue Leak Scan showing warm opportunities and source evidence",
+    alt: "Oppulence relationship memory showing warm opportunities and source evidence",
     bullets: [
-      "Ghosted proposals, with the deal value attached",
-      "Dormant clients and unpaid invoices",
-      "Each finding links to the source email",
+      "Promises, objections, and open loops in one ledger",
+      "Ghosted proposals, dormant clients, and unpaid invoices",
+      "Every finding links back to its source",
     ],
   },
   {
-    title: "Get a short list, not another inbox.",
+    title: "Run every account from one mission control.",
     description:
-      "Each week, Oppulence hands you the three to five actions worth money right now. Each one shows who needs attention, why now, and how much is at stake. The chase arrives already drafted, in your voice. You approve, edit, snooze, or reject.",
-    label: "Revenue Action Queue",
+      "Each week, Oppulence ranks the three to five relationships where silence, a missed commitment, or a money-state change makes the next move worth attention. Each item explains why now, what is at stake, and what to do next.",
+    label: "Account Mission Control",
     href: "/ai-documentation-agent",
     src: desktopScreenshots.chat,
-    alt: "Oppulence daily revenue action queue ranked by value and urgency",
+    alt: "Oppulence relationship action queue ranked by value and urgency",
     bullets: [
-      "The highest-value moves of the week",
-      "Who, why now, and how much on each item",
-      "Approve, edit, snooze, or reject in one click",
+      "The relationships most likely to slip this week",
+      "Why now, what changed, and how much is at stake",
+      "A next move drafted from the real history",
     ],
   },
   {
-    title: "Nothing sends without your click.",
+    title: "Protect the relationship when you act.",
     description:
-      "Each message waits for your approval. The system never emails a contact who bounced, opted out, or changed roles. Actions that touch money need a second confirmation. When a check fails, the system stops.",
-    label: "Policy & sender protection",
+      "Oppulence verifies the contact, checks the relationship and policy context, and waits for your approval. It never emails a contact who bounced, opted out, or changed roles. Actions that touch money need a second confirmation.",
+    label: "Governed Execution",
     href: "/integrations",
     src: desktopScreenshots.connections,
     alt: "Oppulence policy checks and sender protection before execution",
@@ -780,9 +776,9 @@ function HomeUpdates() {
       <div className="linear-inset">
         <p className="linear-eyebrow">[how it works]</p>
         <h2 className="linear-statement-title !max-w-[1180px]">
-          <strong>The memory is the moat.</strong> Anyone can draft a message. Only Oppulence knows
-          every promise, chase, objection, and outcome across your relationships. No one can rebuild
-          that history anywhere else.
+          <strong>Relationship memory compounds.</strong> Generic AI can draft a message. It cannot
+          recreate the history that makes the next move timely, specific, and trusted. Every
+          promise, objection, reply, meeting, edit, and outcome makes your ledger more useful.
         </h2>
       </div>
       <div className="linear-updates-grid linear-inset">
@@ -839,7 +835,7 @@ function HomeStepVisual({ index }: { index: number }) {
 function HomeProofBand() {
   const proof = [
     {
-      title: "Each finding shows its dollar amount and its source.",
+      title: "Every recommendation points back to the promise, thread, invoice, or meeting.",
       label: "Evidence before action",
     },
     {
@@ -847,8 +843,8 @@ function HomeProofBand() {
       label: "You stay in control",
     },
     {
-      title: "Replies, meetings, and payments make the memory sharper.",
-      label: "Learns from outcomes",
+      title: "Replies, meetings, and payments update the same relationship ledger.",
+      label: "Memory compounds",
     },
   ];
 
@@ -868,7 +864,12 @@ const homeFaqs = [
   {
     question: "Is Oppulence another CRM?",
     answer:
-      "No. Your CRM stays the system of record. Oppulence remembers the conversations, promises, and outcomes around each relationship. Then it turns them into the next chase, ready for your approval.",
+      "No. Your CRM stays the system of record. Oppulence is the relationship-memory layer around it: the conversations, promises, objections, and outcomes that explain what should happen next.",
+  },
+  {
+    question: "What is relationship memory?",
+    answer:
+      "It is a living record of what was promised, what changed, what happened next, and which open loop still matters for each person, company, client, opportunity, referral, or partner. Oppulence keeps that record tied to source evidence and turns it into a reviewable next action.",
   },
   {
     question: "Is this a cold-email tool?",
@@ -924,17 +925,17 @@ function FinalCta() {
   return (
     <section className="linear-final-cta linear-inset">
       <p className="linear-eyebrow !mb-0">[get started]</p>
-      <h2>Find out what silence is costing you.</h2>
+      <h2>Give your team one shared truth about every customer relationship.</h2>
       <p className="linear-body max-w-xl text-balance">
-        Connect your inbox. See the deals, invoices, and clients going quiet, each with a dollar
-        amount. Then let Oppulence chase them, one approval at a time.
+        Connect the systems that observe the relationship. Oppulence shows what changed, what needs
+        action, and the evidence behind the recommended next move.
       </p>
       <div className="flex flex-col items-center gap-3 sm:flex-row">
         <Link className="linear-button-primary !h-10 !px-5" href="/book-a-demo">
-          See what is slipping
+          See account mission control
         </Link>
         <Link className="linear-button-secondary !h-10 !px-5" href="/product">
-          See how it works
+          Explore relationship intelligence
         </Link>
       </div>
       <p className="linear-cta-note">[watch is free · chase is $99/mo]</p>

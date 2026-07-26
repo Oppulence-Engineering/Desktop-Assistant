@@ -9,7 +9,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 /**
  * Resolve the packaged Electron binary. Prefer the explicit `ELECTRON_APP_BINARY`
  * (set by CI), otherwise probe the Forge `out/` directory for the current
- * platform/arch. Product name "Solomon AI", executable slug "solomon-ai".
+ * platform/arch. Product name "Oppulence", executable slug "oppulence".
  */
 function resolveBinary(): string {
   const override = process.env.ELECTRON_APP_BINARY;
@@ -17,12 +17,12 @@ function resolveBinary(): string {
 
   const outDir = path.resolve(here, "..", "out");
   const candidates = [
-    "Solomon AI-linux-x64/solomon-ai",
-    "Solomon AI-linux-arm64/solomon-ai",
-    "Solomon AI-win32-x64/solomon-ai.exe",
-    "Solomon AI-win32-arm64/solomon-ai.exe",
-    "Solomon AI-darwin-x64/Solomon AI.app/Contents/MacOS/solomon-ai",
-    "Solomon AI-darwin-arm64/Solomon AI.app/Contents/MacOS/solomon-ai",
+    "Oppulence-linux-x64/oppulence",
+    "Oppulence-linux-arm64/oppulence",
+    "Oppulence-win32-x64/oppulence.exe",
+    "Oppulence-win32-arm64/oppulence.exe",
+    "Oppulence-darwin-x64/Oppulence.app/Contents/MacOS/oppulence",
+    "Oppulence-darwin-arm64/Oppulence.app/Contents/MacOS/oppulence",
   ].map((rel) => path.join(outDir, rel));
 
   const found = candidates.find((p) => existsSync(p));

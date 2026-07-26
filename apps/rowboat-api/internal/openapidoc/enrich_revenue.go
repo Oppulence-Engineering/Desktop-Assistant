@@ -15,7 +15,7 @@ func addRevenueSchemas(schemas obj) {
 		"preflightAvailable":     boolSchema("Whether policy preflight can run (linked and active).", false),
 	}, "id", "mode", "status", "preflightAvailable")
 
-	schemas["RevenueRelationship"] = objectSchema("Longitudinal revenue-memory relationship. The enriched commercial lead stays canonical in OutboundConsole and is referenced, never duplicated.", obj{
+	schemas["RevenueRelationship"] = objectSchema("Canonical, living relationship state projected from append-only evidence. CRM and communication systems remain evidence sources; this object is the shared model rendered by web and desktop.", obj{
 		"id":            uuidSchema("Relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"kind":          stringEnum("Relationship kind.", "person", "person", "company", "customer", "opportunity", "referral", "partner"),
 		"displayName":   stringSchema("Human display name.", "Jordan Buyer"),
@@ -26,7 +26,69 @@ func addRevenueSchemas(schemas obj) {
 		"lastTouchAt":   stringSchema("Last observed touch.", "2026-04-10T15:00:00Z", obj{"format": "date-time"}, nullable()),
 		"nextActionAt":  stringSchema("Next planned action.", "2026-07-01T00:00:00Z", obj{"format": "date-time"}, nullable()),
 		"openActions":   intSchema("Open queue actions for this relationship.", 1),
-	}, "id", "kind", "displayName", "status")
+		"nextAction":    stringSchema("Recommended next action.", "Confirm the security review owner."),
+		"lifecycle":     stringEnum("Commercial lifecycle.", "evaluation", "prospect", "evaluation", "contracting", "onboarding", "active_customer", "renewal", "churned", "former_customer"),
+		"engagement":    stringEnum("Direction of engagement.", "declining", "unknown", "increasing", "steady", "declining", "dormant"),
+		"sentiment":     stringEnum("Observed sentiment.", "mixed", "unknown", "positive", "mixed", "negative"),
+		"health":        stringEnum("Explainable health state; never a magic score.", "needs_attention", "unknown", "healthy", "needs_attention", "critical"),
+		"stateReason":   stringSchema("Evidence-backed explanation of the projected state.", "Security review was promised, but no owner or meeting exists."),
+		"stateVersion":  intSchema("Monotonic projection version.", 4),
+		"lastChangedAt": stringSchema("Last material state change.", "2026-07-25T16:00:00Z", obj{"format": "date-time"}, nullable()),
+		"risks":         arraySchema("Current relationship risks.", stringSchema("Risk.", "Security review has no owner.")),
+		"milestones":    arraySchema("Reached relationship milestones.", stringSchema("Milestone.", "Proposal shared.")),
+	}, "id", "kind", "displayName", "status", "lifecycle", "engagement", "sentiment", "health", "stateVersion", "risks", "milestones")
+
+	schemas["RelationshipParticipant"] = objectSchema("A person participating in the relationship, resolved across provider identities.", obj{
+		"id":           uuidSchema("Participant id.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"displayName":  stringSchema("Display name.", "Avery Chen"),
+		"email":        stringSchema("Normalized email.", "avery@acme.com"),
+		"role":         stringSchema("Relationship role.", "champion"),
+		"title":        stringSchema("Current title.", "VP Operations"),
+		"active":       boolSchema("Whether the participant is active.", true),
+		"externalRefs": arraySchema("Provider identity references.", stringSchema("External reference.", "hubspot:contact:123")),
+	}, "id", "displayName", "role", "active", "externalRefs")
+
+	schemas["RelationshipCommitment"] = objectSchema("An open or completed promise attached to the relationship.", obj{
+		"id":            uuidSchema("Commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"direction":     stringSchema("Who owes the commitment.", "us_to_them"),
+		"text":          stringSchema("Commitment text.", "Send the security packet."),
+		"status":        stringSchema("Commitment status.", "open"),
+		"dueAt":         stringSchema("Due time.", "2026-07-22T17:00:00Z", obj{"format": "date-time"}, nullable()),
+		"confidence":    numberSchema("Extraction confidence.", 0.94),
+		"userConfirmed": boolSchema("Whether a human confirmed it.", false),
+	}, "id", "direction", "text", "status", "confidence", "userConfirmed")
+
+	schemas["RelationshipObservation"] = objectSchema("Immutable, idempotent provider evidence used to project relationship state.", obj{
+		"id":              uuidSchema("Observation id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"source":          stringSchema("Evidence source.", "gmail"),
+		"sourceAccountId": stringSchema("Provider account id.", "me@company.com"),
+		"externalId":      stringSchema("Provider event id.", "message-123"),
+		"sourceVersion":   stringSchema("Provider event version.", "1"),
+		"eventType":       stringSchema("Normalized event type.", "commitment_created"),
+		"occurredAt":      stringSchema("Provider occurrence time.", "2026-07-18T17:30:00Z", obj{"format": "date-time"}),
+		"receivedAt":      stringSchema("Ingestion time.", "2026-07-18T17:31:00Z", obj{"format": "date-time"}),
+		"summary":         stringSchema("Bounded evidence summary.", "We promised to send the security packet."),
+		"normalizedFacts": freeFormSchema("Provider-neutral normalized facts."),
+		"contentHash":     stringSchema("Hash of summary, facts, and sealed payload.", "ab12cd34"),
+	}, "id", "source", "externalId", "sourceVersion", "eventType", "occurredAt", "receivedAt", "normalizedFacts", "contentHash")
+
+	schemas["RelationshipStateSnapshot"] = objectSchema("Immutable projection snapshot created only when material relationship state changes.", obj{
+		"id":                uuidSchema("Snapshot id.", "5b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"version":           intSchema("Relationship state version.", 4),
+		"state":             freeFormSchema("Projected state at this version."),
+		"changedDimensions": arraySchema("Material dimensions that changed.", stringSchema("Dimension.", "health")),
+		"assertionIds":      arraySchema("Assertions selected by deterministic precedence.", stringSchema("Assertion id.", "assertion-123")),
+		"createdAt":         stringSchema("Snapshot creation time.", "2026-07-25T16:00:00Z", obj{"format": "date-time"}),
+	}, "id", "version", "state", "changedDimensions", "assertionIds", "createdAt")
+
+	schemas["RelationshipSourceStatus"] = objectSchema("Freshness and failure state for one relationship evidence source.", obj{
+		"source":            stringSchema("Source name.", "gmail"),
+		"sourceAccountId":   stringSchema("Provider account id.", "me@company.com"),
+		"status":            stringSchema("Connection status.", "connected"),
+		"lastSuccessAt":     stringSchema("Last successful ingestion.", "2026-07-26T12:00:00Z", obj{"format": "date-time"}, nullable()),
+		"lastObservationAt": stringSchema("Newest provider event seen.", "2026-07-26T11:58:00Z", obj{"format": "date-time"}, nullable()),
+		"lastError":         stringSchema("Bounded provider error.", ""),
+	}, "source", "sourceAccountId", "status")
 
 	schemas["RevenueAction"] = objectSchema("One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval.", obj{
 		"id":                 uuidSchema("Action id.", "1a8dfa9b-a7b2-46ea-982c-622a914c00e5"),
@@ -192,11 +254,16 @@ func addRevenuePaths(paths obj) {
 	})}
 
 	paths["/v1/relationships"] = obj{
-		"get": operation("Revenue", "List relationships", "Lists relationship summaries with open-loop counts.", "listRevenueRelationships", bearer(), nil, nil, obj{
+		"get": operation("Relationship Intelligence", "List relationships", "Lists canonical relationship state with optional text, lifecycle, health, and engagement filters.", "listRelationships", bearer(), []any{
+			obj{"name": "q", "in": "query", "required": false, "description": "Account, domain, or contact search.", "schema": obj{"type": "string"}},
+			obj{"name": "lifecycle", "in": "query", "required": false, "description": "Lifecycle filter.", "schema": obj{"type": "string"}},
+			obj{"name": "health", "in": "query", "required": false, "description": "Health filter.", "schema": obj{"type": "string"}},
+			obj{"name": "engagement", "in": "query", "required": false, "description": "Engagement filter.", "schema": obj{"type": "string"}},
+		}, nil, obj{
 			"200": jsonResponse("Relationships.", objectSchema("Relationship list.", obj{"relationships": arraySchema("Relationships.", ref("RevenueRelationship"))}), nil),
 			"401": responseRef("401"),
 		}),
-		"post": operation("Revenue", "Create a relationship", "Records a relationship in the caller's workspace.", "createRevenueRelationship", bearer(), nil, jsonRequest("Relationship.", objectSchema("Create request.", obj{
+		"post": operation("Relationship Intelligence", "Create a relationship", "Records a canonical relationship in the caller's workspace.", "createRelationship", bearer(), nil, jsonRequest("Relationship.", objectSchema("Create request.", obj{
 			"kind":          stringEnum("Relationship kind.", "person", "person", "company", "customer", "opportunity", "referral", "partner"),
 			"displayName":   stringSchema("Display name.", "Jordan Buyer"),
 			"primaryEmail":  stringSchema("Primary email.", "buyer@example.com"),
@@ -208,13 +275,80 @@ func addRevenuePaths(paths obj) {
 			"401": responseRef("401"),
 		}),
 	}
-	paths["/v1/relationships/{relationshipId}"] = obj{"get": operation("Revenue", "Get a relationship", "Returns one relationship with its commitments and actions.", "getRevenueRelationship", bearer(), []any{obj{"name": "relationshipId", "in": "path", "required": true, "description": "Relationship id.", "schema": obj{"type": "string", "format": "uuid"}}}, nil, obj{
+	relationshipParam := []any{obj{"name": "relationshipId", "in": "path", "required": true, "description": "Relationship id.", "schema": obj{"type": "string", "format": "uuid"}}}
+	paths["/v1/relationships/{relationshipId}"] = obj{"get": operation("Relationship Intelligence", "Get relationship mission control", "Returns living relationship state, governed recommendations, participants, and commitments.", "getRelationship", bearer(), relationshipParam, nil, obj{
 		"200": jsonResponse("Relationship detail.", objectSchema("Relationship detail.", obj{
-			"relationship": ref("RevenueRelationship"),
-			"actions":      arraySchema("Actions for this relationship.", ref("RevenueAction")),
+			"relationship":    ref("RevenueRelationship"),
+			"actions":         arraySchema("Actions for this relationship.", ref("RevenueAction")),
+			"recommendations": arraySchema("Governed recommendations.", ref("RevenueAction")),
+			"participants":    arraySchema("Relationship participants.", ref("RelationshipParticipant")),
+			"commitments":     arraySchema("Open and completed commitments.", ref("RelationshipCommitment")),
 		}), nil),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
+	})}
+	paths["/v1/relationships/{relationshipId}/timeline"] = obj{"get": operation("Relationship Intelligence", "Get evidence timeline", "Returns the latest immutable observations for a relationship.", "getRelationshipTimeline", bearer(), append(relationshipParam, obj{"name": "limit", "in": "query", "required": false, "description": "Maximum observations (1-100).", "schema": obj{"type": "integer"}}), nil, obj{
+		"200": jsonResponse("Evidence timeline.", objectSchema("Observation list.", obj{"observations": arraySchema("Observations.", ref("RelationshipObservation"))}), nil),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+	})}
+	paths["/v1/relationships/{relationshipId}/changes"] = obj{"get": operation("Relationship Intelligence", "Get relationship changes", "Returns immutable projection snapshots so operators can see what changed and why.", "getRelationshipChanges", bearer(), relationshipParam, nil, obj{
+		"200": jsonResponse("State changes.", objectSchema("Snapshot list.", obj{"snapshots": arraySchema("Snapshots.", ref("RelationshipStateSnapshot"))}), nil),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+	})}
+	paths["/v1/relationships/{relationshipId}/evidence/{evidenceId}"] = obj{"get": operation("Relationship Intelligence", "Open source evidence", "Returns one observation plus its decrypted raw payload. Tenant ownership is enforced before decryption.", "getRelationshipEvidence", bearer(), append(relationshipParam, obj{"name": "evidenceId", "in": "path", "required": true, "description": "Observation id.", "schema": obj{"type": "string", "format": "uuid"}}), nil, obj{
+		"200": jsonResponse("Source evidence.", objectSchema("Evidence result.", obj{"observation": ref("RelationshipObservation"), "payload": freeFormSchema("Decrypted provider payload.")}), nil),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+	})}
+	paths["/v1/relationships/{relationshipId}/corrections"] = obj{"post": operation("Relationship Intelligence", "Correct relationship state", "Appends a user correction assertion and deterministically reprojects the relationship. Source evidence is never overwritten.", "correctRelationship", bearer(), relationshipParam, jsonRequest("Correction.", objectSchema("Relationship correction.", obj{
+		"dimension": stringEnum("Corrected state dimension.", "health", "lifecycle", "engagement", "sentiment", "health", "next_action"),
+		"value":     stringSchema("Correct value.", "healthy"),
+		"reason":    stringSchema("Why the model is wrong.", "The review happened yesterday."),
+	}, "dimension", "value", "reason"), obj{"dimension": "health", "value": "healthy", "reason": "The review happened yesterday."}), obj{
+		"201": jsonResponse("Reprojected relationship.", ref("RevenueRelationship"), nil),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+	})}
+	paths["/v1/relationship-observations/batch"] = obj{"post": operation("Relationship Intelligence", "Ingest relationship observations", "Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.", "ingestRelationshipObservations", bearer(), nil, jsonRequest("Observation batch.", objectSchema("Observation batch.", obj{
+		"observations": arraySchema("Provider-neutral observations.", objectSchema("Observation input.", obj{
+			"relationshipId":  uuidSchema("Known relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+			"displayName":     stringSchema("Account display name for first ingestion.", "Acme"),
+			"primaryEmail":    stringSchema("Primary contact email.", "avery@acme.com"),
+			"accountDomain":   stringSchema("Exact account domain.", "acme.com"),
+			"source":          stringSchema("Evidence source.", "gmail"),
+			"sourceAccountId": stringSchema("Provider account id.", "me@company.com"),
+			"externalId":      stringSchema("Provider event id.", "message-123"),
+			"sourceVersion":   stringSchema("Provider event version.", "1"),
+			"eventType":       stringSchema("Normalized event type.", "commitment_created"),
+			"occurredAt":      stringSchema("Occurrence time.", "2026-07-18T17:30:00Z", obj{"format": "date-time"}),
+			"summary":         stringSchema("Bounded evidence summary.", "We promised the security packet."),
+			"normalizedFacts": freeFormSchema("Provider-neutral facts."),
+			"payload":         freeFormSchema("Raw provider payload, sealed at rest."),
+		}, "source", "externalId", "eventType")),
+	}, "observations"), obj{"observations": []any{obj{"displayName": "Acme", "accountDomain": "acme.com", "source": "gmail", "externalId": "message-123", "eventType": "commitment_created"}}}), obj{
+		"201": jsonResponse("Ingestion results.", freeFormSchema("Observation, relationship, and duplicate status per input."), nil),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"409": responseRef("409"),
+	})}
+	paths["/v1/relationship-sources/status"] = obj{"get": operation("Relationship Intelligence", "Get source health", "Returns freshness and failure state for each relationship evidence source.", "getRelationshipSourceStatuses", bearer(), nil, nil, obj{
+		"200": jsonResponse("Evidence source health.", objectSchema("Source status list.", obj{"sources": arraySchema("Sources.", ref("RelationshipSourceStatus"))}), nil),
+		"401": responseRef("401"),
+	})}
+	recommendationParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Recommendation/action id.", "schema": obj{"type": "string", "format": "uuid"}}}
+	paths["/v1/relationship-recommendations/{actionId}/approve"] = obj{"post": operation("Relationship Intelligence", "Approve a recommendation", "Relationship-intelligence alias for the governed action approval transition.", "approveRelationshipRecommendation", bearer(), recommendationParam, jsonRequestOptional("Approval options.", objectSchema("Approve request.", obj{"acceptRisk": boolSchema("Explicitly accept a review-required decision.", false)}), obj{"acceptRisk": false}), obj{
+		"200": jsonResponse("Approved recommendation.", ref("RevenueAction"), nil),
+		"401": responseRef("401"),
+		"409": responseRef("409"),
+	})}
+	paths["/v1/relationship-recommendations/{actionId}/reject"] = obj{"post": operation("Relationship Intelligence", "Reject a recommendation", "Relationship-intelligence alias for rejecting the current action revision.", "rejectRelationshipRecommendation", bearer(), recommendationParam, jsonRequest("Rejection.", objectSchema("Reject request.", obj{"reason": stringSchema("Rejection reason.", "Not the right next move.")}, "reason"), obj{"reason": "Not the right next move."}), obj{
+		"200": jsonResponse("Rejected recommendation.", ref("RevenueAction"), nil),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"409": responseRef("409"),
 	})}
 
 	paths["/v1/revenue-actions"] = obj{

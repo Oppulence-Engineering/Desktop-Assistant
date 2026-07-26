@@ -1,64 +1,41 @@
-<a href="https://www.youtube.com/watch?v=5AWoGo-L16I" target="_blank" rel="noopener noreferrer">
-  <img width="1339" height="607" alt="rowboat-github-2" src="https://github.com/user-attachments/assets/fc463b99-01b3-401c-b4a4-044dad480901" />
-</a>
+# Oppulence
 
-<h5 align="center">
+**Relationship intelligence for customer-facing teams**
 
-<p align="center" style="display: flex; justify-content: center; gap: 20px; align-items: center;">
-  <a href="https://trendshift.io/repositories/13609" target="blank">
-    <img src="https://trendshift.io/api/badge/repositories/13609" alt="rowboatlabs/rowboat | Trendshift" width="250" height="55"/>
-  </a>
-</p>
+Oppulence maintains an accurate, living model of every customer relationship
+and tells the team what needs action.
 
-<p align="center">
-    <a href="https://www.rowboatlabs.com/" target="_blank" rel="noopener">
-    <img alt="Website" src="https://img.shields.io/badge/Website-10b981?labelColor=10b981&logo=window&logoColor=white">
-  </a>
-  <a href="https://discord.gg/wajrgmJQ6b" target="_blank" rel="noopener">
-    <img alt="Discord" src="https://img.shields.io/badge/Discord-5865F2?logo=discord&logoColor=white&labelColor=5865F2">
-  </a>
-  <a href="https://x.com/intent/user?screen_name=rowboatlabshq" target="_blank" rel="noopener">
-    <img alt="Twitter" src="https://img.shields.io/twitter/follow/rowboatlabshq?style=social">
-  </a>
-  <a href="https://www.ycombinator.com" target="_blank" rel="noopener">
-    <img alt="Y Combinator" src="https://img.shields.io/badge/Y%20Combinator-S24-orange">
-  </a>
-</p>
+Email, calendar, Slack, meetings, notes, and CRM each hold part of the truth.
+Oppulence treats those systems as evidence streams, reconciles what they know,
+and presents one explainable relationship state across the web and desktop
+apps.
 
-# Rowboat
+The product direction is captured in the
+[Oppulence one-pager](./docs/one-pager.md) and
+[RFC 036: Relationship State Engine](./apps/rfc/036-relationship-state-engine.md):
 
-**Founder/operator control tower that keeps follow-ups, meeting context, relationship memory, and commitments from slipping**
+> Model the relationship directly. Treat every integration as an observer, link
+> every material claim to evidence, and recommend the next action without
+> hiding how the system reached its conclusion.
 
-</h5>
+Use Oppulence to:
 
-> **Fork notice** — This is the [Oppulence-Engineering](https://github.com/Oppulence-Engineering) fork of [rowboatlabs/rowboat](https://github.com/rowboatlabs/rowboat). It ships independent builds with its own release cadence, telemetry pipeline, and update channel. See [Fork details](#fork-details) below.
+- Open Account Mission Control and understand the current relationship state,
+  what changed, and why.
+- See lifecycle, engagement, sentiment, health, participants, commitments,
+  risks, milestones, and next actions in one place.
+- Trace important claims back to email, calendar, Slack, CRM, meetings, notes,
+  and desktop context.
+- Catch accounts that need attention before a renewal, deal, onboarding, or
+  commitment silently slips.
+- Correct the model when the evidence is incomplete or wrong.
+- Review and approve external actions before Oppulence sends or writes
+  anything.
 
-Rowboat connects to the work sources founders and operators already live in - email, calendar, meetings, Slack, notes, and eventually CRM/task systems - and turns them into an operating memory with daily briefs, follow-up queues, relationship pages, and approval-ready actions.
+Download the latest builds for Mac, Windows, and Linux:
+[Oppulence releases](https://github.com/Oppulence-Engineering/rowboat/releases/latest).
 
-The main product direction is captured in [RFC 029: Founder Operating Memory and Control Tower](./apps/rfc/029-founder-operating-memory.md):
-
-> Connect the work sources. Rowboat tells you what changed, what matters today, who needs a response, what was promised, and what action is ready for approval.
-
-The knowledge graph, MCP layer, model gateway, and Temporal runtime are infrastructure. The product promise is simpler: **nothing important slips.**
-
-Use Rowboat to:
-
-- Start the day with a source-linked founder brief across calendar, email, meetings, Slack, and active notes.
-- Catch stale follow-ups, unanswered asks, waiting-on-them threads, and dropped commitments before they cost a deal or relationship.
-- Walk into meetings with prior context, open loops, and the latest relationship history.
-- Keep person, company, deal, project, investor, vendor, and customer pages current through live notes.
-- Draft follow-ups, recaps, task updates, and CRM/calendar actions for human approval.
-- Keep the underlying memory inspectable and editable as plain Markdown on your machine.
-
-Download latest fork builds for Mac/Windows/Linux: [Oppulence releases](https://github.com/Oppulence-Engineering/rowboat/releases/latest)
-
-⭐ If you find Rowboat useful, please star the repo. It helps more people find it.
-
-## Demo
-
-[![Demo](https://github.com/user-attachments/assets/8b9a859b-d4f1-47ca-9d1d-9d26d982e15d)](https://www.youtube.com/watch?v=7xTpciZCfpw)
-
-[Watch the full video](https://www.youtube.com/watch?v=7xTpciZCfpw)
+⭐ If you find Oppulence useful, please star the repo. It helps more people find it.
 
 ---
 
@@ -86,7 +63,8 @@ To use Exa research search (optional), add the Exa API key in `~/.rowboat/config
 
 ### External tools
 
-To enable external tools (optional), add MCP servers or connect Rowboat managed integrations from the app.
+To enable external tools (optional), add MCP servers or connect
+Oppulence-managed integrations from the app.
 
 All API key files use the same format:
 
@@ -98,115 +76,192 @@ All API key files use the same format:
 
 ## What it does
 
-Rowboat is a **local-first operating memory** for founder-led work. It watches the work stream, keeps durable context, and turns that context into a few concrete surfaces:
+Oppulence turns fragmented activity into a durable relationship model and a
+small set of concrete workflows:
 
-- **Daily Founder Brief** - what matters today, who you are meeting, what changed, and which open loops need attention.
-- **Follow-Up Queue** - unanswered asks, stale deals, waiting-on-them threads, missed commitments, and draftable next actions.
-- **Relationship and Deal Memory** - living pages for people, companies, deals, projects, customers, investors, and vendors.
-- **Meeting Lifecycle** - pre-briefs, live or imported notes, action extraction, follow-up drafts, and memory updates.
-- **Approval-Gated Actions** - the model proposes; the user approves before external sends or writes.
+- **Account Mission Control** — the current state, recent changes, supporting
+  evidence, participants, commitments, risks, and recommended next action.
+- **Portfolio Attention Queue** — the relationships that need review now,
+  ordered by explainable signals rather than an opaque score.
+- **Relationship Timeline** — source-linked observations and state changes
+  across email, meetings, Slack, calendar, notes, and CRM.
+- **Commitment and Risk Tracking** — open promises, unresolved objections,
+  missing next steps, stalled onboarding, and renewal risk.
+- **Meeting Lifecycle** — pre-briefs, live or imported notes, action
+  extraction, follow-up drafts, and relationship-state updates.
+- **Approval-Gated Actions** — Oppulence proposes; a person approves before an
+  external send or write.
+- **Source Health** — visibility into which integrations are connected,
+  current, stale, or failing.
 
-Under the hood, Rowboat maintains an **Obsidian-compatible vault** of plain Markdown notes with backlinks - a transparent working memory you can inspect, edit, back up, and delete.
+The desktop app also maintains an **Obsidian-compatible Markdown vault** for
+local notes and working memory that users can inspect, edit, back up, and
+delete.
 
 ## Integrations
 
-Rowboat builds memory from the work you already do:
-
-It also contains a library of product integrations through Rowboat managed integrations and MCP servers.
+Oppulence builds relationship state from the work the team already does:
+email, calendar, Slack, meetings, notes, CRM, browser context, and connected
+tools. Managed integrations and MCP servers extend that evidence and action
+layer without changing the relationship model.
 
 ## How it’s different
 
-Most AI tools reconstruct context on demand by searching transcripts, documents, or chat history.
+Most AI tools search a collection of messages and generate a fresh summary.
+Oppulence maintains **long-lived relationship state** instead:
 
-Rowboat maintains **long-lived operating memory** instead:
+- observations remain immutable and source-linked;
+- assertions record whether a fact came from a source, a rule, AI inference, or
+  a user correction;
+- deterministic projection owns canonical state;
+- user corrections outrank source facts and model inference;
+- ambiguous identities wait for review rather than auto-merging;
+- recommendations include their evidence and confidence;
+- approvals and outcomes become part of the same history.
 
-- context accumulates over time
-- relationships and open loops are explicit
-- every important claim should link back to source evidence
-- generated artifacts are editable by you, not hidden inside a model
-- everything important can live on your machine as plain Markdown
-- cloud execution exists to run scheduled/event jobs, not to take ownership of your memory
+The result is a model that becomes more useful as evidence, corrections,
+decisions, and outcomes accumulate.
 
-The result is memory that compounds, rather than retrieval that starts cold every time.
+## How the relationship model works
+
+**Observe → Assert → Project → Explain → Recommend → Approve → Act → Learn**
+
+1. **Observe** — integrations and native clients emit immutable observations.
+2. **Assert** — facts, rules, inferences, and corrections become
+   provenance-bearing claims.
+3. **Project** — deterministic code produces the current relationship state.
+4. **Explain** — every material state and change links to supporting evidence.
+5. **Recommend** — Oppulence proposes the safest valuable next action.
+6. **Approve** — external actions wait for a human decision.
+7. **Act** — approved email, Slack, calendar, and CRM actions execute
+   idempotently.
+8. **Learn** — replies, meetings, edits, decisions, and outcomes update the
+   relationship history.
+
+## Web and desktop parity
+
+Web and desktop are equal clients of the same relationship-intelligence
+backend.
+
+| Web                                                                                                                  | Desktop                                                                                                                               |
+| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Portfolio review, team coordination, Account Mission Control, evidence, corrections, recommendations, and approvals. | The same relationship state and workflows, plus local knowledge, meeting capture, voice notes, browser context, and native execution. |
+
+Platform-native affordances differ, but relationship state, evidence,
+corrections, recommendations, and approvals stay synchronized. Neither client
+ships a core relationship workflow alone.
 
 ## Core workflows
 
-- **Start-of-day briefing**: today's meetings, important messages, stale commitments, and risks in one source-linked artifact.
-- **Follow-up recovery**: find the threads and relationships that are going cold, then draft the next touch.
-- **Meeting prep and closeout**: walk in with context, leave with actions, and roll the new information back into the graph.
-- **Relationship tracking**: keep a live page for an investor, customer, vendor, candidate, deal, or strategic account.
-- **Operator approvals**: review a proposed email, task, CRM note, calendar hold, or Slack summary before it lands externally.
+- **Account review** — understand the state of a relationship, what changed,
+  what evidence supports it, and what needs action now.
+- **Portfolio triage** — find quiet accounts, unresolved risks, overdue
+  commitments, and missing next steps across the book of business.
+- **Meeting prep and closeout** — walk in with prior context, leave with
+  commitments, and project the new evidence into relationship state.
+- **Follow-up recovery** — identify relationships going cold and draft the next
+  touch from the full history.
+- **Human approval** — review a proposed email, task, CRM update, calendar
+  action, or Slack message before it lands externally.
 
 ## Background jobs
 
-The product is designed around always-on jobs, not only one-off chat:
+Oppulence is designed around always-on observation and projection, not only
+one-off chat:
 
-| Job                         | What it does                                                                                       |
-| --------------------------- | -------------------------------------------------------------------------------------------------- |
-| Daily Founder Brief         | Builds the morning control-tower artifact from calendar, email, meetings, Slack, and active notes. |
-| Follow-Up Sweeper           | Finds unanswered asks, stale deals, waiting-on-them threads, and dropped commitments.              |
-| Meeting Pre-Brief           | Prepares context from prior emails, notes, attendees, and relationship history.                    |
-| Post-Meeting Processor      | Extracts actions, drafts recaps, and updates relationship/deal pages.                              |
-| Relationship Refresh        | Keeps person, company, deal, project, investor, vendor, and customer pages current.                |
-| Connector Health and Repair | Surfaces sync failures, stale watches, and token problems before the user trusts bad data.         |
+| Job                         | What it does                                                                                      |
+| --------------------------- | ------------------------------------------------------------------------------------------------- |
+| Relationship Refresh        | Ingests new evidence and projects the latest account state.                                       |
+| Attention Monitor           | Finds quiet accounts, unresolved risks, overdue commitments, and missing next steps.              |
+| Meeting Pre-Brief           | Prepares the current state, prior evidence, participants, and open loops.                         |
+| Post-Meeting Processor      | Extracts observations and commitments, drafts a recap, and updates relationship state.            |
+| Recommendation Review       | Produces evidence-backed next actions and routes them for approval.                               |
+| Connector Health and Repair | Surfaces stale sources, failed syncs, and token problems before the team trusts incomplete state. |
 
 ## Live notes
 
-Live notes are notes that stay updated automatically. They are the core primitive behind relationship and deal memory.
+Live notes are desktop artifacts that stay updated from the same relationship
+evidence:
 
-- Track a person, company, project, deal, investor, vendor, customer, competitor, or market topic.
+- Track a customer, prospect, company, person, deal, project, partner, vendor,
+  competitor, or market topic.
 - Refresh on a schedule, inside a time window, on an event, or manually.
-- Keep a running summary with source trail, recent changes, open loops, and suggested next action.
+- Keep a running summary with a source trail, recent changes, open loops, and a
+  suggested next action.
 
-Everything is written back into your local Markdown vault. You control what runs, when it runs, and which actions require review.
+The local Markdown vault remains user-controlled, while shared relationship
+state stays synchronized with the web app.
 
 ## Finance operating loop
 
-The same control-tower architecture extends into the Oppulence finance portfolio:
+Finance workflows consume the same relationship state rather than defining the
+category:
 
 - **Conduitt / Conduit** gives evidence: invoice emails, replies, disputes, and follow-ups bound to the financial record they explain.
 - **Cadence** gives AP obligations: vendor bills, payment runs, due dates, approvals, and cash outflows.
 - **Eigen** gives foresight: runway, liquidity, covenant, and AR/AP stress simulation before an agent recommends an action.
 
-Together they let Rowboat answer: who owes us, why have they not paid, who do we owe, what happens if this slips, and what action should a human approve next.
+Together they let Oppulence detect revenue and cash-flow risk from the state of
+the underlying customer and vendor relationships.
 
 ## Bring your own model
 
-Rowboat works with the model setup you prefer:
+Oppulence works with the model setup you prefer:
 
 - **Local models** via Ollama or LM Studio
 - **Hosted models** (bring your own API key/provider)
-- Swap models anytime — your data stays in your local Markdown vault
+- Swap models without resetting the underlying evidence or relationship
+  history
 
-## Extend Rowboat with tools (MCP)
+## Extend Oppulence with tools (MCP)
 
-Rowboat can connect to external tools and services via **Model Context Protocol (MCP)**.
-That means you can plug in (for example) search, databases, CRMs, support tools, and automations - or your own internal tools.
+Oppulence can connect to external tools and services through the
+**Model Context Protocol (MCP)**. Add search, databases, CRMs, support tools,
+automations, or internal systems as additional evidence and action providers.
 
 Examples: Exa (web search), Twitter/X, ElevenLabs (voice), Slack, Linear/Jira, GitHub, and more.
 
-## Local-first by design
+## Evidence, control, and ownership
 
-- All data is stored locally as plain Markdown
-- No proprietary formats or hosted lock-in
-- You can inspect, edit, back up, or delete everything at any time
-- Cloud jobs are scoped, auditable, and designed to support the local memory rather than replace it
+- Every material relationship claim links to source evidence.
+- User corrections are explicit, durable, and higher priority than inferred
+  state.
+- Raw evidence and canonical relationship state are tenant-isolated.
+- Desktop notes and working memory remain inspectable as plain Markdown.
+- External actions are approval-gated and audited.
+- Cloud jobs are scoped to observation, projection, recommendation, and
+  approved execution.
 
 ---
 
 ## Architecture & Deployment
 
-There are several surfaces in this repo, but the RFC 029 product center is:
+The product is organized around three primary surfaces backed by one
+relationship model:
 
-1. **Desktop control tower (`apps/x`)** - the local-first daily-driver experience and Markdown vault.
-2. **Always-on execution plane (`apps/rowboat-api`)** - the Go service that runs cloud jobs, brokers connectors, meters LLM use, and keeps work moving while the desktop is closed.
-3. **Control-tower UI exploration (`apps/rowboatx`)** - a newer Next.js shell for artifacts, queues, tools, tasks, and conversations.
+1. **Oppulence Web (`apps/rowboat-www`)** — portfolio review, team
+   coordination, Account Mission Control, evidence, corrections,
+   recommendations, and approvals.
+2. **Oppulence Desktop (`apps/x`)** — the same relationship workflows plus
+   ambient context, local knowledge, meeting capture, voice notes, and native
+   execution.
+3. **Oppulence API (`apps/rowboat-api`)** — the relationship state engine,
+   evidence and assertion history, connector broker, and always-on execution
+   plane shared by both clients.
 
-`apps/rowboat` remains the older hosted platform/agent-builder surface. It is useful infrastructure and reference code, but RFC 029 keeps the buyer-facing wedge focused on briefs, follow-ups, relationship memory, and approval queues.
+`apps/rowboatx` remains a UI exploration and `apps/rowboat` remains the older
+hosted agent-builder platform. They are supporting codebases, not the center of
+the relationship-intelligence product direction.
 
 ### Primary surfaces
 
-**1. Rowboat Desktop (`apps/x`)** - the shipped user-facing product. Electron, local-first, builds the Markdown operating memory on the user's machine.
+**1. Oppulence Web (`apps/rowboat-www`)** — the browser client for the same
+relationship state and workflows available on desktop. It also contains the
+public product site.
+
+**2. Oppulence Desktop (`apps/x`)** — the Electron client and local observation
+node. It adds native context and execution while retaining parity for core
+relationship work.
 
 ```
 apps/x/
@@ -219,9 +274,16 @@ apps/x/
     └── core/        # @x/core — AI, OAuth, MCP, business logic
 ```
 
-Build chain: `shared -> core -> preload -> renderer/main`. `npm run deps` builds the workspaces; esbuild bundles the main process to a single CommonJS file because Electron Forge's dep walker can't follow pnpm symlinks. See [`apps/x/LIVE_NOTE.md`](./apps/x/LIVE_NOTE.md) for the live-note runtime.
+Build chain: `shared -> core -> preload -> renderer/main`. `npm run deps` builds
+the workspaces; esbuild bundles the main process to a single CommonJS file
+because Electron Forge's dependency walker cannot follow pnpm symlinks. See
+[`apps/x/LIVE_NOTE.md`](./apps/x/LIVE_NOTE.md) for the live-note runtime.
 
-**2. Oppulence API (`apps/rowboat-api`)** - Go service plane for desktop cloud features and always-on jobs: WorkOS auth, billing/credits, LLM gateway, provider proxies, Google/Slack OAuth, connector OAuth, background tasks, event ingestion, Temporal workflows, durable agent sessions, and OpenAPI.
+**3. Oppulence API (`apps/rowboat-api`)** — the Go service for canonical
+relationship state, observations, assertions, projections, source health, and
+always-on work. It also provides WorkOS authentication, billing and credits,
+the LLM gateway, provider proxies, OAuth, background tasks, event ingestion,
+Temporal workflows, durable agent sessions, and OpenAPI.
 
 ```
 apps/rowboat-api/
@@ -233,11 +295,20 @@ apps/rowboat-api/
 └── internal/         # auth, billing, connectors, jobs, runtime, agents, telemetry
 ```
 
-This is the plane that makes Daily Founder Briefs, Follow-Up Sweepers, event-triggered relationship refreshes, and connector repair jobs run reliably beyond the desktop process. See [apps/rowboat-api/README.md](./apps/rowboat-api/README.md) and [apps/rfc/README.md](./apps/rfc/README.md).
+This shared plane keeps web and desktop at parity and makes event-triggered
+relationship refreshes, attention monitoring, recommendation review, approved
+actions, and connector repair reliable while either client is closed. See
+[apps/rowboat-api/README.md](./apps/rowboat-api/README.md),
+[apps/rfc/README.md](./apps/rfc/README.md), and
+[RFC 036](./apps/rfc/036-relationship-state-engine.md).
 
-**3. RowboatX (`apps/rowboatx`)** - Next.js frontend exploration for the next control-tower UI: artifacts, task queues, tool traces, conversations, JSON/Markdown editors, and app navigation.
+**4. RowboatX (`apps/rowboatx`)** — Next.js frontend exploration for artifacts,
+task queues, tool traces, conversations, JSON/Markdown editors, and app
+navigation.
 
-**4. Rowboat Platform (`apps/rowboat`)** - older Next.js app that hosts projects, workflows, the visual agent builder, RAG, and the chat widget API. Hexagonal-ish layering:
+**5. Rowboat Platform (`apps/rowboat`)** — older Next.js app that hosts
+projects, workflows, the visual agent builder, RAG, and the chat widget API.
+Its layering is:
 
 ```
 apps/rowboat/src/
@@ -253,7 +324,6 @@ Plus Next.js routes under `app/api/` — `app/api/widget/v1/*` is what the chat 
 
 | Path                                  | What it is                                                                                                                          |
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/rowboat-www`                    | Oppulence marketing site and desktop companion web app.                                                                             |
 | `apps/cli`                            | CLI tool.                                                                                                                           |
 | `apps/python-sdk`                     | The `rowboat` PyPI client (used by `simulation_runner`).                                                                            |
 | `apps/docs`                           | Docs site, shipped on port 8000 via the `docs` profile.                                                                             |
@@ -324,13 +394,27 @@ The primary surfaces ship through **separate pipelines**.
 1. `release-please` scans commits under `apps/x/` (per `.release-please-config.json`). On a `feat:`/`fix:`/`feat!:`, it opens (or updates) a Release PR with a `CHANGELOG.md` bump + version. Merging that PR causes the next push to produce `release_created: true` and a tag `apps/x@vX.Y.Z`.
 2. Three parallel builders fan out from the tag: `build-macos` (imports Apple cert into a temp keychain, makes `.dmg` + `.zip` for arm64 + x64), `build-linux` (`.deb` / `.rpm` / `.zip` per arch), `build-windows` (Squirrel `.exe` + portable `.zip`).
 3. Publish job attaches 16 installer assets + SPDX/CycloneDX SBOMs to the GitHub Release.
-4. Installed clients use `update-electron-app` pointed at this fork's releases; they download in the background and apply on next launch.
+4. Installed clients use `update-electron-app` with the project's GitHub
+   Releases feed; they download updates in the background and apply them on
+   the next launch.
 
-End-to-end: ~6 minutes from merging the release PR to installers on the Releases page. Details in [Fork details](#fork-details) below.
+End-to-end: ~6 minutes from merging the release PR to installers on the
+Releases page. See [Distribution and operations](#distribution-and-operations)
+below.
 
-**Oppulence API (`apps/rowboat-api`)** has its own quality and deploy workflows: [`.github/workflows/rowboat-api-quality.yml`](./.github/workflows/rowboat-api-quality.yml) and [`.github/workflows/rowboat-api-deploy.yml`](./.github/workflows/rowboat-api-deploy.yml). Local API development uses [`docker-compose.rowboat-api.yml`](./docker-compose.rowboat-api.yml). This is the service plane for RFC 029 jobs that need scheduled/event execution while the desktop is offline.
+**Oppulence API (`apps/rowboat-api`)** has its own quality and deploy workflows:
+[`.github/workflows/rowboat-api-quality.yml`](./.github/workflows/rowboat-api-quality.yml)
+and
+[`.github/workflows/rowboat-api-deploy.yml`](./.github/workflows/rowboat-api-deploy.yml).
+Local API development uses
+[`docker-compose.rowboat-api.yml`](./docker-compose.rowboat-api.yml). This is
+the relationship-state and execution plane shared by the web and desktop
+clients.
 
-**Platform (`apps/rowboat`)** is source-distributed — no registry push in this fork. Users run `./start.sh` locally (or in their own infra), which builds the images from source and brings up the compose stack. Feature flags toggle behavior:
+**Platform (`apps/rowboat`)** is source-distributed rather than pushed to a
+registry. Users run `./start.sh` locally or in their own infrastructure, which
+builds the images from source and brings up the Compose stack. Feature flags
+toggle behavior:
 
 | Flag                                                  | Effect                                            |
 | ----------------------------------------------------- | ------------------------------------------------- |
@@ -356,29 +440,28 @@ End-to-end: ~6 minutes from merging the release PR to installers on the Releases
 
 ### Summary
 
-- Desktop app (`apps/x`) is the **local-first control tower** — release-please + electron-forge + GitHub Releases + auto-update.
-- Oppulence API (`apps/rowboat-api`) is the **always-on execution plane** — scheduled jobs, event routing, connector broker, LLM gateway, Temporal worker, durable agent sessions, and observability.
-- RowboatX (`apps/rowboatx`) is the **next control-tower UI exploration** for artifacts, queues, tools, tasks, and conversations.
+- Oppulence Web (`apps/rowboat-www`) is the **team and portfolio client** for
+  Account Mission Control, evidence, corrections, recommendations, and
+  approvals.
+- Oppulence Desktop (`apps/x`) is the **native relationship client and
+  observation node** — release-please + electron-forge + GitHub Releases +
+  auto-update.
+- Oppulence API (`apps/rowboat-api`) is the **relationship-state and always-on
+  execution plane** — observations, assertions, projections, source health,
+  scheduled jobs, event routing, connectors, LLM gateway, Temporal, durable
+  agents, and observability.
+- RowboatX (`apps/rowboatx`) is a **supporting UI exploration** for artifacts,
+  queues, tools, tasks, and conversations.
 - Web platform (`apps/rowboat`) is the **older self-hosted agent-builder platform** — one Next.js image runs as three roles (server, jobs-worker, rag-worker), plus Mongo/Redis/Qdrant, with `rowboat_agents` + `copilot` as separate LLM services and the experimental apps as optional satellites.
 - These surfaces share repo-level contracts and clients where useful, but have independent release and deployment paths.
 
 ---
 
-<div align="center">
+## Distribution and operations
 
-[Discord](https://discord.gg/wajrgmJQ6b) · [Twitter](https://x.com/intent/user?screen_name=rowboatlabshq)
+### Installation
 
-</div>
-
----
-
-## Fork details
-
-This fork is maintained independently of upstream. The substantive differences are confined to the desktop app under `apps/x/` plus the CI/release pipeline under `.github/workflows/`.
-
-### Installation (this fork)
-
-Download installers from this fork's releases page:
+Download installers from the project's releases page:
 
 **Latest release:** https://github.com/Oppulence-Engineering/rowboat/releases/latest
 
@@ -386,20 +469,26 @@ Each release ships 16 installer assets covering the full Mac/Windows/Linux matri
 
 ### Auto-update
 
-The desktop app uses [`update-electron-app`](https://github.com/electron/update-electron-app) and is pointed at this fork's release feed (`Oppulence-Engineering/rowboat`). Installed clients check for new versions on startup and silently download in the background; the next launch boots into the new version. To opt out, quit and remove the app — no telemetry is sent past that point.
+The desktop app uses
+[`update-electron-app`](https://github.com/electron/update-electron-app) with
+the `Oppulence-Engineering/rowboat` release feed. Installed clients check for
+new versions on startup and download them in the background; the next launch
+uses the new version. To opt out, quit and remove the app.
 
 ### Telemetry and crash reporting
 
-This fork uses [PostHog](https://posthog.com/) for both product analytics and exception capture. The main process registers `process.on('uncaughtException')` and `process.on('unhandledRejection')` handlers that ship to `posthog-node`; the renderer enables `capture_exceptions: true` on the React provider so browser-side errors flow to `posthog-js` automatically. No third-party crash-reporting SDK is wired in. See [ANALYTICS.md](./ANALYTICS.md) for the full event taxonomy and opt-out instructions.
+Oppulence uses [PostHog](https://posthog.com/) for product analytics and
+exception capture. The main process registers `uncaughtException` and
+`unhandledRejection` handlers through `posthog-node`; the renderer uses
+`posthog-js` with exception capture enabled. See
+[ANALYTICS.md](./ANALYTICS.md) for the event taxonomy and opt-out
+instructions.
 
 ### Release process
 
 Releases follow [Conventional Commits](https://www.conventionalcommits.org/). When a PR with a `feat:`, `fix:`, or `feat!:`/`fix!:` commit (squash-merged into `main`) touches `apps/x/`, [release-please](https://github.com/googleapis/release-please) automatically opens a release PR with the version bump and changelog entry. Merging that PR cuts a tag, triggers parallel macOS/Linux/Windows builds via electron-forge, attaches all 16 installer assets to the GitHub Release, and uploads SBOMs. Total wall-clock time is around 6 minutes.
 
-### Upstream sync
-
-Upstream changes are periodically merged in via `Sync fork` on the GitHub UI. Fork-specific files (anything under `.github/workflows/release.yml`, `apps/x/apps/main/forge.config.js`, `apps/x/packages/core/src/posthog.ts`, and this section of `README.md`) take precedence on conflict.
-
 ### Security
 
-To report a vulnerability in this fork, see [SECURITY.md](./SECURITY.md) (email: admin@solomon-ai.co). Vulnerabilities in upstream code should be reported to [rowboatlabs/rowboat](https://github.com/rowboatlabs/rowboat) directly.
+To report a vulnerability, see [SECURITY.md](./SECURITY.md) or email
+admin@solomon-ai.co.

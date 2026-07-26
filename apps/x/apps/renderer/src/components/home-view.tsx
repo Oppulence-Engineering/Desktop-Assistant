@@ -187,11 +187,7 @@ const TOOLKIT_PREVIEW_LIMIT = 8;
 let cachedToolkitPreviews: ToolkitPreview[] | null = null;
 let cachedToolkitLogosLoaded = false;
 
-function ToolkitPreviewIcon({
-  toolkit,
-}: {
-  toolkit: ToolkitPreview;
-}) {
+function ToolkitPreviewIcon({ toolkit }: { toolkit: ToolkitPreview }) {
   return (
     <div
       title={`${toolkit.name}: ${toolkit.description}`}
@@ -626,10 +622,7 @@ export function HomeView({
                 <div className="mt-3 flex min-h-5 flex-wrap items-center gap-1.5">
                   {toolkitLogosLoaded &&
                     toolkitPreviews.map((toolkit) => (
-                      <ToolkitPreviewIcon
-                        key={toolkit.slug}
-                        toolkit={toolkit}
-                      />
+                      <ToolkitPreviewIcon key={toolkit.slug} toolkit={toolkit} />
                     ))}
                   <button
                     type="button"

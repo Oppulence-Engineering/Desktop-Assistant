@@ -73,6 +73,7 @@ const notificationService = new ElectronNotificationService();
 import {
   DEEP_LINK_SCHEME,
   LEGACY_DEEP_LINK_SCHEME,
+  OLDEST_DEEP_LINK_SCHEME,
   dispatchUrl,
   extractDeepLinkFromArgv,
   setMainWindowForDeepLinks,
@@ -153,7 +154,7 @@ if (app.isPackaged && !app.requestSingleInstanceLock()) {
 
 // Register as the OS handler for solomon-ai:// URLs.
 // In dev, point at the right argv so the OS can re-invoke us correctly.
-for (const scheme of [DEEP_LINK_SCHEME, LEGACY_DEEP_LINK_SCHEME]) {
+for (const scheme of [DEEP_LINK_SCHEME, LEGACY_DEEP_LINK_SCHEME, OLDEST_DEEP_LINK_SCHEME]) {
   if (process.defaultApp) {
     if (process.argv.length >= 2) {
       app.setAsDefaultProtocolClient(scheme, process.execPath, [path.resolve(process.argv[1])]);
