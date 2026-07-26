@@ -1,16 +1,16 @@
 # RFC 012: Connector Suite and Consent Broker
 
-|                  |                                                                                                       |
-| ---------------- | ----------------------------------------------------------------------------------------------------- |
-| **RFC**          | 012                                                                                                   |
-| **Status**       | Draft                                                                                                 |
-| **Track**        | Cross-product connector authorization                                                                 |
-| **Owners**       | `apps/rowboat-api`, `apps/oauth-consent`, product MCP owners                                          |
-| **Created**      | 2026-06-06                                                                                            |
-| **Last updated** | 2026-06-06                                                                                            |
-| **Depends on**   | [RFC 011](./complete-011-identity-and-authorization-plane.md), WorkOS, deferred Hydra/Ory broker mode |
-| **Enables**      | [RFC 013](./013-oppulence-product-connector-fabric.md), [RFC 008](./008-conduit-eigen-faculties.md)   |
-| **Supersedes**   | Former connector suite plan and connector sections of the former backend implementation plan.         |
+|                  |                                                                                                                                                           |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**          | 012                                                                                                                                                       |
+| **Status**       | Implementing — core broker endpoints landed; full consent and first-party rollout open                                                                    |
+| **Track**        | Cross-product connector authorization                                                                                                                     |
+| **Owners**       | `apps/rowboat-api`, `apps/oauth-consent`, product MCP owners                                                                                              |
+| **Created**      | 2026-06-06                                                                                                                                                |
+| **Last updated** | 2026-07-26                                                                                                                                                |
+| **Depends on**   | [RFC 011](./complete-011-identity-and-authorization-plane.md), WorkOS, deferred Hydra/Ory broker mode                                                     |
+| **Enables**      | [RFC 013](./013-oppulence-product-connector-fabric.md), [RFC 020](./020-native-third-party-action-engine.md), [RFC 008](./008-conduit-eigen-faculties.md) |
+| **Supersedes**   | Former connector suite plan and connector sections of the former backend implementation plan.                                                             |
 
 ## Summary
 
@@ -23,18 +23,23 @@ tokens.
 
 This RFC defines the authorization substrate. Product-specific data planes and
 MCP contracts are covered by [RFC 013](./013-oppulence-product-connector-fabric.md).
+Third-party package authoring, generic provider auth adapters, actions,
+triggers, ingestion, relationship mappings, and certification are covered by
+[RFC 020](./020-native-third-party-action-engine.md). RFC 020 extends this
+substrate; it does not create a second credential broker.
 
 ## Current state
 
-| Capability                      | State                                               |
-| ------------------------------- | --------------------------------------------------- |
-| Desktop MCP client              | Exists in `apps/x/packages/core/src/mcp`            |
-| Canvas MCP                      | Exists in the portfolio, already HTTP-MCP shaped    |
-| Corinthian MCP                  | Exists with approval-token patterns                 |
-| Cadence/Billflow MCP            | Missing or needs shim                               |
-| rowboat-api connector endpoints | Planned in docs; not the canonical numbered RFC yet |
-| Hydra/Ory broker                | Deferred by deployment doc                          |
-| Consent UI                      | Artifacts exist but deferred                        |
+| Capability                      | State                                                                       |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| Desktop MCP client              | Exists in `apps/x/packages/core/src/mcp`                                    |
+| Canvas MCP                      | Exists in the portfolio, already HTTP-MCP shaped                            |
+| Corinthian MCP                  | Exists with approval-token patterns                                         |
+| Cadence/Billflow MCP            | Missing or needs shim                                                       |
+| rowboat-api connector endpoints | Landed: catalog; OAuth start/callback/claim; API key; MCP token; disconnect |
+| Connection storage and audit    | Landed: `MCPConnection`, history hooks, and tenant interceptors             |
+| Hydra/Ory broker                | Deferred by deployment doc                                                  |
+| Consent UI                      | Artifacts exist but deferred                                                |
 
 RFC 004 assumes cloud runtime connector reads, and RFC 008 assumes connector
 registry access for Conduit/Eigen. This RFC fills the shared broker contract those
@@ -56,7 +61,8 @@ RFCs depend on.
 - Proxying MCP traffic through rowboat-api.
 - Replacing WorkOS as human identity.
 - Handling third-party bank/Plaid tokens in Rowboat.
-- Building generic external-provider OAuth for arbitrary SaaS products.
+- Defining generic external-provider packages or runtime behavior; RFC 020 owns
+  that layer while reusing this RFC's consent and credential controls.
 
 ## Architecture
 
