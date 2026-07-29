@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.22](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.21...v0.1.22) (2026-07-29)
+
+
+### Features
+
+* build relationship intelligence foundation ([fb16aed](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/fb16aeda554e00e8404f3e72e6f4fce87a3d7db3))
+
 ## [0.1.21](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.20...v0.1.21) (2026-07-21)
 
 
