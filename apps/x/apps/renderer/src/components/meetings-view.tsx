@@ -23,6 +23,7 @@ import { conferenceProviderLabel, extractConferenceLink, isEventNow } from "@/li
 import { cn } from "@/lib/utils";
 import type { MeetingTranscriptionState } from "@/hooks/useMeetingTranscription";
 import { MeetingCaptureStrip } from "@/components/meeting-capture-strip";
+import { MeetingCommitments } from "@/components/meeting-commitments";
 import { MeetingRecordings } from "@/components/meeting-recordings";
 
 const MEETINGS_ROOT = "knowledge/Meetings";
@@ -1152,6 +1153,7 @@ export function MeetingsView({
         <UpcomingEvents />
         {/* Recordings on disk: transcribe again, or delete. Renders nothing when there
             are none, so the in-app capture path looks exactly as it did. */}
+        <MeetingCommitments onOpenNote={onOpenNote} />
         <MeetingRecordings onOpenNote={onOpenNote} />
         <div className="p-6">
           {loading ? (

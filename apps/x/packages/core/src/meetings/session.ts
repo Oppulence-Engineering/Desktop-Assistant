@@ -14,6 +14,8 @@ import { WorkDir } from "../config/config.js";
  */
 
 export const META_FILE = "meta.json";
+/** Unconfirmed commitment proposals, written next to the transcript they came from. */
+export const COMMITMENTS_JSON = "commitments.json";
 export const TRANSCRIPT_JSON = "transcript.json";
 export const TRANSCRIPT_MD = "transcript.md";
 export const TRANSCRIBE_LOG = "transcribe.log";

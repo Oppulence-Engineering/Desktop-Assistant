@@ -35,6 +35,12 @@ type MeetingCaptureHandlers = {
   "meeting:deleteAllSessions": InvokeHandler<"meeting:deleteAllSessions">;
   "meeting:sessionTranscript": InvokeHandler<"meeting:sessionTranscript">;
   "meeting:audioTracks": InvokeHandler<"meeting:audioTracks">;
+  "meeting:commitments": InvokeHandler<"meeting:commitments">;
+  "meeting:pendingCommitments": InvokeHandler<"meeting:pendingCommitments">;
+  "meeting:confirmCommitment": InvokeHandler<"meeting:confirmCommitment">;
+  "meeting:dismissCommitment": InvokeHandler<"meeting:dismissCommitment">;
+  "meeting:ledger": InvokeHandler<"meeting:ledger">;
+  "meeting:setCommitmentStatus": InvokeHandler<"meeting:setCommitmentStatus">;
   "ui:getState": InvokeHandler<"ui:getState">;
   "ui:setState": InvokeHandler<"ui:setState">;
   "meeting:storageUsage": InvokeHandler<"meeting:storageUsage">;
@@ -122,6 +128,24 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
     },
     "meeting:beginRecording": async () => {
       return controller().beginRecording();
+    },
+    "meeting:pendingCommitments": async () => {
+      return { sessions: await controller().pendingCommitments() };
+    },
+    "meeting:commitments": async (_event, args) => {
+      return controller().commitments(args.sessionId);
+    },
+    "meeting:confirmCommitment": async (_event, args) => {
+      return controller().confirmCommitment(args.sessionId, args.startMs, args.endMs);
+    },
+    "meeting:dismissCommitment": async (_event, args) => {
+      return controller().dismissCommitment(args.sessionId, args.startMs, args.endMs);
+    },
+    "meeting:ledger": async () => {
+      return { commitments: await controller().ledger() };
+    },
+    "meeting:setCommitmentStatus": async (_event, args) => {
+      return { updated: await controller().setCommitmentStatus(args.id, args.status) };
     },
     "meeting:audioTracks": async (_event, args) => {
       return controller().audioTracks(args.sessionId);

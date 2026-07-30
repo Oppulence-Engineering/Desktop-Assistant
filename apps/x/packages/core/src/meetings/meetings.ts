@@ -60,6 +60,21 @@ export type { MeetingProvenance, WriteMeetingNoteArgs } from "./note.js";
 export { listSessionSummaries, readTranscript } from "./list.js";
 
 export { resolveCounterparty } from "./attendees.js";
+export {
+  CommitmentExtraction,
+  MIN_CONFIDENCE,
+  ProposedCommitment,
+  mightContainCommitments,
+  validateCommitments,
+} from "./commitments.js";
+export { extractCommitments } from "./commitments-ai.js";
+export {
+  commitmentId,
+  confirmCommitment,
+  readLedger,
+  setCommitmentStatus,
+  LedgerCommitment,
+} from "./commitment-ledger.js";
 export type {
   AttendeeSource,
   Counterparty,

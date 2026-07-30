@@ -30,7 +30,17 @@ import {
   withTranscriberFallback,
   writeMeetingNote,
   resolveCounterparty,
+  extractCommitments,
+  confirmCommitment,
+  readLedger,
+  setCommitmentStatus,
 } from "@x/core/dist/meetings/meetings.js";
+import type { LedgerCommitment, ProposedCommitment } from "@x/core/dist/meetings/meetings.js";
+import {
+  readCommitmentProposals,
+  removeCommitmentProposal,
+  writeCommitmentProposals,
+} from "@x/core/dist/meetings/commitment-store.js";
 import { buildKnowledgeIndex } from "@x/core/dist/knowledge/knowledge_index.js";
 import type { MeetingTranscriber } from "@x/core/dist/meetings/meetings.js";
 import type { WhisperService } from "@x/core/dist/voice/whisper/index.js";
@@ -507,6 +517,109 @@ export class MeetingController {
     }
   }
 
+  /** Unconfirmed proposals for a session, with the name to show for `them`. */
+  async commitments(
+    sessionId: string,
+  ): Promise<{ proposals: ProposedCommitment[]; counterparty?: string }> {
+    const dir = await this.sessionPath(sessionId);
+    if (!dir) return { proposals: [] };
+    const stored = await readCommitmentProposals(dir);
+    return { proposals: stored?.proposals ?? [], counterparty: stored?.counterparty };
+  }
+
+  /**
+   * Unconfirmed proposals across recent sessions, newest first.
+   *
+   * Bounded to the most recent sessions rather than the whole history: a proposal from
+   * three months ago that was never confirmed was, in effect, declined, and showing it
+   * forever turns the list into something people stop reading.
+   */
+  async pendingCommitments(limit = 10): Promise<
+    {
+      sessionId: string;
+      meetingTitle?: string;
+      meetingStarted?: string;
+      counterparty?: string;
+      notePath?: string;
+      proposals: ProposedCommitment[];
+    }[]
+  > {
+    const sessions = (await this.listSessions()).slice(0, limit);
+    const out = [];
+    for (const session of sessions) {
+      const stored = await readCommitmentProposals(session.dir);
+      if (!stored || stored.proposals.length === 0) continue;
+      out.push({
+        sessionId: session.id,
+        meetingTitle: stored.meetingTitle,
+        meetingStarted: stored.meetingStarted ?? session.startedAt,
+        counterparty: stored.counterparty,
+        notePath: stored.notePath ?? session.notePath,
+        proposals: stored.proposals,
+      });
+    }
+    return out;
+  }
+
+  /**
+   * Confirm one proposal into the ledger and drop it from the pending list.
+   *
+   * Identified by its span rather than by index: the pending list can change under a
+   * window that has been open for a while, and confirming "the third one" would then
+   * confirm the wrong commitment.
+   */
+  async confirmCommitment(
+    sessionId: string,
+    startMs: number,
+    endMs: number,
+  ): Promise<{ confirmed: boolean; id?: string }> {
+    const dir = await this.sessionPath(sessionId);
+    if (!dir) return { confirmed: false };
+    const stored = await readCommitmentProposals(dir);
+    const proposal = stored?.proposals.find(
+      (item) => item.start_ms === startMs && item.end_ms === endMs,
+    );
+    if (!proposal) return { confirmed: false };
+
+    const entry = await confirmCommitment({
+      proposal,
+      sessionId,
+      notePath: stored?.notePath,
+      meetingTitle: stored?.meetingTitle,
+      meetingStarted: stored?.meetingStarted,
+      counterpartyLabel: stored?.counterparty,
+    });
+    await removeCommitmentProposal(dir, startMs, endMs);
+    return { confirmed: true, id: entry.id };
+  }
+
+  async dismissCommitment(
+    sessionId: string,
+    startMs: number,
+    endMs: number,
+  ): Promise<{ dismissed: boolean }> {
+    const dir = await this.sessionPath(sessionId);
+    if (!dir) return { dismissed: false };
+    return { dismissed: await removeCommitmentProposal(dir, startMs, endMs) };
+  }
+
+  async ledger(): Promise<LedgerCommitment[]> {
+    // Newest first: the ledger is read to answer "what did I just agree to".
+    return (await readLedger()).sort((a, b) => b.confirmed_at.localeCompare(a.confirmed_at));
+  }
+
+  async setCommitmentStatus(id: string, status: "open" | "done" | "dropped"): Promise<boolean> {
+    return setCommitmentStatus(id, status);
+  }
+
+  /** A session directory, or null when the id does not name one inside the root. */
+  private async sessionPath(sessionId: string): Promise<string | null> {
+    const root = await this.root();
+    const dir = path.join(root, sessionId);
+    if (path.dirname(path.resolve(dir)) !== path.resolve(root)) return null;
+    return dir;
+  }
+
   /** Bytes every recording occupies, for the privacy tab's "what is on disk". */
   async storageUsage(): Promise<{ sessions: number; bytes: number; dir: string }> {
     const sessions = await this.listSessions();
@@ -608,6 +721,25 @@ export class MeetingController {
         this.notePaths.set(sessionId, notePath);
         this.notePath = notePath;
         return notePath;
+      },
+      proposeCommitments: async ({ dir, meta, transcript, notePath }) => {
+        const calendarEvent = calendarEventFromMeta(meta);
+        const { counterparty } = resolveCounterparty(calendarEvent, {
+          people: this.knownPeople(),
+        });
+        const proposals = await extractCommitments({
+          segments: transcript.segments,
+          labels: { me: "You", them: counterparty?.label ?? "Other" },
+        });
+        // Written even when empty, so the UI can tell "nothing was proposed" from
+        // "extraction has not run yet" — which are different things to show.
+        await writeCommitmentProposals(dir, {
+          proposals,
+          counterparty: counterparty?.label,
+          notePath,
+          meetingTitle: calendarEvent?.summary,
+          meetingStarted: meta.started,
+        });
       },
       summarize: async ({ dir, notePath, meta }) => {
         await summarizeMeetingNote({

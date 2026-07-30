@@ -1273,6 +1273,110 @@ const ipcSchemas = {
       reason: z.string().optional(),
     }),
   },
+  /**
+   * Unconfirmed commitment proposals for a session.
+   *
+   * Proposals, never facts: nothing reaches the ledger until a human confirms it, and
+   * each one carries the span it came from so "did she really say that?" is answerable
+   * by playing the audio rather than by trusting the row.
+   */
+  "meeting:commitments": {
+    req: z.object({ sessionId: z.string() }),
+    res: z.object({
+      proposals: z
+        .array(
+          z.object({
+            owner: z.enum(["me", "them"]),
+            text: z.string(),
+            due_phrase: z.string().optional(),
+            confidence: z.number(),
+            evidence: z.string(),
+            start_ms: z.number(),
+            end_ms: z.number(),
+          }),
+        )
+        .default([]),
+      /** Display name for `them`, when the meeting was a named 1:1. */
+      counterparty: z.string().optional(),
+    }),
+  },
+  /**
+   * Every unconfirmed proposal across recent sessions.
+   *
+   * The question a user actually has is "what did I agree to lately", not "what did
+   * that one meeting propose" — so this is the shape the UI reads.
+   */
+  "meeting:pendingCommitments": {
+    req: z.null(),
+    res: z.object({
+      sessions: z
+        .array(
+          z.object({
+            sessionId: z.string(),
+            meetingTitle: z.string().optional(),
+            meetingStarted: z.string().optional(),
+            counterparty: z.string().optional(),
+            notePath: z.string().optional(),
+            proposals: z.array(
+              z.object({
+                owner: z.enum(["me", "them"]),
+                text: z.string(),
+                due_phrase: z.string().optional(),
+                confidence: z.number(),
+                evidence: z.string(),
+                start_ms: z.number(),
+                end_ms: z.number(),
+              }),
+            ),
+          }),
+        )
+        .default([]),
+    }),
+  },
+  /** Confirm one proposal into the ledger. Idempotent on the same span. */
+  "meeting:confirmCommitment": {
+    req: z.object({
+      sessionId: z.string(),
+      startMs: z.number(),
+      endMs: z.number(),
+    }),
+    res: z.object({ confirmed: z.boolean(), id: z.string().optional() }),
+  },
+  /** Dismiss a proposal without confirming it. */
+  "meeting:dismissCommitment": {
+    req: z.object({ sessionId: z.string(), startMs: z.number(), endMs: z.number() }),
+    res: z.object({ dismissed: z.boolean() }),
+  },
+  /** The confirmed ledger, newest first. */
+  "meeting:ledger": {
+    req: z.null(),
+    res: z.object({
+      commitments: z
+        .array(
+          z.object({
+            id: z.string(),
+            owner: z.enum(["me", "them"]),
+            owner_label: z.string().optional(),
+            text: z.string(),
+            due_phrase: z.string().optional(),
+            status: z.enum(["open", "done", "dropped"]),
+            confirmed_at: z.string(),
+            session_id: z.string(),
+            note_path: z.string().optional(),
+            meeting_title: z.string().optional(),
+            meeting_started: z.string().optional(),
+            evidence: z.string(),
+            start_ms: z.number(),
+            end_ms: z.number(),
+          }),
+        )
+        .default([]),
+    }),
+  },
+  "meeting:setCommitmentStatus": {
+    req: z.object({ id: z.string(), status: z.enum(["open", "done", "dropped"]) }),
+    res: z.object({ updated: z.boolean() }),
+  },
   /** One-time UI flags — things shown once that must not be shown again. */
   "ui:getState": {
     req: z.null(),
