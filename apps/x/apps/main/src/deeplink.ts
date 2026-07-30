@@ -153,6 +153,16 @@ async function handleRecordMeeting(eventId: string): Promise<void> {
     return;
   }
   if (controller.recording) return;
+  // Standing by for this meeting already: promote, keeping the buffered minutes. Calling
+  // `start` here would discard them and begin from the click, which is the one outcome
+  // standby exists to avoid.
+  if (controller.standingBy) {
+    const promoted = await controller.beginRecording();
+    if (!promoted.started) {
+      console.error(`[deeplink] record-meeting: ${promoted.error ?? "could not promote"}`);
+    }
+    return;
+  }
 
   let event: MeetingCalendarEvent | undefined;
   try {

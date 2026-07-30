@@ -311,6 +311,12 @@ describe("meetings settings block", () => {
       autoStart: "prompt",
       autoStartSilentOrganizers: [],
       preflightNotifications: true,
+      // Bounded on purpose: "we hold the last five minutes" is checkable, and it caps
+      // what standby could ever retain at roughly 20 MB across both tracks.
+      standbySeconds: 300,
+      // Off by default: arming a microphone is the one thing here that happens *to* a
+      // user rather than because of them.
+      standbyBeforeMeetings: false,
     });
   });
 

@@ -62,9 +62,15 @@ final class MicRecorder {
 
     var track: TrackWriter? { writer }
 
-    func start(writingTo url: URL, voiceProcessing: Bool) throws {
+    /// Held rather than passed to `attach` because the raw-fallback path builds a second
+    /// writer, and that one has to stand by too — falling back mid-standby must not
+    /// quietly start writing to disk.
+    private var standbySeconds: Double = 0
+
+    func start(writingTo url: URL, voiceProcessing: Bool, standbySeconds: Double = 0) throws {
         guard !isRecording else { return }
         self.url = url
+        self.standbySeconds = standbySeconds
         try attach(voiceProcessing: voiceProcessing)
         isRecording = true
     }
@@ -123,7 +129,8 @@ final class MicRecorder {
         let tapFormat = voice ? monoFormat : deviceFormat
         let trackWriter: TrackWriter
         do {
-            trackWriter = try TrackWriter(url: url, inputFormat: tapFormat)
+            trackWriter = try TrackWriter(
+                url: url, inputFormat: tapFormat, standbySeconds: standbySeconds)
         } catch {
             throw RecorderError.writerFailed(error)
         }

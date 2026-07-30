@@ -1179,6 +1179,22 @@ const ipcSchemas = {
       error: z.string().optional(),
     }),
   },
+  /** Open both sources and hold the last few minutes in memory, writing nothing. */
+  "meeting:startStandby": {
+    req: z.object({ calendarEventJson: z.string().optional() }),
+    res: z.object({
+      started: z.boolean(),
+      sessionId: z.string().optional(),
+      tracks: z.array(meetings.MeetingTrackId).default([]),
+      warnings: z.array(z.string()).default([]),
+      error: z.string().optional(),
+    }),
+  },
+  /** Promote a standby session — everything held becomes the start of the recording. */
+  "meeting:beginRecording": {
+    req: z.null(),
+    res: z.object({ started: z.boolean(), error: z.string().optional() }),
+  },
   "meeting:stopCapture": {
     req: z.null(),
     res: z.object({

@@ -145,6 +145,7 @@ export function MeetingCaptureStrip() {
   if (available !== true) return null;
 
   const recording = status?.state === "recording";
+  const standby = status?.state === "standby";
   const micOnly = recording && !status.tracks.includes("system");
   const failures = doctor?.checks.filter((check) => check.status === "fail") ?? [];
   const untranscribed = sessions.filter((s) => !s.transcribed);
@@ -154,13 +155,18 @@ export function MeetingCaptureStrip() {
 
   // Offer the setup check once, and only when idle — interrupting a live recording to
   // suggest a test recording would be absurd.
-  const offerCheck = checkDone === false && !recording && !progress;
+  const offerCheck = checkDone === false && !recording && !standby && !progress;
+  // Offered alongside the setup check rather than instead of it: standing by is a thing
+  // you reach for before a call, which is exactly when this strip is on screen.
+  const idleAndReady = !recording && !standby && !progress && failures.length === 0;
 
   // Nothing to say: idle, healthy, nothing queued, nothing odd on disk.
   if (
     !recording &&
+    !standby &&
     !progress &&
     !offerCheck &&
+    !idleAndReady &&
     failures.length === 0 &&
     untranscribed.length === 0 &&
     silentTracks.length === 0
@@ -170,6 +176,27 @@ export function MeetingCaptureStrip() {
 
   return (
     <div className="shrink-0 border-b border-border bg-muted/20 px-6 py-3 text-sm">
+      {idleAndReady && (
+        <div className="flex items-center gap-3">
+          <Mic className="size-4 shrink-0 text-muted-foreground" />
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-foreground">Stand by</p>
+            <p className="text-xs text-muted-foreground">
+              Listen without writing anything, so you can start recording later and still keep the
+              last few minutes.
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void window.ipc.invoke("meeting:startStandby", {})}
+          >
+            Stand by
+          </Button>
+        </div>
+      )}
+
       {offerCheck && (
         <div className="flex items-center gap-3">
           <Mic className="size-4 shrink-0 text-muted-foreground" />
@@ -208,6 +235,45 @@ export function MeetingCaptureStrip() {
           if (!next) setCheckDone(true);
         }}
       />
+
+      {standby && status && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            {/* Hollow amber, not a red dot with different words — the difference between
+                listening and keeping has to read before the text does. */}
+            <span className="size-2.5 rounded-full border-2 border-amber-500" />
+            <span className="font-medium text-foreground">Standing by</span>
+            <span className="text-xs text-muted-foreground">
+              · listening, writing nothing · press record to keep the last{" "}
+              {Math.max(1, Math.round((status.standbySeconds || 300) / 60))} minutes
+            </span>
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => void window.ipc.invoke("meeting:beginRecording", null)}
+              >
+                Record
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => void window.ipc.invoke("meeting:stopCapture", null)}
+              >
+                Stop
+              </Button>
+            </div>
+          </div>
+          <div className="max-w-sm space-y-1">
+            {(status.tracks.length > 0 ? status.tracks : (["mic"] as MeetingTrackId[])).map(
+              (track) => (
+                <LevelBar key={track} track={track} peak={levels[track] ?? 0} />
+              ),
+            )}
+          </div>
+        </div>
+      )}
 
       {recording && (
         <div className="space-y-2">

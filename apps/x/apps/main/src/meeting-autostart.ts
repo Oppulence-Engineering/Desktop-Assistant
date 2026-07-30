@@ -56,9 +56,27 @@ export function calendarNotifyHooks(): CalendarNotifyHooks {
       return isSilentOrganizer(meetings.autoStartSilentOrganizers ?? [], event) ? "auto" : "prompt";
     },
 
+    armStandby: async (event) => {
+      if (!osSupportsNativeCapture()) return;
+      const config = await getTranscriptionConfig();
+      if (config.meetings?.standbyBeforeMeetings !== true) return;
+      const controller = peekMeetingController();
+      // Only from a standing start: a session already running — recording or standing
+      // by — is not ours to disturb.
+      if (!controller || controller.recording || controller.standingBy) return;
+      await controller.start(toMeetingEvent(event), { standby: true });
+    },
+
     startRecording: async (event) => {
       const controller = peekMeetingController();
       if (!controller || controller.recording) return;
+      // Already standing by for this meeting: promote it, which keeps the buffered
+      // minutes rather than throwing them away and starting from now.
+      if (controller.standingBy) {
+        const promoted = await controller.beginRecording();
+        if (!promoted.started) throw new Error(promoted.error ?? "could not start recording");
+        return;
+      }
       const result = await controller.start(toMeetingEvent(event));
       if (!result.started) {
         throw new Error(result.error ?? "could not start recording");

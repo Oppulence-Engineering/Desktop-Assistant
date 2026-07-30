@@ -21,7 +21,11 @@ final class Session {
     }
 
     let dir: URL
-    let startedAt = Date()
+    /// The time the retained audio begins. Set at construction, then moved *backwards*
+    /// when a standby buffer is flushed — the session genuinely started before the user
+    /// pressed record, and `duration_seconds` and the note's timestamp must say so.
+    private(set) var startedAt = Date()
+    private(set) var standing = false
     private let mic = MicRecorder()
     private let system = SystemAudioRecorder()
     private var warnings: [String] = []
@@ -35,16 +39,23 @@ final class Session {
     /// Start both tracks. Either may fail on its own — a denied system-audio grant
     /// should still record your own voice, and a broken input device should still
     /// capture the meeting. Only losing *both* is fatal.
-    func start(voiceProcessing: Bool) throws {
+    /// `standbySeconds > 0` captures into memory and writes nothing until
+    /// `beginRecording()` — see `TrackWriter`.
+    func start(voiceProcessing: Bool, standbySeconds: Double = 0) throws {
+        standing = standbySeconds > 0
         do {
-            try system.start(writingTo: dir.appendingPathComponent("system.wav"))
+            try system.start(
+                writingTo: dir.appendingPathComponent("system.wav"),
+                standbySeconds: standbySeconds
+            )
         } catch let error as SystemAudioRecorder.RecorderError {
             record(warning: error.code, message: error.description)
         }
         do {
             try mic.start(
                 writingTo: dir.appendingPathComponent("mic.wav"),
-                voiceProcessing: voiceProcessing
+                voiceProcessing: voiceProcessing,
+                standbySeconds: standbySeconds
             )
         } catch let error as MicRecorder.RecorderError {
             record(warning: error.code, message: error.description)
@@ -60,15 +71,48 @@ final class Session {
             tracks: tracks.map {
                 ["id": $0.id, "speaker": $0.speaker, "file": $0.file]
             },
-            warnings: warnings
+            warnings: warnings,
+            standby: standing
         ).emit()
         startLevelTimer()
+    }
+
+    /// Promote a standby session to a real recording, keeping whatever the buffers hold.
+    ///
+    /// Every track flushes its own ring, so they can hold different amounts — the system
+    /// tap may have opened later than the mic. The session start moves back by the
+    /// *largest* of them, which is the earliest moment any retained audio exists.
+    func beginRecording() {
+        guard standing else { return }
+        standing = false
+        var recovered: Double = 0
+        for track in tracks {
+            do {
+                recovered = max(recovered, try track.writer.beginRecording())
+            } catch {
+                record(warning: "standby_flush_failed", message: "\(error)")
+            }
+        }
+        if recovered > 0 {
+            startedAt = Date().addingTimeInterval(-recovered)
+        }
+        Event.recording(recoveredSeconds: recovered).emit()
     }
 
     /// Stop both tracks, finalize their headers, and write meta.json. Idempotent.
     func stop() {
         levelTimer?.cancel()
         levelTimer = nil
+        // Never promoted: the buffers are dropped, no file was ever created, and there
+        // is no session to report. Writing a meta.json here would leave the host a
+        // zero-length recording to transcribe and show.
+        if standing {
+            mic.stop()
+            system.stop()
+            try? FileManager.default.removeItem(at: dir)
+            Event.stopped(metaPath: "", durationSeconds: 0).emit()
+            return
+        }
         // Snapshot the tracks before stopping: finalize() is what makes the headers
         // valid, and the summaries have to be read from the same writers.
         let live = tracks

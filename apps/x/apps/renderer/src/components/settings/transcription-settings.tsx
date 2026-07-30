@@ -821,6 +821,12 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                   </div>
                 </div>
                 <SettingToggle
+                  title="Stand by before calendar meetings"
+                  hint="Opens the microphone a couple of minutes early and holds the last few minutes in memory, writing nothing — so pressing record still catches what was already said. Off by default: arming a microphone should be your choice, not a side effect of your calendar."
+                  value={meetings.standbyBeforeMeetings === true}
+                  onChange={(next) => void changeMeetings({ standbyBeforeMeetings: next })}
+                />
+                <SettingToggle
                   title="Warn me before a meeting if something is wrong"
                   hint="Checks microphone and system-audio access, the input device, and disk space about two minutes before a call — and stays quiet when everything is fine"
                   value={meetings.preflightNotifications !== false}

@@ -55,6 +55,12 @@ export interface CalendarNotifyHooks {
   recordPolicy?: (event: ResolvedCalendarEvent) => Promise<"off" | "prompt" | "auto">;
   /** Start recording for this event. Only called when the policy says `auto`. */
   startRecording?: (event: ResolvedCalendarEvent) => Promise<void>;
+  /**
+   * Arm the standby buffer ahead of a meeting, if the user asked for that. Called in
+   * the same window as the readiness check — early enough that the buffer holds the
+   * minutes before the meeting nominally starts, which is the point.
+   */
+  armStandby?: (event: ResolvedCalendarEvent) => Promise<void>;
   /** True while a session is already running — never offer to record over one. */
   isRecording?: () => boolean;
 }
@@ -191,6 +197,13 @@ export async function tick(
         // Marked whether or not anything was said, so a healthy machine is not
         // re-checked every tick for the same meeting.
         mark("preflight", event);
+        if (hooks.armStandby && !hooks.isRecording?.()) {
+          try {
+            await hooks.armStandby(event);
+          } catch (err) {
+            console.error(`[CalendarNotify] could not arm standby for ${event.id}:`, err);
+          }
+        }
         if (!problem) continue;
         try {
           service.notify({
