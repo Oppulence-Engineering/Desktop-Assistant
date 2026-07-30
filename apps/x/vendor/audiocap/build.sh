@@ -45,9 +45,38 @@ if [ -f "$SWIFT_INCLUDE/module.modulemap" ] && [ -f "$SWIFT_INCLUDE/bridging.mod
 error: this toolchain has two module maps defining SwiftBridging:
          $SWIFT_INCLUDE/module.modulemap   (stale)
          $SWIFT_INCLUDE/bridging.modulemap (current)
-       Every Objective-C module import will fail. Remove the stale one:
+       Every Objective-C module import will fail. Apple renamed the file; the stale one
+       is a leftover from an older install, which usually means the whole Command Line
+       Tools tree is a mix of versions. Reinstalling is the reliable fix:
+         sudo rm -rf /Library/Developer/CommandLineTools
+         xcode-select --install
+       To try the targeted fix first:
          sudo rm "$SWIFT_INCLUDE/module.modulemap"
 EOF
+  exit 2
+fi
+
+# The SDK carries prebuilt .swiftinterface modules stamped with the swiftlang build
+# that produced them, and the compiler refuses an SDK it did not match. A Command Line
+# Tools install can end up with a mismatched pair, and the resulting error names the
+# SDK, so it reads like a code problem. Probe it once with a one-line import.
+PROBE="$(mktemp -d)"
+trap 'rm -rf "$PROBE"' EXIT
+printf 'import Foundation\n' > "$PROBE/probe.swift"
+if ! PROBE_OUT="$(swiftc -typecheck -swift-version 5 -sdk "$SDK" "$PROBE/probe.swift" 2>&1)"; then
+  if printf '%s' "$PROBE_OUT" | grep -q "SDK is not supported by the compiler"; then
+    cat >&2 <<EOF
+error: this toolchain's compiler and SDK were built from different Swift releases, so
+       nothing that imports Foundation can compile. Reinstall the Command Line Tools:
+         sudo rm -rf /Library/Developer/CommandLineTools
+         xcode-select --install
+       (or install Xcode and point at it with xcode-select -s).
+$(printf '%s' "$PROBE_OUT" | grep -m1 "SDK is built with")
+EOF
+  else
+    echo "error: this toolchain cannot compile a bare 'import Foundation':" >&2
+    printf '%s\n' "$PROBE_OUT" | head -5 >&2
+  fi
   exit 2
 fi
 

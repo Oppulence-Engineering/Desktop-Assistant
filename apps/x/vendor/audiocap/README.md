@@ -60,11 +60,23 @@ mkdir -p darwin-arm64 && cp out/oppulence-audiocap darwin-arm64/
 ROWBOAT_AUDIOCAP_BIN="$PWD/darwin-arm64/oppulence-audiocap" npm run dev
 ```
 
-If `build.sh` reports two module maps defining `SwiftBridging`, the toolchain has a
-stale `module.modulemap` next to the current `bridging.modulemap`; Apple renamed the
-file and older Command Line Tools installs leave the original behind. Remove the
-stale one as the error instructs — otherwise every Objective-C module import fails
-with an error that points at the SDK and reads like a code problem.
+`build.sh` preflights the toolchain, because both known failure modes produce errors
+that name the SDK and read like code problems:
+
+- **Two module maps defining `SwiftBridging`** — a stale `module.modulemap` beside the
+  current `bridging.modulemap`. Apple renamed the file; older Command Line Tools
+  installs leave the original behind, and every Objective-C module import then fails.
+- **A compiler and SDK from different Swift releases** — the SDK's prebuilt
+  `.swiftinterface` modules are stamped with the `swiftlang` build that produced them
+  and the compiler refuses a mismatch, so nothing importing Foundation compiles.
+
+Both mean the Command Line Tools tree is a mix of versions. Reinstalling is the
+reliable fix:
+
+```sh
+sudo rm -rf /Library/Developer/CommandLineTools
+xcode-select --install
+```
 
 ## Output
 
