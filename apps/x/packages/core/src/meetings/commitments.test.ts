@@ -141,6 +141,30 @@ describe("validateCommitments", () => {
     expect(validateCommitments([proposal(), restated], segments)).toHaveLength(1);
   });
 
+  it("drops a quote too short to identify a moment", () => {
+    // A degraded model answering "the" satisfies "appears in the transcript" perfectly
+    // and verifies nothing — and the span derived from it points at the first
+    // occurrence, which is very unlikely to be where the commitment was. That defeats
+    // the whole check while looking like it passed.
+    for (const evidence of ["the", "so", "by Friday", "I'll send"]) {
+      expect(validateCommitments([proposal({ evidence })], segments)).toEqual([]);
+    }
+  });
+
+  it("picks the occurrence nearest the model's hint when a phrase repeats", () => {
+    const repeated = [
+      segment({ start_ms: 0, end_ms: 1000, text: "I'll send the revised pricing by Friday" }),
+      segment({ start_ms: 1000, end_ms: 2000, text: "sure, understood" }),
+      segment({ start_ms: 2000, end_ms: 3000, text: "I'll send the revised pricing by Friday" }),
+    ];
+    // The model's number is not trusted as a value — that is why the span is derived —
+    // but it is a fine hint for choosing between two identical quotes.
+    const [late] = validateCommitments([proposal({ start_ms: 2100, end_ms: 2900 })], repeated);
+    expect(late.start_ms).toBe(2000);
+    const [early] = validateCommitments([proposal({ start_ms: 10, end_ms: 900 })], repeated);
+    expect(early.start_ms).toBe(0);
+  });
+
   it("still drops a paraphrase even though the span is now derived", () => {
     // Deriving the span must not become a way for an unverifiable quote to slip through:
     // no match in the transcript is still a rejection.
