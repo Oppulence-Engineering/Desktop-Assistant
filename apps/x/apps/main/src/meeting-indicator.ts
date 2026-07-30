@@ -38,9 +38,31 @@ function position(): { x: number; y: number } {
   return { x: Math.round(x + width - WIDTH - MARGIN), y: Math.round(y + MARGIN) };
 }
 
+/**
+ * Whether a window still sits wholly on a display that exists.
+ *
+ * The indicator is hidden between sessions rather than destroyed, so it comes back
+ * wherever it last was — which is right when the user dragged it somewhere, and wrong
+ * when that somewhere was a monitor since unplugged, or a spot a resolution change put
+ * past the edge. An indicator nobody can see is precisely the failure this window exists
+ * to prevent, so it is checked rather than assumed.
+ */
+function isOnScreen(win: BrowserWindow): boolean {
+  const [x, y] = win.getPosition();
+  return screen.getAllDisplays().some((display) => {
+    const { x: dx, y: dy, width, height } = display.workArea;
+    // The whole pill, not a sliver: two visible pixels on an edge is not visibility.
+    return x >= dx && y >= dy && x + WIDTH <= dx + width && y + HEIGHT <= dy + height;
+  });
+}
+
 export function showMeetingIndicator(): void {
   if (quitting) return;
   if (indicator && !indicator.isDestroyed()) {
+    if (!isOnScreen(indicator)) {
+      const { x, y } = position();
+      indicator.setPosition(x, y);
+    }
     indicator.showInactive();
     return;
   }
