@@ -293,4 +293,99 @@ describe("summarization", () => {
     expect(progress.at(-1)?.phase).toBe("done");
     expect(await sessionModule.exists(path.join(dir, "transcript.json"))).toBe(true);
   });
+
+  it("proposes commitments after the transcript exists, and never before the note", async () => {
+    const dir = await finishedSession("2026.07.30-1300");
+    const order: string[] = [];
+    const { queue } = makeQueue({
+      writeNote: async () => {
+        order.push("note");
+        return "note.md";
+      },
+      summarize: async () => {
+        order.push("summarize");
+      },
+      proposeCommitments: async ({ notePath }: { notePath?: string }) => {
+        order.push(`commitments:${notePath}`);
+      },
+    });
+
+    queue.enqueue(dir);
+    await settle(queue);
+    expect(order).toEqual(["note", "summarize", "commitments:note.md"]);
+  });
+
+  it("does not propose commitments for a transcript with no segments", async () => {
+    const dir = await finishedSession("2026.07.30-1310", {
+      tracks: [trackMeta({ silent: true, peak: 0 })],
+    });
+    let proposed = false;
+    const { queue } = makeQueue({
+      writeNote: async () => "note.md",
+      proposeCommitments: async () => {
+        proposed = true;
+      },
+    });
+
+    queue.enqueue(dir);
+    await settle(queue);
+    // Nothing was said. Asking a model to find commitments in silence is a wasted call.
+    expect(proposed).toBe(false);
+  });
+
+  it("still completes the job when proposing commitments throws", async () => {
+    const dir = await finishedSession("2026.07.30-1320");
+    const { queue, progress } = makeQueue({
+      writeNote: async () => "note.md",
+      proposeCommitments: async () => {
+        throw new Error("model exploded");
+      },
+    });
+
+    queue.enqueue(dir);
+    await settle(queue);
+
+    // This one reaches a model, which is the least reliable step in the pipeline — it
+    // must never cost the user the transcript that already succeeded.
+    expect(progress.at(-1)?.phase).toBe("done");
+    expect(await sessionModule.exists(path.join(dir, "transcript.json"))).toBe(true);
+  });
+
+  it("still completes the job when announcing the meeting throws", async () => {
+    const dir = await finishedSession("2026.07.30-1330");
+    const { queue, progress } = makeQueue({
+      writeNote: async () => "note.md",
+      onTranscribed: async () => {
+        throw new Error("event bus down");
+      },
+    });
+
+    queue.enqueue(dir);
+    await settle(queue);
+
+    // The meeting is fully processed by the time this runs; failing to announce it must
+    // not undo any of that.
+    expect(progress.at(-1)?.phase).toBe("done");
+  });
+
+  it("announces the meeting last, with the note it produced", async () => {
+    const dir = await finishedSession("2026.07.30-1340");
+    const order: string[] = [];
+    let announced: { notePath?: string } | null = null;
+    const { queue } = makeQueue({
+      writeNote: async () => {
+        order.push("note");
+        return "note.md";
+      },
+      onTranscribed: async (args: { notePath?: string }) => {
+        order.push("announce");
+        announced = args;
+      },
+    });
+
+    queue.enqueue(dir);
+    await settle(queue);
+    expect(order.at(-1)).toBe("announce");
+    expect(announced!.notePath).toBe("note.md");
+  });
 });
