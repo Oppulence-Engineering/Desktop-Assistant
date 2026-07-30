@@ -1204,7 +1204,9 @@ const ipcSchemas = {
     res: z.object({ deleted: z.boolean() }),
   },
   "meeting:captureDoctor": {
-    req: z.null(),
+    /** Probing system-audio access can raise the OS permission dialog, so it only
+     *  happens behind an explicit user action — never on a view mounting. */
+    req: z.object({ probeSystemAudio: z.boolean().default(false) }),
     res: meetings.MeetingDoctorReport,
   },
   /** Whether the fast (Parakeet) transcription models are downloaded. */

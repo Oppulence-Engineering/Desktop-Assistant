@@ -293,20 +293,23 @@ describe("compressed tracks", () => {
     expect(await fs.readdir(dirPath)).not.toContain("mic.decoded.wav");
   });
 
-  it("fails the track with a clear reason when nothing can decode it", async () => {
+  it("fails the session with a clear reason when nothing can decode it", async () => {
     const dirPath = await session("compressed-nodecoder");
     await writeWav(path.join(dirPath, "mic.wav"), tone(1));
     await fs.rename(path.join(dirPath, "mic.wav"), path.join(dirPath, "mic.m4a"));
 
-    const transcript = await transcribeSession(
-      args({
-        dir: dirPath,
-        transcriber: fakeTranscriber(),
-        meta: sessionMeta({ tracks: [trackMeta({ file: "mic.m4a" })] }),
-      }),
-    );
+    // Must fail, not return empty: an empty transcript would mark this done and let
+    // retention delete the only copy of the meeting.
+    await expect(
+      transcribeSession(
+        args({
+          dir: dirPath,
+          transcriber: fakeTranscriber(),
+          meta: sessionMeta({ tracks: [trackMeta({ file: "mic.m4a" })] }),
+        }),
+      ),
+    ).rejects.toThrow(/no track could be transcribed/);
 
-    expect(transcript.segments).toEqual([]);
     const log = await fs.readFile(path.join(dirPath, "transcribe.log"), "utf8");
     expect(log).toContain("no decoder is available");
   });
@@ -348,5 +351,89 @@ describe("silence gate units", () => {
     );
 
     expect(transcript.segments.map((s) => s.text)).toEqual(["quiet but real"]);
+  });
+});
+
+describe("total failure", () => {
+  it("throws rather than returning an empty transcript when no track could be read", async () => {
+    // The dangerous case: an empty transcript looks like success, so the queue would
+    // mark the session done, blank its note, and let retention delete the audio. A
+    // missing whisper binary alone is enough to get here.
+    const dirPath = await session("all-failed");
+    // Neither track file exists.
+    await expect(
+      transcribeSession(
+        args({
+          dir: dirPath,
+          transcriber: fakeTranscriber(),
+          meta: sessionMeta({
+            tracks: [
+              trackMeta({ id: "mic", speaker: "me", file: "mic.wav" }),
+              trackMeta({ id: "system", speaker: "them", file: "system.wav" }),
+            ],
+          }),
+        }),
+      ),
+    ).rejects.toThrow(/no track could be transcribed \(2\/2\)/);
+  });
+
+  it("still succeeds when one track works", async () => {
+    const dirPath = await session("one-failed");
+    await writeWav(path.join(dirPath, "mic.wav"), tone(1));
+
+    const transcript = await transcribeSession(
+      args({
+        dir: dirPath,
+        transcriber: fakeTranscriber(() => [{ start: 0, end: 1, text: "mine" }]),
+        meta: sessionMeta({
+          tracks: [
+            trackMeta({ id: "mic", speaker: "me", file: "mic.wav" }),
+            trackMeta({ id: "system", speaker: "them", file: "system.wav" }),
+          ],
+        }),
+      }),
+    );
+    expect(transcript.segments).toHaveLength(1);
+  });
+
+  it("does not throw for a session whose tracks are all legitimately silent", async () => {
+    // Silence is a successful transcription of nothing, not a failure.
+    const dirPath = await session("all-silent");
+    await writeWav(path.join(dirPath, "mic.wav"), silence(1));
+
+    const transcript = await transcribeSession(
+      args({
+        dir: dirPath,
+        transcriber: fakeTranscriber(),
+        meta: sessionMeta({ tracks: [trackMeta({ silent: true })] }),
+      }),
+    );
+    expect(transcript.segments).toEqual([]);
+  });
+
+  it("cleans up the scratch file when decoding fails", async () => {
+    const dirPath = await session("decode-fails");
+    await writeWav(path.join(dirPath, "mic.wav"), tone(1));
+    await fs.rename(path.join(dirPath, "mic.wav"), path.join(dirPath, "mic.m4a"));
+
+    await expect(
+      transcribeSession(
+        args({
+          dir: dirPath,
+          transcriber: fakeTranscriber(),
+          meta: sessionMeta({ tracks: [trackMeta({ file: "mic.m4a" })] }),
+          codec: {
+            async compress() {},
+            async decode(_input: string, out: string) {
+              // Half-written, then fail — exactly what an interrupted decode leaves.
+              await fs.writeFile(out, Buffer.alloc(1024));
+              throw new Error("decoder died");
+            },
+          },
+        }),
+      ),
+    ).rejects.toThrow(/no track could be transcribed/);
+
+    expect(await fs.readdir(dirPath)).not.toContain("mic.decoded.wav");
   });
 });

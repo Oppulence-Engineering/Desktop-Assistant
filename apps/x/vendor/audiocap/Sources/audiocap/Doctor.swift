@@ -12,8 +12,8 @@ enum Doctor {
         let remediation: String?
     }
 
-    static func run(recordingsRoot: URL?) -> [Check] {
-        var checks = [microphone(), systemAudio(), inputDevice()]
+    static func run(recordingsRoot: URL?, probeSystemAudio: Bool) -> [Check] {
+        var checks = [microphone(), systemAudio(probe: probeSystemAudio), inputDevice()]
         if let recordingsRoot { checks.append(writable(recordingsRoot)) }
         return checks
     }
@@ -42,11 +42,23 @@ enum Doctor {
         }
     }
 
-    /// There is no side-effect-free way to query the system-audio TCC state, and
-    /// probing it by creating a tap would fire the prompt as a side effect of a
-    /// "check". So: actually create one, because a silent system track is the failure
-    /// this check exists to prevent, and the prompt is the remediation anyway.
-    static func systemAudio() -> Check {
+    /// There is no side-effect-free way to query the system-audio TCC state: the only
+    /// real check is creating a tap, which can fire the permission prompt.
+    ///
+    /// That makes it unsuitable for a check that runs on its own — opening the meetings
+    /// UI should not raise a system dialog. So it only probes when asked, and otherwise
+    /// reports honestly that the state is unknown until first use.
+    static func systemAudio(probe: Bool) -> Check {
+        guard probe else {
+            return Check(
+                name: "system audio",
+                status: "warn",
+                detail: "not checked — the state cannot be read without requesting access",
+                remediation:
+                    "if a recording has no system audio: System Settings › Privacy & Security › Screen & System Audio Recording"
+            )
+        }
+
         let description = CATapDescription(stereoGlobalTapButExcludeProcesses: [])
         description.name = "Oppulence permission probe"
         description.isPrivate = true

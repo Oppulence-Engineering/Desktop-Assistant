@@ -121,11 +121,13 @@ final class MicRecorder {
         else { throw RecorderError.formatUnsupported(deviceFormat) }
 
         let tapFormat = voice ? monoFormat : deviceFormat
+        let trackWriter: TrackWriter
         do {
-            writer = try TrackWriter(url: url, inputFormat: tapFormat)
+            trackWriter = try TrackWriter(url: url, inputFormat: tapFormat)
         } catch {
             throw RecorderError.writerFailed(error)
         }
+        writer = trackWriter
 
         if voice {
             // Complete the duplex graph: VoiceProcessingIO must render to an output
@@ -137,7 +139,11 @@ final class MicRecorder {
             livenessPeak = 0
             livenessSettled = false
         }
-        installTap(on: input, format: tapFormat, checkLiveness: voice)
+        // The tap captures its writer rather than reading `self.writer`: the fallback
+        // path swaps that property from the main thread while the audio thread is
+        // reading it. A callback still in flight then writes to the old writer, which is
+        // already finalized and ignores it, instead of racing on the reference.
+        installTap(on: input, format: tapFormat, writer: trackWriter, checkLiveness: voice)
 
         engine.prepare()
         do {
@@ -155,10 +161,15 @@ final class MicRecorder {
         )
     }
 
-    private func installTap(on input: AVAudioInputNode, format: AVAudioFormat, checkLiveness: Bool) {
+    private func installTap(
+        on input: AVAudioInputNode,
+        format: AVAudioFormat,
+        writer: TrackWriter,
+        checkLiveness: Bool
+    ) {
         let checkFrames = Int(format.sampleRate)  // one second
         input.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
-            guard let self, let writer = self.writer else { return }
+            guard let self else { return }
 
             if checkLiveness && !self.livenessSettled {
                 let frames = Int(buffer.frameLength)

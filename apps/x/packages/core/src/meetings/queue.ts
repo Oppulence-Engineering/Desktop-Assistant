@@ -129,7 +129,23 @@ export class MeetingQueue {
   private async run(dir: string): Promise<void> {
     const meta = await readMeta(dir);
     if (!meta) throw new Error(`unreadable ${META_FILE}`);
+    try {
+      await this.transcribeAndFile(dir, meta);
+    } catch (err) {
+      // `never` means never, including when transcription failed — otherwise the
+      // strictest retention setting quietly behaved like the middle one.
+      await applyRetention({
+        dir,
+        meta,
+        mode: this.deps.keepAudio(),
+        transcribed: false,
+        codec: this.deps.codec,
+      });
+      throw err;
+    }
+  }
 
+  private async transcribeAndFile(dir: string, meta: MeetingSessionMeta): Promise<void> {
     this.emit(dir, "transcribing", { fraction: 0 });
     const transcript = await transcribeSession({
       dir,

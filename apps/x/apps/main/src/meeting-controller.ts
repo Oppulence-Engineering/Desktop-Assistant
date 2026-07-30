@@ -25,7 +25,11 @@ import {
 import type { MeetingTranscriber } from "@x/core/dist/meetings/meetings.js";
 import type { WhisperService } from "@x/core/dist/voice/whisper/index.js";
 import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
-import { MeetingCaptureSidecar, ensureMicrophoneAccess } from "./meeting-capture.js";
+import {
+  MeetingCaptureSidecar,
+  ensureMicrophoneAccess,
+  nativeCaptureAvailable,
+} from "./meeting-capture.js";
 import {
   audiocapCodec,
   codecAvailable,
@@ -41,6 +45,11 @@ import {
  * closing — which is the whole point of moving capture out of the page. The tray and
  * the Meetings view are both just views onto this.
  */
+
+/** Two minutes with every track below this peak stops the session, matching the
+ *  renderer pipeline's silence auto-stop. Levels are 0…1. */
+const SILENCE_AUTO_STOP_MS = 2 * 60 * 1000;
+const SILENCE_PEAK_LEVEL = 0.005;
 
 function broadcast<T>(channel: string, payload: T): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -62,6 +71,8 @@ export class MeetingController {
   private notePath: string | undefined;
   private calendarEvent: MeetingCalendarEvent | undefined;
   private lastProgress: MeetingTranscriptionProgress | null = null;
+  /** Auto-stop timer: a forgotten recording should not run for hours. */
+  private silenceTimer: NodeJS.Timeout | null = null;
   private onStateChange?: () => void;
   /** sessionId → note path, so the placeholder and the final note are one file. */
   private readonly notePaths = new Map<string, string>();
@@ -136,17 +147,25 @@ export class MeetingController {
       const { tracks, warnings } = await this.sidecar.start({
         dir,
         voiceProcessing: config.meetings?.micVoiceProcessing ?? false,
-        onLevel: (peaks) =>
+        onLevel: (peaks) => {
+          // The renderer pipeline auto-stops after two minutes with no transcript; the
+          // native path has no transcript stream to watch, so it watches levels. Without
+          // this, walking away from a finished call records until the app quits.
+          if (Object.values(peaks).some((peak) => (peak ?? 0) >= SILENCE_PEAK_LEVEL)) {
+            this.armSilenceTimer();
+          }
           broadcast<MeetingLevels>("meeting:captureLevel", {
             sessionId: path.basename(dir),
             peaks: peaks as MeetingLevels["peaks"],
-          }),
+          });
+        },
         onStopped: ({ crashed }) => void this.onSidecarStopped(crashed),
       });
 
       this.sessionDir = dir;
       this.sessionStartedAt = new Date();
       this.calendarEvent = calendarEvent;
+      this.armSilenceTimer();
 
       // Write the note now, empty, so there is something to open while the meeting
       // runs — and remember its path so the post-transcription write lands on the
@@ -190,15 +209,31 @@ export class MeetingController {
   async stop(): Promise<{ stopped: boolean; sessionId?: string; queued: boolean }> {
     if (this.state !== "recording") return { stopped: false, queued: false };
     const dir = this.sessionDir!;
+    this.clearSilenceTimer();
     this.setState("stopping");
     await this.sidecar.stop();
     const queued = await this.finishSession(dir);
     return { stopped: true, sessionId: path.basename(dir), queued };
   }
 
+  private armSilenceTimer(): void {
+    if (this.silenceTimer) clearTimeout(this.silenceTimer);
+    this.silenceTimer = setTimeout(() => {
+      console.log(`[meeting] ${SILENCE_AUTO_STOP_MS / 60_000} minutes of silence — stopping`);
+      void this.stop();
+    }, SILENCE_AUTO_STOP_MS);
+  }
+
+  private clearSilenceTimer(): void {
+    if (!this.silenceTimer) return;
+    clearTimeout(this.silenceTimer);
+    this.silenceTimer = null;
+  }
+
   /** Best-effort finalize on app quit so the last write is not a truncated file. */
   stopForQuit(): void {
     if (this.state !== "recording") return;
+    this.clearSilenceTimer();
     console.log("[meeting] finalizing capture for quit");
     this.sidecar.killForQuit();
   }
@@ -212,7 +247,10 @@ export class MeetingController {
     const queue = this.queue;
     return {
       state: this.state,
-      engine: "native",
+      // Only ever "native" here — this controller *is* the native path. Reported rather
+      // than hardcoded at the call site so a renderer-engine machine is not told its
+      // idle session is native.
+      engine: nativeCaptureAvailable() ? "native" : "renderer",
       sessionId: this.sessionDir ? path.basename(this.sessionDir) : undefined,
       startedAt: this.sessionStartedAt?.toISOString(),
       elapsedSeconds: this.elapsedSeconds,
@@ -256,6 +294,7 @@ export class MeetingController {
   /** The sidecar exited on its own — a crash, or the OS tearing it down. */
   private async onSidecarStopped(crashed: boolean): Promise<void> {
     if (this.state !== "recording") return;
+    this.clearSilenceTimer();
     const dir = this.sessionDir!;
     this.setState("stopping");
     const queued = await this.finishSession(dir);

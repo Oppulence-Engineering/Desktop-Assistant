@@ -157,8 +157,9 @@ falls back to it whenever the models are absent, so choosing "fast" can never me
   signal, restarting raw if it is flat. When testing a mic change, assert **level**,
   not duration.
 - **Permissions:** microphone, plus Screen & System Audio Recording for the tap.
-  `doctor` reports both; the system-audio check creates a throwaway tap, which can
-  fire the one-time prompt.
+  `doctor` reports the microphone directly. System-audio state cannot be read without
+  requesting it, so that check only runs with `--probe-system-audio` — creating the
+  throwaway tap can fire the one-time prompt, which should follow a user action.
 - **Parakeet's sub-word tokens mark words with a leading space**, not the SentencePiece
   U+2581 marker. Handling only the marker collapses a whole meeting into one "word" —
   which still yields a readable transcript, just with every timestamp wrong, so it

@@ -84,7 +84,9 @@ export function MeetingCaptureStrip() {
         if (engine !== "native") return;
         const [nextStatus, nextDoctor] = await Promise.all([
           window.ipc.invoke("meeting:captureStatus", null),
-          window.ipc.invoke("meeting:captureDoctor", null),
+          // No probe: checking system-audio access means requesting it, and mounting a
+          // view is not a user asking for a permission dialog.
+          window.ipc.invoke("meeting:captureDoctor", { probeSystemAudio: false }),
         ]);
         if (cancelled) return;
         setStatus(nextStatus);

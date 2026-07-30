@@ -98,8 +98,8 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
       return { deleted: await controller().deleteSession(args.sessionId) };
     },
 
-    "meeting:captureDoctor": async () => {
-      return runCaptureDoctor(await controller().root());
+    "meeting:captureDoctor": async (_event, args) => {
+      return runCaptureDoctor(await controller().root(), args.probeSystemAudio);
     },
 
     "meeting:transcriptionModels": async () => {

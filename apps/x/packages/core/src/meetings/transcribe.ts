@@ -66,6 +66,7 @@ export async function transcribeSession(opts: TranscribeSessionOpts): Promise<Me
 
   const totalFrames = meta.tracks.reduce((sum, track) => sum + Math.max(0, track.frames), 0) || 1;
   let framesDone = 0;
+  let failures = 0;
   const segments: MeetingTranscriptSegment[] = [];
 
   for (const track of meta.tracks) {
@@ -86,8 +87,19 @@ export async function transcribeSession(opts: TranscribeSessionOpts): Promise<Me
       });
       segments.push(...trackSegments);
     } catch (err) {
+      failures += 1;
       await appendLog(dir, `skipping ${track.file}: ${(err as Error).message}`);
     }
+  }
+
+  // "Nothing was said" and "nothing could be read" must not look the same. Returning an
+  // empty transcript for a total failure would mark the session done, overwrite its note
+  // with a blank one, and — with the default retention — delete the audio, losing the
+  // meeting outright. A missing whisper binary alone is enough to reach this.
+  if (meta.tracks.length > 0 && failures === meta.tracks.length) {
+    throw new Error(
+      `no track could be transcribed (${failures}/${meta.tracks.length}) — see transcribe.log`,
+    );
   }
 
   segments.sort((a, b) => a.start_ms - b.start_ms || a.end_ms - b.end_ms);
@@ -126,14 +138,17 @@ async function transcribeTrack(args: {
   // failure part-way through would silently double the session's disk use.
   let file = path.join(dir, track.file);
   let scratch: string | undefined;
-  if (isCompressed(track.file)) {
-    if (!codec) throw new Error(`${track.file} is compressed and no decoder is available`);
-    scratch = path.join(dir, decodedName(track.file));
-    await codec.decode(file, scratch);
-    file = scratch;
-  }
 
   try {
+    if (isCompressed(track.file)) {
+      if (!codec) throw new Error(`${track.file} is compressed and no decoder is available`);
+      scratch = path.join(dir, decodedName(track.file));
+      // Inside the try: a decode that fails part-way still leaves a partial file, and
+      // cleaning up only around the transcribe call would leak it.
+      await codec.decode(file, scratch);
+      file = scratch;
+    }
+
     return await transcribeDecodedTrack({
       dir,
       track,

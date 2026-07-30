@@ -74,12 +74,14 @@ final class SystemAudioRecorder {
         do {
             let format = try tapStreamFormat()
             try createAggregateDevice(tapUUID: description.uuid)
+            let trackWriter: TrackWriter
             do {
-                writer = try TrackWriter(url: url, inputFormat: format)
+                trackWriter = try TrackWriter(url: url, inputFormat: format)
             } catch {
                 throw RecorderError.writerFailed(error)
             }
-            try installIOProc(format: format)
+            writer = trackWriter
+            try installIOProc(format: format, writer: trackWriter)
         } catch {
             cleanup()
             throw error
@@ -141,10 +143,11 @@ final class SystemAudioRecorder {
         aggregateID = newAggregateID
     }
 
-    private func installIOProc(format: AVAudioFormat) throws {
+    private func installIOProc(format: AVAudioFormat, writer: TrackWriter) throws {
+        // Captured, not read off `self`, so the realtime callback never touches a
+        // property the main thread mutates. `TrackWriter` ignores writes after finalize.
         var status = AudioDeviceCreateIOProcIDWithBlock(&procID, aggregateID, queue) {
-            [weak self] _, inInputData, _, _, _ in
-            guard let self, let writer = self.writer else { return }
+            _, inInputData, _, _, _ in
             guard
                 let buffer = AVAudioPCMBuffer(
                     pcmFormat: format,

@@ -296,7 +296,10 @@ export class MeetingCaptureSidecar {
  * Run `audiocap doctor --json`. Reports `nativeAvailable: false` (with the reason as
  * a check) rather than throwing, so the UI can always render something actionable.
  */
-export async function runCaptureDoctor(recordingsRoot: string): Promise<MeetingDoctorReport> {
+export async function runCaptureDoctor(
+  recordingsRoot: string,
+  probeSystemAudio = false,
+): Promise<MeetingDoctorReport> {
   if (!osSupportsNativeCapture()) {
     return {
       ok: true,
@@ -330,9 +333,9 @@ export async function runCaptureDoctor(recordingsRoot: string): Promise<MeetingD
   }
 
   return new Promise((resolve) => {
-    const child = spawn(audiocapBinaryPath(), ["doctor", "--json", "--out", recordingsRoot], {
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+    const argv = ["doctor", "--json", "--out", recordingsRoot];
+    if (probeSystemAudio) argv.push("--probe-system-audio");
+    const child = spawn(audiocapBinaryPath(), argv, { stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     child.stdout.setEncoding("utf8");
     child.stdout.on("data", (chunk: string) => (stdout += chunk));

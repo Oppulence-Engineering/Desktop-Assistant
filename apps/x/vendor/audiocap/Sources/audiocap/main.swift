@@ -11,7 +11,7 @@ let usage = """
 
     USAGE
       audiocap record     --out <session-dir> [--voice-processing]
-      audiocap doctor     [--json] [--out <recordings-root>]
+      audiocap doctor     [--json] [--probe-system-audio] [--out <recordings-root>]
       audiocap transcribe --in <audio> [--model v3|v2] [--language en] [--json]
       audiocap models     [--ensure] [--model v3|v2] [--json]
       audiocap compress   --in <wav> --out <m4a>
@@ -25,9 +25,10 @@ let usage = """
       on stdin, or SIGTERM/SIGINT.
 
     doctor
-      Reports microphone and system-audio permission state plus the default input
-      device. --json for machine output. Creating the probe tap can trigger the
-      one-time System Audio Recording prompt.
+      Reports microphone permission and the default input device. --json for machine
+      output. System-audio state cannot be read without requesting access, so it is
+      only checked with --probe-system-audio — which can trigger the one-time System
+      Audio Recording prompt, and so should follow a user action, not run on its own.
 
     transcribe
       Parakeet (Core ML) transcription of one audio file to timed segments as JSON.
@@ -57,6 +58,7 @@ struct Args {
     var json = false
     var voiceProcessing = false
     var ensure = false
+    var probeSystemAudio = false
     var version = false
     var help = false
 
@@ -85,6 +87,8 @@ struct Args {
                 json = true
             case "--ensure":
                 ensure = true
+            case "--probe-system-audio":
+                probeSystemAudio = true
             case "--voice-processing":
                 voiceProcessing = true
             case "--version", "-v":
@@ -141,7 +145,10 @@ if args.version {
 // MARK: - doctor
 
 if args.command == "doctor" {
-    let checks = Doctor.run(recordingsRoot: args.out.map(expand))
+    let checks = Doctor.run(
+        recordingsRoot: args.out.map(expand),
+        probeSystemAudio: args.probeSystemAudio
+    )
     print(args.json ? Doctor.json(checks) : Doctor.human(checks))
     exit(checks.allSatisfy { $0.status != "fail" } ? 0 : 1)
 }

@@ -220,3 +220,23 @@ describe("compression on keepAudio: always", () => {
     expect(codec.compressed).toHaveLength(2);
   });
 });
+
+describe("keepAudio: never on a failed transcription", () => {
+  it("deletes the audio even though there is no transcript", async () => {
+    // The distinguishing behaviour of `never`: it does not wait for a transcript, so
+    // it is genuinely stricter than `untilTranscribed` rather than identical to it.
+    const { dir, meta } = await twoTrackSession();
+    expect(await retention.applyRetention({ dir, meta, mode: "never", transcribed: false })).toBe(
+      true,
+    );
+    expect(await retention.hasAudio(dir, meta)).toBe(false);
+  });
+
+  it("untilTranscribed keeps it in the same situation", async () => {
+    const { dir, meta } = await twoTrackSession();
+    expect(
+      await retention.applyRetention({ dir, meta, mode: "untilTranscribed", transcribed: false }),
+    ).toBe(false);
+    expect(await retention.hasAudio(dir, meta)).toBe(true);
+  });
+});

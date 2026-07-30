@@ -84,8 +84,9 @@ enum Codec {
 
         let destination: AVAudioFile
         do {
-            // Write beside the target and move into place at the end, so an interrupted
-            // conversion never leaves a half-written file where the real one belongs.
+            // Written directly, not via a temp file: the caller only deletes the source
+            // once this returns successfully, and it removes a partial output on failure,
+            // so a half-written file is never mistaken for a finished one.
             destination = try AVAudioFile(forWriting: output, settings: settings)
         } catch {
             throw CodecError.unwritable(output, "\(error)")
