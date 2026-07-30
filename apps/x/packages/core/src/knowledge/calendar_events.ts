@@ -61,9 +61,24 @@ export async function listUpcomingEvents(
   opts: { earliestMs?: number; latestMs: number; requireConferenceLink?: boolean; now?: number },
   dir = CALENDAR_SYNC_DIR,
 ): Promise<ResolvedCalendarEvent[]> {
+  return filterUpcoming(await listCalendarEvents(dir), opts);
+}
+
+/**
+ * The filter half of {@link listUpcomingEvents}, over events already read.
+ *
+ * Split out because the notification tick asks three different questions of the same
+ * calendar — join, readiness, record — and calling the reader three times meant re-reading
+ * and re-parsing every event file three times every thirty seconds, forever. On a busy
+ * calendar that is a real amount of background I/O for an answer that cannot have changed
+ * between the three calls.
+ */
+export function filterUpcoming(
+  events: ResolvedCalendarEvent[],
+  opts: { earliestMs?: number; latestMs: number; requireConferenceLink?: boolean; now?: number },
+): ResolvedCalendarEvent[] {
   const now = opts.now ?? Date.now();
   const earliest = opts.earliestMs ?? 0;
-  const events = await listCalendarEvents(dir);
   return events.filter(
     (event) =>
       startsWithin(event, earliest, opts.latestMs, now) &&

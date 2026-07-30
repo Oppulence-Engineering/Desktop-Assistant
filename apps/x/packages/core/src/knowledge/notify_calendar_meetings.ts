@@ -1,7 +1,7 @@
 import path from "node:path";
 import fs from "node:fs/promises";
 import { WorkDir } from "../config/config.js";
-import { CALENDAR_SYNC_DIR, listUpcomingEvents } from "./calendar_events.js";
+import { CALENDAR_SYNC_DIR, filterUpcoming, listCalendarEvents } from "./calendar_events.js";
 import type { ResolvedCalendarEvent } from "@x/shared/dist/calendar.js";
 import container from "../di/container.js";
 import type { INotificationService } from "../application/notification/service.js";
@@ -140,13 +140,19 @@ export async function tick(
   const alreadyDone = (kind: "join" | "preflight" | "record", event: ResolvedCalendarEvent) =>
     state.notifiedEventIds[key(kind, event.id)] !== undefined;
 
+  // Read once. Three questions get asked of this calendar below and the answer cannot
+  // change between them, so re-reading and re-parsing every event file three times per
+  // tick would be pure waste on a busy calendar.
+  const calendar = await listCalendarEvents(CALENDAR_SYNC_DIR);
+
   // --- Join reminder -------------------------------------------------------
   // Cancelled, declined, all-day and unparseable events are already dropped by the
   // shared reader; the window is `[-grace, +lead]` around the start.
-  const due = await listUpcomingEvents(
-    { earliestMs: -NOTIFY_GRACE_MS, latestMs: NOTIFY_LEAD_MS, now },
-    CALENDAR_SYNC_DIR,
-  );
+  const due = filterUpcoming(calendar, {
+    earliestMs: -NOTIFY_GRACE_MS,
+    latestMs: NOTIFY_LEAD_MS,
+    now,
+  });
 
   for (const event of due) {
     if (alreadyDone("join", event)) continue;
@@ -174,15 +180,12 @@ export async function tick(
   // Only for meetings with a join link: those are the ones that would be recorded, and
   // a readiness warning about a meeting nobody would capture is pure noise.
   if (hooks.preflight) {
-    const upcoming = await listUpcomingEvents(
-      {
-        earliestMs: PREFLIGHT_EARLIEST_MS,
-        latestMs: PREFLIGHT_LEAD_MS,
-        requireConferenceLink: true,
-        now,
-      },
-      CALENDAR_SYNC_DIR,
-    );
+    const upcoming = filterUpcoming(calendar, {
+      earliestMs: PREFLIGHT_EARLIEST_MS,
+      latestMs: PREFLIGHT_LEAD_MS,
+      requireConferenceLink: true,
+      now,
+    });
     const pending = upcoming.filter((event) => !alreadyDone("preflight", event));
     if (pending.length > 0) {
       // Asked once even when several meetings are due: the answer is about the machine.
@@ -224,15 +227,12 @@ export async function tick(
 
   // --- Offer to record -----------------------------------------------------
   if (hooks.recordPolicy && !hooks.isRecording?.()) {
-    const starting = await listUpcomingEvents(
-      {
-        earliestMs: -RECORD_GRACE_MS,
-        latestMs: RECORD_LEAD_MS,
-        requireConferenceLink: true,
-        now,
-      },
-      CALENDAR_SYNC_DIR,
-    );
+    const starting = filterUpcoming(calendar, {
+      earliestMs: -RECORD_GRACE_MS,
+      latestMs: RECORD_LEAD_MS,
+      requireConferenceLink: true,
+      now,
+    });
     for (const event of starting) {
       if (alreadyDone("record", event)) continue;
       let policy: "off" | "prompt" | "auto" = "off";
