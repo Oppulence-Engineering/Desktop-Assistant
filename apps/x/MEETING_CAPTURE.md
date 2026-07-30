@@ -102,7 +102,26 @@ appends samples as they arrive, patching the two size fields only on clean stop.
 - `readWavInfo` derives the true length from the file when the header says zero.
 - `recoverWavHeader` repairs the file in place before transcription, so retained audio
   is playable in the app's audio viewer afterwards.
-- The session is picked up by `resumePending()` on next launch.
+- `meta.json` is written last, so a hard kill leaves track files and no meta — which
+  would make the session invisible to both the pending predicate and the sessions
+  list. `recoverOrphanedSessions` (run first by `resumePending`) rebuilds the meta from
+  the files. The only thing genuinely unrecoverable is the per-track start offsets,
+  which exist solely as each track's first-buffer wall clock; they default to 0 and the
+  session carries a warning, because a few hundred milliseconds of speaker skew beats
+  losing the meeting.
+- The session is then picked up by `resumePending()` as ordinary pending work.
+
+### Non-speech output
+
+Given near-silence whisper does not return nothing — it returns its guess at the noise
+(`[Music]`, `[BLANK_AUDIO]`, `♪`). Harmless in a dictation box, corrosive in a meeting
+note, where it reads as a participant saying it. With two tracks one is nearly always
+the quiet one, so this is the common case. `isNonSpeech`
+(`voice/whisper/non-speech.ts`) drops a segment when _all_ of it is annotation or
+punctuation — structural rather than a word list, so it catches unseen annotations
+while keeping "so [inaudible] by Friday". A transcript that ends up with no segments
+gets `no_speech_detected: true` in the note, so a silent meeting is distinguishable
+from one still waiting on its transcript.
 
 ## IPC surface
 
@@ -209,6 +228,8 @@ window mid-recording does not stop the session (the tray keeps counting).
 | Transcription queue                | `packages/core/src/meetings/queue.ts`                                                                         |
 | Chunked transcription + merge      | `packages/core/src/meetings/transcribe.ts`                                                                    |
 | WAV reading + crash recovery       | `packages/core/src/meetings/wav.ts`                                                                           |
+| Orphaned-session recovery          | `packages/core/src/meetings/recover.ts`                                                                       |
+| Whisper non-speech filter          | `packages/core/src/voice/whisper/non-speech.ts`                                                               |
 | Note writing + provenance          | `packages/core/src/meetings/note.ts`                                                                          |
 | Audio retention                    | `packages/core/src/meetings/retention.ts`                                                                     |
 | Types + note formatter (shared)    | `packages/shared/src/meetings.ts`                                                                             |
