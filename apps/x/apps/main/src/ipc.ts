@@ -9,6 +9,7 @@ import {
   MessageChannelMain,
 } from "electron";
 import { ipc } from "@x/shared";
+import { markSecondaryWindow } from "./main-window.js";
 import path from "node:path";
 import os from "node:os";
 import {
@@ -1355,6 +1356,10 @@ export function setupIpcHandlers() {
             sandbox: true,
           },
         });
+        // Not an app window. Without this it counts in `appWindows()`, so closing it
+        // could quit the app on Windows/Linux and, while a PDF renders, a dock click
+        // would decline to re-create the real window.
+        markSecondaryWindow(hiddenWin);
         await hiddenWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
         // Small delay to ensure CSS/fonts render
         await new Promise((resolve) => setTimeout(resolve, 300));
