@@ -562,18 +562,18 @@ function notices(body: string): string {
   while (index < lines.length && lines[index].trim() === "") index++;
   if (lines[index]?.startsWith("# ")) index++;
 
+  // Blank lines are skipped rather than treated as the end of the run: the formatter
+  // separates each notice with one, so stopping at the first blank kept only the
+  // privacy line and still dropped the speaker-attribution caveat. The run ends at the
+  // first line that is neither blank nor a quote — which is where the summary starts.
   const kept: string[] = [];
   for (; index < lines.length; index++) {
     const line = lines[index];
-    if (line.trim() === "") {
-      // A blank line ends the run of notices; before the run it is just spacing.
-      if (kept.length > 0) break;
-      continue;
-    }
+    if (line.trim() === "") continue;
     if (!line.startsWith(">")) break;
     kept.push(line);
   }
-  return kept.length > 0 ? `${kept.join("\n")}\n\n` : "";
+  return kept.length > 0 ? `${kept.join("\n\n")}\n\n` : "";
 }
 
 /** The transcript text a summarizer should be given, or "" when there is none yet. */

@@ -94,9 +94,37 @@ describe("validateCommitments", () => {
     expect(validateCommitments([fabricated], segments)).toEqual([]);
   });
 
-  it("drops a span that points nowhere", () => {
-    // An approximate span still plays *something*, which is worse than no playback.
-    expect(validateCommitments([proposal({ start_ms: 500, end_ms: 900 })], segments)).toEqual([]);
+  it("derives the span from where the quote actually is, ignoring the model's numbers", () => {
+    // Requiring the model to echo the span exactly rejected nearly every real proposal,
+    // because models round and approximate numbers. Deriving it makes "click to hear
+    // this" correct by construction rather than by hoping.
+    const [kept] = validateCommitments([proposal({ start_ms: 999, end_ms: 1234 })], segments);
+    expect(kept.start_ms).toBe(0);
+    expect(kept.end_ms).toBe(1000);
+  });
+
+  it("spans every segment a quote touches", () => {
+    // Segmentation follows pauses, not sentences, so a quoted sentence split across two
+    // segments has to resolve to the whole stretch of audio that contains it.
+    const split = [
+      segment({ start_ms: 0, end_ms: 1000, text: "I'll send the revised" }),
+      segment({ start_ms: 1000, end_ms: 2500, text: "pricing by Friday" }),
+    ];
+    const [kept] = validateCommitments(
+      [proposal({ evidence: "revised pricing by Friday" })],
+      split,
+    );
+    expect(kept.start_ms).toBe(0);
+    expect(kept.end_ms).toBe(2500);
+  });
+
+  it("matches across a typographic apostrophe", () => {
+    // Transcripts and model output disagree about curly quotes constantly, and losing a
+    // real commitment to one would be absurd.
+    const curly = [segment({ start_ms: 0, end_ms: 900, text: "I\u2019ll send the pricing" })];
+    expect(
+      validateCommitments([proposal({ evidence: "I'll send the pricing" })], curly),
+    ).toHaveLength(1);
   });
 
   it("drops anything below the confidence floor", () => {
@@ -111,6 +139,14 @@ describe("validateCommitments", () => {
   it("collapses the same commitment restated twice", () => {
     const restated = proposal({ start_ms: 1000, end_ms: 2000, evidence: "great, thanks" });
     expect(validateCommitments([proposal(), restated], segments)).toHaveLength(1);
+  });
+
+  it("still drops a paraphrase even though the span is now derived", () => {
+    // Deriving the span must not become a way for an unverifiable quote to slip through:
+    // no match in the transcript is still a rejection.
+    expect(
+      validateCommitments([proposal({ evidence: "she agreed to send pricing" })], segments),
+    ).toEqual([]);
   });
 
   it("matches evidence regardless of whitespace and case", () => {

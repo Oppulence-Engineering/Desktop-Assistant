@@ -149,29 +149,92 @@ export function validateCommitments(
   proposals: ProposedCommitment[],
   segments: MeetingTranscriptSegment[],
 ): ProposedCommitment[] {
-  const spans = new Set(segments.map((segment) => `${segment.start_ms}:${segment.end_ms}`));
-  const haystack = segments
-    .map((segment) => segment.text.toLowerCase().replace(/\s+/g, " "))
-    .join(" ");
-
+  const index = buildQuoteIndex(segments);
   const seen = new Set<string>();
-  return proposals.filter((proposal) => {
-    if (proposal.confidence < MIN_CONFIDENCE) return false;
-    if (!proposal.text.trim() || !proposal.evidence.trim()) return false;
+  const kept: ProposedCommitment[] = [];
 
-    // The span has to be a real one. An approximate span would still play *something*,
-    // which is worse than not offering playback: it would look verified.
-    if (!spans.has(`${proposal.start_ms}:${proposal.end_ms}`)) return false;
+  for (const proposal of proposals) {
+    if (proposal.confidence < MIN_CONFIDENCE) continue;
+    if (!proposal.text.trim() || !proposal.evidence.trim()) continue;
 
     // The evidence has to actually appear. Models paraphrase when asked to quote, and a
     // paraphrase presented as a quote is the failure this whole design is built to avoid.
-    const quote = proposal.evidence.toLowerCase().replace(/\s+/g, " ").trim();
-    if (!haystack.includes(quote)) return false;
+    const span = locateQuote(index, proposal.evidence);
+    if (!span) continue;
 
     // The same commitment restated twice in a call is one commitment.
     const key = `${proposal.owner}:${proposal.text.toLowerCase().replace(/\s+/g, " ").trim()}`;
-    if (seen.has(key)) return false;
+    if (seen.has(key)) continue;
     seen.add(key);
-    return true;
-  });
+
+    // The span is *derived* from where the quote actually is, not taken from the model.
+    // Requiring it to echo `start_ms`/`end_ms` exactly was the earlier design and it was
+    // wrong twice over: models round and approximate numbers, so nearly every real
+    // proposal was silently rejected — and when one did match, the span was only as
+    // trustworthy as the model. Deriving it makes "click to hear this" correct by
+    // construction rather than by hoping.
+    kept.push({ ...proposal, start_ms: span.start_ms, end_ms: span.end_ms });
+  }
+  return kept;
+}
+
+interface QuoteIndex {
+  haystack: string;
+  /** Where each segment's normalized text sits inside `haystack`. */
+  spans: { from: number; to: number; start_ms: number; end_ms: number }[];
+}
+
+function normalize(text: string): string {
+  // Curly quotes and apostrophes: transcripts and model output disagree about them
+  // constantly, and a quote that fails to match over a typographic apostrophe would
+  // throw away a perfectly good commitment.
+  return text
+    .toLowerCase()
+    .replace(/[‘’ʼ]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildQuoteIndex(segments: MeetingTranscriptSegment[]): QuoteIndex {
+  let haystack = "";
+  const spans: QuoteIndex["spans"] = [];
+  for (const segment of segments) {
+    const text = normalize(segment.text);
+    if (!text) continue;
+    if (haystack) haystack += " ";
+    spans.push({
+      from: haystack.length,
+      to: haystack.length + text.length,
+      start_ms: segment.start_ms,
+      end_ms: segment.end_ms,
+    });
+    haystack += text;
+  }
+  return { haystack, spans };
+}
+
+/**
+ * Where a quote sits in the transcript, or null when it is not there.
+ *
+ * Spans are unioned across every segment the quote touches, so a sentence split across
+ * two segments — which is the norm, since segmentation follows pauses and not
+ * sentences — still resolves to the full stretch of audio that contains it.
+ */
+function locateQuote(
+  index: QuoteIndex,
+  evidence: string,
+): { start_ms: number; end_ms: number } | null {
+  const quote = normalize(evidence);
+  if (!quote) return null;
+  const at = index.haystack.indexOf(quote);
+  if (at === -1) return null;
+
+  const end = at + quote.length;
+  const touched = index.spans.filter((span) => span.from < end && span.to > at);
+  if (touched.length === 0) return null;
+  return {
+    start_ms: touched[0].start_ms,
+    end_ms: touched[touched.length - 1].end_ms,
+  };
 }

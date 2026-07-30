@@ -155,11 +155,15 @@ describe("mergeSummaryIntoNote keeps what the note claims about itself", () => {
     expect(merged.trimEnd().endsWith("```")).toBe(true);
   });
 
-  it("carries several notices", () => {
-    const note = noteWith("> One.\n> Two.");
+  it("carries several notices, blank-line separated as the formatter writes them", () => {
+    // The formatter puts a blank line between each. Treating that blank as the end of
+    // the run kept only the first — the privacy line survived and the speaker-attribution
+    // caveat silently did not.
+    const note = noteWith("> One.\n\n> Two.");
     const merged = mergeSummaryIntoNote(note, "Notes.");
     expect(merged).toContain("> One.");
     expect(merged).toContain("> Two.");
+    expect(merged.indexOf("> Two.")).toBeLessThan(merged.indexOf("Notes."));
   });
 
   it("does not carry a previous summary forward", () => {

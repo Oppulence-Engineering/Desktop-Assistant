@@ -42,6 +42,10 @@ export class MeetingLiveTranscriber {
   private readonly cursors = new Map<string, number>();
   private dir: string | null = null;
   private tracks: LiveTrack[] = [];
+  /** Bumped on every stop. A pass in flight when the session ends checks this before
+   *  reporting, so a late result cannot land against the next session — or against no
+   *  session at all, which broadcast an empty id and appended to a cleared panel. */
+  private generation = 0;
 
   constructor(private readonly deps: LiveTranscriberDeps) {}
 
@@ -64,6 +68,7 @@ export class MeetingLiveTranscriber {
   }
 
   stop(): void {
+    this.generation++;
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
     this.dir = null;
@@ -76,9 +81,11 @@ export class MeetingLiveTranscriber {
     // same audio twice.
     if (this.running || !this.dir) return;
     this.running = true;
+    const generation = this.generation;
     try {
       for (const track of this.tracks) {
-        await this.transcribeNew(this.dir, track);
+        if (generation !== this.generation) break;
+        await this.transcribeNew(this.dir, track, generation);
       }
     } catch (err) {
       // A live aid that fails is a live aid that is not there. It must never affect the
@@ -89,7 +96,7 @@ export class MeetingLiveTranscriber {
     }
   }
 
-  private async transcribeNew(dir: string, track: LiveTrack): Promise<void> {
+  private async transcribeNew(dir: string, track: LiveTrack, generation: number): Promise<void> {
     const file = path.join(dir, track.file);
     // The header still says zero — the writer patches it on stop — so `readWavInfo`
     // derives the real length from the file size. That is the same path a crashed
@@ -121,6 +128,8 @@ export class MeetingLiveTranscriber {
     // Advance only after a successful pass, so a failure re-reads rather than skipping
     // a stretch of the meeting entirely.
     this.cursors.set(track.id, cursor + available);
+    // Transcription takes seconds; the meeting may have ended inside that window.
+    if (generation !== this.generation) return;
     if (segments.length > 0) this.deps.onSegments(segments);
   }
 }
