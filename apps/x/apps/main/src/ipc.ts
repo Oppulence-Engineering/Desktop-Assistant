@@ -172,6 +172,10 @@ import {
 } from "@x/core/dist/background-tasks/fileops.js";
 import { browserIpcHandlers } from "./browser/ipc.js";
 import { mailboxIpcHandlers } from "./ipc/mailbox.js";
+import { createMeetingIpcHandlers } from "./ipc/meetings.js";
+import { nativeCaptureAvailable } from "./meeting-capture.js";
+import { getMeetingController } from "./meeting-controller.js";
+import { initMeetingTray } from "./tray.js";
 import { ensureAgentSlackAvailable } from "./agent-slack.js";
 
 /**
@@ -624,6 +628,28 @@ function getWhisper(): WhisperService {
     whisperUtilityRunner.transcribePcm,
   );
   return whisperService;
+}
+
+/**
+ * Bring up native meeting capture: a menu-bar item so a recording is visible and
+ * stoppable with no window open, and a rescan for sessions that finished but were
+ * never transcribed.
+ *
+ * Lives here so `getWhisper` stays private — the controller only needs the facade.
+ * Skipped entirely when the sidecar can't run, in which case meetings record through
+ * the renderer pipeline and there is nothing for a tray to control.
+ */
+export function initMeetingCapture(): void {
+  if (!nativeCaptureAvailable()) {
+    console.log("[meeting] native capture unavailable — using the in-app pipeline");
+    return;
+  }
+  const controller = getMeetingController({ whisper: getWhisper });
+  initMeetingTray(controller);
+  void controller
+    .refreshSettings()
+    .then(() => controller.resumePending())
+    .catch((err) => console.error("[meeting] resume failed:", err));
 }
 
 /** On-device transcription is viable only when the binary exists AND the device is capable (§13). */
@@ -1871,5 +1897,7 @@ export function setupIpcHandlers() {
     ...browserIpcHandlers,
     // Provider-neutral mailbox handlers (email-001..004)
     ...mailboxIpcHandlers,
+    // Native dual-track meeting capture (oppulence-audiocap sidecar)
+    ...createMeetingIpcHandlers({ whisper: getWhisper }),
   });
 }

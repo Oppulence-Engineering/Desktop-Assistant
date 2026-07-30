@@ -83,6 +83,7 @@ import {
   VoicePrivacySettings,
   DiarizationSettings,
 } from "./transcription.js";
+import * as meetings from "./meetings.js";
 
 // ============================================================================
 // Runtime Validation Schemas (Single Source of Truth)
@@ -1157,6 +1158,71 @@ const ipcSchemas = {
     res: z.object({
       notes: z.string(),
     }),
+  },
+  // ---- Native dual-track capture (oppulence-audiocap sidecar) ----
+  /** Which engine a start would actually use, so the renderer knows whether to run
+   *  its own pipeline or hand off to the sidecar. */
+  "meeting:captureEngine": {
+    req: z.null(),
+    res: z.object({ engine: meetings.MeetingResolvedEngine }),
+  },
+  "meeting:startCapture": {
+    req: z.object({ calendarEventJson: z.string().optional() }),
+    res: z.object({
+      started: z.boolean(),
+      sessionId: z.string().optional(),
+      notePath: z.string().optional(),
+      tracks: z.array(meetings.MeetingTrackId).default([]),
+      warnings: z.array(z.string()).default([]),
+      error: z.string().optional(),
+    }),
+  },
+  "meeting:stopCapture": {
+    req: z.null(),
+    res: z.object({
+      stopped: z.boolean(),
+      sessionId: z.string().optional(),
+      queued: z.boolean().default(false),
+    }),
+  },
+  "meeting:captureStatus": {
+    req: z.null(),
+    res: meetings.MeetingCaptureStatus,
+  },
+  "meeting:listSessions": {
+    req: z.null(),
+    res: z.object({ sessions: z.array(meetings.MeetingSessionSummary) }),
+  },
+  "meeting:retranscribe": {
+    req: z.object({ sessionId: z.string() }),
+    res: z.object({ queued: z.boolean(), error: z.string().optional() }),
+  },
+  "meeting:deleteSession": {
+    req: z.object({ sessionId: z.string() }),
+    res: z.object({ deleted: z.boolean() }),
+  },
+  "meeting:captureDoctor": {
+    req: z.null(),
+    res: meetings.MeetingDoctorReport,
+  },
+  /** Event (ipc.on): per-track peak levels while recording, main → renderer. */
+  "meeting:captureLevel": {
+    req: meetings.MeetingLevels,
+    res: z.null(),
+  },
+  /** Event (ipc.on): transcription queue progress, main → renderer. */
+  "meeting:captureProgress": {
+    req: meetings.MeetingTranscriptionProgress,
+    res: z.null(),
+  },
+  /** Event (ipc.on): capture stopped without being asked (sidecar crash, quit). */
+  "meeting:captureEnded": {
+    req: z.object({
+      sessionId: z.string(),
+      crashed: z.boolean(),
+      queued: z.boolean(),
+    }),
+    res: z.null(),
   },
   // Inline task schedule classification
   "export:note": {

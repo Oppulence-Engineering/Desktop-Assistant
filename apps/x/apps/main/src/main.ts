@@ -11,6 +11,7 @@ import {
 } from "electron";
 import path from "node:path";
 import {
+  initMeetingCapture,
   setupIpcHandlers,
   startRunsWatcher,
   startServicesWatcher,
@@ -22,6 +23,7 @@ import {
   stopServicesWatcher,
   stopWorkspaceWatcher,
 } from "./ipc.js";
+import { destroyMeetingTray, stopCaptureForQuit } from "./tray.js";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
 import { updateElectronApp, UpdateSourceType } from "update-electron-app";
@@ -385,6 +387,11 @@ async function startBackgroundServices() {
   // start bg-task scheduler (cron / window)
   initBackgroundTaskScheduler();
 
+  // Meeting capture: put a menu-bar item up so a recording is visible and stoppable
+  // with every window closed, and pick up any session that finished but never got
+  // transcribed (a quit or crash mid-transcription costs a retry, not a meeting).
+  initMeetingCapture();
+
   // RFC 006 offline-return: surface cloud runs that completed while the app
   // was closed (auto-pulls the newest successful artifact per task, gated by
   // the artifact-sync sidecar) and nudge the renderer with a quiet badge.
@@ -626,6 +633,10 @@ async function maybeRemindThenQuit(): Promise<void> {
 }
 
 function runQuitCleanup(): void {
+  // Finalize a live meeting capture first: the sidecar patches its WAV headers on
+  // SIGTERM, and everything else here can wait a few milliseconds for that.
+  stopCaptureForQuit();
+  destroyMeetingTray();
   // Clean up watcher on app quit
   stopWorkspaceWatcher();
   stopRunsWatcher();
