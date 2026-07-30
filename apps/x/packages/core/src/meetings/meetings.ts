@@ -37,6 +37,8 @@ export { applyRetention, hasAudio } from "./retention.js";
 export { withTranscriberFallback } from "./fallback.js";
 
 export { summarizeMeetingNote } from "./summary.js";
+
+export { publishMeetingTranscribed, MEETING_EVENT_SOURCE, MEETING_TRANSCRIBED } from "./events.js";
 export type { SummarizeNoteArgs } from "./summary.js";
 export type { FallbackOpts } from "./fallback.js";
 

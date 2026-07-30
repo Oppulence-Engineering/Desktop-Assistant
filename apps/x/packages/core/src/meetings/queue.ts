@@ -51,6 +51,14 @@ export interface MeetingQueueDeps {
   /** Writes an LLM summary above the transcript once the note exists. Optional: without
    *  it a session still gets its transcript and note, just no summary. */
   summarize?: (args: { dir: string; notePath: string; meta: MeetingSessionMeta }) => Promise<void>;
+  /** Announces a finished meeting to the event bus. Optional so tests and the queue
+   *  itself stay free of the events subsystem. */
+  onTranscribed?: (args: {
+    dir: string;
+    meta: MeetingSessionMeta;
+    transcript: MeetingTranscript;
+    notePath?: string;
+  }) => Promise<void>;
   onProgress?: (progress: MeetingTranscriptionProgress) => void;
 }
 
@@ -175,6 +183,15 @@ export class MeetingQueue {
       transcribed: true,
       codec: this.deps.codec,
     });
+
+    // Last, and never fatal: the meeting is already fully processed by this point, so a
+    // failure to announce it must not undo any of that.
+    try {
+      await this.deps.onTranscribed?.({ dir, meta, transcript, notePath });
+    } catch (err) {
+      await appendLog(dir, `event not published: ${(err as Error).message}`);
+    }
+
     this.emit(dir, "done", { notePath });
   }
 

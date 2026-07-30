@@ -21,6 +21,7 @@ import {
   nativeProvenance,
   patchMeta,
   readMeta,
+  publishMeetingTranscribed,
   recordingsRoot,
   summarizeMeetingNote,
   withTranscriberFallback,
@@ -189,6 +190,7 @@ export class MeetingController {
           calendarEvent,
           provenance: nativeProvenance({
             model: this.modelId,
+            sessionId,
             systemAudioCaptured: tracks.includes("system"),
           }),
         });
@@ -392,7 +394,7 @@ export class MeetingController {
           startedAt: meta.started,
           segments: transcript.segments,
           calendarEvent: calendarEventFromMeta(meta),
-          provenance: nativeProvenance({ model: this.modelId, systemAudioCaptured }),
+          provenance: nativeProvenance({ model: this.modelId, sessionId, systemAudioCaptured }),
           notePath: this.notePaths.get(sessionId),
         });
         this.notePaths.set(sessionId, notePath);
@@ -406,6 +408,14 @@ export class MeetingController {
           meta,
           summarize: (transcript, startedAt, calendarEventJson) =>
             summarizeMeeting(transcript, startedAt, calendarEventJson),
+        });
+      },
+      onTranscribed: async ({ dir, meta, transcript, notePath }) => {
+        await publishMeetingTranscribed({
+          sessionId: path.basename(dir),
+          meta,
+          transcript,
+          notePath,
         });
       },
       onProgress: (progress) => {
