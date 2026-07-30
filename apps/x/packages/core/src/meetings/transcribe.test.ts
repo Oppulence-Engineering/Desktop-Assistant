@@ -235,3 +235,25 @@ describe("transcribeSession", () => {
     expect(fractions.at(-1)).toBe(1);
   });
 });
+
+describe("non-speech filtering", () => {
+  it("drops whisper's annotations for near-silence instead of attributing them to a speaker", async () => {
+    const dirPath = await session("non-speech");
+    await writeWav(path.join(dirPath, "mic.wav"), tone(1));
+
+    // What a real quiet track produced: whisper's guess at the noise.
+    const transcript = await transcribeSession(
+      args({
+        dir: dirPath,
+        transcriber: fakeTranscriber(() => [
+          { start: 0, end: 1, text: " [Music]" },
+          { start: 1, end: 2, text: "♪♪" },
+          { start: 2, end: 3, text: " We agreed on Friday." },
+        ]),
+        meta: sessionMeta({ tracks: [trackMeta()] }),
+      }),
+    );
+
+    expect(transcript.segments.map((s) => s.text)).toEqual(["We agreed on Friday."]);
+  });
+});

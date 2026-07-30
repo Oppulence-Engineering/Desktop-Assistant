@@ -34,6 +34,8 @@ export type { MeetingTranscriber, TranscribeSessionOpts } from "./transcribe.js"
 
 export { applyRetention, hasAudio } from "./retention.js";
 
+export { recoverOrphanedSessions, recoverSessionMeta, RECOVERED_WARNING } from "./recover.js";
+
 export {
   calendarEventFromMeta,
   meetingNotePath,

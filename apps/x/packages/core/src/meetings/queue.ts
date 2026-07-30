@@ -7,6 +7,7 @@ import {
   type MeetingTranscript,
   type MeetingTranscriptionProgress,
 } from "@x/shared/dist/meetings.js";
+import { recoverOrphanedSessions } from "./recover.js";
 import { applyRetention } from "./retention.js";
 import {
   appendLog,
@@ -75,8 +76,13 @@ export class MeetingQueue {
   /**
    * Rescan for sessions that finished but were never transcribed. Directory names
    * sort chronologically, so oldest-first is a plain name sort.
+   *
+   * Orphans are rebuilt first: a hard-killed recorder never wrote `meta.json`, and
+   * without one its audio is invisible to both the pending predicate and the sessions
+   * list — the recording would survive the crash and then never be looked at.
    */
   async resumePending(): Promise<string[]> {
+    await recoverOrphanedSessions(this.root);
     const pending = await pendingSessions(this.root);
     for (const dir of pending) this.enqueue(dir);
     return pending;

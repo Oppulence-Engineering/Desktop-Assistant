@@ -5,7 +5,7 @@ import type {
   MeetingTranscript,
   MeetingTranscriptSegment,
 } from "@x/shared/dist/meetings.js";
-import { pcmStats } from "../voice/whisper/index.js";
+import { isNonSpeech, pcmStats } from "../voice/whisper/index.js";
 import { appendLog } from "./session.js";
 import { readPcmChunk, readWavInfo, recoverWavHeader } from "./wav.js";
 
@@ -135,6 +135,10 @@ async function transcribeTrack(args: {
     for (const segment of result.segments) {
       const text = segment.text.trim();
       if (!text) continue;
+      // Whisper answers near-silence with its guess at the noise — "[Music]",
+      // "[BLANK_AUDIO]" — which would show up as a participant saying it. One of two
+      // tracks is nearly always the quiet one, so this is the common case, not the edge.
+      if (isNonSpeech(text)) continue;
       segments.push({
         speaker: track.speaker,
         start_ms: Math.round(baseMs + segment.start * 1000),
