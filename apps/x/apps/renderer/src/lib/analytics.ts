@@ -75,11 +75,20 @@ export function transcriptionStarted(props: {
   provider: string;
   mode: TranscriptionMode;
   model?: string;
+  /** `native` = dual-track sidecar capture, `renderer` = in-app WebAudio pipeline. */
+  captureEngine?: string;
+  /** False when the system track never opened, so a one-sided transcript is
+   *  distinguishable from a quiet meeting in aggregate. */
+  systemAudioCaptured?: boolean;
 }) {
   posthog.capture("transcription_started", {
     provider: props.provider,
     mode: props.mode,
     ...(props.model ? { model: props.model } : {}),
+    ...(props.captureEngine ? { capture_engine: props.captureEngine } : {}),
+    ...(props.systemAudioCaptured !== undefined
+      ? { system_audio_captured: props.systemAudioCaptured }
+      : {}),
   });
 }
 
@@ -109,11 +118,13 @@ export function transcriptionFailed(props: {
   provider: string;
   mode: TranscriptionMode;
   code: string;
+  captureEngine?: string;
 }) {
   posthog.capture("transcription_failed", {
     provider: props.provider,
     mode: props.mode,
     code: props.code,
+    ...(props.captureEngine ? { capture_engine: props.captureEngine } : {}),
   });
 }
 

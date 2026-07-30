@@ -22,6 +22,7 @@ import { formatRelativeTime } from "@/lib/relative-time";
 import { extractConferenceLink } from "@/lib/calendar-event";
 import { cn } from "@/lib/utils";
 import type { MeetingTranscriptionState } from "@/hooks/useMeetingTranscription";
+import { MeetingCaptureStrip } from "@/components/meeting-capture-strip";
 
 const MEETINGS_ROOT = "knowledge/Meetings";
 const CALENDAR_DIR = "calendar_sync";
@@ -1158,6 +1159,9 @@ export function MeetingsView({
         </div>
         <p className="mt-1 text-xs text-muted-foreground">Upcoming events and meeting notes.</p>
       </div>
+      {/* Capture state: levels while recording, the transcription queue, and anything
+          on disk that needs attention. Renders nothing when native capture is off. */}
+      <MeetingCaptureStrip />
       <div className="flex-1 overflow-auto">
         <UpcomingEvents />
         <div className="p-6">

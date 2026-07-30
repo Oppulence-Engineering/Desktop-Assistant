@@ -26,6 +26,7 @@ import type {
   TranscriptionProvider,
   WhisperBenchmarkProfile,
 } from "@x/shared/dist/transcription.js";
+import type { MeetingResolvedEngine, MeetingsSettings } from "@x/shared/dist/meetings.js";
 
 const TRANSCRIPTION_CONFIG_CHANGED_EVENT = "transcription-config-changed";
 
@@ -85,6 +86,10 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const [localOnly, setLocalOnly] = useState(false);
   // RFC 017: on-device meeting diarization (beta). Off by default.
   const [diarizationEnabled, setDiarizationEnabled] = useState(false);
+  const [meetings, setMeetings] = useState<MeetingsSettings | null>(null);
+  // What a start would actually use, as opposed to what is configured — the
+  // difference is the whole point of showing it.
+  const [resolvedEngine, setResolvedEngine] = useState<MeetingResolvedEngine | null>(null);
   const [activeModel, setActiveModel] = useState<string>("base.en-q5_1");
   // Per-model download progress in [0, 1]; absent until a download starts.
   const [progress, setProgress] = useState<Record<string, number>>({});
@@ -133,7 +138,12 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
         setLocalOnly(cfg.privacy.localOnly);
         setActiveModel(cfg.whisper.model);
         setDiarizationEnabled(cfg.diarization?.enabled ?? false);
+        setMeetings(cfg.meetings);
       })
+      .catch(() => {});
+    void window.ipc
+      .invoke("meeting:captureEngine", null)
+      .then((r) => setResolvedEngine(r.engine))
       .catch(() => {});
 
     const off = window.ipc.on("whisper:modelProgress", (p) => {
@@ -193,6 +203,23 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       }
     },
     [localOnly],
+  );
+
+  const changeMeetings = useCallback(
+    async (patch: Partial<MeetingsSettings>) => {
+      const previous = meetings;
+      setMeetings((current) => (current ? { ...current, ...patch } : current));
+      try {
+        const cfg = await window.ipc.invoke("transcription:setConfig", { meetings: patch });
+        setMeetings(cfg.meetings);
+        // The engine can change as a result (auto → renderer when forced off).
+        const { engine } = await window.ipc.invoke("meeting:captureEngine", null);
+        setResolvedEngine(engine);
+      } catch {
+        setMeetings(previous);
+      }
+    },
+    [meetings],
   );
 
   const changeDiarizationEnabled = useCallback(
@@ -672,7 +699,103 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
           )}
         </div>
       </SettingsSection>
+
+      {meetings && (
+        <SettingsSection
+          title="Meeting recording"
+          description={
+            resolvedEngine === "native"
+              ? "Your microphone and system audio are recorded as two separate tracks on this device — the other side of the call is captured without a meeting bot."
+              : "This device records through the in-app pipeline. Two-track capture needs macOS 14.2 or later."
+          }
+        >
+          <div className="space-y-2">
+            <SettingToggle
+              title="Two-track capture"
+              hint={
+                resolvedEngine === "native"
+                  ? "Recommended · survives closing the window, and both sides are transcribed separately"
+                  : "Unavailable on this device"
+              }
+              value={meetings.captureEngine !== "renderer"}
+              disabled={resolvedEngine !== "native"}
+              onChange={(next) =>
+                void changeMeetings({ captureEngine: next ? "auto" : "renderer" })
+              }
+            />
+            {resolvedEngine === "native" && meetings.captureEngine !== "renderer" && (
+              <>
+                <SettingToggle
+                  title="Echo cancellation"
+                  hint="Turn on when the meeting plays through speakers, or their audio is transcribed twice — once as them, once as you. Leave off with headphones."
+                  value={meetings.micVoiceProcessing}
+                  onChange={(next) => void changeMeetings({ micVoiceProcessing: next })}
+                />
+                <SettingToggle
+                  title="Keep audio after transcribing"
+                  hint={
+                    meetings.keepAudio === "always"
+                      ? "Recordings stay on disk so you can re-transcribe with a better model later"
+                      : "Recordings are deleted once the transcript is written · kept if transcription fails, so a retry is possible"
+                  }
+                  value={meetings.keepAudio === "always"}
+                  onChange={(next) =>
+                    void changeMeetings({ keepAudio: next ? "always" : "untilTranscribed" })
+                  }
+                />
+              </>
+            )}
+          </div>
+        </SettingsSection>
+      )}
     </div>
+  );
+}
+
+/** A labelled on/off row, matching the local-diarization toggle above. */
+function SettingToggle({
+  title,
+  hint,
+  value,
+  onChange,
+  disabled = false,
+}: {
+  title: string;
+  hint: string;
+  value: boolean;
+  onChange: (next: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => !disabled && onChange(!value)}
+      aria-pressed={value}
+      disabled={disabled}
+      className={cn(
+        "flex w-full items-center justify-between gap-3 rounded-none border px-3.5 py-3 text-left transition-all",
+        disabled && "cursor-not-allowed opacity-50",
+        !disabled && value
+          ? "border-primary bg-primary/[0.03] ring-2 ring-primary/20"
+          : "border-border",
+        !disabled && "hover:border-primary/40 hover:bg-muted/40",
+      )}
+    >
+      <span className="flex flex-col">
+        <span className="text-sm font-medium">{title}</span>
+        <span className="text-xs text-muted-foreground">{hint}</span>
+      </span>
+      <span
+        className={cn(
+          "shrink-0 rounded-none border px-2 py-0.5 text-xs",
+          value
+            ? "border-primary bg-primary text-primary-foreground"
+            : "bg-card text-muted-foreground",
+        )}
+      >
+        {value ? "On" : "Off"}
+      </span>
+    </button>
   );
 }
 

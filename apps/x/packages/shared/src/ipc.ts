@@ -1136,6 +1136,8 @@ const ipcSchemas = {
       privacy: VoicePrivacySettings.partial().optional(),
       // RFC 017: on-device diarization settings (incl. the Local-diarization-beta toggle).
       diarization: DiarizationSettings.partial().optional(),
+      // Native dual-track capture: engine, echo cancellation, audio retention.
+      meetings: meetings.MeetingsSettings.partial().optional(),
     }),
     res: TranscriptionConfig,
   },

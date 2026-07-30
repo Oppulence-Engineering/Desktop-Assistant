@@ -292,3 +292,49 @@ describe("resolveMeetingProvider", () => {
     expect(r).toEqual({ provider: "none", reason: "local_unavailable" });
   });
 });
+
+describe("meetings settings block", () => {
+  it("defaults to auto engine, no echo cancellation, and delete-after-transcribe", async () => {
+    const cfg = await voice.getTranscriptionConfig();
+    expect(cfg.meetings).toEqual({
+      captureEngine: "auto",
+      micVoiceProcessing: false,
+      // RFC 035: raw audio is not retained by default.
+      keepAudio: "untilTranscribed",
+      transcribeOnStop: true,
+    });
+  });
+
+  it("merges a partial meetings patch without clobbering its siblings", async () => {
+    await voice.setTranscriptionConfig({ meetings: { keepAudio: "always" } });
+    await voice.setTranscriptionConfig({ meetings: { micVoiceProcessing: true } });
+
+    const cfg = await voice.readTranscriptionConfig();
+    expect(cfg?.meetings.keepAudio).toBe("always"); // preserved across the second write
+    expect(cfg?.meetings.micVoiceProcessing).toBe(true);
+    expect(cfg?.meetings.captureEngine).toBe("auto"); // untouched keeps its default
+  });
+
+  it("does not disturb the meetings block when an unrelated setting changes", async () => {
+    await voice.setTranscriptionConfig({ meetings: { captureEngine: "renderer" } });
+    await voice.setTranscriptionConfig({ whisper: { model: "small.en-q5_1" } });
+
+    const cfg = await voice.readTranscriptionConfig();
+    expect(cfg?.meetings.captureEngine).toBe("renderer");
+  });
+
+  it("reads a config file written before the meetings block existed", async () => {
+    // Forward-compat with installed users: an older transcription.json has no
+    // `meetings` key at all, and must parse rather than throw.
+    const legacy = { $schemaVersion: 1, voiceProvider: "whisper-local" };
+    await fs.mkdir(path.join(tmpDir, "config"), { recursive: true });
+    await fs.writeFile(
+      path.join(tmpDir, "config", "transcription.json"),
+      JSON.stringify(legacy),
+      "utf8",
+    );
+
+    const cfg = await voice.readTranscriptionConfig();
+    expect(cfg?.meetings.keepAudio).toBe("untilTranscribed");
+  });
+});

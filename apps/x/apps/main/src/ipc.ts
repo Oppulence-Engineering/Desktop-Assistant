@@ -1557,6 +1557,8 @@ export function setupIpcHandlers() {
         privacy: patch.privacy,
         // RFC 017: persist the on-device diarization beta toggle + tunables.
         ...(patch.diarization ? { diarization: patch.diarization } : {}),
+        // Native capture: engine choice, echo cancellation, audio retention.
+        ...(patch.meetings ? { meetings: patch.meetings } : {}),
       });
     },
     "notifications:getConfig": async () => {

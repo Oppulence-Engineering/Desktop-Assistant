@@ -306,6 +306,7 @@ export function useMeetingTranscription(
               provider: "whisper-local",
               mode: "meeting",
               code: "native_capture_failed",
+              captureEngine: "native",
             });
             setState("idle");
             return null;
@@ -314,7 +315,12 @@ export function useMeetingTranscription(
           notePathRef.current = result.notePath ?? "";
           calendarEventRef.current = calendarEvent;
           if (!result.tracks.includes("system")) onSystemAudioUnavailableRef.current?.();
-          analytics.transcriptionStarted({ provider: "whisper-local", mode: "meeting" });
+          analytics.transcriptionStarted({
+            provider: "whisper-local",
+            mode: "meeting",
+            captureEngine: "native",
+            systemAudioCaptured: result.tracks.includes("system"),
+          });
           setState("recording");
           return result.notePath ?? null;
         }

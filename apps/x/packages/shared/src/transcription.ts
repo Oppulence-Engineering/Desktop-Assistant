@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { DEFAULT_MEETINGS_SETTINGS, MeetingsSettings } from "./meetings.js";
 
+// Re-exported so consumers of the transcription config can reach the nested block
+// without also importing ./meetings.js.
+export { MeetingsSettings, DEFAULT_MEETINGS_SETTINGS };
+
 /**
  * Transcription provider abstraction (RFC 009 §12).
  *
