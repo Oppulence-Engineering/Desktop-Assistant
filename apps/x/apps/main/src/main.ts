@@ -24,6 +24,7 @@ import {
   stopWorkspaceWatcher,
 } from "./ipc.js";
 import { destroyMeetingTray, stopCaptureForQuit } from "./tray.js";
+import { destroyMeetingIndicator } from "./meeting-indicator.js";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
 import { updateElectronApp, UpdateSourceType } from "update-electron-app";
@@ -80,6 +81,7 @@ import {
   extractDeepLinkFromArgv,
   setMainWindowForDeepLinks,
 } from "./deeplink.js";
+import { appWindows, getMainWindow, preloadPath, setMainWindow } from "./main-window.js";
 import {
   startCrashReporter,
   processPendingCrashDumps,
@@ -193,10 +195,6 @@ app.on("second-instance", (_event, argv) => {
   if (url) dispatchUrl(url);
 });
 
-// Path resolution differs between development and production:
-const preloadPath = app.isPackaged
-  ? path.join(__dirname, "../preload/dist/preload.cjs")
-  : path.join(__dirname, "../../../preload/dist/preload.cjs");
 console.log("preloadPath", preloadPath);
 
 const rendererPath = app.isPackaged
@@ -306,8 +304,12 @@ function createWindow() {
   configureSessionPermissions(session.defaultSession);
   configureSessionPermissions(session.fromPartition(BROWSER_PARTITION));
 
+  setMainWindow(win);
   setMainWindowForDeepLinks(win);
-  win.on("closed", () => setMainWindowForDeepLinks(null));
+  win.on("closed", () => {
+    setMainWindow(null);
+    setMainWindowForDeepLinks(null);
+  });
   win.webContents.on("preload-error", (_event, failedPreloadPath, error) => {
     console.error("[Main] preload failed:", failedPreloadPath, error);
   });
@@ -521,7 +523,9 @@ app.whenReady().then(async () => {
   }, 750);
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
+    // `appWindows()` rather than `getAllWindows()`: the recording indicator must not
+    // count, or clicking the dock during a meeting would find nothing to re-create.
+    if (appWindows().length === 0) {
       createWindow();
     }
   });
@@ -533,6 +537,16 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
+});
+
+// Electron fires `window-all-closed` only when the *last* window closes, and the
+// indicator is a window. Closing the app's window while it is up would otherwise leave
+// the app running invisibly on Windows/Linux with no way back to it.
+app.on("browser-window-created", (_event, win) => {
+  win.on("closed", () => {
+    if (process.platform === "darwin") return;
+    if (appWindows().length === 0) app.quit();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -596,7 +610,7 @@ async function maybeRemindThenQuit(): Promise<void> {
     if (!cfg.suppressDesktopScheduleQuitReminder) {
       const { items } = await listTasks({ limit: 1000 });
       if (hasPendingDesktopSchedules(items)) {
-        const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
+        const win = getMainWindow() ?? appWindows()[0];
         const opts: Electron.MessageBoxOptions = {
           type: "info",
           message: "Desktop schedules pause while the app is closed",
@@ -618,7 +632,7 @@ async function maybeRemindThenQuit(): Promise<void> {
           reminderInFlight = false;
           // Windows/Linux reach here via window-all-closed → quit; keeping
           // the app open with zero windows would strand it headless.
-          if (BrowserWindow.getAllWindows().length === 0) {
+          if (appWindows().length === 0) {
             createWindow();
           }
           return;
@@ -636,6 +650,7 @@ function runQuitCleanup(): void {
   // Finalize a live meeting capture first: the sidecar patches its WAV headers on
   // SIGTERM, and everything else here can wait a few milliseconds for that.
   stopCaptureForQuit();
+  destroyMeetingIndicator();
   destroyMeetingTray();
   // Clean up watcher on app quit
   stopWorkspaceWatcher();

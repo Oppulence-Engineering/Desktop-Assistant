@@ -64,6 +64,7 @@ import {
   GitBranch as PhGitBranch,
   Globe as PhGlobe,
   HardDrives as PhHardDrives,
+  LockKey as PhLockKey,
   Headphones as PhHeadphones,
   House as PhHouse,
   Image as PhImage,
@@ -347,6 +348,8 @@ export const ScanSearch = styled(PhScan, "ScanSearch");
 export const Search = styled(PhMagnifyingGlass, "Search");
 export const SearchIcon = styled(PhMagnifyingGlass, "SearchIcon");
 export const Send = styled(PhPaperPlaneTilt, "Send");
+export const HardDrive = styled(PhHardDrives, "HardDrive");
+export const Lock = styled(PhLockKey, "Lock");
 export const Server = styled(PhHardDrives, "Server");
 export const Settings = styled(PhGearSix, "Settings");
 export const Shield = styled(PhShieldCheck, "Shield");

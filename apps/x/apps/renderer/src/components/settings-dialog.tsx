@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Server,
   Key,
+  Lock,
   Shield,
   Palette,
   Loader2,
@@ -61,6 +62,7 @@ import { ModelSettings, SolomonModelSettings } from "@/components/settings/model
 import { AppearanceSettings } from "@/components/settings/appearance-settings";
 import { MemorySettings } from "@/components/settings/memory-settings";
 import { SettingsSection } from "@/components/settings/settings-ui";
+import { PrivacySettings } from "@/components/settings/privacy-settings";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { IntegrationApiKeyModal } from "@/components/integration-api-key-modal";
 import { useConnectors } from "@/hooks/useConnectors";
@@ -74,6 +76,7 @@ type ConfigTab =
   | "preferences"
   | "notifications"
   | "permissions"
+  | "privacy"
   | "security"
   | "extensions"
   | "connections"
@@ -140,6 +143,13 @@ const tabs: TabConfig[] = [
     label: "Permissions",
     icon: Shield,
     description: "Control file, command, and workspace access.",
+    group: "workspace",
+  },
+  {
+    id: "privacy",
+    label: "Privacy & data",
+    icon: Lock,
+    description: "What is stored on this Mac, what leaves it, and how to delete it.",
     group: "workspace",
   },
   {
@@ -1804,6 +1814,8 @@ export function SettingsDialog({
                     </div>
                   ) : activeTab === "notifications" ? (
                     <NotificationSettings />
+                  ) : activeTab === "privacy" ? (
+                    <PrivacySettings dialogOpen={open} />
                   ) : activeTab === "permissions" ? (
                     <SecuritySettings dialogOpen={open} />
                   ) : activeTab === "security" ? (

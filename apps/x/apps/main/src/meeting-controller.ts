@@ -1,6 +1,7 @@
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import { app, BrowserWindow } from "electron";
+import { syncMeetingIndicator } from "./meeting-indicator.js";
 import type {
   MeetingCalendarEvent,
   MeetingCaptureState,
@@ -11,12 +12,14 @@ import type {
   MeetingTrackId,
   MeetingTranscriptionEngine,
   MeetingTranscriptionProgress,
+  MeetingTranscript,
 } from "@x/shared/dist/meetings.js";
 import {
   calendarEventFromMeta,
   createSessionDir,
   deleteMeetingNote,
   listSessionSummaries,
+  readTranscript,
   MeetingQueue,
   nativeProvenance,
   patchMeta,
@@ -324,6 +327,67 @@ export class MeetingController {
     return { deleted: true, noteDeleted };
   }
 
+  /**
+   * Delete every recording. Built on `deleteSession` rather than an `rm -rf` of the
+   * root so each session keeps the same protections — the traversal guard, the
+   * in-progress guard, and notes going to the trash instead of being unlinked.
+   *
+   * A session that fails is counted and skipped rather than aborting the sweep: the
+   * user asked for everything gone, and stopping halfway leaves them worse off than
+   * either outcome.
+   */
+  async deleteAllSessions(
+    deleteNotes = false,
+  ): Promise<{ deleted: number; notesDeleted: number; failed: number }> {
+    const sessions = await this.listSessions();
+    let deleted = 0;
+    let notesDeleted = 0;
+    let failed = 0;
+    for (const session of sessions) {
+      try {
+        const result = await this.deleteSession(session.id, deleteNotes);
+        if (result.deleted) deleted++;
+        else failed++;
+        if (result.noteDeleted) notesDeleted++;
+      } catch (err) {
+        console.warn(`[meeting] could not delete ${session.id}:`, err);
+        failed++;
+      }
+    }
+    return { deleted, notesDeleted, failed };
+  }
+
+  /**
+   * A finished session's transcript segments.
+   *
+   * `found: false` rather than an empty list for a session that has none: "nothing was
+   * said" and "it has not transcribed yet" are different answers, and a caller that
+   * cannot tell them apart will show the wrong one.
+   */
+  async sessionTranscript(
+    sessionId: string,
+  ): Promise<{ segments: MeetingTranscript["segments"]; found: boolean }> {
+    const root = await this.root();
+    const dir = path.join(root, sessionId);
+    if (path.dirname(path.resolve(dir)) !== path.resolve(root)) {
+      return { segments: [], found: false };
+    }
+    const transcript = await readTranscript(dir);
+    return transcript
+      ? { segments: transcript.segments, found: true }
+      : { segments: [], found: false };
+  }
+
+  /** Bytes every recording occupies, for the privacy tab's "what is on disk". */
+  async storageUsage(): Promise<{ sessions: number; bytes: number; dir: string }> {
+    const sessions = await this.listSessions();
+    return {
+      sessions: sessions.length,
+      bytes: sessions.reduce((total, session) => total + session.bytes, 0),
+      dir: await this.root(),
+    };
+  }
+
   // MARK: -
 
   /** The sidecar exited on its own — a crash, or the OS tearing it down. */
@@ -480,10 +544,13 @@ export class MeetingController {
 
   private setState(state: MeetingCaptureState): void {
     this.state = state;
-    // Both the tray and any open window are views onto this one piece of state, so
-    // every transition notifies both rather than either polling.
+    // The tray, any open window, and the indicator are all views onto this one piece
+    // of state, so every transition notifies all three rather than any of them polling.
     this.onStateChange?.();
     broadcast<MeetingCaptureStatus>("meeting:captureState", this.statusSnapshot());
+    // Driven from the transition, not from `start()`/`stop()`, so a session the sidecar
+    // ended on its own — a crash, a quit — takes the indicator down with it.
+    syncMeetingIndicator(state);
   }
 }
 
