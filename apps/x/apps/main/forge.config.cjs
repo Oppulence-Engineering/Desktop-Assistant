@@ -30,7 +30,12 @@ const packagerConfig = {
   // RFC 009: ship the signed per-arch whisper-cli outside the asar (executables
   // can't run from inside it). generateAssets always creates .package/whisper/
   // (staging the matching arch when present), so this path is always valid.
-  extraResource: [path.join(__dirname, ".package", "whisper")],
+  // `audiocap` is the macOS dual-track capture helper, staged the same way; on
+  // other platforms the directory ships empty and meetings use in-app capture.
+  extraResource: [
+    path.join(__dirname, ".package", "whisper"),
+    path.join(__dirname, ".package", "audiocap"),
+  ],
   // Since we bundle everything with esbuild, we don't need node_modules at all.
   // These settings prevent Forge's dependency walker (flora-colossus) from trying
   // to analyze/copy node_modules, which fails with pnpm's symlinked workspaces.
@@ -245,6 +250,32 @@ module.exports = {
         console.warn(
           `[whisper] no binary for ${platform}-${arch} at ${whisperSrc} — shipping without local transcription`,
         );
+      }
+
+      // Stage the per-arch audiocap capture helper for extraResource. macOS only —
+      // Core Audio process taps do not exist elsewhere — and absence is fine: the
+      // app falls back to in-app capture when the binary is missing.
+      const audiocapDest = path.join(packageDir, "audiocap");
+      fs.mkdirSync(audiocapDest, { recursive: true });
+      if (platform === "darwin") {
+        const audiocapSrc = path.join(
+          __dirname,
+          "..",
+          "..",
+          "vendor",
+          "audiocap",
+          `${platform}-${arch}`,
+        );
+        if (fs.existsSync(audiocapSrc)) {
+          copyDirectory(audiocapSrc, audiocapDest);
+          const exe = path.join(audiocapDest, "oppulence-audiocap");
+          if (fs.existsSync(exe)) fs.chmodSync(exe, 0o755);
+          console.log(`✅ Staged oppulence-audiocap for ${platform}-${arch}`);
+        } else {
+          console.warn(
+            `[audiocap] no binary for ${platform}-${arch} at ${audiocapSrc} — shipping without native meeting capture`,
+          );
+        }
       }
 
       console.log("✅ All assets staged in .package/");
