@@ -1,0 +1,7 @@
+# Built audiocap binaries are CI artifacts, not committed to git — same convention
+# as vendor/whisper. The audiocap-build workflow produces them and the release job
+# stages the matching arch into vendor/audiocap/<platform>-<arch>/ before packaging.
+out/
+darwin-arm64/
+darwin-x64/
+.build/

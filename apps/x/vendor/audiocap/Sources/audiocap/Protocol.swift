@@ -1,0 +1,69 @@
+import Foundation
+
+/// stdout is the machine channel and carries nothing but NDJSON events; stderr is
+/// for humans. The host parses stdout line-by-line, so a stray `print()` anywhere
+/// in this target would corrupt the stream — log to `Log.info` instead.
+enum Event {
+    /// Emitted once both recorders have been attached, listing the tracks that
+    /// actually started. A track missing here never started; `warnings` says why.
+    case started(tracks: [[String: Any]], warnings: [String])
+    /// Per-track peak amplitude (0...1) over the last window. Also the liveness
+    /// signal: a track reporting 0 for the whole meeting recorded digital silence.
+    case level(peaks: [String: Float])
+    /// Non-fatal: the session continues, degraded. Recorded into meta.json too.
+    case warning(code: String, message: String)
+    /// Fatal for the process; the host treats whatever is on disk as salvageable.
+    case error(code: String, message: String)
+    /// Final event: files are finalized and meta.json is written.
+    case stopped(metaPath: String, durationSeconds: Int)
+
+    private var payload: [String: Any] {
+        switch self {
+        case .started(let tracks, let warnings):
+            return ["type": "started", "tracks": tracks, "warnings": warnings]
+        case .level(let peaks):
+            return ["type": "level", "peaks": peaks]
+        case .warning(let code, let message):
+            return ["type": "warning", "code": code, "message": message]
+        case .error(let code, let message):
+            return ["type": "error", "code": code, "message": message]
+        case .stopped(let metaPath, let durationSeconds):
+            return [
+                "type": "stopped", "metaPath": metaPath, "durationSeconds": durationSeconds,
+            ]
+        }
+    }
+
+    func emit() {
+        Emitter.shared.write(payload)
+    }
+}
+
+/// Serializes stdout writes — level events originate on a timer while warnings can
+/// come off an audio thread, and a torn JSON line is an unparseable line.
+private final class Emitter {
+    static let shared = Emitter()
+    private let lock = NSLock()
+
+    func write(_ payload: [String: Any]) {
+        guard
+            let data = try? JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
+        else { return }
+        lock.lock()
+        defer { lock.unlock() }
+        FileHandle.standardOutput.write(data)
+        FileHandle.standardOutput.write(Data("\n".utf8))
+    }
+}
+
+enum Log {
+    static func info(_ message: String) {
+        FileHandle.standardError.write(Data("audiocap: \(message)\n".utf8))
+    }
+}
+
+let iso8601: ISO8601DateFormatter = {
+    let f = ISO8601DateFormatter()
+    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return f
+}()

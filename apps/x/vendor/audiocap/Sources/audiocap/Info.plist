@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>co.solomon-ai.desktop.audiocap</string>
+	<key>CFBundleName</key>
+	<string>Oppulence Audio Capture</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Oppulence needs microphone access to record and transcribe your side of meetings on this device.</string>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>Oppulence needs access to system audio to transcribe the other side of meetings from other apps (Zoom, Meet, Teams).</string>
+</dict>
+</plist>
