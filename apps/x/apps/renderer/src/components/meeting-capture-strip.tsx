@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { AudioLines, Loader2, Mic, RotateCcw, TriangleAlertIcon } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
+import { Loader2, Mic, TriangleAlertIcon } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import type {
   MeetingCaptureStatus,
@@ -14,10 +13,9 @@ import type {
  * Live state for native dual-track capture: what is being recorded right now, what is
  * transcribing, and what already exists on disk.
  *
- * Existing meeting notes are listed separately from the workspace; this shows the
- * *capture* side, which is the part with failure modes worth surfacing — a track that
- * recorded silence, a permission that was never granted, a transcript that failed and
- * can be retried. Renders nothing at all when native capture is unavailable, so the
+ * Ambient state only: what is happening right now and what needs attention. Per-session
+ * actions live in the recordings list below, so a session is not offered a Retry button
+ * in two places at once. Renders nothing when native capture is unavailable, so the
  * in-app pipeline's UI is unchanged.
  */
 
@@ -62,7 +60,6 @@ export function MeetingCaptureStrip() {
   const [doctor, setDoctor] = useState<MeetingDoctorReport | null>(null);
   const [sessions, setSessions] = useState<MeetingSessionSummary[]>([]);
   const [elapsed, setElapsed] = useState(0);
-  const [retrying, setRetrying] = useState<string | null>(null);
 
   const refreshSessions = useCallback(async () => {
     try {
@@ -130,20 +127,6 @@ export function MeetingCaptureStrip() {
     const timer = setInterval(update, 1000);
     return () => clearInterval(timer);
   }, [status?.state, status?.startedAt]);
-
-  const retranscribe = useCallback(
-    async (sessionId: string) => {
-      setRetrying(sessionId);
-      try {
-        const result = await window.ipc.invoke("meeting:retranscribe", { sessionId });
-        if (!result.queued) console.warn(`[meeting] cannot re-transcribe: ${result.error}`);
-      } finally {
-        setRetrying(null);
-        void refreshSessions();
-      }
-    },
-    [refreshSessions],
-  );
 
   if (available !== true) return null;
 
@@ -222,37 +205,6 @@ export function MeetingCaptureStrip() {
             </span>
           </p>
         ))}
-
-      {!progress && untranscribed.length > 0 && (
-        <div className="mt-1 space-y-1">
-          {untranscribed.slice(0, 3).map((session) => (
-            <div key={session.id} className="flex items-center gap-2 text-xs">
-              <AudioLines className="size-3.5 shrink-0 text-muted-foreground" />
-              <span className="text-muted-foreground">
-                {session.id} · {clock(session.durationSeconds)} not transcribed
-                {session.error ? ` — ${session.error}` : ""}
-              </span>
-              {session.hasAudio && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 px-2 text-xs"
-                  disabled={retrying === session.id}
-                  onClick={() => void retranscribe(session.id)}
-                >
-                  {retrying === session.id ? (
-                    <Loader2 className="mr-1 size-3 animate-spin" />
-                  ) : (
-                    <RotateCcw className="mr-1 size-3" />
-                  )}
-                  Retry
-                </Button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
 
       {!recording &&
         silentTracks.slice(0, 2).map((session) => (

@@ -23,6 +23,7 @@ import { extractConferenceLink } from "@/lib/calendar-event";
 import { cn } from "@/lib/utils";
 import type { MeetingTranscriptionState } from "@/hooks/useMeetingTranscription";
 import { MeetingCaptureStrip } from "@/components/meeting-capture-strip";
+import { MeetingRecordings } from "@/components/meeting-recordings";
 
 const MEETINGS_ROOT = "knowledge/Meetings";
 const CALENDAR_DIR = "calendar_sync";
@@ -1164,6 +1165,9 @@ export function MeetingsView({
       <MeetingCaptureStrip />
       <div className="flex-1 overflow-auto">
         <UpcomingEvents />
+        {/* Recordings on disk: transcribe again, or delete. Renders nothing when there
+            are none, so the in-app capture path looks exactly as it did. */}
+        <MeetingRecordings onOpenNote={onOpenNote} />
         <div className="p-6">
           {loading ? (
             <div className="flex items-center justify-center py-10">

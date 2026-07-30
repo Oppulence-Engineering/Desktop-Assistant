@@ -269,7 +269,8 @@ window mid-recording does not stop the session (the tray keeps counting).
 | Parakeet + codec sidecar clients   | `apps/main/src/meeting-engines.ts`                                                                            |
 | Audio retention + compression      | `packages/core/src/meetings/retention.ts`                                                                     |
 | Types + note formatter (shared)    | `packages/shared/src/meetings.ts`                                                                             |
-| Capture UI                         | `apps/renderer/src/components/meeting-capture-strip.tsx`                                                      |
+| Capture UI (live state)            | `apps/renderer/src/components/meeting-capture-strip.tsx`                                                      |
+| Recordings list (retry / delete)   | `apps/renderer/src/components/meeting-recordings.tsx`                                                         |
 | Engine switch                      | `apps/renderer/src/hooks/useMeetingTranscription.ts`                                                          |
 | Settings                           | `apps/renderer/src/components/settings/transcription-settings.tsx`                                            |
 | Packaging                          | `apps/main/forge.config.cjs`, `.github/workflows/audiocap-build.yml`, `.github/scripts/stage-audiocap-bin.sh` |

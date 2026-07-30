@@ -52,6 +52,10 @@ import {
  *  renderer pipeline's silence auto-stop. Levels are 0…1. */
 const SILENCE_AUTO_STOP_MS = 2 * 60 * 1000;
 const SILENCE_PEAK_LEVEL = 0.005;
+/** How often the watch wakes. Level events arrive ~5×/second, so re-arming a timer on
+ *  each one would churn thousands of timers over a meeting; recording a timestamp and
+ *  checking it occasionally costs one assignment per event instead. */
+const SILENCE_CHECK_INTERVAL_MS = 15 * 1000;
 
 function broadcast<T>(channel: string, payload: T): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -73,8 +77,9 @@ export class MeetingController {
   private notePath: string | undefined;
   private calendarEvent: MeetingCalendarEvent | undefined;
   private lastProgress: MeetingTranscriptionProgress | null = null;
-  /** Auto-stop timer: a forgotten recording should not run for hours. */
-  private silenceTimer: NodeJS.Timeout | null = null;
+  /** Auto-stop watch: a forgotten recording should not run for hours. */
+  private silenceWatch: NodeJS.Timeout | null = null;
+  private lastActivityAt = 0;
   private onStateChange?: () => void;
   /** sessionId → note path, so the placeholder and the final note are one file. */
   private readonly notePaths = new Map<string, string>();
@@ -154,7 +159,7 @@ export class MeetingController {
           // native path has no transcript stream to watch, so it watches levels. Without
           // this, walking away from a finished call records until the app quits.
           if (Object.values(peaks).some((peak) => (peak ?? 0) >= SILENCE_PEAK_LEVEL)) {
-            this.armSilenceTimer();
+            this.lastActivityAt = Date.now();
           }
           broadcast<MeetingLevels>("meeting:captureLevel", {
             sessionId: path.basename(dir),
@@ -167,7 +172,7 @@ export class MeetingController {
       this.sessionDir = dir;
       this.sessionStartedAt = new Date();
       this.calendarEvent = calendarEvent;
-      this.armSilenceTimer();
+      this.startSilenceWatch();
 
       // Write the note now, empty, so there is something to open while the meeting
       // runs — and remember its path so the post-transcription write lands on the
@@ -211,31 +216,33 @@ export class MeetingController {
   async stop(): Promise<{ stopped: boolean; sessionId?: string; queued: boolean }> {
     if (this.state !== "recording") return { stopped: false, queued: false };
     const dir = this.sessionDir!;
-    this.clearSilenceTimer();
+    this.stopSilenceWatch();
     this.setState("stopping");
     await this.sidecar.stop();
     const queued = await this.finishSession(dir);
     return { stopped: true, sessionId: path.basename(dir), queued };
   }
 
-  private armSilenceTimer(): void {
-    if (this.silenceTimer) clearTimeout(this.silenceTimer);
-    this.silenceTimer = setTimeout(() => {
+  private startSilenceWatch(): void {
+    this.stopSilenceWatch();
+    this.lastActivityAt = Date.now();
+    this.silenceWatch = setInterval(() => {
+      if (Date.now() - this.lastActivityAt < SILENCE_AUTO_STOP_MS) return;
       console.log(`[meeting] ${SILENCE_AUTO_STOP_MS / 60_000} minutes of silence — stopping`);
       void this.stop();
-    }, SILENCE_AUTO_STOP_MS);
+    }, SILENCE_CHECK_INTERVAL_MS);
   }
 
-  private clearSilenceTimer(): void {
-    if (!this.silenceTimer) return;
-    clearTimeout(this.silenceTimer);
-    this.silenceTimer = null;
+  private stopSilenceWatch(): void {
+    if (!this.silenceWatch) return;
+    clearInterval(this.silenceWatch);
+    this.silenceWatch = null;
   }
 
   /** Best-effort finalize on app quit so the last write is not a truncated file. */
   stopForQuit(): void {
     if (this.state !== "recording") return;
-    this.clearSilenceTimer();
+    this.stopSilenceWatch();
     console.log("[meeting] finalizing capture for quit");
     this.sidecar.killForQuit();
   }
@@ -296,7 +303,7 @@ export class MeetingController {
   /** The sidecar exited on its own — a crash, or the OS tearing it down. */
   private async onSidecarStopped(crashed: boolean): Promise<void> {
     if (this.state !== "recording") return;
-    this.clearSilenceTimer();
+    this.stopSilenceWatch();
     const dir = this.sessionDir!;
     this.setState("stopping");
     const queued = await this.finishSession(dir);
