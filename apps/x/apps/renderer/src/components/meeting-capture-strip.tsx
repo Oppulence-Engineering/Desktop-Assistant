@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Mic, TriangleAlertIcon } from "@/lib/icons";
+import { Button } from "@/components/ui/button";
+import { MeetingCaptureCheck } from "@/components/meeting-capture-check";
 import { cn } from "@/lib/utils";
 import type {
   MeetingCaptureStatus,
@@ -60,6 +62,10 @@ export function MeetingCaptureStrip() {
   const [doctor, setDoctor] = useState<MeetingDoctorReport | null>(null);
   const [sessions, setSessions] = useState<MeetingSessionSummary[]>([]);
   const [elapsed, setElapsed] = useState(0);
+  // The 10-second dual-track proof, offered once. `null` while unknown, so the prompt
+  // never flashes on mount before the flag has been read.
+  const [checkDone, setCheckDone] = useState<boolean | null>(null);
+  const [checkOpen, setCheckOpen] = useState(false);
 
   const refreshSessions = useCallback(async () => {
     try {
@@ -89,6 +95,14 @@ export function MeetingCaptureStrip() {
         setStatus(nextStatus);
         setDoctor(nextDoctor);
         void refreshSessions();
+        // Read last: an unreadable flag should offer the check again, not block the rest
+        // of the strip from rendering.
+        try {
+          const ui = await window.ipc.invoke("ui:getState", null);
+          if (!cancelled) setCheckDone(ui.meetingCaptureCheckDone);
+        } catch {
+          if (!cancelled) setCheckDone(true);
+        }
       })
       .catch(() => setAvailable(false));
 
@@ -138,10 +152,15 @@ export function MeetingCaptureStrip() {
     .slice(0, 5)
     .filter((s) => s.tracks.some((t) => t.silent) && s.transcribed);
 
+  // Offer the setup check once, and only when idle — interrupting a live recording to
+  // suggest a test recording would be absurd.
+  const offerCheck = checkDone === false && !recording && !progress;
+
   // Nothing to say: idle, healthy, nothing queued, nothing odd on disk.
   if (
     !recording &&
     !progress &&
+    !offerCheck &&
     failures.length === 0 &&
     untranscribed.length === 0 &&
     silentTracks.length === 0
@@ -151,6 +170,45 @@ export function MeetingCaptureStrip() {
 
   return (
     <div className="shrink-0 border-b border-border bg-muted/20 px-6 py-3 text-sm">
+      {offerCheck && (
+        <div className="flex items-center gap-3">
+          <Mic className="size-4 shrink-0 text-muted-foreground" />
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-foreground">See what gets captured</p>
+            <p className="text-xs text-muted-foreground">
+              Ten seconds, on this device, showing your voice and the call&apos;s audio on separate
+              tracks.
+            </p>
+          </div>
+          <Button type="button" size="sm" onClick={() => setCheckOpen(true)}>
+            Run the check
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setCheckDone(true);
+              void window.ipc
+                .invoke("ui:setState", { meetingCaptureCheckDone: true })
+                .catch(() => {});
+            }}
+          >
+            Not now
+          </Button>
+        </div>
+      )}
+
+      <MeetingCaptureCheck
+        open={checkOpen}
+        onOpenChange={(next) => {
+          setCheckOpen(next);
+          // The dialog persists the flag itself; mirror it so the prompt goes away
+          // without waiting for a remount.
+          if (!next) setCheckDone(true);
+        }}
+      />
+
       {recording && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">

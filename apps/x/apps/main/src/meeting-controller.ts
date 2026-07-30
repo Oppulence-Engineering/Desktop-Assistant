@@ -12,12 +12,14 @@ import type {
   MeetingTrackId,
   MeetingTranscriptionEngine,
   MeetingTranscriptionProgress,
+  MeetingTranscript,
 } from "@x/shared/dist/meetings.js";
 import {
   calendarEventFromMeta,
   createSessionDir,
   deleteMeetingNote,
   listSessionSummaries,
+  readTranscript,
   MeetingQueue,
   nativeProvenance,
   patchMeta,
@@ -349,6 +351,27 @@ export class MeetingController {
       }
     }
     return { deleted, notesDeleted, failed };
+  }
+
+  /**
+   * A finished session's transcript segments.
+   *
+   * `found: false` rather than an empty list for a session that has none: "nothing was
+   * said" and "it has not transcribed yet" are different answers, and a caller that
+   * cannot tell them apart will show the wrong one.
+   */
+  async sessionTranscript(
+    sessionId: string,
+  ): Promise<{ segments: MeetingTranscript["segments"]; found: boolean }> {
+    const root = await this.root();
+    const dir = path.join(root, sessionId);
+    if (path.dirname(path.resolve(dir)) !== path.resolve(root)) {
+      return { segments: [], found: false };
+    }
+    const transcript = await readTranscript(dir);
+    return transcript
+      ? { segments: transcript.segments, found: true }
+      : { segments: [], found: false };
   }
 
   /** Bytes every recording occupies, for the privacy tab's "what is on disk". */

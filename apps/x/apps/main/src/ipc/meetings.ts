@@ -13,6 +13,7 @@ import {
   type ParakeetModel,
 } from "../meeting-engines.js";
 import { getMeetingController, type MeetingControllerDeps } from "../meeting-controller.js";
+import { getUiState, setUiState } from "@x/core/dist/config/ui_state.js";
 
 type IPCChannels = ipc.IPCChannels;
 
@@ -30,6 +31,9 @@ type MeetingCaptureHandlers = {
   "meeting:retranscribe": InvokeHandler<"meeting:retranscribe">;
   "meeting:deleteSession": InvokeHandler<"meeting:deleteSession">;
   "meeting:deleteAllSessions": InvokeHandler<"meeting:deleteAllSessions">;
+  "meeting:sessionTranscript": InvokeHandler<"meeting:sessionTranscript">;
+  "ui:getState": InvokeHandler<"ui:getState">;
+  "ui:setState": InvokeHandler<"ui:setState">;
   "meeting:storageUsage": InvokeHandler<"meeting:storageUsage">;
   "meeting:captureDoctor": InvokeHandler<"meeting:captureDoctor">;
   "meeting:transcriptionModels": InvokeHandler<"meeting:transcriptionModels">;
@@ -100,6 +104,17 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
       return controller().retranscribe(args.sessionId);
     },
 
+    "meeting:sessionTranscript": async (_event, args) => {
+      return controller().sessionTranscript(args.sessionId);
+    },
+    "ui:getState": async () => {
+      const state = await getUiState();
+      return { meetingCaptureCheckDone: state.meetingCaptureCheckDone ?? false };
+    },
+    "ui:setState": async (_event, args) => {
+      const state = await setUiState(args);
+      return { meetingCaptureCheckDone: state.meetingCaptureCheckDone ?? false };
+    },
     "meeting:deleteAllSessions": async (_event, args) => {
       return controller().deleteAllSessions(args.deleteNotes);
     },
