@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recording</title>
+    <style>
+      /* The window is transparent and frameless; the pill below is the only surface.
+         No theme bootstrap here on purpose — this reads the same in light and dark
+         because it is a status light, not a page. */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        overflow: hidden;
+        /* The whole window is draggable except the controls, which opt out. */
+        -webkit-user-select: none;
+        user-select: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/indicator.tsx"></script>
+  </body>
+</html>

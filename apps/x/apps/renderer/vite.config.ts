@@ -21,5 +21,14 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
+    rollupOptions: {
+      // A second entry for the always-on-top recording indicator. It is a separate
+      // document rather than a route because it loads in its own BrowserWindow, and
+      // pulling the 4 MB app bundle into a 264-pixel pill would be absurd.
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        indicator: path.resolve(__dirname, "indicator.html"),
+      },
+    },
   },
 });

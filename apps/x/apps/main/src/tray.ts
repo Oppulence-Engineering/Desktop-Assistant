@@ -1,6 +1,7 @@
-import { app, BrowserWindow, Menu, nativeImage, shell, Tray } from "electron";
+import { app, Menu, nativeImage, shell, Tray } from "electron";
 import type { NativeImage } from "electron";
 import { peekMeetingController, type MeetingController } from "./meeting-controller.js";
+import { appWindows, getMainWindow } from "./main-window.js";
 
 /**
  * Menu-bar presence for meeting capture.
@@ -45,7 +46,9 @@ function clock(seconds: number): string {
 }
 
 function focusApp(): void {
-  const [win] = BrowserWindow.getAllWindows();
+  // Explicitly the main window — `getAllWindows()[0]` could be the recording
+  // indicator, and "Open Oppulence" focusing a 260-pixel pill is not the ask.
+  const win = getMainWindow() ?? appWindows()[0];
   if (win && !win.isDestroyed()) {
     if (win.isMinimized()) win.restore();
     win.show();

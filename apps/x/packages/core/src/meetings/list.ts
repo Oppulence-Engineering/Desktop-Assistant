@@ -36,10 +36,32 @@ export async function listSessionSummaries(root: string): Promise<MeetingSession
       segmentCount: transcribed ? await countSegments(transcriptPath) : undefined,
       tracks: meta.tracks,
       warnings: meta.warnings,
+      bytes: await dirBytes(dir),
       error: transcribed ? undefined : await lastLogError(dir),
     });
   }
   return summaries;
+}
+
+/**
+ * Bytes a session directory occupies. Non-recursive: sessions are flat, and walking
+ * would only add a way for a symlink someone dropped in to be followed.
+ */
+export async function dirBytes(dir: string): Promise<number> {
+  let total = 0;
+  try {
+    for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      try {
+        total += (await fs.stat(path.join(dir, entry.name))).size;
+      } catch {
+        // Deleted between the listing and the stat — retention runs concurrently.
+      }
+    }
+  } catch {
+    return 0;
+  }
+  return total;
 }
 
 export async function readTranscript(dir: string): Promise<MeetingTranscript | null> {

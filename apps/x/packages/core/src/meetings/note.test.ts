@@ -80,6 +80,34 @@ describe("formatMeetingNote", () => {
     expect(note).toContain("system_audio_captured: false");
   });
 
+  it("states on the note itself that the audio never left, when it did not", () => {
+    const note = formatMeetingNote(
+      [{ speaker: "You", text: "hi" }],
+      "2026-07-29T10:00:00.000Z",
+      undefined,
+      nativeProvenance({ model: "parakeet-tdt-0.6b-v3", systemAudioCaptured: true }),
+    );
+
+    expect(note).toContain("> Recorded and transcribed on this Mac.");
+    // Directly under the title, above anything a summary pass prepends.
+    const lines = note.split("\n");
+    expect(lines[lines.findIndex((l) => l.startsWith("# ")) + 1]).toBe("");
+    expect(lines[lines.findIndex((l) => l.startsWith("# ")) + 2]).toContain(
+      "The audio never left this device",
+    );
+  });
+
+  it("claims nothing when the audio was uploaded, or when provenance is unknown", () => {
+    const cloud = formatMeetingNote([], "2026-07-29T10:00:00.000Z", undefined, {
+      transcription_provider: "deepgram",
+      audio_uploaded: true,
+    });
+    expect(cloud).not.toContain("never left this device");
+
+    // An importer writes no provenance at all — it cannot honestly make the claim.
+    expect(formatMeetingNote([], "2026-07-29T10:00:00.000Z")).not.toContain("never left");
+  });
+
   it("serializes a calendar event onto one line, escaping quotes", () => {
     const note = formatMeetingNote([], "2026-07-29T10:00:00.000Z", {
       summary: "Quarterly review",

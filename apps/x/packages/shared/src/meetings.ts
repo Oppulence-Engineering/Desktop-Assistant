@@ -212,6 +212,9 @@ export const MeetingSessionSummary = z.object({
   segmentCount: z.number().optional(),
   tracks: z.array(MeetingTrackMeta).default([]),
   warnings: z.array(z.string()).default([]),
+  /** Bytes this session occupies on disk, audio included. Summed rather than stored so
+   *  it stays right after retention compresses or deletes the audio underneath it. */
+  bytes: z.number().default(0),
   /** Last transcription failure for this session, if any. */
   error: z.string().optional(),
 });
@@ -305,6 +308,23 @@ export function segmentsToEntries(segments: MeetingTranscriptSegment[]): Meeting
  * stay last and its shape must not drift — both capture engines call this one
  * function precisely so they can't.
  */
+/**
+ * The one-line "this stayed here" notice at the top of a locally-captured note.
+ *
+ * The app already knew every fact behind this and had never said one of them out loud.
+ * Privacy that is only true in the implementation is not a feature anyone can act on.
+ *
+ * Scope is deliberately narrow. `audio_uploaded: false` is set exactly when
+ * transcription ran on-device, so it licenses a claim about the recording and the
+ * transcript — and nothing else. It says nothing about the summary, which goes to
+ * whichever model is configured and is frequently a cloud API. A notice that overstates
+ * by one clause is worse than no notice, because it teaches people not to trust the rest.
+ */
+export function localCaptureNotice(provenance?: Record<string, string | boolean>): string | null {
+  if (!provenance || provenance.audio_uploaded !== false) return null;
+  return "> Recorded and transcribed on this Mac. The audio never left this device.";
+}
+
 export function formatMeetingNote(
   entries: MeetingNoteEntry[],
   date: string,
@@ -341,6 +361,8 @@ export function formatMeetingNote(
     lines.push(`calendar_event: '${JSON.stringify(eventObj).replace(/'/g, "''")}'`);
   }
   lines.push("---", "", `# ${noteTitle}`, "");
+  const notice = localCaptureNotice(provenance);
+  if (notice) lines.push(notice, "");
 
   const transcriptLines: string[] = [];
   for (let i = 0; i < entries.length; i++) {

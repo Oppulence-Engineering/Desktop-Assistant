@@ -1207,6 +1207,17 @@ const ipcSchemas = {
     req: z.object({ sessionId: z.string(), deleteNote: z.boolean().default(false) }),
     res: z.object({ deleted: z.boolean(), noteDeleted: z.boolean().default(false) }),
   },
+  /** Delete every recording at once. `deleteNotes` is opt-in for the same reason it is
+   *  per-session: the note is the durable artifact and may have been edited since. */
+  "meeting:deleteAllSessions": {
+    req: z.object({ deleteNotes: z.boolean().default(false) }),
+    res: z.object({ deleted: z.number(), notesDeleted: z.number(), failed: z.number() }),
+  },
+  /** What meeting capture is holding on disk, for the privacy tab. */
+  "meeting:storageUsage": {
+    req: z.null(),
+    res: z.object({ sessions: z.number(), bytes: z.number(), dir: z.string() }),
+  },
   "meeting:captureDoctor": {
     /** Probing system-audio access can raise the OS permission dialog, so it only
      *  happens behind an explicit user action — never on a view mounting. */

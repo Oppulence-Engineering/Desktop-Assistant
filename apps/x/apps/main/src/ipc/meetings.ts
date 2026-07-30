@@ -29,6 +29,8 @@ type MeetingCaptureHandlers = {
   "meeting:listSessions": InvokeHandler<"meeting:listSessions">;
   "meeting:retranscribe": InvokeHandler<"meeting:retranscribe">;
   "meeting:deleteSession": InvokeHandler<"meeting:deleteSession">;
+  "meeting:deleteAllSessions": InvokeHandler<"meeting:deleteAllSessions">;
+  "meeting:storageUsage": InvokeHandler<"meeting:storageUsage">;
   "meeting:captureDoctor": InvokeHandler<"meeting:captureDoctor">;
   "meeting:transcriptionModels": InvokeHandler<"meeting:transcriptionModels">;
   "meeting:ensureTranscriptionModels": InvokeHandler<"meeting:ensureTranscriptionModels">;
@@ -98,6 +100,12 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
       return controller().retranscribe(args.sessionId);
     },
 
+    "meeting:deleteAllSessions": async (_event, args) => {
+      return controller().deleteAllSessions(args.deleteNotes);
+    },
+    "meeting:storageUsage": async () => {
+      return controller().storageUsage();
+    },
     "meeting:deleteSession": async (_event, args) => {
       return controller().deleteSession(args.sessionId, args.deleteNote);
     },

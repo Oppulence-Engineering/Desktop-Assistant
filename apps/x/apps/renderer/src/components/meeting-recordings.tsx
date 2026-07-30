@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Mic, RotateCcw, Trash2, TriangleAlertIcon } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -235,7 +236,12 @@ export function MeetingRecordings({ onOpenNote }: { onOpenNote?: (path: string) 
 
       <AlertDialog
         open={pendingDelete !== null}
-        onOpenChange={(open) => !open && setPendingDelete(null)}
+        onOpenChange={(open) => {
+          if (open) return;
+          setPendingDelete(null);
+          // Never sticky: "also delete the note" has to be chosen again each time.
+          setAlsoDeleteNote(false);
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -250,6 +256,18 @@ export function MeetingRecordings({ onOpenNote }: { onOpenNote?: (path: string) 
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {pendingDelete?.notePath && (
+            <label className="flex items-start gap-2.5 text-sm">
+              <Checkbox
+                checked={alsoDeleteNote}
+                onCheckedChange={(checked) => setAlsoDeleteNote(checked === true)}
+                className="mt-0.5"
+              />
+              <span className="text-muted-foreground">
+                Also delete the meeting note. It moves to the trash, so this one is recoverable.
+              </span>
+            </label>
+          )}
           <AlertDialogFooter>
             <Button type="button" variant="outline" onClick={() => setPendingDelete(null)}>
               Cancel
