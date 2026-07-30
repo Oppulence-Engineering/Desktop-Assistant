@@ -6,7 +6,7 @@ import {
   segmentsToEntries,
   type MeetingTranscriptSegment,
 } from "@x/shared/dist/meetings.js";
-import { meetingNotePath, nativeProvenance } from "./note.js";
+import { meetingNotePath, nativeProvenance, writeMeetingNote } from "./note.js";
 
 /**
  * Note shape is a compatibility surface, not an implementation detail:
@@ -193,5 +193,57 @@ describe("meetingNotePath", () => {
         calendarEvent: { summary: "///" },
       }),
     ).toBe("knowledge/Meetings/solomon/2026-07-29/meeting-2026.07.29-1000.md");
+  });
+});
+
+describe("writeMeetingNote", () => {
+  const provenance = nativeProvenance({ model: "base.en-q5_1", systemAudioCaptured: true });
+
+  it("flags a note with no speech, so it is not mistaken for a pending transcript", async () => {
+    let written = "";
+    await writeMeetingNote({
+      sessionId: "2026.07.29-1000",
+      startedAt: "2026-07-29T10:00:00.000Z",
+      segments: [],
+      provenance,
+      write: async (_path, data) => {
+        written = data;
+        return { success: true } as never;
+      },
+    });
+    expect(written).toContain("no_speech_detected: true");
+  });
+
+  it("does not flag a note that has speech", async () => {
+    let written = "";
+    await writeMeetingNote({
+      sessionId: "2026.07.29-1000",
+      startedAt: "2026-07-29T10:00:00.000Z",
+      segments: [segment({ text: "We agreed on Friday." })],
+      provenance,
+      write: async (_path, data) => {
+        written = data;
+        return { success: true } as never;
+      },
+    });
+    expect(written).not.toContain("no_speech_detected");
+    expect(written).toContain("We agreed on Friday.");
+  });
+
+  it("writes to the path it is given rather than deriving a second one", async () => {
+    let path = "";
+    const result = await writeMeetingNote({
+      sessionId: "2026.07.29-1000",
+      startedAt: "2026-07-29T10:00:00.000Z",
+      segments: [],
+      provenance,
+      notePath: "knowledge/Meetings/solomon/2026-07-29/pinned.md",
+      write: async (p) => {
+        path = p;
+        return { success: true } as never;
+      },
+    });
+    expect(path).toBe("knowledge/Meetings/solomon/2026-07-29/pinned.md");
+    expect(result).toBe(path);
   });
 });

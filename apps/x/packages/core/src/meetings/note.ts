@@ -117,11 +117,17 @@ export async function writeMeetingNote(args: WriteMeetingNoteArgs): Promise<stri
       sessionId: args.sessionId,
       calendarEvent: args.calendarEvent,
     });
+  const provenance = { ...args.provenance } as Record<string, string | boolean>;
+  // An empty transcript block is ambiguous: it looks the same whether nothing was said
+  // or capture silently failed. Say which, so the UI and the note pipeline can tell a
+  // finished-but-silent meeting from one still waiting on a transcript.
+  if (args.segments.length === 0) provenance.no_speech_detected = true;
+
   const content = formatMeetingNote(
     segmentsToEntries(args.segments),
     args.startedAt,
     args.calendarEvent,
-    args.provenance as unknown as Record<string, string | boolean>,
+    provenance,
   );
   await (args.write ?? writeFile)(notePath, content, { encoding: "utf8", mkdirp: true });
   return notePath;
