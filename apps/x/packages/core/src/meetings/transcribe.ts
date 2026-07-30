@@ -1,3 +1,4 @@
+import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type {
   MeetingSessionMeta,
@@ -6,6 +7,7 @@ import type {
   MeetingTranscriptSegment,
 } from "@x/shared/dist/meetings.js";
 import { isNonSpeech, pcmStats } from "../voice/whisper/index.js";
+import { decodedName, isCompressed, type AudioCodec } from "./codec.js";
 import { appendLog } from "./session.js";
 import { readPcmChunk, readWavInfo, recoverWavHeader } from "./wav.js";
 
@@ -23,9 +25,15 @@ import { readPcmChunk, readWavInfo, recoverWavHeader } from "./wav.js";
  *  in flight. */
 export const CHUNK_SECONDS = 600;
 
-/** Below this peak a window holds no speech worth transcribing. Skipping it is
- *  faster and, more importantly, stops whisper inventing text for silence. */
-export const SILENCE_PEAK_THRESHOLD = 0.005;
+/**
+ * Below this peak a window holds no speech worth transcribing. Skipping it is faster
+ * and, more importantly, stops whisper inventing text for silence.
+ *
+ * In the same int16 units `pcmStats` reports (0…32767), **not** normalized — comparing
+ * a 0…1 threshold against those made this skip fire only on a perfectly zero window.
+ * 164 is ≈0.005 full scale, about −46 dBFS: far below anything audible as speech.
+ */
+export const SILENCE_PEAK_THRESHOLD = 164;
 
 /** The slice of `WhisperService` this needs, so tests inject a fake instead of a
  *  model download. Mirrors the DI seam in `core/src/mailbox`. */
@@ -43,6 +51,10 @@ export interface TranscribeSessionOpts {
   engine: string;
   model: string;
   lang?: string;
+  /** Needed only to re-transcribe a session whose audio was compressed. */
+  codec?: AudioCodec;
+  /** Window size, for tests and for engines that prefer a different granularity. */
+  chunkSeconds?: number;
   /** 0…1 across all tracks in this session. */
   onProgress?: (fraction: number) => void;
   now?: () => Date;
@@ -65,6 +77,8 @@ export async function transcribeSession(opts: TranscribeSessionOpts): Promise<Me
         track,
         transcriber,
         lang,
+        codec: opts.codec,
+        chunkSeconds: opts.chunkSeconds ?? CHUNK_SECONDS,
         onFrames: (frames) => {
           framesDone += frames;
           onProgress?.(Math.min(1, framesDone / totalFrames));
@@ -92,10 +106,11 @@ async function transcribeTrack(args: {
   track: MeetingTrackMeta;
   transcriber: MeetingTranscriber;
   lang?: string;
+  codec?: AudioCodec;
+  chunkSeconds: number;
   onFrames: (frames: number) => void;
 }): Promise<MeetingTranscriptSegment[]> {
-  const { dir, track, transcriber, lang, onFrames } = args;
-  const file = path.join(dir, track.file);
+  const { dir, track, transcriber, lang, codec, chunkSeconds, onFrames } = args;
 
   // A track the sidecar already flagged silent has nothing to transcribe. This is
   // the failure mode that looks like success — correct duration, no signal — so it
@@ -105,6 +120,44 @@ async function transcribeTrack(args: {
     onFrames(track.frames);
     return [];
   }
+
+  // Retained audio is compressed, so re-transcribing means decoding back to the WAV
+  // capture produced. The scratch file is cleaned up in `finally` — otherwise a
+  // failure part-way through would silently double the session's disk use.
+  let file = path.join(dir, track.file);
+  let scratch: string | undefined;
+  if (isCompressed(track.file)) {
+    if (!codec) throw new Error(`${track.file} is compressed and no decoder is available`);
+    scratch = path.join(dir, decodedName(track.file));
+    await codec.decode(file, scratch);
+    file = scratch;
+  }
+
+  try {
+    return await transcribeDecodedTrack({
+      dir,
+      track,
+      file,
+      transcriber,
+      lang,
+      chunkSeconds,
+      onFrames,
+    });
+  } finally {
+    if (scratch) await fs.rm(scratch, { force: true }).catch(() => {});
+  }
+}
+
+async function transcribeDecodedTrack(args: {
+  dir: string;
+  track: MeetingTrackMeta;
+  file: string;
+  transcriber: MeetingTranscriber;
+  lang?: string;
+  chunkSeconds: number;
+  onFrames: (frames: number) => void;
+}): Promise<MeetingTranscriptSegment[]> {
+  const { dir, track, file, transcriber, lang, chunkSeconds, onFrames } = args;
 
   // Repair a header the writer never finalized before reading, so the retained file
   // is also playable afterwards.
@@ -117,7 +170,7 @@ async function transcribeTrack(args: {
     throw new Error(`expected mono, got ${info.channels} channels`);
   }
 
-  const chunkFrames = Math.floor(CHUNK_SECONDS * info.sampleRate);
+  const chunkFrames = Math.floor(chunkSeconds * info.sampleRate);
   const segments: MeetingTranscriptSegment[] = [];
 
   for (let startFrame = 0; startFrame < info.frames; startFrame += chunkFrames) {

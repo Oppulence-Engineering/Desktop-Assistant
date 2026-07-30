@@ -1207,6 +1207,27 @@ const ipcSchemas = {
     req: z.null(),
     res: meetings.MeetingDoctorReport,
   },
+  /** Whether the fast (Parakeet) transcription models are downloaded. */
+  "meeting:transcriptionModels": {
+    req: z.null(),
+    res: z.object({
+      ready: z.boolean(),
+      model: z.string(),
+      cacheDir: z.string(),
+      /** False when the sidecar is missing, so the UI can explain why it cannot offer it. */
+      available: z.boolean(),
+    }),
+  },
+  /** Download them (~600 MB). Progress arrives on `meeting:modelProgress`. */
+  "meeting:ensureTranscriptionModels": {
+    req: z.null(),
+    res: z.object({ ready: z.boolean(), error: z.string().optional() }),
+  },
+  /** Event (ipc.on): transcription-model download progress, main → renderer. */
+  "meeting:modelProgress": {
+    req: z.object({ fraction: z.number(), phase: z.string() }),
+    res: z.null(),
+  },
   /** Event (ipc.on): capture state changed. Broadcast on every transition so a
    *  tray-started session shows up in the window, and vice versa. */
   "meeting:captureState": {

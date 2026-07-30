@@ -1,6 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { MeetingKeepAudio, MeetingSessionMeta } from "@x/shared/dist/meetings.js";
+import { compressedName, isCompressed, type AudioCodec } from "./codec.js";
 import { appendLog, patchMeta } from "./session.js";
 
 /**
@@ -23,12 +24,22 @@ export interface ApplyRetentionArgs {
   meta: MeetingSessionMeta;
   mode: MeetingKeepAudio;
   transcribed: boolean;
+  /** When present, `always` compresses instead of just keeping the WAV. */
+  codec?: AudioCodec;
 }
 
-/** Returns true when audio was deleted. */
+/**
+ * Returns true when audio was deleted **or** compressed — i.e. when the session's
+ * audio files changed and `meta.json` was rewritten to match.
+ */
 export async function applyRetention(args: ApplyRetentionArgs): Promise<boolean> {
-  const { dir, meta, mode, transcribed } = args;
-  if (mode === "always") return false;
+  const { dir, meta, mode, transcribed, codec } = args;
+  // Keeping audio does not mean keeping it uncompressed: once a transcript exists the
+  // WAV has done its job, and AAC is ~1/8 the size and still playable.
+  if (mode === "always") {
+    if (!codec || !transcribed) return false;
+    return compressTracks({ dir, meta, codec });
+  }
   // Keeping the audio on failure is the whole point of `untilTranscribed`: without a
   // transcript, deleting it would throw the meeting away.
   if (mode === "untilTranscribed" && !transcribed) return false;
@@ -50,6 +61,51 @@ export async function applyRetention(args: ApplyRetentionArgs): Promise<boolean>
     await appendLog(dir, `audio deleted (keepAudio: ${mode})`);
   }
   return deleted;
+}
+
+/**
+ * Compress each track in place and repoint `meta.json` at the new files. Skips tracks
+ * that are already compressed, so it is safe to run again.
+ *
+ * The original WAV is deleted only after its `.m4a` exists, so a failure part-way
+ * through costs disk, never the recording.
+ */
+async function compressTracks(args: {
+  dir: string;
+  meta: MeetingSessionMeta;
+  codec: AudioCodec;
+}): Promise<boolean> {
+  const { dir, meta, codec } = args;
+  const tracks = [...meta.tracks];
+  let changed = false;
+
+  for (let i = 0; i < tracks.length; i++) {
+    const track = tracks[i];
+    if (isCompressed(track.file)) continue;
+    const source = path.join(dir, track.file);
+    const target = path.join(dir, compressedName(track.file));
+    try {
+      await fs.access(source);
+    } catch {
+      continue; // already gone
+    }
+    try {
+      await codec.compress(source, target);
+      await fs.rm(source, { force: true });
+      tracks[i] = { ...track, file: path.basename(target) };
+      changed = true;
+    } catch (err) {
+      // Leave the WAV alone — an uncompressed recording beats no recording.
+      await fs.rm(target, { force: true }).catch(() => {});
+      await appendLog(dir, `could not compress ${track.file}: ${(err as Error).message}`);
+    }
+  }
+
+  if (changed) {
+    await patchMeta(dir, { tracks });
+    await appendLog(dir, "compressed retained audio");
+  }
+  return changed;
 }
 
 /** True when every track file is still on disk — i.e. re-transcription is possible. */

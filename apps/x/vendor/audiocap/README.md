@@ -24,16 +24,19 @@ both tracks, instead of one being gated out of the transcript to stop echo.
 
 ```
 vendor/audiocap/
-  build.sh                  # swiftc build for one arch (no SwiftPM — see below)
+  build.sh                  # SwiftPM release build for one arch + toolchain preflight
   Sources/audiocap/
     main.swift              # CLI, signal + stdin handling, version constant
     Session.swift           # both tracks + meta.json + level timer
     MicRecorder.swift       # AVAudioEngine, optional echo cancellation
     SystemAudioRecorder.swift  # Core Audio process tap
     TrackWriter.swift       # convert → 16 kHz mono WAV, crash-safe append
+    ParakeetEngine.swift    # Core ML transcription + model download
+    Codec.swift             # AAC compress/decode for retained audio
     Doctor.swift            # permission/device preflight
     Protocol.swift          # NDJSON event writer
     Info.plist              # embedded via -sectcreate for TCC attribution
+  Tests/audiocapTests/      # token→word→segment logic (needs Xcode; runs in CI)
   <platform>-<arch>/        # built binary (git-ignored; CI artifact)
     oppulence-audiocap
 ```
@@ -42,12 +45,16 @@ vendor/audiocap/
 source. At dev time they are usually absent, and the app falls back to renderer
 capture. To run locally, build one (below) or point `ROWBOAT_AUDIOCAP_BIN` at it.
 
-## No SwiftPM, on purpose
+## On SwiftPM
 
-The target has zero package dependencies, so a `Package.swift` would add coupling
-without benefit: SwiftPM's manifest compiler is tightly bound to the toolchain
-version and fails outright on a bare Command Line Tools install (no full Xcode).
-`swiftc` needs only a compiler and an SDK, which is also all the CI runner needs.
+The capture half needs only system frameworks. The transcription half depends on
+[FluidAudio](https://github.com/FluidInference/FluidAudio) — the Core ML port of
+Parakeet — so the package has a manifest and a `Package.resolved`.
+
+This started as a bare `swiftc` build precisely to avoid that coupling: SwiftPM's
+manifest compiler is tightly bound to the toolchain version and fails outright on a
+damaged Command Line Tools install. Adding a real dependency changed the trade, and
+`build.sh` now preflights the toolchain instead of avoiding it.
 
 ## Building
 
@@ -88,11 +95,14 @@ One directory per session, named by the host:
 | `system.wav` | everything the Mac played: the other side of the call, same format |
 | `meta.json`  | timings, per-track start offsets, peak level, warnings             |
 
-**16 kHz mono** because that is exactly what whisper.cpp consumes, and there is no
-audio decoder in the repo. A higher-fidelity archive would buy nothing for
-re-transcription — whisper resamples to 16 kHz regardless — and would need a decode
-pass on the way back out. The trade is that retained audio is speech-grade, not
-archive-grade; adding a parallel AAC track later is contained to `TrackWriter`.
+**16 kHz mono** because that is what both transcription engines consume, and nothing
+else in the repo can decode audio. A higher-fidelity archive would buy nothing for
+re-transcription — every ASR model here resamples to 16 kHz regardless.
+
+Retained recordings are compressed to `.m4a` after transcription (`compress`), which is
+~7.7× smaller — 15 MB per hour per track instead of 115 — and costs **0.76 % WER** on
+the round-trip, measured. `decode` turns them back into exactly what capture produced,
+so re-transcription works on a compressed session.
 
 **Crash safety:** the WAV header is written up front with zero sizes and patched on
 clean stop, and samples are appended raw. Kill the process at any point and every
@@ -105,18 +115,33 @@ without an AAC decode step later.
 
 NDJSON on **stdout** (nothing else ever goes there — logs go to stderr):
 
-| Event     | Payload                                                             |
-| --------- | ------------------------------------------------------------------- |
-| `started` | `tracks[]` that actually opened, `warnings[]`                       |
-| `level`   | `peaks: {mic, system}` — 0…1, every 200 ms                          |
-| `warning` | `code`, `message` — session continues, degraded                     |
-| `error`   | `code`, `message` — fatal; whatever is on disk is still salvageable |
-| `stopped` | `metaPath`, `durationSeconds` — files are finalized                 |
+| Event           | Payload                                                             |
+| --------------- | ------------------------------------------------------------------- |
+| `started`       | `tracks[]` that actually opened, `warnings[]`                       |
+| `level`         | `peaks: {mic, system}` — 0…1, every 200 ms                          |
+| `warning`       | `code`, `message` — session continues, degraded                     |
+| `error`         | `code`, `message` — fatal; whatever is on disk is still salvageable |
+| `stopped`       | `metaPath`, `durationSeconds` — files are finalized                 |
+| `modelProgress` | `fraction`, `phase` — transcription-model download                  |
 
 Commands on **stdin**: `stop`. `SIGTERM`/`SIGINT` do the same, and stdin EOF (the
 host died) also stops cleanly rather than leaking a recorder. `level` doubles as proof
 of life: a track reporting `0` for a whole meeting recorded digital silence, which the
 host can surface while there is still time to fix it.
+
+## Transcription
+
+`transcribe` runs Parakeet TDT 0.6B on the Neural Engine and prints timed segments as
+JSON. Measured on an M-series machine: **0.52 s fixed cost per invocation, then ~70×
+realtime** — about 54 s for an hour-long track, against roughly 3.3 minutes for
+whisper.cpp `base.en`. v3 is multilingual (25 European languages) and the default; v2 is
+English-only.
+
+Models are ~600 MB and download once into FluidAudio's cache. `models` reports whether
+they are present, `models --ensure` fetches them with progress — worth running before a
+meeting rather than discovering it during one. The host keeps whisper as the default and
+falls back to it whenever the models are absent, so choosing "fast" can never mean
+"no transcript".
 
 ## Gotchas
 
@@ -134,3 +159,9 @@ host can surface while there is still time to fix it.
 - **Permissions:** microphone, plus Screen & System Audio Recording for the tap.
   `doctor` reports both; the system-audio check creates a throwaway tap, which can
   fire the one-time prompt.
+- **Parakeet's sub-word tokens mark words with a leading space**, not the SentencePiece
+  U+2581 marker. Handling only the marker collapses a whole meeting into one "word" —
+  which still yields a readable transcript, just with every timestamp wrong, so it
+  destroys the interleaving of the two tracks without looking broken. Covered by tests.
+- **`ASRResult.duration` is 0 on the file path**, so the no-timings fallback measures
+  the file itself instead.

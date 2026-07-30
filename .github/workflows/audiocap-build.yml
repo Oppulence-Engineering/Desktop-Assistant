@@ -37,6 +37,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Unit tests for the pure logic (token→word→segment). Host arch only, since the
+      # cross-built leg cannot run what it produces. XCTest ships with Xcode, which the
+      # runners have and a bare Command Line Tools install does not — so this is the
+      # first place these actually execute.
+      - name: Test
+        if: matrix.arch == 'arm64'
+        shell: bash
+        working-directory: apps/x/vendor/audiocap
+        run: swift test
+
       - name: Build oppulence-audiocap
         shell: bash
         working-directory: apps/x/vendor/audiocap

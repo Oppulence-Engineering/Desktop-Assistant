@@ -88,8 +88,8 @@ oppulence-audiocap                ├─▶ note.ts ─▶ knowledge/Meetings/so
 2. `finishSession` patches host-owned fields into `meta.json` (calendar event, app
    version) and enqueues.
 3. Per track, in 10-minute windows: read PCM → skip windows below the silence
-   threshold → `WhisperService.transcribe(chunk, {channels: 1})` → shift segments by
-   **chunk position + the track's `offset_ms`** → tag `me`/`them`.
+   threshold → transcribe the chunk → shift segments by **chunk position + the track's
+   `offset_ms`** → tag `me`/`them`.
 4. Merge by time, write `transcript.json` (atomically — its existence is the "done"
    predicate) then `transcript.md`, then the note, then apply retention.
 
@@ -123,22 +123,51 @@ while keeping "so [inaudible] by Friday". A transcript that ends up with no segm
 gets `no_speech_detected: true` in the note, so a silent meeting is distinguishable
 from one still waiting on its transcript.
 
+### Transcription engines
+
+| engine              | speed (measured)           | 1-hour meeting, 2 tracks | notes                               |
+| ------------------- | -------------------------- | ------------------------ | ----------------------------------- |
+| `whisper` (default) | 18x realtime               | ~6.6 min                 | already shipped, no download        |
+| `parakeet`          | 0.52 s/call + 70x realtime | ~1.8 min                 | Core ML, ~600 MB once, 25 languages |
+
+Parakeet is **not** trusted on its own. It can return zero tokens for audio that plainly
+contains speech — deterministically, on the same file, while whisper transcribes it
+correctly — and scaling the input changes the outcome unpredictably. Observed on a real
+capture: the system track, clearly audible at peak 1.0, came back empty. For a meeting
+that is not a worse transcript, it is losing one side of the conversation with nothing to
+notice, so `withTranscriberFallback` retries any _empty result on a window that had
+signal_ on whisper. Silence is still expected to be empty and costs nothing.
+
+The practical effect is a fast path with a correctness floor: most windows come back in
+milliseconds, and the ones Parakeet drops cost a whisper pass instead of a hole in the
+transcript.
+
+### Retained audio
+
+`keepAudio: always` compresses to AAC after transcription — measured **7.7x smaller**
+(15 MB per hour per track instead of 115) for **0.76 % WER** on the round-trip. The
+sidecar decodes it back transparently when re-transcribing, since nothing else in the
+repo can read AAC.
+
 ## IPC surface
 
-| Channel                   | Direction | Purpose                                                  |
-| ------------------------- | --------- | -------------------------------------------------------- |
-| `meeting:captureEngine`   | invoke    | Which engine a start would actually use                  |
-| `meeting:startCapture`    | invoke    | Start; returns tracks that opened + the note path        |
-| `meeting:stopCapture`     | invoke    | Finalize files and enqueue; does not await transcription |
-| `meeting:captureStatus`   | invoke    | State, elapsed, tracks, queue depth                      |
-| `meeting:listSessions`    | invoke    | Sessions on disk, newest first                           |
-| `meeting:retranscribe`    | invoke    | Re-run; refuses with a reason if audio was deleted       |
-| `meeting:deleteSession`   | invoke    | Remove a session directory                               |
-| `meeting:captureDoctor`   | invoke    | Permission/device preflight with remediation             |
-| `meeting:captureState`    | event     | Every state transition — keeps tray and window agreed    |
-| `meeting:captureLevel`    | event     | Per-track peaks while recording                          |
-| `meeting:captureProgress` | event     | Transcription queue progress                             |
-| `meeting:captureEnded`    | event     | Capture stopped without being asked (crash, quit, tray)  |
+| Channel                             | Direction | Purpose                                                  |
+| ----------------------------------- | --------- | -------------------------------------------------------- |
+| `meeting:captureEngine`             | invoke    | Which engine a start would actually use                  |
+| `meeting:startCapture`              | invoke    | Start; returns tracks that opened + the note path        |
+| `meeting:stopCapture`               | invoke    | Finalize files and enqueue; does not await transcription |
+| `meeting:captureStatus`             | invoke    | State, elapsed, tracks, queue depth                      |
+| `meeting:listSessions`              | invoke    | Sessions on disk, newest first                           |
+| `meeting:retranscribe`              | invoke    | Re-run; refuses with a reason if audio was deleted       |
+| `meeting:deleteSession`             | invoke    | Remove a session directory                               |
+| `meeting:captureDoctor`             | invoke    | Permission/device preflight with remediation             |
+| `meeting:transcriptionModels`       | invoke    | Whether the Parakeet models are downloaded               |
+| `meeting:ensureTranscriptionModels` | invoke    | Download them (~600 MB)                                  |
+| `meeting:modelProgress`             | event     | Model-download progress                                  |
+| `meeting:captureState`              | event     | Every state transition — keeps tray and window agreed    |
+| `meeting:captureLevel`              | event     | Per-track peaks while recording                          |
+| `meeting:captureProgress`           | event     | Transcription queue progress                             |
+| `meeting:captureEnded`              | event     | Capture stopped without being asked (crash, quit, tray)  |
 
 Schemas: `packages/shared/src/ipc.ts` (`meeting:*` block). Payload types:
 `packages/shared/src/meetings.ts`. Handlers: `apps/main/src/ipc/meetings.ts`, spread
@@ -231,7 +260,9 @@ window mid-recording does not stop the session (the tray keeps counting).
 | Orphaned-session recovery          | `packages/core/src/meetings/recover.ts`                                                                       |
 | Whisper non-speech filter          | `packages/core/src/voice/whisper/non-speech.ts`                                                               |
 | Note writing + provenance          | `packages/core/src/meetings/note.ts`                                                                          |
-| Audio retention                    | `packages/core/src/meetings/retention.ts`                                                                     |
+| Engine fallback                    | `packages/core/src/meetings/fallback.ts`                                                                      |
+| Parakeet + codec sidecar clients   | `apps/main/src/meeting-engines.ts`                                                                            |
+| Audio retention + compression      | `packages/core/src/meetings/retention.ts`                                                                     |
 | Types + note formatter (shared)    | `packages/shared/src/meetings.ts`                                                                             |
 | Capture UI                         | `apps/renderer/src/components/meeting-capture-strip.tsx`                                                      |
 | Engine switch                      | `apps/renderer/src/hooks/useMeetingTranscription.ts`                                                          |
@@ -252,5 +283,8 @@ window mid-recording does not stop the session (the tray keeps counting).
 - **A stale `module.modulemap`** in an older Command Line Tools install breaks every
   Objective-C module import with an error that points at the SDK. `build.sh` detects it
   and prints the fix.
+- **`pcmStats.peak` is int16 (0…32767), not normalized.** A 0…1 threshold compared
+  against it fires only on digital silence — which is how the silent-window skip
+  quietly did nothing for a while.
 - **Do not change `appBundleId`** — it would reset every installed user's microphone and
   screen-recording grants.

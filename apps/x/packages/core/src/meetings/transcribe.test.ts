@@ -2,10 +2,11 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import { CHUNK_SECONDS, transcribeSession } from "./transcribe.js";
+import { transcribeSession } from "./transcribe.js";
 import {
   fakeTranscriber,
   SAMPLE_RATE,
+  nearSilence,
   sessionMeta,
   silence,
   tone,
@@ -98,8 +99,10 @@ describe("transcribeSession", () => {
 
   it("shifts by chunk position across a chunk boundary", async () => {
     const dirPath = await session("chunks");
-    // Two full chunks plus a little, all loud, so nothing is skipped as silence.
-    const seconds = CHUNK_SECONDS * 2 + 5;
+    // Two full chunks plus a little, all loud, so nothing is skipped as silence. A
+    // small chunk size keeps the fixture cheap; the arithmetic under test is the same.
+    const chunkSeconds = 2;
+    const seconds = chunkSeconds * 2 + 1;
     await writeWav(path.join(dirPath, "mic.wav"), tone(seconds, 0.4, 8));
 
     const transcriber = fakeTranscriber(() => [{ start: 1, end: 2, text: "x" }]);
@@ -107,6 +110,7 @@ describe("transcribeSession", () => {
       args({
         dir: dirPath,
         transcriber,
+        chunkSeconds,
         meta: sessionMeta({
           tracks: [trackMeta({ frames: seconds * SAMPLE_RATE })],
         }),
@@ -114,13 +118,13 @@ describe("transcribeSession", () => {
     );
 
     expect(transcriber.calls).toHaveLength(3);
-    expect(transcriber.calls[0].samples).toBe(CHUNK_SECONDS * SAMPLE_RATE);
-    expect(transcriber.calls[2].samples).toBe(5 * SAMPLE_RATE);
+    expect(transcriber.calls[0].samples).toBe(chunkSeconds * SAMPLE_RATE);
+    expect(transcriber.calls[2].samples).toBe(1 * SAMPLE_RATE);
     // Each chunk's segment lands one second into that chunk.
     expect(transcript.segments.map((s) => s.start_ms)).toEqual([
       1000,
-      (CHUNK_SECONDS + 1) * 1000,
-      (CHUNK_SECONDS * 2 + 1) * 1000,
+      (chunkSeconds + 1) * 1000,
+      (chunkSeconds * 2 + 1) * 1000,
     ]);
   });
 
@@ -147,8 +151,9 @@ describe("transcribeSession", () => {
   it("skips silent windows so the model is not asked to transcribe nothing", async () => {
     const dirPath = await session("silent-window");
     // Quiet for the first chunk, loud for the second.
-    const loud = tone(5, 0.4, 8);
-    const quiet = silence(CHUNK_SECONDS);
+    const chunkSeconds = 2;
+    const loud = tone(2, 0.4, 8);
+    const quiet = silence(chunkSeconds);
     const samples = new Int16Array(quiet.length + loud.length);
     samples.set(quiet, 0);
     samples.set(loud, quiet.length);
@@ -159,13 +164,14 @@ describe("transcribeSession", () => {
       args({
         dir: dirPath,
         transcriber,
+        chunkSeconds,
         meta: sessionMeta({ tracks: [trackMeta({ frames: samples.length })] }),
       }),
     );
 
     expect(transcriber.calls).toHaveLength(1);
     // Still shifted by the skipped chunk — a skipped window is not a shorter track.
-    expect(transcript.segments[0].start_ms).toBe(CHUNK_SECONDS * 1000);
+    expect(transcript.segments[0].start_ms).toBe(chunkSeconds * 1000);
   });
 
   it("keeps one track's transcript when the other is unreadable", async () => {
@@ -255,5 +261,92 @@ describe("non-speech filtering", () => {
     );
 
     expect(transcript.segments.map((s) => s.text)).toEqual(["We agreed on Friday."]);
+  });
+});
+
+describe("compressed tracks", () => {
+  it("decodes before transcribing and cleans the scratch file up", async () => {
+    const dirPath = await session("compressed");
+    // A "compressed" track: the codec here just copies, but the pipeline cannot tell.
+    await writeWav(path.join(dirPath, "mic.wav"), tone(1));
+    await fs.rename(path.join(dirPath, "mic.wav"), path.join(dirPath, "mic.m4a"));
+
+    const decoded: string[] = [];
+    const transcript = await transcribeSession(
+      args({
+        dir: dirPath,
+        transcriber: fakeTranscriber(() => [{ start: 0, end: 1, text: "from compressed" }]),
+        meta: sessionMeta({ tracks: [trackMeta({ file: "mic.m4a" })] }),
+        codec: {
+          async compress() {},
+          async decode(input: string, out: string) {
+            decoded.push(path.basename(input));
+            await fs.copyFile(input, out);
+          },
+        },
+      }),
+    );
+
+    expect(decoded).toEqual(["mic.m4a"]);
+    expect(transcript.segments.map((s) => s.text)).toEqual(["from compressed"]);
+    // The scratch decode must not be left behind doubling the session's disk use.
+    expect(await fs.readdir(dirPath)).not.toContain("mic.decoded.wav");
+  });
+
+  it("fails the track with a clear reason when nothing can decode it", async () => {
+    const dirPath = await session("compressed-nodecoder");
+    await writeWav(path.join(dirPath, "mic.wav"), tone(1));
+    await fs.rename(path.join(dirPath, "mic.wav"), path.join(dirPath, "mic.m4a"));
+
+    const transcript = await transcribeSession(
+      args({
+        dir: dirPath,
+        transcriber: fakeTranscriber(),
+        meta: sessionMeta({ tracks: [trackMeta({ file: "mic.m4a" })] }),
+      }),
+    );
+
+    expect(transcript.segments).toEqual([]);
+    const log = await fs.readFile(path.join(dirPath, "transcribe.log"), "utf8");
+    expect(log).toContain("no decoder is available");
+  });
+});
+
+describe("silence gate units", () => {
+  it("skips a quiet-but-nonzero window, not just a perfectly zero one", async () => {
+    // The gate compares against `pcmStats.peak`, which is int16 (0…32767). Expressing
+    // the threshold as 0…1 made this fire only on digital silence, so every window of
+    // room tone was still sent to the model.
+    const dirPath = await session("near-silence");
+    await writeWav(path.join(dirPath, "mic.wav"), nearSilence(2));
+
+    const transcriber = fakeTranscriber();
+    await transcribeSession(
+      args({
+        dir: dirPath,
+        transcriber,
+        meta: sessionMeta({ tracks: [trackMeta({ frames: 2 * SAMPLE_RATE, peak: 0.002 })] }),
+        chunkSeconds: 1,
+      }),
+    );
+
+    expect(transcriber.calls).toHaveLength(0);
+  });
+
+  it("still transcribes quiet speech above the gate", async () => {
+    const dirPath = await session("quiet-speech");
+    // 0.02 full scale — quiet, but well above room tone.
+    await writeWav(path.join(dirPath, "mic.wav"), tone(1, 0.02));
+
+    const transcriber = fakeTranscriber(() => [{ start: 0, end: 1, text: "quiet but real" }]);
+    const transcript = await transcribeSession(
+      args({
+        dir: dirPath,
+        transcriber,
+        meta: sessionMeta({ tracks: [trackMeta({ frames: SAMPLE_RATE })] }),
+      }),
+    );
+
+    expect(transcript.segments.map((s) => s.text)).toEqual(["quiet but real"]);
   });
 });

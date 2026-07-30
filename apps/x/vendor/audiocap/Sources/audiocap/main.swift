@@ -1,4 +1,5 @@
 import AVFoundation
+import FluidAudio
 import Foundation
 
 /// Bumped by hand; mirrored into meta.json and `doctor` output so a transcript can
@@ -6,11 +7,15 @@ import Foundation
 let audiocapVersion = "0.1.0"
 
 let usage = """
-    oppulence-audiocap \(audiocapVersion) — local dual-track meeting capture (macOS 14.2+)
+    oppulence-audiocap \(audiocapVersion) — local meeting capture + transcription (macOS 14.2+)
 
     USAGE
-      audiocap record --out <session-dir> [--voice-processing]
-      audiocap doctor [--json] [--out <recordings-root>]
+      audiocap record     --out <session-dir> [--voice-processing]
+      audiocap doctor     [--json] [--out <recordings-root>]
+      audiocap transcribe --in <audio> [--model v3|v2] [--language en] [--json]
+      audiocap models     [--ensure] [--model v3|v2] [--json]
+      audiocap compress   --in <wav> --out <m4a>
+      audiocap decode     --in <m4a> --out <wav>
       audiocap --version
 
     record
@@ -23,17 +28,35 @@ let usage = """
       Reports microphone and system-audio permission state plus the default input
       device. --json for machine output. Creating the probe tap can trigger the
       one-time System Audio Recording prompt.
+
+    transcribe
+      Parakeet (Core ML) transcription of one audio file to timed segments as JSON.
+      Roughly ten times faster than whisper.cpp. Downloads ~600 MB of models on
+      first use — run `models --ensure` ahead of time to avoid that mid-meeting.
+
+    models
+      Whether the transcription models are present; --ensure downloads them,
+      reporting NDJSON progress.
+
+    compress / decode
+      AAC round-trip for retained recordings: ~1/8 the size, still playable, and
+      decodable back to exactly what capture produced so re-transcription works.
     """
 
 // MARK: - Argument parsing
 
-/// Hand-rolled rather than pulling in ArgumentParser: two subcommands and three
-/// flags is not worth a dependency, a Package.resolved, or a CI fetch step.
+/// Hand-rolled rather than pulling in ArgumentParser. A handful of subcommands with
+/// no interdependent options does not need a parsing library, and the smaller the
+/// dependency list the less there is to resolve at build time.
 struct Args {
     var command: String?
     var out: String?
+    var input: String?
+    var model = "v3"
+    var language: String?
     var json = false
     var voiceProcessing = false
+    var ensure = false
     var version = false
     var help = false
 
@@ -49,8 +72,19 @@ struct Args {
             case "--out", "-o":
                 index += 1
                 if index < rest.count { out = rest[index] }
+            case "--in", "-i":
+                index += 1
+                if index < rest.count { input = rest[index] }
+            case "--model":
+                index += 1
+                if index < rest.count { model = rest[index] }
+            case "--language":
+                index += 1
+                if index < rest.count { language = rest[index] }
             case "--json":
                 json = true
+            case "--ensure":
+                ensure = true
             case "--voice-processing":
                 voiceProcessing = true
             case "--version", "-v":
@@ -63,6 +97,25 @@ struct Args {
             index += 1
         }
     }
+}
+
+/// Run an async operation from the top level and exit with its outcome. The CLI
+/// subcommands are one-shot, so there is nothing to keep a run loop alive for.
+func runAsync(_ body: @escaping () async -> Int32) -> Never {
+    let group = DispatchGroup()
+    group.enter()
+    var code: Int32 = 0
+    Task {
+        code = await body()
+        group.leave()
+    }
+    group.wait()
+    exit(code)
+}
+
+func emitFailure(_ code: String, _ message: String) -> Int32 {
+    Event.error(code: code, message: message).emit()
+    return 1
 }
 
 func expand(_ path: String) -> URL {
@@ -91,6 +144,90 @@ if args.command == "doctor" {
     let checks = Doctor.run(recordingsRoot: args.out.map(expand))
     print(args.json ? Doctor.json(checks) : Doctor.human(checks))
     exit(checks.allSatisfy { $0.status != "fail" } ? 0 : 1)
+}
+
+// MARK: - transcribe / models / compress / decode
+
+if args.command == "transcribe" {
+    guard let inPath = args.input else {
+        Log.info("--in <audio> is required")
+        exit(64)
+    }
+    let version = ParakeetEngine.version(named: args.model)
+    runAsync {
+        do {
+            let segments = try await ParakeetEngine.transcribe(
+                expand(inPath),
+                version: version,
+                language: args.language,
+                // Progress only matters to a host reading the stream; a human running
+                // this by hand gets the stderr log instead.
+                emitProgress: args.json
+            )
+            let payload: [String: Any] = [
+                "engine": ParakeetEngine.engineName,
+                "model": ParakeetEngine.modelName(for: version),
+                "segments": segments.map { ["start": $0.start, "end": $0.end, "text": $0.text] },
+            ]
+            let data = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
+            FileHandle.standardOutput.write(data)
+            FileHandle.standardOutput.write(Data("\n".utf8))
+            return 0
+        } catch let error as ParakeetEngine.EngineError {
+            return emitFailure(error.code, error.description)
+        } catch {
+            return emitFailure("parakeet_failed", "\(error)")
+        }
+    }
+}
+
+if args.command == "models" {
+    let version = ParakeetEngine.version(named: args.model)
+    runAsync {
+        if args.ensure {
+            do {
+                _ = try await ParakeetEngine.prepare(version: version, emitProgress: true)
+            } catch let error as ParakeetEngine.EngineError {
+                return emitFailure(error.code, error.description)
+            } catch {
+                return emitFailure("parakeet_models_unavailable", "\(error)")
+            }
+        }
+        let ready = ParakeetEngine.modelsReady(version: version)
+        let payload: [String: Any] = [
+            "ready": ready,
+            "model": ParakeetEngine.modelName(for: version),
+            "cacheDir": AsrModels.defaultCacheDirectory(for: version).path,
+        ]
+        if args.json,
+            let data = try? JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys]),
+            let text = String(data: data, encoding: .utf8)
+        {
+            print(text)
+        } else {
+            print(ready ? "models ready" : "models not downloaded (~600 MB on first use)")
+        }
+        return ready ? 0 : 1
+    }
+}
+
+if args.command == "compress" || args.command == "decode" {
+    guard let inPath = args.input, let outPath = args.out else {
+        Log.info("--in <file> and --out <file> are both required")
+        exit(64)
+    }
+    do {
+        if args.command == "compress" {
+            try Codec.compress(input: expand(inPath), output: expand(outPath))
+        } else {
+            try Codec.decode(input: expand(inPath), output: expand(outPath))
+        }
+        exit(0)
+    } catch let error as Codec.CodecError {
+        exit(emitFailure(error.code, error.description))
+    } catch {
+        exit(emitFailure("codec_failed", "\(error)"))
+    }
 }
 
 // MARK: - record

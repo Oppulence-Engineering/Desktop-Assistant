@@ -32,6 +32,21 @@ export type MeetingResolvedEngine = z.infer<typeof MeetingResolvedEngine>;
 export const MeetingKeepAudio = z.enum(["always", "untilTranscribed", "never"]);
 export type MeetingKeepAudio = z.infer<typeof MeetingKeepAudio>;
 
+/**
+ * Which transcription engine runs after capture.
+ *
+ * `whisper` is the default: already shipped, no extra download. `parakeet` is roughly
+ * ten times faster (tens of seconds per hour of audio rather than minutes) because it
+ * runs on the Neural Engine, at the cost of a one-time ~600 MB model download and a
+ * dependency on the native sidecar.
+ */
+export const MeetingTranscriptionEngine = z.enum(["whisper", "parakeet"]);
+export type MeetingTranscriptionEngine = z.infer<typeof MeetingTranscriptionEngine>;
+
+/** Parakeet model: v3 is multilingual (25 European languages), v2 is English-only. */
+export const ParakeetModel = z.enum(["v3", "v2"]);
+export type ParakeetModel = z.infer<typeof ParakeetModel>;
+
 export const MeetingsSettings = z.object({
   captureEngine: MeetingCaptureEngine.default("auto"),
   /** Absolute path, or unset for `<WorkDir>/recordings`. */
@@ -43,6 +58,11 @@ export const MeetingsSettings = z.object({
    */
   micVoiceProcessing: z.boolean().default(false),
   keepAudio: MeetingKeepAudio.default("untilTranscribed"),
+  /** Compress retained audio to AAC once transcribed — ~1/8 the size, still playable.
+   *  Only applies when `keepAudio` is `always`; there is nothing to compress otherwise. */
+  compressRetainedAudio: z.boolean().default(true),
+  transcriptionEngine: MeetingTranscriptionEngine.default("whisper"),
+  parakeetModel: ParakeetModel.default("v3"),
   /** Queue a session for transcription the moment it stops. */
   transcribeOnStop: z.boolean().default(true),
 });
@@ -52,6 +72,9 @@ export const DEFAULT_MEETINGS_SETTINGS: MeetingsSettings = {
   captureEngine: "auto",
   micVoiceProcessing: false,
   keepAudio: "untilTranscribed",
+  compressRetainedAudio: true,
+  transcriptionEngine: "whisper",
+  parakeetModel: "v3",
   transcribeOnStop: true,
 };
 

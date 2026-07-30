@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Build the oppulence-audiocap capture sidecar for one arch.
 #
-# Compiles with `swiftc` directly rather than SwiftPM. The target has no package
-# dependencies, so a manifest buys nothing and costs plenty: SwiftPM's manifest
-# compiler is tightly coupled to the toolchain version and fails outright on a bare
-# Command Line Tools install, while `swiftc` needs only a compiler and an SDK.
+# Builds with SwiftPM. The capture half needs only system frameworks, but the
+# transcription half depends on FluidAudio (Parakeet's Core ML port), so a manifest is
+# no longer optional. Note that SwiftPM's manifest compiler is tightly coupled to the
+# toolchain: the preflight below catches the two ways a mismatched Command Line Tools
+# install breaks it.
 #
 # Usage:  ./build.sh [arm64|x86_64]     (defaults to the host arch)
 # Output: out/oppulence-audiocap + out/VERSION
@@ -83,18 +84,14 @@ fi
 mkdir -p "$HERE/out"
 OUT="$HERE/out/oppulence-audiocap"
 
-# -wmo so the whole target optimizes as one unit (it is small and the audio path
-# benefits); -swift-version 5 because the realtime callbacks manage their own thread
-# safety and Swift 6 strict isolation would force actor hops into the IO proc.
-swiftc \
-  -O -wmo -swift-version 5 \
-  -target "${ARCH}-apple-macos${MIN_MACOS}" \
-  -sdk "$SDK" \
-  -framework AVFoundation -framework CoreAudio \
-  -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist \
-  -Xlinker "$SOURCES/Info.plist" \
-  -o "$OUT" \
-  "$SOURCES"/*.swift
+# Release build. `-Xswiftc -swift-version -Xswiftc 5` is set in the manifest; the
+# realtime audio callbacks manage their own thread safety and Swift 6 strict isolation
+# would force actor hops into the IO proc.
+swift build -c release --arch "$ARCH" 2>&1
+
+BUILT="$(swift build -c release --arch "$ARCH" --show-bin-path)/audiocap"
+[ -f "$BUILT" ] || { echo "error: no binary at $BUILT" >&2; exit 1; }
+cp "$BUILT" "$OUT"
 
 chmod 0755 "$OUT"
 echo "$VERSION" > "$HERE/out/VERSION"

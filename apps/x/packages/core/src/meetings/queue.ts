@@ -7,6 +7,7 @@ import {
   type MeetingTranscript,
   type MeetingTranscriptionProgress,
 } from "@x/shared/dist/meetings.js";
+import type { AudioCodec } from "./codec.js";
 import { recoverOrphanedSessions } from "./recover.js";
 import { applyRetention } from "./retention.js";
 import {
@@ -37,6 +38,9 @@ export interface MeetingQueueDeps {
   model: () => string;
   lang?: () => string | undefined;
   keepAudio: () => MeetingKeepAudio;
+  /** Compresses retained audio and decodes it back for re-transcription. Optional:
+   *  without it, `keepAudio: always` simply keeps the uncompressed WAV. */
+  codec?: AudioCodec;
   /** Writes the workspace note; returns its path. Injected so core stays unaware of
    *  the workspace layer, and so tests can assert without a workspace. */
   writeNote?: (args: {
@@ -134,6 +138,7 @@ export class MeetingQueue {
       engine: this.deps.engine(),
       model: this.deps.model(),
       lang: this.deps.lang?.(),
+      codec: this.deps.codec,
       onProgress: (fraction) => this.emit(dir, "transcribing", { fraction }),
     });
 
@@ -149,7 +154,13 @@ export class MeetingQueue {
     await appendLog(dir, `transcribed — ${transcript.segments.length} segments`);
 
     const notePath = await this.deps.writeNote?.({ dir, meta, transcript });
-    await applyRetention({ dir, meta, mode: this.deps.keepAudio(), transcribed: true });
+    await applyRetention({
+      dir,
+      meta,
+      mode: this.deps.keepAudio(),
+      transcribed: true,
+      codec: this.deps.codec,
+    });
     this.emit(dir, "done", { notePath });
   }
 

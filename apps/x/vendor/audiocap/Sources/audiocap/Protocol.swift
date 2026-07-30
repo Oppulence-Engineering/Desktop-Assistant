@@ -16,6 +16,9 @@ enum Event {
     case error(code: String, message: String)
     /// Final event: files are finalized and meta.json is written.
     case stopped(metaPath: String, durationSeconds: Int)
+    /// Transcription-model download progress. The Parakeet models are ~600 MB, so the
+    /// host needs something to show rather than appearing to hang on first use.
+    case modelProgress(fraction: Double, phase: String)
 
     private var payload: [String: Any] {
         switch self {
@@ -31,6 +34,8 @@ enum Event {
             return [
                 "type": "stopped", "metaPath": metaPath, "durationSeconds": durationSeconds,
             ]
+        case .modelProgress(let fraction, let phase):
+            return ["type": "modelProgress", "fraction": fraction, "phase": phase]
         }
     }
 

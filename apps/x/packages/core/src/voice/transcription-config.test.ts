@@ -294,15 +294,28 @@ describe("resolveMeetingProvider", () => {
 });
 
 describe("meetings settings block", () => {
-  it("defaults to auto engine, no echo cancellation, and delete-after-transcribe", async () => {
+  it("defaults to auto capture, whisper, and delete-after-transcribe", async () => {
     const cfg = await voice.getTranscriptionConfig();
     expect(cfg.meetings).toEqual({
       captureEngine: "auto",
       micVoiceProcessing: false,
       // RFC 035: raw audio is not retained by default.
       keepAudio: "untilTranscribed",
+      compressRetainedAudio: true,
+      // whisper by default: parakeet is faster but needs a 600 MB download first.
+      transcriptionEngine: "whisper",
+      parakeetModel: "v3",
       transcribeOnStop: true,
     });
+  });
+
+  it("keeps the fast engine off until it is explicitly chosen", async () => {
+    // Turning it on must not silently change anything else about capture.
+    await voice.setTranscriptionConfig({ meetings: { transcriptionEngine: "parakeet" } });
+    const cfg = await voice.readTranscriptionConfig();
+    expect(cfg?.meetings.transcriptionEngine).toBe("parakeet");
+    expect(cfg?.meetings.captureEngine).toBe("auto");
+    expect(cfg?.meetings.keepAudio).toBe("untilTranscribed");
   });
 
   it("merges a partial meetings patch without clobbering its siblings", async () => {

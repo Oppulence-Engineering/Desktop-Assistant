@@ -122,3 +122,101 @@ describe("hasAudio", () => {
     expect(await retention.hasAudio(dir, sessionMeta({ tracks: [] }))).toBe(false);
   });
 });
+
+describe("compression on keepAudio: always", () => {
+  /** Stand-in for the sidecar: renames rather than really encoding. */
+  function fakeCodec() {
+    const compressed: string[] = [];
+    const decoded: string[] = [];
+    return {
+      compressed,
+      decoded,
+      async compress(wav: string, out: string) {
+        compressed.push(path.basename(wav));
+        await fs.copyFile(wav, out);
+      },
+      async decode(input: string, out: string) {
+        decoded.push(path.basename(input));
+        await fs.copyFile(input, out);
+      },
+    };
+  }
+
+  it("compresses each track and repoints meta at the new files", async () => {
+    const { dir, meta } = await twoTrackSession();
+    const codec = fakeCodec();
+
+    expect(
+      await retention.applyRetention({
+        dir,
+        meta,
+        mode: "always",
+        transcribed: true,
+        codec,
+      }),
+    ).toBe(true);
+
+    expect(codec.compressed.sort()).toEqual(["mic.wav", "system.wav"]);
+    // The uncompressed originals are gone, the compressed ones are not.
+    expect(await session.exists(path.join(dir, "mic.wav"))).toBe(false);
+    expect(await session.exists(path.join(dir, "mic.m4a"))).toBe(true);
+
+    const updated = await session.readMeta(dir);
+    expect(updated?.tracks.map((t) => t.file).sort()).toEqual(["mic.m4a", "system.m4a"]);
+    // Compressed is still kept audio — not deleted audio.
+    expect(updated?.audio_deleted_at).toBeUndefined();
+    expect(await retention.hasAudio(dir, updated!)).toBe(true);
+  });
+
+  it("keeps the original when compression fails, rather than losing the recording", async () => {
+    const { dir, meta } = await twoTrackSession();
+    const codec = {
+      compress: async () => {
+        throw new Error("encoder exploded");
+      },
+      decode: async () => {},
+    };
+
+    expect(
+      await retention.applyRetention({ dir, meta, mode: "always", transcribed: true, codec }),
+    ).toBe(false);
+    expect(await session.exists(path.join(dir, "mic.wav"))).toBe(true);
+    const log = await fs.readFile(path.join(dir, "transcribe.log"), "utf8");
+    expect(log).toContain("could not compress");
+  });
+
+  it("does nothing before a transcript exists", async () => {
+    const { dir, meta } = await twoTrackSession();
+    const codec = fakeCodec();
+    expect(
+      await retention.applyRetention({ dir, meta, mode: "always", transcribed: false, codec }),
+    ).toBe(false);
+    expect(codec.compressed).toEqual([]);
+  });
+
+  it("keeps the plain WAV when no codec is available", async () => {
+    const { dir, meta } = await twoTrackSession();
+    expect(await retention.applyRetention({ dir, meta, mode: "always", transcribed: true })).toBe(
+      false,
+    );
+    expect(await session.exists(path.join(dir, "mic.wav"))).toBe(true);
+  });
+
+  it("is a no-op once the tracks are already compressed", async () => {
+    const { dir, meta } = await twoTrackSession();
+    const codec = fakeCodec();
+    await retention.applyRetention({ dir, meta, mode: "always", transcribed: true, codec });
+    const after = (await session.readMeta(dir))!;
+
+    expect(
+      await retention.applyRetention({
+        dir,
+        meta: after,
+        mode: "always",
+        transcribed: true,
+        codec,
+      }),
+    ).toBe(false);
+    expect(codec.compressed).toHaveLength(2);
+  });
+});

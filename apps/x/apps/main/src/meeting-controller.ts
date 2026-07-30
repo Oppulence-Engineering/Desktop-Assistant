@@ -19,11 +19,19 @@ import {
   patchMeta,
   readMeta,
   recordingsRoot,
+  withTranscriberFallback,
   writeMeetingNote,
 } from "@x/core/dist/meetings/meetings.js";
+import type { MeetingTranscriber } from "@x/core/dist/meetings/meetings.js";
 import type { WhisperService } from "@x/core/dist/voice/whisper/index.js";
 import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
 import { MeetingCaptureSidecar, ensureMicrophoneAccess } from "./meeting-capture.js";
+import {
+  audiocapCodec,
+  codecAvailable,
+  createParakeetTranscriber,
+  type ParakeetModel,
+} from "./meeting-engines.js";
 
 /**
  * The one owner of a native capture session: spawns the sidecar, holds the live
@@ -284,15 +292,21 @@ export class MeetingController {
     if (this.queue) return this.queue;
     const root = await this.root();
 
+    // Both engines satisfy the same seam, so everything downstream — chunk offsets,
+    // the merge, retention, the note — is shared. Parakeet is resolved per job so a
+    // settings change applies to the next session without a restart.
     this.queue = new MeetingQueue(root, {
       transcriber: {
-        transcribe: (pcm, opts) => this.deps.whisper().transcribe(pcm, opts),
+        transcribe: (pcm, opts) => this.transcriber().transcribe(pcm, opts),
       },
-      engine: () => "whisper.cpp",
+      engine: () => (this.transcriptionEngine === "parakeet" ? "parakeet" : "whisper.cpp"),
       // Read at job time, not construction time, so switching models in settings
       // applies to the next session without a restart.
       model: () => this.modelId,
       keepAudio: () => this.keepAudio,
+      // Absent when the sidecar did not ship: retention then keeps the plain WAV
+      // rather than failing to compress it.
+      codec: codecAvailable() && this.compressRetainedAudio ? audiocapCodec : undefined,
       writeNote: async ({ dir, meta, transcript }) => {
         const sessionId = path.basename(dir);
         const systemAudioCaptured = meta.tracks.some(
@@ -328,12 +342,42 @@ export class MeetingController {
   /** Cached from settings; refreshed whenever a session starts or a job runs. */
   private modelId = "base.en-q5_1";
   private keepAudio: "always" | "untilTranscribed" | "never" = "untilTranscribed";
+  private transcriptionEngine: "whisper" | "parakeet" = "whisper";
+  private parakeetModel: ParakeetModel = "v3";
+  private compressRetainedAudio = true;
+
+  /**
+   * The engine for the next job. Falls back to whisper when Parakeet is selected but
+   * the sidecar is missing — a settings value should never mean "no transcript".
+   */
+  private transcriber(): MeetingTranscriber {
+    const whisper: MeetingTranscriber = {
+      transcribe: (pcm, opts) => this.deps.whisper().transcribe(pcm, opts),
+    };
+    if (this.transcriptionEngine !== "parakeet" || !codecAvailable()) return whisper;
+
+    // Parakeet is the fast path, not the only path: it can return nothing at all for
+    // audio that plainly has speech, which for a meeting means silently losing one
+    // side. Whisper backs it up on any window that had signal.
+    return withTranscriberFallback(
+      createParakeetTranscriber({ model: this.parakeetModel }),
+      whisper,
+      { onFallback: (reason) => console.warn(`[meeting] ${reason}`) },
+    );
+  }
 
   /** Pull the settings the queue reads lazily. Called at boot and after a config
    *  change so a job never blocks on async config mid-drain. */
   async refreshSettings(): Promise<void> {
     const config = await getTranscriptionConfig();
-    this.modelId = config.whisper?.model ?? this.modelId;
+    this.transcriptionEngine = config.meetings?.transcriptionEngine ?? this.transcriptionEngine;
+    this.parakeetModel = config.meetings?.parakeetModel ?? this.parakeetModel;
+    this.compressRetainedAudio =
+      config.meetings?.compressRetainedAudio ?? this.compressRetainedAudio;
+    this.modelId =
+      this.transcriptionEngine === "parakeet"
+        ? `parakeet-tdt-0.6b-${this.parakeetModel}-coreml`
+        : (config.whisper?.model ?? this.modelId);
     this.keepAudio = config.meetings?.keepAudio ?? this.keepAudio;
   }
 

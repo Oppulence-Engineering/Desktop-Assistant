@@ -90,6 +90,8 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
   // What a start would actually use, as opposed to what is configured — the
   // difference is the whole point of showing it.
   const [resolvedEngine, setResolvedEngine] = useState<MeetingResolvedEngine | null>(null);
+  const [fastModels, setFastModels] = useState<{ ready: boolean; available: boolean } | null>(null);
+  const [modelDownload, setModelDownload] = useState<number | null>(null);
   const [activeModel, setActiveModel] = useState<string>("base.en-q5_1");
   // Per-model download progress in [0, 1]; absent until a download starts.
   const [progress, setProgress] = useState<Record<string, number>>({});
@@ -145,7 +147,14 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       .invoke("meeting:captureEngine", null)
       .then((r) => setResolvedEngine(r.engine))
       .catch(() => {});
+    void window.ipc
+      .invoke("meeting:transcriptionModels", null)
+      .then((r) => setFastModels({ ready: r.ready, available: r.available }))
+      .catch(() => {});
 
+    const offMeetingModels = window.ipc.on("meeting:modelProgress", (p) => {
+      setModelDownload(p.fraction);
+    });
     const off = window.ipc.on("whisper:modelProgress", (p) => {
       setProgress((prev) => {
         if (p.phase !== "download") {
@@ -156,8 +165,23 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
         return { ...prev, [p.id]: p.totalMb ? p.receivedMb / p.totalMb : 0 };
       });
     });
-    return off;
+    return () => {
+      off?.();
+      offMeetingModels?.();
+    };
   }, [dialogOpen]);
+
+  const downloadFastModels = useCallback(async () => {
+    setModelDownload(0);
+    try {
+      const result = await window.ipc.invoke("meeting:ensureTranscriptionModels", null);
+      setFastModels((current) => (current ? { ...current, ready: result.ready } : current));
+      if (!result.ready)
+        toast.error(result.error ?? "Could not download the transcription models.");
+    } finally {
+      setModelDownload(null);
+    }
+  }, []);
 
   const changeVoiceProvider = useCallback(
     async (next: TranscriptionProvider) => {
@@ -726,11 +750,57 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
             {resolvedEngine === "native" && meetings.captureEngine !== "renderer" && (
               <>
                 <SettingToggle
+                  title="Fast transcription"
+                  hint={
+                    meetings.transcriptionEngine === "parakeet"
+                      ? "Parakeet on the Neural Engine — about a minute for an hour-long meeting, versus roughly seven"
+                      : "Uses whisper. Switch to Parakeet for ~4x faster transcription (multilingual, one-time 600 MB download)"
+                  }
+                  value={meetings.transcriptionEngine === "parakeet"}
+                  onChange={(next) =>
+                    void changeMeetings({ transcriptionEngine: next ? "parakeet" : "whisper" })
+                  }
+                />
+                {meetings.transcriptionEngine === "parakeet" && fastModels && !fastModels.ready && (
+                  <div className="flex items-center justify-between gap-3 border border-border px-3.5 py-3">
+                    <span className="flex flex-col">
+                      <span className="text-sm font-medium">Transcription models</span>
+                      <span className="text-xs text-muted-foreground">
+                        {modelDownload === null
+                          ? "About 600 MB, downloaded once. Meetings fall back to whisper until this finishes."
+                          : `Downloading… ${Math.round(modelDownload * 100)}%`}
+                      </span>
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={modelDownload !== null}
+                      onClick={() => void downloadFastModels()}
+                    >
+                      {modelDownload !== null ? (
+                        <Loader2 className="mr-2 size-3.5 animate-spin" />
+                      ) : (
+                        <Download className="mr-2 size-3.5" />
+                      )}
+                      Download
+                    </Button>
+                  </div>
+                )}
+                <SettingToggle
                   title="Echo cancellation"
                   hint="Turn on when the meeting plays through speakers, or their audio is transcribed twice — once as them, once as you. Leave off with headphones."
                   value={meetings.micVoiceProcessing}
                   onChange={(next) => void changeMeetings({ micVoiceProcessing: next })}
                 />
+                {meetings.keepAudio === "always" && (
+                  <SettingToggle
+                    title="Compress kept audio"
+                    hint="AAC instead of raw — about an eighth the size (15 MB per hour per track rather than 115), still playable, and still re-transcribable"
+                    value={meetings.compressRetainedAudio}
+                    onChange={(next) => void changeMeetings({ compressRetainedAudio: next })}
+                  />
+                )}
                 <SettingToggle
                   title="Keep audio after transcribing"
                   hint={

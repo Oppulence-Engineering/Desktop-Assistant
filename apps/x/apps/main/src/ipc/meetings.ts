@@ -1,7 +1,13 @@
 import { ipc } from "@x/shared";
 import type { MeetingCalendarEvent } from "@x/shared/dist/meetings.js";
 import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
-import { resolveCaptureEngine, runCaptureDoctor } from "../meeting-capture.js";
+import { BrowserWindow } from "electron";
+import {
+  nativeCaptureAvailable,
+  resolveCaptureEngine,
+  runCaptureDoctor,
+} from "../meeting-capture.js";
+import { ensureParakeetModels, parakeetModelStatus } from "../meeting-engines.js";
 import { getMeetingController, type MeetingControllerDeps } from "../meeting-controller.js";
 
 type IPCChannels = ipc.IPCChannels;
@@ -20,7 +26,14 @@ type MeetingCaptureHandlers = {
   "meeting:retranscribe": InvokeHandler<"meeting:retranscribe">;
   "meeting:deleteSession": InvokeHandler<"meeting:deleteSession">;
   "meeting:captureDoctor": InvokeHandler<"meeting:captureDoctor">;
+  "meeting:transcriptionModels": InvokeHandler<"meeting:transcriptionModels">;
+  "meeting:ensureTranscriptionModels": InvokeHandler<"meeting:ensureTranscriptionModels">;
 };
+
+async function parakeetModel(): Promise<"v3" | "v2"> {
+  const config = await getTranscriptionConfig();
+  return config.meetings?.parakeetModel ?? "v3";
+}
 
 function parseCalendarEvent(json?: string): MeetingCalendarEvent | undefined {
   if (!json) return undefined;
@@ -87,6 +100,32 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
 
     "meeting:captureDoctor": async () => {
       return runCaptureDoctor(await controller().root());
+    },
+
+    "meeting:transcriptionModels": async () => {
+      if (!nativeCaptureAvailable()) {
+        return { ready: false, model: "", cacheDir: "", available: false };
+      }
+      const status = await parakeetModelStatus(await parakeetModel());
+      return { ...status, available: true };
+    },
+
+    "meeting:ensureTranscriptionModels": async () => {
+      if (!nativeCaptureAvailable()) {
+        return { ready: false, error: "the capture helper is not installed in this build" };
+      }
+      try {
+        const status = await ensureParakeetModels(await parakeetModel(), (fraction, phase) => {
+          for (const win of BrowserWindow.getAllWindows()) {
+            if (!win.isDestroyed() && win.webContents) {
+              win.webContents.send("meeting:modelProgress", { fraction, phase });
+            }
+          }
+        });
+        return { ready: status.ready };
+      } catch (err) {
+        return { ready: false, error: (err as Error).message };
+      }
     },
   };
 }

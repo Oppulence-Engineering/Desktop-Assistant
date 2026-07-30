@@ -21,6 +21,11 @@ export function silence(seconds: number): Int16Array {
   return new Int16Array(Math.floor(seconds * SAMPLE_RATE));
 }
 
+/** Audible but below the silence gate — room tone, not speech. */
+export function nearSilence(seconds: number): Int16Array {
+  return tone(seconds, 0.002);
+}
+
 export interface WriteWavOpts {
   /** Leave the RIFF/data size fields at zero, as a killed writer would. */
   unfinalized?: boolean;
