@@ -48,6 +48,9 @@ export interface MeetingProvenance {
   audio_uploaded: boolean;
   speaker_identity_persistence: string;
   capture_engine: string;
+  /** The recording this note came from. Without it nothing links a note back to its
+   *  audio, so a transcript line cannot offer to play the moment it describes. */
+  session_id: string;
   /** False when the system track never opened — the note holds only your side, and
    *  saying so is the difference between "one-sided" and "the meeting was silent". */
   system_audio_captured: boolean;
@@ -60,6 +63,7 @@ export interface MeetingProvenance {
  */
 export function nativeProvenance(args: {
   model: string;
+  sessionId: string;
   systemAudioCaptured: boolean;
 }): MeetingProvenance {
   return {
@@ -71,6 +75,7 @@ export function nativeProvenance(args: {
     audio_uploaded: false,
     speaker_identity_persistence: "none",
     capture_engine: "native",
+    session_id: args.sessionId,
     system_audio_captured: args.systemAudioCaptured,
   };
 }

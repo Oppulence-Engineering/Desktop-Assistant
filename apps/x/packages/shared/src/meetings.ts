@@ -377,6 +377,53 @@ export function formatMeetingNote(
   return lines.join("\n");
 }
 
+/**
+ * Split a note into its raw frontmatter and body, preserving the frontmatter text
+ * exactly. Re-parsing and re-serializing it would reorder keys and reformat the
+ * one-line JSON in `calendar_event`.
+ */
+function splitFrontmatter(content: string): { raw: string | null; body: string } {
+  if (!content.startsWith("---")) return { raw: null, body: content };
+  const endIndex = content.indexOf("\n---", 3);
+  if (endIndex === -1) return { raw: null, body: content };
+  const closingEnd = endIndex + 4; // '\n---'
+  return { raw: content.slice(0, closingEnd), body: content.slice(closingEnd).replace(/^\n/, "") };
+}
+
+/**
+ * Put an LLM summary above the transcript in a meeting note.
+ *
+ * The transcript block is preserved verbatim and stays last — it is an editor node, and
+ * `meeting:summarize` is defined as prepending above it. The model's own H1/H2 is
+ * stripped because the note already has a title from its frontmatter.
+ *
+ * Lives here rather than in either capture path because both of them do this, and a note
+ * whose shape depends on which engine recorded it is a note two things can disagree
+ * about.
+ */
+export function mergeSummaryIntoNote(noteContent: string, summary: string): string {
+  const { raw, body } = splitFrontmatter(noteContent);
+  const titleMatch = noteContent.match(/^title:\s*(.+)$/m);
+  const noteTitle = titleMatch?.[1]?.trim() || "Meeting Notes";
+  const cleaned = summary.replace(/^#{1,2}\s+.+\n+/, "");
+  const transcriptBlock = body.match(/(```transcript\n[\s\S]*?\n```)/)?.[1] ?? "";
+
+  const newBody =
+    `# ${noteTitle}\n\n` + cleaned + (transcriptBlock ? "\n\n" + transcriptBlock : "");
+  return raw ? `${raw}\n${newBody}` : newBody;
+}
+
+/** The transcript text a summarizer should be given, or "" when there is none yet. */
+export function transcriptTextFromNote(noteContent: string): string {
+  const block = noteContent.match(/```transcript\n([\s\S]*?)\n```/)?.[1];
+  if (!block) return "";
+  try {
+    return (JSON.parse(block) as { transcript?: string }).transcript?.trim() ?? "";
+  } catch {
+    return "";
+  }
+}
+
 /** Human-readable sibling of `transcript.json`, timestamped for skimming. */
 export function renderTranscriptMarkdown(transcript: MeetingTranscript, title: string): string {
   const lines = [`# ${title}`, "", `engine: ${transcript.engine} (${transcript.model})`, ""];

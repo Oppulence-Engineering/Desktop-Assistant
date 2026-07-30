@@ -24,13 +24,16 @@ import {
   nativeProvenance,
   patchMeta,
   readMeta,
+  publishMeetingTranscribed,
   recordingsRoot,
+  summarizeMeetingNote,
   withTranscriberFallback,
   writeMeetingNote,
 } from "@x/core/dist/meetings/meetings.js";
 import type { MeetingTranscriber } from "@x/core/dist/meetings/meetings.js";
 import type { WhisperService } from "@x/core/dist/voice/whisper/index.js";
 import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
+import { summarizeMeeting } from "@x/core/dist/knowledge/summarize_meeting.js";
 import {
   MeetingCaptureSidecar,
   ensureMicrophoneAccess,
@@ -190,6 +193,7 @@ export class MeetingController {
           calendarEvent,
           provenance: nativeProvenance({
             model: this.modelId,
+            sessionId,
             systemAudioCaptured: tracks.includes("system"),
           }),
         });
@@ -454,12 +458,29 @@ export class MeetingController {
           startedAt: meta.started,
           segments: transcript.segments,
           calendarEvent: calendarEventFromMeta(meta),
-          provenance: nativeProvenance({ model: this.modelId, systemAudioCaptured }),
+          provenance: nativeProvenance({ model: this.modelId, sessionId, systemAudioCaptured }),
           notePath: this.notePaths.get(sessionId),
         });
         this.notePaths.set(sessionId, notePath);
         this.notePath = notePath;
         return notePath;
+      },
+      summarize: async ({ dir, notePath, meta }) => {
+        await summarizeMeetingNote({
+          dir,
+          notePath,
+          meta,
+          summarize: (transcript, startedAt, calendarEventJson) =>
+            summarizeMeeting(transcript, startedAt, calendarEventJson),
+        });
+      },
+      onTranscribed: async ({ dir, meta, transcript, notePath }) => {
+        await publishMeetingTranscribed({
+          sessionId: path.basename(dir),
+          meta,
+          transcript,
+          notePath,
+        });
       },
       onProgress: (progress) => {
         this.lastProgress = progress;

@@ -681,8 +681,11 @@ export function useMeetingTranscription(
     ],
   );
 
-  const stop = useCallback(async () => {
-    if (state !== "recording") return;
+  /** Returns the engine that was recording, so the caller knows whether summarization
+   *  already happened elsewhere. */
+  const stop = useCallback(async (): Promise<{ engine: MeetingResolvedEngine }> => {
+    if (state !== "recording") return { engine: engineRef.current };
+    const engine = engineRef.current;
     setState("stopping");
 
     // Native capture: main finalizes the files and queues transcription. The note is
@@ -698,7 +701,7 @@ export function useMeetingTranscription(
       engineRef.current = "renderer";
       analytics.transcriptionCompleted({ provider: "whisper-local", mode: "meeting" });
       setState("idle");
-      return;
+      return { engine };
     }
 
     // On-device: drain the engine's tail first — close() flushes the open segment,
@@ -718,6 +721,7 @@ export function useMeetingTranscription(
       mode: "meeting",
     });
     setState("idle");
+    return { engine };
   }, [state, cleanup, writeTranscriptToFile]);
 
   return { state, start, stop };

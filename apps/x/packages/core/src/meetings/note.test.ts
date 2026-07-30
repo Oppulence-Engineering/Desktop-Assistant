@@ -68,7 +68,11 @@ describe("formatMeetingNote", () => {
       [],
       "2026-07-29T10:00:00.000Z",
       undefined,
-      nativeProvenance({ model: "base.en-q5_1", systemAudioCaptured: false }),
+      nativeProvenance({
+        model: "base.en-q5_1",
+        sessionId: "2026.07.29-1000",
+        systemAudioCaptured: false,
+      }),
     );
 
     expect(note).toContain("transcription_provider: whisper.cpp");
@@ -76,6 +80,8 @@ describe("formatMeetingNote", () => {
     expect(note).toContain("diarization_provider: dual-track");
     expect(note).toContain("audio_uploaded: false");
     expect(note).toContain("capture_engine: native");
+    // Links the note back to its recording, which is what makes click-to-play possible.
+    expect(note).toContain("session_id: 2026.07.29-1000");
     // The one that stops a one-sided transcript from looking like a silent meeting.
     expect(note).toContain("system_audio_captured: false");
   });
@@ -225,7 +231,11 @@ describe("meetingNotePath", () => {
 });
 
 describe("writeMeetingNote", () => {
-  const provenance = nativeProvenance({ model: "base.en-q5_1", systemAudioCaptured: true });
+  const provenance = nativeProvenance({
+    model: "base.en-q5_1",
+    sessionId: "2026.07.29-1000",
+    systemAudioCaptured: true,
+  });
 
   it("flags a note with no speech, so it is not mistaken for a pending transcript", async () => {
     let written = "";
