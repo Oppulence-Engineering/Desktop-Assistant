@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Loader2, Play, X } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 
@@ -57,6 +57,10 @@ export function MeetingCommitments({ onOpenNote }: { onOpenNote?: (path: string)
   const [tracks, setTracks] = useState<Record<string, AudioTrack[]>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  /** One element, reused. A fresh `new Audio()` per click leaked an element and a
+   *  listener each time, and clicking three quotes played all three at once. */
+  const player = useRef<HTMLAudioElement | null>(null);
+  const stopAt = useRef<number>(Infinity);
 
   const key = (sessionId: string, proposal: Proposal) =>
     `${sessionId}:${proposal.start_ms}-${proposal.end_ms}`;
@@ -105,18 +109,46 @@ export function MeetingCommitments({ onOpenNote }: { onOpenNote?: (path: string)
       const wanted = proposal.owner === "me" ? "mic" : "system";
       const chosen = available.find((t) => t.track === wanted) ?? available[0];
       if (!chosen) return;
-      const element = new Audio(chosen.url);
-      // Transcript times are on the session clock; each file starts at its own offset.
-      element.currentTime = Math.max(0, (proposal.start_ms - chosen.offsetMs) / 1000);
-      void element.play();
+      if (!player.current) {
+        const element = new Audio();
+        // Bound once, reading the ref each tick, so switching quotes re-aims the same
+        // listener instead of stacking another one.
+        element.addEventListener("timeupdate", () => {
+          if (element.currentTime >= stopAt.current) element.pause();
+        });
+        player.current = element;
+      }
+      const element = player.current;
+      element.pause();
       // Stop at the end of the quoted span rather than playing on into the rest of the
       // meeting — the point is to hear *this* sentence.
-      const stopAt = (proposal.end_ms - chosen.offsetMs) / 1000;
-      element.addEventListener("timeupdate", () => {
-        if (element.currentTime >= stopAt) element.pause();
-      });
+      stopAt.current = (proposal.end_ms - chosen.offsetMs) / 1000;
+      // Transcript times are on the session clock; each file starts at its own offset.
+      const seekTo = Math.max(0, (proposal.start_ms - chosen.offsetMs) / 1000);
+
+      const begin = () => {
+        element.currentTime = seekTo;
+        void element.play();
+      };
+      if (element.src !== chosen.url) {
+        element.src = chosen.url;
+        // `src` is applied asynchronously; seeking before metadata lands is ignored.
+        element.addEventListener("loadedmetadata", begin, { once: true });
+        element.load();
+      } else {
+        begin();
+      }
     },
     [tracksFor],
+  );
+
+  // Nothing should keep playing once the panel is gone.
+  useEffect(
+    () => () => {
+      player.current?.pause();
+      player.current = null;
+    },
+    [],
   );
 
   const act = useCallback(async (sessionId: string, proposal: Proposal, confirm: boolean) => {

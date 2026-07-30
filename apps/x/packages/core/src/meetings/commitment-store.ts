@@ -46,8 +46,33 @@ export async function writeCommitmentProposals(
   await fs.rename(tmp, file);
 }
 
+/**
+ * Serializes read-modify-write per session directory, for the same reason the ledger
+ * does: dismissing three proposals in a row is one click each, and two overlapping
+ * rewrites would resurrect a dismissed one.
+ */
+const queues = new Map<string, Promise<unknown>>();
+
+function serialized<T>(dir: string, operation: () => Promise<T>): Promise<T> {
+  const previous = queues.get(dir) ?? Promise.resolve();
+  const result = previous.then(operation, operation);
+  queues.set(
+    dir,
+    result.catch(() => undefined),
+  );
+  return result;
+}
+
 /** Drop one proposal, by the span that identifies it. */
-export async function removeCommitmentProposal(
+export function removeCommitmentProposal(
+  dir: string,
+  startMs: number,
+  endMs: number,
+): Promise<boolean> {
+  return serialized(dir, () => removeCommitmentProposalUnsafe(dir, startMs, endMs));
+}
+
+async function removeCommitmentProposalUnsafe(
   dir: string,
   startMs: number,
   endMs: number,

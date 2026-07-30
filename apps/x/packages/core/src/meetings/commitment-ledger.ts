@@ -55,6 +55,27 @@ function ledgerFile(): string {
   return path.join(WorkDir, "commitments.json");
 }
 
+/**
+ * Serializes read-modify-write on the ledger.
+ *
+ * Every mutation here reads the whole file, edits it, and writes it back. Two of those
+ * interleaving loses one edit outright — and they interleave easily, because confirming
+ * commitments is exactly the kind of thing a user does by clicking three "Keep" buttons
+ * in a row. The UI disables the button it is working on, not the others.
+ *
+ * A promise chain rather than a lock: mutations are rare and fast, and this cannot
+ * deadlock or be forgotten at an early return.
+ */
+let ledgerQueue: Promise<unknown> = Promise.resolve();
+
+function serialized<T>(operation: () => Promise<T>): Promise<T> {
+  const result = ledgerQueue.then(operation, operation);
+  // Keep the chain alive even when an operation rejects, or one failure would wedge
+  // every later write.
+  ledgerQueue = result.catch(() => undefined);
+  return result;
+}
+
 export async function readLedger(): Promise<LedgerCommitment[]> {
   try {
     const parsed = Ledger.safeParse(JSON.parse(await fs.readFile(ledgerFile(), "utf8")));
@@ -95,7 +116,11 @@ export interface ConfirmArgs {
 }
 
 /** Confirm one proposal into the ledger. Idempotent on the same span. */
-export async function confirmCommitment(args: ConfirmArgs): Promise<LedgerCommitment> {
+export function confirmCommitment(args: ConfirmArgs): Promise<LedgerCommitment> {
+  return serialized(() => confirmCommitmentUnsafe(args));
+}
+
+async function confirmCommitmentUnsafe(args: ConfirmArgs): Promise<LedgerCommitment> {
   const { proposal } = args;
   const entry: LedgerCommitment = {
     id: commitmentId(args.sessionId, proposal.start_ms, proposal.end_ms),
@@ -129,7 +154,11 @@ export async function confirmCommitment(args: ConfirmArgs): Promise<LedgerCommit
 }
 
 /** Mark a commitment done or dropped. Returns false when it is not in the ledger. */
-export async function setCommitmentStatus(id: string, status: CommitmentStatus): Promise<boolean> {
+export function setCommitmentStatus(id: string, status: CommitmentStatus): Promise<boolean> {
+  return serialized(() => setCommitmentStatusUnsafe(id, status));
+}
+
+async function setCommitmentStatusUnsafe(id: string, status: CommitmentStatus): Promise<boolean> {
   const existing = await readLedger();
   const row = existing.find((entry) => entry.id === id);
   if (!row) return false;

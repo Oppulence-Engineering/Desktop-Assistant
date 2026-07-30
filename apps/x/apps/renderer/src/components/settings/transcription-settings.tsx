@@ -821,6 +821,12 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                   </div>
                 </div>
                 <SettingToggle
+                  title="Suggest commitments after a meeting"
+                  hint="Pulls out what people said they would do, for you to confirm or dismiss. Nothing is saved until you confirm it."
+                  value={meetings.extractCommitments !== false}
+                  onChange={(next) => void changeMeetings({ extractCommitments: next })}
+                />
+                <SettingToggle
                   title="Live transcript while recording"
                   hint="Transcribes in the background during the call so you can read along and ask questions mid-meeting. Off by default: it is a second transcription pass running on a machine already busy with the call."
                   value={meetings.liveTranscript === true}

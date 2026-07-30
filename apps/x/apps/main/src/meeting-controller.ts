@@ -38,7 +38,12 @@ import {
   askMeeting,
 } from "@x/core/dist/meetings/meetings.js";
 import { MeetingLiveTranscriber } from "./meeting-live.js";
-import type { LedgerCommitment, ProposedCommitment } from "@x/core/dist/meetings/meetings.js";
+import type {
+  CounterpartyResolution,
+  KnownPerson,
+  LedgerCommitment,
+  ProposedCommitment,
+} from "@x/core/dist/meetings/meetings.js";
 import {
   readCommitmentProposals,
   removeCommitmentProposal,
@@ -78,6 +83,9 @@ const SILENCE_PEAK_LEVEL = 0.005;
  *  each one would churn thousands of timers over a meeting; recording a timestamp and
  *  checking it occasionally costs one assignment per event instead. */
 const SILENCE_CHECK_INTERVAL_MS = 15 * 1000;
+/** Long enough to collapse one meeting's reads into one vault scan, short enough that a
+ *  renamed person is not mislabelled for the rest of the session. */
+const PEOPLE_CACHE_MS = 60_000;
 
 function broadcast<T>(channel: string, payload: T): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -301,9 +309,11 @@ export class MeetingController {
       // Live transcription only once actually recording — there is no file to read
       // while standing by, which is the entire point of standing by.
       if (this.standbySeconds === 0 && config.meetings?.liveTranscript) {
-        this.liveCounterparty = resolveCounterparty(calendarEvent, {
-          people: this.knownPeople(),
-        }).counterparty?.label;
+        // Deliberately the *cheap* resolution here. This runs as recording starts, and
+        // a whole-vault scan at that moment would stall the app exactly when the user is
+        // watching it begin. The calendar's own display name is good enough for a live
+        // panel; the note gets the canonical one afterwards.
+        this.liveCounterparty = resolveCounterparty(calendarEvent).counterparty?.label;
         this.startLive(dir, tracks);
       }
       this.setState(this.standbySeconds > 0 ? "standby" : "recording");
@@ -530,12 +540,38 @@ export class MeetingController {
   }
 
   /**
-   * People from the knowledge index, for putting a real name on a 1:1's counterparty.
+   * Resolve a meeting's counterparty without paying for the knowledge index unless it
+   * can possibly help.
    *
-   * Best-effort and rebuilt per note rather than cached: it is read once at the end of a
-   * meeting, and a stale index would silently name someone by an old title. A failure
-   * here just means the calendar's own display name is used.
+   * `buildKnowledgeIndex()` is fully synchronous and `readFileSync`s every note in the
+   * vault. Calling it on the main process blocks IPC, the tray and every window event
+   * for as long as it takes — and it was being called three times per meeting, one of
+   * them at the instant recording starts, which is the worst moment in the app to
+   * freeze.
+   *
+   * Two things fix that. The cheap resolution runs first with no index at all: it
+   * already knows whether this is a 1:1, and on a group call — where the answer is
+   * "decline" regardless — the index is never touched. When it is a 1:1 the index is
+   * consulted for the canonical name, through a short-lived cache so the note write and
+   * the commitment pass of the same meeting share one build.
    */
+  private resolveMeetingCounterparty(
+    calendarEvent: MeetingCalendarEvent | undefined,
+  ): CounterpartyResolution {
+    const cheap = resolveCounterparty(calendarEvent);
+    // Not a 1:1, or nothing to name: no index can change this answer.
+    if (!cheap.counterparty) return cheap;
+    return resolveCounterparty(calendarEvent, { people: this.knownPeople() });
+  }
+
+  /**
+   * People from the knowledge index, cached briefly.
+   *
+   * The TTL is short because a stale index would name someone by an old title; it exists
+   * only so the two or three reads within one finished meeting collapse into one scan.
+   */
+  private peopleCache: { at: number; people: KnownPerson[] } | null = null;
+
   private knownPeople(): {
     name: string;
     email?: string;
@@ -543,9 +579,17 @@ export class MeetingController {
     organization?: string;
     role?: string;
   }[] {
+    const now = Date.now();
+    if (this.peopleCache && now - this.peopleCache.at < PEOPLE_CACHE_MS) {
+      return this.peopleCache.people;
+    }
     try {
-      return buildKnowledgeIndex().people;
+      const people = buildKnowledgeIndex().people;
+      this.peopleCache = { at: now, people };
+      return people;
     } catch {
+      // A failure here just means the calendar's own display name is used.
+      this.peopleCache = { at: now, people: [] };
       return [];
     }
   }
@@ -798,9 +842,7 @@ export class MeetingController {
         // bucket, so on a group call this correctly declines and the note stays "Other".
         // No explicit self-address needed: Google marks the local user's own attendee
         // entry with `self: true`, which the resolver already excludes.
-        const { counterparty, reason } = resolveCounterparty(calendarEvent, {
-          people: this.knownPeople(),
-        });
+        const { counterparty, reason } = this.resolveMeetingCounterparty(calendarEvent);
         const notePath = await writeMeetingNote({
           sessionId,
           startedAt: meta.started,
@@ -821,10 +863,10 @@ export class MeetingController {
         return notePath;
       },
       proposeCommitments: async ({ dir, meta, transcript, notePath }) => {
+        const settings = await getTranscriptionConfig();
+        if (settings.meetings?.extractCommitments === false) return;
         const calendarEvent = calendarEventFromMeta(meta);
-        const { counterparty } = resolveCounterparty(calendarEvent, {
-          people: this.knownPeople(),
-        });
+        const { counterparty } = this.resolveMeetingCounterparty(calendarEvent);
         const proposals = await extractCommitments({
           segments: transcript.segments,
           labels: { me: "You", them: counterparty?.label ?? "Other" },

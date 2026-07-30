@@ -113,6 +113,15 @@ export const MeetingsSettings = z.object({
    * battery on without asking.
    */
   liveTranscript: z.boolean().default(false),
+  /**
+   * Propose commitments from a finished transcript.
+   *
+   * On by default — it is gated by a cheap keyword pre-filter, runs once per meeting
+   * rather than continuously, and is the thing that turns a transcript into something
+   * you act on. But it is still a model call the user did not ask for each time, so it
+   * gets a switch like every other model-backed feature here.
+   */
+  extractCommitments: z.boolean().default(true),
 });
 export type MeetingsSettings = z.infer<typeof MeetingsSettings>;
 
@@ -130,6 +139,7 @@ export const DEFAULT_MEETINGS_SETTINGS: MeetingsSettings = {
   standbySeconds: 300,
   standbyBeforeMeetings: false,
   liveTranscript: false,
+  extractCommitments: true,
 };
 
 // ---------------------------------------------------------------------------
