@@ -147,7 +147,10 @@ export class MeetingCaptureSidecar {
       console.error("[meeting] could not promote standby:", err);
       return false;
     }
-    this.standby = false;
+    // `standby` stays true until the sidecar's `recording` event clears it. The write
+    // only means the request was sent — the promote can still fail on the far side (a
+    // full disk, a directory that lost its permissions), and clearing it here would
+    // report a recording that is writing to nothing.
     return true;
   }
 

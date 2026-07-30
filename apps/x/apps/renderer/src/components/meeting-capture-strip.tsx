@@ -156,9 +156,6 @@ export function MeetingCaptureStrip() {
   // Offer the setup check once, and only when idle — interrupting a live recording to
   // suggest a test recording would be absurd.
   const offerCheck = checkDone === false && !recording && !standby && !progress;
-  // Offered alongside the setup check rather than instead of it: standing by is a thing
-  // you reach for before a call, which is exactly when this strip is on screen.
-  const idleAndReady = !recording && !standby && !progress && failures.length === 0;
 
   // Nothing to say: idle, healthy, nothing queued, nothing odd on disk.
   if (
@@ -166,7 +163,6 @@ export function MeetingCaptureStrip() {
     !standby &&
     !progress &&
     !offerCheck &&
-    !idleAndReady &&
     failures.length === 0 &&
     untranscribed.length === 0 &&
     silentTracks.length === 0
@@ -176,27 +172,6 @@ export function MeetingCaptureStrip() {
 
   return (
     <div className="shrink-0 border-b border-border bg-muted/20 px-6 py-3 text-sm">
-      {idleAndReady && (
-        <div className="flex items-center gap-3">
-          <Mic className="size-4 shrink-0 text-muted-foreground" />
-          <div className="min-w-0 flex-1">
-            <p className="font-medium text-foreground">Stand by</p>
-            <p className="text-xs text-muted-foreground">
-              Listen without writing anything, so you can start recording later and still keep the
-              last few minutes.
-            </p>
-          </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => void window.ipc.invoke("meeting:startStandby", {})}
-          >
-            Stand by
-          </Button>
-        </div>
-      )}
-
       {offerCheck && (
         <div className="flex items-center gap-3">
           <Mic className="size-4 shrink-0 text-muted-foreground" />
@@ -273,6 +248,23 @@ export function MeetingCaptureStrip() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Whatever the recorder itself has said about this session. Without this a
+          sidecar error is logged to a console nobody reads, and a user who pressed
+          Record and got nothing has no way to find out why. */}
+      {(recording || standby) && (status?.warnings.length ?? 0) > 0 && (
+        <ul className="mb-2 space-y-0.5">
+          {status!.warnings.slice(-3).map((warning, index) => (
+            <li
+              key={index}
+              className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-500"
+            >
+              <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
+              {warning}
+            </li>
+          ))}
+        </ul>
       )}
 
       {recording && (
