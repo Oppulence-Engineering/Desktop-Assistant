@@ -110,16 +110,25 @@ final class TrackWriter {
         standby = nil
         recording = true
 
-        guard !buffered.isEmpty else { return 0 }
-        buffered.withUnsafeBufferPointer { pointer in
-            guard let base = pointer.baseAddress else { return }
-            handle?.write(Data(bytes: base, count: pointer.count * 2))
+        if !buffered.isEmpty {
+            buffered.withUnsafeBufferPointer { pointer in
+                guard let base = pointer.baseAddress else { return }
+                handle?.write(Data(bytes: base, count: pointer.count * 2))
+            }
+            frames = Int64(buffered.count)
         }
-        frames = Int64(buffered.count)
-        let seconds = Double(buffered.count) / Self.sampleRate
+
         // The retained audio starts where the ring starts, not where standby did —
         // anything older than the ring was overwritten. Backdating this is what keeps
         // `offset_ms` and the transcript clock honest about a retroactive recording.
+        //
+        // Set unconditionally, including when the ring is empty. `append` stamps
+        // `firstBuffer` on the first buffer it *sees*, which during standby is minutes
+        // before anything was kept. Leaving that behind on an empty-ring track would
+        // make it look like the earliest track in `writeMeta`, and every other track's
+        // `offset_ms` would then be inflated by the whole standby duration — shifting a
+        // real transcript by minutes.
+        let seconds = Double(buffered.count) / Self.sampleRate
         firstBuffer = Date().addingTimeInterval(-seconds)
         return seconds
     }

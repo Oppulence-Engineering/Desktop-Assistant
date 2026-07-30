@@ -149,15 +149,26 @@ export function MeetingCaptureCheck({
   const finish = useCallback(async () => {
     setPhase("transcribing");
     try {
-      await window.ipc.invoke("meeting:stopCapture", null);
+      const { queued } = await window.ipc.invoke("meeting:stopCapture", null);
+      // Transcription is a setting. With it off nothing will ever report progress, and
+      // waiting for an event that cannot arrive would leave this on "Transcribing…"
+      // forever — the waveforms alone still answer what the check is asking.
+      if (!queued) setPhase("result");
     } catch (err) {
       setError((err as Error).message);
       setPhase("error");
-      return;
     }
   }, []);
 
   const start = useCallback(async () => {
+    // "Run it again" must not strand the previous attempt's session.
+    const previous = sessionRef.current;
+    if (previous) {
+      sessionRef.current = null;
+      void window.ipc
+        .invoke("meeting:deleteSession", { sessionId: previous, deleteNote: true })
+        .catch(() => {});
+    }
     setError(null);
     setWaves({ mic: [], system: [] });
     setLines([]);
@@ -199,6 +210,10 @@ export function MeetingCaptureCheck({
   // progress event for this session rather than polling.
   useEffect(() => {
     if (phase !== "transcribing") return;
+    // A backstop for the job that never reports — a crashed worker, a queue busy with a
+    // real meeting. Ten seconds of audio transcribes in about a second; a minute of
+    // waiting means it is not coming.
+    const timeout = window.setTimeout(() => setPhase("result"), 60_000);
     const off = window.ipc.on("meeting:captureProgress", (progress) => {
       if (sessionRef.current && progress.sessionId !== sessionRef.current) return;
       if (progress.phase === "failed") {
@@ -219,7 +234,10 @@ export function MeetingCaptureCheck({
         setPhase("result");
       })();
     });
-    return () => off();
+    return () => {
+      window.clearTimeout(timeout);
+      off();
+    };
   }, [phase]);
 
   const dismiss = useCallback(
@@ -232,6 +250,18 @@ export function MeetingCaptureCheck({
           await window.ipc.invoke("meeting:stopCapture", null);
         } catch {
           // Main owns the state; nothing here can improve on a failed stop.
+        }
+      }
+      // The check is a setup test, not a meeting. Leaving it behind would put a
+      // ten-second recording in the list, a note in the workspace, and a summary and
+      // commitment pass over "testing, one two" — every one of which the user would
+      // then have to clean up.
+      const sessionId = sessionRef.current;
+      if (sessionId) {
+        try {
+          await window.ipc.invoke("meeting:deleteSession", { sessionId, deleteNote: true });
+        } catch {
+          // A test recording we could not remove is untidy, not harmful.
         }
       }
       if (done) {
