@@ -122,3 +122,58 @@ describe("transcriptTextFromNote", () => {
     expect(transcriptTextFromNote("```transcript\nnot json\n```")).toBe("");
   });
 });
+
+describe("mergeSummaryIntoNote keeps what the note claims about itself", () => {
+  const noteWith = (body: string) =>
+    [
+      "---",
+      "type: meeting",
+      "title: Weekly sync",
+      "---",
+      "",
+      "# Weekly sync",
+      "",
+      body,
+      "",
+      "```transcript",
+      '{"transcript":"**You:** hi"}',
+      "```",
+    ].join("\n");
+
+  it("carries leading blockquote notices above the summary", () => {
+    // These lines are the note's standing claims — that the audio never left, and that
+    // several people share one speaker label. Summarizing rebuilds the body, and before
+    // this they were silently deleted from every meeting that had speech in it.
+    const note = noteWith(
+      "> Recorded and transcribed on this Mac. The audio never left this device.",
+    );
+    const merged = mergeSummaryIntoNote(note, "## Notes\n\nThey synced.");
+    expect(merged).toContain("The audio never left this device");
+    expect(merged).toContain("They synced.");
+    // Still above the summary, and the transcript block still last.
+    expect(merged.indexOf("never left")).toBeLessThan(merged.indexOf("They synced."));
+    expect(merged.trimEnd().endsWith("```")).toBe(true);
+  });
+
+  it("carries several notices", () => {
+    const note = noteWith("> One.\n> Two.");
+    const merged = mergeSummaryIntoNote(note, "Notes.");
+    expect(merged).toContain("> One.");
+    expect(merged).toContain("> Two.");
+  });
+
+  it("does not carry a previous summary forward", () => {
+    // Only the leading quotes are notices; prose below them is the old summary, which is
+    // precisely what a re-summarize is replacing.
+    const note = noteWith("> A notice.\n\nAn older summary that must not survive.");
+    const merged = mergeSummaryIntoNote(note, "The new summary.");
+    expect(merged).toContain("> A notice.");
+    expect(merged).not.toContain("older summary");
+  });
+
+  it("is unchanged for a note with no notices", () => {
+    const note = noteWith("Just a summary.");
+    const merged = mergeSummaryIntoNote(note, "New summary.");
+    expect(merged).toContain("# Weekly sync\n\nNew summary.");
+  });
+});

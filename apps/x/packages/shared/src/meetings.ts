@@ -387,8 +387,46 @@ export function mergeSummaryIntoNote(noteContent: string, summary: string): stri
   const transcriptBlock = body.match(/(```transcript\n[\s\S]*?\n```)/)?.[1] ?? "";
 
   const newBody =
-    `# ${noteTitle}\n\n` + cleaned + (transcriptBlock ? "\n\n" + transcriptBlock : "");
+    `# ${noteTitle}\n\n` +
+    notices(body) +
+    cleaned +
+    (transcriptBlock ? "\n\n" + transcriptBlock : "");
   return raw ? `${raw}\n${newBody}` : newBody;
+}
+
+/**
+ * The blockquote lines directly under the title, re-emitted above the summary.
+ *
+ * This rebuild is otherwise destructive: it keeps the title and the transcript block and
+ * throws away everything between them. That silently deleted the two standing claims a
+ * note makes about itself — "the audio never left this device", and "all N other
+ * participants appear as Other" — from every meeting that got summarized, which is every
+ * meeting with speech in it. A trust notice that disappears the moment the note becomes
+ * useful is worse than one that was never written.
+ *
+ * Only leading blockquotes are carried, and only until the first non-quote line: those
+ * are notices this formatter emitted. Anything further down is the previous summary,
+ * which is exactly what is being replaced.
+ */
+function notices(body: string): string {
+  const lines = body.split("\n");
+  let index = 0;
+  // Blank lines first: `splitFrontmatter` leaves one in front of the title.
+  while (index < lines.length && lines[index].trim() === "") index++;
+  if (lines[index]?.startsWith("# ")) index++;
+
+  const kept: string[] = [];
+  for (; index < lines.length; index++) {
+    const line = lines[index];
+    if (line.trim() === "") {
+      // A blank line ends the run of notices; before the run it is just spacing.
+      if (kept.length > 0) break;
+      continue;
+    }
+    if (!line.startsWith(">")) break;
+    kept.push(line);
+  }
+  return kept.length > 0 ? `${kept.join("\n")}\n\n` : "";
 }
 
 /** The transcript text a summarizer should be given, or "" when there is none yet. */
