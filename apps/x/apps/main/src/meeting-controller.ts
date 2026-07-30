@@ -121,27 +121,34 @@ export class MeetingController {
     if (!this.sidecar.beginRecording()) {
       return { started: false, error: "the recorder did not accept the request" };
     }
-    const dir = this.sessionDir;
-    if (dir) {
-      const sessionId = path.basename(dir);
-      try {
-        this.notePath = await writeMeetingNote({
-          sessionId,
-          startedAt: (this.sessionStartedAt ?? new Date()).toISOString(),
-          segments: [],
-          calendarEvent: this.calendarEvent,
-          provenance: nativeProvenance({
-            model: this.modelId,
-            sessionId,
-            systemAudioCaptured: this.sidecar.tracks.includes("system"),
-          }),
-        });
-        this.notePaths.set(sessionId, this.notePath);
-      } catch (err) {
-        console.warn(`[meeting] could not create the note up front: ${(err as Error).message}`);
-      }
-    }
+    // The note is written from `onRecording`, not here: this only means the request
+    // was sent. A promote that fails on the far side must not leave a note for a
+    // recording that never started.
     return { started: true };
+  }
+
+  /** Write the placeholder note for a session that has just begun recording. */
+  private async writePlaceholderNote(dir: string): Promise<void> {
+    const sessionId = path.basename(dir);
+    if (this.notePaths.has(sessionId)) return;
+    try {
+      this.notePath = await writeMeetingNote({
+        sessionId,
+        startedAt: (this.sessionStartedAt ?? new Date()).toISOString(),
+        segments: [],
+        calendarEvent: this.calendarEvent,
+        provenance: nativeProvenance({
+          model: this.modelId,
+          sessionId,
+          systemAudioCaptured: this.sidecar.tracks.includes("system"),
+        }),
+      });
+      this.notePaths.set(sessionId, this.notePath);
+    } catch (err) {
+      // A note we could not write is not a reason to abandon a recording — the
+      // transcript still lands, and the queue writes the note again afterwards.
+      console.warn(`[meeting] could not create the note up front: ${(err as Error).message}`);
+    }
   }
 
   get elapsedSeconds(): number {
@@ -215,6 +222,16 @@ export class MeetingController {
             this.sessionStartedAt = new Date(Date.now() - recoveredSeconds * 1000);
           }
           this.setState("recording");
+          // Only now, once the sidecar has confirmed it is writing.
+          void this.writePlaceholderNote(dir);
+        },
+        onError: (code, message) => {
+          console.error(`[meeting] sidecar error ${code}: ${message}`);
+          // The sidecar records errors into its warning list, but that list only
+          // reaches a window on the next state transition — and a promote that fails
+          // produces no transition at all, so the user would press Record and see
+          // nothing happen, forever.
+          broadcast<MeetingCaptureStatus>("meeting:captureState", this.statusSnapshot());
         },
         onLevel: (peaks) => {
           // The renderer pipeline auto-stops after two minutes with no transcript; the
@@ -240,26 +257,10 @@ export class MeetingController {
       // runs — and remember its path so the post-transcription write lands on the
       // same file rather than deriving a second one. Skipped while standing by: a
       // standby that is never promoted leaves no session, so it must leave no note.
+      // The promote path writes it from `onRecording` instead, once the sidecar has
+      // confirmed it is actually writing.
       const sessionId = path.basename(dir);
-      if (!this.standbySeconds)
-        try {
-          this.notePath = await writeMeetingNote({
-            sessionId,
-            startedAt: this.sessionStartedAt.toISOString(),
-            segments: [],
-            calendarEvent,
-            provenance: nativeProvenance({
-              model: this.modelId,
-              sessionId,
-              systemAudioCaptured: tracks.includes("system"),
-            }),
-          });
-          this.notePaths.set(sessionId, this.notePath);
-        } catch (err) {
-          // A note we could not write is not a reason to abandon a recording — the
-          // transcript still lands, and the queue writes the note again afterwards.
-          console.warn(`[meeting] could not create the note up front: ${(err as Error).message}`);
-        }
+      if (!this.standbySeconds) await this.writePlaceholderNote(dir);
 
       this.setState(this.standbySeconds > 0 ? "standby" : "recording");
       return {
