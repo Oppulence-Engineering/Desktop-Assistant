@@ -103,6 +103,16 @@ export const MeetingsSettings = z.object({
    * scheduled" is a reason, not a consent. The manual control is always available.
    */
   standbyBeforeMeetings: z.boolean().default(false),
+  /**
+   * Transcribe in the background while the meeting runs, so you can search and ask
+   * questions mid-call.
+   *
+   * Off by default. It is a second transcription pass running during a call, on a
+   * machine already busy with the call — cheap on the Neural Engine (roughly a 5% duty
+   * cycle with the fast engine) but not free, and not something to spend someone's
+   * battery on without asking.
+   */
+  liveTranscript: z.boolean().default(false),
 });
 export type MeetingsSettings = z.infer<typeof MeetingsSettings>;
 
@@ -119,6 +129,7 @@ export const DEFAULT_MEETINGS_SETTINGS: MeetingsSettings = {
   preflightNotifications: true,
   standbySeconds: 300,
   standbyBeforeMeetings: false,
+  liveTranscript: false,
 };
 
 // ---------------------------------------------------------------------------

@@ -13,6 +13,7 @@ import type {
   MeetingTranscriptionEngine,
   MeetingTranscriptionProgress,
   MeetingTranscript,
+  MeetingTranscriptSegment,
 } from "@x/shared/dist/meetings.js";
 import {
   calendarEventFromMeta,
@@ -34,7 +35,9 @@ import {
   confirmCommitment,
   readLedger,
   setCommitmentStatus,
+  askMeeting,
 } from "@x/core/dist/meetings/meetings.js";
+import { MeetingLiveTranscriber } from "./meeting-live.js";
 import type { LedgerCommitment, ProposedCommitment } from "@x/core/dist/meetings/meetings.js";
 import {
   readCommitmentProposals,
@@ -102,6 +105,17 @@ export class MeetingController {
   private onStateChange?: () => void;
   /** Above zero while a standby session is holding audio in memory. */
   private standbySeconds = 0;
+  /** The throwaway transcript produced while the meeting runs. Never written to the
+   *  note — the post-session pass is the record. */
+  private readonly live = new MeetingLiveTranscriber({
+    transcriber: () => this.transcriber(),
+    onSegments: (segments) => {
+      this.liveSegments.push(...segments);
+      const sessionId = this.sessionDir ? path.basename(this.sessionDir) : "";
+      broadcast("meeting:liveSegments", { sessionId, segments });
+    },
+  });
+  private liveSegments: MeetingTranscriptSegment[] = [];
   /** sessionId → note path, so the placeholder and the final note are one file. */
   private readonly notePaths = new Map<string, string>();
 
@@ -132,6 +146,17 @@ export class MeetingController {
     if (this.state !== "standby") return { started: false, error: "not standing by" };
     if (!this.sidecar.beginRecording()) {
       return { started: false, error: "the recorder did not accept the request" };
+    }
+    const config = await getTranscriptionConfig();
+    if (config.meetings?.liveTranscript && this.sessionDir) {
+      this.startLive(
+        this.sessionDir,
+        this.sidecar.tracks.map((id) => ({
+          id,
+          speaker: id === "mic" ? "me" : "them",
+          file: `${id}.wav`,
+        })),
+      );
     }
     const dir = this.sessionDir;
     if (dir) {
@@ -273,6 +298,14 @@ export class MeetingController {
           console.warn(`[meeting] could not create the note up front: ${(err as Error).message}`);
         }
 
+      // Live transcription only once actually recording — there is no file to read
+      // while standing by, which is the entire point of standing by.
+      if (this.standbySeconds === 0 && config.meetings?.liveTranscript) {
+        this.liveCounterparty = resolveCounterparty(calendarEvent, {
+          people: this.knownPeople(),
+        }).counterparty?.label;
+        this.startLive(dir, tracks);
+      }
       this.setState(this.standbySeconds > 0 ? "standby" : "recording");
       return {
         started: true,
@@ -517,6 +550,63 @@ export class MeetingController {
     }
   }
 
+  /** Start the live pass, tolerating a failure — it is an aid, not the record. */
+  private startLive(
+    dir: string,
+    tracks: MeetingTrackId[] | { id: string; speaker: string; file: string }[],
+  ): void {
+    this.liveSegments = [];
+    const normalized = tracks.map((track) =>
+      typeof track === "string"
+        ? { id: track, speaker: track === "mic" ? "me" : "them", file: `${track}.wav` }
+        : track,
+    );
+    try {
+      this.live.start(dir, normalized);
+    } catch (err) {
+      console.warn("[meeting] could not start live transcription:", err);
+    }
+  }
+
+  /** Display name for `them` in the live transcript, when the meeting is a named 1:1. */
+  private liveCounterparty: string | undefined;
+
+  /** The in-progress transcript, in order. */
+  liveTranscript(): {
+    active: boolean;
+    sessionId?: string;
+    counterparty?: string;
+    segments: MeetingTranscriptSegment[];
+  } {
+    if (!this.live.active) return { active: false, segments: [] };
+    return {
+      active: true,
+      sessionId: this.sessionDir ? path.basename(this.sessionDir) : undefined,
+      counterparty: this.liveCounterparty,
+      // Ordered by their own track clocks. Offsets are unknown until the session ends,
+      // so this is approximate — fine for reading, and the final pass fixes it.
+      segments: [...this.liveSegments].sort((a, b) => a.start_ms - b.start_ms),
+    };
+  }
+
+  /** Answer a question about the meeting in progress. */
+  async ask(question: string): Promise<{ answer: string; error?: string }> {
+    const live = this.liveTranscript();
+    if (!live.active) {
+      return { answer: "", error: "no meeting is being transcribed right now" };
+    }
+    try {
+      const answer = await askMeeting({
+        question,
+        segments: live.segments,
+        labels: { me: "You", them: live.counterparty ?? "Other" },
+      });
+      return { answer };
+    } catch (err) {
+      return { answer: "", error: (err as Error).message };
+    }
+  }
+
   /** Unconfirmed proposals for a session, with the name to show for `them`. */
   async commitments(
     sessionId: string,
@@ -647,7 +737,15 @@ export class MeetingController {
    * whether it was enqueued — a session with no `meta.json` (the sidecar died before
    * finalizing) is left on disk for `resumePending` rather than dropped.
    */
+  /** Torn down on every exit from a session, however it ended. */
+  private stopLive(): void {
+    this.live.stop();
+  }
+
   private async finishSession(dir: string): Promise<boolean> {
+    // Every exit from a session lands here — clean stop, sidecar crash, quit — so it is
+    // the one place the live pass has to be torn down.
+    this.stopLive();
     this.sessionDir = null;
     this.sessionStartedAt = null;
     this.setState("idle");

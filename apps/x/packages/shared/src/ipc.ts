@@ -1377,6 +1377,30 @@ const ipcSchemas = {
     req: z.object({ id: z.string(), status: z.enum(["open", "done", "dropped"]) }),
     res: z.object({ updated: z.boolean() }),
   },
+  /** The in-progress transcript of the session recording right now. */
+  "meeting:liveTranscript": {
+    req: z.null(),
+    res: z.object({
+      /** False when live transcription is off or nothing is recording. */
+      active: z.boolean(),
+      sessionId: z.string().optional(),
+      counterparty: z.string().optional(),
+      segments: z.array(meetings.MeetingTranscriptSegment).default([]),
+    }),
+  },
+  /** Ask a question about the meeting in progress. */
+  "meeting:ask": {
+    req: z.object({ question: z.string() }),
+    res: z.object({ answer: z.string(), error: z.string().optional() }),
+  },
+  /** Event (ipc.on): new live segments, main → renderer. */
+  "meeting:liveSegments": {
+    req: z.object({
+      sessionId: z.string(),
+      segments: z.array(meetings.MeetingTranscriptSegment),
+    }),
+    res: z.null(),
+  },
   /** One-time UI flags — things shown once that must not be shown again. */
   "ui:getState": {
     req: z.null(),

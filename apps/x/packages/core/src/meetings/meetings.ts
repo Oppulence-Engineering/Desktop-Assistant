@@ -68,6 +68,7 @@ export {
   validateCommitments,
 } from "./commitments.js";
 export { extractCommitments } from "./commitments-ai.js";
+export { askMeeting, renderForAsk, ASK_GUARD } from "./ask.js";
 export {
   commitmentId,
   confirmCommitment,

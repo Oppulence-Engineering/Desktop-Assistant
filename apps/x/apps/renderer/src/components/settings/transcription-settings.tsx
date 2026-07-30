@@ -821,6 +821,12 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                   </div>
                 </div>
                 <SettingToggle
+                  title="Live transcript while recording"
+                  hint="Transcribes in the background during the call so you can read along and ask questions mid-meeting. Off by default: it is a second transcription pass running on a machine already busy with the call."
+                  value={meetings.liveTranscript === true}
+                  onChange={(next) => void changeMeetings({ liveTranscript: next })}
+                />
+                <SettingToggle
                   title="Stand by before calendar meetings"
                   hint="Opens the microphone a couple of minutes early and holds the last few minutes in memory, writing nothing — so pressing record still catches what was already said. Off by default: arming a microphone should be your choice, not a side effect of your calendar."
                   value={meetings.standbyBeforeMeetings === true}

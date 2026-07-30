@@ -37,6 +37,8 @@ type MeetingCaptureHandlers = {
   "meeting:audioTracks": InvokeHandler<"meeting:audioTracks">;
   "meeting:commitments": InvokeHandler<"meeting:commitments">;
   "meeting:pendingCommitments": InvokeHandler<"meeting:pendingCommitments">;
+  "meeting:liveTranscript": InvokeHandler<"meeting:liveTranscript">;
+  "meeting:ask": InvokeHandler<"meeting:ask">;
   "meeting:confirmCommitment": InvokeHandler<"meeting:confirmCommitment">;
   "meeting:dismissCommitment": InvokeHandler<"meeting:dismissCommitment">;
   "meeting:ledger": InvokeHandler<"meeting:ledger">;
@@ -128,6 +130,12 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
     },
     "meeting:beginRecording": async () => {
       return controller().beginRecording();
+    },
+    "meeting:liveTranscript": async () => {
+      return controller().liveTranscript();
+    },
+    "meeting:ask": async (_event, args) => {
+      return controller().ask(args.question);
     },
     "meeting:pendingCommitments": async () => {
       return { sessions: await controller().pendingCommitments() };
