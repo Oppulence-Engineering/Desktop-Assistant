@@ -10,7 +10,7 @@ let usage = """
     oppulence-audiocap \(audiocapVersion) — local meeting capture + transcription (macOS 14.2+)
 
     USAGE
-      audiocap record     --out <session-dir> [--voice-processing]
+      audiocap record     --out <session-dir> [--voice-processing] [--standby <seconds>]
       audiocap doctor     [--json] [--probe-system-audio] [--out <recordings-root>]
       audiocap transcribe --in <audio> [--model v3|v2] [--language en] [--json]
       audiocap models     [--ensure] [--model v3|v2] [--json]
@@ -23,6 +23,12 @@ let usage = """
       system.wav (16 kHz mono 16-bit PCM), then writes meta.json on stop.
       Emits NDJSON events on stdout; logs to stderr. Stop with the line "stop"
       on stdin, or SIGTERM/SIGINT.
+
+      --standby <seconds> opens both sources but writes nothing, holding only the
+      last N seconds in memory. The line "record" on stdin then flushes what is
+      held and continues to disk, so the recording includes what was said before
+      anyone asked for it. Stopping while still standing by writes no files at
+      all and removes the session directory.
 
     doctor
       Reports microphone permission and the default input device. --json for machine
@@ -57,6 +63,7 @@ struct Args {
     var language: String?
     var json = false
     var voiceProcessing = false
+    var standbySeconds: Double = 0
     var ensure = false
     var probeSystemAudio = false
     var version = false
@@ -91,6 +98,9 @@ struct Args {
                 probeSystemAudio = true
             case "--voice-processing":
                 voiceProcessing = true
+            case "--standby":
+                index += 1
+                if index < rest.count { standbySeconds = Double(rest[index]) ?? 0 }
             case "--version", "-v":
                 version = true
             case "--help", "-h":
@@ -254,7 +264,10 @@ guard let outPath = args.out else {
 let session: Session
 do {
     session = try Session(dir: expand(outPath))
-    try session.start(voiceProcessing: args.voiceProcessing)
+    try session.start(
+        voiceProcessing: args.voiceProcessing,
+        standbySeconds: args.standbySeconds
+    )
 } catch {
     let code = (error as? Session.SessionError) != nil ? "no_audio_source" : "session_start_failed"
     Event.error(code: code, message: "\(error)").emit()
@@ -292,6 +305,11 @@ DispatchQueue.global(qos: .utility).async {
         case "stop":
             DispatchQueue.main.async { stopAndExit() }
             return
+        case "record":
+            // Promote a standby session. A no-op on one that is already recording, so
+            // a host that sends it twice cannot lose the buffer.
+            DispatchQueue.main.async { session.beginRecording() }
+            continue
         case "":
             continue
         default:

@@ -57,7 +57,7 @@ final class SystemAudioRecorder {
 
     var track: TrackWriter? { writer }
 
-    func start(writingTo url: URL) throws {
+    func start(writingTo url: URL, standbySeconds: Double = 0) throws {
         guard !isRecording else { return }
 
         let description = CATapDescription(stereoGlobalTapButExcludeProcesses: [])
@@ -76,7 +76,8 @@ final class SystemAudioRecorder {
             try createAggregateDevice(tapUUID: description.uuid)
             let trackWriter: TrackWriter
             do {
-                trackWriter = try TrackWriter(url: url, inputFormat: format)
+                trackWriter = try TrackWriter(
+                    url: url, inputFormat: format, standbySeconds: standbySeconds)
             } catch {
                 throw RecorderError.writerFailed(error)
             }

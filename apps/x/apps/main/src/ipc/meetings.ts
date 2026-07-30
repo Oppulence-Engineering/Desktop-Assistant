@@ -30,6 +30,8 @@ type MeetingCaptureHandlers = {
   "meeting:listSessions": InvokeHandler<"meeting:listSessions">;
   "meeting:retranscribe": InvokeHandler<"meeting:retranscribe">;
   "meeting:deleteSession": InvokeHandler<"meeting:deleteSession">;
+  "meeting:startStandby": InvokeHandler<"meeting:startStandby">;
+  "meeting:beginRecording": InvokeHandler<"meeting:beginRecording">;
   "meeting:deleteAllSessions": InvokeHandler<"meeting:deleteAllSessions">;
   "meeting:sessionTranscript": InvokeHandler<"meeting:sessionTranscript">;
   "ui:getState": InvokeHandler<"ui:getState">;
@@ -104,6 +106,22 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
       return controller().retranscribe(args.sessionId);
     },
 
+    "meeting:startStandby": async (_event, args) => {
+      const calendarEvent = args.calendarEventJson
+        ? (JSON.parse(args.calendarEventJson) as MeetingCalendarEvent)
+        : undefined;
+      const result = await controller().start(calendarEvent, { standby: true });
+      return {
+        started: result.started,
+        sessionId: result.sessionId,
+        tracks: result.tracks,
+        warnings: result.warnings,
+        error: result.error,
+      };
+    },
+    "meeting:beginRecording": async () => {
+      return controller().beginRecording();
+    },
     "meeting:sessionTranscript": async (_event, args) => {
       return controller().sessionTranscript(args.sessionId);
     },

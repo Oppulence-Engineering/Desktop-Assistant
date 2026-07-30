@@ -30,11 +30,16 @@ export interface CaptureEvents {
   /** The sidecar finished — cleanly or not. `metaPath` is present only when it wrote
    *  one, which is what tells the caller the session is safe to enqueue. */
   onStopped?: (result: { metaPath?: string; durationSeconds?: number; crashed: boolean }) => void;
+  /** Standby was promoted; `recoveredSeconds` is the audio kept from before the ask. */
+  onRecording?: (recoveredSeconds: number) => void;
 }
 
 export interface StartCaptureArgs extends CaptureEvents {
   dir: string;
   voiceProcessing: boolean;
+  /** Above zero, capture opens but writes nothing, holding only the last N seconds in
+   *  memory until `beginRecording()`. */
+  standbySeconds?: number;
 }
 
 /**
@@ -110,6 +115,7 @@ export class MeetingCaptureSidecar {
   private warnings: string[] = [];
   private metaPath: string | undefined;
   private sessionDir: string | null = null;
+  private standby = false;
 
   get running(): boolean {
     return this.child !== null;
@@ -121,6 +127,31 @@ export class MeetingCaptureSidecar {
 
   get sessionWarnings(): string[] {
     return [...this.warnings];
+  }
+
+  /** True while holding audio in memory and writing nothing. */
+  get standingBy(): boolean {
+    return this.standby;
+  }
+
+  /**
+   * Promote a standby session: the sidecar flushes what it is holding and continues to
+   * disk. Returns false when there was nothing standing by, so a caller cannot mistake
+   * a no-op for a started recording.
+   */
+  beginRecording(): boolean {
+    if (!this.child || !this.standby) return false;
+    try {
+      this.child.stdin.write("record\n");
+    } catch (err) {
+      console.error("[meeting] could not promote standby:", err);
+      return false;
+    }
+    // `standby` stays true until the sidecar's `recording` event clears it. The write
+    // only means the request was sent — the promote can still fail on the far side (a
+    // full disk, a directory that lost its permissions), and clearing it here would
+    // report a recording that is writing to nothing.
+    return true;
   }
 
   /**
@@ -136,10 +167,14 @@ export class MeetingCaptureSidecar {
     this.warnings = [];
     this.metaPath = undefined;
     this.sessionDir = args.dir;
+    this.standby = (args.standbySeconds ?? 0) > 0;
 
     const bin = audiocapBinaryPath();
     const argv = ["record", "--out", args.dir];
     if (args.voiceProcessing) argv.push("--voice-processing");
+    if ((args.standbySeconds ?? 0) > 0) {
+      argv.push("--standby", String(Math.round(args.standbySeconds!)));
+    }
 
     const child = spawn(bin, argv, { stdio: ["pipe", "pipe", "pipe"] });
     this.child = child;
@@ -263,6 +298,11 @@ export class MeetingCaptureSidecar {
           this.warnings.push(...event.warnings.map(String));
         }
         return "started";
+      }
+      case "recording": {
+        this.standby = false;
+        this.events.onRecording?.(Number(event.recoveredSeconds ?? 0));
+        return "recording";
       }
       case "level": {
         this.events.onLevel?.((event.peaks ?? {}) as Partial<Record<MeetingTrackId, number>>);

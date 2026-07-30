@@ -88,6 +88,8 @@ export class MeetingController {
   private silenceWatch: NodeJS.Timeout | null = null;
   private lastActivityAt = 0;
   private onStateChange?: () => void;
+  /** Above zero while a standby session is holding audio in memory. */
+  private standbySeconds = 0;
   /** sessionId → note path, so the placeholder and the final note are one file. */
   private readonly notePaths = new Map<string, string>();
 
@@ -100,6 +102,53 @@ export class MeetingController {
 
   get recording(): boolean {
     return this.state === "recording";
+  }
+
+  /** Holding audio in memory, writing nothing, ready to reach backwards. */
+  get standingBy(): boolean {
+    return this.state === "standby";
+  }
+
+  /**
+   * Promote a standby session. Everything the buffer holds becomes the start of the
+   * recording; `onRecording` moves the session's start time back to match.
+   *
+   * The note is written here rather than at standby time — a standby that is never
+   * promoted must leave nothing behind, including a note.
+   */
+  async beginRecording(): Promise<{ started: boolean; error?: string }> {
+    if (this.state !== "standby") return { started: false, error: "not standing by" };
+    if (!this.sidecar.beginRecording()) {
+      return { started: false, error: "the recorder did not accept the request" };
+    }
+    // The note is written from `onRecording`, not here: this only means the request
+    // was sent. A promote that fails on the far side must not leave a note for a
+    // recording that never started.
+    return { started: true };
+  }
+
+  /** Write the placeholder note for a session that has just begun recording. */
+  private async writePlaceholderNote(dir: string): Promise<void> {
+    const sessionId = path.basename(dir);
+    if (this.notePaths.has(sessionId)) return;
+    try {
+      this.notePath = await writeMeetingNote({
+        sessionId,
+        startedAt: (this.sessionStartedAt ?? new Date()).toISOString(),
+        segments: [],
+        calendarEvent: this.calendarEvent,
+        provenance: nativeProvenance({
+          model: this.modelId,
+          sessionId,
+          systemAudioCaptured: this.sidecar.tracks.includes("system"),
+        }),
+      });
+      this.notePaths.set(sessionId, this.notePath);
+    } catch (err) {
+      // A note we could not write is not a reason to abandon a recording — the
+      // transcript still lands, and the queue writes the note again afterwards.
+      console.warn(`[meeting] could not create the note up front: ${(err as Error).message}`);
+    }
   }
 
   get elapsedSeconds(): number {
@@ -125,7 +174,10 @@ export class MeetingController {
     return resumed.length;
   }
 
-  async start(calendarEvent?: MeetingCalendarEvent): Promise<{
+  async start(
+    calendarEvent?: MeetingCalendarEvent,
+    opts: { standby?: boolean } = {},
+  ): Promise<{
     started: boolean;
     sessionId?: string;
     notePath?: string;
@@ -148,6 +200,7 @@ export class MeetingController {
     this.setState("starting");
     const config = await getTranscriptionConfig();
     const root = recordingsRoot(config.meetings?.recordingsDir);
+    this.standbySeconds = opts.standby ? (config.meetings?.standbySeconds ?? 300) : 0;
 
     let dir: string;
     try {
@@ -161,6 +214,25 @@ export class MeetingController {
       const { tracks, warnings } = await this.sidecar.start({
         dir,
         voiceProcessing: config.meetings?.micVoiceProcessing ?? false,
+        standbySeconds: this.standbySeconds,
+        onRecording: (recoveredSeconds) => {
+          // The session really did begin earlier than the click. Moving this back keeps
+          // the note's timestamp, the elapsed clock and the transcript on one clock.
+          if (this.sessionStartedAt) {
+            this.sessionStartedAt = new Date(Date.now() - recoveredSeconds * 1000);
+          }
+          this.setState("recording");
+          // Only now, once the sidecar has confirmed it is writing.
+          void this.writePlaceholderNote(dir);
+        },
+        onError: (code, message) => {
+          console.error(`[meeting] sidecar error ${code}: ${message}`);
+          // The sidecar records errors into its warning list, but that list only
+          // reaches a window on the next state transition — and a promote that fails
+          // produces no transition at all, so the user would press Record and see
+          // nothing happen, forever.
+          broadcast<MeetingCaptureStatus>("meeting:captureState", this.statusSnapshot());
+        },
         onLevel: (peaks) => {
           // The renderer pipeline auto-stops after two minutes with no transcript; the
           // native path has no transcript stream to watch, so it watches levels. Without
@@ -183,28 +255,14 @@ export class MeetingController {
 
       // Write the note now, empty, so there is something to open while the meeting
       // runs — and remember its path so the post-transcription write lands on the
-      // same file rather than deriving a second one.
+      // same file rather than deriving a second one. Skipped while standing by: a
+      // standby that is never promoted leaves no session, so it must leave no note.
+      // The promote path writes it from `onRecording` instead, once the sidecar has
+      // confirmed it is actually writing.
       const sessionId = path.basename(dir);
-      try {
-        this.notePath = await writeMeetingNote({
-          sessionId,
-          startedAt: this.sessionStartedAt.toISOString(),
-          segments: [],
-          calendarEvent,
-          provenance: nativeProvenance({
-            model: this.modelId,
-            sessionId,
-            systemAudioCaptured: tracks.includes("system"),
-          }),
-        });
-        this.notePaths.set(sessionId, this.notePath);
-      } catch (err) {
-        // A note we could not write is not a reason to abandon a recording — the
-        // transcript still lands, and the queue writes the note again afterwards.
-        console.warn(`[meeting] could not create the note up front: ${(err as Error).message}`);
-      }
+      if (!this.standbySeconds) await this.writePlaceholderNote(dir);
 
-      this.setState("recording");
+      this.setState(this.standbySeconds > 0 ? "standby" : "recording");
       return {
         started: true,
         sessionId,
@@ -274,6 +332,7 @@ export class MeetingController {
       notePath: this.notePath,
       tracks: this.sidecar.tracks,
       warnings: this.sidecar.sessionWarnings,
+      standbySeconds: this.state === "standby" ? this.standbySeconds : 0,
       queueDepth: queue?.depth ?? 0,
       transcribingSessionId: queue?.transcribingSessionId,
     };

@@ -787,6 +787,51 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                     </Button>
                   </div>
                 )}
+                <div className="border border-border px-3.5 py-3">
+                  <p className="text-sm font-medium">When a calendar meeting starts</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Only for events with a video-call link.
+                  </p>
+                  <div className="mt-2.5 flex flex-col gap-1.5">
+                    {(
+                      [
+                        ["prompt", "Ask me", "A notification you can act on or ignore."],
+                        [
+                          "always",
+                          "Start recording",
+                          "Records without asking. You are still told each time it starts.",
+                        ],
+                        ["off", "Do nothing", "No notification, no recording."],
+                      ] as const
+                    ).map(([value, label, hint]) => (
+                      <label key={value} className="flex cursor-pointer items-start gap-2.5">
+                        <input
+                          type="radio"
+                          name="meeting-auto-start"
+                          className="mt-1"
+                          checked={(meetings.autoStart ?? "prompt") === value}
+                          onChange={() => void changeMeetings({ autoStart: value })}
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-sm">{label}</span>
+                          <span className="block text-xs text-muted-foreground">{hint}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <SettingToggle
+                  title="Stand by before calendar meetings"
+                  hint="Opens the microphone a couple of minutes early and holds the last few minutes in memory, writing nothing — so pressing record still catches what was already said. Off by default: arming a microphone should be your choice, not a side effect of your calendar."
+                  value={meetings.standbyBeforeMeetings === true}
+                  onChange={(next) => void changeMeetings({ standbyBeforeMeetings: next })}
+                />
+                <SettingToggle
+                  title="Warn me before a meeting if something is wrong"
+                  hint="Checks microphone and system-audio access, the input device, and disk space about two minutes before a call — and stays quiet when everything is fine"
+                  value={meetings.preflightNotifications !== false}
+                  onChange={(next) => void changeMeetings({ preflightNotifications: next })}
+                />
                 <SettingToggle
                   title="Echo cancellation"
                   hint="Turn on when the meeting plays through speakers, or their audio is transcribed twice — once as them, once as you. Leave off with headphones."

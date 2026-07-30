@@ -145,6 +145,7 @@ export function MeetingCaptureStrip() {
   if (available !== true) return null;
 
   const recording = status?.state === "recording";
+  const standby = status?.state === "standby";
   const micOnly = recording && !status.tracks.includes("system");
   const failures = doctor?.checks.filter((check) => check.status === "fail") ?? [];
   const untranscribed = sessions.filter((s) => !s.transcribed);
@@ -154,11 +155,12 @@ export function MeetingCaptureStrip() {
 
   // Offer the setup check once, and only when idle — interrupting a live recording to
   // suggest a test recording would be absurd.
-  const offerCheck = checkDone === false && !recording && !progress;
+  const offerCheck = checkDone === false && !recording && !standby && !progress;
 
   // Nothing to say: idle, healthy, nothing queued, nothing odd on disk.
   if (
     !recording &&
+    !standby &&
     !progress &&
     !offerCheck &&
     failures.length === 0 &&
@@ -208,6 +210,62 @@ export function MeetingCaptureStrip() {
           if (!next) setCheckDone(true);
         }}
       />
+
+      {standby && status && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            {/* Hollow amber, not a red dot with different words — the difference between
+                listening and keeping has to read before the text does. */}
+            <span className="size-2.5 rounded-full border-2 border-amber-500" />
+            <span className="font-medium text-foreground">Standing by</span>
+            <span className="text-xs text-muted-foreground">
+              · listening, writing nothing · press record to keep the last{" "}
+              {Math.max(1, Math.round((status.standbySeconds || 300) / 60))} minutes
+            </span>
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => void window.ipc.invoke("meeting:beginRecording", null)}
+              >
+                Record
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => void window.ipc.invoke("meeting:stopCapture", null)}
+              >
+                Stop
+              </Button>
+            </div>
+          </div>
+          <div className="max-w-sm space-y-1">
+            {(status.tracks.length > 0 ? status.tracks : (["mic"] as MeetingTrackId[])).map(
+              (track) => (
+                <LevelBar key={track} track={track} peak={levels[track] ?? 0} />
+              ),
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Whatever the recorder itself has said about this session. Without this a
+          sidecar error is logged to a console nobody reads, and a user who pressed
+          Record and got nothing has no way to find out why. */}
+      {(recording || standby) && (status?.warnings.length ?? 0) > 0 && (
+        <ul className="mb-2 space-y-0.5">
+          {status!.warnings.slice(-3).map((warning, index) => (
+            <li
+              key={index}
+              className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-500"
+            >
+              <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
+              {warning}
+            </li>
+          ))}
+        </ul>
+      )}
 
       {recording && (
         <div className="space-y-2">

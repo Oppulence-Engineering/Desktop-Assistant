@@ -6,7 +6,10 @@ import Foundation
 enum Event {
     /// Emitted once both recorders have been attached, listing the tracks that
     /// actually started. A track missing here never started; `warnings` says why.
-    case started(tracks: [[String: Any]], warnings: [String])
+    case started(tracks: [[String: Any]], warnings: [String], standby: Bool)
+    /// Standby was promoted to a real recording. `recoveredSeconds` is how much audio
+    /// from before the request was kept — the whole point of standing by.
+    case recording(recoveredSeconds: Double)
     /// Per-track peak amplitude (0...1) over the last window. Also the liveness
     /// signal: a track reporting 0 for the whole meeting recorded digital silence.
     case level(peaks: [String: Float])
@@ -22,8 +25,12 @@ enum Event {
 
     private var payload: [String: Any] {
         switch self {
-        case .started(let tracks, let warnings):
-            return ["type": "started", "tracks": tracks, "warnings": warnings]
+        case .started(let tracks, let warnings, let standby):
+            return [
+                "type": "started", "tracks": tracks, "warnings": warnings, "standby": standby,
+            ]
+        case .recording(let recoveredSeconds):
+            return ["type": "recording", "recoveredSeconds": recoveredSeconds]
         case .level(let peaks):
             return ["type": "level", "peaks": peaks]
         case .warning(let code, let message):

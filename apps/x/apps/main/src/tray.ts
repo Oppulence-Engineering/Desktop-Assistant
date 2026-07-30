@@ -79,20 +79,41 @@ async function rebuild(controller: MeetingController): Promise<void> {
   // One-sided capture is worth surfacing here too: the tray is where someone looks
   // when they are unsure the meeting is being recorded properly.
   const micOnly = recording && !status.tracks.includes("system");
+  const standingBy = controller.standingBy;
 
   tray.setContextMenu(
     Menu.buildFromTemplate([
       recording
         ? { label: `Recording — ${clock(elapsed)}`, enabled: false }
-        : { label: "Not recording", enabled: false },
+        : standingBy
+          ? { label: "Standing by — nothing is being written", enabled: false }
+          : { label: "Not recording", enabled: false },
       ...(micOnly ? [{ label: "Microphone only — no system audio", enabled: false } as const] : []),
       { type: "separator" as const },
       {
-        label: recording ? "Stop recording" : "Start recording",
+        label: recording ? "Stop recording" : standingBy ? "Keep it" : "Start recording",
         click: () => {
-          void (recording ? controller.stop() : controller.start());
+          if (recording) void controller.stop();
+          else if (standingBy) void controller.beginRecording();
+          else void controller.start();
         },
       },
+      // Standby lives here rather than as a card in the Meetings view. It is reached for
+      // before a call, when the app is very likely not the window in front of you — and
+      // a permanent "Stand by" banner in a view you open for other reasons is noise the
+      // rest of the time.
+      ...(recording
+        ? []
+        : [
+            {
+              label: standingBy ? "Discard and stop" : "Stand by (keep the last minutes)",
+              click: () => {
+                void (standingBy
+                  ? controller.stop()
+                  : controller.start(undefined, { standby: true }));
+              },
+            } as const,
+          ]),
       ...(queueLabel ? [{ label: queueLabel, enabled: false } as const] : []),
       { type: "separator" as const },
       {

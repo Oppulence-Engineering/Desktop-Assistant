@@ -58,6 +58,13 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .dot::after { animation: none; } }
 .dot.paused { background: #a1a1aa; }
 .dot.paused::after { animation: none; }
+/* Standby is amber and hollow — deliberately not a red dot with different copy.
+   A live microphone that looks identical to a recording one is the confusion this
+   whole surface exists to prevent, and colour reads before text does. */
+.dot.standby { background: transparent; border: 2px solid #f59e0b; width: 10px; height: 10px; }
+.dot.standby::after { animation: none; background: transparent; }
+.label { flex: none; font-size: 10px; letter-spacing: 0.02em; color: #fcd34d; }
+.pill.standby-pill { background: rgba(41, 37, 24, 0.94); border-color: rgba(245, 158, 11, 0.35); }
 
 .time { flex: none; font-variant-numeric: tabular-nums; font-size: 13px; letter-spacing: 0.2px; }
 .tracks { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
@@ -78,7 +85,32 @@ const CSS = `
 .stop:disabled { opacity: 0.5; cursor: default; }
 .stop > span { display: block; width: 9px; height: 9px; border-radius: 1.5px; background: currentColor; }
 .warn { flex: none; font-size: 10px; color: #fbbf24; -webkit-app-region: no-drag; }
+
+.record {
+  -webkit-app-region: no-drag;
+  flex: none; display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid rgba(245,158,11,0.4); background: rgba(245, 158, 11, 0.18);
+  color: #fcd34d; cursor: pointer; padding: 0;
+}
+.record:hover { background: rgba(239, 68, 68, 0.35); color: #fff; border-color: rgba(239,68,68,0.5); }
+.record > span { display: block; width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+.dismiss { width: 22px; height: 22px; background: transparent; border-color: rgba(255,255,255,0.14); color: rgba(250,250,250,0.6); }
+.dismiss:hover:not(:disabled) { background: rgba(255,255,255,0.08); color: #fff; }
+.cross { position: relative; width: 8px; height: 8px; }
+.cross::before, .cross::after {
+  content: ""; position: absolute; top: 3px; left: -1px; width: 10px; height: 1.5px;
+  background: currentColor; border-radius: 1px;
+}
+.cross::before { transform: rotate(45deg); }
+.cross::after { transform: rotate(-45deg); }
 `;
+
+/** What "standby" actually promises, in the tooltip rather than the pill. */
+function standbyHint(seconds: number): string {
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  return `Listening but writing nothing. Press record to keep the last ${minutes} minute${minutes === 1 ? "" : "s"}.`;
+}
 
 function Meter({ track, peak }: { track: MeetingTrackId; peak: number }) {
   // Same perceptual curve as the in-app strip, so the two never disagree about how
@@ -132,6 +164,7 @@ function Indicator() {
   }, [status?.startedAt]);
 
   const recording = status?.state === "recording";
+  const standby = status?.state === "standby";
   const tracks = status?.tracks?.length ? status.tracks : (["mic"] as MeetingTrackId[]);
   // Mic-only is worth saying here and not only in the app: it is the difference between
   // a transcript of a conversation and a transcript of one person talking.
@@ -147,12 +180,26 @@ function Indicator() {
     }
   };
 
+  const beginRecording = async () => {
+    try {
+      await window.ipc.invoke("meeting:beginRecording", null);
+    } catch {
+      // The next state broadcast is the source of truth either way.
+    }
+  };
+
   return (
     <>
       <style>{CSS}</style>
-      <div className="pill">
-        <span className={`dot${recording ? "" : " paused"}`} />
-        <span className="time">{clock(elapsed)}</span>
+      <div className={`pill${standby ? " standby-pill" : ""}`}>
+        <span className={`dot${standby ? " standby" : recording ? "" : " paused"}`} />
+        {standby ? (
+          <span className="label" title={standbyHint(status?.standbySeconds ?? 0)}>
+            STANDBY
+          </span>
+        ) : (
+          <span className="time">{clock(elapsed)}</span>
+        )}
         {micOnly && (
           <span className="warn" title="System audio is not being captured">
             mic only
@@ -163,15 +210,37 @@ function Indicator() {
             <Meter key={track} track={track} peak={levels[track] ?? 0} />
           ))}
         </div>
+        {standby ? (
+          <button
+            type="button"
+            className="record"
+            onClick={() => void beginRecording()}
+            title={`Keep the last ${Math.round((status?.standbySeconds ?? 0) / 60)} minutes and record`}
+            aria-label="Start recording, keeping what was already said"
+          >
+            <span />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="stop"
+            onClick={() => void stop()}
+            disabled={stopping || !recording}
+            title="Stop recording"
+            aria-label="Stop recording"
+          >
+            <span />
+          </button>
+        )}
         <button
           type="button"
-          className="stop"
+          className="stop dismiss"
           onClick={() => void stop()}
-          disabled={stopping || !recording}
-          title="Stop recording"
-          aria-label="Stop recording"
+          title={standby ? "Discard the buffer and stop" : undefined}
+          aria-label="Stop"
+          hidden={!standby}
         >
-          <span />
+          <span className="cross" />
         </button>
       </div>
     </>

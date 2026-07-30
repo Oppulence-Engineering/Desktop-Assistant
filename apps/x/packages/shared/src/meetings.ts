@@ -74,6 +74,35 @@ export const MeetingsSettings = z.object({
   parakeetModel: ParakeetModel.default("v3"),
   /** Queue a session for transcription the moment it stops. */
   transcribeOnStop: z.boolean().default(true),
+  /**
+   * What to do when a calendar meeting with a join link starts.
+   *
+   * `prompt` is the default and the only one that ships on by default: recording people
+   * is consent-shaped, and a notification you can act on or ignore *is* the consent
+   * step. `always` skips it, which is a choice a user has to make deliberately —
+   * `autoStartSilentOrganizers` is the narrower version of the same choice, for the
+   * recurring meetings you have already decided about.
+   */
+  autoStart: z.enum(["off", "prompt", "always"]).default("prompt"),
+  /** Organizer emails whose meetings start recording without asking. */
+  autoStartSilentOrganizers: z.array(z.string()).default([]),
+  /** Warn before a meeting when this machine is not ready to record it. */
+  preflightNotifications: z.boolean().default(true),
+  /**
+   * How far back "record" can reach when standing by, in seconds. Bounded on purpose:
+   * "we hold the last five minutes" is a promise someone can check, and it caps what
+   * standby could ever retain at roughly 20 MB of memory across both tracks.
+   */
+  standbySeconds: z.number().min(30).max(900).default(300),
+  /**
+   * Open the microphone into the standby buffer a couple of minutes before a calendar
+   * meeting, so pressing record catches what was already said.
+   *
+   * Off by default, and it has to be. Arming a microphone is the one thing here that
+   * happens to you rather than because of you, and "we only open it before meetings you
+   * scheduled" is a reason, not a consent. The manual control is always available.
+   */
+  standbyBeforeMeetings: z.boolean().default(false),
 });
 export type MeetingsSettings = z.infer<typeof MeetingsSettings>;
 
@@ -85,6 +114,11 @@ export const DEFAULT_MEETINGS_SETTINGS: MeetingsSettings = {
   transcriptionEngine: "whisper",
   parakeetModel: "v3",
   transcribeOnStop: true,
+  autoStart: "prompt",
+  autoStartSilentOrganizers: [],
+  preflightNotifications: true,
+  standbySeconds: 300,
+  standbyBeforeMeetings: false,
 };
 
 // ---------------------------------------------------------------------------
@@ -174,7 +208,13 @@ export type MeetingTranscript = z.infer<typeof MeetingTranscript>;
 // Runtime surface
 // ---------------------------------------------------------------------------
 
-export const MeetingCaptureState = z.enum(["idle", "starting", "recording", "stopping"]);
+/**
+ * `standby` is capture running with nothing written to disk — the last few minutes held
+ * in memory so "record" can reach backwards. It is a distinct state and not a flavour of
+ * recording, because every surface has to be able to show the difference: a live
+ * microphone the user cannot see is exactly what this product refuses to be.
+ */
+export const MeetingCaptureState = z.enum(["idle", "starting", "standby", "recording", "stopping"]);
 export type MeetingCaptureState = z.infer<typeof MeetingCaptureState>;
 
 export const MeetingCaptureStatus = z.object({
@@ -187,6 +227,8 @@ export const MeetingCaptureStatus = z.object({
   /** Track ids that opened successfully — absence of `system` means one-sided capture. */
   tracks: z.array(MeetingTrackId).default([]),
   warnings: z.array(z.string()).default([]),
+  /** How far back a standby session can reach, in seconds. Zero when not standing by. */
+  standbySeconds: z.number().default(0),
   /** Sessions waiting to transcribe, plus the one in flight. */
   queueDepth: z.number().default(0),
   transcribingSessionId: z.string().optional(),
