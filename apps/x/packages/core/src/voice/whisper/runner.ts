@@ -414,7 +414,11 @@ export async function transcribePcm(pcm: Int16Array, opts: RunOpts): Promise<Run
         rms: Number(stats.rms.toFixed(1)),
         activePct: Number((stats.activeRatio * 100).toFixed(1)),
       });
-      return run(wavPath, { ...opts, vadModelPath: undefined });
+      // `await`, not a bare return: returning the promise from inside this `try`
+      // lets the `finally` delete the temp WAV while whisper-cli is still starting,
+      // so every retry died with "input file not found" — the rescue path for quiet
+      // speech never actually worked.
+      return await run(wavPath, { ...opts, vadModelPath: undefined });
     }
     return result;
   } finally {

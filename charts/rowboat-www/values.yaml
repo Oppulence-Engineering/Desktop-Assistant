@@ -74,7 +74,13 @@ probes:
     timeoutSeconds: 5
     failureThreshold: 6
 
-podAnnotations: {}
+podAnnotations:
+  # This pod mounts an emptyDir at /tmp (see templates/deployment.yaml).
+  # Cluster Autoscaler refuses to evict any pod with local storage, so without
+  # this annotation a single rowboat-www replica pins whatever node it lands on
+  # open indefinitely — it held a CCX23 in us-east for 33 days.
+  # /tmp is scratch, so eviction is safe.
+  cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
 podLabels: {}
 podSecurityContext:
   runAsNonRoot: true

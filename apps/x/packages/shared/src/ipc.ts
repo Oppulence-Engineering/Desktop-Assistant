@@ -83,6 +83,7 @@ import {
   VoicePrivacySettings,
   DiarizationSettings,
 } from "./transcription.js";
+import * as meetings from "./meetings.js";
 
 // ============================================================================
 // Runtime Validation Schemas (Single Source of Truth)
@@ -1135,6 +1136,8 @@ const ipcSchemas = {
       privacy: VoicePrivacySettings.partial().optional(),
       // RFC 017: on-device diarization settings (incl. the Local-diarization-beta toggle).
       diarization: DiarizationSettings.partial().optional(),
+      // Native dual-track capture: engine, echo cancellation, audio retention.
+      meetings: meetings.MeetingsSettings.partial().optional(),
     }),
     res: TranscriptionConfig,
   },
@@ -1157,6 +1160,104 @@ const ipcSchemas = {
     res: z.object({
       notes: z.string(),
     }),
+  },
+  // ---- Native dual-track capture (oppulence-audiocap sidecar) ----
+  /** Which engine a start would actually use, so the renderer knows whether to run
+   *  its own pipeline or hand off to the sidecar. */
+  "meeting:captureEngine": {
+    req: z.null(),
+    res: z.object({ engine: meetings.MeetingResolvedEngine }),
+  },
+  "meeting:startCapture": {
+    req: z.object({ calendarEventJson: z.string().optional() }),
+    res: z.object({
+      started: z.boolean(),
+      sessionId: z.string().optional(),
+      notePath: z.string().optional(),
+      tracks: z.array(meetings.MeetingTrackId).default([]),
+      warnings: z.array(z.string()).default([]),
+      error: z.string().optional(),
+    }),
+  },
+  "meeting:stopCapture": {
+    req: z.null(),
+    res: z.object({
+      stopped: z.boolean(),
+      sessionId: z.string().optional(),
+      queued: z.boolean().default(false),
+    }),
+  },
+  "meeting:captureStatus": {
+    req: z.null(),
+    res: meetings.MeetingCaptureStatus,
+  },
+  "meeting:listSessions": {
+    req: z.null(),
+    res: z.object({ sessions: z.array(meetings.MeetingSessionSummary) }),
+  },
+  "meeting:retranscribe": {
+    req: z.object({ sessionId: z.string() }),
+    res: z.object({ queued: z.boolean(), error: z.string().optional() }),
+  },
+  "meeting:deleteSession": {
+    /** `deleteNote` is opt-in: the note is the durable artifact and may have been
+     *  edited since, so removing a recording does not take it by default. Only the
+     *  flag crosses the wire — main derives the note path from the session itself, so
+     *  nothing can ask for an arbitrary file to be deleted. */
+    req: z.object({ sessionId: z.string(), deleteNote: z.boolean().default(false) }),
+    res: z.object({ deleted: z.boolean(), noteDeleted: z.boolean().default(false) }),
+  },
+  "meeting:captureDoctor": {
+    /** Probing system-audio access can raise the OS permission dialog, so it only
+     *  happens behind an explicit user action — never on a view mounting. */
+    req: z.object({ probeSystemAudio: z.boolean().default(false) }),
+    res: meetings.MeetingDoctorReport,
+  },
+  /** Whether the fast (Parakeet) transcription models are downloaded. */
+  "meeting:transcriptionModels": {
+    req: z.null(),
+    res: z.object({
+      ready: z.boolean(),
+      model: z.string(),
+      cacheDir: z.string(),
+      /** False when the sidecar is missing, so the UI can explain why it cannot offer it. */
+      available: z.boolean(),
+    }),
+  },
+  /** Download them (~600 MB). Progress arrives on `meeting:modelProgress`. */
+  "meeting:ensureTranscriptionModels": {
+    req: z.null(),
+    res: z.object({ ready: z.boolean(), error: z.string().optional() }),
+  },
+  /** Event (ipc.on): transcription-model download progress, main → renderer. */
+  "meeting:modelProgress": {
+    req: z.object({ fraction: z.number(), phase: z.string() }),
+    res: z.null(),
+  },
+  /** Event (ipc.on): capture state changed. Broadcast on every transition so a
+   *  tray-started session shows up in the window, and vice versa. */
+  "meeting:captureState": {
+    req: meetings.MeetingCaptureStatus,
+    res: z.null(),
+  },
+  /** Event (ipc.on): per-track peak levels while recording, main → renderer. */
+  "meeting:captureLevel": {
+    req: meetings.MeetingLevels,
+    res: z.null(),
+  },
+  /** Event (ipc.on): transcription queue progress, main → renderer. */
+  "meeting:captureProgress": {
+    req: meetings.MeetingTranscriptionProgress,
+    res: z.null(),
+  },
+  /** Event (ipc.on): capture stopped without being asked (sidecar crash, quit). */
+  "meeting:captureEnded": {
+    req: z.object({
+      sessionId: z.string(),
+      crashed: z.boolean(),
+      queued: z.boolean(),
+    }),
+    res: z.null(),
   },
   // Inline task schedule classification
   "export:note": {

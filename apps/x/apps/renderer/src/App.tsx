@@ -996,9 +996,19 @@ function App() {
   voiceRef.current = voice;
 
   const handleToggleMeetingRef = useRef<(() => void) | undefined>(undefined);
-  const meetingTranscription = useMeetingTranscription(() => {
-    handleToggleMeetingRef.current?.();
-  });
+  const meetingTranscription = useMeetingTranscription(
+    () => {
+      handleToggleMeetingRef.current?.();
+    },
+    () => {
+      // Recording continues with mic only — say so, because a transcript with
+      // nothing but "You" turns otherwise looks like the meeting was silent.
+      toast.warning("System audio unavailable — recording your microphone only.", {
+        description:
+          "Grant Screen & System Audio Recording in System Settings to capture the other side of the call.",
+      });
+    },
+  );
   // Mirror of the live transcription state for the [] -dep join handler. (ERRORS.md E18)
   const meetingStateRef = useRef(meetingTranscription.state);
   meetingStateRef.current = meetingTranscription.state;
