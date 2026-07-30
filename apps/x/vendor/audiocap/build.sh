@@ -33,6 +33,17 @@ if [ "$(uname -s)" != "Darwin" ]; then
   exit 2
 fi
 
+# FluidAudio's manifest declares swift-tools-version 6.0, so an older toolchain cannot
+# even resolve the dependency. Say that, rather than letting SwiftPM report it as a
+# property of *this* package.
+SWIFT_MAJOR="$(swift build --help >/dev/null 2>&1 && swift --version 2>/dev/null | sed -n 's/.*Swift version \([0-9]*\).*/\1/p' | head -1)"
+if [ -n "$SWIFT_MAJOR" ] && [ "$SWIFT_MAJOR" -lt 6 ] 2>/dev/null; then
+  echo "error: Swift 6 or newer is required (found $(swift --version 2>/dev/null | head -1))." >&2
+  echo "       The FluidAudio dependency declares swift-tools-version 6.0." >&2
+  echo "       On CI use a macos-15+ image; locally, update Xcode or the Command Line Tools." >&2
+  exit 2
+fi
+
 SDK="${SDKROOT:-$(xcrun --show-sdk-path)}"
 [ -d "$SDK" ] || { echo "error: no macOS SDK at $SDK" >&2; exit 2; }
 

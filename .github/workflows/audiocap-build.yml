@@ -27,15 +27,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-14, plat: darwin, arch: arm64, target: arm64 }
-          # Cross-compile the Intel binary on an Apple-Silicon runner: `swiftc
-          # -target x86_64-apple-macos…` targets Intel regardless of host arch, and
-          # macos-14 (arm64) runners are plentiful whereas Intel runners can sit
-          # queued for hours. build.sh skips its smoke test when cross-building.
-          - { os: macos-14, plat: darwin, arch: x64, target: x86_64 }
+          # macos-15+: the FluidAudio dependency declares swift-tools-version 6.0, which
+          # the macos-14 image's default Xcode 15 (Swift 5.10) cannot resolve at all.
+          - { os: macos-15, plat: darwin, arch: arm64, target: arm64 }
+          # Cross-compile the Intel binary on an Apple-Silicon runner: SwiftPM's
+          # --arch targets Intel regardless of host arch, and arm64 runners are
+          # plentiful whereas Intel ones can sit queued for hours. build.sh skips its
+          # smoke test when cross-building.
+          - { os: macos-15, plat: darwin, arch: x64, target: x86_64 }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: swift --version && xcodebuild -version
 
       # Unit tests for the pure logic (token→word→segment). Host arch only, since the
       # cross-built leg cannot run what it produces. XCTest ships with Xcode, which the
