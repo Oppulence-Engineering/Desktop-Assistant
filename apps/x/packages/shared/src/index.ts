@@ -20,5 +20,6 @@ export * as billing from "./billing.js";
 export * as transcription from "./transcription.js";
 export * as diarization from "./diarization.js";
 export * as meetings from "./meetings.js";
+export * as calendar from "./calendar.js";
 export * as relationships from "./relationships.js";
 export { PrefixLogger };

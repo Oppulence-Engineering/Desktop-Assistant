@@ -5843,13 +5843,16 @@ function App() {
 
   const handleToggleMeeting = useCallback(async () => {
     if (meetingTranscription.state === "recording") {
-      await meetingTranscription.stop();
+      const { engine } = await meetingTranscription.stop();
       setRecordingMeetingSource(null);
       // Clear any stale pending calendar event so it can't attach to a later run. (ERRORS.md E18)
       pendingCalendarEventRef.current = undefined;
 
-      // Read the final transcript and generate meeting notes via LLM
-      const notePath = meetingNotePathRef.current;
+      // Read the final transcript and generate meeting notes via LLM.
+      // Native capture transcribes asynchronously after stop, so its note is still the
+      // empty placeholder here — summarizing it produced invented notes that the queue
+      // then overwrote. That path summarizes in the queue instead, once a transcript exists.
+      const notePath = engine === "native" ? null : meetingNotePathRef.current;
       if (notePath) {
         setMeetingSummarizing(true);
         try {

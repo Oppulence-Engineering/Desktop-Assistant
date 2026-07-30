@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { formatRelativeTime } from "@/lib/relative-time";
-import { extractConferenceLink } from "@/lib/calendar-event";
+import { conferenceProviderLabel, extractConferenceLink, isEventNow } from "@/lib/calendar-event";
 import { cn } from "@/lib/utils";
 import type { MeetingTranscriptionState } from "@/hooks/useMeetingTranscription";
 import { MeetingCaptureStrip } from "@/components/meeting-capture-strip";
@@ -274,23 +274,8 @@ function formatEventTimeRangeCompact(event: UpcomingEvent): string {
   return `${startStr} – ${endStr}`;
 }
 
-// Whether a timed event is happening right now.
-function isEventNow(event: UpcomingEvent): boolean {
-  if (event.isAllDay) return false;
-  const now = Date.now();
-  const start = event.start.getTime();
-  const end = event.end ? event.end.getTime() : start + 30 * 60 * 1000;
-  return start <= now && now < end;
-}
-
 // Human label for the conferencing provider behind an event's join link.
-function meetingPlatformLabel(link: string | null): string | null {
-  if (!link) return null;
-  if (/zoom\.us|zoomgov\.com/i.test(link)) return "Zoom";
-  if (/teams\.(?:microsoft|live)\.com/i.test(link)) return "Teams";
-  if (/meet\.google\.com/i.test(link)) return "Meet";
-  return "Video call";
-}
+const meetingPlatformLabel = conferenceProviderLabel;
 
 function formatEventDetailTime(event: UpcomingEvent): string {
   if (!event.isAllDay) {
