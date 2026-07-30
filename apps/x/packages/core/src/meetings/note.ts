@@ -5,7 +5,10 @@ import {
   type MeetingSessionMeta,
   type MeetingTranscript,
 } from "@x/shared/dist/meetings.js";
-import { writeFile } from "../workspace/workspace.js";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import { WorkDir } from "../config/config.js";
+import { remove, writeFile } from "../workspace/workspace.js";
 
 /**
  * The workspace note a finished session produces.
@@ -82,6 +85,48 @@ export function calendarEventFromMeta(
   } catch {
     return undefined;
   }
+}
+
+/**
+ * The note a finished session produced, if it is still on disk.
+ *
+ * Derived rather than stored, and only returned when the file exists: offering to open
+ * — or delete — a note the user has since moved or removed is worse than offering
+ * nothing. Deriving it here also means a caller never has to hand a path in, so nothing
+ * can ask for an arbitrary file to be deleted.
+ */
+export async function existingNotePath(
+  sessionId: string,
+  meta: Pick<MeetingSessionMeta, "started" | "calendar_event">,
+): Promise<string | undefined> {
+  const relative = meetingNotePath({
+    startedAt: new Date(meta.started),
+    sessionId,
+    calendarEvent: calendarEventFromMeta(meta),
+  });
+  try {
+    await fs.access(path.join(WorkDir, relative));
+    return relative;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Delete a session's note, if it has one. Returns whether anything was removed.
+ *
+ * Goes through the workspace layer, which keeps the path inside the workspace and moves
+ * to trash rather than unlinking — a meeting note may have been edited or summarized
+ * since it was written, so deleting one should be recoverable.
+ */
+export async function deleteMeetingNote(
+  sessionId: string,
+  meta: Pick<MeetingSessionMeta, "started" | "calendar_event">,
+): Promise<boolean> {
+  const relative = await existingNotePath(sessionId, meta);
+  if (!relative) return false;
+  await remove(relative);
+  return true;
 }
 
 export interface WriteMeetingNoteArgs {

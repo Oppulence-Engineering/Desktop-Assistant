@@ -1200,8 +1200,12 @@ const ipcSchemas = {
     res: z.object({ queued: z.boolean(), error: z.string().optional() }),
   },
   "meeting:deleteSession": {
-    req: z.object({ sessionId: z.string() }),
-    res: z.object({ deleted: z.boolean() }),
+    /** `deleteNote` is opt-in: the note is the durable artifact and may have been
+     *  edited since, so removing a recording does not take it by default. Only the
+     *  flag crosses the wire — main derives the note path from the session itself, so
+     *  nothing can ask for an arbitrary file to be deleted. */
+    req: z.object({ sessionId: z.string(), deleteNote: z.boolean().default(false) }),
+    res: z.object({ deleted: z.boolean(), noteDeleted: z.boolean().default(false) }),
   },
   "meeting:captureDoctor": {
     /** Probing system-audio access can raise the OS permission dialog, so it only

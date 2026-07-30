@@ -55,6 +55,9 @@ export function MeetingRecordings({ onOpenNote }: { onOpenNote?: (path: string) 
   const [sessions, setSessions] = useState<MeetingSessionSummary[]>([]);
   const [busy, setBusy] = useState<Record<string, RowState>>({});
   const [pendingDelete, setPendingDelete] = useState<MeetingSessionSummary | null>(null);
+  // Opt-in, and reset every time the dialog opens: "also delete the note" should never
+  // be sticky from a previous deletion.
+  const [alsoDeleteNote, setAlsoDeleteNote] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -113,15 +116,26 @@ export function MeetingRecordings({ onOpenNote }: { onOpenNote?: (path: string) 
     setError(null);
     setRow(session.id, { deleting: true });
     try {
-      const { deleted } = await window.ipc.invoke("meeting:deleteSession", {
+      const { deleted, noteDeleted } = await window.ipc.invoke("meeting:deleteSession", {
         sessionId: session.id,
+        deleteNote: alsoDeleteNote,
       });
-      if (!deleted) setError("Could not delete this recording — it may still be recording.");
+      if (!deleted) {
+        setError("Could not delete this recording — it may still be recording.");
+      } else if (alsoDeleteNote && !noteDeleted) {
+        // The recording is gone but the note is not; say so rather than implying both.
+        setError("The recording was deleted, but its note could not be found.");
+      }
     } finally {
       setRow(session.id, { deleting: false });
       void refresh();
     }
-  }, [pendingDelete, refresh, setRow]);
+  }, [alsoDeleteNote, pendingDelete, refresh, setRow]);
+
+  const openDeleteDialog = useCallback((session: MeetingSessionSummary) => {
+    setAlsoDeleteNote(false);
+    setPendingDelete(session);
+  }, []);
 
   if (sessions.length === 0) return null;
 
@@ -206,7 +220,7 @@ export function MeetingRecordings({ onOpenNote }: { onOpenNote?: (path: string) 
                 aria-label={`Delete recording from ${startedLabel(session.startedAt)}`}
                 className="h-7 shrink-0 px-2 text-xs text-muted-foreground hover:text-destructive"
                 disabled={row?.deleting || row?.retrying}
-                onClick={() => setPendingDelete(session)}
+                onClick={() => openDeleteDialog(session)}
               >
                 {row?.deleting ? (
                   <Loader2 className="size-3 animate-spin" />

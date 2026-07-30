@@ -44,6 +44,8 @@ export { recoverOrphanedSessions, recoverSessionMeta, RECOVERED_WARNING } from "
 
 export {
   calendarEventFromMeta,
+  deleteMeetingNote,
+  existingNotePath,
   meetingNotePath,
   nativeProvenance,
   writeMeetingNote,

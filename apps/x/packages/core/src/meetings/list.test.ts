@@ -99,3 +99,28 @@ describe("listSessionSummaries", () => {
     expect(await list.listSessionSummaries(root)).toEqual([]);
   });
 });
+
+describe("deleteMeetingNote", () => {
+  it("removes the note and reports it", async () => {
+    const dir = await finished("2026.07.29-1400");
+    const { deleteMeetingNote, meetingNotePath } = await import("./note.js");
+    const meta = (await session.readMeta(dir))!;
+    const rel = meetingNotePath({
+      startedAt: new Date(meta.started),
+      sessionId: "2026.07.29-1400",
+    });
+    await fs.mkdir(path.join(tmpDir, path.dirname(rel)), { recursive: true });
+    await fs.writeFile(path.join(tmpDir, rel), "# note");
+
+    expect(await deleteMeetingNote("2026.07.29-1400", meta)).toBe(true);
+    await expect(fs.access(path.join(tmpDir, rel))).rejects.toThrow();
+  });
+
+  it("reports false when there is no note, rather than throwing", async () => {
+    const dir = await finished("2026.07.29-1500");
+    const { deleteMeetingNote } = await import("./note.js");
+    const meta = (await session.readMeta(dir))!;
+    // Nothing was ever written for this session.
+    expect(await deleteMeetingNote("2026.07.29-1500", meta)).toBe(false);
+  });
+});

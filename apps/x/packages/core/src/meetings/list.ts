@@ -1,8 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { MeetingTranscript, type MeetingSessionSummary } from "@x/shared/dist/meetings.js";
-import { WorkDir } from "../config/config.js";
-import { meetingNotePath, calendarEventFromMeta } from "./note.js";
+import { existingNotePath } from "./note.js";
 import { hasAudio } from "./retention.js";
 import { sessionDirs } from "./queue.js";
 import { exists, readMeta, TRANSCRIBE_LOG, TRANSCRIPT_JSON } from "./session.js";
@@ -33,7 +32,7 @@ export async function listSessionSummaries(root: string): Promise<MeetingSession
       durationSeconds: meta.duration_seconds,
       transcribed,
       hasAudio: await hasAudio(dir, meta),
-      notePath: await noteFor(dir, meta),
+      notePath: await existingNotePath(path.basename(dir), meta),
       segmentCount: transcribed ? await countSegments(transcriptPath) : undefined,
       tracks: meta.tracks,
       warnings: meta.warnings,
@@ -50,29 +49,6 @@ export async function readTranscript(dir: string): Promise<MeetingTranscript | n
     return parsed.success ? parsed.data : null;
   } catch {
     return null;
-  }
-}
-
-/**
- * The note this session produced, if it is still there. Derived rather than stored, and
- * only returned when the file exists — offering to open a note the user has since
- * deleted or moved would be worse than offering nothing.
- */
-async function noteFor(
-  dir: string,
-  meta: Awaited<ReturnType<typeof readMeta>>,
-): Promise<string | undefined> {
-  if (!meta) return undefined;
-  const relative = meetingNotePath({
-    startedAt: new Date(meta.started),
-    sessionId: path.basename(dir),
-    calendarEvent: calendarEventFromMeta(meta),
-  });
-  try {
-    await fs.access(path.join(WorkDir, relative));
-    return relative;
-  } catch {
-    return undefined;
   }
 }
 

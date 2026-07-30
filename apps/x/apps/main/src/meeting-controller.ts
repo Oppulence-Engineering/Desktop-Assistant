@@ -15,6 +15,7 @@ import type {
 import {
   calendarEventFromMeta,
   createSessionDir,
+  deleteMeetingNote,
   listSessionSummaries,
   MeetingQueue,
   nativeProvenance,
@@ -288,14 +289,35 @@ export class MeetingController {
     return { queued: true };
   }
 
-  async deleteSession(sessionId: string): Promise<boolean> {
+  async deleteSession(
+    sessionId: string,
+    deleteNote = false,
+  ): Promise<{ deleted: boolean; noteDeleted: boolean }> {
     const root = await this.root();
     const dir = path.join(root, sessionId);
     // Guard against a traversal in the id turning this into an arbitrary delete.
-    if (path.dirname(path.resolve(dir)) !== path.resolve(root)) return false;
-    if (this.sessionDir === dir) return false;
+    if (path.dirname(path.resolve(dir)) !== path.resolve(root)) {
+      return { deleted: false, noteDeleted: false };
+    }
+    if (this.sessionDir === dir) return { deleted: false, noteDeleted: false };
+
+    // Read the meta before removing the directory — it is what the note path is
+    // derived from, and the caller never supplies one.
+    const meta = deleteNote ? await readMeta(dir) : null;
+    let noteDeleted = false;
+    if (meta) {
+      try {
+        noteDeleted = await deleteMeetingNote(sessionId, meta);
+      } catch (err) {
+        // A note we could not remove is not a reason to keep the recording the user
+        // asked to delete; report it rather than failing the whole operation.
+        console.warn(`[meeting] could not delete the note for ${sessionId}:`, err);
+      }
+    }
+
     await fs.rm(dir, { recursive: true, force: true });
-    return true;
+    this.notePaths.delete(sessionId);
+    return { deleted: true, noteDeleted };
   }
 
   // MARK: -
