@@ -74,6 +74,20 @@ export const MeetingsSettings = z.object({
   parakeetModel: ParakeetModel.default("v3"),
   /** Queue a session for transcription the moment it stops. */
   transcribeOnStop: z.boolean().default(true),
+  /**
+   * What to do when a calendar meeting with a join link starts.
+   *
+   * `prompt` is the default and the only one that ships on by default: recording people
+   * is consent-shaped, and a notification you can act on or ignore *is* the consent
+   * step. `always` skips it, which is a choice a user has to make deliberately —
+   * `autoStartSilentOrganizers` is the narrower version of the same choice, for the
+   * recurring meetings you have already decided about.
+   */
+  autoStart: z.enum(["off", "prompt", "always"]).default("prompt"),
+  /** Organizer emails whose meetings start recording without asking. */
+  autoStartSilentOrganizers: z.array(z.string()).default([]),
+  /** Warn before a meeting when this machine is not ready to record it. */
+  preflightNotifications: z.boolean().default(true),
 });
 export type MeetingsSettings = z.infer<typeof MeetingsSettings>;
 
@@ -85,6 +99,9 @@ export const DEFAULT_MEETINGS_SETTINGS: MeetingsSettings = {
   transcriptionEngine: "whisper",
   parakeetModel: "v3",
   transcribeOnStop: true,
+  autoStart: "prompt",
+  autoStartSilentOrganizers: [],
+  preflightNotifications: true,
 };
 
 // ---------------------------------------------------------------------------

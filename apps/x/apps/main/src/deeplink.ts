@@ -2,6 +2,8 @@ import { BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { WorkDir } from "@x/core/dist/config/config.js";
+import type { MeetingCalendarEvent } from "@x/shared/dist/meetings.js";
+import { peekMeetingController } from "./meeting-controller.js";
 import {
   DEEP_LINK_SCHEME,
   LEGACY_DEEP_LINK_SCHEME,
@@ -84,7 +86,20 @@ interface MeetingNotesAction {
   eventId: string;
 }
 
-type ParsedAction = MeetingNotesAction;
+/** Start a native recording for a calendar event. Deliberately handled in main rather
+ *  than forwarded to the renderer: capture no longer belongs to a window, and this must
+ *  work with every window closed. */
+interface RecordMeetingAction {
+  type: "record-meeting";
+  eventId: string;
+}
+
+/** Open the app on the meetings surface — where a readiness problem is explained. */
+interface MeetingSetupAction {
+  type: "meeting-setup";
+}
+
+type ParsedAction = MeetingNotesAction | RecordMeetingAction | MeetingSetupAction;
 
 function parseAction(url: string): ParsedAction | null {
   const rest = getDeepLinkPayload(url);
@@ -98,6 +113,11 @@ function parseAction(url: string): ParsedAction | null {
     const eventId = params.get("eventId");
     return eventId ? { type, eventId } : null;
   }
+  if (type === "record-meeting") {
+    const eventId = params.get("eventId");
+    return eventId ? { type, eventId } : null;
+  }
+  if (type === "meeting-setup") return { type };
   return null;
 }
 
@@ -105,8 +125,48 @@ async function dispatchAction(url: string): Promise<void> {
   const parsed = parseAction(url);
   if (!parsed) return;
 
+  if (parsed.type === "record-meeting") {
+    await handleRecordMeeting(parsed.eventId);
+    return;
+  }
+  if (parsed.type === "meeting-setup") {
+    const win = mainWindowRef;
+    if (win && !win.isDestroyed()) focusWindow(win);
+    return;
+  }
+
   const openMeeting = parsed.type === "join-and-take-meeting-notes";
   await handleTakeMeetingNotes(parsed.eventId, openMeeting);
+}
+
+/**
+ * Start recording for an event, without needing a window.
+ *
+ * The click that gets here may be the user's only interaction with the app all day —
+ * the main window can be closed and the notification still has to work, which is the
+ * whole reason capture moved into the main process.
+ */
+async function handleRecordMeeting(eventId: string): Promise<void> {
+  const controller = peekMeetingController();
+  if (!controller) {
+    console.warn("[deeplink] record-meeting: capture is not available");
+    return;
+  }
+  if (controller.recording) return;
+
+  let event: MeetingCalendarEvent | undefined;
+  try {
+    const raw = await fs.readFile(path.join(WorkDir, "calendar_sync", `${eventId}.json`), "utf-8");
+    event = JSON.parse(raw) as MeetingCalendarEvent;
+  } catch (err) {
+    // Start anyway: a recording with no calendar context still beats no recording.
+    console.warn(`[deeplink] record-meeting: could not read event ${eventId}`, err);
+  }
+
+  const result = await controller.start(event);
+  if (!result.started) {
+    console.error(`[deeplink] record-meeting: ${result.error ?? "could not start"}`);
+  }
 }
 
 async function handleTakeMeetingNotes(eventId: string, openMeeting: boolean): Promise<void> {

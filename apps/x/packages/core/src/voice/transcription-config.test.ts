@@ -306,6 +306,11 @@ describe("meetings settings block", () => {
       transcriptionEngine: "whisper",
       parakeetModel: "v3",
       transcribeOnStop: true,
+      // Prompt, never silent: recording people is consent-shaped, and the notification
+      // you can act on or ignore *is* the consent step. `always` has to be chosen.
+      autoStart: "prompt",
+      autoStartSilentOrganizers: [],
+      preflightNotifications: true,
     });
   });
 

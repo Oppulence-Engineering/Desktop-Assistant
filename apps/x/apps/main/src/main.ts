@@ -25,6 +25,7 @@ import {
 } from "./ipc.js";
 import { destroyMeetingTray, stopCaptureForQuit } from "./tray.js";
 import { destroyMeetingIndicator } from "./meeting-indicator.js";
+import { calendarNotifyHooks } from "./meeting-autostart.js";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
 import { updateElectronApp, UpdateSourceType } from "update-electron-app";
@@ -470,7 +471,7 @@ async function startBackgroundServices() {
   initAgentNotes();
 
   // start calendar meeting notification service (fires 1-minute warnings)
-  initCalendarNotifications();
+  initCalendarNotifications(calendarNotifyHooks());
 
   // start chrome extension sync server
   initChromeSync();
