@@ -35,6 +35,9 @@ export type { MeetingTranscriber, TranscribeSessionOpts } from "./transcribe.js"
 export { applyRetention, hasAudio } from "./retention.js";
 
 export { withTranscriberFallback } from "./fallback.js";
+
+export { summarizeMeetingNote } from "./summary.js";
+export type { SummarizeNoteArgs } from "./summary.js";
 export type { FallbackOpts } from "./fallback.js";
 
 export { compressedName, decodedName, isCompressed, COMPRESSED_EXTENSION } from "./codec.js";

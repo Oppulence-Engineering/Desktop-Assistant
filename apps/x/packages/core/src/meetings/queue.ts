@@ -48,6 +48,9 @@ export interface MeetingQueueDeps {
     meta: MeetingSessionMeta;
     transcript: MeetingTranscript;
   }) => Promise<string | undefined>;
+  /** Writes an LLM summary above the transcript once the note exists. Optional: without
+   *  it a session still gets its transcript and note, just no summary. */
+  summarize?: (args: { dir: string; notePath: string; meta: MeetingSessionMeta }) => Promise<void>;
   onProgress?: (progress: MeetingTranscriptionProgress) => void;
 }
 
@@ -155,6 +158,16 @@ export class MeetingQueue {
     await appendLog(dir, `transcribed — ${transcript.segments.length} segments`);
 
     const notePath = await this.deps.writeNote?.({ dir, meta, transcript });
+    // After the note, because it edits the note in place — and after the transcript, so
+    // there is something to summarize. Doing this at stop summarized the placeholder.
+    if (notePath && transcript.segments.length > 0) {
+      try {
+        await this.deps.summarize?.({ dir, notePath, meta });
+      } catch (err) {
+        // A missing summary must never fail a job that produced a good transcript.
+        await appendLog(dir, `summary failed: ${(err as Error).message}`);
+      }
+    }
     await applyRetention({
       dir,
       meta,

@@ -238,3 +238,59 @@ describe("createSessionDir", () => {
     expect([...names].sort()).toEqual(names);
   });
 });
+
+describe("summarization", () => {
+  it("summarizes after the note exists, and only then", async () => {
+    const dir = await finishedSession("2026.07.30-1000");
+    const order: string[] = [];
+    const { queue } = makeQueue({
+      writeNote: async () => {
+        order.push("note");
+        return "note.md";
+      },
+      summarize: async ({ notePath }: { notePath: string }) => {
+        order.push(`summarize:${notePath}`);
+      },
+    });
+
+    queue.enqueue(dir);
+    await settle(queue);
+
+    // The summary edits the note in place, so it cannot run before the note exists.
+    expect(order).toEqual(["note", "summarize:note.md"]);
+  });
+
+  it("does not summarize a transcript with no segments", async () => {
+    const dir = await finishedSession("2026.07.30-1100", {
+      tracks: [trackMeta({ silent: true, peak: 0 })],
+    });
+    let summarized = false;
+    const { queue } = makeQueue({
+      writeNote: async () => "note.md",
+      summarize: async () => {
+        summarized = true;
+      },
+    });
+
+    queue.enqueue(dir);
+    await settle(queue);
+    expect(summarized).toBe(false);
+  });
+
+  it("still completes the job when summarizing throws", async () => {
+    const dir = await finishedSession("2026.07.30-1200");
+    const { queue, progress } = makeQueue({
+      writeNote: async () => "note.md",
+      summarize: async () => {
+        throw new Error("model exploded");
+      },
+    });
+
+    queue.enqueue(dir);
+    await settle(queue);
+
+    // A missing summary must not fail a job that produced a good transcript.
+    expect(progress.at(-1)?.phase).toBe("done");
+    expect(await sessionModule.exists(path.join(dir, "transcript.json"))).toBe(true);
+  });
+});

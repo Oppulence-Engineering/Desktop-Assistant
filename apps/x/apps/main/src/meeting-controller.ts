@@ -22,12 +22,14 @@ import {
   patchMeta,
   readMeta,
   recordingsRoot,
+  summarizeMeetingNote,
   withTranscriberFallback,
   writeMeetingNote,
 } from "@x/core/dist/meetings/meetings.js";
 import type { MeetingTranscriber } from "@x/core/dist/meetings/meetings.js";
 import type { WhisperService } from "@x/core/dist/voice/whisper/index.js";
 import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
+import { summarizeMeeting } from "@x/core/dist/knowledge/summarize_meeting.js";
 import {
   MeetingCaptureSidecar,
   ensureMicrophoneAccess,
@@ -396,6 +398,15 @@ export class MeetingController {
         this.notePaths.set(sessionId, notePath);
         this.notePath = notePath;
         return notePath;
+      },
+      summarize: async ({ dir, notePath, meta }) => {
+        await summarizeMeetingNote({
+          dir,
+          notePath,
+          meta,
+          summarize: (transcript, startedAt, calendarEventJson) =>
+            summarizeMeeting(transcript, startedAt, calendarEventJson),
+        });
       },
       onProgress: (progress) => {
         this.lastProgress = progress;
