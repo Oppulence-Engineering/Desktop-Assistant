@@ -123,22 +123,31 @@ if (remoteDebuggingPort) {
   app.commandLine.appendSwitch("remote-debugging-port", remoteDebuggingPort);
 }
 
-function disableChromiumFeature(feature: string): void {
+/** Append `feature` to an `enable-features`/`disable-features` switch, preserving any
+ *  value already there — appendSwitch replaces rather than merges. */
+function addChromiumFeature(switchName: "enable-features" | "disable-features", feature: string) {
   const existing = app.commandLine
-    .getSwitchValue("disable-features")
+    .getSwitchValue(switchName)
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
   const features = new Set(existing);
   features.add(feature);
-  app.commandLine.appendSwitch("disable-features", Array.from(features).join(","));
+  app.commandLine.appendSwitch(switchName, Array.from(features).join(","));
 }
 
 if (process.platform === "darwin") {
   // Electron 39/Chromium can crash macOS mic capture in the audio utility process
   // with "Failed to initialize sandbox" before renderer audio reaches Whisper.
   // Keep renderer sandboxing on; only disable the narrower audio-service sandbox.
-  disableChromiumFeature("AudioServiceSandbox");
+  addChromiumFeature("disable-features", "AudioServiceSandbox");
+
+  // Without this, `audio: "loopback"` in setDisplayMediaRequestHandler silently
+  // yields no audio track on macOS 15+ — meeting capture then hears only the mic,
+  // never the other side of the call. Chromium moved system-audio loopback behind
+  // this feature; Electron documents the switch as the supported way back in
+  // (electron/electron#47493). Must be set before app.whenReady().
+  addChromiumFeature("enable-features", "MacSckSystemAudioLoopbackOverride");
 }
 
 // run this as early in the main process as possible

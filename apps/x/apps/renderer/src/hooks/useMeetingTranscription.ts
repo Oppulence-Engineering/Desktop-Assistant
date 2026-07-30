@@ -130,7 +130,10 @@ function formatTranscript(
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
-export function useMeetingTranscription(onAutoStop?: () => void) {
+export function useMeetingTranscription(
+  onAutoStop?: () => void,
+  onSystemAudioUnavailable?: () => void,
+) {
   const { refresh: refreshSolomonAccount } = useSolomonAccount({ autoRefresh: false });
   const [state, setState] = useState<MeetingTranscriptionState>("idle");
   const wsRef = useRef<WebSocket | null>(null);
@@ -148,6 +151,8 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onAutoStopRef = useRef(onAutoStop);
   onAutoStopRef.current = onAutoStop;
+  const onSystemAudioUnavailableRef = useRef(onSystemAudioUnavailable);
+  onSystemAudioUnavailableRef.current = onSystemAudioUnavailable;
   const dateRef = useRef<string>("");
   const calendarEventRef = useRef<CalendarEventMeta | undefined>(undefined);
   const privacyGenerationRef = useRef(0);
@@ -425,11 +430,11 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
         })(),
       ]);
 
-      // Check for failures — clean up any successful resources if something failed
-      const failed =
-        wsResult.status === "rejected" ||
-        micResult.status === "rejected" ||
-        (systemResult.status === "rejected" && !useLocalRef.current);
+      // Only the transport and the mic are load-bearing. A missing system track
+      // degrades the meeting to one-sided rather than killing it — on macOS,
+      // `audio: "loopback"` can yield no audio track at all, and losing your own
+      // half of the conversation on top of theirs is the worse outcome.
+      const failed = wsResult.status === "rejected" || micResult.status === "rejected";
 
       if (failed) {
         if (wsResult.status === "rejected")
@@ -452,12 +457,17 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
         setState("idle");
         return null;
       }
-      if (systemResult.status === "rejected") {
+      const systemAudioAvailable = systemResult.status === "fulfilled";
+      if (!systemAudioAvailable) {
         console.warn(
-          "[meeting] System audio unavailable; continuing local transcription with microphone audio only:",
+          "[meeting] System audio unavailable; recording microphone only — the other side of the call will not be transcribed:",
           systemResult.reason,
         );
+        onSystemAudioUnavailableRef.current?.();
       }
+      // Make one-sided capture visible in the note rather than silently producing a
+      // transcript that looks complete but only ever has "You" turns.
+      provenanceRef.current.system_audio_captured = systemAudioAvailable;
 
       const usingHeadphones =
         headphoneResult.status === "fulfilled" ? headphoneResult.value : false;
@@ -519,7 +529,7 @@ export function useMeetingTranscription(onAutoStop?: () => void) {
       const micStream = micResult.value;
       micStreamRef.current = micStream;
 
-      const systemStream = systemResult.status === "fulfilled" ? systemResult.value : null;
+      const systemStream = systemAudioAvailable ? systemResult.value : null;
       systemStreamRef.current = systemStream;
 
       // ----- Audio pipeline -----
