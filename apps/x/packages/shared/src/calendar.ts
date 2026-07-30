@@ -36,15 +36,28 @@ export const CalendarEventSchema = z
     organizer: z
       .object({ email: z.string().optional(), displayName: z.string().optional() })
       .optional(),
+    /**
+     * Junk elements are filtered out rather than failing the whole array.
+     *
+     * A strict array rejects the *event* over one malformed attendee, which costs that
+     * meeting its reminder entirely — a wildly disproportionate outcome for a field
+     * nothing here depends on being complete.
+     */
     attendees: z
-      .array(
-        z.object({
-          email: z.string().optional(),
-          displayName: z.string().optional(),
-          self: z.boolean().optional(),
-          optional: z.boolean().optional(),
-          responseStatus: z.string().optional(),
-        }),
+      .preprocess(
+        (value) =>
+          Array.isArray(value)
+            ? value.filter((item) => item !== null && typeof item === "object")
+            : value,
+        z.array(
+          z.object({
+            email: z.string().optional(),
+            displayName: z.string().optional(),
+            self: z.boolean().optional(),
+            optional: z.boolean().optional(),
+            responseStatus: z.string().optional(),
+          }),
+        ),
       )
       .optional(),
   })
