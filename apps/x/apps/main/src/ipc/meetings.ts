@@ -7,7 +7,11 @@ import {
   resolveCaptureEngine,
   runCaptureDoctor,
 } from "../meeting-capture.js";
-import { ensureParakeetModels, parakeetModelStatus } from "../meeting-engines.js";
+import {
+  ensureParakeetModels,
+  parakeetModelStatus,
+  type ParakeetModel,
+} from "../meeting-engines.js";
 import { getMeetingController, type MeetingControllerDeps } from "../meeting-controller.js";
 
 type IPCChannels = ipc.IPCChannels;
@@ -30,7 +34,7 @@ type MeetingCaptureHandlers = {
   "meeting:ensureTranscriptionModels": InvokeHandler<"meeting:ensureTranscriptionModels">;
 };
 
-async function parakeetModel(): Promise<"v3" | "v2"> {
+async function parakeetModel(): Promise<ParakeetModel> {
   const config = await getTranscriptionConfig();
   return config.meetings?.parakeetModel ?? "v3";
 }

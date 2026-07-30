@@ -77,12 +77,14 @@ describe("applyRetention", () => {
     expect(await retention.hasAudio(dir, meta)).toBe(true);
   });
 
-  it("deletes even without a transcript in `never` mode", async () => {
-    const { dir, meta } = await twoTrackSession();
-    expect(await retention.applyRetention({ dir, meta, mode: "never", transcribed: false })).toBe(
-      true,
-    );
-    expect(await retention.hasAudio(dir, meta)).toBe(false);
+  it("never deletes before a transcript exists, whatever the mode", async () => {
+    // The one invariant worth stating plainly: nothing here removes the only copy of a
+    // meeting that was never successfully transcribed.
+    for (const mode of ["always", "untilTranscribed"] as const) {
+      const { dir, meta } = await twoTrackSession();
+      expect(await retention.applyRetention({ dir, meta, mode, transcribed: false })).toBe(false);
+      expect(await retention.hasAudio(dir, meta)).toBe(true);
+    }
   });
 
   it("records the deletion in meta so the UI can explain the missing audio", async () => {
@@ -221,22 +223,13 @@ describe("compression on keepAudio: always", () => {
   });
 });
 
-describe("keepAudio: never on a failed transcription", () => {
-  it("deletes the audio even though there is no transcript", async () => {
-    // The distinguishing behaviour of `never`: it does not wait for a transcript, so
-    // it is genuinely stricter than `untilTranscribed` rather than identical to it.
-    const { dir, meta } = await twoTrackSession();
-    expect(await retention.applyRetention({ dir, meta, mode: "never", transcribed: false })).toBe(
-      true,
-    );
-    expect(await retention.hasAudio(dir, meta)).toBe(false);
-  });
-
-  it("untilTranscribed keeps it in the same situation", async () => {
-    const { dir, meta } = await twoTrackSession();
-    expect(
-      await retention.applyRetention({ dir, meta, mode: "untilTranscribed", transcribed: false }),
-    ).toBe(false);
-    expect(await retention.hasAudio(dir, meta)).toBe(true);
+describe("legacy `never` config", () => {
+  it("reads as untilTranscribed instead of failing to parse", async () => {
+    // Installed users may have it persisted. It must still load — and land on the safe
+    // behaviour, not the one that deleted recordings that were never transcribed.
+    const { MeetingKeepAudio } = await import("@x/shared/dist/meetings.js");
+    expect(MeetingKeepAudio.parse("never")).toBe("untilTranscribed");
+    expect(MeetingKeepAudio.parse("always")).toBe("always");
+    expect(MeetingKeepAudio.parse("untilTranscribed")).toBe("untilTranscribed");
   });
 });

@@ -202,12 +202,17 @@ Transcription → **Meeting recording**.
 | `captureEngine`      | `auto`                 | `auto` prefers native; `renderer` forces the in-app path |
 | `recordingsDir`      | `<WorkDir>/recordings` |                                                          |
 | `micVoiceProcessing` | `false`                | Echo cancellation. On with speakers, off with headphones |
-| `keepAudio`          | `untilTranscribed`     | `always` \| `untilTranscribed` \| `never`                |
+| `keepAudio`          | `untilTranscribed`     | `always` \| `untilTranscribed`                           |
 | `transcribeOnStop`   | `true`                 |                                                          |
 
-`untilTranscribed` keeps the audio when transcription **failed**, so a retry is
-possible — deleting it there would throw the meeting away with nothing to show for it.
-`never` deletes when the session ends whether or not a transcript exists.
+**Deletion always requires a transcript.** `untilTranscribed` keeps the audio when
+transcription failed, so a retry is possible — deleting it there would throw the meeting
+away with nothing to show for it. `always` does not keep the WAV either: it compresses,
+so re-transcription stays possible at an eighth of the size.
+
+There was a third mode, `never`, that deleted when the session ended regardless. It was
+removed: the only thing it actually bought was turning any transcription failure into a
+lost meeting. A persisted `never` now reads as `untilTranscribed`.
 
 ## Verification runbook
 

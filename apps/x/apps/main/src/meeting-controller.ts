@@ -5,9 +5,11 @@ import type {
   MeetingCalendarEvent,
   MeetingCaptureState,
   MeetingCaptureStatus,
+  MeetingKeepAudio,
   MeetingLevels,
   MeetingSessionSummary,
   MeetingTrackId,
+  MeetingTranscriptionEngine,
   MeetingTranscriptionProgress,
 } from "@x/shared/dist/meetings.js";
 import {
@@ -380,8 +382,10 @@ export class MeetingController {
 
   /** Cached from settings; refreshed whenever a session starts or a job runs. */
   private modelId = "base.en-q5_1";
-  private keepAudio: "always" | "untilTranscribed" | "never" = "untilTranscribed";
-  private transcriptionEngine: "whisper" | "parakeet" = "whisper";
+  // Shared types rather than hand-written unions: a local copy silently drifts when the
+  // schema changes, which is how `never` outlived its removal here.
+  private keepAudio: MeetingKeepAudio = "untilTranscribed";
+  private transcriptionEngine: MeetingTranscriptionEngine = "whisper";
   private parakeetModel: ParakeetModel = "v3";
   private compressRetainedAudio = true;
 

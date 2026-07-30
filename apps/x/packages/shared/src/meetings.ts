@@ -25,11 +25,20 @@ export const MeetingResolvedEngine = z.enum(["native", "renderer"]);
 export type MeetingResolvedEngine = z.infer<typeof MeetingResolvedEngine>;
 
 /**
- * When to delete captured audio. `untilTranscribed` is the default: audio exists
- * long enough to survive a crash and be re-transcribed, then goes away once
+ * When to delete captured audio. `untilTranscribed` is the default: audio survives long
+ * enough to outlive a crash and be re-transcribed, then goes away once
  * `transcript.json` lands (RFC 035 — raw audio is not kept by default).
+ *
+ * **Deletion always requires a transcript.** There was a third mode, `never`, that
+ * deleted when the session ended whether or not one existed; it was removed because the
+ * only thing it actually bought was turning any transcription failure into a lost
+ * meeting. A persisted `never` reads as `untilTranscribed` so existing configs still
+ * load — and land on the safe behaviour they almost certainly wanted.
  */
-export const MeetingKeepAudio = z.enum(["always", "untilTranscribed", "never"]);
+export const MeetingKeepAudio = z.preprocess(
+  (value) => (value === "never" ? "untilTranscribed" : value),
+  z.enum(["always", "untilTranscribed"]),
+);
 export type MeetingKeepAudio = z.infer<typeof MeetingKeepAudio>;
 
 /**

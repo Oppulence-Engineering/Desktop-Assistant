@@ -3,6 +3,7 @@ import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import type { AudioCodec, MeetingTranscriber } from "@x/core/dist/meetings/meetings.js";
+import type { ParakeetModel as SharedParakeetModel } from "@x/shared/dist/meetings.js";
 import { pcm16ToWav } from "@x/core/dist/voice/whisper/wav.js";
 import { audiocapBinaryPath, nativeCaptureAvailable } from "./meeting-capture.js";
 
@@ -119,8 +120,9 @@ export interface ParakeetModelStatus {
   cacheDir: string;
 }
 
-/** v3 is multilingual (25 European languages); v2 is English-only. */
-export type ParakeetModel = "v3" | "v2";
+/** Re-exported from the schema rather than redeclared — a local union drifts silently
+ *  when the schema changes. v3 is multilingual (25 European languages); v2 English-only. */
+export type ParakeetModel = SharedParakeetModel;
 
 export async function parakeetModelStatus(model: ParakeetModel): Promise<ParakeetModelStatus> {
   try {

@@ -12,11 +12,13 @@ import { appendLog, patchMeta } from "./session.js";
  * so `untilTranscribed` is the default and the recording is deleted once
  * `transcript.json` lands.
  *
- * | mode              | audio is deleted                                              |
- * | ----------------- | ------------------------------------------------------------- |
- * | `always`          | never — re-transcribe with a better model whenever you like   |
+ * | mode              | audio is deleted                                                |
+ * | ----------------- | --------------------------------------------------------------- |
+ * | `always`          | never — compressed instead, so re-transcription stays possible   |
  * | `untilTranscribed`| once a transcript exists; kept on failure so a retry is possible |
- * | `never`           | when the session ends, transcript or not — strictest posture  |
+ *
+ * Deletion always requires a transcript. Nothing here removes the only copy of a
+ * meeting that was never successfully read.
  */
 
 export interface ApplyRetentionArgs {
@@ -34,15 +36,16 @@ export interface ApplyRetentionArgs {
  */
 export async function applyRetention(args: ApplyRetentionArgs): Promise<boolean> {
   const { dir, meta, mode, transcribed, codec } = args;
+  // Nothing is ever removed before a transcript exists — without one, deleting would
+  // throw the meeting away with nothing to show for it.
+  if (!transcribed) return false;
+
   // Keeping audio does not mean keeping it uncompressed: once a transcript exists the
   // WAV has done its job, and AAC is ~1/8 the size and still playable.
   if (mode === "always") {
-    if (!codec || !transcribed) return false;
+    if (!codec) return false;
     return compressTracks({ dir, meta, codec });
   }
-  // Keeping the audio on failure is the whole point of `untilTranscribed`: without a
-  // transcript, deleting it would throw the meeting away.
-  if (mode === "untilTranscribed" && !transcribed) return false;
   if (meta.audio_deleted_at) return false;
 
   let deleted = false;

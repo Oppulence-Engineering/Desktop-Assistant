@@ -104,13 +104,13 @@ test("packaged audiocap helper is staged and its IPC is reachable", async () => 
     )
     .toBe("function");
 
-  const invoke = <T>(channel: string) =>
+  const invoke = <T>(channel: string, args: unknown = null) =>
     window.evaluate(
-      ([c]) =>
+      ([c, a]) =>
         (
           window as unknown as { ipc: { invoke(c: string, a: unknown): Promise<unknown> } }
-        ).ipc.invoke(c as string, null),
-      [channel],
+        ).ipc.invoke(c as string, a),
+      [channel, args] as [string, unknown],
     ) as Promise<T>;
 
   // Always well-formed, binary or not — the renderer decides which pipeline to run
@@ -118,7 +118,11 @@ test("packaged audiocap helper is staged and its IPC is reachable", async () => 
   const { engine } = await invoke<{ engine: string }>("meeting:captureEngine");
   expect(["native", "renderer"]).toContain(engine);
 
-  const doctor = await invoke<DoctorReport>("meeting:captureDoctor");
+  // No probe: it would request system-audio access, which a CI run cannot grant and a
+  // user has not asked for.
+  const doctor = await invoke<DoctorReport>("meeting:captureDoctor", {
+    probeSystemAudio: false,
+  });
   expect(doctor).toMatchObject({
     ok: expect.any(Boolean),
     nativeAvailable: expect.any(Boolean),
