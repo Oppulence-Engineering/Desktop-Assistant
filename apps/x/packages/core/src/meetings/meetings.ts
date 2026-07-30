@@ -59,5 +59,29 @@ export type { MeetingProvenance, WriteMeetingNoteArgs } from "./note.js";
 
 export { listSessionSummaries, readTranscript } from "./list.js";
 
+export { resolveCounterparty } from "./attendees.js";
+export {
+  CommitmentExtraction,
+  MIN_CONFIDENCE,
+  ProposedCommitment,
+  mightContainCommitments,
+  validateCommitments,
+} from "./commitments.js";
+export { extractCommitments } from "./commitments-ai.js";
+export { askMeeting, renderForAsk, ASK_GUARD } from "./ask.js";
+export {
+  commitmentId,
+  confirmCommitment,
+  readLedger,
+  setCommitmentStatus,
+  LedgerCommitment,
+} from "./commitment-ledger.js";
+export type {
+  AttendeeSource,
+  Counterparty,
+  CounterpartyResolution,
+  KnownPerson,
+} from "./attendees.js";
+
 export { readPcmChunk, readWavInfo, recoverWavHeader, WavError } from "./wav.js";
 export type { WavInfo } from "./wav.js";

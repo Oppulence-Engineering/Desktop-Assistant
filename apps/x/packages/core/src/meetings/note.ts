@@ -47,6 +47,16 @@ export interface MeetingProvenance {
   diarization_mode: string;
   audio_uploaded: boolean;
   speaker_identity_persistence: string;
+  /**
+   * Whether the non-you speaker is named, and why not when they are not.
+   *
+   * Recorded because the reader has to know which lines to doubt: a note that says
+   * "Dana" everywhere and a note that says "Other" everywhere are different claims, and
+   * only the frontmatter says which one this is.
+   */
+  counterparty?: string;
+  counterparty_email?: string;
+  speaker_attribution?: string;
   capture_engine: string;
   /** The recording this note came from. Without it nothing links a note back to its
    *  audio, so a transcript line cannot offer to play the moment it describes. */
@@ -65,6 +75,9 @@ export function nativeProvenance(args: {
   model: string;
   sessionId: string;
   systemAudioCaptured: boolean;
+  counterparty?: { label: string; email?: string };
+  /** Why the counterparty is unnamed, when they are. */
+  attributionLimit?: string;
 }): MeetingProvenance {
   return {
     transcription_provider: "whisper.cpp",
@@ -77,6 +90,20 @@ export function nativeProvenance(args: {
     capture_engine: "native",
     session_id: args.sessionId,
     system_audio_captured: args.systemAudioCaptured,
+    // Whether the non-you speaker is named, and why not when they are not. The reader
+    // has to be able to tell a note that says "Dana" from one that says "Other" —
+    // they are different claims, and only this says which.
+    ...(args.counterparty
+      ? {
+          counterparty: args.counterparty.label,
+          ...(args.counterparty.email ? { counterparty_email: args.counterparty.email } : {}),
+          speaker_attribution: "named (1:1)",
+        }
+      : {
+          speaker_attribution: args.attributionLimit
+            ? `unnamed — ${args.attributionLimit}`
+            : "unnamed",
+        }),
   };
 }
 
@@ -141,6 +168,8 @@ export interface WriteMeetingNoteArgs {
   segments: MeetingTranscript["segments"];
   calendarEvent?: MeetingCalendarEvent;
   provenance: MeetingProvenance;
+  /** Speaker label overrides, when the counterparty was resolved. */
+  speakerLabels?: Partial<Record<"me" | "them", string>>;
   /**
    * Reuse an existing path instead of deriving one. The placeholder written when
    * recording starts and the final note must be the *same* file: derived paths differ
@@ -174,10 +203,11 @@ export async function writeMeetingNote(args: WriteMeetingNoteArgs): Promise<stri
   if (args.segments.length === 0) provenance.no_speech_detected = true;
 
   const content = formatMeetingNote(
-    segmentsToEntries(args.segments),
+    segmentsToEntries(args.segments, args.speakerLabels ?? {}),
     args.startedAt,
     args.calendarEvent,
     provenance,
+    args.sessionId,
   );
   await (args.write ?? writeFile)(notePath, content, { encoding: "utf8", mkdirp: true });
   return notePath;

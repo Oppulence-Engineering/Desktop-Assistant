@@ -157,7 +157,8 @@ describe("mergeSummaryIntoNote keeps what the note claims about itself", () => {
 
   it("carries several notices, blank-line separated as the formatter writes them", () => {
     // The formatter puts a blank line between each. Treating that blank as the end of
-    // the run would keep only the first and silently drop the rest.
+    // the run kept only the first — the privacy line survived and the speaker-attribution
+    // caveat silently did not.
     const note = noteWith("> One.\n\n> Two.");
     const merged = mergeSummaryIntoNote(note, "Notes.");
     expect(merged).toContain("> One.");

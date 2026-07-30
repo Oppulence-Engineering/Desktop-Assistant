@@ -13,6 +13,7 @@ import type {
   MeetingTranscriptionEngine,
   MeetingTranscriptionProgress,
   MeetingTranscript,
+  MeetingTranscriptSegment,
 } from "@x/shared/dist/meetings.js";
 import {
   calendarEventFromMeta,
@@ -29,7 +30,26 @@ import {
   summarizeMeetingNote,
   withTranscriberFallback,
   writeMeetingNote,
+  resolveCounterparty,
+  extractCommitments,
+  confirmCommitment,
+  readLedger,
+  setCommitmentStatus,
+  askMeeting,
 } from "@x/core/dist/meetings/meetings.js";
+import { MeetingLiveTranscriber } from "./meeting-live.js";
+import type {
+  CounterpartyResolution,
+  KnownPerson,
+  LedgerCommitment,
+  ProposedCommitment,
+} from "@x/core/dist/meetings/meetings.js";
+import {
+  readCommitmentProposals,
+  removeCommitmentProposal,
+  writeCommitmentProposals,
+} from "@x/core/dist/meetings/commitment-store.js";
+import { buildKnowledgeIndex } from "@x/core/dist/knowledge/knowledge_index.js";
 import type { MeetingTranscriber } from "@x/core/dist/meetings/meetings.js";
 import type { WhisperService } from "@x/core/dist/voice/whisper/index.js";
 import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
@@ -63,6 +83,9 @@ const SILENCE_PEAK_LEVEL = 0.005;
  *  each one would churn thousands of timers over a meeting; recording a timestamp and
  *  checking it occasionally costs one assignment per event instead. */
 const SILENCE_CHECK_INTERVAL_MS = 15 * 1000;
+/** Long enough to collapse one meeting's reads into one vault scan, short enough that a
+ *  renamed person is not mislabelled for the rest of the session. */
+const PEOPLE_CACHE_MS = 60_000;
 
 function broadcast<T>(channel: string, payload: T): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -90,6 +113,17 @@ export class MeetingController {
   private onStateChange?: () => void;
   /** Above zero while a standby session is holding audio in memory. */
   private standbySeconds = 0;
+  /** The throwaway transcript produced while the meeting runs. Never written to the
+   *  note — the post-session pass is the record. */
+  private readonly live = new MeetingLiveTranscriber({
+    transcriber: () => this.transcriber(),
+    onSegments: (segments) => {
+      this.liveSegments.push(...segments);
+      const sessionId = this.sessionDir ? path.basename(this.sessionDir) : "";
+      broadcast("meeting:liveSegments", { sessionId, segments });
+    },
+  });
+  private liveSegments: MeetingTranscriptSegment[] = [];
   /** sessionId → note path, so the placeholder and the final note are one file. */
   private readonly notePaths = new Map<string, string>();
 
@@ -121,9 +155,9 @@ export class MeetingController {
     if (!this.sidecar.beginRecording()) {
       return { started: false, error: "the recorder did not accept the request" };
     }
-    // The note is written from `onRecording`, not here: this only means the request
-    // was sent. A promote that fails on the far side must not leave a note for a
-    // recording that never started.
+    // The note and the live pass both start from `onRecording`, not here: this only
+    // means the request was sent. A promote that fails on the far side must leave no
+    // note, and there is no file for a live pass to read either.
     return { started: true };
   }
 
@@ -224,12 +258,13 @@ export class MeetingController {
           this.setState("recording");
           // Only now, once the sidecar has confirmed it is writing.
           void this.writePlaceholderNote(dir);
+          void this.maybeStartLive(dir, this.sidecar.tracks);
         },
         onError: (code, message) => {
           console.error(`[meeting] sidecar error ${code}: ${message}`);
           // The sidecar records errors into its warning list, but that list only
           // reaches a window on the next state transition — and a promote that fails
-          // produces no transition at all, so the user would press Record and see
+          // produces no transition at all, so the user would click "Record" and see
           // nothing happen, forever.
           broadcast<MeetingCaptureStatus>("meeting:captureState", this.statusSnapshot());
         },
@@ -262,6 +297,16 @@ export class MeetingController {
       const sessionId = path.basename(dir);
       if (!this.standbySeconds) await this.writePlaceholderNote(dir);
 
+      // Live transcription only once actually recording — there is no file to read
+      // while standing by, which is the entire point of standing by.
+      if (this.standbySeconds === 0 && config.meetings?.liveTranscript) {
+        // Deliberately the *cheap* resolution here. This runs as recording starts, and
+        // a whole-vault scan at that moment would stall the app exactly when the user is
+        // watching it begin. The calendar's own display name is good enough for a live
+        // panel; the note gets the canonical one afterwards.
+        this.liveCounterparty = resolveCounterparty(calendarEvent).counterparty?.label;
+        this.startLive(dir, tracks);
+      }
       this.setState(this.standbySeconds > 0 ? "standby" : "recording");
       return {
         started: true,
@@ -437,6 +482,276 @@ export class MeetingController {
       : { segments: [], found: false };
   }
 
+  /**
+   * Playable files for a session, as `app://recording/...` URLs.
+   *
+   * Retention deletes audio once a transcript exists unless the user opted to keep it,
+   * so "there is nothing to play" is the common, correct case rather than a failure —
+   * and it is reported with a reason so the UI can say which.
+   */
+  async audioTracks(sessionId: string): Promise<{
+    tracks: { track: MeetingTrackId; url: string; offsetMs: number; durationMs: number }[];
+    reason?: string;
+  }> {
+    const root = await this.root();
+    const dir = path.join(root, sessionId);
+    if (path.dirname(path.resolve(dir)) !== path.resolve(root)) {
+      return { tracks: [], reason: "unknown recording" };
+    }
+    const meta = await readMeta(dir);
+    if (!meta) return { tracks: [], reason: "this recording is no longer on disk" };
+    if (meta.audio_deleted_at) {
+      return { tracks: [], reason: "the audio was removed by your retention setting" };
+    }
+
+    const tracks: { track: MeetingTrackId; url: string; offsetMs: number; durationMs: number }[] =
+      [];
+    for (const track of meta.tracks) {
+      // Retention may have compressed the file since meta was written, so the name in
+      // meta is a starting point rather than the answer.
+      const candidates = [track.file, track.file.replace(/\.wav$/, ".m4a")];
+      for (const name of candidates) {
+        try {
+          await fs.access(path.join(dir, name));
+          tracks.push({
+            track: track.id,
+            url: `app://recording/${encodeURIComponent(sessionId)}/${encodeURIComponent(name)}`,
+            offsetMs: track.offset_ms,
+            durationMs: track.duration_ms,
+          });
+          break;
+        } catch {
+          // Try the compressed name before giving up on this track.
+        }
+      }
+    }
+    return tracks.length > 0
+      ? { tracks }
+      : { tracks: [], reason: "the audio was removed by your retention setting" };
+  }
+
+  /**
+   * Resolve a meeting's counterparty without paying for the knowledge index unless it
+   * can possibly help.
+   *
+   * `buildKnowledgeIndex()` is fully synchronous and `readFileSync`s every note in the
+   * vault. Calling it on the main process blocks IPC, the tray and every window event
+   * for as long as it takes — and it was being called three times per meeting, one of
+   * them at the instant recording starts, which is the worst moment in the app to
+   * freeze.
+   *
+   * Two things fix that. The cheap resolution runs first with no index at all: it
+   * already knows whether this is a 1:1, and on a group call — where the answer is
+   * "decline" regardless — the index is never touched. When it is a 1:1 the index is
+   * consulted for the canonical name, through a short-lived cache so the note write and
+   * the commitment pass of the same meeting share one build.
+   */
+  private resolveMeetingCounterparty(
+    calendarEvent: MeetingCalendarEvent | undefined,
+  ): CounterpartyResolution {
+    const cheap = resolveCounterparty(calendarEvent);
+    // Not a 1:1, or nothing to name: no index can change this answer.
+    if (!cheap.counterparty) return cheap;
+    return resolveCounterparty(calendarEvent, { people: this.knownPeople() });
+  }
+
+  /**
+   * People from the knowledge index, cached briefly.
+   *
+   * The TTL is short because a stale index would name someone by an old title; it exists
+   * only so the two or three reads within one finished meeting collapse into one scan.
+   */
+  private peopleCache: { at: number; people: KnownPerson[] } | null = null;
+
+  private knownPeople(): {
+    name: string;
+    email?: string;
+    aliases?: string[];
+    organization?: string;
+    role?: string;
+  }[] {
+    const now = Date.now();
+    if (this.peopleCache && now - this.peopleCache.at < PEOPLE_CACHE_MS) {
+      return this.peopleCache.people;
+    }
+    try {
+      const people = buildKnowledgeIndex().people;
+      this.peopleCache = { at: now, people };
+      return people;
+    } catch {
+      // A failure here just means the calendar's own display name is used.
+      this.peopleCache = { at: now, people: [] };
+      return [];
+    }
+  }
+
+  /** Start the live pass if the user asked for one. */
+  private async maybeStartLive(dir: string, tracks: MeetingTrackId[]): Promise<void> {
+    const config = await getTranscriptionConfig();
+    if (!config.meetings?.liveTranscript) return;
+    this.startLive(dir, tracks);
+  }
+
+  /** Start the live pass, tolerating a failure — it is an aid, not the record. */
+  private startLive(
+    dir: string,
+    tracks: MeetingTrackId[] | { id: string; speaker: string; file: string }[],
+  ): void {
+    this.liveSegments = [];
+    const normalized = tracks.map((track) =>
+      typeof track === "string"
+        ? { id: track, speaker: track === "mic" ? "me" : "them", file: `${track}.wav` }
+        : track,
+    );
+    try {
+      this.live.start(dir, normalized);
+    } catch (err) {
+      console.warn("[meeting] could not start live transcription:", err);
+    }
+  }
+
+  /** Display name for `them` in the live transcript, when the meeting is a named 1:1. */
+  private liveCounterparty: string | undefined;
+
+  /** The in-progress transcript, in order. */
+  liveTranscript(): {
+    active: boolean;
+    sessionId?: string;
+    counterparty?: string;
+    segments: MeetingTranscriptSegment[];
+  } {
+    if (!this.live.active) return { active: false, segments: [] };
+    return {
+      active: true,
+      sessionId: this.sessionDir ? path.basename(this.sessionDir) : undefined,
+      counterparty: this.liveCounterparty,
+      // Ordered by their own track clocks. Offsets are unknown until the session ends,
+      // so this is approximate — fine for reading, and the final pass fixes it.
+      segments: [...this.liveSegments].sort((a, b) => a.start_ms - b.start_ms),
+    };
+  }
+
+  /** Answer a question about the meeting in progress. */
+  async ask(question: string): Promise<{ answer: string; error?: string }> {
+    const live = this.liveTranscript();
+    if (!live.active) {
+      return { answer: "", error: "no meeting is being transcribed right now" };
+    }
+    try {
+      const answer = await askMeeting({
+        question,
+        segments: live.segments,
+        labels: { me: "You", them: live.counterparty ?? "Other" },
+      });
+      return { answer };
+    } catch (err) {
+      return { answer: "", error: (err as Error).message };
+    }
+  }
+
+  /** Unconfirmed proposals for a session, with the name to show for `them`. */
+  async commitments(
+    sessionId: string,
+  ): Promise<{ proposals: ProposedCommitment[]; counterparty?: string }> {
+    const dir = await this.sessionPath(sessionId);
+    if (!dir) return { proposals: [] };
+    const stored = await readCommitmentProposals(dir);
+    return { proposals: stored?.proposals ?? [], counterparty: stored?.counterparty };
+  }
+
+  /**
+   * Unconfirmed proposals across recent sessions, newest first.
+   *
+   * Bounded to the most recent sessions rather than the whole history: a proposal from
+   * three months ago that was never confirmed was, in effect, declined, and showing it
+   * forever turns the list into something people stop reading.
+   */
+  async pendingCommitments(limit = 10): Promise<
+    {
+      sessionId: string;
+      meetingTitle?: string;
+      meetingStarted?: string;
+      counterparty?: string;
+      notePath?: string;
+      proposals: ProposedCommitment[];
+    }[]
+  > {
+    const sessions = (await this.listSessions()).slice(0, limit);
+    const out = [];
+    for (const session of sessions) {
+      const stored = await readCommitmentProposals(session.dir);
+      if (!stored || stored.proposals.length === 0) continue;
+      out.push({
+        sessionId: session.id,
+        meetingTitle: stored.meetingTitle,
+        meetingStarted: stored.meetingStarted ?? session.startedAt,
+        counterparty: stored.counterparty,
+        notePath: stored.notePath ?? session.notePath,
+        proposals: stored.proposals,
+      });
+    }
+    return out;
+  }
+
+  /**
+   * Confirm one proposal into the ledger and drop it from the pending list.
+   *
+   * Identified by its span rather than by index: the pending list can change under a
+   * window that has been open for a while, and confirming "the third one" would then
+   * confirm the wrong commitment.
+   */
+  async confirmCommitment(
+    sessionId: string,
+    startMs: number,
+    endMs: number,
+  ): Promise<{ confirmed: boolean; id?: string }> {
+    const dir = await this.sessionPath(sessionId);
+    if (!dir) return { confirmed: false };
+    const stored = await readCommitmentProposals(dir);
+    const proposal = stored?.proposals.find(
+      (item) => item.start_ms === startMs && item.end_ms === endMs,
+    );
+    if (!proposal) return { confirmed: false };
+
+    const entry = await confirmCommitment({
+      proposal,
+      sessionId,
+      notePath: stored?.notePath,
+      meetingTitle: stored?.meetingTitle,
+      meetingStarted: stored?.meetingStarted,
+      counterpartyLabel: stored?.counterparty,
+    });
+    await removeCommitmentProposal(dir, startMs, endMs);
+    return { confirmed: true, id: entry.id };
+  }
+
+  async dismissCommitment(
+    sessionId: string,
+    startMs: number,
+    endMs: number,
+  ): Promise<{ dismissed: boolean }> {
+    const dir = await this.sessionPath(sessionId);
+    if (!dir) return { dismissed: false };
+    return { dismissed: await removeCommitmentProposal(dir, startMs, endMs) };
+  }
+
+  async ledger(): Promise<LedgerCommitment[]> {
+    // Newest first: the ledger is read to answer "what did I just agree to".
+    return (await readLedger()).sort((a, b) => b.confirmed_at.localeCompare(a.confirmed_at));
+  }
+
+  async setCommitmentStatus(id: string, status: "open" | "done" | "dropped"): Promise<boolean> {
+    return setCommitmentStatus(id, status);
+  }
+
+  /** A session directory, or null when the id does not name one inside the root. */
+  private async sessionPath(sessionId: string): Promise<string | null> {
+    const root = await this.root();
+    const dir = path.join(root, sessionId);
+    if (path.dirname(path.resolve(dir)) !== path.resolve(root)) return null;
+    return dir;
+  }
+
   /** Bytes every recording occupies, for the privacy tab's "what is on disk". */
   async storageUsage(): Promise<{ sessions: number; bytes: number; dir: string }> {
     const sessions = await this.listSessions();
@@ -464,7 +779,15 @@ export class MeetingController {
    * whether it was enqueued — a session with no `meta.json` (the sidecar died before
    * finalizing) is left on disk for `resumePending` rather than dropped.
    */
+  /** Torn down on every exit from a session, however it ended. */
+  private stopLive(): void {
+    this.live.stop();
+  }
+
   private async finishSession(dir: string): Promise<boolean> {
+    // Every exit from a session lands here — clean stop, sidecar crash, quit — so it is
+    // the one place the live pass has to be torn down.
+    this.stopLive();
     this.sessionDir = null;
     this.sessionStartedAt = null;
     this.setState("idle");
@@ -512,17 +835,49 @@ export class MeetingController {
         // Read the calendar event off the session, not off whatever is recording now
         // — a session resumed from a previous launch would otherwise be labelled with
         // an unrelated meeting.
+        const calendarEvent = calendarEventFromMeta(meta);
+        // Named only on a 1:1. Channel attribution puts every counterparty in one
+        // bucket, so on a group call this correctly declines and the note stays "Other".
+        // No explicit self-address needed: Google marks the local user's own attendee
+        // entry with `self: true`, which the resolver already excludes.
+        const { counterparty, reason } = this.resolveMeetingCounterparty(calendarEvent);
         const notePath = await writeMeetingNote({
           sessionId,
           startedAt: meta.started,
           segments: transcript.segments,
-          calendarEvent: calendarEventFromMeta(meta),
-          provenance: nativeProvenance({ model: this.modelId, sessionId, systemAudioCaptured }),
+          calendarEvent,
+          speakerLabels: counterparty ? { them: counterparty.label } : undefined,
+          provenance: nativeProvenance({
+            model: this.modelId,
+            sessionId,
+            systemAudioCaptured,
+            counterparty: counterparty ?? undefined,
+            attributionLimit: reason,
+          }),
           notePath: this.notePaths.get(sessionId),
         });
         this.notePaths.set(sessionId, notePath);
         this.notePath = notePath;
         return notePath;
+      },
+      proposeCommitments: async ({ dir, meta, transcript, notePath }) => {
+        const settings = await getTranscriptionConfig();
+        if (settings.meetings?.extractCommitments === false) return;
+        const calendarEvent = calendarEventFromMeta(meta);
+        const { counterparty } = this.resolveMeetingCounterparty(calendarEvent);
+        const proposals = await extractCommitments({
+          segments: transcript.segments,
+          labels: { me: "You", them: counterparty?.label ?? "Other" },
+        });
+        // Written even when empty, so the UI can tell "nothing was proposed" from
+        // "extraction has not run yet" — which are different things to show.
+        await writeCommitmentProposals(dir, {
+          proposals,
+          counterparty: counterparty?.label,
+          notePath,
+          meetingTitle: calendarEvent?.summary,
+          meetingStarted: meta.started,
+        });
       },
       summarize: async ({ dir, notePath, meta }) => {
         await summarizeMeetingNote({

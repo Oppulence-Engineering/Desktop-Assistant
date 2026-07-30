@@ -317,6 +317,12 @@ describe("meetings settings block", () => {
       // Off by default: arming a microphone is the one thing here that happens *to* a
       // user rather than because of them.
       standbyBeforeMeetings: false,
+      // Off by default: a second transcription pass during a call is cheap on the
+      // Neural Engine but not free, and not something to spend a battery on unasked.
+      liveTranscript: false,
+      // On by default: gated by a keyword pre-filter, runs once per meeting, and it is
+      // the thing that turns a transcript into something you act on.
+      extractCommitments: true,
     });
   });
 

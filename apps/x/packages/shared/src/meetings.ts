@@ -103,6 +103,25 @@ export const MeetingsSettings = z.object({
    * scheduled" is a reason, not a consent. The manual control is always available.
    */
   standbyBeforeMeetings: z.boolean().default(false),
+  /**
+   * Transcribe in the background while the meeting runs, so you can search and ask
+   * questions mid-call.
+   *
+   * Off by default. It is a second transcription pass running during a call, on a
+   * machine already busy with the call — cheap on the Neural Engine (roughly a 5% duty
+   * cycle with the fast engine) but not free, and not something to spend someone's
+   * battery on without asking.
+   */
+  liveTranscript: z.boolean().default(false),
+  /**
+   * Propose commitments from a finished transcript.
+   *
+   * On by default — it is gated by a cheap keyword pre-filter, runs once per meeting
+   * rather than continuously, and is the thing that turns a transcript into something
+   * you act on. But it is still a model call the user did not ask for each time, so it
+   * gets a switch like every other model-backed feature here.
+   */
+  extractCommitments: z.boolean().default(true),
 });
 export type MeetingsSettings = z.infer<typeof MeetingsSettings>;
 
@@ -119,6 +138,8 @@ export const DEFAULT_MEETINGS_SETTINGS: MeetingsSettings = {
   preflightNotifications: true,
   standbySeconds: 300,
   standbyBeforeMeetings: false,
+  liveTranscript: false,
+  extractCommitments: true,
 };
 
 // ---------------------------------------------------------------------------
@@ -304,11 +325,30 @@ export interface MeetingCalendarEvent {
   htmlLink?: string;
   conferenceLink?: string;
   source?: string;
+  /**
+   * Kept in `meta.json` so the queue can name the counterparty when it writes the note,
+   * without re-reading the calendar. Deliberately **not** serialized into the note's
+   * `calendar_event` frontmatter below: a note is a file people read, edit and share,
+   * and a roster of email addresses does not need to travel with it.
+   */
+  attendees?: {
+    email?: string;
+    displayName?: string;
+    self?: boolean;
+    resource?: boolean;
+    responseStatus?: string;
+  }[];
+  organizer?: { email?: string; displayName?: string };
 }
 
 export interface MeetingNoteEntry {
   speaker: string;
   text: string;
+  /** Where in the recording this line starts. Absent for entries built from text
+   *  alone — an imported transcript, or a note someone typed. */
+  start_ms?: number;
+  end_ms?: number;
+  track?: "mic" | "system";
 }
 
 /** `mm:ss`, or `h:mm:ss` past an hour. */
@@ -325,17 +365,32 @@ export function clockLabel(ms: number): string {
  * Collapse timed segments into note entries, merging consecutive turns from the
  * same speaker — the note reads as a conversation, not a list of utterances.
  */
-export function segmentsToEntries(segments: MeetingTranscriptSegment[]): MeetingNoteEntry[] {
+export function segmentsToEntries(
+  segments: MeetingTranscriptSegment[],
+  /** Overrides for the default `You` / `Other`. Only supplied when the counterparty
+   *  could be named with confidence — see `meetings/attendees.ts`. */
+  labels: Partial<Record<MeetingSpeaker, string>> = {},
+): MeetingNoteEntry[] {
   const entries: MeetingNoteEntry[] = [];
   for (const segment of segments) {
     const text = segment.text.trim();
     if (!text) continue;
-    const speaker = SPEAKER_LABEL[segment.speaker];
+    const speaker = labels[segment.speaker] ?? SPEAKER_LABEL[segment.speaker];
     const last = entries[entries.length - 1];
     if (last && last.speaker === speaker) {
       last.text += " " + text;
+      // Merged runs keep the *first* start and the *last* end, so clicking the
+      // paragraph seeks to where the person began speaking rather than to the last
+      // fragment that happened to be appended to it.
+      last.end_ms = segment.end_ms;
     } else {
-      entries.push({ speaker, text });
+      entries.push({
+        speaker,
+        text,
+        start_ms: segment.start_ms,
+        end_ms: segment.end_ms,
+        track: segment.speaker === "me" ? "mic" : "system",
+      });
     }
   }
   return entries;
@@ -367,11 +422,29 @@ export function localCaptureNotice(provenance?: Record<string, string | boolean>
   return "> Recorded and transcribed on this Mac. The audio never left this device.";
 }
 
+/**
+ * The line that says "Other" is a bucket, not a person.
+ *
+ * Only emitted when it could actually mislead — a call with several counterparties, all
+ * of whom land in one channel. On a 1:1 the speaker is named and there is nothing to
+ * warn about; on a solo recording there is no counterparty at all. A caveat printed on
+ * every note is a caveat nobody reads on the one where it mattered.
+ */
+export function attributionNotice(provenance?: Record<string, string | boolean>): string | null {
+  const attribution = provenance?.speaker_attribution;
+  if (typeof attribution !== "string") return null;
+  const multiParty = /(\d+) other participants/.exec(attribution);
+  if (!multiParty) return null;
+  return `> Speakers are separated by audio channel, not by voice — so all ${multiParty[1]} other participants appear as **Other**.`;
+}
+
 export function formatMeetingNote(
   entries: MeetingNoteEntry[],
   date: string,
   calendarEvent?: MeetingCalendarEvent,
   provenance?: Record<string, string | boolean>,
+  /** Ties the block's timings to a recording so a click can seek into it. */
+  sessionId?: string,
 ): string {
   const noteTitle = calendarEvent?.summary || "Meeting Notes";
   const lines = [
@@ -405,6 +478,8 @@ export function formatMeetingNote(
   lines.push("---", "", `# ${noteTitle}`, "");
   const notice = localCaptureNotice(provenance);
   if (notice) lines.push(notice, "");
+  const attribution = attributionNotice(provenance);
+  if (attribution) lines.push(attribution, "");
 
   const transcriptLines: string[] = [];
   for (let i = 0; i < entries.length; i++) {
@@ -415,7 +490,25 @@ export function formatMeetingNote(
     transcriptLines.push("");
   }
   const transcriptText = transcriptLines.join("\n").trim();
-  lines.push("```transcript", JSON.stringify({ transcript: transcriptText }), "```");
+  // Timings ride alongside the text rather than replacing it: `transcript` stays the
+  // one source of truth for what was said, so a note whose block loses its segments —
+  // hand-edited, imported, written by an older build — still reads identically.
+  const timed = entries.filter(
+    (entry): entry is MeetingNoteEntry & { start_ms: number; end_ms: number } =>
+      typeof entry.start_ms === "number" && typeof entry.end_ms === "number",
+  );
+  const block: Record<string, unknown> = { transcript: transcriptText };
+  if (timed.length > 0) {
+    block.segments = timed.map((entry) => ({
+      speaker: entry.speaker,
+      text: entry.text,
+      start_ms: entry.start_ms,
+      end_ms: entry.end_ms,
+      ...(entry.track ? { track: entry.track } : {}),
+    }));
+    if (sessionId) block.sessionId = sessionId;
+  }
+  lines.push("```transcript", JSON.stringify(block), "```");
   return lines.join("\n");
 }
 
@@ -480,9 +573,9 @@ function notices(body: string): string {
   if (lines[index]?.startsWith("# ")) index++;
 
   // Blank lines are skipped rather than treated as the end of the run: the formatter
-  // separates each notice with one, so stopping at the first blank would keep only the
-  // first notice and still silently drop the rest. The run ends at the first line that
-  // is neither blank nor a quote — which is where the summary starts.
+  // separates each notice with one, so stopping at the first blank kept only the
+  // privacy line and still dropped the speaker-attribution caveat. The run ends at the
+  // first line that is neither blank nor a quote — which is where the summary starts.
   const kept: string[] = [];
   for (; index < lines.length; index++) {
     const line = lines[index];

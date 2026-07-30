@@ -1251,6 +1251,156 @@ const ipcSchemas = {
       found: z.boolean(),
     }),
   },
+  /**
+   * Playable audio for a finished session, if any survived retention.
+   *
+   * `offsetMs` is load-bearing: transcript timings are on the session clock, but each
+   * file starts at its own offset, so seeking needs `session_ms - offsetMs`. Getting
+   * this wrong lands you seconds away from the line you clicked.
+   */
+  "meeting:audioTracks": {
+    req: z.object({ sessionId: z.string() }),
+    res: z.object({
+      tracks: z.array(
+        z.object({
+          track: meetings.MeetingTrackId,
+          url: z.string(),
+          offsetMs: z.number().default(0),
+          durationMs: z.number().default(0),
+        }),
+      ),
+      /** Why there is nothing to play, when there is nothing to play. */
+      reason: z.string().optional(),
+    }),
+  },
+  /**
+   * Unconfirmed commitment proposals for a session.
+   *
+   * Proposals, never facts: nothing reaches the ledger until a human confirms it, and
+   * each one carries the span it came from so "did she really say that?" is answerable
+   * by playing the audio rather than by trusting the row.
+   */
+  "meeting:commitments": {
+    req: z.object({ sessionId: z.string() }),
+    res: z.object({
+      proposals: z
+        .array(
+          z.object({
+            owner: z.enum(["me", "them"]),
+            text: z.string(),
+            due_phrase: z.string().optional(),
+            confidence: z.number(),
+            evidence: z.string(),
+            start_ms: z.number(),
+            end_ms: z.number(),
+          }),
+        )
+        .default([]),
+      /** Display name for `them`, when the meeting was a named 1:1. */
+      counterparty: z.string().optional(),
+    }),
+  },
+  /**
+   * Every unconfirmed proposal across recent sessions.
+   *
+   * The question a user actually has is "what did I agree to lately", not "what did
+   * that one meeting propose" — so this is the shape the UI reads.
+   */
+  "meeting:pendingCommitments": {
+    req: z.null(),
+    res: z.object({
+      sessions: z
+        .array(
+          z.object({
+            sessionId: z.string(),
+            meetingTitle: z.string().optional(),
+            meetingStarted: z.string().optional(),
+            counterparty: z.string().optional(),
+            notePath: z.string().optional(),
+            proposals: z.array(
+              z.object({
+                owner: z.enum(["me", "them"]),
+                text: z.string(),
+                due_phrase: z.string().optional(),
+                confidence: z.number(),
+                evidence: z.string(),
+                start_ms: z.number(),
+                end_ms: z.number(),
+              }),
+            ),
+          }),
+        )
+        .default([]),
+    }),
+  },
+  /** Confirm one proposal into the ledger. Idempotent on the same span. */
+  "meeting:confirmCommitment": {
+    req: z.object({
+      sessionId: z.string(),
+      startMs: z.number(),
+      endMs: z.number(),
+    }),
+    res: z.object({ confirmed: z.boolean(), id: z.string().optional() }),
+  },
+  /** Dismiss a proposal without confirming it. */
+  "meeting:dismissCommitment": {
+    req: z.object({ sessionId: z.string(), startMs: z.number(), endMs: z.number() }),
+    res: z.object({ dismissed: z.boolean() }),
+  },
+  /** The confirmed ledger, newest first. */
+  "meeting:ledger": {
+    req: z.null(),
+    res: z.object({
+      commitments: z
+        .array(
+          z.object({
+            id: z.string(),
+            owner: z.enum(["me", "them"]),
+            owner_label: z.string().optional(),
+            text: z.string(),
+            due_phrase: z.string().optional(),
+            status: z.enum(["open", "done", "dropped"]),
+            confirmed_at: z.string(),
+            session_id: z.string(),
+            note_path: z.string().optional(),
+            meeting_title: z.string().optional(),
+            meeting_started: z.string().optional(),
+            evidence: z.string(),
+            start_ms: z.number(),
+            end_ms: z.number(),
+          }),
+        )
+        .default([]),
+    }),
+  },
+  "meeting:setCommitmentStatus": {
+    req: z.object({ id: z.string(), status: z.enum(["open", "done", "dropped"]) }),
+    res: z.object({ updated: z.boolean() }),
+  },
+  /** The in-progress transcript of the session recording right now. */
+  "meeting:liveTranscript": {
+    req: z.null(),
+    res: z.object({
+      /** False when live transcription is off or nothing is recording. */
+      active: z.boolean(),
+      sessionId: z.string().optional(),
+      counterparty: z.string().optional(),
+      segments: z.array(meetings.MeetingTranscriptSegment).default([]),
+    }),
+  },
+  /** Ask a question about the meeting in progress. */
+  "meeting:ask": {
+    req: z.object({ question: z.string() }),
+    res: z.object({ answer: z.string(), error: z.string().optional() }),
+  },
+  /** Event (ipc.on): new live segments, main → renderer. */
+  "meeting:liveSegments": {
+    req: z.object({
+      sessionId: z.string(),
+      segments: z.array(meetings.MeetingTranscriptSegment),
+    }),
+    res: z.null(),
+  },
   /** One-time UI flags — things shown once that must not be shown again. */
   "ui:getState": {
     req: z.null(),

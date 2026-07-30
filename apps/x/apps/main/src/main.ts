@@ -83,6 +83,8 @@ import {
   setMainWindowForDeepLinks,
 } from "./deeplink.js";
 import { appWindows, getMainWindow, preloadPath, setMainWindow } from "./main-window.js";
+import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
+import { recordingsRoot } from "@x/core/dist/meetings/meetings.js";
 import {
   startCrashReporter,
   processPendingCrashDumps,
@@ -224,6 +226,16 @@ function registerAppProtocol() {
       }
     }
 
+    // Recorded meeting audio: app://recording/<sessionId>/<file>
+    //
+    // Its own host rather than reusing `workspace` because the recordings root is
+    // configurable and may sit outside the workspace entirely — in which case
+    // `app://workspace/recordings/...` silently 403s and click-to-play looks broken
+    // for exactly the users who moved it somewhere deliberate.
+    if (url.host === "recording") {
+      return serveRecording(decodeURIComponent(url.pathname));
+    }
+
     // Renderer SPA — existing logic
     let urlPath = url.pathname;
     if (urlPath === "/" || !path.extname(urlPath)) {
@@ -233,6 +245,34 @@ function registerAppProtocol() {
     const filePath = path.join(rendererPath, urlPath);
     return net.fetch(pathToFileURL(filePath).toString());
   });
+}
+
+/**
+ * Serve one file out of one session directory, and nothing else.
+ *
+ * Two segments exactly, neither of which may traverse: the resolved path has to sit
+ * directly inside the recordings root. This host can reach outside the workspace, so it
+ * is the one place where a `..` would actually buy an attacker something.
+ */
+async function serveRecording(pathname: string): Promise<Response> {
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts.length !== 2) return new Response("Not Found", { status: 404 });
+  const [sessionId, file] = parts;
+  if (!/^[\w.@-]+$/.test(sessionId) || !/^[\w.@-]+$/.test(file)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  try {
+    const config = await getTranscriptionConfig();
+    const root = path.resolve(recordingsRoot(config.meetings?.recordingsDir));
+    const absPath = path.resolve(root, sessionId, file);
+    if (path.dirname(path.dirname(absPath)) !== root) {
+      return new Response("Forbidden", { status: 403 });
+    }
+    return net.fetch(pathToFileURL(absPath).toString());
+  } catch {
+    return new Response("Not Found", { status: 404 });
+  }
 }
 
 protocol.registerSchemesAsPrivileged([

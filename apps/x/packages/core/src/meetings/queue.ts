@@ -51,6 +51,17 @@ export interface MeetingQueueDeps {
   /** Writes an LLM summary above the transcript once the note exists. Optional: without
    *  it a session still gets its transcript and note, just no summary. */
   summarize?: (args: { dir: string; notePath: string; meta: MeetingSessionMeta }) => Promise<void>;
+  /**
+   * Proposes commitments from the finished transcript. Optional and non-fatal: a
+   * meeting with a transcript and no proposals is a perfectly good outcome, and this
+   * one reaches a model, which is the least reliable step in the pipeline.
+   */
+  proposeCommitments?: (args: {
+    dir: string;
+    meta: MeetingSessionMeta;
+    transcript: MeetingTranscript;
+    notePath?: string;
+  }) => Promise<void>;
   /** Announces a finished meeting to the event bus. Optional so tests and the queue
    *  itself stay free of the events subsystem. */
   onTranscribed?: (args: {
@@ -174,6 +185,13 @@ export class MeetingQueue {
       } catch (err) {
         // A missing summary must never fail a job that produced a good transcript.
         await appendLog(dir, `summary failed: ${(err as Error).message}`);
+      }
+    }
+    if (transcript.segments.length > 0) {
+      try {
+        await this.deps.proposeCommitments?.({ dir, meta, transcript, notePath });
+      } catch (err) {
+        await appendLog(dir, `commitments failed: ${(err as Error).message}`);
       }
     }
     await applyRetention({
