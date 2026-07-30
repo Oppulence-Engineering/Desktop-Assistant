@@ -1251,6 +1251,28 @@ const ipcSchemas = {
       found: z.boolean(),
     }),
   },
+  /**
+   * Playable audio for a finished session, if any survived retention.
+   *
+   * `offsetMs` is load-bearing: transcript timings are on the session clock, but each
+   * file starts at its own offset, so seeking needs `session_ms - offsetMs`. Getting
+   * this wrong lands you seconds away from the line you clicked.
+   */
+  "meeting:audioTracks": {
+    req: z.object({ sessionId: z.string() }),
+    res: z.object({
+      tracks: z.array(
+        z.object({
+          track: meetings.MeetingTrackId,
+          url: z.string(),
+          offsetMs: z.number().default(0),
+          durationMs: z.number().default(0),
+        }),
+      ),
+      /** Why there is nothing to play, when there is nothing to play. */
+      reason: z.string().optional(),
+    }),
+  },
   /** One-time UI flags — things shown once that must not be shown again. */
   "ui:getState": {
     req: z.null(),

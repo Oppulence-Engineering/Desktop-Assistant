@@ -23,6 +23,10 @@ function toMeetingEvent(event: ResolvedCalendarEvent): MeetingCalendarEvent {
     start: { dateTime: event.start.toISOString() },
     ...(event.end ? { end: { dateTime: event.end.toISOString() } } : {}),
     ...(event.conferenceLink ? { conferenceLink: event.conferenceLink } : {}),
+    // Carried so the queue can name a 1:1's counterparty when it writes the note. Kept
+    // in meta.json only — `formatMeetingNote` does not serialize these into the note.
+    ...(event.raw.attendees ? { attendees: event.raw.attendees } : {}),
+    ...(event.raw.organizer ? { organizer: event.raw.organizer } : {}),
     source: "google",
   };
 }

@@ -144,12 +144,56 @@ describe("segmentsToEntries", () => {
         segment({ speaker: "me", text: "Two." }),
         segment({ speaker: "them", text: "Three." }),
         segment({ speaker: "me", text: "Four." }),
-      ]),
+      ]).map((entry) => ({ speaker: entry.speaker, text: entry.text })),
     ).toEqual([
       { speaker: "You", text: "One. Two." },
       { speaker: "Other", text: "Three." },
       { speaker: "You", text: "Four." },
     ]);
+  });
+
+  it("a merged run spans from its first start to its last end", () => {
+    // Clicking a paragraph must seek to where the person started speaking, not to the
+    // last fragment that happened to be appended to it.
+    const [entry] = segmentsToEntries([
+      segment({ speaker: "me", text: "One.", start_ms: 1000, end_ms: 2000 }),
+      segment({ speaker: "me", text: "Two.", start_ms: 2000, end_ms: 4500 }),
+    ]);
+    expect(entry.start_ms).toBe(1000);
+    expect(entry.end_ms).toBe(4500);
+  });
+
+  it("tags each entry with the file its speaker was recorded to", () => {
+    const entries = segmentsToEntries([segment({ speaker: "me" }), segment({ speaker: "them" })]);
+    expect(entries.map((e) => e.track)).toEqual(["mic", "system"]);
+  });
+
+  it("puts timings in the block without changing the transcript text", () => {
+    // Older notes, hand-edited notes and imported ones have no segments at all, so the
+    // rendered text stays the single source of truth for *what was said*.
+    const note = formatMeetingNote(
+      segmentsToEntries([segment({ speaker: "me", text: "Hi.", start_ms: 500, end_ms: 900 })]),
+      "2026-07-29T10:00:00.000Z",
+      undefined,
+      undefined,
+      "2026.07.29-1000",
+    );
+    const block = JSON.parse(note.split("```transcript\n")[1].split("\n```")[0]);
+    expect(block.transcript).toBe("**You:** Hi.");
+    expect(block.segments).toEqual([
+      { speaker: "You", text: "Hi.", start_ms: 500, end_ms: 900, track: "mic" },
+    ]);
+    expect(block.sessionId).toBe("2026.07.29-1000");
+  });
+
+  it("omits segments entirely when nothing is timed", () => {
+    const note = formatMeetingNote(
+      [{ speaker: "You", text: "typed by hand" }],
+      "2026-07-29T10:00:00.000Z",
+    );
+    const block = JSON.parse(note.split("```transcript\n")[1].split("\n```")[0]);
+    expect(block.segments).toBeUndefined();
+    expect(block.sessionId).toBeUndefined();
   });
 
   it("uses the same speaker labels the renderer path writes", () => {

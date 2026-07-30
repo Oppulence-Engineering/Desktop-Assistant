@@ -59,5 +59,13 @@ export type { MeetingProvenance, WriteMeetingNoteArgs } from "./note.js";
 
 export { listSessionSummaries, readTranscript } from "./list.js";
 
+export { resolveCounterparty } from "./attendees.js";
+export type {
+  AttendeeSource,
+  Counterparty,
+  CounterpartyResolution,
+  KnownPerson,
+} from "./attendees.js";
+
 export { readPcmChunk, readWavInfo, recoverWavHeader, WavError } from "./wav.js";
 export type { WavInfo } from "./wav.js";

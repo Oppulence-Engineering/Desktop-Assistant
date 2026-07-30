@@ -34,6 +34,7 @@ type MeetingCaptureHandlers = {
   "meeting:beginRecording": InvokeHandler<"meeting:beginRecording">;
   "meeting:deleteAllSessions": InvokeHandler<"meeting:deleteAllSessions">;
   "meeting:sessionTranscript": InvokeHandler<"meeting:sessionTranscript">;
+  "meeting:audioTracks": InvokeHandler<"meeting:audioTracks">;
   "ui:getState": InvokeHandler<"ui:getState">;
   "ui:setState": InvokeHandler<"ui:setState">;
   "meeting:storageUsage": InvokeHandler<"meeting:storageUsage">;
@@ -121,6 +122,9 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
     },
     "meeting:beginRecording": async () => {
       return controller().beginRecording();
+    },
+    "meeting:audioTracks": async (_event, args) => {
+      return controller().audioTracks(args.sessionId);
     },
     "meeting:sessionTranscript": async (_event, args) => {
       return controller().sessionTranscript(args.sessionId);

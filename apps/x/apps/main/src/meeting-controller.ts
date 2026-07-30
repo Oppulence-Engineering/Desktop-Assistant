@@ -29,7 +29,9 @@ import {
   summarizeMeetingNote,
   withTranscriberFallback,
   writeMeetingNote,
+  resolveCounterparty,
 } from "@x/core/dist/meetings/meetings.js";
+import { buildKnowledgeIndex } from "@x/core/dist/knowledge/knowledge_index.js";
 import type { MeetingTranscriber } from "@x/core/dist/meetings/meetings.js";
 import type { WhisperService } from "@x/core/dist/voice/whisper/index.js";
 import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
@@ -436,6 +438,75 @@ export class MeetingController {
       : { segments: [], found: false };
   }
 
+  /**
+   * Playable files for a session, as `app://recording/...` URLs.
+   *
+   * Retention deletes audio once a transcript exists unless the user opted to keep it,
+   * so "there is nothing to play" is the common, correct case rather than a failure —
+   * and it is reported with a reason so the UI can say which.
+   */
+  async audioTracks(sessionId: string): Promise<{
+    tracks: { track: MeetingTrackId; url: string; offsetMs: number; durationMs: number }[];
+    reason?: string;
+  }> {
+    const root = await this.root();
+    const dir = path.join(root, sessionId);
+    if (path.dirname(path.resolve(dir)) !== path.resolve(root)) {
+      return { tracks: [], reason: "unknown recording" };
+    }
+    const meta = await readMeta(dir);
+    if (!meta) return { tracks: [], reason: "this recording is no longer on disk" };
+    if (meta.audio_deleted_at) {
+      return { tracks: [], reason: "the audio was removed by your retention setting" };
+    }
+
+    const tracks: { track: MeetingTrackId; url: string; offsetMs: number; durationMs: number }[] =
+      [];
+    for (const track of meta.tracks) {
+      // Retention may have compressed the file since meta was written, so the name in
+      // meta is a starting point rather than the answer.
+      const candidates = [track.file, track.file.replace(/\.wav$/, ".m4a")];
+      for (const name of candidates) {
+        try {
+          await fs.access(path.join(dir, name));
+          tracks.push({
+            track: track.id,
+            url: `app://recording/${encodeURIComponent(sessionId)}/${encodeURIComponent(name)}`,
+            offsetMs: track.offset_ms,
+            durationMs: track.duration_ms,
+          });
+          break;
+        } catch {
+          // Try the compressed name before giving up on this track.
+        }
+      }
+    }
+    return tracks.length > 0
+      ? { tracks }
+      : { tracks: [], reason: "the audio was removed by your retention setting" };
+  }
+
+  /**
+   * People from the knowledge index, for putting a real name on a 1:1's counterparty.
+   *
+   * Best-effort and rebuilt per note rather than cached: it is read once at the end of a
+   * meeting, and a stale index would silently name someone by an old title. A failure
+   * here just means the calendar's own display name is used.
+   */
+  private knownPeople(): {
+    name: string;
+    email?: string;
+    aliases?: string[];
+    organization?: string;
+    role?: string;
+  }[] {
+    try {
+      return buildKnowledgeIndex().people;
+    } catch {
+      return [];
+    }
+  }
+
   /** Bytes every recording occupies, for the privacy tab's "what is on disk". */
   async storageUsage(): Promise<{ sessions: number; bytes: number; dir: string }> {
     const sessions = await this.listSessions();
@@ -511,12 +582,27 @@ export class MeetingController {
         // Read the calendar event off the session, not off whatever is recording now
         // — a session resumed from a previous launch would otherwise be labelled with
         // an unrelated meeting.
+        const calendarEvent = calendarEventFromMeta(meta);
+        // Named only on a 1:1. Channel attribution puts every counterparty in one
+        // bucket, so on a group call this correctly declines and the note stays "Other".
+        // No explicit self-address needed: Google marks the local user's own attendee
+        // entry with `self: true`, which the resolver already excludes.
+        const { counterparty, reason } = resolveCounterparty(calendarEvent, {
+          people: this.knownPeople(),
+        });
         const notePath = await writeMeetingNote({
           sessionId,
           startedAt: meta.started,
           segments: transcript.segments,
-          calendarEvent: calendarEventFromMeta(meta),
-          provenance: nativeProvenance({ model: this.modelId, sessionId, systemAudioCaptured }),
+          calendarEvent,
+          speakerLabels: counterparty ? { them: counterparty.label } : undefined,
+          provenance: nativeProvenance({
+            model: this.modelId,
+            sessionId,
+            systemAudioCaptured,
+            counterparty: counterparty ?? undefined,
+            attributionLimit: reason,
+          }),
           notePath: this.notePaths.get(sessionId),
         });
         this.notePaths.set(sessionId, notePath);

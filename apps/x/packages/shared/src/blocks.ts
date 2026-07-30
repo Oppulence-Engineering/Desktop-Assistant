@@ -335,6 +335,28 @@ export type EmailsBlock = z.infer<typeof EmailsBlockSchema>;
 
 export const TranscriptBlockSchema = z.object({
   transcript: z.string(),
+  /**
+   * Timed entries, when the capture engine produced them.
+   *
+   * Optional on purpose: every note written before this existed still parses, and a
+   * note someone edited by hand still parses. `transcript` stays the source of truth
+   * for the *text* — this only adds where in the recording each line came from, so a
+   * click can seek there.
+   */
+  segments: z
+    .array(
+      z.object({
+        speaker: z.string(),
+        text: z.string(),
+        start_ms: z.number(),
+        end_ms: z.number(),
+        /** Which recorded file this came from: `mic` is you, `system` is them. */
+        track: z.enum(["mic", "system"]).optional(),
+      }),
+    )
+    .optional(),
+  /** The recording these timings index into. Absent once the audio is gone. */
+  sessionId: z.string().optional(),
 });
 
 export type TranscriptBlock = z.infer<typeof TranscriptBlockSchema>;
