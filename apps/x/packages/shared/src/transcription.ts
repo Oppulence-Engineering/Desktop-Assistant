@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_MEETINGS_SETTINGS, MeetingsSettings } from "./meetings.js";
 
 /**
  * Transcription provider abstraction (RFC 009 §12).
@@ -260,6 +261,8 @@ export const TranscriptionConfig = z.object({
   }),
   // RFC 017: on-device meeting diarization (off by default, beta).
   diarization: DiarizationSettings.default(DEFAULT_DIARIZATION_SETTINGS),
+  // Native dual-track meeting capture: engine choice, echo cancellation, retention.
+  meetings: MeetingsSettings.default(DEFAULT_MEETINGS_SETTINGS),
 });
 export type TranscriptionConfig = z.infer<typeof TranscriptionConfig>;
 
