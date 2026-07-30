@@ -1205,6 +1205,12 @@ const ipcSchemas = {
     req: z.null(),
     res: meetings.MeetingDoctorReport,
   },
+  /** Event (ipc.on): capture state changed. Broadcast on every transition so a
+   *  tray-started session shows up in the window, and vice versa. */
+  "meeting:captureState": {
+    req: meetings.MeetingCaptureStatus,
+    res: z.null(),
+  },
   /** Event (ipc.on): per-track peak levels while recording, main → renderer. */
   "meeting:captureLevel": {
     req: meetings.MeetingLevels,

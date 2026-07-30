@@ -11,6 +11,7 @@ import type {
   MeetingTranscriptionProgress,
 } from "@x/shared/dist/meetings.js";
 import {
+  calendarEventFromMeta,
   createSessionDir,
   listSessionSummaries,
   MeetingQueue,
@@ -54,6 +55,8 @@ export class MeetingController {
   private calendarEvent: MeetingCalendarEvent | undefined;
   private lastProgress: MeetingTranscriptionProgress | null = null;
   private onStateChange?: () => void;
+  /** sessionId → note path, so the placeholder and the final note are one file. */
+  private readonly notePaths = new Map<string, string>();
 
   constructor(private readonly deps: MeetingControllerDeps) {}
 
@@ -92,6 +95,7 @@ export class MeetingController {
   async start(calendarEvent?: MeetingCalendarEvent): Promise<{
     started: boolean;
     sessionId?: string;
+    notePath?: string;
     tracks: MeetingTrackId[];
     warnings: string[];
     error?: string;
@@ -135,8 +139,37 @@ export class MeetingController {
       this.sessionDir = dir;
       this.sessionStartedAt = new Date();
       this.calendarEvent = calendarEvent;
+
+      // Write the note now, empty, so there is something to open while the meeting
+      // runs — and remember its path so the post-transcription write lands on the
+      // same file rather than deriving a second one.
+      const sessionId = path.basename(dir);
+      try {
+        this.notePath = await writeMeetingNote({
+          sessionId,
+          startedAt: this.sessionStartedAt.toISOString(),
+          segments: [],
+          calendarEvent,
+          provenance: nativeProvenance({
+            model: this.modelId,
+            systemAudioCaptured: tracks.includes("system"),
+          }),
+        });
+        this.notePaths.set(sessionId, this.notePath);
+      } catch (err) {
+        // A note we could not write is not a reason to abandon a recording — the
+        // transcript still lands, and the queue writes the note again afterwards.
+        console.warn(`[meeting] could not create the note up front: ${(err as Error).message}`);
+      }
+
       this.setState("recording");
-      return { started: true, sessionId: path.basename(dir), tracks, warnings };
+      return {
+        started: true,
+        sessionId,
+        notePath: this.notePath,
+        tracks,
+        warnings,
+      };
     } catch (err) {
       // Nothing was captured, so leave no empty session directory behind to confuse
       // the queue or the sessions list.
@@ -163,6 +196,11 @@ export class MeetingController {
   }
 
   async status(): Promise<MeetingCaptureStatus> {
+    return this.statusSnapshot();
+  }
+
+  /** Synchronous so every state transition can broadcast it without an await. */
+  private statusSnapshot(): MeetingCaptureStatus {
     const queue = this.queue;
     return {
       state: this.state,
@@ -245,7 +283,6 @@ export class MeetingController {
   private async ensureQueue(): Promise<MeetingQueue> {
     if (this.queue) return this.queue;
     const root = await this.root();
-    const calendarEvent = () => this.calendarEvent;
 
     this.queue = new MeetingQueue(root, {
       transcriber: {
@@ -261,20 +298,28 @@ export class MeetingController {
         const systemAudioCaptured = meta.tracks.some(
           (track) => track.id === "system" && !track.silent,
         );
+        // Read the calendar event off the session, not off whatever is recording now
+        // — a session resumed from a previous launch would otherwise be labelled with
+        // an unrelated meeting.
         const notePath = await writeMeetingNote({
           sessionId,
-          meta,
-          transcript,
-          calendarEvent: calendarEvent(),
+          startedAt: meta.started,
+          segments: transcript.segments,
+          calendarEvent: calendarEventFromMeta(meta),
           provenance: nativeProvenance({ model: this.modelId, systemAudioCaptured }),
+          notePath: this.notePaths.get(sessionId),
         });
+        this.notePaths.set(sessionId, notePath);
         this.notePath = notePath;
         return notePath;
       },
       onProgress: (progress) => {
         this.lastProgress = progress;
         broadcast<MeetingTranscriptionProgress>("meeting:captureProgress", progress);
+        // Queue depth is part of the status the tray renders, so a job starting or
+        // finishing is also a state change.
         this.onStateChange?.();
+        broadcast<MeetingCaptureStatus>("meeting:captureState", this.statusSnapshot());
       },
     });
     return this.queue;
@@ -298,7 +343,10 @@ export class MeetingController {
 
   private setState(state: MeetingCaptureState): void {
     this.state = state;
+    // Both the tray and any open window are views onto this one piece of state, so
+    // every transition notifies both rather than either polling.
     this.onStateChange?.();
+    broadcast<MeetingCaptureStatus>("meeting:captureState", this.statusSnapshot());
   }
 }
 

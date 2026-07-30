@@ -4,6 +4,11 @@ import { useSolomonAccount } from "@/hooks/useSolomonAccount";
 import { openWhisperStream, type WhisperStreamHandle } from "@/lib/whisper-stream";
 import * as analytics from "@/lib/analytics";
 import type { TranscriptionProvider } from "@x/shared/dist/transcription.js";
+import {
+  formatMeetingNote,
+  type MeetingCalendarEvent,
+  type MeetingResolvedEngine,
+} from "@x/shared/dist/meetings.js";
 
 export type MeetingTranscriptionState = "idle" | "connecting" | "recording" | "stopping";
 
@@ -65,67 +70,18 @@ interface TranscriptEntry {
   text: string;
 }
 
-export interface CalendarEventMeta {
-  summary?: string;
-  start?: { dateTime?: string; date?: string };
-  end?: { dateTime?: string; date?: string };
-  location?: string;
-  htmlLink?: string;
-  conferenceLink?: string;
-  source?: string;
-}
+/** Re-exported so existing importers keep working; the shape now lives in @x/shared
+ *  because the native capture path in main needs the same type. */
+export type CalendarEventMeta = MeetingCalendarEvent;
 
-function formatTranscript(
-  entries: TranscriptEntry[],
-  date: string,
-  calendarEvent?: CalendarEventMeta,
-  provenance?: Record<string, string | boolean>,
-): string {
-  const noteTitle = calendarEvent?.summary || "Meeting Notes";
-  const lines = [
-    "---",
-    "type: meeting",
-    "source: solomon",
-    `title: ${noteTitle}`,
-    `date: "${date}"`,
-  ];
-  // RFC 017 trust surface: record how this note was transcribed/diarized so the
-  // user can tell cloud diarization from local beta diarization (or none).
-  if (provenance) {
-    for (const [key, value] of Object.entries(provenance)) {
-      lines.push(`${key}: ${typeof value === "string" ? value : value ? "true" : "false"}`);
-    }
-  }
-  if (calendarEvent) {
-    // Serialize as a JSON string on one line — the frontmatter system
-    // only supports flat key: value pairs, not nested YAML objects.
-    const eventObj: Record<string, string> = {};
-    if (calendarEvent.summary) eventObj.summary = calendarEvent.summary;
-    if (calendarEvent.start?.dateTime) eventObj.start = calendarEvent.start.dateTime;
-    else if (calendarEvent.start?.date) eventObj.start = calendarEvent.start.date;
-    if (calendarEvent.end?.dateTime) eventObj.end = calendarEvent.end.dateTime;
-    else if (calendarEvent.end?.date) eventObj.end = calendarEvent.end.date;
-    if (calendarEvent.location) eventObj.location = calendarEvent.location;
-    if (calendarEvent.htmlLink) eventObj.htmlLink = calendarEvent.htmlLink;
-    if (calendarEvent.conferenceLink) eventObj.conferenceLink = calendarEvent.conferenceLink;
-    if (calendarEvent.source) eventObj.source = calendarEvent.source;
-    lines.push(`calendar_event: '${JSON.stringify(eventObj).replace(/'/g, "''")}'`);
-  }
-  lines.push("---", "", `# ${noteTitle}`, "");
-  // Build the raw transcript text
-  const transcriptLines: string[] = [];
-  for (let i = 0; i < entries.length; i++) {
-    if (i > 0 && entries[i].speaker !== entries[i - 1].speaker) {
-      transcriptLines.push("");
-    }
-    transcriptLines.push(`**${entries[i].speaker}:** ${entries[i].text}`);
-    transcriptLines.push("");
-  }
-  const transcriptText = transcriptLines.join("\n").trim();
-  const transcriptData = JSON.stringify({ transcript: transcriptText });
-  lines.push("```transcript", transcriptData, "```");
-  return lines.join("\n");
-}
+/**
+ * The note formatter moved to `@x/shared/meetings` so the native capture engine
+ * writes the identical note from the main process. Everything downstream depends on
+ * that shape — the transcript block is an editor node, note listing filters on
+ * `source: solomon`, and `meeting:summarize` prepends above the block — so there is
+ * exactly one implementation on purpose.
+ */
+const formatTranscript = formatMeetingNote;
 
 // ---------------------------------------------------------------------------
 // Hook
@@ -159,6 +115,9 @@ export function useMeetingTranscription(
   // RFC 017 provenance fields written into the note frontmatter (provider/model,
   // diarization provider+mode, audio-uploaded, identity persistence).
   const provenanceRef = useRef<Record<string, string | boolean>>({});
+  // Which engine the live session is using. `native` means the sidecar owns capture
+  // and this hook holds no audio graph at all — it just reflects main's state.
+  const engineRef = useRef<MeetingResolvedEngine>("renderer");
 
   const writeTranscriptToFile = useCallback(async () => {
     if (!notePathRef.current) return;
@@ -255,6 +214,47 @@ export function useMeetingTranscription(
     };
   }, [cleanup]);
 
+  // Native capture lives in main, so main is the authority on whether a session is
+  // running. Reconcile on mount (the window may have been closed through a recording,
+  // or the session started from the tray) and follow every transition after that.
+  useEffect(() => {
+    let cancelled = false;
+
+    const adopt = (status: { state: string; notePath?: string }) => {
+      if (cancelled) return;
+      if (status.state === "recording") {
+        engineRef.current = "native";
+        if (status.notePath) notePathRef.current = status.notePath;
+        setState("recording");
+      } else if (engineRef.current === "native" && status.state === "idle") {
+        engineRef.current = "renderer";
+        setState("idle");
+      }
+    };
+
+    void window.ipc
+      .invoke("meeting:captureStatus", null)
+      .then(adopt)
+      .catch(() => {
+        /* native capture unavailable — the in-page path owns state */
+      });
+
+    const offState = window.ipc.on("meeting:captureState", adopt);
+    // A session that ended without us asking: the tray stopped it, the app quit, or
+    // the sidecar died. Either way the button must not stay stuck on "Stop".
+    const offEnded = window.ipc.on("meeting:captureEnded", () => {
+      if (cancelled || engineRef.current !== "native") return;
+      engineRef.current = "renderer";
+      setState("idle");
+    });
+
+    return () => {
+      cancelled = true;
+      offState?.();
+      offEnded?.();
+    };
+  }, []);
+
   // E16: arm/reset the silence auto-stop timer. Shared by start() (so an all-silent
   // session still auto-stops), Deepgram ws.onmessage, and appendLocalFinal.
   const resetSilenceTimer = useCallback(() => {
@@ -288,6 +288,41 @@ export function useMeetingTranscription(
     async (calendarEvent?: CalendarEventMeta): Promise<string | null> => {
       if (state !== "idle") return null;
       setState("connecting");
+
+      // Native capture: the sidecar records both tracks to disk and main transcribes
+      // afterwards, so there is no audio graph, no socket, and no window dependency
+      // here. Everything below this block is the in-page fallback for Windows/Linux
+      // and macOS older than 14.2.
+      engineRef.current = "renderer";
+      try {
+        const { engine } = await window.ipc.invoke("meeting:captureEngine", null);
+        if (engine === "native") {
+          const result = await window.ipc.invoke("meeting:startCapture", {
+            calendarEventJson: calendarEvent ? JSON.stringify(calendarEvent) : undefined,
+          });
+          if (!result.started) {
+            console.error("[meeting] native capture failed to start:", result.error);
+            analytics.transcriptionFailed({
+              provider: "whisper-local",
+              mode: "meeting",
+              code: "native_capture_failed",
+            });
+            setState("idle");
+            return null;
+          }
+          engineRef.current = "native";
+          notePathRef.current = result.notePath ?? "";
+          calendarEventRef.current = calendarEvent;
+          if (!result.tracks.includes("system")) onSystemAudioUnavailableRef.current?.();
+          analytics.transcriptionStarted({ provider: "whisper-local", mode: "meeting" });
+          setState("recording");
+          return result.notePath ?? null;
+        }
+      } catch (err) {
+        // An unreachable handler must not block recording — fall through to the
+        // in-page pipeline rather than refusing to record at all.
+        console.warn("[meeting] could not resolve the capture engine:", err);
+      }
 
       let meetingProvider: TranscriptionProvider = "deepgram";
       try {
@@ -643,6 +678,22 @@ export function useMeetingTranscription(
   const stop = useCallback(async () => {
     if (state !== "recording") return;
     setState("stopping");
+
+    // Native capture: main finalizes the files and queues transcription. The note is
+    // rewritten with the transcript when that finishes, which the caller learns about
+    // through `meeting:captureProgress` rather than by awaiting here — a long meeting
+    // must not hold the stop button hostage.
+    if (engineRef.current === "native") {
+      try {
+        await window.ipc.invoke("meeting:stopCapture", null);
+      } catch (err) {
+        console.error("[meeting] native stop failed:", err);
+      }
+      engineRef.current = "renderer";
+      analytics.transcriptionCompleted({ provider: "whisper-local", mode: "meeting" });
+      setState("idle");
+      return;
+    }
 
     // On-device: drain the engine's tail first — close() flushes the open segment,
     // waits for the trailing finals (which land in transcriptRef via appendLocalFinal)

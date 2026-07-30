@@ -34,7 +34,12 @@ export type { MeetingTranscriber, TranscribeSessionOpts } from "./transcribe.js"
 
 export { applyRetention, hasAudio } from "./retention.js";
 
-export { meetingNotePath, nativeProvenance, writeMeetingNote } from "./note.js";
+export {
+  calendarEventFromMeta,
+  meetingNotePath,
+  nativeProvenance,
+  writeMeetingNote,
+} from "./note.js";
 export type { MeetingProvenance, WriteMeetingNoteArgs } from "./note.js";
 
 export { listSessionSummaries, readTranscript } from "./list.js";

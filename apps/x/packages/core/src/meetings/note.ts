@@ -72,27 +72,54 @@ export function nativeProvenance(args: {
   };
 }
 
+/** A session's calendar event as stored in `meta.json` (JSON on one line). */
+export function calendarEventFromMeta(
+  meta: Pick<MeetingSessionMeta, "calendar_event">,
+): MeetingCalendarEvent | undefined {
+  if (!meta.calendar_event) return undefined;
+  try {
+    return JSON.parse(meta.calendar_event) as MeetingCalendarEvent;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface WriteMeetingNoteArgs {
   sessionId: string;
-  meta: MeetingSessionMeta;
-  transcript: MeetingTranscript;
+  /** ISO start time — `meta.started` for a finished session. */
+  startedAt: string;
+  segments: MeetingTranscript["segments"];
   calendarEvent?: MeetingCalendarEvent;
   provenance: MeetingProvenance;
+  /**
+   * Reuse an existing path instead of deriving one. The placeholder written when
+   * recording starts and the final note must be the *same* file: derived paths differ
+   * if the two timestamps straddle midnight, which would leave two notes for one
+   * meeting.
+   */
+  notePath?: string;
   /** Injected so tests don't need a workspace on disk. */
   write?: typeof writeFile;
 }
 
-/** Render and write the note; returns its workspace-relative path. */
+/**
+ * Render and write the note; returns its workspace-relative path.
+ *
+ * Called twice per session: once with no segments when recording starts, so there is
+ * something to open immediately, and again with the transcript once it exists. Same
+ * two-write shape as the renderer capture path.
+ */
 export async function writeMeetingNote(args: WriteMeetingNoteArgs): Promise<string> {
-  const startedAt = new Date(args.meta.started);
-  const notePath = meetingNotePath({
-    startedAt,
-    sessionId: args.sessionId,
-    calendarEvent: args.calendarEvent,
-  });
+  const notePath =
+    args.notePath ??
+    meetingNotePath({
+      startedAt: new Date(args.startedAt),
+      sessionId: args.sessionId,
+      calendarEvent: args.calendarEvent,
+    });
   const content = formatMeetingNote(
-    segmentsToEntries(args.transcript.segments),
-    args.meta.started,
+    segmentsToEntries(args.segments),
+    args.startedAt,
     args.calendarEvent,
     args.provenance as unknown as Record<string, string | boolean>,
   );
