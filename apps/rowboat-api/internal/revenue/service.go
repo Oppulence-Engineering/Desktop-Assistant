@@ -283,6 +283,7 @@ func (s *Service) ListRelationships(ctx context.Context, u *ent.User) ([]*ent.Re
 	return s.ListRelationshipsFiltered(ctx, u, RelationshipListFilter{})
 }
 
+// RelationshipListFilter controls relationship list search, paging, and state filters.
 type RelationshipListFilter struct {
 	Query      string
 	Lifecycle  string

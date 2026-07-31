@@ -946,6 +946,7 @@ func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.
 	httpx.WriteJSON(w, http.StatusCreated, map[string]any{"results": out})
 }
 
+// RelationshipTimeline returns the relationship's immutable observation timeline.
 func (h *Handler) RelationshipTimeline(w http.ResponseWriter, r *http.Request) {
 	if _, ok := h.viewer(w, r); !ok {
 		return
@@ -972,6 +973,7 @@ func (h *Handler) RelationshipTimeline(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"observations": out})
 }
 
+// RelationshipChanges returns projected state changes for a relationship.
 func (h *Handler) RelationshipChanges(w http.ResponseWriter, r *http.Request) {
 	if _, ok := h.viewer(w, r); !ok {
 		return
@@ -992,6 +994,7 @@ func (h *Handler) RelationshipChanges(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"snapshots": out})
 }
 
+// RelationshipEvidence returns a single evidence record and its source references.
 func (h *Handler) RelationshipEvidence(w http.ResponseWriter, r *http.Request) {
 	if _, ok := h.viewer(w, r); !ok {
 		return
@@ -1023,6 +1026,7 @@ func (h *Handler) RelationshipEvidence(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// CorrectRelationship appends a user correction and reprojects relationship state.
 func (h *Handler) CorrectRelationship(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -1054,6 +1058,7 @@ func (h *Handler) CorrectRelationship(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusCreated, relationshipToDTO(rel))
 }
 
+// RelationshipSourceStatuses returns ingestion status for configured relationship sources.
 func (h *Handler) RelationshipSourceStatuses(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -1396,6 +1401,7 @@ func (h *Handler) ApproveRecommendation(w http.ResponseWriter, r *http.Request) 
 	httpx.WriteJSON(w, http.StatusOK, actionToDTO(action))
 }
 
+// RejectRecommendation records rejection of a governed recommendation revision.
 func (h *Handler) RejectRecommendation(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {

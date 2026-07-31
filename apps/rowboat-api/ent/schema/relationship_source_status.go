@@ -13,8 +13,10 @@ import (
 // without turning connector availability into relationship truth.
 type RelationshipSourceStatus struct{ ent.Schema }
 
+// Mixin adds the shared base fields to relationship source statuses.
 func (RelationshipSourceStatus) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
 
+// Fields defines the relationship source status columns.
 func (RelationshipSourceStatus) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("source").NotEmpty(),
@@ -30,6 +32,7 @@ func (RelationshipSourceStatus) Fields() []ent.Field {
 	}
 }
 
+// Edges defines the relationship source status graph connections.
 func (RelationshipSourceStatus) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
@@ -39,6 +42,7 @@ func (RelationshipSourceStatus) Edges() []ent.Edge {
 	}
 }
 
+// Indexes defines lookup constraints for relationship source statuses.
 func (RelationshipSourceStatus) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("workspace").Fields("source", "source_account_id").Unique(),

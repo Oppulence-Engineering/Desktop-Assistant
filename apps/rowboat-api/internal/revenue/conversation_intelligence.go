@@ -43,6 +43,7 @@ type ConversationClaim struct {
 	ObservationID     string   `json:"observationId,omitempty"`
 }
 
+// ConversationActionProposal describes one independently approvable follow-through action.
 type ConversationActionProposal struct {
 	ID               string   `json:"id"`
 	ActionType       string   `json:"actionType"`
@@ -55,6 +56,7 @@ type ConversationActionProposal struct {
 	Confidence       float64  `json:"confidence"`
 }
 
+// ConversationGovernanceReceipt records capture, routing, retention, and deletion policy.
 type ConversationGovernanceReceipt struct {
 	ReceiptID             string `json:"receiptId"`
 	CapturedAt            string `json:"capturedAt"`
@@ -68,6 +70,7 @@ type ConversationGovernanceReceipt struct {
 	EvidenceClip          string `json:"evidenceClip"`
 }
 
+// ConversationReviewItem identifies a focused human verification task for conversation evidence.
 type ConversationReviewItem struct {
 	ID             string  `json:"id"`
 	Kind           string  `json:"kind"`
@@ -84,6 +87,7 @@ type conversationReviewCorrection struct {
 	CorrectedValue string
 }
 
+// RelationshipDeltaItem describes one canonical relationship state change.
 type RelationshipDeltaItem struct {
 	Dimension    string   `json:"dimension"`
 	Before       any      `json:"before,omitempty"`
@@ -92,6 +96,7 @@ type RelationshipDeltaItem struct {
 	AssertionIDs []string `json:"assertionIds"`
 }
 
+// RelationshipContradiction captures conflicting assertions within a state dimension.
 type RelationshipContradiction struct {
 	Dimension               string `json:"dimension"`
 	CurrentValue            string `json:"currentValue"`
@@ -100,6 +105,7 @@ type RelationshipContradiction struct {
 	ContradictedAssertionID string `json:"contradictedAssertionId"`
 }
 
+// RelationshipDelta summarizes state changes and uncertainty between projections.
 type RelationshipDelta struct {
 	FromVersion          int                         `json:"fromVersion"`
 	ToVersion            int                         `json:"toVersion"`
@@ -109,6 +115,7 @@ type RelationshipDelta struct {
 	RecommendationReason string                      `json:"recommendationReason,omitempty"`
 }
 
+// RelationshipLiveCue is an evidence-backed prompt for an active or upcoming meeting.
 type RelationshipLiveCue struct {
 	ID         string `json:"id"`
 	Kind       string `json:"kind"`
@@ -118,6 +125,7 @@ type RelationshipLiveCue struct {
 	EvidenceID string `json:"evidenceId,omitempty"`
 }
 
+// RelationshipIntelligence is the derived trust and follow-through surface for a relationship.
 type RelationshipIntelligence struct {
 	Claims             []ConversationClaim             `json:"claims"`
 	ReviewItems        []ConversationReviewItem        `json:"reviewItems"`
@@ -703,6 +711,7 @@ func (s *Service) RelationshipIntelligenceFor(
 	return result, nil
 }
 
+// ConversationReviewCorrectionInput contains a focused human correction to reviewed evidence.
 type ConversationReviewCorrectionInput struct {
 	ReviewItemID   string
 	Kind           string

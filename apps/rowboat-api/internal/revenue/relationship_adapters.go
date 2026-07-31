@@ -24,18 +24,22 @@ type AdapterEvent struct {
 	Facts           map[string]any
 }
 
+// AdaptGmailEvent converts a Gmail adapter event into a relationship observation.
 func AdaptGmailEvent(event AdapterEvent) (RelationshipObservationInput, error) {
 	return adaptRelationshipEvent("gmail", event)
 }
 
+// AdaptCalendarEvent converts a calendar adapter event into a relationship observation.
 func AdaptCalendarEvent(event AdapterEvent) (RelationshipObservationInput, error) {
 	return adaptRelationshipEvent("calendar", event)
 }
 
+// AdaptSlackEvent converts a Slack adapter event into a relationship observation.
 func AdaptSlackEvent(event AdapterEvent) (RelationshipObservationInput, error) {
 	return adaptRelationshipEvent("slack", event)
 }
 
+// AdaptHubSpotEvent converts a HubSpot adapter event into a relationship observation.
 func AdaptHubSpotEvent(event AdapterEvent) (RelationshipObservationInput, error) {
 	return adaptRelationshipEvent("hubspot", event)
 }
