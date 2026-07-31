@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   AudioLines,
   Download,
@@ -109,6 +109,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const [meetingDoctor, setMeetingDoctor] = useState<MeetingDoctorReport | null>(null);
   const [meetingDoctorBusy, setMeetingDoctorBusy] = useState(false);
   const [meetingCaptureCheckOpen, setMeetingCaptureCheckOpen] = useState(false);
+  const meetingDoctorRequest = useRef(0);
 
   const refreshRouting = useCallback(async () => {
     try {
@@ -170,10 +171,15 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       .catch(() => {});
     // Passive checks never request system-audio permission. The explicit
     // preflight button below is the only settings action that performs the probe.
+    const doctorRequest = ++meetingDoctorRequest.current;
     void window.ipc
       .invoke("meeting:captureDoctor", { probeSystemAudio: false })
-      .then(setMeetingDoctor)
-      .catch(() => setMeetingDoctor(null));
+      .then((report) => {
+        if (meetingDoctorRequest.current === doctorRequest) setMeetingDoctor(report);
+      })
+      .catch(() => {
+        if (meetingDoctorRequest.current === doctorRequest) setMeetingDoctor(null);
+      });
 
     const offMeetingModels = window.ipc.on("meeting:modelProgress", (p) => {
       setModelDownload(p.fraction);
@@ -189,23 +195,27 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       });
     });
     return () => {
+      meetingDoctorRequest.current++;
+      setMeetingDoctorBusy(false);
       off?.();
       offMeetingModels?.();
     };
   }, [dialogOpen, refreshRouting]);
 
   const runMeetingPreflight = useCallback(async () => {
+    const doctorRequest = ++meetingDoctorRequest.current;
     setMeetingDoctorBusy(true);
     try {
-      setMeetingDoctor(
-        await window.ipc.invoke("meeting:captureDoctor", { probeSystemAudio: true }),
-      );
+      const report = await window.ipc.invoke("meeting:captureDoctor", { probeSystemAudio: true });
+      if (meetingDoctorRequest.current === doctorRequest) setMeetingDoctor(report);
     } catch (err) {
-      toast.error("Meeting preflight failed", {
-        description: err instanceof Error ? err.message : undefined,
-      });
+      if (meetingDoctorRequest.current === doctorRequest) {
+        toast.error("Meeting preflight failed", {
+          description: err instanceof Error ? err.message : undefined,
+        });
+      }
     } finally {
-      setMeetingDoctorBusy(false);
+      if (meetingDoctorRequest.current === doctorRequest) setMeetingDoctorBusy(false);
     }
   }, []);
 
@@ -571,6 +581,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
               aria-pressed={activeModel === "auto"}
             >
               <span
+                aria-hidden="true"
                 className={cn(
                   "flex size-3.5 shrink-0 items-center justify-center rounded-full border",
                   activeModel === "auto" ? "border-primary" : "border-muted-foreground/40",
@@ -996,11 +1007,14 @@ function AudioPreflightPanel({
 }) {
   const failures = report?.checks.filter((check) => check.status === "fail") ?? [];
   const warnings = report?.checks.filter((check) => check.status === "warn") ?? [];
+  const needsAttention = report !== null && (!report.ok || failures.length > 0);
   const ready = report?.ok === true && failures.length === 0 && warnings.length === 0;
   const summary = !report
     ? "Checking microphone, capture helper, and storage…"
-    : failures.length > 0
+    : needsAttention
+      ? failures.length > 0
       ? `${failures.length} issue${failures.length === 1 ? "" : "s"} need attention`
+        : "Audio preflight needs attention"
       : warnings.length > 0
         ? `Ready with ${warnings.length} warning${warnings.length === 1 ? "" : "s"}`
         : "Microphone, capture helper, and storage are ready";
@@ -1013,7 +1027,7 @@ function AudioPreflightPanel({
             className={cn(
               "mt-0.5 flex size-8 shrink-0 items-center justify-center border bg-card",
               ready && "text-emerald-600 dark:text-emerald-400",
-              failures.length > 0 && "text-destructive",
+              needsAttention && "text-destructive",
             )}
           >
             {busy ? <Loader2 className="size-4 animate-spin" /> : <AudioLines className="size-4" />}
@@ -1022,8 +1036,8 @@ function AudioPreflightPanel({
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-medium">Audio preflight</p>
               {report && (
-                <Badge variant={failures.length > 0 ? "destructive" : "secondary"}>
-                  {failures.length > 0 ? "Needs attention" : warnings.length > 0 ? "Check warnings" : "Ready"}
+                <Badge variant={needsAttention ? "destructive" : "secondary"}>
+                  {needsAttention ? "Needs attention" : warnings.length > 0 ? "Check warnings" : "Ready"}
                 </Badge>
               )}
             </div>
@@ -1045,6 +1059,7 @@ function AudioPreflightPanel({
           {report.checks.map((check) => (
             <div key={check.name} className="flex min-w-0 items-start gap-2 text-xs">
               <span
+                aria-hidden="true"
                 className={cn(
                   "mt-1 size-1.5 shrink-0 rounded-full",
                   check.status === "ok" && "bg-emerald-500",
@@ -1053,6 +1068,7 @@ function AudioPreflightPanel({
                 )}
               />
               <span className="min-w-0">
+                <span className="sr-only">{check.status}: </span>
                 <span className="font-medium text-foreground">{check.name}</span>
                 <span className="block text-muted-foreground">{check.detail}</span>
                 {check.remediation && check.status !== "ok" && (

@@ -158,6 +158,9 @@ func (e *SlackExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecResu
 // Reconcile searches Slack message metadata through slack-go. The channel and
 // optional thread remain review-bound to the original action target.
 func (e *SlackExecutor) Reconcile(ctx context.Context, req ExecRequest) (*ExecResult, bool, error) {
+	if strings.TrimSpace(req.IdempotencyKey) == "" {
+		return nil, false, errors.New("revenue: Slack reconciliation idempotency key is required")
+	}
 	team, channel, thread, err := slackTarget(req.Action)
 	if err != nil {
 		return nil, false, err

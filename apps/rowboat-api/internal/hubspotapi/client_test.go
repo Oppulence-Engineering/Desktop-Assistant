@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"go.uber.org/zap"
@@ -92,5 +93,15 @@ func TestSearchUsesOfficialSDKAndUserCredential(t *testing.T) {
 func TestNormalizeObjectTypeRejectsArbitraryObjects(t *testing.T) {
 	if _, err := NormalizeObjectType("owners"); err == nil {
 		t.Fatal("expected unsupported object type to fail")
+	}
+}
+
+func TestActionMarkerRequiresAnExactRevisionBoundary(t *testing.T) {
+	body := WithActionMarker("Follow up", "revenue-action:abc:revision:10")
+	if !strings.Contains(body, actionMarker("revenue-action:abc:revision:10")) {
+		t.Fatalf("exact marker missing: %q", body)
+	}
+	if strings.Contains(body, actionMarker("revenue-action:abc:revision:1")) {
+		t.Fatalf("revision 1 must not prefix-match revision 10: %q", body)
 	}
 }

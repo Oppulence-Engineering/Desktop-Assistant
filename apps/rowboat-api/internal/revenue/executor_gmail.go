@@ -91,6 +91,9 @@ func (e *GmailExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecResu
 // Reconcile searches Gmail by the deterministic RFC 822 Message-ID embedded
 // in the one permitted write. It does not call drafts.create or messages.send.
 func (e *GmailExecutor) Reconcile(ctx context.Context, req ExecRequest) (*ExecResult, bool, error) {
+	if strings.TrimSpace(req.IdempotencyKey) == "" {
+		return nil, false, errors.New("revenue: Gmail reconciliation idempotency key is required")
+	}
 	_, token, err := e.connection(ctx, req.UserID, scopeGmailReadonly)
 	if err != nil {
 		return nil, false, err

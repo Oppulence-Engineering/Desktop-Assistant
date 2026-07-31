@@ -169,8 +169,8 @@ func (c *Client) FindMessageByRFC822MessageID(ctx context.Context, token, messag
 	if messageID == "" {
 		return nil, fmt.Errorf("gmail reconciliation message id is required")
 	}
-	queryID := strings.TrimSuffix(strings.TrimPrefix(messageID, "<"), ">")
-	messages, err := c.ListMessages(ctx, token, "in:anywhere rfc822msgid:"+queryID, 2)
+	// Gmail documents rfc822msgid with the RFC 822 angle brackets intact.
+	messages, err := c.ListMessages(ctx, token, "in:anywhere rfc822msgid:"+messageID, 2)
 	if err != nil {
 		return nil, err
 	}

@@ -162,7 +162,7 @@ func TestGmailExecutorReconcilesByMessageIDWithoutWriting(t *testing.T) {
 	if g.drafted != 0 || g.sent != 0 {
 		t.Fatalf("Gmail reconciliation must not write: drafted=%d sent=%d", g.drafted, g.sent)
 	}
-	if strings.ContainsAny(g.gmailQuery, "<>") || !strings.Contains(g.gmailQuery, "rfc822msgid:oppulence-") {
+	if !strings.Contains(g.gmailQuery, "rfc822msgid:<oppulence-") || !strings.Contains(g.gmailQuery, "@actions.oppulence.ai>") {
 		t.Fatalf("Gmail reconciliation query = %q", g.gmailQuery)
 	}
 }

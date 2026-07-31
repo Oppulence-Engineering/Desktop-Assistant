@@ -610,7 +610,10 @@ func resolveObservationRelationship(
 	predicates := []func(*ent.RelationshipQuery){}
 	if domain != "" && !isPublicMailboxDomain(domain) {
 		predicates = append(predicates, func(q *ent.RelationshipQuery) {
-			q.Where(relationship.AccountDomainEQ(domain))
+			// Domains identify accounts, not people. Person relationships at the
+			// same company must remain distinct and are resolved by their email or
+			// provider aliases instead.
+			q.Where(relationship.KindEQ("company"), relationship.AccountDomainEQ(domain))
 		})
 	}
 	if email != "" {
@@ -743,6 +746,13 @@ func bindRelationshipIdentities(
 	seenAt time.Time,
 ) error {
 	signals = dedupeRelationshipIdentitySignals(signals)
+	if rel.Kind != "company" {
+		// A corporate domain is shared by every person at that account. Binding
+		// it to a person would silently collapse coworkers into one relationship.
+		signals = slices.DeleteFunc(signals, func(signal relationshipIdentitySignal) bool {
+			return signal.Kind == "domain"
+		})
+	}
 	if len(signals) == 0 {
 		return nil
 	}
@@ -765,7 +775,20 @@ func bindRelationshipIdentities(
 			if owner.ID != rel.ID {
 				return fmt.Errorf("%w: identity %s is already linked to another relationship", ErrConflict, signal.Kind)
 			}
-			_, err = existing.Update().SetLastSeenAt(seenAt.UTC()).SetSource(source).Save(ctx)
+			update := existing.Update()
+			changed := false
+			if seenAt.Before(existing.FirstSeenAt) {
+				update.SetFirstSeenAt(seenAt.UTC())
+				changed = true
+			}
+			if seenAt.After(existing.LastSeenAt) {
+				update.SetLastSeenAt(seenAt.UTC()).SetSource(source)
+				changed = true
+			}
+			if !changed {
+				continue
+			}
+			_, err = update.Save(ctx)
 			if err != nil {
 				return err
 			}
@@ -832,9 +855,6 @@ func isPublicMailboxDomain(domain string) bool {
 }
 
 func normalizeResourceRefs(refs []string) ([]string, error) {
-	if len(refs) > 50 {
-		return nil, errors.New("at most 50 resource refs are allowed")
-	}
 	seen := make(map[string]struct{}, len(refs))
 	out := make([]string, 0, len(refs))
 	for _, raw := range refs {
@@ -855,6 +875,9 @@ func normalizeResourceRefs(refs []string) ([]string, error) {
 		}
 		seen[ref] = struct{}{}
 		out = append(out, ref)
+		if len(out) > 50 {
+			return nil, errors.New("at most 50 unique resource refs are allowed")
+		}
 	}
 	sort.Strings(out)
 	return out, nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -31,22 +32,21 @@ func (s *Service) ReconcileAmbiguousAction(ctx context.Context, u *ent.User, id 
 	if action.ExecutionStatus != ExecAmbiguous {
 		return action, nil
 	}
+	if action.AssignedUserID != nil && *action.AssignedUserID != u.ID {
+		return s.markReconciliationManual(ctx, action, "action is assigned to another provider credential")
+	}
+	if strings.TrimSpace(action.ExecutionIdempotencyKey) == "" {
+		// Older or corrupted ambiguous rows have no safe provider marker. Any
+		// lookup would risk matching a different write, so fail closed.
+		return s.markReconciliationManual(ctx, action, "execution idempotency key is missing")
+	}
 	ws, err := s.CurrentWorkspace(ctx, u)
 	if err != nil {
 		return nil, err
 	}
 	reconciler, ok := s.executor.(Reconciler)
 	if !ok {
-		_, err = s.client.RevenueAction.Update().
-			Where(revenueaction.IDEQ(action.ID), revenueaction.ExecutionStatusEQ(ExecAmbiguous)).
-			SetReconciliationStatus("manual_review").
-			SetReconciliationError("execution backend does not support provider reconciliation").
-			ClearReconciliationNextAt().
-			Save(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return s.GetAction(ctx, id)
+		return s.markReconciliationManual(ctx, action, "execution backend does not support provider reconciliation")
 	}
 	result, found, reconcileErr := reconciler.Reconcile(ctx, ExecRequest{
 		Action: action, Workspace: ws, UserID: u.ID, Mode: action.ExecutionMode,
@@ -129,6 +129,22 @@ func (s *Service) ReconcileAmbiguousAction(ctx context.Context, u *ent.User, id 
 		return nil, err
 	}
 	return s.GetAction(ctx, id)
+}
+
+func (s *Service) markReconciliationManual(ctx context.Context, action *ent.RevenueAction, reason string) (*ent.RevenueAction, error) {
+	now := s.now().UTC()
+	_, err := s.client.RevenueAction.Update().
+		Where(revenueaction.IDEQ(action.ID), revenueaction.ExecutionStatusEQ(ExecAmbiguous)).
+		SetReconciliationStatus("manual_review").
+		SetReconciliationAttempts(maxReconciliationAttempts).
+		SetReconciliationCheckedAt(now).
+		SetReconciliationError(truncateRunes(reason, 1000)).
+		ClearReconciliationNextAt().
+		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return s.GetAction(ctx, action.ID)
 }
 
 // ReconcileAmbiguousExecutions processes a bounded batch for one tenant.

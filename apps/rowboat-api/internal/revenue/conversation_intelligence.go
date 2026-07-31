@@ -397,6 +397,16 @@ func (s *Service) materializeConversationEvidence(
 		evidenceByClaim[claim.ID] = evidence
 	}
 
+	learning := outcomeLearningProfile{now: s.now().UTC()}
+	if len(proposals) > 0 {
+		var err error
+		// One observation can contain several proposals. Load workspace history
+		// once so ranking does not issue two large queries per proposal.
+		learning, err = loadOutcomeLearningProfile(ctx, client, ws, s.now())
+		if err != nil {
+			return err
+		}
+	}
 	for _, proposal := range proposals {
 		if !conversationActionTypes[proposal.ActionType] || !conversationChannels[proposal.Channel] {
 			return fmt.Errorf("%w: unsupported conversation action", ErrInvalidInput)
@@ -410,7 +420,7 @@ func (s *Service) materializeConversationEvidence(
 		if len(evidences) == 0 {
 			return fmt.Errorf("%w: conversation actions require supporting claim ids", ErrInvalidInput)
 		}
-		if err := s.createConversationAction(ctx, client, ws, u, rel, input, proposal, evidences); err != nil {
+		if err := s.createConversationAction(ctx, client, ws, u, rel, input, proposal, evidences, learning); err != nil {
 			return err
 		}
 	}
@@ -426,11 +436,9 @@ func (s *Service) createConversationAction(
 	input RelationshipObservationInput,
 	proposal ConversationActionProposal,
 	evidences []*ent.RevenueEvidence,
+	learning outcomeLearningProfile,
 ) error {
-	lift, err := s.outcomeLearningLift(ctx, client, ws, proposal.ActionType, proposal.Channel)
-	if err != nil {
-		return err
-	}
+	lift := learning.result(proposal.ActionType, proposal.Channel).Lift
 	confidence := int(proposal.Confidence * 20)
 	priority := 55 + confidence + lift
 	if priority < 0 {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -553,6 +554,85 @@ func TestPublicMailboxDomainsNeverMergeUnrelatedPeople(t *testing.T) {
 	domains, err := f.client.RelationshipIdentity.Query().Where(relationshipidentity.KindEQ("domain")).Count(f.ctx)
 	if err != nil || domains != 0 {
 		t.Fatalf("public domain must not become an account anchor: count=%d err=%v", domains, err)
+	}
+}
+
+func TestCorporateDomainDoesNotCollapsePersonRelationships(t *testing.T) {
+	f := newFixture(t)
+	avery, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "person", DisplayName: "Avery", PrimaryEmail: "avery@acme.example", AccountDomain: "acme.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	morgan, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "person", DisplayName: "Morgan", PrimaryEmail: "morgan@acme.example", AccountDomain: "acme.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 7, 31, 16, 0, 0, 0, time.UTC)
+	results, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Avery", PrimaryEmail: "avery@acme.example", AccountDomain: "acme.example",
+		Source: "slack", ExternalID: "avery-message", EventType: "message.posted",
+		ResourceRefs: []string{"slack:user:U-AVERY"}, OccurredAt: now,
+	}})
+	if err != nil {
+		t.Fatalf("ingest person identity: %v", err)
+	}
+	if results[0].Relationship.ID != avery.ID || results[0].Relationship.ID == morgan.ID {
+		t.Fatalf("email must select Avery without collapsing Morgan: got=%s avery=%s morgan=%s",
+			results[0].Relationship.ID, avery.ID, morgan.ID)
+	}
+	providerOnly, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		Source: "slack", ExternalID: "avery-message-2", EventType: "message.posted",
+		ResourceRefs: []string{"slack:user:U-AVERY"}, OccurredAt: now.Add(time.Minute),
+	}})
+	if err != nil || providerOnly[0].Relationship.ID != avery.ID {
+		t.Fatalf("provider alias must resolve Avery: results=%#v err=%v", providerOnly, err)
+	}
+	domainAnchors, err := f.client.RelationshipIdentity.Query().
+		Where(relationshipidentity.KindEQ("domain")).Count(f.ctx)
+	if err != nil || domainAnchors != 0 {
+		t.Fatalf("person rows must not claim shared corporate domains: count=%d err=%v", domainAnchors, err)
+	}
+}
+
+func TestResourceRefLimitCountsUniqueAliases(t *testing.T) {
+	duplicates := make([]string, 51)
+	for i := range duplicates {
+		duplicates[i] = "slack:user:U123"
+	}
+	refs, err := normalizeResourceRefs(duplicates)
+	if err != nil || len(refs) != 1 {
+		t.Fatalf("duplicate aliases should count once: refs=%#v err=%v", refs, err)
+	}
+	unique := make([]string, 51)
+	for i := range unique {
+		unique[i] = fmt.Sprintf("slack:user:U%d", i)
+	}
+	if _, err := normalizeResourceRefs(unique); err == nil {
+		t.Fatal("more than 50 unique aliases must fail")
+	}
+}
+
+func TestIdentityFirstSeenTracksEarliestObservation(t *testing.T) {
+	f := newFixture(t)
+	later := time.Date(2026, 7, 31, 18, 0, 0, 0, time.UTC)
+	for _, event := range []RelationshipObservationInput{
+		{DisplayName: "Acme", Source: "hubspot", ExternalID: "later", EventType: "company.updated",
+			ResourceRefs: []string{"hubspot:company:123"}, OccurredAt: later, ReceivedAt: later},
+		{DisplayName: "Acme", Source: "hubspot", ExternalID: "earlier", EventType: "company.created",
+			ResourceRefs: []string{"hubspot:company:123"}, OccurredAt: later.Add(-24 * time.Hour), ReceivedAt: later.Add(-24 * time.Hour)},
+	} {
+		if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{event}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	identity, err := f.client.RelationshipIdentity.Query().
+		Where(relationshipidentity.ProviderEQ("hubspot")).Only(f.ctx)
+	if err != nil || !identity.FirstSeenAt.Equal(later.Add(-24*time.Hour)) || !identity.LastSeenAt.Equal(later) {
+		t.Fatalf("identity observation times not preserved: identity=%+v err=%v", identity, err)
 	}
 }
 

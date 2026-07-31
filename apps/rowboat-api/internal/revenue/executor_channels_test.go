@@ -2,8 +2,10 @@ package revenue
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,6 +21,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 )
+
+func hubspotapiMarkerTokenForTest(idempotencyKey string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(idempotencyKey)))
+	return fmt.Sprintf("oppulence-action-%x", sum[:16])
+}
 
 type staticSlackTokens struct {
 	token string
@@ -305,11 +312,11 @@ func TestHubSpotExecutorReconcilesThroughOfficialSDKSearch(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Errorf("decode search: %v", err)
 		}
-		if body["query"] != "oppulence-action:idem-hubspot-1" {
+		if body["query"] != hubspotapiMarkerTokenForTest("idem-hubspot-1") {
 			t.Errorf("search query = %#v", body["query"])
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.WriteString(w, `{"total":1,"results":[{"id":"note-99","archived":false,"createdAt":"2026-07-31T12:00:00Z","updatedAt":"2026-07-31T12:00:00Z","properties":{"hs_note_body":"Follow up\n<!-- oppulence-action:idem-hubspot-1 -->"}}]}`)
+		_, _ = io.WriteString(w, fmt.Sprintf(`{"total":1,"results":[{"id":"note-99","archived":false,"createdAt":"2026-07-31T12:00:00Z","updatedAt":"2026-07-31T12:00:00Z","properties":{"hs_note_body":"Follow up\n[Oppulence reference: %s]"}}]}`, hubspotapiMarkerTokenForTest("idem-hubspot-1")))
 	}))
 	t.Cleanup(server.Close)
 	exec := NewHubSpotExecutor(f.client, sealer, outbound.Policy{})

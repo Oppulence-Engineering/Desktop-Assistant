@@ -5,6 +5,7 @@ package hubspotapi
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"strings"
@@ -26,7 +27,16 @@ import (
 
 const defaultBaseURL = "https://api.hubapi.com"
 
-const actionMarkerPrefix = "oppulence-action:"
+const actionMarkerPrefix = "oppulence-action-"
+
+func actionMarkerToken(idempotencyKey string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(idempotencyKey)))
+	return fmt.Sprintf("%s%x", actionMarkerPrefix, sum[:16])
+}
+
+func actionMarker(idempotencyKey string) string {
+	return "[Oppulence reference: " + actionMarkerToken(idempotencyKey) + "]"
+}
 
 // Client resolves a user's sealed private-app token immediately before each
 // request and calls HubSpot through the official SDK.
@@ -184,16 +194,16 @@ func (c *Client) CreateTask(ctx context.Context, userID uuid.UUID, target Associ
 	})
 }
 
-// WithActionMarker adds an inert HTML comment that the official HubSpot SDK's
-// Notes/Tasks search APIs can find if a create response is lost. It is not a
-// retry token: callers still submit the write at most once.
+// WithActionMarker adds a short, inert text reference that HubSpot persists and
+// indexes with the note/task body. It is not a retry token: callers still
+// submit the write at most once.
 func WithActionMarker(body, idempotencyKey string) string {
 	body = strings.TrimSpace(body)
 	idempotencyKey = strings.TrimSpace(idempotencyKey)
 	if idempotencyKey == "" {
 		return body
 	}
-	return body + "\n<!-- " + actionMarkerPrefix + idempotencyKey + " -->"
+	return body + "\n" + actionMarker(idempotencyKey)
 }
 
 // FindEngagementByActionMarker reconciles a note/task through the official SDK
@@ -204,7 +214,8 @@ func (c *Client) FindEngagementByActionMarker(ctx context.Context, userID uuid.U
 	if idempotencyKey == "" {
 		return nil, errors.New("hubspot: reconciliation idempotency key is required")
 	}
-	marker := actionMarkerPrefix + idempotencyKey
+	queryMarker := actionMarkerToken(idempotencyKey)
+	exactMarker := actionMarker(idempotencyKey)
 	sdk, err := c.sdk(ctx, userID, 2)
 	if err != nil {
 		return nil, err
@@ -212,7 +223,7 @@ func (c *Client) FindEngagementByActionMarker(ctx context.Context, userID uuid.U
 	property := "hs_note_body"
 	request := crm.PublicObjectSearchRequestParam{
 		After: "", FilterGroups: []crm.FilterGroupParam{}, Limit: 10,
-		Properties: []string{property}, Sorts: []string{}, Query: hubspotsdk.String(marker),
+		Properties: []string{property}, Sorts: []string{}, Query: hubspotsdk.String(queryMarker),
 	}
 	var response *crm.CollectionResponseWithTotalSimplePublicObject
 	switch engagement {
@@ -232,7 +243,7 @@ func (c *Client) FindEngagementByActionMarker(ctx context.Context, userID uuid.U
 		return nil, nil
 	}
 	for i := range response.Results {
-		if strings.Contains(response.Results[i].Properties[property], marker) {
+		if strings.Contains(response.Results[i].Properties[property], exactMarker) {
 			return &response.Results[i], nil
 		}
 	}
