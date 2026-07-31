@@ -12,7 +12,7 @@ import {
     flushRelationshipEvidence,
 } from '../../relationships/evidence-outbox.js';
 import {
-    canonicalTranscriptObservation,
+    canonicalTranscriptObservationWithExtraction,
     conversationFingerprint,
 } from '../../relationships/conversation-evidence.js';
 import {
@@ -367,7 +367,7 @@ async function publishGranolaEvidence(doc: Document): Promise<void> {
             : doc.notes) as ProseMirrorNode | undefined,
     );
     if (!text.trim()) return;
-    const observation = canonicalTranscriptObservation({
+    const observation = await canonicalTranscriptObservationWithExtraction({
         identity: {
             displayName: domain || counterparty.displayName,
             primaryEmail: counterparty.email,

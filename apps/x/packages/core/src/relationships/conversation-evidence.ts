@@ -3,12 +3,20 @@ import type {
   ConversationActionProposal,
   ConversationClaim,
   ConversationGovernanceReceipt,
+  ConversationExtractionResult,
   ConversationSegment,
   RelationshipObservationAssertionInput,
   RelationshipObservationInput,
   RelationshipObservationParticipantInput,
 } from "@x/shared/dist/relationships.js";
 import { ConversationGovernanceReceiptSchema } from "@x/shared/dist/relationships.js";
+import { duePhrase, resolveSpokenDueAt } from "./conversation-dates.js";
+import { conversationFingerprint } from "./conversation-utils.js";
+import type { ConversationExtractor } from "./conversation-extractor.js";
+import { HybridConversationExtractor } from "./conversation-extractor.js";
+
+export { resolveSpokenDueAt } from "./conversation-dates.js";
+export { conversationFingerprint } from "./conversation-utils.js";
 
 export type TranscriptProvider = CanonicalTranscriptEnvelope["provider"];
 
@@ -46,6 +54,17 @@ export interface CompiledConversationEvidence {
   actions: ConversationActionProposal[];
   assertions: RelationshipObservationAssertionInput[];
 }
+
+const ALL_CONVERSATION_CLAIM_KINDS = [
+  "risk",
+  "objection",
+  "decision",
+  "milestone",
+  "sentiment",
+  "stakeholder",
+  "lifecycle",
+  "commitment",
+] as const;
 
 const MAX_CANONICAL_TRANSCRIPT_CHARS = 250_000;
 const MAX_CANONICAL_SEGMENT_CHARS = 4_000;
@@ -145,20 +164,6 @@ function splitSegmentText(text: string): string[] {
   return chunks;
 }
 
-/** Stable, non-secret content fingerprint used for replay deduplication. */
-export function conversationFingerprint(value: string): string {
-  let left = 0x811c9dc5;
-  let right = 0x9e3779b9;
-  for (let index = 0; index < value.length; index += 1) {
-    const code = value.charCodeAt(index);
-    left = Math.imul(left ^ code, 0x01000193);
-    right = Math.imul(right ^ code, 0x85ebca6b);
-  }
-  return `${(left >>> 0).toString(16).padStart(8, "0")}${(right >>> 0)
-    .toString(16)
-    .padStart(8, "0")}`;
-}
-
 function defaultGovernance(source: CanonicalTranscriptSource): ConversationGovernanceReceipt {
   const imported = source.provider !== "oppulence" && source.provider !== "upload";
   const receiptSeed = `${source.provider}:${source.sourceRecordId}:${source.occurredAt}`;
@@ -251,67 +256,6 @@ export function normalizeTranscript(
     captureCaveats,
     governance: defaultGovernance(source),
   };
-}
-
-function addDays(base: Date, days: number): Date {
-  const result = new Date(base);
-  result.setUTCDate(result.getUTCDate() + days);
-  return result;
-}
-
-/** Resolve common spoken due phrases deterministically relative to the meeting. */
-export function resolveSpokenDueAt(
-  phrase: string | undefined,
-  occurredAt: string,
-): string | undefined {
-  const value = phrase?.trim().toLowerCase();
-  const base = new Date(occurredAt);
-  if (!value || Number.isNaN(base.getTime())) return undefined;
-  const iso = value.match(/\b(20\d{2}-\d{2}-\d{2})\b/);
-  if (iso) return new Date(`${iso[1]}T17:00:00.000Z`).toISOString();
-  if (/\btoday\b/.test(value))
-    return new Date(
-      Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate(), 17),
-    ).toISOString();
-  if (/\btomorrow\b/.test(value)) {
-    const day = addDays(base, 1);
-    return new Date(
-      Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 17),
-    ).toISOString();
-  }
-  const relative = value.match(/\bin\s+(\d+)\s+(day|week)s?\b/);
-  if (relative) {
-    const amount = Number(relative[1]) * (relative[2] === "week" ? 7 : 1);
-    const day = addDays(base, amount);
-    return new Date(
-      Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 17),
-    ).toISOString();
-  }
-  if (/\bnext week\b/.test(value)) {
-    const day = addDays(base, 7);
-    return new Date(
-      Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 17),
-    ).toISOString();
-  }
-  const weekdays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-  const weekday = weekdays.findIndex((name) =>
-    new RegExp(`\\b(?:next\\s+)?${name}\\b`).test(value),
-  );
-  if (weekday >= 0) {
-    let days = (weekday - base.getUTCDay() + 7) % 7;
-    if (days === 0 || value.includes("next ")) days += 7;
-    const day = addDays(base, days);
-    return new Date(
-      Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 17),
-    ).toISOString();
-  }
-  return undefined;
-}
-
-function duePhrase(text: string): string | undefined {
-  return text.match(
-    /\b(?:by|before|on)\s+((?:next\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)|today|tomorrow|next week|20\d{2}-\d{2}-\d{2})\b/i,
-  )?.[1];
 }
 
 function compileClaims(envelope: CanonicalTranscriptEnvelope): ConversationClaim[] {
@@ -490,4 +434,57 @@ export function canonicalTranscriptObservation(args: {
     payload: { envelope },
     assertions,
   };
+}
+
+/** Attach a validated shadow extraction without changing projection or actions. */
+export function attachConversationExtraction(
+  observation: RelationshipObservationInput,
+  extraction: ConversationExtractionResult,
+): RelationshipObservationInput {
+  const envelope = (observation.payload as { envelope?: CanonicalTranscriptEnvelope } | undefined)
+    ?.envelope;
+  if (!envelope || extraction.envelopeFingerprint !== envelope.fingerprint) {
+    throw new Error("conversation extraction does not match the observation envelope");
+  }
+  return {
+    ...observation,
+    // Semantic and deterministic fallback candidates are review proposals. The
+    // compatibility compiler remains visible for shadow comparison, but it no longer
+    // publishes assertions or follow-through actions on the promoted async path.
+    assertions: [],
+    normalizedFacts: {
+      ...observation.normalizedFacts,
+      legacy_shadow_action_pack: observation.normalizedFacts.action_pack ?? [],
+      action_pack: [],
+      conversation_extraction: {
+        schema_version: extraction.schemaVersion,
+        envelope_fingerprint: extraction.envelopeFingerprint,
+        provenance: extraction.provenance,
+        candidate_count: extraction.candidates.length,
+        rejected_candidate_count: extraction.rejectedCandidates.length,
+      },
+      conversation_claim_candidates: extraction.candidates,
+      conversation_candidate_rejections: extraction.rejectedCandidates,
+    },
+  };
+}
+
+/**
+ * Run the hybrid extractor in shadow mode and preserve the compatibility claims.
+ * Promotion to canonical assertions is intentionally owned by the review lifecycle.
+ */
+export async function canonicalTranscriptObservationWithExtraction(args: {
+  source: CanonicalTranscriptSource;
+  identity: ConversationRelationshipIdentity;
+  extractor?: ConversationExtractor;
+}): Promise<RelationshipObservationInput> {
+  const observation = canonicalTranscriptObservation(args);
+  const envelope = (observation.payload as { envelope: CanonicalTranscriptEnvelope }).envelope;
+  const extractor = args.extractor ?? new HybridConversationExtractor();
+  const extraction = await extractor.extract({
+    envelope,
+    extractorVersion: extractor.version,
+    requestedClaimKinds: [...ALL_CONVERSATION_CLAIM_KINDS],
+  });
+  return attachConversationExtraction(observation, extraction);
 }

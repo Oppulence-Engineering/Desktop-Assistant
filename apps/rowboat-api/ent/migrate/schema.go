@@ -892,6 +892,16 @@ var (
 		{Name: "due_at", Type: field.TypeTime, Nullable: true},
 		{Name: "confidence", Type: field.TypeFloat64},
 		{Name: "user_confirmed", Type: field.TypeBool, Default: false},
+		{Name: "owner_participant_ref", Type: field.TypeString, Nullable: true},
+		{Name: "counterparty_participant_ref", Type: field.TypeString, Nullable: true},
+		{Name: "beneficiary_participant_ref", Type: field.TypeString, Nullable: true},
+		{Name: "source_phrase", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "due_phrase", Type: field.TypeString, Nullable: true},
+		{Name: "due_timezone", Type: field.TypeString, Nullable: true},
+		{Name: "acceptance", Type: field.TypeString, Default: "candidate"},
+		{Name: "blocker", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "completed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "current_event_version", Type: field.TypeInt, Default: 0},
 		{Name: "relationship_id", Type: field.TypeUUID},
 		{Name: "revenue_workspace_id", Type: field.TypeUUID},
 		{Name: "user_commitments", Type: field.TypeUUID},
@@ -904,21 +914,198 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "commitments_relationships_commitments",
-				Columns:    []*schema.Column{CommitmentsColumns[9]},
+				Columns:    []*schema.Column{CommitmentsColumns[19]},
 				RefColumns: []*schema.Column{RelationshipsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "commitments_revenue_workspaces_commitments",
-				Columns:    []*schema.Column{CommitmentsColumns[10]},
+				Columns:    []*schema.Column{CommitmentsColumns[20]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "commitments_users_commitments",
-				Columns:    []*schema.Column{CommitmentsColumns[11]},
+				Columns:    []*schema.Column{CommitmentsColumns[21]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// CommitmentDependenciesColumns holds the columns for the "commitment_dependencies" table.
+	CommitmentDependenciesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "evidence_refs", Type: field.TypeJSON},
+		{Name: "from_commitment_id", Type: field.TypeUUID},
+		{Name: "to_commitment_id", Type: field.TypeUUID},
+		{Name: "relationship_id", Type: field.TypeUUID},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_commitment_dependencies", Type: field.TypeUUID},
+	}
+	// CommitmentDependenciesTable holds the schema information for the "commitment_dependencies" table.
+	CommitmentDependenciesTable = &schema.Table{
+		Name:       "commitment_dependencies",
+		Columns:    CommitmentDependenciesColumns,
+		PrimaryKey: []*schema.Column{CommitmentDependenciesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "commitment_dependencies_commitments_outgoing_dependencies",
+				Columns:    []*schema.Column{CommitmentDependenciesColumns[5]},
+				RefColumns: []*schema.Column{CommitmentsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "commitment_dependencies_commitments_incoming_dependencies",
+				Columns:    []*schema.Column{CommitmentDependenciesColumns[6]},
+				RefColumns: []*schema.Column{CommitmentsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "commitment_dependencies_relationships_commitment_dependencies",
+				Columns:    []*schema.Column{CommitmentDependenciesColumns[7]},
+				RefColumns: []*schema.Column{RelationshipsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "commitment_dependencies_revenue_workspaces_commitment_dependencies",
+				Columns:    []*schema.Column{CommitmentDependenciesColumns[8]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "commitment_dependencies_users_commitment_dependencies",
+				Columns:    []*schema.Column{CommitmentDependenciesColumns[9]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "commitmentdependency_kind_from_commitment_id_to_commitment_id",
+				Unique:  true,
+				Columns: []*schema.Column{CommitmentDependenciesColumns[3], CommitmentDependenciesColumns[5], CommitmentDependenciesColumns[6]},
+			},
+		},
+	}
+	// CommitmentEventsColumns holds the columns for the "commitment_events" table.
+	CommitmentEventsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "source_event_id", Type: field.TypeString},
+		{Name: "version", Type: field.TypeInt},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "actor_type", Type: field.TypeString},
+		{Name: "actor_ref", Type: field.TypeString, Nullable: true},
+		{Name: "occurred_at", Type: field.TypeTime},
+		{Name: "source_observation_id", Type: field.TypeString, Nullable: true},
+		{Name: "evidence_refs", Type: field.TypeJSON},
+		{Name: "payload_json", Type: field.TypeString, Size: 2147483647, Default: "{}"},
+		{Name: "commitment_id", Type: field.TypeUUID},
+		{Name: "relationship_id", Type: field.TypeUUID},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_commitment_events", Type: field.TypeUUID},
+	}
+	// CommitmentEventsTable holds the schema information for the "commitment_events" table.
+	CommitmentEventsTable = &schema.Table{
+		Name:       "commitment_events",
+		Columns:    CommitmentEventsColumns,
+		PrimaryKey: []*schema.Column{CommitmentEventsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "commitment_events_commitments_events",
+				Columns:    []*schema.Column{CommitmentEventsColumns[12]},
+				RefColumns: []*schema.Column{CommitmentsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "commitment_events_relationships_commitment_events",
+				Columns:    []*schema.Column{CommitmentEventsColumns[13]},
+				RefColumns: []*schema.Column{RelationshipsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "commitment_events_revenue_workspaces_commitment_events",
+				Columns:    []*schema.Column{CommitmentEventsColumns[14]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "commitment_events_users_commitment_events",
+				Columns:    []*schema.Column{CommitmentEventsColumns[15]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "commitmentevent_version_commitment_id",
+				Unique:  true,
+				Columns: []*schema.Column{CommitmentEventsColumns[4], CommitmentEventsColumns[12]},
+			},
+			{
+				Name:    "commitmentevent_source_event_id_revenue_workspace_id",
+				Unique:  true,
+				Columns: []*schema.Column{CommitmentEventsColumns[3], CommitmentEventsColumns[14]},
+			},
+		},
+	}
+	// ConversationIntelligenceArtifactsColumns holds the columns for the "conversation_intelligence_artifacts" table.
+	ConversationIntelligenceArtifactsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "stable_id", Type: field.TypeString},
+		{Name: "version", Type: field.TypeInt, Default: 1},
+		{Name: "status", Type: field.TypeString, Nullable: true},
+		{Name: "subject_ref", Type: field.TypeString, Nullable: true},
+		{Name: "effective_at", Type: field.TypeTime},
+		{Name: "evidence_refs", Type: field.TypeJSON},
+		{Name: "payload_json", Type: field.TypeString, Size: 2147483647},
+		{Name: "payload_hash", Type: field.TypeString},
+		{Name: "relationship_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_conversation_intelligence_artifacts", Type: field.TypeUUID},
+	}
+	// ConversationIntelligenceArtifactsTable holds the schema information for the "conversation_intelligence_artifacts" table.
+	ConversationIntelligenceArtifactsTable = &schema.Table{
+		Name:       "conversation_intelligence_artifacts",
+		Columns:    ConversationIntelligenceArtifactsColumns,
+		PrimaryKey: []*schema.Column{ConversationIntelligenceArtifactsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "conversation_intelligence_artifacts_relationships_conversation_intelligence_artifacts",
+				Columns:    []*schema.Column{ConversationIntelligenceArtifactsColumns[12]},
+				RefColumns: []*schema.Column{RelationshipsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "conversation_intelligence_artifacts_revenue_workspaces_conversation_intelligence_artifacts",
+				Columns:    []*schema.Column{ConversationIntelligenceArtifactsColumns[13]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "conversation_intelligence_artifacts_users_conversation_intelligence_artifacts",
+				Columns:    []*schema.Column{ConversationIntelligenceArtifactsColumns[14]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "conversationintelligenceartifact_kind_stable_id_version_revenue_workspace_id",
+				Unique:  true,
+				Columns: []*schema.Column{ConversationIntelligenceArtifactsColumns[3], ConversationIntelligenceArtifactsColumns[4], ConversationIntelligenceArtifactsColumns[5], ConversationIntelligenceArtifactsColumns[13]},
+			},
+			{
+				Name:    "conversationintelligenceartifact_kind_status_effective_at_relationship_id",
+				Unique:  false,
+				Columns: []*schema.Column{ConversationIntelligenceArtifactsColumns[3], ConversationIntelligenceArtifactsColumns[6], ConversationIntelligenceArtifactsColumns[8], ConversationIntelligenceArtifactsColumns[12]},
 			},
 		},
 	}
@@ -2321,6 +2508,9 @@ var (
 		BackgroundTaskScheduleStatesTable,
 		CloudEventsTable,
 		CommitmentsTable,
+		CommitmentDependenciesTable,
+		CommitmentEventsTable,
+		ConversationIntelligenceArtifactsTable,
 		CreditLedgersTable,
 		GoogleWatchesTable,
 		LlmUsagesTable,
@@ -2395,6 +2585,18 @@ func init() {
 	CommitmentsTable.ForeignKeys[0].RefTable = RelationshipsTable
 	CommitmentsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
 	CommitmentsTable.ForeignKeys[2].RefTable = UsersTable
+	CommitmentDependenciesTable.ForeignKeys[0].RefTable = CommitmentsTable
+	CommitmentDependenciesTable.ForeignKeys[1].RefTable = CommitmentsTable
+	CommitmentDependenciesTable.ForeignKeys[2].RefTable = RelationshipsTable
+	CommitmentDependenciesTable.ForeignKeys[3].RefTable = RevenueWorkspacesTable
+	CommitmentDependenciesTable.ForeignKeys[4].RefTable = UsersTable
+	CommitmentEventsTable.ForeignKeys[0].RefTable = CommitmentsTable
+	CommitmentEventsTable.ForeignKeys[1].RefTable = RelationshipsTable
+	CommitmentEventsTable.ForeignKeys[2].RefTable = RevenueWorkspacesTable
+	CommitmentEventsTable.ForeignKeys[3].RefTable = UsersTable
+	ConversationIntelligenceArtifactsTable.ForeignKeys[0].RefTable = RelationshipsTable
+	ConversationIntelligenceArtifactsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
+	ConversationIntelligenceArtifactsTable.ForeignKeys[2].RefTable = UsersTable
 	CreditLedgersTable.ForeignKeys[0].RefTable = UsersTable
 	GoogleWatchesTable.ForeignKeys[0].RefTable = UsersTable
 	LlmUsagesTable.ForeignKeys[0].RefTable = UsersTable

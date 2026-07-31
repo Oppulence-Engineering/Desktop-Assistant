@@ -5,7 +5,9 @@ import {
   commitmentStatusObservation,
   confirmedCommitmentObservation,
   meetingTranscriptObservation,
+  meetingTranscriptObservationWithExtraction,
 } from "./meeting-evidence.js";
+import { DeterministicConversationExtractor } from "./conversation-extractor.js";
 
 const meta: MeetingSessionMeta = {
   schema: 1,
@@ -52,6 +54,38 @@ const counterparty = {
 };
 
 describe("meeting relationship evidence", () => {
+  it("attaches validated hybrid candidates without publishing unreviewed assertions", async () => {
+    const result = await meetingTranscriptObservationWithExtraction({
+      sessionId: "session-shadow",
+      meta,
+      transcript,
+      counterparty,
+      extractor: new DeterministicConversationExtractor(() => new Date("2026-07-31T12:31:00.000Z")),
+    });
+
+    expect(result.assertions).toEqual([]);
+    expect(result.normalizedFacts.action_pack).toEqual([]);
+    expect(result.normalizedFacts.legacy_shadow_action_pack).toEqual(
+      expect.arrayContaining([expect.objectContaining({ actionType: "meeting_recap" })]),
+    );
+    expect(result.normalizedFacts).toMatchObject({
+      conversation_extraction: {
+        schema_version: 2,
+        candidate_count: 1,
+        rejected_candidate_count: 0,
+        provenance: expect.objectContaining({
+          extractorVersion: "conversation-deterministic-v1",
+        }),
+      },
+      conversation_claim_candidates: [
+        expect.objectContaining({
+          kind: "commitment",
+          caveats: expect.arrayContaining(["deterministic fallback candidate requires review"]),
+        }),
+      ],
+    });
+  });
+
   it("compiles quote-backed claims, actions, speaker caveats, and governance", () => {
     const result = meetingTranscriptObservation({
       sessionId: "session-1",

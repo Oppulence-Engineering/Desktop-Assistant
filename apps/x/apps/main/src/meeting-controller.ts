@@ -6,6 +6,7 @@ import type {
   MeetingCalendarEvent,
   MeetingCaptureState,
   MeetingCaptureStatus,
+  CaptureHealthSnapshot,
   MeetingKeepAudio,
   MeetingLevels,
   MeetingSessionSummary,
@@ -73,9 +74,14 @@ import {
 import {
   confirmedCommitmentObservation,
   commitmentStatusObservation,
-  meetingTranscriptObservation,
+  meetingTranscriptObservationWithExtraction,
 } from "@x/core/dist/relationships/meeting-evidence.js";
 import { getRelationship, listRelationships } from "@x/core/dist/relationships/client.js";
+import { MeetingCaptureGuardian } from "@x/core/dist/meetings/capture-guardian.js";
+import {
+  detectLiveCoachingSignals,
+  generateLiveCoachingCues,
+} from "@x/core/dist/relationships/live-coaching.js";
 
 /**
  * The one owner of a native capture session: spawns the sidecar, holds the live
@@ -97,6 +103,7 @@ const SILENCE_CHECK_INTERVAL_MS = 15 * 1000;
 /** Long enough to collapse one meeting's reads into one vault scan, short enough that a
  *  renamed person is not mislabelled for the rest of the session. */
 const PEOPLE_CACHE_MS = 60_000;
+const GUARDIAN_INTERVAL_MS = 5_000;
 
 function broadcast<T>(channel: string, payload: T): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -121,6 +128,16 @@ export class MeetingController {
   /** Auto-stop watch: a forgotten recording should not run for hours. */
   private silenceWatch: NodeJS.Timeout | null = null;
   private lastActivityAt = 0;
+  private readonly guardian = new MeetingCaptureGuardian();
+  private guardianWatch: NodeJS.Timeout | null = null;
+  private guardianChecking = false;
+  private guardianSnapshot: CaptureHealthSnapshot | undefined;
+  private guardianHeartbeatAt = 0;
+  private guardianLiveProgressAt: number | undefined;
+  private guardianPostStartedAt: number | undefined;
+  private guardianPostProgressAt: number | undefined;
+  private guardianTrackProgress: Record<MeetingTrackId, number> = { mic: 0, system: 0 };
+  private guardianPeaks: Record<MeetingTrackId, number> = { mic: 0, system: 0 };
   private onStateChange?: () => void;
   /** Above zero while a standby session is holding audio in memory. */
   private standbySeconds = 0;
@@ -130,8 +147,12 @@ export class MeetingController {
     transcriber: () => this.transcriber(),
     onSegments: (segments) => {
       this.liveSegments.push(...segments);
+      this.guardianLiveProgressAt = Date.now();
+      this.guardianPostStartedAt = undefined;
+      this.guardianPostProgressAt = undefined;
       const sessionId = this.sessionDir ? path.basename(this.sessionDir) : "";
       broadcast("meeting:liveSegments", { sessionId, segments });
+      void this.updateLiveCoaching(sessionId, segments);
     },
   });
   private liveSegments: MeetingTranscriptSegment[] = [];
@@ -233,14 +254,11 @@ export class MeetingController {
     if (this.state !== "idle") {
       return { started: false, tracks: [], warnings: [], error: "already recording" };
     }
-    if (!(await ensureMicrophoneAccess())) {
-      return {
-        started: false,
-        tracks: [],
-        warnings: [],
-        error: "microphone access denied — enable it in System Settings › Privacy & Security",
-      };
-    }
+    // Ask before spawning so macOS can show its permission sheet, but do not make the
+    // microphone a prerequisite. The sidecar opens each source independently: when the
+    // mic is unavailable, preserving the counterparty on the system track is the honest
+    // degraded mode, and the returned warning tells the user exactly what is missing.
+    await ensureMicrophoneAccess();
 
     this.setState("starting");
     const config = await getTranscriptionConfig();
@@ -279,7 +297,16 @@ export class MeetingController {
           // nothing happen, forever.
           broadcast<MeetingCaptureStatus>("meeting:captureState", this.statusSnapshot());
         },
-        onLevel: (peaks) => {
+        onLevel: (peaks, frames) => {
+          this.guardianHeartbeatAt = Date.now();
+          for (const track of this.sidecar.tracks) {
+            const frameCount = frames[track];
+            if (Number.isFinite(frameCount)) this.guardianTrackProgress[track] = frameCount!;
+            this.guardianPeaks[track] = Math.max(
+              this.guardianPeaks[track],
+              peaks[track] ?? 0,
+            );
+          }
           // The renderer pipeline auto-stops after two minutes with no transcript; the
           // native path has no transcript stream to watch, so it watches levels. Without
           // this, walking away from a finished call records until the app quits.
@@ -296,6 +323,13 @@ export class MeetingController {
 
       this.sessionDir = dir;
       this.sessionStartedAt = new Date();
+      this.guardian.reset();
+      this.guardianSnapshot = undefined;
+      this.guardianHeartbeatAt = Date.now();
+      this.guardianLiveProgressAt = Date.now();
+      this.guardianTrackProgress = { mic: 0, system: 0 };
+      this.guardianPeaks = { mic: 0, system: 0 };
+      this.startGuardianWatch();
       this.calendarEvent = calendarEvent;
       this.startSilenceWatch();
 
@@ -311,6 +345,7 @@ export class MeetingController {
       const liveIdentity = resolveCounterparty(calendarEvent).counterparty;
       this.liveCounterparty = liveIdentity?.label;
       this.liveCues = [];
+      this.liveCueHistory = [];
       if (liveIdentity) void this.loadLiveCues(liveIdentity, sessionId);
 
       // Live transcription only once actually recording — there is no file to read
@@ -365,10 +400,88 @@ export class MeetingController {
     this.silenceWatch = null;
   }
 
+  private startGuardianWatch(): void {
+    this.stopGuardianWatch();
+    void this.checkCaptureHealth();
+    this.guardianWatch = setInterval(() => void this.checkCaptureHealth(), GUARDIAN_INTERVAL_MS);
+  }
+
+  private stopGuardianWatch(): void {
+    if (!this.guardianWatch) return;
+    clearInterval(this.guardianWatch);
+    this.guardianWatch = null;
+  }
+
+  private async sessionBytes(dir: string): Promise<number> {
+    let total = 0;
+    for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      total += (await fs.stat(path.join(dir, entry.name))).size;
+    }
+    return total;
+  }
+
+  private projectedRemainingSeconds(): number {
+    const end = this.calendarEvent?.end?.dateTime;
+    if (end && Number.isFinite(Date.parse(end))) {
+      return Math.max(0, Math.round((Date.parse(end) - Date.now()) / 1000));
+    }
+    return 60 * 60;
+  }
+
+  private async checkCaptureHealth(): Promise<void> {
+    if (this.guardianChecking || !this.sessionDir || !this.sessionStartedAt) return;
+    this.guardianChecking = true;
+    try {
+      const now = Date.now();
+      const elapsed = Math.max(1, (now - this.sessionStartedAt.getTime()) / 1000);
+      const [disk, bytes] = await Promise.all([
+        fs.statfs(this.sessionDir),
+        this.sessionBytes(this.sessionDir),
+      ]);
+      this.guardianSnapshot = this.guardian.evaluate({
+        sessionId: path.basename(this.sessionDir),
+        nowMs: now,
+        recordingStartedAtMs: this.sessionStartedAt.getTime(),
+        expectedTracks: ["mic", "system"],
+        tracks: this.sidecar.tracks.map((track) => ({
+          id: track,
+          frames: this.guardianTrackProgress[track],
+          peak: this.guardianPeaks[track],
+          permission: "granted",
+        })),
+        sidecarHeartbeatAtMs: this.guardianHeartbeatAt,
+        sidecarRunning: this.sidecar.running,
+        availableDiskBytes: disk.bavail * disk.bsize,
+        observedBytesPerSecond: bytes / elapsed,
+        projectedRemainingSeconds: this.projectedRemainingSeconds(),
+        modelReady: this.transcriptionEngine !== "parakeet" || codecAvailable(),
+        liveTranscriptionEnabled: this.live.active,
+        liveProgressAtMs: this.guardianLiveProgressAt,
+        ...(this.guardianPostStartedAt
+          ? {
+              postTranscriptionStartedAtMs: this.guardianPostStartedAt,
+              postTranscriptionProgressAtMs: this.guardianPostProgressAt,
+            }
+          : {}),
+      });
+      // Peaks represent the whole interval between guardian checks. Clearing only
+      // after evaluation prevents a brief utterance between two checks from being
+      // misclassified as fifteen seconds of digital silence.
+      this.guardianPeaks = { mic: 0, system: 0 };
+      broadcast<MeetingCaptureStatus>("meeting:captureState", this.statusSnapshot());
+    } catch (err) {
+      console.warn("[meeting] capture guardian check failed:", err);
+    } finally {
+      this.guardianChecking = false;
+    }
+  }
+
   /** Best-effort finalize on app quit so the last write is not a truncated file. */
   stopForQuit(): void {
     if (this.state !== "recording") return;
     this.stopSilenceWatch();
+    this.stopGuardianWatch();
     console.log("[meeting] finalizing capture for quit");
     this.sidecar.killForQuit();
   }
@@ -395,6 +508,7 @@ export class MeetingController {
       standbySeconds: this.state === "standby" ? this.standbySeconds : 0,
       queueDepth: queue?.depth ?? 0,
       transcribingSessionId: queue?.transcribingSessionId,
+      captureHealth: this.guardianSnapshot,
     };
   }
 
@@ -628,6 +742,66 @@ export class MeetingController {
   /** Display name for `them` in the live transcript, when the meeting is a named 1:1. */
   private liveCounterparty: string | undefined;
   private liveCues: RelationshipLiveCue[] = [];
+  private liveCueHistory: RelationshipLiveCue[] = [];
+
+  private async updateLiveCoaching(
+    sessionId: string,
+    segments: MeetingTranscriptSegment[],
+  ): Promise<void> {
+    if (!sessionId || !this.sessionDir || path.basename(this.sessionDir) !== sessionId) return;
+    const config = await getTranscriptionConfig();
+    const frequency = config.meetings.liveCoachingFrequency ?? "off";
+    if (frequency === "off") return;
+    const signals = detectLiveCoachingSignals({
+      meetingId: sessionId,
+      segments: segments.map((segment) => ({
+        startMs: segment.start_ms,
+        endMs: segment.end_ms,
+        text: segment.text,
+      })),
+    });
+    const generated = generateLiveCoachingCues({
+      meetingId: sessionId,
+      signals,
+      preferences: { frequency },
+      priorCues: this.liveCueHistory,
+      now: new Date().toISOString(),
+    });
+    if (generated.length === 0) return;
+    this.liveCueHistory.push(...generated);
+    const limit = frequency === "minimal" ? 1 : 3;
+    this.liveCues = [...this.liveCues, ...generated]
+      .filter((cue, index, all) => all.findIndex((other) => other.id === cue.id) === index)
+      .slice(-limit);
+    broadcast("meeting:liveCues", { cues: this.liveCues });
+    await this.recordCueTelemetry("displayed", generated.map((cue) => cue.id));
+  }
+
+  private async recordCueTelemetry(outcome: string, cueIds: string[]): Promise<void> {
+    if (!this.sessionDir || cueIds.length === 0) return;
+    const record = JSON.stringify({ at: new Date().toISOString(), outcome, cueIds });
+    await fs.appendFile(path.join(this.sessionDir, "cue-events.jsonl"), `${record}\n`, "utf8").catch(
+      () => undefined,
+    );
+  }
+
+  async dismissLiveCue(cueId: string): Promise<{ dismissed: boolean }> {
+    const cue = this.liveCues.find((item) => item.id === cueId);
+    if (!cue) return { dismissed: false };
+    cue.dismissalState = "dismissed_for_meeting";
+    this.liveCues = this.liveCues.filter((item) => item.id !== cueId);
+    broadcast("meeting:liveCues", { cues: this.liveCues });
+    await this.recordCueTelemetry("dismissed", [cueId]);
+    return { dismissed: true };
+  }
+
+  async recordLiveCueFeedback(cueId: string, outcome: string): Promise<{ recorded: boolean }> {
+    if (!this.liveCueHistory.some((item) => item.id === cueId) && !this.liveCues.some((item) => item.id === cueId)) {
+      return { recorded: false };
+    }
+    await this.recordCueTelemetry(outcome, [cueId]);
+    return { recorded: true };
+  }
 
   private async loadLiveCues(
     counterparty: { label: string; email?: string },
@@ -868,7 +1042,7 @@ export class MeetingController {
         .filter((segment) => segment.text.length > 0),
     };
     await enqueueRelationshipEvidence(
-      meetingTranscriptObservation({
+      await meetingTranscriptObservationWithExtraction({
         sessionId: args.sessionId,
         meta,
         transcript,
@@ -946,6 +1120,7 @@ export class MeetingController {
   private async onSidecarStopped(crashed: boolean): Promise<void> {
     if (this.state !== "recording") return;
     this.stopSilenceWatch();
+    this.stopGuardianWatch();
     const dir = this.sessionDir!;
     this.setState("stopping");
     const queued = await this.finishSession(dir);
@@ -966,14 +1141,34 @@ export class MeetingController {
     // Every exit from a session lands here — clean stop, sidecar crash, quit — so it is
     // the one place the live pass has to be torn down.
     this.stopLive();
+    this.stopGuardianWatch();
+    const health = this.guardianSnapshot;
+    if (health) {
+      await fs
+        .writeFile(path.join(dir, "capture-health.json"), JSON.stringify(health, null, 2), "utf8")
+        .catch((err) => console.warn("[meeting] could not persist capture health:", err));
+    }
     this.sessionDir = null;
     this.sessionStartedAt = null;
     this.setState("idle");
 
     const config = await getTranscriptionConfig();
+    const existingMeta = await readMeta(dir);
     await patchMeta(dir, {
       app_version: app.getVersion(),
       ...(this.calendarEvent ? { calendar_event: JSON.stringify(this.calendarEvent) } : {}),
+      ...(health && health.timeline.some((event) => event.severity !== "recovered")
+        ? {
+            warnings: [
+              ...new Set([
+                ...(existingMeta?.warnings ?? []),
+                ...health.timeline
+                  .filter((event) => event.severity !== "recovered")
+                  .map((event) => `capture guardian: ${event.kind} — ${event.impact}`),
+              ]),
+            ],
+          }
+        : {}),
     });
 
     if (!config.meetings?.transcribeOnStop) return false;
@@ -1086,7 +1281,7 @@ export class MeetingController {
         if (!counterparty) return;
         try {
           await enqueueRelationshipEvidence(
-            meetingTranscriptObservation({
+            await meetingTranscriptObservationWithExtraction({
               sessionId,
               meta,
               transcript,
@@ -1101,6 +1296,14 @@ export class MeetingController {
       },
       onProgress: (progress) => {
         this.lastProgress = progress;
+        const now = Date.now();
+        if (["queued", "transcribing", "writing"].includes(progress.phase)) {
+          this.guardianPostStartedAt ??= now;
+          this.guardianPostProgressAt = now;
+        } else {
+          this.guardianPostStartedAt = undefined;
+          this.guardianPostProgressAt = undefined;
+        }
         broadcast<MeetingTranscriptionProgress>("meeting:captureProgress", progress);
         // Queue depth is part of the status the tray renders, so a job starting or
         // finishing is also a state change.
@@ -1188,6 +1391,7 @@ export class MeetingController {
     if (state === "idle") {
       this.liveCounterparty = undefined;
       this.liveCues = [];
+      this.liveCueHistory = [];
       broadcast("meeting:liveCues", { cues: [] });
     }
     // The tray, any open window, and the indicator are all views onto this one piece

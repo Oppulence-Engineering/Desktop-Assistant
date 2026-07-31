@@ -152,6 +152,9 @@ export function MeetingCaptureStrip() {
   const silentTracks = sessions
     .slice(0, 5)
     .filter((s) => s.tracks.some((t) => t.silent) && s.transcribed);
+  const captureProblem =
+    status?.captureHealth?.activeEvents.find((event) => event.severity === "critical") ??
+    status?.captureHealth?.activeEvents[0];
 
   // Offer the setup check once, and only when idle — interrupting a live recording to
   // suggest a test recording would be absurd.
@@ -265,6 +268,24 @@ export function MeetingCaptureStrip() {
             </li>
           ))}
         </ul>
+      )}
+
+      {(recording || standby) && captureProblem && (
+        <div
+          className={cn(
+            "mb-2 flex items-start gap-2 border px-3 py-2 text-xs",
+            captureProblem.severity === "critical"
+              ? "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
+              : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+          )}
+          role="status"
+        >
+          <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
+          <span>
+            <strong className="font-medium">{captureProblem.kind.replaceAll("_", " ")}:</strong>{" "}
+            {captureProblem.impact} {captureProblem.remediation}
+          </span>
+        </div>
       )}
 
       {recording && (

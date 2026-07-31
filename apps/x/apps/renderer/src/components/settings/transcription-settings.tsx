@@ -874,6 +874,28 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                   value={meetings.liveTranscript === true}
                   onChange={(next) => void changeMeetings({ liveTranscript: next })}
                 />
+                <div className="border border-border px-3.5 py-3">
+                  <p className="text-sm font-medium">Live coaching cues</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Quiet, source-linked question prompts detected locally from the live transcript. Off by default.
+                  </p>
+                  <div className="mt-2.5 flex gap-4">
+                    {(["off", "minimal", "standard"] as const).map((value) => (
+                      <label
+                        key={value}
+                        className="flex cursor-pointer items-center gap-1.5 text-sm capitalize"
+                      >
+                        <input
+                          type="radio"
+                          name="meeting-live-coaching"
+                          checked={(meetings.liveCoachingFrequency ?? "off") === value}
+                          onChange={() => void changeMeetings({ liveCoachingFrequency: value })}
+                        />
+                        {value}
+                      </label>
+                    ))}
+                  </div>
+                </div>
                 <SettingToggle
                   title="Stand by before calendar meetings"
                   hint="Opens the microphone a couple of minutes early and holds the last few minutes in memory, writing nothing — so pressing record still catches what was already said. Off by default: arming a microphone should be your choice, not a side effect of your calendar."

@@ -49,6 +49,12 @@ import { BrowserStateSchema } from "./browser-control.js";
 import { BillingInfoSchema } from "./billing.js";
 import {
   RelationshipActionSchema,
+  ConversationReviewDecisionKindSchema,
+  CommitmentRecoveryEvaluationSchema,
+  RelationshipCommitmentSchema,
+  MutualActionPlanSchema,
+  MutualActionPlanItemSchema,
+  ConversationDeletionReceiptSchema,
   RelationshipDetailSchema,
   RelationshipLiveCueSchema,
   RelationshipObservationSchema,
@@ -1419,6 +1425,18 @@ const ipcSchemas = {
     req: z.object({ question: z.string() }),
     res: z.object({ answer: z.string(), error: z.string().optional() }),
   },
+  /** Dismiss a passive cue for this meeting; telemetry contains ids, never text. */
+  "meeting:dismissLiveCue": {
+    req: z.object({ cueId: z.string().min(1) }),
+    res: z.object({ dismissed: z.boolean() }),
+  },
+  "meeting:liveCueFeedback": {
+    req: z.object({
+      cueId: z.string().min(1),
+      outcome: z.enum(["opened", "question_used", "useful", "not_useful"]),
+    }),
+    res: z.object({ recorded: z.boolean() }),
+  },
   /** Event (ipc.on): new live segments, main → renderer. */
   "meeting:liveSegments": {
     req: z.object({
@@ -2079,6 +2097,68 @@ const ipcSchemas = {
       reason: z.string().min(1),
     }),
     res: RelationshipDetailSchema.pick({ relationship: true, intelligence: true }),
+  },
+  "relationships:decideConversation": {
+    req: z.object({
+      id: z.string(),
+      reviewItemId: z.string(),
+      kind: ConversationReviewDecisionKindSchema,
+      correctedValue: z.string().optional(),
+      reason: z.string().optional(),
+      deferUntil: z.string().optional(),
+    }),
+    res: RelationshipDetailSchema.pick({ relationship: true, intelligence: true }),
+  },
+  "relationships:resolveContradiction": {
+    req: z.object({
+      id: z.string(),
+      caseId: z.string(),
+      selectedAssertionId: z.string(),
+      reason: z.string().optional(),
+    }),
+    res: RelationshipDetailSchema.pick({ relationship: true, intelligence: true }),
+  },
+  "relationships:runCommitmentRecovery": {
+    req: z.object({ id: z.string() }),
+    res: z.object({ evaluations: z.array(CommitmentRecoveryEvaluationSchema) }),
+  },
+  "relationships:appendCommitmentTransition": {
+    req: z.object({
+      relationshipId: z.string(),
+      commitmentId: z.string(),
+      kind: z.string(),
+      idempotencyKey: z.string(),
+      reason: z.string().optional(),
+      dueAt: z.string().optional(),
+      action: z.string().optional(),
+      blocker: z.string().optional(),
+      evidenceRefs: z.array(z.string()).optional(),
+    }),
+    res: RelationshipCommitmentSchema,
+  },
+  "relationships:createMutualActionPlan": {
+    req: z.object({ relationshipId: z.string(), commitmentIds: z.array(z.string()).min(1) }),
+    res: MutualActionPlanSchema,
+  },
+  "relationships:reviseMutualActionPlan": {
+    req: z.object({
+      relationshipId: z.string(),
+      planId: z.string(),
+      items: z.array(MutualActionPlanItemSchema).min(1),
+    }),
+    res: MutualActionPlanSchema,
+  },
+  "relationships:approveMutualActionPlan": {
+    req: z.object({ relationshipId: z.string(), planId: z.string() }),
+    res: MutualActionPlanSchema,
+  },
+  "relationships:shareMutualActionPlan": {
+    req: z.object({ relationshipId: z.string(), planId: z.string() }),
+    res: z.object({ plan: MutualActionPlanSchema, responseToken: z.string() }),
+  },
+  "relationships:requestConversationDeletion": {
+    req: z.object({ relationshipId: z.string(), requestId: z.string().min(1) }),
+    res: ConversationDeletionReceiptSchema,
   },
   "relationships:approve": {
     req: z.object({ actionId: z.string(), acceptRisk: z.boolean().optional() }),

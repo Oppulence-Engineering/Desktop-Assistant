@@ -24,7 +24,10 @@ const MIN_DARWIN_MAJOR = 23; // Darwin 23.2 == macOS 14.2
 const MIN_DARWIN_MINOR = 2;
 
 export interface CaptureEvents {
-  onLevel?: (peaks: Partial<Record<MeetingTrackId, number>>) => void;
+  onLevel?: (
+    peaks: Partial<Record<MeetingTrackId, number>>,
+    frames: Partial<Record<MeetingTrackId, number>>,
+  ) => void;
   onWarning?: (code: string, message: string) => void;
   onError?: (code: string, message: string) => void;
   /** The sidecar finished — cleanly or not. `metaPath` is present only when it wrote
@@ -305,7 +308,10 @@ export class MeetingCaptureSidecar {
         return "recording";
       }
       case "level": {
-        this.events.onLevel?.((event.peaks ?? {}) as Partial<Record<MeetingTrackId, number>>);
+        this.events.onLevel?.(
+          (event.peaks ?? {}) as Partial<Record<MeetingTrackId, number>>,
+          (event.frames ?? {}) as Partial<Record<MeetingTrackId, number>>,
+        );
         return "level";
       }
       case "warning": {

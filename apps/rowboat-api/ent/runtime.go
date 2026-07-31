@@ -23,6 +23,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -935,10 +938,137 @@ func init() {
 	commitmentDescUserConfirmed := commitmentFields[5].Descriptor()
 	// commitment.DefaultUserConfirmed holds the default value on creation for the user_confirmed field.
 	commitment.DefaultUserConfirmed = commitmentDescUserConfirmed.Default.(bool)
+	// commitmentDescAcceptance is the schema descriptor for acceptance field.
+	commitmentDescAcceptance := commitmentFields[12].Descriptor()
+	// commitment.DefaultAcceptance holds the default value on creation for the acceptance field.
+	commitment.DefaultAcceptance = commitmentDescAcceptance.Default.(string)
+	// commitment.AcceptanceValidator is a validator for the "acceptance" field. It is called by the builders before save.
+	commitment.AcceptanceValidator = commitmentDescAcceptance.Validators[0].(func(string) error)
+	// commitmentDescCurrentEventVersion is the schema descriptor for current_event_version field.
+	commitmentDescCurrentEventVersion := commitmentFields[15].Descriptor()
+	// commitment.DefaultCurrentEventVersion holds the default value on creation for the current_event_version field.
+	commitment.DefaultCurrentEventVersion = commitmentDescCurrentEventVersion.Default.(int)
+	// commitment.CurrentEventVersionValidator is a validator for the "current_event_version" field. It is called by the builders before save.
+	commitment.CurrentEventVersionValidator = commitmentDescCurrentEventVersion.Validators[0].(func(int) error)
 	// commitmentDescID is the schema descriptor for id field.
 	commitmentDescID := commitmentMixinFields0[0].Descriptor()
 	// commitment.DefaultID holds the default value on creation for the id field.
 	commitment.DefaultID = commitmentDescID.Default.(func() uuid.UUID)
+	commitmentdependencyMixin := schema.CommitmentDependency{}.Mixin()
+	commitmentdependencyMixinFields0 := commitmentdependencyMixin[0].Fields()
+	_ = commitmentdependencyMixinFields0
+	commitmentdependencyFields := schema.CommitmentDependency{}.Fields()
+	_ = commitmentdependencyFields
+	// commitmentdependencyDescCreatedAt is the schema descriptor for created_at field.
+	commitmentdependencyDescCreatedAt := commitmentdependencyMixinFields0[1].Descriptor()
+	// commitmentdependency.DefaultCreatedAt holds the default value on creation for the created_at field.
+	commitmentdependency.DefaultCreatedAt = commitmentdependencyDescCreatedAt.Default.(func() time.Time)
+	// commitmentdependencyDescUpdatedAt is the schema descriptor for updated_at field.
+	commitmentdependencyDescUpdatedAt := commitmentdependencyMixinFields0[2].Descriptor()
+	// commitmentdependency.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	commitmentdependency.DefaultUpdatedAt = commitmentdependencyDescUpdatedAt.Default.(func() time.Time)
+	// commitmentdependency.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	commitmentdependency.UpdateDefaultUpdatedAt = commitmentdependencyDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// commitmentdependencyDescKind is the schema descriptor for kind field.
+	commitmentdependencyDescKind := commitmentdependencyFields[0].Descriptor()
+	// commitmentdependency.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	commitmentdependency.KindValidator = commitmentdependencyDescKind.Validators[0].(func(string) error)
+	// commitmentdependencyDescEvidenceRefs is the schema descriptor for evidence_refs field.
+	commitmentdependencyDescEvidenceRefs := commitmentdependencyFields[1].Descriptor()
+	// commitmentdependency.DefaultEvidenceRefs holds the default value on creation for the evidence_refs field.
+	commitmentdependency.DefaultEvidenceRefs = commitmentdependencyDescEvidenceRefs.Default.([]string)
+	// commitmentdependencyDescID is the schema descriptor for id field.
+	commitmentdependencyDescID := commitmentdependencyMixinFields0[0].Descriptor()
+	// commitmentdependency.DefaultID holds the default value on creation for the id field.
+	commitmentdependency.DefaultID = commitmentdependencyDescID.Default.(func() uuid.UUID)
+	commitmenteventMixin := schema.CommitmentEvent{}.Mixin()
+	commitmenteventMixinFields0 := commitmenteventMixin[0].Fields()
+	_ = commitmenteventMixinFields0
+	commitmenteventFields := schema.CommitmentEvent{}.Fields()
+	_ = commitmenteventFields
+	// commitmenteventDescCreatedAt is the schema descriptor for created_at field.
+	commitmenteventDescCreatedAt := commitmenteventMixinFields0[1].Descriptor()
+	// commitmentevent.DefaultCreatedAt holds the default value on creation for the created_at field.
+	commitmentevent.DefaultCreatedAt = commitmenteventDescCreatedAt.Default.(func() time.Time)
+	// commitmenteventDescUpdatedAt is the schema descriptor for updated_at field.
+	commitmenteventDescUpdatedAt := commitmenteventMixinFields0[2].Descriptor()
+	// commitmentevent.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	commitmentevent.DefaultUpdatedAt = commitmenteventDescUpdatedAt.Default.(func() time.Time)
+	// commitmentevent.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	commitmentevent.UpdateDefaultUpdatedAt = commitmenteventDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// commitmenteventDescSourceEventID is the schema descriptor for source_event_id field.
+	commitmenteventDescSourceEventID := commitmenteventFields[0].Descriptor()
+	// commitmentevent.SourceEventIDValidator is a validator for the "source_event_id" field. It is called by the builders before save.
+	commitmentevent.SourceEventIDValidator = commitmenteventDescSourceEventID.Validators[0].(func(string) error)
+	// commitmenteventDescVersion is the schema descriptor for version field.
+	commitmenteventDescVersion := commitmenteventFields[1].Descriptor()
+	// commitmentevent.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	commitmentevent.VersionValidator = commitmenteventDescVersion.Validators[0].(func(int) error)
+	// commitmenteventDescKind is the schema descriptor for kind field.
+	commitmenteventDescKind := commitmenteventFields[2].Descriptor()
+	// commitmentevent.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	commitmentevent.KindValidator = commitmenteventDescKind.Validators[0].(func(string) error)
+	// commitmenteventDescActorType is the schema descriptor for actor_type field.
+	commitmenteventDescActorType := commitmenteventFields[3].Descriptor()
+	// commitmentevent.ActorTypeValidator is a validator for the "actor_type" field. It is called by the builders before save.
+	commitmentevent.ActorTypeValidator = commitmenteventDescActorType.Validators[0].(func(string) error)
+	// commitmenteventDescEvidenceRefs is the schema descriptor for evidence_refs field.
+	commitmenteventDescEvidenceRefs := commitmenteventFields[7].Descriptor()
+	// commitmentevent.DefaultEvidenceRefs holds the default value on creation for the evidence_refs field.
+	commitmentevent.DefaultEvidenceRefs = commitmenteventDescEvidenceRefs.Default.([]string)
+	// commitmenteventDescPayloadJSON is the schema descriptor for payload_json field.
+	commitmenteventDescPayloadJSON := commitmenteventFields[8].Descriptor()
+	// commitmentevent.DefaultPayloadJSON holds the default value on creation for the payload_json field.
+	commitmentevent.DefaultPayloadJSON = commitmenteventDescPayloadJSON.Default.(string)
+	// commitmenteventDescID is the schema descriptor for id field.
+	commitmenteventDescID := commitmenteventMixinFields0[0].Descriptor()
+	// commitmentevent.DefaultID holds the default value on creation for the id field.
+	commitmentevent.DefaultID = commitmenteventDescID.Default.(func() uuid.UUID)
+	conversationintelligenceartifactMixin := schema.ConversationIntelligenceArtifact{}.Mixin()
+	conversationintelligenceartifactMixinFields0 := conversationintelligenceartifactMixin[0].Fields()
+	_ = conversationintelligenceartifactMixinFields0
+	conversationintelligenceartifactFields := schema.ConversationIntelligenceArtifact{}.Fields()
+	_ = conversationintelligenceartifactFields
+	// conversationintelligenceartifactDescCreatedAt is the schema descriptor for created_at field.
+	conversationintelligenceartifactDescCreatedAt := conversationintelligenceartifactMixinFields0[1].Descriptor()
+	// conversationintelligenceartifact.DefaultCreatedAt holds the default value on creation for the created_at field.
+	conversationintelligenceartifact.DefaultCreatedAt = conversationintelligenceartifactDescCreatedAt.Default.(func() time.Time)
+	// conversationintelligenceartifactDescUpdatedAt is the schema descriptor for updated_at field.
+	conversationintelligenceartifactDescUpdatedAt := conversationintelligenceartifactMixinFields0[2].Descriptor()
+	// conversationintelligenceartifact.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	conversationintelligenceartifact.DefaultUpdatedAt = conversationintelligenceartifactDescUpdatedAt.Default.(func() time.Time)
+	// conversationintelligenceartifact.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	conversationintelligenceartifact.UpdateDefaultUpdatedAt = conversationintelligenceartifactDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// conversationintelligenceartifactDescKind is the schema descriptor for kind field.
+	conversationintelligenceartifactDescKind := conversationintelligenceartifactFields[0].Descriptor()
+	// conversationintelligenceartifact.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	conversationintelligenceartifact.KindValidator = conversationintelligenceartifactDescKind.Validators[0].(func(string) error)
+	// conversationintelligenceartifactDescStableID is the schema descriptor for stable_id field.
+	conversationintelligenceartifactDescStableID := conversationintelligenceartifactFields[1].Descriptor()
+	// conversationintelligenceartifact.StableIDValidator is a validator for the "stable_id" field. It is called by the builders before save.
+	conversationintelligenceartifact.StableIDValidator = conversationintelligenceartifactDescStableID.Validators[0].(func(string) error)
+	// conversationintelligenceartifactDescVersion is the schema descriptor for version field.
+	conversationintelligenceartifactDescVersion := conversationintelligenceartifactFields[2].Descriptor()
+	// conversationintelligenceartifact.DefaultVersion holds the default value on creation for the version field.
+	conversationintelligenceartifact.DefaultVersion = conversationintelligenceartifactDescVersion.Default.(int)
+	// conversationintelligenceartifact.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	conversationintelligenceartifact.VersionValidator = conversationintelligenceartifactDescVersion.Validators[0].(func(int) error)
+	// conversationintelligenceartifactDescEvidenceRefs is the schema descriptor for evidence_refs field.
+	conversationintelligenceartifactDescEvidenceRefs := conversationintelligenceartifactFields[6].Descriptor()
+	// conversationintelligenceartifact.DefaultEvidenceRefs holds the default value on creation for the evidence_refs field.
+	conversationintelligenceartifact.DefaultEvidenceRefs = conversationintelligenceartifactDescEvidenceRefs.Default.([]string)
+	// conversationintelligenceartifactDescPayloadJSON is the schema descriptor for payload_json field.
+	conversationintelligenceartifactDescPayloadJSON := conversationintelligenceartifactFields[7].Descriptor()
+	// conversationintelligenceartifact.PayloadJSONValidator is a validator for the "payload_json" field. It is called by the builders before save.
+	conversationintelligenceartifact.PayloadJSONValidator = conversationintelligenceartifactDescPayloadJSON.Validators[0].(func(string) error)
+	// conversationintelligenceartifactDescPayloadHash is the schema descriptor for payload_hash field.
+	conversationintelligenceartifactDescPayloadHash := conversationintelligenceartifactFields[8].Descriptor()
+	// conversationintelligenceartifact.PayloadHashValidator is a validator for the "payload_hash" field. It is called by the builders before save.
+	conversationintelligenceartifact.PayloadHashValidator = conversationintelligenceartifactDescPayloadHash.Validators[0].(func(string) error)
+	// conversationintelligenceartifactDescID is the schema descriptor for id field.
+	conversationintelligenceartifactDescID := conversationintelligenceartifactMixinFields0[0].Descriptor()
+	// conversationintelligenceartifact.DefaultID holds the default value on creation for the id field.
+	conversationintelligenceartifact.DefaultID = conversationintelligenceartifactDescID.Default.(func() uuid.UUID)
 	creditledgerFields := schema.CreditLedger{}.Fields()
 	_ = creditledgerFields
 	// creditledgerDescTs is the schema descriptor for ts field.

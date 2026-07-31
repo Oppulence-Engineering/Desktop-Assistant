@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 )
 
@@ -266,5 +267,181 @@ func TestCompiledConversationWithoutValidGovernanceReceiptIsRejected(t *testing.
 	}
 	if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{input}); err == nil || !strings.Contains(err.Error(), "must be encrypted") {
 		t.Fatalf("unencrypted retained evidence should fail closed, got %v", err)
+	}
+}
+
+func semanticConversationInput(now time.Time, externalID string) RelationshipObservationInput {
+	input := compiledConversationInput(now, externalID, "semantic-v1")
+	input.Facts["conversation_claim_candidates"] = []map[string]any{
+		{
+			"candidateId": "candidate-risk", "kind": "risk",
+			"normalizedValue": map[string]any{"kind": "risk", "text": "Security review may delay renewal"},
+			"displayValue":    "Security review may delay renewal",
+			"evidence": []map[string]any{{
+				"exactQuote": "We are concerned the security review will delay the renewal.",
+				"segmentIds": []string{"segment-1"}, "startMs": 1000, "endMs": 4000,
+			}},
+			"stateDimension": "risk", "confidence": 0.96, "caveats": []string{},
+		},
+	}
+	input.Facts["conversation_extraction"] = map[string]any{
+		"schema_version": 2, "envelope_fingerprint": "semantic-v1",
+		"candidate_count": 1, "rejected_candidate_count": 0,
+	}
+	return input
+}
+
+func TestSemanticConversationRequiresDecisionBeforeStateOrActions(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 7, 31, 14, 0, 0, 0, time.UTC)
+	input := semanticConversationInput(now, "oppulence:semantic-review")
+	results, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{input})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel, err := f.svc.GetRelationship(f.ctx, results[0].Relationship.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rel.Risks) != 0 {
+		t.Fatalf("unreviewed semantic candidate mutated state: %#v", rel.Risks)
+	}
+	actionCount, _ := f.client.RevenueAction.Query().Count(f.ctx)
+	if actionCount != 0 {
+		t.Fatalf("unreviewed semantic candidate created %d actions", actionCount)
+	}
+	artifacts, err := f.client.ConversationIntelligenceArtifact.Query().
+		Where(conversationintelligenceartifact.HasRelationshipWith()).All(f.ctx)
+	if err != nil || len(artifacts) != 4 {
+		t.Fatalf("extraction, candidate, batch, and policy decision must persist atomically: %#v err=%v", artifacts, err)
+	}
+	intelligence, err := f.svc.RelationshipIntelligenceFor(f.ctx, rel)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var review ConversationReviewItem
+	for _, item := range intelligence.ReviewItems {
+		if item.ClaimID == "candidate-risk" && item.BatchID != "" {
+			review = item
+			break
+		}
+	}
+	if review.ID == "" || review.Status != "pending_review" || review.ExactQuote == "" {
+		t.Fatalf("semantic review item missing evidence/baseline: %#v", intelligence.ReviewItems)
+	}
+
+	updated, after, err := f.svc.DecideConversationReview(f.ctx, f.user, rel.ID, ConversationReviewDecisionInput{
+		ReviewItemID: review.ID, Kind: "approve", Reason: "The customer stated this directly.",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(updated.Risks) != 1 || updated.Risks[0] != "Security review may delay renewal" {
+		t.Fatalf("approved candidate did not project: %#v", updated.Risks)
+	}
+	for _, item := range after.ReviewItems {
+		if item.ID == review.ID {
+			t.Fatal("terminal review decision remained pending")
+		}
+	}
+	decisionCount, err := f.client.ConversationIntelligenceArtifact.Query().Where(
+		conversationintelligenceartifact.KindEQ("review_decision"),
+		conversationintelligenceartifact.StableIDEQ(review.ID),
+	).Count(f.ctx)
+	if err != nil || decisionCount != 1 {
+		t.Fatalf("review decision must have one immutable artifact: count=%d err=%v", decisionCount, err)
+	}
+}
+
+func TestSemanticReviewRejectsStaleBaseline(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 7, 31, 14, 0, 0, 0, time.UTC)
+	results, err := f.svc.IngestRelationshipObservations(
+		f.ctx, f.user, []RelationshipObservationInput{semanticConversationInput(now, "oppulence:stale-review")},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel, _ := f.svc.GetRelationship(f.ctx, results[0].Relationship.ID)
+	intelligence, _ := f.svc.RelationshipIntelligenceFor(f.ctx, rel)
+	var review ConversationReviewItem
+	for _, item := range intelligence.ReviewItems {
+		if item.BatchID != "" {
+			review = item
+			break
+		}
+	}
+	_, err = f.svc.CorrectRelationship(f.ctx, f.user, rel.ID, RelationshipCorrectionInput{
+		Dimension: "sentiment", Value: "positive", Reason: "New source fact",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, err = f.svc.DecideConversationReview(f.ctx, f.user, rel.ID, ConversationReviewDecisionInput{
+		ReviewItemID: review.ID, Kind: "approve",
+	})
+	if err == nil || !strings.Contains(err.Error(), "stale") {
+		t.Fatalf("stale decision should fail with current-version context, got %v", err)
+	}
+}
+
+func TestTypedContradictionPersistsAndResolutionReferencesEverySide(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 7, 31, 15, 0, 0, 0, time.UTC)
+	first, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Acme", AccountDomain: "acme.example", Source: "crm",
+		ExternalID: "crm-lifecycle-1", EventType: "lifecycle_changed", OccurredAt: now, ReceivedAt: now,
+		Assertions: []RelationshipAssertionInput{{
+			Dimension: "lifecycle", Value: "evaluation", SourceType: "source_fact", Confidence: 1, ValidFrom: now,
+		}},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	relID := first[0].Relationship.ID
+	_, err = f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		RelationshipID: relID, Source: "meeting", ExternalID: "meeting-lifecycle-2",
+		EventType: "lifecycle_observed", OccurredAt: now.Add(time.Hour), ReceivedAt: now.Add(time.Hour),
+		Assertions: []RelationshipAssertionInput{{
+			Dimension: "lifecycle", Value: "renewal", SourceType: "source_fact", Confidence: 1,
+			ValidFrom: now.Add(time.Hour),
+		}},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rel, _ := f.svc.GetRelationship(f.ctx, relID)
+	intelligence, err := f.svc.RelationshipIntelligenceFor(f.ctx, rel)
+	if err != nil || len(intelligence.ContradictionCases) != 1 {
+		t.Fatalf("want one durable typed case: %#v err=%v", intelligence.ContradictionCases, err)
+	}
+	contradiction := intelligence.ContradictionCases[0]
+	if contradiction.Status != "open" || len(contradiction.Sides) != 2 {
+		t.Fatalf("unexpected contradiction: %#v", contradiction)
+	}
+	updated, after, err := f.svc.ResolveContradiction(f.ctx, f.user, relID, ContradictionResolutionInput{
+		CaseID: contradiction.CaseID, SelectedAssertionID: contradiction.Sides[0].AssertionID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.Lifecycle != "renewal" {
+		t.Fatalf("selected user correction did not project: %#v", updated)
+	}
+	resolved := false
+	for _, candidate := range after.ContradictionCases {
+		if candidate.CaseID == contradiction.CaseID {
+			resolved = candidate.Status == "user_resolved" && candidate.ResolutionAssertionID != ""
+		}
+	}
+	if !resolved {
+		t.Fatalf("original contradiction was not resolved immutably: %#v", after.ContradictionCases)
+	}
+	versions, err := f.client.ConversationIntelligenceArtifact.Query().Where(
+		conversationintelligenceartifact.KindEQ("contradiction_case"),
+		conversationintelligenceartifact.StableIDEQ(contradiction.CaseID),
+	).Count(f.ctx)
+	if err != nil || versions != 2 {
+		t.Fatalf("contradiction must retain open and resolved versions: %d err=%v", versions, err)
 	}
 }

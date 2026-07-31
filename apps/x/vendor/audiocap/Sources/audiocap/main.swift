@@ -4,7 +4,7 @@ import Foundation
 
 /// Bumped by hand; mirrored into meta.json and `doctor` output so a transcript can
 /// always be traced back to the capture code that produced it.
-let audiocapVersion = "0.1.0"
+let audiocapVersion = "0.2.0"
 
 let usage = """
     oppulence-audiocap \(audiocapVersion) — local meeting capture + transcription (macOS 14.2+)

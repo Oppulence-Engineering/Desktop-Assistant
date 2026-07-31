@@ -75,6 +75,12 @@ const (
 	EdgeRevenueEvidences = "revenue_evidences"
 	// EdgeCommitments holds the string denoting the commitments edge name in mutations.
 	EdgeCommitments = "commitments"
+	// EdgeCommitmentEvents holds the string denoting the commitment_events edge name in mutations.
+	EdgeCommitmentEvents = "commitment_events"
+	// EdgeCommitmentDependencies holds the string denoting the commitment_dependencies edge name in mutations.
+	EdgeCommitmentDependencies = "commitment_dependencies"
+	// EdgeConversationIntelligenceArtifacts holds the string denoting the conversation_intelligence_artifacts edge name in mutations.
+	EdgeConversationIntelligenceArtifacts = "conversation_intelligence_artifacts"
 	// EdgeRevenueActions holds the string denoting the revenue_actions edge name in mutations.
 	EdgeRevenueActions = "revenue_actions"
 	// EdgeRevenueActionRevisions holds the string denoting the revenue_action_revisions edge name in mutations.
@@ -286,6 +292,27 @@ const (
 	CommitmentsInverseTable = "commitments"
 	// CommitmentsColumn is the table column denoting the commitments relation/edge.
 	CommitmentsColumn = "user_commitments"
+	// CommitmentEventsTable is the table that holds the commitment_events relation/edge.
+	CommitmentEventsTable = "commitment_events"
+	// CommitmentEventsInverseTable is the table name for the CommitmentEvent entity.
+	// It exists in this package in order to avoid circular dependency with the "commitmentevent" package.
+	CommitmentEventsInverseTable = "commitment_events"
+	// CommitmentEventsColumn is the table column denoting the commitment_events relation/edge.
+	CommitmentEventsColumn = "user_commitment_events"
+	// CommitmentDependenciesTable is the table that holds the commitment_dependencies relation/edge.
+	CommitmentDependenciesTable = "commitment_dependencies"
+	// CommitmentDependenciesInverseTable is the table name for the CommitmentDependency entity.
+	// It exists in this package in order to avoid circular dependency with the "commitmentdependency" package.
+	CommitmentDependenciesInverseTable = "commitment_dependencies"
+	// CommitmentDependenciesColumn is the table column denoting the commitment_dependencies relation/edge.
+	CommitmentDependenciesColumn = "user_commitment_dependencies"
+	// ConversationIntelligenceArtifactsTable is the table that holds the conversation_intelligence_artifacts relation/edge.
+	ConversationIntelligenceArtifactsTable = "conversation_intelligence_artifacts"
+	// ConversationIntelligenceArtifactsInverseTable is the table name for the ConversationIntelligenceArtifact entity.
+	// It exists in this package in order to avoid circular dependency with the "conversationintelligenceartifact" package.
+	ConversationIntelligenceArtifactsInverseTable = "conversation_intelligence_artifacts"
+	// ConversationIntelligenceArtifactsColumn is the table column denoting the conversation_intelligence_artifacts relation/edge.
+	ConversationIntelligenceArtifactsColumn = "user_conversation_intelligence_artifacts"
 	// RevenueActionsTable is the table that holds the revenue_actions relation/edge.
 	RevenueActionsTable = "revenue_actions"
 	// RevenueActionsInverseTable is the table name for the RevenueAction entity.
@@ -816,6 +843,48 @@ func ByCommitments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByCommitmentEventsCount orders the results by commitment_events count.
+func ByCommitmentEventsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommitmentEventsStep(), opts...)
+	}
+}
+
+// ByCommitmentEvents orders the results by commitment_events terms.
+func ByCommitmentEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommitmentEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByCommitmentDependenciesCount orders the results by commitment_dependencies count.
+func ByCommitmentDependenciesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommitmentDependenciesStep(), opts...)
+	}
+}
+
+// ByCommitmentDependencies orders the results by commitment_dependencies terms.
+func ByCommitmentDependencies(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommitmentDependenciesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByConversationIntelligenceArtifactsCount orders the results by conversation_intelligence_artifacts count.
+func ByConversationIntelligenceArtifactsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newConversationIntelligenceArtifactsStep(), opts...)
+	}
+}
+
+// ByConversationIntelligenceArtifacts orders the results by conversation_intelligence_artifacts terms.
+func ByConversationIntelligenceArtifacts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newConversationIntelligenceArtifactsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByRevenueActionsCount orders the results by revenue_actions count.
 func ByRevenueActionsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -1226,6 +1295,27 @@ func newCommitmentsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(CommitmentsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, CommitmentsTable, CommitmentsColumn),
+	)
+}
+func newCommitmentEventsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommitmentEventsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommitmentEventsTable, CommitmentEventsColumn),
+	)
+}
+func newCommitmentDependenciesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommitmentDependenciesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommitmentDependenciesTable, CommitmentDependenciesColumn),
+	)
+}
+func newConversationIntelligenceArtifactsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ConversationIntelligenceArtifactsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ConversationIntelligenceArtifactsTable, ConversationIntelligenceArtifactsColumn),
 	)
 }
 func newRevenueActionsStep() *sqlgraph.Step {

@@ -138,6 +138,7 @@ import { API_URL } from "@x/core/dist/config/env.js";
 import {
   approveRelationshipRecommendation,
   correctConversationReview,
+  decideConversationReview,
   correctRelationship,
   createRelationship,
   getRelationship,
@@ -147,6 +148,14 @@ import {
   getRelationshipTimeline,
   listRelationships,
   rejectRelationshipRecommendation,
+  resolveRelationshipContradiction,
+  runCommitmentRecovery,
+  appendCommitmentTransition,
+  createMutualActionPlan,
+  reviseMutualActionPlan,
+  approveMutualActionPlan,
+  shareMutualActionPlan,
+  requestConversationDeletion,
   searchRelationships,
 } from "@x/core/dist/relationships/client.js";
 import {
@@ -917,6 +926,33 @@ export function setupIpcHandlers() {
         correctedValue: args.correctedValue,
         reason: args.reason,
       }),
+    "relationships:decideConversation": async (_event, args) =>
+      decideConversationReview(args.id, {
+        reviewItemId: args.reviewItemId,
+        kind: args.kind,
+        correctedValue: args.correctedValue,
+        reason: args.reason,
+        deferUntil: args.deferUntil,
+      }),
+    "relationships:resolveContradiction": async (_event, args) =>
+      resolveRelationshipContradiction(args.id, args.caseId, {
+        selectedAssertionId: args.selectedAssertionId,
+        reason: args.reason,
+      }),
+    "relationships:runCommitmentRecovery": async (_event, args) =>
+      runCommitmentRecovery(args.id),
+    "relationships:appendCommitmentTransition": async (_event, args) =>
+      appendCommitmentTransition(args.relationshipId, args.commitmentId, args),
+    "relationships:createMutualActionPlan": async (_event, args) =>
+      createMutualActionPlan(args.relationshipId, args.commitmentIds),
+    "relationships:reviseMutualActionPlan": async (_event, args) =>
+      reviseMutualActionPlan(args.relationshipId, args.planId, args.items),
+    "relationships:approveMutualActionPlan": async (_event, args) =>
+      approveMutualActionPlan(args.relationshipId, args.planId),
+    "relationships:shareMutualActionPlan": async (_event, args) =>
+      shareMutualActionPlan(args.relationshipId, args.planId),
+    "relationships:requestConversationDeletion": async (_event, args) =>
+      requestConversationDeletion(args.relationshipId, args.requestId),
     "relationships:approve": async (_event, args) =>
       approveRelationshipRecommendation(args.actionId, args.acceptRisk),
     "relationships:reject": async (_event, args) =>

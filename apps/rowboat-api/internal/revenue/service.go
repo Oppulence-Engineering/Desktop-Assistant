@@ -1169,6 +1169,32 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 			return nil, err
 		}
 	}
+	if strings.HasPrefix(action.DedupeKey, "mutual-action-plan:") {
+		rel, err := action.Edges.RelationshipOrErr()
+		if err != nil {
+			return nil, err
+		}
+		policy, err := s.ResolveConversationPolicy(ctx, u, rel)
+		if err != nil {
+			return nil, err
+		}
+		decisionTime := s.now().UTC()
+		decision := evaluateGovernanceDecision(
+			policy, "external_share", "none",
+			action.ID.String()+":"+action.RevisionHash+":"+decisionTime.Format(time.RFC3339Nano), decisionTime,
+		)
+		if _, err := appendConversationArtifact(ctx, s.client, ws, u, rel, conversationArtifactInput{
+			Kind: "governance_decision", StableID: decision.DecisionID,
+			Status:     map[bool]string{true: "allowed", false: "blocked"}[decision.Allowed],
+			SubjectRef: action.ID.String(), EffectiveAt: decisionTime,
+			EvidenceRefs: []string{"revenue-action-revision:" + action.RevisionHash}, Payload: decision,
+		}); err != nil {
+			return nil, err
+		}
+		if !decision.Allowed {
+			return nil, fmt.Errorf("%w: %s", ErrBlocked, decision.Reason)
+		}
+	}
 
 	// Idempotent short-circuit (invariant 7): duplicate execute returns the
 	// existing result, never sends twice.

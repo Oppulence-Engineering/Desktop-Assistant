@@ -40,6 +40,8 @@ type MeetingCaptureHandlers = {
   "meeting:pendingCommitments": InvokeHandler<"meeting:pendingCommitments">;
   "meeting:liveTranscript": InvokeHandler<"meeting:liveTranscript">;
   "meeting:ask": InvokeHandler<"meeting:ask">;
+  "meeting:dismissLiveCue": InvokeHandler<"meeting:dismissLiveCue">;
+  "meeting:liveCueFeedback": InvokeHandler<"meeting:liveCueFeedback">;
   "meeting:confirmCommitment": InvokeHandler<"meeting:confirmCommitment">;
   "meeting:dismissCommitment": InvokeHandler<"meeting:dismissCommitment">;
   "meeting:ledger": InvokeHandler<"meeting:ledger">;
@@ -140,6 +142,12 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
     },
     "meeting:ask": async (_event, args) => {
       return controller().ask(args.question);
+    },
+    "meeting:dismissLiveCue": async (_event, args) => {
+      return controller().dismissLiveCue(args.cueId);
+    },
+    "meeting:liveCueFeedback": async (_event, args) => {
+      return controller().recordLiveCueFeedback(args.cueId, args.outcome);
     },
     "meeting:pendingCommitments": async () => {
       return { sessions: await controller().pendingCommitments() };

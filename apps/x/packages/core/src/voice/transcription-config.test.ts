@@ -320,6 +320,7 @@ describe("meetings settings block", () => {
       // Off by default: a second transcription pass during a call is cheap on the
       // Neural Engine but not free, and not something to spend a battery on unasked.
       liveTranscript: false,
+      liveCoachingFrequency: "off",
       // On by default: gated by a keyword pre-filter, runs once per meeting, and it is
       // the thing that turns a transcript into something you act on.
       extractCommitments: true,

@@ -8,6 +8,8 @@
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "dev": "tsc -w -p tsconfig.build.json",
     "test": "vitest run",
+    "test:conversation-eval": "vitest run src/relationships/conversation-evals/runner.test.ts",
+    "test:conversation-model-eval": "CONVERSATION_EVAL_REAL=1 vitest run src/relationships/conversation-evals/conversation-model.eval.test.ts",
     "test:watch": "vitest"
   },
   "dependencies": {

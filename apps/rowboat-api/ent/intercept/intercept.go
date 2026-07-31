@@ -26,6 +26,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -601,6 +604,87 @@ func (f TraverseCommitment) Traverse(ctx context.Context, q ent.Query) error {
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.CommitmentQuery", q)
+}
+
+// The CommitmentDependencyFunc type is an adapter to allow the use of ordinary function as a Querier.
+type CommitmentDependencyFunc func(context.Context, *ent.CommitmentDependencyQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f CommitmentDependencyFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.CommitmentDependencyQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.CommitmentDependencyQuery", q)
+}
+
+// The TraverseCommitmentDependency type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseCommitmentDependency func(context.Context, *ent.CommitmentDependencyQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseCommitmentDependency) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseCommitmentDependency) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CommitmentDependencyQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.CommitmentDependencyQuery", q)
+}
+
+// The CommitmentEventFunc type is an adapter to allow the use of ordinary function as a Querier.
+type CommitmentEventFunc func(context.Context, *ent.CommitmentEventQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f CommitmentEventFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.CommitmentEventQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.CommitmentEventQuery", q)
+}
+
+// The TraverseCommitmentEvent type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseCommitmentEvent func(context.Context, *ent.CommitmentEventQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseCommitmentEvent) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseCommitmentEvent) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CommitmentEventQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.CommitmentEventQuery", q)
+}
+
+// The ConversationIntelligenceArtifactFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ConversationIntelligenceArtifactFunc func(context.Context, *ent.ConversationIntelligenceArtifactQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ConversationIntelligenceArtifactFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ConversationIntelligenceArtifactQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ConversationIntelligenceArtifactQuery", q)
+}
+
+// The TraverseConversationIntelligenceArtifact type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseConversationIntelligenceArtifact func(context.Context, *ent.ConversationIntelligenceArtifactQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseConversationIntelligenceArtifact) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseConversationIntelligenceArtifact) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConversationIntelligenceArtifactQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ConversationIntelligenceArtifactQuery", q)
 }
 
 // The CreditLedgerFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -1506,6 +1590,12 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.CloudEventQuery, predicate.CloudEvent, cloudevent.OrderOption]{typ: ent.TypeCloudEvent, tq: q}, nil
 	case *ent.CommitmentQuery:
 		return &query[*ent.CommitmentQuery, predicate.Commitment, commitment.OrderOption]{typ: ent.TypeCommitment, tq: q}, nil
+	case *ent.CommitmentDependencyQuery:
+		return &query[*ent.CommitmentDependencyQuery, predicate.CommitmentDependency, commitmentdependency.OrderOption]{typ: ent.TypeCommitmentDependency, tq: q}, nil
+	case *ent.CommitmentEventQuery:
+		return &query[*ent.CommitmentEventQuery, predicate.CommitmentEvent, commitmentevent.OrderOption]{typ: ent.TypeCommitmentEvent, tq: q}, nil
+	case *ent.ConversationIntelligenceArtifactQuery:
+		return &query[*ent.ConversationIntelligenceArtifactQuery, predicate.ConversationIntelligenceArtifact, conversationintelligenceartifact.OrderOption]{typ: ent.TypeConversationIntelligenceArtifact, tq: q}, nil
 	case *ent.CreditLedgerQuery:
 		return &query[*ent.CreditLedgerQuery, predicate.CreditLedger, creditledger.OrderOption]{typ: ent.TypeCreditLedger, tq: q}, nil
 	case *ent.GoogleWatchQuery:

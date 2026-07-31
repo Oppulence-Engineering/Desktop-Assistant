@@ -29,6 +29,17 @@ func (Commitment) Fields() []ent.Field {
 		field.Time("due_at").Optional().Nillable(),
 		field.Float("confidence").Min(0).Max(1),
 		field.Bool("user_confirmed").Default(false),
+		field.String("owner_participant_ref").Optional(),
+		field.String("counterparty_participant_ref").Optional(),
+		field.String("beneficiary_participant_ref").Optional(),
+		field.Text("source_phrase").Optional().Sensitive(),
+		field.String("due_phrase").Optional(),
+		field.String("due_timezone").Optional(),
+		field.String("acceptance").Default("candidate").
+			Validate(oneOfRevenue("acceptance", "candidate", "internally_confirmed", "offered", "accepted", "disputed")),
+		field.Text("blocker").Optional().Sensitive(),
+		field.Time("completed_at").Optional().Nillable(),
+		field.Int("current_event_version").Default(0).NonNegative(),
 	}
 }
 
@@ -41,5 +52,11 @@ func (Commitment) Edges() []ent.Edge {
 			Ref("commitments").Unique().Required(),
 		edge.From("user", User.Type).Ref("commitments").Unique().Required(),
 		edge.To("evidences", RevenueEvidence.Type),
+		edge.To("events", CommitmentEvent.Type).
+			StorageKey(edge.Column("commitment_id")),
+		edge.To("outgoing_dependencies", CommitmentDependency.Type).
+			StorageKey(edge.Column("from_commitment_id")),
+		edge.To("incoming_dependencies", CommitmentDependency.Type).
+			StorageKey(edge.Column("to_commitment_id")),
 	}
 }

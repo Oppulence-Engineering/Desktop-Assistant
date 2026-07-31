@@ -44,6 +44,7 @@ import {
   ACTION_TYPE_LABELS,
   approveRecommendation,
   correctConversationReview,
+  decideConversationReview,
   correctRelationship,
   createRelationship,
   DETECTOR_LABELS,
@@ -54,6 +55,13 @@ import {
   listRelationships,
   listRelationshipSourceStatuses,
   rejectRecommendation,
+  resolveRelationshipContradiction,
+  runCommitmentRecovery,
+  appendCommitmentTransition,
+  createMutualActionPlan,
+  approveMutualActionPlan,
+  shareMutualActionPlan,
+  requestConversationDeletion,
   RELATIONSHIP_KIND_LABELS,
   relativeTime,
   semanticSearch,
@@ -535,6 +543,17 @@ function RelationshipSheet({
                     }),
                   )
                 }
+                onDecide={(item, kind, correctedValue, deferUntil) =>
+                  act(`review:${item.id}:${kind}`, () =>
+                    decideConversationReview(id, {
+                      reviewItemId: item.id,
+                      kind,
+                      correctedValue,
+                      deferUntil,
+                      reason: "User decided a proposed conversation change.",
+                    }),
+                  )
+                }
               />
             ) : null}
 
@@ -561,6 +580,90 @@ function RelationshipSheet({
               rightTitle="Milestones"
               right={data.relationship.milestones}
             />
+
+            {data.intelligence?.effectivePolicy ? (
+              <div className="border border-border p-3 text-xs text-primary/60">
+                <details>
+                  <summary className="cursor-pointer font-medium text-primary">
+                    Privacy policy · {humanize(data.intelligence.effectivePolicy.modelRoute)}
+                  </summary>
+                  <div className="mt-2 grid gap-1 sm:grid-cols-2">
+                    <span>Capture: {humanize(data.intelligence.effectivePolicy.capture)}</span>
+                    <span>Retention: {data.intelligence.effectivePolicy.retentionDays} days</span>
+                    <span>Evidence: {data.intelligence.effectivePolicy.publishEvidence ? "allowed" : "blocked"}</span>
+                    <span>External share: {data.intelligence.effectivePolicy.externalShare ? "allowed" : "blocked"}</span>
+                  </div>
+                  <p className="mt-2 break-all text-[11px]">
+                    {data.intelligence.effectivePolicy.policyVersion} · {data.intelligence.governanceDecisions.length} recorded decisions
+                  </p>
+                  {data.intelligence.deletionReceipts[0] ? (
+                    <p className="mt-1">Last deletion: {humanize(data.intelligence.deletionReceipts[0].status)}</p>
+                  ) : null}
+                </details>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="mt-3"
+                  disabled={busy === "delete-conversation"}
+                  onClick={() => {
+                    if (!window.confirm("Delete shared conversation evidence for this relationship? Device and provider copies will remain pending until separately confirmed.")) return;
+                    void act("delete-conversation", () =>
+                      requestConversationDeletion(id, crypto.randomUUID()),
+                    );
+                  }}
+                >
+                  Delete conversation data
+                </Button>
+              </div>
+            ) : null}
+
+            <section>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <SectionTitle
+                  title={`Commitment recovery (${data.intelligence?.recoveryEvaluations.length ?? 0})`}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy === "recovery"}
+                  onClick={() => void act("recovery", () => runCommitmentRecovery(id))}
+                >
+                  {busy === "recovery" ? <CircleNotch className="animate-spin" /> : null}
+                  Reconcile now
+                </Button>
+              </div>
+              {data.intelligence?.recoveryEvaluations.length ? (
+                <ul className="space-y-2">
+                  {data.intelligence.recoveryEvaluations.map((evaluation) => (
+                    <li key={evaluation.evaluationId} className="border border-border p-3 text-xs">
+                      <p className="font-medium capitalize text-primary">
+                        {humanize(evaluation.classification)}
+                      </p>
+                      <p className="mt-1 text-primary/60">{evaluation.explanation}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <EmptyText>No due commitment has been reconciled yet.</EmptyText>
+              )}
+              {data.intelligence?.recommendationEvaluations.length ? (
+                <details className="mt-2 text-xs text-primary/55">
+                  <summary className="cursor-pointer">Inspect ranking factors</summary>
+                  {data.intelligence.recommendationEvaluations.map((evaluation) => (
+                    <ul key={evaluation.evaluationId} className="mt-2 border-l border-border pl-3">
+                      {evaluation.factors.map((factor) => (
+                        <li key={factor.factor}>
+                          {humanize(factor.factor)}: {factor.contribution >= 0 ? "+" : ""}
+                          {factor.contribution} · {factor.reason}
+                        </li>
+                      ))}
+                    </ul>
+                  ))}
+                </details>
+              ) : null}
+            </section>
 
             <section>
               <SectionTitle title={`Recommendations (${data.recommendations.length})`} />
@@ -650,6 +753,132 @@ function RelationshipSheet({
               )}
             />
 
+            {data.commitmentDependencies.length ? (
+              <section>
+                <SectionTitle title={`Commitment graph (${data.commitmentDependencies.length})`} />
+                <ul className="mt-2 space-y-2 text-xs">
+                  {data.commitmentDependencies.map((dependency) => {
+                    const from = data.commitments.find(
+                      (item) => item.id === dependency.fromCommitmentId,
+                    );
+                    const to = data.commitments.find(
+                      (item) => item.id === dependency.toCommitmentId,
+                    );
+                    return (
+                      <li key={dependency.dependencyId} className="border border-border p-3">
+                        <span>{from?.text ?? "Unknown commitment"}</span>
+                        <Badge variant="secondary" className="mx-2 capitalize">
+                          {dependency.kind}
+                        </Badge>
+                        <span>{to?.text ?? "Unknown commitment"}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ) : null}
+
+            <section>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <SectionTitle
+                  title={`Mutual action plans (${data.intelligence?.mutualActionPlans.length ?? 0})`}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={
+                    Boolean(busy) || !data.commitments.some((item) => item.acceptance === "accepted")
+                  }
+                  onClick={() =>
+                    void act("create-plan", () =>
+                      createMutualActionPlan(
+                        id,
+                        data.commitments
+                          .filter((item) => item.acceptance === "accepted" && item.status === "open")
+                          .map((item) => item.id),
+                      ),
+                    )
+                  }
+                >
+                  Create from accepted promises
+                </Button>
+              </div>
+              {data.commitments.some((item) => item.acceptance === "internally_confirmed") ? (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {data.commitments
+                    .filter((item) => item.acceptance === "internally_confirmed")
+                    .map((item) => (
+                      <Button
+                        key={item.id}
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={Boolean(busy)}
+                        onClick={() =>
+                          void act(`accept:${item.id}`, () =>
+                            appendCommitmentTransition(id, item.id, {
+                              kind: "accepted",
+                              idempotencyKey: `user-accepted:${item.id}`,
+                              reason: "User confirmed counterparty acceptance.",
+                              evidenceRefs: [`user-decision:${item.id}:accepted`],
+                            }),
+                          )
+                        }
+                      >
+                        Confirm accepted: {item.text}
+                      </Button>
+                    ))}
+                </div>
+              ) : null}
+              {data.intelligence?.mutualActionPlans.length ? (
+                <ul className="space-y-2">
+                  {data.intelligence.mutualActionPlans.map((plan) => (
+                    <li key={plan.planId} className="border border-border p-3 text-xs">
+                      <p className="font-medium capitalize text-primary">
+                        {humanize(plan.status)} · revision {plan.currentRevision.version}
+                      </p>
+                      <ul className="mt-1 list-disc pl-4 text-primary/60">
+                        {plan.currentRevision.items.map((item) => (
+                          <li key={item.itemId}>{item.title} · {item.ownerParticipantRef}</li>
+                        ))}
+                      </ul>
+                      <div className="mt-2 flex gap-1.5">
+                        {plan.status === "draft" || plan.status === "revised" ? (
+                          <Button
+                            size="sm"
+                            disabled={Boolean(busy)}
+                            onClick={() =>
+                              void act(`approve-plan:${plan.planId}`, () =>
+                                approveMutualActionPlan(id, plan.planId),
+                              )
+                            }
+                          >
+                            Approve revision
+                          </Button>
+                        ) : null}
+                        {plan.status === "internally_approved" ? (
+                          <Button
+                            size="sm"
+                            disabled={Boolean(busy)}
+                            onClick={() =>
+                              void act(`share-plan:${plan.planId}`, () =>
+                                shareMutualActionPlan(id, plan.planId),
+                              )
+                            }
+                          >
+                            Queue exact revision for sharing
+                          </Button>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <EmptyText>Accept a commitment to build an evidence-backed shared plan.</EmptyText>
+              )}
+            </section>
+
             <section>
               <SectionTitle title={`What changed (${changes.length})`} />
               {data.intelligence?.delta.changes.length ? (
@@ -670,14 +899,42 @@ function RelationshipSheet({
                   ))}
                 </ul>
               ) : null}
-              {data.intelligence?.delta.contradictions.length ? (
+              {data.intelligence?.contradictionCases.length ? (
                 <ul className="mb-3 space-y-2 rounded-[2px] border border-amber-500/30 p-3 text-xs text-primary/60">
-                  {data.intelligence.delta.contradictions.map((item) => (
-                    <li key={item.contradictedAssertionId}>
+                  {data.intelligence.contradictionCases.map((item) => (
+                    <li key={item.caseId}>
                       <span className="font-medium capitalize text-primary">
                         {humanize(item.dimension)}:
                       </span>{" "}
-                      “{item.contradictedValue}” was superseded by “{item.currentValue}”.
+                      {item.status === "open"
+                        ? `Choose the current value from ${item.sides.length} evidence-backed options.`
+                        : item.reason}
+                      <span className="ml-1 text-primary/40">
+                        ({item.sides.map((side) => side.source).join(" vs ")})
+                      </span>
+                      {item.status === "open" ? (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {item.sides.map((side) => (
+                            <Button
+                              key={side.assertionId}
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={busy === item.caseId}
+                              onClick={() =>
+                                void act(item.caseId, () =>
+                                  resolveRelationshipContradiction(id, item.caseId, {
+                                    selectedAssertionId: side.assertionId,
+                                    reason: `Selected ${side.source} as current evidence.`,
+                                  }),
+                                )
+                              }
+                            >
+                              Use {String("value" in side.value ? side.value.value : side.source)}
+                            </Button>
+                          ))}
+                        </div>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -791,10 +1048,17 @@ function CorrectionReview({
   items,
   disabled,
   onCorrect,
+  onDecide,
 }: {
   items: ConversationReviewItem[];
   disabled: boolean;
   onCorrect: (item: ConversationReviewItem, correctedValue: string) => void;
+  onDecide: (
+    item: ConversationReviewItem,
+    kind: "approve" | "correct" | "reject" | "defer",
+    correctedValue?: string,
+    deferUntil?: string,
+  ) => void;
 }) {
   const [drafts, setDrafts] = React.useState<Record<string, string>>({});
   if (items.length === 0) return null;
@@ -802,7 +1066,7 @@ function CorrectionReview({
     <section className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3">
       <SectionTitle title={`Focused evidence review (${items.length})`} />
       <p className="mb-3 text-xs text-primary/55">
-        Only low-confidence words, speakers, entities, and material claims appear here.
+        Approve, correct, reject, or defer each proposed material change before it affects state.
       </p>
       <ul className="flex flex-col gap-3">
         {items.map((item) => {
@@ -827,14 +1091,53 @@ function CorrectionReview({
                     setDrafts((current) => ({ ...current, [item.id]: event.target.value }))
                   }
                 />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={disabled || !draft.trim() || draft.trim() === item.currentValue}
-                  onClick={() => onCorrect(item, draft.trim())}
-                >
-                  Correct
-                </Button>
+                {item.batchId ? (
+                  <>
+                    <Button size="sm" disabled={disabled} onClick={() => onDecide(item, "approve")}>
+                      Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={disabled || !draft.trim() || draft.trim() === item.currentValue}
+                      onClick={() => onDecide(item, "correct", draft.trim())}
+                    >
+                      Correct
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={disabled}
+                      onClick={() => onDecide(item, "reject")}
+                    >
+                      Reject
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={disabled}
+                      onClick={() =>
+                        onDecide(
+                          item,
+                          "defer",
+                          undefined,
+                          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                        )
+                      }
+                    >
+                      Defer 1 day
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={disabled || !draft.trim() || draft.trim() === item.currentValue}
+                    onClick={() => onCorrect(item, draft.trim())}
+                  >
+                    Correct
+                  </Button>
+                )}
               </div>
             </li>
           );

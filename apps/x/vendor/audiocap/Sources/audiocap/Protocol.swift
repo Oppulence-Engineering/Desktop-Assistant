@@ -12,7 +12,7 @@ enum Event {
     case recording(recoveredSeconds: Double)
     /// Per-track peak amplitude (0...1) over the last window. Also the liveness
     /// signal: a track reporting 0 for the whole meeting recorded digital silence.
-    case level(peaks: [String: Float])
+    case level(peaks: [String: Float], frames: [String: Int64])
     /// Non-fatal: the session continues, degraded. Recorded into meta.json too.
     case warning(code: String, message: String)
     /// Fatal for the process; the host treats whatever is on disk as salvageable.
@@ -31,8 +31,8 @@ enum Event {
             ]
         case .recording(let recoveredSeconds):
             return ["type": "recording", "recoveredSeconds": recoveredSeconds]
-        case .level(let peaks):
-            return ["type": "level", "peaks": peaks]
+        case .level(let peaks, let frames):
+            return ["type": "level", "peaks": peaks, "frames": frames]
         case .warning(let code, let message):
             return ["type": "warning", "code": code, "message": message]
         case .error(let code, let message):

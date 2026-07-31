@@ -2820,9 +2820,25 @@
       },
       "Commitment": {
         "properties": {
+          "acceptance": {
+            "type": "string"
+          },
+          "beneficiary_participant_ref": {
+            "type": "string"
+          },
+          "blocker": {
+            "type": "string"
+          },
+          "completed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
           "confidence": {
             "format": "double",
             "type": "number"
+          },
+          "counterparty_participant_ref": {
+            "type": "string"
           },
           "created_at": {
             "description": "Row creation timestamp.",
@@ -2830,12 +2846,27 @@
             "format": "date-time",
             "type": "string"
           },
+          "current_event_version": {
+            "type": "integer"
+          },
           "direction": {
             "type": "string"
           },
           "due_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "due_phrase": {
+            "type": "string"
+          },
+          "due_timezone": {
+            "type": "string"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/CommitmentEvent"
+            },
+            "type": "array"
           },
           "evidences": {
             "items": {
@@ -2849,8 +2880,26 @@
             "format": "uuid",
             "type": "string"
           },
+          "incoming_dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/CommitmentDependency"
+            },
+            "type": "array"
+          },
+          "outgoing_dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/CommitmentDependency"
+            },
+            "type": "array"
+          },
+          "owner_participant_ref": {
+            "type": "string"
+          },
           "relationship": {
             "$ref": "#/components/schemas/Relationship"
+          },
+          "source_phrase": {
+            "type": "string"
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
@@ -2886,9 +2935,219 @@
           "status",
           "confidence",
           "user_confirmed",
+          "acceptance",
+          "current_event_version",
           "workspace",
           "relationship",
           "user"
+        ],
+        "type": "object"
+      },
+      "CommitmentDependency": {
+        "description": "An evidence-backed directed edge between two commitments.",
+        "properties": {
+          "createdAt": {
+            "description": "Creation time.",
+            "example": "2026-08-01T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "dependencyId": {
+            "description": "Dependency id.",
+            "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "evidenceRefs": {
+            "description": "Evidence references.",
+            "items": {
+              "description": "Reference.",
+              "example": "relationship-observation:ab12",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "fromCommitmentId": {
+            "description": "Origin commitment id.",
+            "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "description": "Dependency semantics.",
+            "enum": ["blocks", "requires", "supersedes"],
+            "example": "blocks",
+            "type": "string"
+          },
+          "relationshipId": {
+            "description": "Relationship id.",
+            "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "toCommitmentId": {
+            "description": "Target commitment id.",
+            "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dependencyId",
+          "relationshipId",
+          "fromCommitmentId",
+          "toCommitmentId",
+          "kind",
+          "evidenceRefs",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "CommitmentEvent": {
+        "description": "One immutable event in a commitment transition stream.",
+        "properties": {
+          "action": {
+            "description": "Promised action at this event.",
+            "example": "Send the security packet.",
+            "type": "string"
+          },
+          "actorRef": {
+            "description": "Actor reference.",
+            "example": "participant:owner",
+            "type": "string"
+          },
+          "actorType": {
+            "description": "Transition authority.",
+            "enum": ["user", "source_fact", "deterministic_rule", "ai_candidate"],
+            "example": "user",
+            "type": "string"
+          },
+          "beneficiaryParticipantRef": {
+            "description": "Promise beneficiary.",
+            "example": "participant:beneficiary",
+            "type": "string"
+          },
+          "blocker": {
+            "description": "Blocker detail.",
+            "example": "Waiting on legal.",
+            "type": "string"
+          },
+          "commitmentId": {
+            "description": "Commitment id.",
+            "example": "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51",
+            "format": "uuid",
+            "type": "string"
+          },
+          "counterpartyParticipantRef": {
+            "description": "Promise counterparty.",
+            "example": "participant:customer",
+            "type": "string"
+          },
+          "dueAt": {
+            "description": "Resolved due time.",
+            "example": "2026-08-07T17:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "duePhrase": {
+            "description": "Original due phrase.",
+            "example": "by Friday",
+            "type": "string"
+          },
+          "dueTimezone": {
+            "description": "Due-time timezone.",
+            "example": "America/New_York",
+            "type": "string"
+          },
+          "eventId": {
+            "description": "Event id.",
+            "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "evidenceRefs": {
+            "description": "Exact evidence references.",
+            "items": {
+              "description": "Reference.",
+              "example": "relationship-observation:ab12",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "description": "Transition kind.",
+            "enum": [
+              "proposed",
+              "internally_confirmed",
+              "offered",
+              "accepted",
+              "disputed",
+              "blocked",
+              "unblocked",
+              "due_date_changed",
+              "renegotiated",
+              "fulfilled",
+              "cancelled",
+              "superseded"
+            ],
+            "example": "accepted",
+            "type": "string"
+          },
+          "occurredAt": {
+            "description": "Event time.",
+            "example": "2026-08-01T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "ownerParticipantRef": {
+            "description": "Promise owner.",
+            "example": "participant:owner",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "type": "string"
+          },
+          "sourceEventId": {
+            "description": "Idempotent source event id.",
+            "example": "user-accept:commitment-1",
+            "type": "string"
+          },
+          "sourceObservationId": {
+            "description": "Source observation id.",
+            "example": "relationship-observation:ab12",
+            "type": "string"
+          },
+          "supersedesCommitmentId": {
+            "description": "Superseded commitment id.",
+            "example": "a13cf25b-d195-45f3-a665-3a38ba575392",
+            "format": "uuid",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "eventId",
+          "commitmentId",
+          "sourceEventId",
+          "version",
+          "kind",
+          "actorType",
+          "occurredAt",
+          "evidenceRefs"
         ],
         "type": "object"
       },
@@ -3165,6 +3424,93 @@
         ],
         "type": "object"
       },
+      "ConversationDeletionReceipt": {
+        "description": "Immutable deletion request and per-target verification state. Pending device or provider targets keep the receipt partial.",
+        "properties": {
+          "completedAt": {
+            "description": "Time every required target was verified.",
+            "example": "2026-07-31T14:01:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "legalHold": {
+            "description": "Whether legal hold blocked deletion.",
+            "example": false,
+            "type": "boolean"
+          },
+          "receiptId": {
+            "description": "Idempotent request id.",
+            "example": "delete:ab12",
+            "type": "string"
+          },
+          "requestedAt": {
+            "description": "Request time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "scopeRef": {
+            "description": "Relationship scope.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "enum": ["pending", "blocked", "partial", "verified"],
+            "example": "active",
+            "type": "string"
+          },
+          "targets": {
+            "description": "Per-target outcomes.",
+            "items": {
+              "description": "Deletion target outcome.",
+              "properties": {
+                "attempts": {
+                  "description": "Attempts made.",
+                  "example": 1,
+                  "type": "integer"
+                },
+                "errorCode": {
+                  "description": "Bounded failure code.",
+                  "example": "legal_hold",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Target state.",
+                  "enum": ["pending", "deleted", "not_found", "blocked", "failed"],
+                  "example": "deleted",
+                  "type": "string"
+                },
+                "target": {
+                  "description": "Deletion target.",
+                  "enum": [
+                    "local_recording",
+                    "local_note",
+                    "outbox",
+                    "api_evidence",
+                    "embedding",
+                    "plan_share",
+                    "provider"
+                  ],
+                  "example": "api_evidence",
+                  "type": "string"
+                },
+                "verificationHash": {
+                  "description": "Content-free verification hash.",
+                  "example": "sha256:ab12",
+                  "type": "string"
+                }
+              },
+              "required": ["target", "status", "attempts"],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["receiptId", "requestedAt", "scopeRef", "legalHold", "status", "targets"],
+        "type": "object"
+      },
       "ConversationGovernanceReceipt": {
         "description": "Capture, routing, retention, disclosure, legal-hold, deletion, and evidence-clip receipt stored beside a transcript.",
         "properties": {
@@ -3235,9 +3581,113 @@
         ],
         "type": "object"
       },
-      "ConversationReviewItem": {
-        "description": "One low-confidence word, speaker, entity, or material claim requiring focused correction.",
+      "ConversationIntelligenceArtifact": {
         "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "effective_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "payload_hash": {
+            "type": "string"
+          },
+          "payload_json": {
+            "type": "string"
+          },
+          "relationship": {
+            "$ref": "#/components/schemas/Relationship"
+          },
+          "stable_id": {
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "subject_ref": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "version": {
+            "type": "integer"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "kind",
+          "stable_id",
+          "version",
+          "effective_at",
+          "evidence_refs",
+          "payload_json",
+          "payload_hash",
+          "workspace",
+          "user"
+        ],
+        "type": "object"
+      },
+      "ConversationReviewItem": {
+        "description": "One evidence-backed proposed change requiring approve, correct, reject, or defer review.",
+        "properties": {
+          "baselineVersion": {
+            "description": "Pinned relationship-state version.",
+            "example": 4,
+            "type": "integer"
+          },
+          "batchId": {
+            "description": "Idempotent review batch id.",
+            "example": "review:ab12",
+            "type": "string"
+          },
+          "before": {
+            "additionalProperties": true,
+            "description": "State pinned before conversation processing.",
+            "type": "object"
+          },
+          "caveats": {
+            "description": "Extraction and capture caveats.",
+            "items": {
+              "description": "Caveat.",
+              "example": "Speaker assignment requires review.",
+              "type": "string"
+            },
+            "type": "array"
+          },
           "claimId": {
             "description": "Material claim id.",
             "example": "claim:ab12",
@@ -3252,6 +3702,15 @@
             "description": "Current inferred value.",
             "example": "Other",
             "type": "string"
+          },
+          "dependentActionIds": {
+            "description": "Actions invalidated by rejection or correction.",
+            "items": {
+              "description": "Action id.",
+              "example": "action:ab12",
+              "type": "string"
+            },
+            "type": "array"
           },
           "exactQuote": {
             "description": "Exact words under review.",
@@ -3280,9 +3739,20 @@
             "format": "uuid",
             "type": "string"
           },
+          "proposedAfter": {
+            "additionalProperties": true,
+            "description": "Typed proposed value after this item.",
+            "type": "object"
+          },
           "stateDimension": {
             "description": "Canonical state dimension affected by correction.",
             "example": "risk",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "enum": ["pending_review", "accepted", "corrected", "rejected", "deferred"],
+            "example": "active",
             "type": "string"
           }
         },
@@ -5172,9 +5642,27 @@
             },
             "type": "array"
           },
+          "commitment_dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/CommitmentDependency"
+            },
+            "type": "array"
+          },
+          "commitment_events": {
+            "items": {
+              "$ref": "#/components/schemas/CommitmentEvent"
+            },
+            "type": "array"
+          },
           "commitments": {
             "items": {
               "$ref": "#/components/schemas/Commitment"
+            },
+            "type": "array"
+          },
+          "conversation_intelligence_artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationIntelligenceArtifact"
             },
             "type": "array"
           },
@@ -5473,11 +5961,39 @@
             },
             "type": "array"
           },
+          "contradictionCases": {
+            "description": "Typed durable conflicts.",
+            "items": {
+              "additionalProperties": true,
+              "description": "Contradiction case.",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "deletionReceipts": {
+            "description": "Deletion status and verification.",
+            "items": {
+              "$ref": "#/components/schemas/ConversationDeletionReceipt"
+            },
+            "type": "array"
+          },
           "delta": {
             "additionalProperties": true,
             "description": "Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.",
             "example": -42,
             "type": "object"
+          },
+          "effectivePolicy": {
+            "$ref": "#/components/schemas/ResolvedConversationPolicy"
+          },
+          "governanceDecisions": {
+            "description": "Immutable checkpoint decisions.",
+            "items": {
+              "additionalProperties": true,
+              "description": "Governance decision.",
+              "type": "object"
+            },
+            "type": "array"
           },
           "governanceReceipts": {
             "description": "Transcript governance receipts.",
@@ -5495,6 +6011,33 @@
             },
             "type": "array"
           },
+          "mutualActionPlans": {
+            "description": "Revision-bound bilateral plans.",
+            "items": {
+              "additionalProperties": true,
+              "description": "Mutual action plan.",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "recommendationEvaluations": {
+            "description": "Immutable contextual ranking factors.",
+            "items": {
+              "additionalProperties": true,
+              "description": "Recommendation evaluation.",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "recoveryEvaluations": {
+            "description": "Bounded commitment recovery evaluations.",
+            "items": {
+              "additionalProperties": true,
+              "description": "Recovery evaluation.",
+              "type": "object"
+            },
+            "type": "array"
+          },
           "reviewItems": {
             "description": "Only low-confidence review items.",
             "items": {
@@ -5503,7 +6046,20 @@
             "type": "array"
           }
         },
-        "required": ["claims", "reviewItems", "governanceReceipts", "delta", "liveCues"],
+        "required": [
+          "claims",
+          "reviewItems",
+          "governanceReceipts",
+          "delta",
+          "liveCues",
+          "contradictionCases",
+          "recoveryEvaluations",
+          "recommendationEvaluations",
+          "mutualActionPlans",
+          "effectivePolicy",
+          "governanceDecisions",
+          "deletionReceipts"
+        ],
         "type": "object"
       },
       "RelationshipObservation": {
@@ -5715,6 +6271,85 @@
           }
         },
         "required": ["id", "version", "state", "changedDimensions", "assertionIds", "createdAt"],
+        "type": "object"
+      },
+      "ResolvedConversationPolicy": {
+        "description": "Monotonically resolved conversation policy with every contributing layer recorded.",
+        "properties": {
+          "capture": {
+            "description": "Capture rule.",
+            "enum": ["deny", "require_consent", "allow"],
+            "example": "require_consent",
+            "type": "string"
+          },
+          "externalShare": {
+            "description": "Whether externally scoped plan sharing is allowed.",
+            "example": true,
+            "type": "boolean"
+          },
+          "legalHold": {
+            "description": "Whether required deletion is blocked.",
+            "example": false,
+            "type": "boolean"
+          },
+          "modelRoute": {
+            "description": "Most permissive model route allowed.",
+            "enum": ["local_only", "region_restricted", "hosted_allowed"],
+            "example": "local_only",
+            "type": "string"
+          },
+          "policyVersion": {
+            "description": "Hash-bound effective policy version.",
+            "example": "policy:ab12",
+            "type": "string"
+          },
+          "publishEvidence": {
+            "description": "Whether shared evidence publication is allowed.",
+            "example": true,
+            "type": "boolean"
+          },
+          "redactionClasses": {
+            "description": "Classes removed at outbound boundaries.",
+            "items": {
+              "description": "Redaction class.",
+              "example": "personal_identifier",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "resolvedAt": {
+            "description": "Resolution time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "retentionDays": {
+            "description": "Maximum retention in days.",
+            "example": 30,
+            "type": "integer"
+          },
+          "sourceLayerIds": {
+            "description": "Policy layers that contributed.",
+            "items": {
+              "description": "Layer id.",
+              "example": "workspace:default",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "capture",
+          "modelRoute",
+          "publishEvidence",
+          "externalShare",
+          "retentionDays",
+          "redactionClasses",
+          "legalHold",
+          "policyVersion",
+          "sourceLayerIds",
+          "resolvedAt"
+        ],
         "type": "object"
       },
       "RevenueAction": {
@@ -7433,9 +8068,27 @@
             },
             "type": "array"
           },
+          "commitment_dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/CommitmentDependency"
+            },
+            "type": "array"
+          },
+          "commitment_events": {
+            "items": {
+              "$ref": "#/components/schemas/CommitmentEvent"
+            },
+            "type": "array"
+          },
           "commitments": {
             "items": {
               "$ref": "#/components/schemas/Commitment"
+            },
+            "type": "array"
+          },
+          "conversation_intelligence_artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationIntelligenceArtifact"
             },
             "type": "array"
           },
@@ -11882,6 +12535,126 @@
         "tags": ["Billing"]
       }
     },
+    "/v1/public/mutual-action-plan": {
+      "get": {
+        "description": "Returns only the externally authorized plan revision with internal evidence references removed and policy redactions applied.",
+        "operationId": "getPublicMutualActionPlan",
+        "parameters": [
+          {
+            "description": "Scoped plan response token. Never put this token in a URL or query parameter.",
+            "in": "header",
+            "name": "X-Oppulence-Plan-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Public mutual action plan.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Scoped public plan."
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "summary": "Open a scoped mutual action plan",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/public/mutual-action-plan/responses": {
+      "post": {
+        "description": "Appends an idempotent external response for internal review; it never directly changes canonical commitments.",
+        "operationId": "respondPublicMutualActionPlan",
+        "parameters": [
+          {
+            "description": "Scoped plan response token. Never put this token in a URL or query parameter.",
+            "in": "header",
+            "name": "X-Oppulence-Plan-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "kind": "confirm",
+                "responseId": "response:ab12"
+              },
+              "schema": {
+                "description": "Plan response.",
+                "properties": {
+                  "comment": {
+                    "description": "Counterparty comment.",
+                    "example": "Waiting on legal.",
+                    "type": "string"
+                  },
+                  "itemId": {
+                    "description": "Plan item id when applicable.",
+                    "example": "item:ab12",
+                    "type": "string"
+                  },
+                  "kind": {
+                    "description": "Response kind.",
+                    "enum": ["confirm", "correct", "blocked", "completed", "comment"],
+                    "example": "confirm",
+                    "type": "string"
+                  },
+                  "proposedValue": {
+                    "description": "Proposed correction.",
+                    "example": "Move due date to Friday.",
+                    "type": "string"
+                  },
+                  "responseId": {
+                    "description": "Counterparty-generated idempotency key.",
+                    "example": "response:ab12",
+                    "type": "string"
+                  }
+                },
+                "required": ["responseId", "kind"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "External response.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Response receipt.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Recorded response."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "summary": "Respond to a scoped plan",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
     "/v1/relationship-observations/batch": {
       "post": {
         "description": "Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.",
@@ -12375,6 +13148,13 @@
                       },
                       "type": "array"
                     },
+                    "commitmentDependencies": {
+                      "description": "Evidence-backed commitment graph edges.",
+                      "items": {
+                        "$ref": "#/components/schemas/CommitmentDependency"
+                      },
+                      "type": "array"
+                    },
                     "commitments": {
                       "description": "Open and completed commitments.",
                       "items": {
@@ -12478,6 +13258,446 @@
         "tags": ["Relationship Intelligence"]
       }
     },
+    "/v1/relationships/{relationshipId}/commitment-dependencies": {
+      "post": {
+        "description": "Creates an evidence-backed dependency after enforcing tenant and relationship scope and rejecting graph cycles.",
+        "operationId": "createCommitmentDependency",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "evidenceRefs": ["relationship-observation:ab12"],
+                "fromCommitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                "kind": "blocks",
+                "toCommitmentId": "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51"
+              },
+              "schema": {
+                "description": "Commitment dependency request.",
+                "properties": {
+                  "evidenceRefs": {
+                    "description": "Evidence references.",
+                    "items": {
+                      "description": "Reference.",
+                      "example": "relationship-observation:ab12",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "fromCommitmentId": {
+                    "description": "Origin commitment id.",
+                    "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "kind": {
+                    "description": "Dependency semantics.",
+                    "enum": ["blocks", "requires", "supersedes"],
+                    "example": "blocks",
+                    "type": "string"
+                  },
+                  "toCommitmentId": {
+                    "description": "Target commitment id.",
+                    "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "format": "uuid",
+                    "type": "string"
+                  }
+                },
+                "required": ["fromCommitmentId", "toCommitmentId", "kind", "evidenceRefs"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Dependency.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommitmentDependency"
+                }
+              }
+            },
+            "description": "Created dependency."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Create a commitment dependency",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/commitment-recovery/run": {
+      "post": {
+        "description": "Reconciles due commitments against bounded fresh evidence, closes only explicit fulfillment, and queues governed recovery proposals otherwise.",
+        "operationId": "runCommitmentRecovery",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {},
+              "schema": {
+                "description": "Recovery request.",
+                "properties": {},
+                "type": "object"
+              }
+            }
+          },
+          "description": "Empty request.",
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Recovery evaluation result.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Recovery evaluations."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Run commitment recovery",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/commitments/{commitmentId}/events": {
+      "get": {
+        "description": "Returns the append-only transition history for one commitment.",
+        "operationId": "getCommitmentEvents",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Commitment id.",
+            "in": "path",
+            "name": "commitmentId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Commitment history.",
+                  "properties": {
+                    "events": {
+                      "description": "Ordered immutable events.",
+                      "items": {
+                        "$ref": "#/components/schemas/CommitmentEvent"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["events"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Commitment events."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get commitment history",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions": {
+      "post": {
+        "description": "Validates the state machine and appends one idempotent event before atomically updating the materialized projection.",
+        "operationId": "appendCommitmentTransition",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Commitment id.",
+            "in": "path",
+            "name": "commitmentId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "evidenceRefs": ["counterparty:accepted"],
+                "idempotencyKey": "ui:accept:ab12",
+                "kind": "accepted"
+              },
+              "schema": {
+                "description": "Commitment transition.",
+                "properties": {
+                  "action": {
+                    "description": "Replacement action for renegotiation.",
+                    "example": "Send revised packet.",
+                    "type": "string"
+                  },
+                  "blocker": {
+                    "description": "Blocker detail.",
+                    "example": "Waiting on legal.",
+                    "type": "string"
+                  },
+                  "dueAt": {
+                    "description": "Replacement due date.",
+                    "example": "2026-08-07T17:00:00Z",
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "evidenceRefs": {
+                    "description": "Evidence references.",
+                    "items": {
+                      "description": "Reference.",
+                      "example": "relationship-observation:ab12",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "idempotencyKey": {
+                    "description": "Stable source event id.",
+                    "example": "ui:accept:ab12",
+                    "type": "string"
+                  },
+                  "kind": {
+                    "description": "Event kind.",
+                    "enum": [
+                      "internally_confirmed",
+                      "offered",
+                      "accepted",
+                      "disputed",
+                      "blocked",
+                      "unblocked",
+                      "due_date_changed",
+                      "renegotiated",
+                      "fulfilled",
+                      "cancelled",
+                      "superseded"
+                    ],
+                    "example": "accepted",
+                    "type": "string"
+                  },
+                  "reason": {
+                    "description": "Optional reason.",
+                    "example": "Counterparty accepted in writing.",
+                    "type": "string"
+                  }
+                },
+                "required": ["kind", "idempotencyKey"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Transition.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipCommitment"
+                }
+              }
+            },
+            "description": "Updated commitment."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Append a commitment transition",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve": {
+      "post": {
+        "description": "Records the user's selected evidence side as a top-authority correction without rewriting either source.",
+        "operationId": "resolveRelationshipContradiction",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Contradiction case id.",
+            "in": "path",
+            "name": "caseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "selectedAssertionId": "assertion:ab12"
+              },
+              "schema": {
+                "description": "Contradiction resolution.",
+                "properties": {
+                  "reason": {
+                    "description": "Optional rationale.",
+                    "example": "CRM was updated after the meeting.",
+                    "type": "string"
+                  },
+                  "selectedAssertionId": {
+                    "description": "Selected assertion id.",
+                    "example": "assertion:ab12",
+                    "type": "string"
+                  }
+                },
+                "required": ["selectedAssertionId"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Resolution.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Relationship detail result.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Updated relationship and intelligence."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Resolve a typed contradiction",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
     "/v1/relationships/{relationshipId}/conversation-corrections": {
       "post": {
         "description": "Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.",
@@ -12566,6 +13786,299 @@
           }
         ],
         "summary": "Correct reviewed conversation evidence",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/conversation-decisions": {
+      "post": {
+        "description": "Approves, corrects, rejects, or defers one evidence-backed semantic candidate. A stale baseline returns 409 and no state mutation.",
+        "operationId": "decideConversationChange",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "kind": "approve",
+                "reason": "Customer stated this directly.",
+                "reviewItemId": "review:ab12"
+              },
+              "schema": {
+                "description": "Conversation review decision.",
+                "properties": {
+                  "correctedValue": {
+                    "description": "Required replacement for correct.",
+                    "example": "Security review is complete.",
+                    "type": "string"
+                  },
+                  "deferUntil": {
+                    "description": "Future reminder for defer.",
+                    "example": "2026-08-01T14:00:00Z",
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "kind": {
+                    "description": "Decision kind.",
+                    "enum": ["approve", "correct", "reject", "defer"],
+                    "example": "approve",
+                    "type": "string"
+                  },
+                  "reason": {
+                    "description": "Decision reason.",
+                    "example": "Customer clarified this in the meeting.",
+                    "type": "string"
+                  },
+                  "reviewItemId": {
+                    "description": "Review item id.",
+                    "example": "review:ab12",
+                    "type": "string"
+                  }
+                },
+                "required": ["reviewItemId", "kind"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Review decision.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Decision result.",
+                  "properties": {
+                    "intelligence": {
+                      "$ref": "#/components/schemas/RelationshipIntelligence"
+                    },
+                    "relationship": {
+                      "$ref": "#/components/schemas/RevenueRelationship"
+                    }
+                  },
+                  "required": ["relationship", "intelligence"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Updated relationship and refreshed review queue."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Decide a proposed conversation change",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/conversation-deletion": {
+      "post": {
+        "description": "Evaluates legal hold at execution time, removes server-side content transactionally, and returns an idempotent per-target receipt. Device and provider work remains pending until separately verified.",
+        "operationId": "requestConversationDeletion",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "requestId": "delete:ab12"
+              },
+              "schema": {
+                "description": "Deletion request.",
+                "properties": {
+                  "requestId": {
+                    "description": "Idempotency key.",
+                    "example": "delete:ab12",
+                    "type": "string"
+                  }
+                },
+                "required": ["requestId"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Deletion request.",
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDeletionReceipt"
+                }
+              }
+            },
+            "description": "Deletion receipt."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Request conversation deletion",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/conversation-policy": {
+      "get": {
+        "description": "Returns all applicable layers and the monotonically resolved effective policy.",
+        "operationId": "getConversationPolicy",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Conversation policy result.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Policy layers and effective policy."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Inspect conversation policy",
+        "tags": ["Relationship Intelligence"]
+      },
+      "put": {
+        "description": "Appends authorized policy-layer versions; lower layers may only make handling stricter.",
+        "operationId": "putConversationPolicy",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "Policy update.",
+                "properties": {
+                  "layers": {
+                    "description": "Versioned policy layers.",
+                    "items": {
+                      "additionalProperties": true,
+                      "description": "Conversation policy layer.",
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": ["layers"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Policy layers.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Conversation policy result.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Resolved effective policy."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Update conversation policy",
         "tags": ["Relationship Intelligence"]
       }
     },
@@ -12712,6 +14225,311 @@
           }
         ],
         "summary": "Open source evidence",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/mutual-action-plans": {
+      "post": {
+        "description": "Creates an evidence-backed plan only from accepted or open commitments.",
+        "operationId": "createMutualActionPlan",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "commitmentIds": ["8b8dfa9b-a7b2-46ea-982c-622a914c00e5"]
+              },
+              "schema": {
+                "description": "Plan create request.",
+                "properties": {
+                  "commitmentIds": {
+                    "description": "Commitment ids.",
+                    "items": {
+                      "description": "Commitment id.",
+                      "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": ["commitmentIds"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Accepted commitments.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Mutual action plan.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Draft plan."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Create a mutual action plan",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/mutual-action-plans/{planId}": {
+      "put": {
+        "description": "Appends a validated revision and invalidates any approval bound to the prior hash.",
+        "operationId": "reviseMutualActionPlan",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Mutual action plan id.",
+            "in": "path",
+            "name": "planId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "Plan revision request.",
+                "properties": {
+                  "items": {
+                    "description": "Plan items.",
+                    "items": {
+                      "additionalProperties": true,
+                      "description": "Mutual action plan item.",
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": ["items"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Replacement items.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Mutual action plan.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Revised plan."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Revise a mutual action plan",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/approve": {
+      "post": {
+        "description": "Binds internal approval to the exact current revision hash.",
+        "operationId": "approveMutualActionPlan",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Mutual action plan id.",
+            "in": "path",
+            "name": "planId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {},
+              "schema": {
+                "description": "Plan approval request.",
+                "properties": {},
+                "type": "object"
+              }
+            }
+          },
+          "description": "Empty request.",
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Mutual action plan.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Approved plan."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Approve a plan revision",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share": {
+      "post": {
+        "description": "Re-evaluates effective policy, creates a scoped expiring token, stores only its hash, and queues the exact approved revision for operator approval.",
+        "operationId": "shareMutualActionPlan",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Mutual action plan id.",
+            "in": "path",
+            "name": "planId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {},
+              "schema": {
+                "description": "Plan share request.",
+                "properties": {},
+                "type": "object"
+              }
+            }
+          },
+          "description": "Empty request.",
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Plan share result.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Shared plan metadata and one-time response token."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Queue an approved plan share",
         "tags": ["Relationship Intelligence"]
       }
     },

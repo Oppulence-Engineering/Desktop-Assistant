@@ -540,6 +540,11 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 
 	// Authenticated surface (Ory/WorkOS bearer required).
 	r.Group(func(r chi.Router) {
+		r.Use(rl.PerUserWindow(ratelimit.GroupRevenue, 60, time.Minute))
+		revenueH.MountPublic(r)
+	})
+
+	r.Group(func(r chi.Router) {
 		r.Use(authMW.RequireJWT)
 		r.Use(rl.PerUser(ratelimit.GroupDefault, 600)) // sanity bucket
 

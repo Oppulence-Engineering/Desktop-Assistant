@@ -13,6 +13,9 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -269,6 +272,51 @@ func (_u *RevenueWorkspaceUpdate) AddCommitments(v ...*Commitment) *RevenueWorks
 	return _u.AddCommitmentIDs(ids...)
 }
 
+// AddCommitmentEventIDs adds the "commitment_events" edge to the CommitmentEvent entity by IDs.
+func (_u *RevenueWorkspaceUpdate) AddCommitmentEventIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.AddCommitmentEventIDs(ids...)
+	return _u
+}
+
+// AddCommitmentEvents adds the "commitment_events" edges to the CommitmentEvent entity.
+func (_u *RevenueWorkspaceUpdate) AddCommitmentEvents(v ...*CommitmentEvent) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCommitmentEventIDs(ids...)
+}
+
+// AddCommitmentDependencyIDs adds the "commitment_dependencies" edge to the CommitmentDependency entity by IDs.
+func (_u *RevenueWorkspaceUpdate) AddCommitmentDependencyIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.AddCommitmentDependencyIDs(ids...)
+	return _u
+}
+
+// AddCommitmentDependencies adds the "commitment_dependencies" edges to the CommitmentDependency entity.
+func (_u *RevenueWorkspaceUpdate) AddCommitmentDependencies(v ...*CommitmentDependency) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCommitmentDependencyIDs(ids...)
+}
+
+// AddConversationIntelligenceArtifactIDs adds the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity by IDs.
+func (_u *RevenueWorkspaceUpdate) AddConversationIntelligenceArtifactIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.AddConversationIntelligenceArtifactIDs(ids...)
+	return _u
+}
+
+// AddConversationIntelligenceArtifacts adds the "conversation_intelligence_artifacts" edges to the ConversationIntelligenceArtifact entity.
+func (_u *RevenueWorkspaceUpdate) AddConversationIntelligenceArtifacts(v ...*ConversationIntelligenceArtifact) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConversationIntelligenceArtifactIDs(ids...)
+}
+
 // AddActionIDs adds the "actions" edge to the RevenueAction entity by IDs.
 func (_u *RevenueWorkspaceUpdate) AddActionIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
 	_u.mutation.AddActionIDs(ids...)
@@ -512,6 +560,69 @@ func (_u *RevenueWorkspaceUpdate) RemoveCommitments(v ...*Commitment) *RevenueWo
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveCommitmentIDs(ids...)
+}
+
+// ClearCommitmentEvents clears all "commitment_events" edges to the CommitmentEvent entity.
+func (_u *RevenueWorkspaceUpdate) ClearCommitmentEvents() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearCommitmentEvents()
+	return _u
+}
+
+// RemoveCommitmentEventIDs removes the "commitment_events" edge to CommitmentEvent entities by IDs.
+func (_u *RevenueWorkspaceUpdate) RemoveCommitmentEventIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.RemoveCommitmentEventIDs(ids...)
+	return _u
+}
+
+// RemoveCommitmentEvents removes "commitment_events" edges to CommitmentEvent entities.
+func (_u *RevenueWorkspaceUpdate) RemoveCommitmentEvents(v ...*CommitmentEvent) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCommitmentEventIDs(ids...)
+}
+
+// ClearCommitmentDependencies clears all "commitment_dependencies" edges to the CommitmentDependency entity.
+func (_u *RevenueWorkspaceUpdate) ClearCommitmentDependencies() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearCommitmentDependencies()
+	return _u
+}
+
+// RemoveCommitmentDependencyIDs removes the "commitment_dependencies" edge to CommitmentDependency entities by IDs.
+func (_u *RevenueWorkspaceUpdate) RemoveCommitmentDependencyIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.RemoveCommitmentDependencyIDs(ids...)
+	return _u
+}
+
+// RemoveCommitmentDependencies removes "commitment_dependencies" edges to CommitmentDependency entities.
+func (_u *RevenueWorkspaceUpdate) RemoveCommitmentDependencies(v ...*CommitmentDependency) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCommitmentDependencyIDs(ids...)
+}
+
+// ClearConversationIntelligenceArtifacts clears all "conversation_intelligence_artifacts" edges to the ConversationIntelligenceArtifact entity.
+func (_u *RevenueWorkspaceUpdate) ClearConversationIntelligenceArtifacts() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearConversationIntelligenceArtifacts()
+	return _u
+}
+
+// RemoveConversationIntelligenceArtifactIDs removes the "conversation_intelligence_artifacts" edge to ConversationIntelligenceArtifact entities by IDs.
+func (_u *RevenueWorkspaceUpdate) RemoveConversationIntelligenceArtifactIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.RemoveConversationIntelligenceArtifactIDs(ids...)
+	return _u
+}
+
+// RemoveConversationIntelligenceArtifacts removes "conversation_intelligence_artifacts" edges to ConversationIntelligenceArtifact entities.
+func (_u *RevenueWorkspaceUpdate) RemoveConversationIntelligenceArtifacts(v ...*ConversationIntelligenceArtifact) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConversationIntelligenceArtifactIDs(ids...)
 }
 
 // ClearActions clears all "actions" edges to the RevenueAction entity.
@@ -1037,6 +1148,141 @@ func (_u *RevenueWorkspaceUpdate) sqlSave(ctx context.Context) (_node int, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(commitment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CommitmentEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommitmentEventsTable,
+			Columns: []string{revenueworkspace.CommitmentEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentevent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCommitmentEventsIDs(); len(nodes) > 0 && !_u.mutation.CommitmentEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommitmentEventsTable,
+			Columns: []string{revenueworkspace.CommitmentEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CommitmentEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommitmentEventsTable,
+			Columns: []string{revenueworkspace.CommitmentEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CommitmentDependenciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommitmentDependenciesTable,
+			Columns: []string{revenueworkspace.CommitmentDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCommitmentDependenciesIDs(); len(nodes) > 0 && !_u.mutation.CommitmentDependenciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommitmentDependenciesTable,
+			Columns: []string{revenueworkspace.CommitmentDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CommitmentDependenciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommitmentDependenciesTable,
+			Columns: []string{revenueworkspace.CommitmentDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConversationIntelligenceArtifactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.ConversationIntelligenceArtifactsTable,
+			Columns: []string{revenueworkspace.ConversationIntelligenceArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationintelligenceartifact.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConversationIntelligenceArtifactsIDs(); len(nodes) > 0 && !_u.mutation.ConversationIntelligenceArtifactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.ConversationIntelligenceArtifactsTable,
+			Columns: []string{revenueworkspace.ConversationIntelligenceArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationintelligenceartifact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConversationIntelligenceArtifactsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.ConversationIntelligenceArtifactsTable,
+			Columns: []string{revenueworkspace.ConversationIntelligenceArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationintelligenceartifact.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1739,6 +1985,51 @@ func (_u *RevenueWorkspaceUpdateOne) AddCommitments(v ...*Commitment) *RevenueWo
 	return _u.AddCommitmentIDs(ids...)
 }
 
+// AddCommitmentEventIDs adds the "commitment_events" edge to the CommitmentEvent entity by IDs.
+func (_u *RevenueWorkspaceUpdateOne) AddCommitmentEventIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.AddCommitmentEventIDs(ids...)
+	return _u
+}
+
+// AddCommitmentEvents adds the "commitment_events" edges to the CommitmentEvent entity.
+func (_u *RevenueWorkspaceUpdateOne) AddCommitmentEvents(v ...*CommitmentEvent) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCommitmentEventIDs(ids...)
+}
+
+// AddCommitmentDependencyIDs adds the "commitment_dependencies" edge to the CommitmentDependency entity by IDs.
+func (_u *RevenueWorkspaceUpdateOne) AddCommitmentDependencyIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.AddCommitmentDependencyIDs(ids...)
+	return _u
+}
+
+// AddCommitmentDependencies adds the "commitment_dependencies" edges to the CommitmentDependency entity.
+func (_u *RevenueWorkspaceUpdateOne) AddCommitmentDependencies(v ...*CommitmentDependency) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCommitmentDependencyIDs(ids...)
+}
+
+// AddConversationIntelligenceArtifactIDs adds the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity by IDs.
+func (_u *RevenueWorkspaceUpdateOne) AddConversationIntelligenceArtifactIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.AddConversationIntelligenceArtifactIDs(ids...)
+	return _u
+}
+
+// AddConversationIntelligenceArtifacts adds the "conversation_intelligence_artifacts" edges to the ConversationIntelligenceArtifact entity.
+func (_u *RevenueWorkspaceUpdateOne) AddConversationIntelligenceArtifacts(v ...*ConversationIntelligenceArtifact) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConversationIntelligenceArtifactIDs(ids...)
+}
+
 // AddActionIDs adds the "actions" edge to the RevenueAction entity by IDs.
 func (_u *RevenueWorkspaceUpdateOne) AddActionIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
 	_u.mutation.AddActionIDs(ids...)
@@ -1982,6 +2273,69 @@ func (_u *RevenueWorkspaceUpdateOne) RemoveCommitments(v ...*Commitment) *Revenu
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveCommitmentIDs(ids...)
+}
+
+// ClearCommitmentEvents clears all "commitment_events" edges to the CommitmentEvent entity.
+func (_u *RevenueWorkspaceUpdateOne) ClearCommitmentEvents() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearCommitmentEvents()
+	return _u
+}
+
+// RemoveCommitmentEventIDs removes the "commitment_events" edge to CommitmentEvent entities by IDs.
+func (_u *RevenueWorkspaceUpdateOne) RemoveCommitmentEventIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.RemoveCommitmentEventIDs(ids...)
+	return _u
+}
+
+// RemoveCommitmentEvents removes "commitment_events" edges to CommitmentEvent entities.
+func (_u *RevenueWorkspaceUpdateOne) RemoveCommitmentEvents(v ...*CommitmentEvent) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCommitmentEventIDs(ids...)
+}
+
+// ClearCommitmentDependencies clears all "commitment_dependencies" edges to the CommitmentDependency entity.
+func (_u *RevenueWorkspaceUpdateOne) ClearCommitmentDependencies() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearCommitmentDependencies()
+	return _u
+}
+
+// RemoveCommitmentDependencyIDs removes the "commitment_dependencies" edge to CommitmentDependency entities by IDs.
+func (_u *RevenueWorkspaceUpdateOne) RemoveCommitmentDependencyIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.RemoveCommitmentDependencyIDs(ids...)
+	return _u
+}
+
+// RemoveCommitmentDependencies removes "commitment_dependencies" edges to CommitmentDependency entities.
+func (_u *RevenueWorkspaceUpdateOne) RemoveCommitmentDependencies(v ...*CommitmentDependency) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCommitmentDependencyIDs(ids...)
+}
+
+// ClearConversationIntelligenceArtifacts clears all "conversation_intelligence_artifacts" edges to the ConversationIntelligenceArtifact entity.
+func (_u *RevenueWorkspaceUpdateOne) ClearConversationIntelligenceArtifacts() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearConversationIntelligenceArtifacts()
+	return _u
+}
+
+// RemoveConversationIntelligenceArtifactIDs removes the "conversation_intelligence_artifacts" edge to ConversationIntelligenceArtifact entities by IDs.
+func (_u *RevenueWorkspaceUpdateOne) RemoveConversationIntelligenceArtifactIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.RemoveConversationIntelligenceArtifactIDs(ids...)
+	return _u
+}
+
+// RemoveConversationIntelligenceArtifacts removes "conversation_intelligence_artifacts" edges to ConversationIntelligenceArtifact entities.
+func (_u *RevenueWorkspaceUpdateOne) RemoveConversationIntelligenceArtifacts(v ...*ConversationIntelligenceArtifact) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConversationIntelligenceArtifactIDs(ids...)
 }
 
 // ClearActions clears all "actions" edges to the RevenueAction entity.
@@ -2537,6 +2891,141 @@ func (_u *RevenueWorkspaceUpdateOne) sqlSave(ctx context.Context) (_node *Revenu
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(commitment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CommitmentEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommitmentEventsTable,
+			Columns: []string{revenueworkspace.CommitmentEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentevent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCommitmentEventsIDs(); len(nodes) > 0 && !_u.mutation.CommitmentEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommitmentEventsTable,
+			Columns: []string{revenueworkspace.CommitmentEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CommitmentEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommitmentEventsTable,
+			Columns: []string{revenueworkspace.CommitmentEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CommitmentDependenciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommitmentDependenciesTable,
+			Columns: []string{revenueworkspace.CommitmentDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCommitmentDependenciesIDs(); len(nodes) > 0 && !_u.mutation.CommitmentDependenciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommitmentDependenciesTable,
+			Columns: []string{revenueworkspace.CommitmentDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CommitmentDependenciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommitmentDependenciesTable,
+			Columns: []string{revenueworkspace.CommitmentDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConversationIntelligenceArtifactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.ConversationIntelligenceArtifactsTable,
+			Columns: []string{revenueworkspace.ConversationIntelligenceArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationintelligenceartifact.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConversationIntelligenceArtifactsIDs(); len(nodes) > 0 && !_u.mutation.ConversationIntelligenceArtifactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.ConversationIntelligenceArtifactsTable,
+			Columns: []string{revenueworkspace.ConversationIntelligenceArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationintelligenceartifact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConversationIntelligenceArtifactsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.ConversationIntelligenceArtifactsTable,
+			Columns: []string{revenueworkspace.ConversationIntelligenceArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationintelligenceartifact.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

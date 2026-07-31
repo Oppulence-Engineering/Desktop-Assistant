@@ -37,6 +37,26 @@ type Commitment struct {
 	Confidence float64 `json:"confidence,omitempty"`
 	// UserConfirmed holds the value of the "user_confirmed" field.
 	UserConfirmed bool `json:"user_confirmed,omitempty"`
+	// OwnerParticipantRef holds the value of the "owner_participant_ref" field.
+	OwnerParticipantRef string `json:"owner_participant_ref,omitempty"`
+	// CounterpartyParticipantRef holds the value of the "counterparty_participant_ref" field.
+	CounterpartyParticipantRef string `json:"counterparty_participant_ref,omitempty"`
+	// BeneficiaryParticipantRef holds the value of the "beneficiary_participant_ref" field.
+	BeneficiaryParticipantRef string `json:"beneficiary_participant_ref,omitempty"`
+	// SourcePhrase holds the value of the "source_phrase" field.
+	SourcePhrase string `json:"-"`
+	// DuePhrase holds the value of the "due_phrase" field.
+	DuePhrase string `json:"due_phrase,omitempty"`
+	// DueTimezone holds the value of the "due_timezone" field.
+	DueTimezone string `json:"due_timezone,omitempty"`
+	// Acceptance holds the value of the "acceptance" field.
+	Acceptance string `json:"acceptance,omitempty"`
+	// Blocker holds the value of the "blocker" field.
+	Blocker string `json:"-"`
+	// CompletedAt holds the value of the "completed_at" field.
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	// CurrentEventVersion holds the value of the "current_event_version" field.
+	CurrentEventVersion int `json:"current_event_version,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CommitmentQuery when eager-loading is set.
 	Edges                CommitmentEdges `json:"edges"`
@@ -56,13 +76,22 @@ type CommitmentEdges struct {
 	User *User `json:"user,omitempty"`
 	// Evidences holds the value of the evidences edge.
 	Evidences []*RevenueEvidence `json:"evidences,omitempty"`
+	// Events holds the value of the events edge.
+	Events []*CommitmentEvent `json:"events,omitempty"`
+	// OutgoingDependencies holds the value of the outgoing_dependencies edge.
+	OutgoingDependencies []*CommitmentDependency `json:"outgoing_dependencies,omitempty"`
+	// IncomingDependencies holds the value of the incoming_dependencies edge.
+	IncomingDependencies []*CommitmentDependency `json:"incoming_dependencies,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [7]bool
 	// totalCount holds the count of the edges above.
-	totalCount [4]map[string]int
+	totalCount [7]map[string]int
 
-	namedEvidences map[string][]*RevenueEvidence
+	namedEvidences            map[string][]*RevenueEvidence
+	namedEvents               map[string][]*CommitmentEvent
+	namedOutgoingDependencies map[string][]*CommitmentDependency
+	namedIncomingDependencies map[string][]*CommitmentDependency
 }
 
 // WorkspaceOrErr returns the Workspace value or an error if the edge
@@ -107,6 +136,33 @@ func (e CommitmentEdges) EvidencesOrErr() ([]*RevenueEvidence, error) {
 	return nil, &NotLoadedError{edge: "evidences"}
 }
 
+// EventsOrErr returns the Events value or an error if the edge
+// was not loaded in eager-loading.
+func (e CommitmentEdges) EventsOrErr() ([]*CommitmentEvent, error) {
+	if e.loadedTypes[4] {
+		return e.Events, nil
+	}
+	return nil, &NotLoadedError{edge: "events"}
+}
+
+// OutgoingDependenciesOrErr returns the OutgoingDependencies value or an error if the edge
+// was not loaded in eager-loading.
+func (e CommitmentEdges) OutgoingDependenciesOrErr() ([]*CommitmentDependency, error) {
+	if e.loadedTypes[5] {
+		return e.OutgoingDependencies, nil
+	}
+	return nil, &NotLoadedError{edge: "outgoing_dependencies"}
+}
+
+// IncomingDependenciesOrErr returns the IncomingDependencies value or an error if the edge
+// was not loaded in eager-loading.
+func (e CommitmentEdges) IncomingDependenciesOrErr() ([]*CommitmentDependency, error) {
+	if e.loadedTypes[6] {
+		return e.IncomingDependencies, nil
+	}
+	return nil, &NotLoadedError{edge: "incoming_dependencies"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Commitment) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -116,9 +172,11 @@ func (*Commitment) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case commitment.FieldConfidence:
 			values[i] = new(sql.NullFloat64)
-		case commitment.FieldDirection, commitment.FieldText, commitment.FieldStatus:
+		case commitment.FieldCurrentEventVersion:
+			values[i] = new(sql.NullInt64)
+		case commitment.FieldDirection, commitment.FieldText, commitment.FieldStatus, commitment.FieldOwnerParticipantRef, commitment.FieldCounterpartyParticipantRef, commitment.FieldBeneficiaryParticipantRef, commitment.FieldSourcePhrase, commitment.FieldDuePhrase, commitment.FieldDueTimezone, commitment.FieldAcceptance, commitment.FieldBlocker:
 			values[i] = new(sql.NullString)
-		case commitment.FieldCreatedAt, commitment.FieldUpdatedAt, commitment.FieldDueAt:
+		case commitment.FieldCreatedAt, commitment.FieldUpdatedAt, commitment.FieldDueAt, commitment.FieldCompletedAt:
 			values[i] = new(sql.NullTime)
 		case commitment.FieldID:
 			values[i] = new(uuid.UUID)
@@ -198,6 +256,67 @@ func (_m *Commitment) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.UserConfirmed = value.Bool
 			}
+		case commitment.FieldOwnerParticipantRef:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field owner_participant_ref", values[i])
+			} else if value.Valid {
+				_m.OwnerParticipantRef = value.String
+			}
+		case commitment.FieldCounterpartyParticipantRef:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field counterparty_participant_ref", values[i])
+			} else if value.Valid {
+				_m.CounterpartyParticipantRef = value.String
+			}
+		case commitment.FieldBeneficiaryParticipantRef:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field beneficiary_participant_ref", values[i])
+			} else if value.Valid {
+				_m.BeneficiaryParticipantRef = value.String
+			}
+		case commitment.FieldSourcePhrase:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field source_phrase", values[i])
+			} else if value.Valid {
+				_m.SourcePhrase = value.String
+			}
+		case commitment.FieldDuePhrase:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field due_phrase", values[i])
+			} else if value.Valid {
+				_m.DuePhrase = value.String
+			}
+		case commitment.FieldDueTimezone:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field due_timezone", values[i])
+			} else if value.Valid {
+				_m.DueTimezone = value.String
+			}
+		case commitment.FieldAcceptance:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field acceptance", values[i])
+			} else if value.Valid {
+				_m.Acceptance = value.String
+			}
+		case commitment.FieldBlocker:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field blocker", values[i])
+			} else if value.Valid {
+				_m.Blocker = value.String
+			}
+		case commitment.FieldCompletedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field completed_at", values[i])
+			} else if value.Valid {
+				_m.CompletedAt = new(time.Time)
+				*_m.CompletedAt = value.Time
+			}
+		case commitment.FieldCurrentEventVersion:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field current_event_version", values[i])
+			} else if value.Valid {
+				_m.CurrentEventVersion = int(value.Int64)
+			}
 		case commitment.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field relationship_id", values[i])
@@ -252,6 +371,21 @@ func (_m *Commitment) QueryEvidences() *RevenueEvidenceQuery {
 	return NewCommitmentClient(_m.config).QueryEvidences(_m)
 }
 
+// QueryEvents queries the "events" edge of the Commitment entity.
+func (_m *Commitment) QueryEvents() *CommitmentEventQuery {
+	return NewCommitmentClient(_m.config).QueryEvents(_m)
+}
+
+// QueryOutgoingDependencies queries the "outgoing_dependencies" edge of the Commitment entity.
+func (_m *Commitment) QueryOutgoingDependencies() *CommitmentDependencyQuery {
+	return NewCommitmentClient(_m.config).QueryOutgoingDependencies(_m)
+}
+
+// QueryIncomingDependencies queries the "incoming_dependencies" edge of the Commitment entity.
+func (_m *Commitment) QueryIncomingDependencies() *CommitmentDependencyQuery {
+	return NewCommitmentClient(_m.config).QueryIncomingDependencies(_m)
+}
+
 // Update returns a builder for updating this Commitment.
 // Note that you need to call Commitment.Unwrap() before calling this method if this Commitment
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -299,6 +433,36 @@ func (_m *Commitment) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("user_confirmed=")
 	builder.WriteString(fmt.Sprintf("%v", _m.UserConfirmed))
+	builder.WriteString(", ")
+	builder.WriteString("owner_participant_ref=")
+	builder.WriteString(_m.OwnerParticipantRef)
+	builder.WriteString(", ")
+	builder.WriteString("counterparty_participant_ref=")
+	builder.WriteString(_m.CounterpartyParticipantRef)
+	builder.WriteString(", ")
+	builder.WriteString("beneficiary_participant_ref=")
+	builder.WriteString(_m.BeneficiaryParticipantRef)
+	builder.WriteString(", ")
+	builder.WriteString("source_phrase=<sensitive>")
+	builder.WriteString(", ")
+	builder.WriteString("due_phrase=")
+	builder.WriteString(_m.DuePhrase)
+	builder.WriteString(", ")
+	builder.WriteString("due_timezone=")
+	builder.WriteString(_m.DueTimezone)
+	builder.WriteString(", ")
+	builder.WriteString("acceptance=")
+	builder.WriteString(_m.Acceptance)
+	builder.WriteString(", ")
+	builder.WriteString("blocker=<sensitive>")
+	builder.WriteString(", ")
+	if v := _m.CompletedAt; v != nil {
+		builder.WriteString("completed_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("current_event_version=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CurrentEventVersion))
 	builder.WriteByte(')')
 	return builder.String()
 }
@@ -324,6 +488,78 @@ func (_m *Commitment) appendNamedEvidences(name string, edges ...*RevenueEvidenc
 		_m.Edges.namedEvidences[name] = []*RevenueEvidence{}
 	} else {
 		_m.Edges.namedEvidences[name] = append(_m.Edges.namedEvidences[name], edges...)
+	}
+}
+
+// NamedEvents returns the Events named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Commitment) NamedEvents(name string) ([]*CommitmentEvent, error) {
+	if _m.Edges.namedEvents == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedEvents[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Commitment) appendNamedEvents(name string, edges ...*CommitmentEvent) {
+	if _m.Edges.namedEvents == nil {
+		_m.Edges.namedEvents = make(map[string][]*CommitmentEvent)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedEvents[name] = []*CommitmentEvent{}
+	} else {
+		_m.Edges.namedEvents[name] = append(_m.Edges.namedEvents[name], edges...)
+	}
+}
+
+// NamedOutgoingDependencies returns the OutgoingDependencies named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Commitment) NamedOutgoingDependencies(name string) ([]*CommitmentDependency, error) {
+	if _m.Edges.namedOutgoingDependencies == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedOutgoingDependencies[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Commitment) appendNamedOutgoingDependencies(name string, edges ...*CommitmentDependency) {
+	if _m.Edges.namedOutgoingDependencies == nil {
+		_m.Edges.namedOutgoingDependencies = make(map[string][]*CommitmentDependency)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedOutgoingDependencies[name] = []*CommitmentDependency{}
+	} else {
+		_m.Edges.namedOutgoingDependencies[name] = append(_m.Edges.namedOutgoingDependencies[name], edges...)
+	}
+}
+
+// NamedIncomingDependencies returns the IncomingDependencies named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Commitment) NamedIncomingDependencies(name string) ([]*CommitmentDependency, error) {
+	if _m.Edges.namedIncomingDependencies == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedIncomingDependencies[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Commitment) appendNamedIncomingDependencies(name string, edges ...*CommitmentDependency) {
+	if _m.Edges.namedIncomingDependencies == nil {
+		_m.Edges.namedIncomingDependencies = make(map[string][]*CommitmentDependency)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedIncomingDependencies[name] = []*CommitmentDependency{}
+	} else {
+		_m.Edges.namedIncomingDependencies[name] = append(_m.Edges.namedIncomingDependencies[name], edges...)
 	}
 }
 
