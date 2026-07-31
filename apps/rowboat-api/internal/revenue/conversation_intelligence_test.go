@@ -237,7 +237,7 @@ func TestConversationRecommendationRankingLearnsFromOutcomesWithoutChangingState
 	if err != nil || len(emails) != 2 {
 		t.Fatalf("email recommendations: %d %v", len(emails), err)
 	}
-	if !strings.Contains(emails[1].PriorityComponentsJSON, `"outcome_learning":3`) {
+	if !strings.Contains(emails[1].PriorityComponentsJSON, `"outcome_learning":2`) {
 		t.Fatalf("second recommendation did not learn a bounded outcome lift: %s", emails[1].PriorityComponentsJSON)
 	}
 	rel, _ := f.svc.GetRelationship(f.ctx, first[0].Relationship.ID)

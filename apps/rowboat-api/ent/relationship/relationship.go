@@ -81,6 +81,8 @@ const (
 	EdgeMailThreads = "mail_threads"
 	// EdgeParticipants holds the string denoting the participants edge name in mutations.
 	EdgeParticipants = "participants"
+	// EdgeIdentities holds the string denoting the identities edge name in mutations.
+	EdgeIdentities = "identities"
 	// EdgeObservations holds the string denoting the observations edge name in mutations.
 	EdgeObservations = "observations"
 	// EdgeAssertions holds the string denoting the assertions edge name in mutations.
@@ -157,6 +159,13 @@ const (
 	ParticipantsInverseTable = "relationship_participants"
 	// ParticipantsColumn is the table column denoting the participants relation/edge.
 	ParticipantsColumn = "relationship_id"
+	// IdentitiesTable is the table that holds the identities relation/edge.
+	IdentitiesTable = "relationship_identities"
+	// IdentitiesInverseTable is the table name for the RelationshipIdentity entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipidentity" package.
+	IdentitiesInverseTable = "relationship_identities"
+	// IdentitiesColumn is the table column denoting the identities relation/edge.
+	IdentitiesColumn = "relationship_id"
 	// ObservationsTable is the table that holds the observations relation/edge.
 	ObservationsTable = "relationship_observations"
 	// ObservationsInverseTable is the table name for the RelationshipObservation entity.
@@ -515,6 +524,20 @@ func ByParticipants(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByIdentitiesCount orders the results by identities count.
+func ByIdentitiesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newIdentitiesStep(), opts...)
+	}
+}
+
+// ByIdentities orders the results by identities terms.
+func ByIdentities(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newIdentitiesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByObservationsCount orders the results by observations count.
 func ByObservationsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -624,6 +647,13 @@ func newParticipantsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ParticipantsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ParticipantsTable, ParticipantsColumn),
+	)
+}
+func newIdentitiesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(IdentitiesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, IdentitiesTable, IdentitiesColumn),
 	)
 }
 func newObservationsStep() *sqlgraph.Step {

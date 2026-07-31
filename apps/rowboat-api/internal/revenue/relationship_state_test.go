@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
@@ -426,6 +428,131 @@ func TestAcmeGoldenPathProjectsFourSourcesIntoOneRelationship(t *testing.T) {
 	sources, err := f.svc.RelationshipSourceStatuses(f.ctx, f.user)
 	if err != nil || len(sources) != 4 {
 		t.Fatalf("want four source statuses, got %d err=%v", len(sources), err)
+	}
+}
+
+func TestCrossChannelIdentityAnchorsResolveProviderOnlyEvents(t *testing.T) {
+	f := newFixture(t)
+	base := time.Date(2026, 7, 31, 14, 0, 0, 0, time.UTC)
+	events := []struct {
+		adapt func(AdapterEvent) (RelationshipObservationInput, error)
+		event AdapterEvent
+	}{
+		{AdaptHubSpotEvent, AdapterEvent{
+			ExternalID: "company-created", AccountName: "Acme", AccountDomain: "acme.example",
+			PrimaryEmail: "avery@acme.example", ResourceRefs: []string{"hubspot:company:123"},
+			EventType: "company.created", OccurredAt: base,
+		}},
+		{AdaptSlackEvent, AdapterEvent{
+			ExternalID: "message-1", PrimaryEmail: "avery@acme.example",
+			ResourceRefs: []string{"slack:user:U123"}, EventType: "message.posted",
+			OccurredAt: base.Add(time.Minute), Participants: []RelationshipParticipantInput{{
+				DisplayName: "Avery", Email: "avery@acme.example", ExternalRefs: []string{"slack:user:U123"},
+			}},
+		}},
+		{AdaptCalendarEvent, AdapterEvent{
+			ExternalID: "event-1", PrimaryEmail: "avery@acme.example",
+			ResourceRefs: []string{"calendar:event:evt-1"}, EventType: "event.updated",
+			OccurredAt: base.Add(2 * time.Minute),
+		}},
+		{AdaptGmailEvent, AdapterEvent{
+			ExternalID: "thread-1", PrimaryEmail: "avery@acme.example",
+			ResourceRefs: []string{"gmail:thread:thread-1"}, EventType: "thread.updated",
+			OccurredAt: base.Add(3 * time.Minute),
+		}},
+		// No email or domain remains on these later events. The learned SDK/provider
+		// record IDs are sufficient to recover the same canonical relationship.
+		{AdaptSlackEvent, AdapterEvent{
+			ExternalID: "message-2", ResourceRefs: []string{"slack:user:U123"},
+			EventType: "message.posted", OccurredAt: base.Add(4 * time.Minute),
+			Participants: []RelationshipParticipantInput{{
+				DisplayName: "Avery Chen", ExternalRefs: []string{"slack:user:U123"},
+			}},
+		}},
+		{AdaptHubSpotEvent, AdapterEvent{
+			ExternalID: "company-updated", ResourceRefs: []string{"hubspot:company:123"},
+			EventType: "company.updated", OccurredAt: base.Add(5 * time.Minute),
+		}},
+	}
+	var relationshipID string
+	for _, fixture := range events {
+		input, err := fixture.adapt(fixture.event)
+		if err != nil {
+			t.Fatalf("adapt: %v", err)
+		}
+		results, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{input})
+		if err != nil {
+			t.Fatalf("ingest %s: %v", fixture.event.ExternalID, err)
+		}
+		if relationshipID == "" {
+			relationshipID = results[0].Relationship.ID.String()
+		} else if got := results[0].Relationship.ID.String(); got != relationshipID {
+			t.Fatalf("cross-channel event split relationship: got %s want %s", got, relationshipID)
+		}
+	}
+	identities, err := f.client.RelationshipIdentity.Query().
+		Where(relationshipidentity.ProviderIn("hubspot", "slack", "calendar", "gmail")).
+		All(f.ctx)
+	if err != nil {
+		t.Fatalf("query identities: %v", err)
+	}
+	if len(identities) != 4 {
+		t.Fatalf("want four persisted provider identities, got %d", len(identities))
+	}
+	participants, err := f.client.RelationshipParticipant.Query().All(f.ctx)
+	if err != nil || len(participants) != 1 || participants[0].DisplayName != "Avery Chen" || !slices.Contains(participants[0].ExternalRefs, "slack:user:U123") {
+		t.Fatalf("participant aliases were not retained: %#v err=%v", participants, err)
+	}
+}
+
+func TestIdentityAnchorConflictWaitsForReview(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 7, 31, 14, 30, 0, 0, time.UTC)
+	first, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Acme", Source: "hubspot", ExternalID: "acme-created", EventType: "company.created",
+		ResourceRefs: []string{"hubspot:company:123"}, OccurredAt: now,
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{Kind: "company", DisplayName: "Other Co"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		RelationshipID: other.ID, Source: "hubspot", ExternalID: "wrong-link", EventType: "company.updated",
+		ResourceRefs: []string{"hubspot:company:123"}, OccurredAt: now.Add(time.Minute),
+	}})
+	if !errors.Is(err, ErrConflict) {
+		t.Fatalf("identity collision must wait for review, got %v", err)
+	}
+	identities, err := f.client.RelationshipIdentity.Query().WithRelationship().All(f.ctx)
+	if err != nil || len(identities) != 1 {
+		t.Fatalf("conflict must not create another identity: %#v err=%v", identities, err)
+	}
+	owner, _ := identities[0].Edges.RelationshipOrErr()
+	if owner.ID != first[0].Relationship.ID {
+		t.Fatalf("identity owner changed during conflict: got %s", owner.ID)
+	}
+}
+
+func TestPublicMailboxDomainsNeverMergeUnrelatedPeople(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 7, 31, 15, 0, 0, 0, time.UTC)
+	inputs := []RelationshipObservationInput{
+		{DisplayName: "Avery", PrimaryEmail: "avery@gmail.com", AccountDomain: "gmail.com", Source: "gmail", ExternalID: "a", EventType: "thread", OccurredAt: now},
+		{DisplayName: "Morgan", PrimaryEmail: "morgan@gmail.com", AccountDomain: "gmail.com", Source: "gmail", ExternalID: "b", EventType: "thread", OccurredAt: now},
+	}
+	results, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, inputs)
+	if err != nil {
+		t.Fatalf("ingest public mailboxes: %v", err)
+	}
+	if results[0].Relationship.ID == results[1].Relationship.ID {
+		t.Fatal("unrelated gmail.com people must never auto-merge by mailbox domain")
+	}
+	domains, err := f.client.RelationshipIdentity.Query().Where(relationshipidentity.KindEQ("domain")).Count(f.ctx)
+	if err != nil || domains != 0 {
+		t.Fatalf("public domain must not become an account anchor: count=%d err=%v", domains, err)
 	}
 }
 

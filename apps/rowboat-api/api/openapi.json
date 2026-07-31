@@ -5799,6 +5799,12 @@
             "format": "uuid",
             "type": "string"
           },
+          "identities": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipIdentity"
+            },
+            "type": "array"
+          },
           "kind": {
             "type": "string"
           },
@@ -6055,6 +6061,74 @@
           }
         },
         "required": ["id", "direction", "text", "status", "confidence", "userConfirmed"],
+        "type": "object"
+      },
+      "RelationshipIdentity": {
+        "properties": {
+          "confidence": {
+            "format": "double",
+            "type": "number"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "first_seen_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "last_seen_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "provider": {
+            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
+            "example": "openai",
+            "type": "string"
+          },
+          "relationship": {
+            "$ref": "#/components/schemas/Relationship"
+          },
+          "source": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "kind",
+          "confidence",
+          "first_seen_at",
+          "last_seen_at",
+          "workspace",
+          "relationship",
+          "user"
+        ],
         "type": "object"
       },
       "RelationshipIntelligence": {
@@ -6678,6 +6752,36 @@
           "recipientEmail": {
             "description": "Recipient email address.",
             "example": "buyer@example.com",
+            "type": "string"
+          },
+          "reconciliationAttempts": {
+            "description": "Number of bounded provider lookups performed.",
+            "example": 1,
+            "type": "integer"
+          },
+          "reconciliationCheckedAt": {
+            "description": "Most recent provider lookup time.",
+            "example": "2026-07-12T12:07:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "reconciliationError": {
+            "description": "Bounded provider lookup error.",
+            "example": "",
+            "type": "string"
+          },
+          "reconciliationNextAt": {
+            "description": "Next scheduled read-only lookup time.",
+            "example": "2026-07-12T12:12:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "reconciliationStatus": {
+            "description": "Read-only provider reconciliation state for an ambiguous write.",
+            "enum": ["pending", "found", "not_found", "error", "manual_review"],
+            "example": "pending",
             "type": "string"
           },
           "relationshipId": {
@@ -8288,6 +8392,12 @@
           "relationship_assertions": {
             "items": {
               "$ref": "#/components/schemas/RelationshipAssertion"
+            },
+            "type": "array"
+          },
+          "relationship_identities": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipIdentity"
             },
             "type": "array"
           },

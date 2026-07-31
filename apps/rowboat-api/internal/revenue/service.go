@@ -120,6 +120,13 @@ type Executor interface {
 	Execute(ctx context.Context, req ExecRequest) (*ExecResult, error)
 }
 
+// Reconciler performs a read-only provider lookup for a write whose response
+// was lost. found=false never authorizes a resend; the service schedules a
+// later lookup and eventually leaves the action for manual review.
+type Reconciler interface {
+	Reconcile(ctx context.Context, req ExecRequest) (result *ExecResult, found bool, err error)
+}
+
 // notConfiguredExecutor is the default until the Gmail executor is wired: it
 // fails every execution deterministically (never ambiguous — nothing was
 // submitted).
@@ -1281,6 +1288,11 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 			Where(revenueaction.IDEQ(action.ID)).
 			SetExecutionStatus(ExecAmbiguous).
 			SetExecutionError(execErr.Error()).
+			SetReconciliationStatus("pending").
+			SetReconciliationAttempts(0).
+			SetReconciliationNextAt(s.now().UTC()).
+			ClearReconciliationCheckedAt().
+			ClearReconciliationError().
 			Save(ctx); err != nil {
 			return nil, err
 		}

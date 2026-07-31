@@ -396,6 +396,12 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		revenue.NewHubSpotExecutor(client, sealer, vendorPolicy),
 	)
 	revenueSvc := revenue.NewService(client, facade, routedExec, log)
+	// Provider write timeouts are reconciled continuously through read-only
+	// SDK/API lookups. This loop is always on because it is part of exactly-once
+	// execution safety, not an optional recommendation feature.
+	go func() {
+		_ = revenue.NewAmbiguousExecutionReconciler(revenueSvc, time.Minute, 200, log).Run(ctx)
+	}()
 	// The Gmail backend also feeds the leak scan (read-only sweep).
 	revenueSvc.SetSweeper(gmailExec)
 	// Gate execution behind a paid plan: scan/queue/draft/ROI stay free,

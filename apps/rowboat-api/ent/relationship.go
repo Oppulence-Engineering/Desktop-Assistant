@@ -97,6 +97,8 @@ type RelationshipEdges struct {
 	MailThreads []*MailThread `json:"mail_threads,omitempty"`
 	// Participants holds the value of the participants edge.
 	Participants []*RelationshipParticipant `json:"participants,omitempty"`
+	// Identities holds the value of the identities edge.
+	Identities []*RelationshipIdentity `json:"identities,omitempty"`
 	// Observations holds the value of the observations edge.
 	Observations []*RelationshipObservation `json:"observations,omitempty"`
 	// Assertions holds the value of the assertions edge.
@@ -105,9 +107,9 @@ type RelationshipEdges struct {
 	Snapshots []*RelationshipStateSnapshot `json:"snapshots,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [13]bool
+	loadedTypes [14]bool
 	// totalCount holds the count of the edges above.
-	totalCount [13]map[string]int
+	totalCount [14]map[string]int
 
 	namedCommitments                       map[string][]*Commitment
 	namedCommitmentEvents                  map[string][]*CommitmentEvent
@@ -117,6 +119,7 @@ type RelationshipEdges struct {
 	namedEvidences                         map[string][]*RevenueEvidence
 	namedMailThreads                       map[string][]*MailThread
 	namedParticipants                      map[string][]*RelationshipParticipant
+	namedIdentities                        map[string][]*RelationshipIdentity
 	namedObservations                      map[string][]*RelationshipObservation
 	namedAssertions                        map[string][]*RelationshipAssertion
 	namedSnapshots                         map[string][]*RelationshipStateSnapshot
@@ -216,10 +219,19 @@ func (e RelationshipEdges) ParticipantsOrErr() ([]*RelationshipParticipant, erro
 	return nil, &NotLoadedError{edge: "participants"}
 }
 
+// IdentitiesOrErr returns the Identities value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) IdentitiesOrErr() ([]*RelationshipIdentity, error) {
+	if e.loadedTypes[10] {
+		return e.Identities, nil
+	}
+	return nil, &NotLoadedError{edge: "identities"}
+}
+
 // ObservationsOrErr returns the Observations value or an error if the edge
 // was not loaded in eager-loading.
 func (e RelationshipEdges) ObservationsOrErr() ([]*RelationshipObservation, error) {
-	if e.loadedTypes[10] {
+	if e.loadedTypes[11] {
 		return e.Observations, nil
 	}
 	return nil, &NotLoadedError{edge: "observations"}
@@ -228,7 +240,7 @@ func (e RelationshipEdges) ObservationsOrErr() ([]*RelationshipObservation, erro
 // AssertionsOrErr returns the Assertions value or an error if the edge
 // was not loaded in eager-loading.
 func (e RelationshipEdges) AssertionsOrErr() ([]*RelationshipAssertion, error) {
-	if e.loadedTypes[11] {
+	if e.loadedTypes[12] {
 		return e.Assertions, nil
 	}
 	return nil, &NotLoadedError{edge: "assertions"}
@@ -237,7 +249,7 @@ func (e RelationshipEdges) AssertionsOrErr() ([]*RelationshipAssertion, error) {
 // SnapshotsOrErr returns the Snapshots value or an error if the edge
 // was not loaded in eager-loading.
 func (e RelationshipEdges) SnapshotsOrErr() ([]*RelationshipStateSnapshot, error) {
-	if e.loadedTypes[12] {
+	if e.loadedTypes[13] {
 		return e.Snapshots, nil
 	}
 	return nil, &NotLoadedError{edge: "snapshots"}
@@ -505,6 +517,11 @@ func (_m *Relationship) QueryMailThreads() *MailThreadQuery {
 // QueryParticipants queries the "participants" edge of the Relationship entity.
 func (_m *Relationship) QueryParticipants() *RelationshipParticipantQuery {
 	return NewRelationshipClient(_m.config).QueryParticipants(_m)
+}
+
+// QueryIdentities queries the "identities" edge of the Relationship entity.
+func (_m *Relationship) QueryIdentities() *RelationshipIdentityQuery {
+	return NewRelationshipClient(_m.config).QueryIdentities(_m)
 }
 
 // QueryObservations queries the "observations" edge of the Relationship entity.
@@ -811,6 +828,30 @@ func (_m *Relationship) appendNamedParticipants(name string, edges ...*Relations
 		_m.Edges.namedParticipants[name] = []*RelationshipParticipant{}
 	} else {
 		_m.Edges.namedParticipants[name] = append(_m.Edges.namedParticipants[name], edges...)
+	}
+}
+
+// NamedIdentities returns the Identities named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedIdentities(name string) ([]*RelationshipIdentity, error) {
+	if _m.Edges.namedIdentities == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedIdentities[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedIdentities(name string, edges ...*RelationshipIdentity) {
+	if _m.Edges.namedIdentities == nil {
+		_m.Edges.namedIdentities = make(map[string][]*RelationshipIdentity)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedIdentities[name] = []*RelationshipIdentity{}
+	} else {
+		_m.Edges.namedIdentities[name] = append(_m.Edges.namedIdentities[name], edges...)
 	}
 }
 

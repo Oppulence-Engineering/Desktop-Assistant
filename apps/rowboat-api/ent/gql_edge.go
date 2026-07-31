@@ -796,6 +796,18 @@ func (_m *Relationship) Participants(ctx context.Context) (result []*Relationshi
 	return result, err
 }
 
+func (_m *Relationship) Identities(ctx context.Context) (result []*RelationshipIdentity, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedIdentities(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.IdentitiesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryIdentities().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *Relationship) Observations(ctx context.Context) (result []*RelationshipObservation, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
 		result, err = _m.NamedObservations(graphql.GetFieldContext(ctx).Field.Alias)
@@ -857,6 +869,30 @@ func (_m *RelationshipAssertion) Observation(ctx context.Context) (*Relationship
 }
 
 func (_m *RelationshipAssertion) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipIdentity) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipIdentity) Relationship(ctx context.Context) (*Relationship, error) {
+	result, err := _m.Edges.RelationshipOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationship().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *RelationshipIdentity) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
 		result, err = _m.QueryUser().Only(ctx)
@@ -1296,6 +1332,18 @@ func (_m *RevenueWorkspace) RelationshipParticipants(ctx context.Context) (resul
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryRelationshipParticipants().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) RelationshipIdentities(ctx context.Context) (result []*RelationshipIdentity, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationshipIdentities(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipIdentitiesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationshipIdentities().All(ctx)
 	}
 	return result, err
 }
@@ -1832,6 +1880,18 @@ func (_m *User) RelationshipParticipants(ctx context.Context) (result []*Relatio
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryRelationshipParticipants().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RelationshipIdentities(ctx context.Context) (result []*RelationshipIdentity, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationshipIdentities(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipIdentitiesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationshipIdentities().All(ctx)
 	}
 	return result, err
 }

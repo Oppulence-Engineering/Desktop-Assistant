@@ -6008,6 +6008,7 @@ export interface components {
        * @example 123e4567-e89b-12d3-a456-426614174000
        */
       id: string;
+      identities?: components["schemas"]["RelationshipIdentity"][];
       kind: string;
       /** Format: date-time */
       last_changed_at?: string;
@@ -6132,6 +6133,43 @@ export interface components {
        * @example false
        */
       userConfirmed: boolean;
+    };
+    RelationshipIdentity: {
+      /** Format: double */
+      confidence: number;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /** Format: date-time */
+      first_seen_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      kind: string;
+      /** Format: date-time */
+      last_seen_at: string;
+      /**
+       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
+       * @example openai
+       */
+      provider?: string;
+      relationship: components["schemas"]["Relationship"];
+      source?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
     };
     /** @description Derived trust surface for a relationship: conversation claims, focused review, exact delta, governance, contradictions, and live cue cards. */
     RelationshipIntelligence: {
@@ -6587,6 +6625,34 @@ export interface components {
        * @example buyer@example.com
        */
       recipientEmail?: string;
+      /**
+       * @description Number of bounded provider lookups performed.
+       * @example 1
+       */
+      reconciliationAttempts?: number;
+      /**
+       * Format: date-time
+       * @description Most recent provider lookup time.
+       * @example 2026-07-12T12:07:00Z
+       */
+      reconciliationCheckedAt?: string | null;
+      /**
+       * @description Bounded provider lookup error.
+       * @example
+       */
+      reconciliationError?: string;
+      /**
+       * Format: date-time
+       * @description Next scheduled read-only lookup time.
+       * @example 2026-07-12T12:12:00Z
+       */
+      reconciliationNextAt?: string | null;
+      /**
+       * @description Read-only provider reconciliation state for an ambiguous write.
+       * @example pending
+       * @enum {string}
+       */
+      reconciliationStatus?: "pending" | "found" | "not_found" | "error" | "manual_review";
       /**
        * Format: uuid
        * @description Owning relationship id.
@@ -7676,6 +7742,7 @@ export interface components {
       oauth_connections?: components["schemas"]["OAuthConnection"][];
       policy_decision_snapshots?: components["schemas"]["PolicyDecisionSnapshot"][];
       relationship_assertions?: components["schemas"]["RelationshipAssertion"][];
+      relationship_identities?: components["schemas"]["RelationshipIdentity"][];
       relationship_observations?: components["schemas"]["RelationshipObservation"][];
       relationship_participants?: components["schemas"]["RelationshipParticipant"][];
       relationship_source_statuses?: components["schemas"]["RelationshipSourceStatus"][];

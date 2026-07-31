@@ -1273,6 +1273,29 @@ func HasRelationshipParticipantsWith(preds ...predicate.RelationshipParticipant)
 	})
 }
 
+// HasRelationshipIdentities applies the HasEdge predicate on the "relationship_identities" edge.
+func HasRelationshipIdentities() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RelationshipIdentitiesTable, RelationshipIdentitiesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelationshipIdentitiesWith applies the HasEdge predicate on the "relationship_identities" edge with a given conditions (other predicates).
+func HasRelationshipIdentitiesWith(preds ...predicate.RelationshipIdentity) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newRelationshipIdentitiesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasRelationshipObservations applies the HasEdge predicate on the "relationship_observations" edge.
 func HasRelationshipObservations() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

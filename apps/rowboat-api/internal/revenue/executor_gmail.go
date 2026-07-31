@@ -2,6 +2,7 @@ package revenue
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"net"
@@ -74,17 +75,39 @@ func (e *GmailExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecResu
 	}
 
 	if req.Mode == ExecModeSend {
-		id, err := e.google.SendMessage(ctx, token, to, action.ProposedSubject, action.ProposedMessage)
+		id, err := e.google.SendMessageWithMessageID(ctx, token, to, action.ProposedSubject, action.ProposedMessage, gmailActionMessageID(req.IdempotencyKey))
 		if err != nil {
 			return nil, classifySubmitError(err)
 		}
 		return &ExecResult{ProviderMessageID: id}, nil
 	}
-	id, err := e.google.CreateDraft(ctx, token, to, action.ProposedSubject, action.ProposedMessage)
+	id, err := e.google.CreateDraftWithMessageID(ctx, token, to, action.ProposedSubject, action.ProposedMessage, gmailActionMessageID(req.IdempotencyKey))
 	if err != nil {
 		return nil, classifySubmitError(err)
 	}
 	return &ExecResult{ProviderMessageID: id}, nil
+}
+
+// Reconcile searches Gmail by the deterministic RFC 822 Message-ID embedded
+// in the one permitted write. It does not call drafts.create or messages.send.
+func (e *GmailExecutor) Reconcile(ctx context.Context, req ExecRequest) (*ExecResult, bool, error) {
+	_, token, err := e.connection(ctx, req.UserID, scopeGmailReadonly)
+	if err != nil {
+		return nil, false, err
+	}
+	message, err := e.google.FindMessageByRFC822MessageID(ctx, token, gmailActionMessageID(req.IdempotencyKey))
+	if err != nil {
+		return nil, false, err
+	}
+	if message == nil {
+		return nil, false, nil
+	}
+	return &ExecResult{ProviderMessageID: message.ID, ProviderThreadID: message.ThreadID}, true, nil
+}
+
+func gmailActionMessageID(idempotencyKey string) string {
+	sum := sha256.Sum256([]byte(idempotencyKey))
+	return fmt.Sprintf("<oppulence-%x@actions.oppulence.ai>", sum[:16])
 }
 
 // SweepThreads implements ThreadSweeper for the revenue leak scan (RFC 030
@@ -227,3 +250,5 @@ func classifySubmitError(err error) error {
 	}
 	return err
 }
+
+var _ Reconciler = (*GmailExecutor)(nil)

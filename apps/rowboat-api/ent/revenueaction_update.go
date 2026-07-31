@@ -559,6 +559,107 @@ func (_u *RevenueActionUpdate) ClearExecutionError() *RevenueActionUpdate {
 	return _u
 }
 
+// SetReconciliationStatus sets the "reconciliation_status" field.
+func (_u *RevenueActionUpdate) SetReconciliationStatus(v string) *RevenueActionUpdate {
+	_u.mutation.SetReconciliationStatus(v)
+	return _u
+}
+
+// SetNillableReconciliationStatus sets the "reconciliation_status" field if the given value is not nil.
+func (_u *RevenueActionUpdate) SetNillableReconciliationStatus(v *string) *RevenueActionUpdate {
+	if v != nil {
+		_u.SetReconciliationStatus(*v)
+	}
+	return _u
+}
+
+// ClearReconciliationStatus clears the value of the "reconciliation_status" field.
+func (_u *RevenueActionUpdate) ClearReconciliationStatus() *RevenueActionUpdate {
+	_u.mutation.ClearReconciliationStatus()
+	return _u
+}
+
+// SetReconciliationAttempts sets the "reconciliation_attempts" field.
+func (_u *RevenueActionUpdate) SetReconciliationAttempts(v int) *RevenueActionUpdate {
+	_u.mutation.ResetReconciliationAttempts()
+	_u.mutation.SetReconciliationAttempts(v)
+	return _u
+}
+
+// SetNillableReconciliationAttempts sets the "reconciliation_attempts" field if the given value is not nil.
+func (_u *RevenueActionUpdate) SetNillableReconciliationAttempts(v *int) *RevenueActionUpdate {
+	if v != nil {
+		_u.SetReconciliationAttempts(*v)
+	}
+	return _u
+}
+
+// AddReconciliationAttempts adds value to the "reconciliation_attempts" field.
+func (_u *RevenueActionUpdate) AddReconciliationAttempts(v int) *RevenueActionUpdate {
+	_u.mutation.AddReconciliationAttempts(v)
+	return _u
+}
+
+// SetReconciliationCheckedAt sets the "reconciliation_checked_at" field.
+func (_u *RevenueActionUpdate) SetReconciliationCheckedAt(v time.Time) *RevenueActionUpdate {
+	_u.mutation.SetReconciliationCheckedAt(v)
+	return _u
+}
+
+// SetNillableReconciliationCheckedAt sets the "reconciliation_checked_at" field if the given value is not nil.
+func (_u *RevenueActionUpdate) SetNillableReconciliationCheckedAt(v *time.Time) *RevenueActionUpdate {
+	if v != nil {
+		_u.SetReconciliationCheckedAt(*v)
+	}
+	return _u
+}
+
+// ClearReconciliationCheckedAt clears the value of the "reconciliation_checked_at" field.
+func (_u *RevenueActionUpdate) ClearReconciliationCheckedAt() *RevenueActionUpdate {
+	_u.mutation.ClearReconciliationCheckedAt()
+	return _u
+}
+
+// SetReconciliationNextAt sets the "reconciliation_next_at" field.
+func (_u *RevenueActionUpdate) SetReconciliationNextAt(v time.Time) *RevenueActionUpdate {
+	_u.mutation.SetReconciliationNextAt(v)
+	return _u
+}
+
+// SetNillableReconciliationNextAt sets the "reconciliation_next_at" field if the given value is not nil.
+func (_u *RevenueActionUpdate) SetNillableReconciliationNextAt(v *time.Time) *RevenueActionUpdate {
+	if v != nil {
+		_u.SetReconciliationNextAt(*v)
+	}
+	return _u
+}
+
+// ClearReconciliationNextAt clears the value of the "reconciliation_next_at" field.
+func (_u *RevenueActionUpdate) ClearReconciliationNextAt() *RevenueActionUpdate {
+	_u.mutation.ClearReconciliationNextAt()
+	return _u
+}
+
+// SetReconciliationError sets the "reconciliation_error" field.
+func (_u *RevenueActionUpdate) SetReconciliationError(v string) *RevenueActionUpdate {
+	_u.mutation.SetReconciliationError(v)
+	return _u
+}
+
+// SetNillableReconciliationError sets the "reconciliation_error" field if the given value is not nil.
+func (_u *RevenueActionUpdate) SetNillableReconciliationError(v *string) *RevenueActionUpdate {
+	if v != nil {
+		_u.SetReconciliationError(*v)
+	}
+	return _u
+}
+
+// ClearReconciliationError clears the value of the "reconciliation_error" field.
+func (_u *RevenueActionUpdate) ClearReconciliationError() *RevenueActionUpdate {
+	_u.mutation.ClearReconciliationError()
+	return _u
+}
+
 // SetDismissReason sets the "dismiss_reason" field.
 func (_u *RevenueActionUpdate) SetDismissReason(v string) *RevenueActionUpdate {
 	_u.mutation.SetDismissReason(v)
@@ -952,6 +1053,16 @@ func (_u *RevenueActionUpdate) check() error {
 			return &ValidationError{Name: "execution_mode", err: fmt.Errorf(`ent: validator failed for field "RevenueAction.execution_mode": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ReconciliationStatus(); ok {
+		if err := revenueaction.ReconciliationStatusValidator(v); err != nil {
+			return &ValidationError{Name: "reconciliation_status", err: fmt.Errorf(`ent: validator failed for field "RevenueAction.reconciliation_status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ReconciliationAttempts(); ok {
+		if err := revenueaction.ReconciliationAttemptsValidator(v); err != nil {
+			return &ValidationError{Name: "reconciliation_attempts", err: fmt.Errorf(`ent: validator failed for field "RevenueAction.reconciliation_attempts": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RevenueAction.workspace"`)
 	}
@@ -1119,6 +1230,36 @@ func (_u *RevenueActionUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if _u.mutation.ExecutionErrorCleared() {
 		_spec.ClearField(revenueaction.FieldExecutionError, field.TypeString)
+	}
+	if value, ok := _u.mutation.ReconciliationStatus(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationStatus, field.TypeString, value)
+	}
+	if _u.mutation.ReconciliationStatusCleared() {
+		_spec.ClearField(revenueaction.FieldReconciliationStatus, field.TypeString)
+	}
+	if value, ok := _u.mutation.ReconciliationAttempts(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationAttempts, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedReconciliationAttempts(); ok {
+		_spec.AddField(revenueaction.FieldReconciliationAttempts, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ReconciliationCheckedAt(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationCheckedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ReconciliationCheckedAtCleared() {
+		_spec.ClearField(revenueaction.FieldReconciliationCheckedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.ReconciliationNextAt(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationNextAt, field.TypeTime, value)
+	}
+	if _u.mutation.ReconciliationNextAtCleared() {
+		_spec.ClearField(revenueaction.FieldReconciliationNextAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.ReconciliationError(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationError, field.TypeString, value)
+	}
+	if _u.mutation.ReconciliationErrorCleared() {
+		_spec.ClearField(revenueaction.FieldReconciliationError, field.TypeString)
 	}
 	if value, ok := _u.mutation.DismissReason(); ok {
 		_spec.SetField(revenueaction.FieldDismissReason, field.TypeString, value)
@@ -1954,6 +2095,107 @@ func (_u *RevenueActionUpdateOne) ClearExecutionError() *RevenueActionUpdateOne 
 	return _u
 }
 
+// SetReconciliationStatus sets the "reconciliation_status" field.
+func (_u *RevenueActionUpdateOne) SetReconciliationStatus(v string) *RevenueActionUpdateOne {
+	_u.mutation.SetReconciliationStatus(v)
+	return _u
+}
+
+// SetNillableReconciliationStatus sets the "reconciliation_status" field if the given value is not nil.
+func (_u *RevenueActionUpdateOne) SetNillableReconciliationStatus(v *string) *RevenueActionUpdateOne {
+	if v != nil {
+		_u.SetReconciliationStatus(*v)
+	}
+	return _u
+}
+
+// ClearReconciliationStatus clears the value of the "reconciliation_status" field.
+func (_u *RevenueActionUpdateOne) ClearReconciliationStatus() *RevenueActionUpdateOne {
+	_u.mutation.ClearReconciliationStatus()
+	return _u
+}
+
+// SetReconciliationAttempts sets the "reconciliation_attempts" field.
+func (_u *RevenueActionUpdateOne) SetReconciliationAttempts(v int) *RevenueActionUpdateOne {
+	_u.mutation.ResetReconciliationAttempts()
+	_u.mutation.SetReconciliationAttempts(v)
+	return _u
+}
+
+// SetNillableReconciliationAttempts sets the "reconciliation_attempts" field if the given value is not nil.
+func (_u *RevenueActionUpdateOne) SetNillableReconciliationAttempts(v *int) *RevenueActionUpdateOne {
+	if v != nil {
+		_u.SetReconciliationAttempts(*v)
+	}
+	return _u
+}
+
+// AddReconciliationAttempts adds value to the "reconciliation_attempts" field.
+func (_u *RevenueActionUpdateOne) AddReconciliationAttempts(v int) *RevenueActionUpdateOne {
+	_u.mutation.AddReconciliationAttempts(v)
+	return _u
+}
+
+// SetReconciliationCheckedAt sets the "reconciliation_checked_at" field.
+func (_u *RevenueActionUpdateOne) SetReconciliationCheckedAt(v time.Time) *RevenueActionUpdateOne {
+	_u.mutation.SetReconciliationCheckedAt(v)
+	return _u
+}
+
+// SetNillableReconciliationCheckedAt sets the "reconciliation_checked_at" field if the given value is not nil.
+func (_u *RevenueActionUpdateOne) SetNillableReconciliationCheckedAt(v *time.Time) *RevenueActionUpdateOne {
+	if v != nil {
+		_u.SetReconciliationCheckedAt(*v)
+	}
+	return _u
+}
+
+// ClearReconciliationCheckedAt clears the value of the "reconciliation_checked_at" field.
+func (_u *RevenueActionUpdateOne) ClearReconciliationCheckedAt() *RevenueActionUpdateOne {
+	_u.mutation.ClearReconciliationCheckedAt()
+	return _u
+}
+
+// SetReconciliationNextAt sets the "reconciliation_next_at" field.
+func (_u *RevenueActionUpdateOne) SetReconciliationNextAt(v time.Time) *RevenueActionUpdateOne {
+	_u.mutation.SetReconciliationNextAt(v)
+	return _u
+}
+
+// SetNillableReconciliationNextAt sets the "reconciliation_next_at" field if the given value is not nil.
+func (_u *RevenueActionUpdateOne) SetNillableReconciliationNextAt(v *time.Time) *RevenueActionUpdateOne {
+	if v != nil {
+		_u.SetReconciliationNextAt(*v)
+	}
+	return _u
+}
+
+// ClearReconciliationNextAt clears the value of the "reconciliation_next_at" field.
+func (_u *RevenueActionUpdateOne) ClearReconciliationNextAt() *RevenueActionUpdateOne {
+	_u.mutation.ClearReconciliationNextAt()
+	return _u
+}
+
+// SetReconciliationError sets the "reconciliation_error" field.
+func (_u *RevenueActionUpdateOne) SetReconciliationError(v string) *RevenueActionUpdateOne {
+	_u.mutation.SetReconciliationError(v)
+	return _u
+}
+
+// SetNillableReconciliationError sets the "reconciliation_error" field if the given value is not nil.
+func (_u *RevenueActionUpdateOne) SetNillableReconciliationError(v *string) *RevenueActionUpdateOne {
+	if v != nil {
+		_u.SetReconciliationError(*v)
+	}
+	return _u
+}
+
+// ClearReconciliationError clears the value of the "reconciliation_error" field.
+func (_u *RevenueActionUpdateOne) ClearReconciliationError() *RevenueActionUpdateOne {
+	_u.mutation.ClearReconciliationError()
+	return _u
+}
+
 // SetDismissReason sets the "dismiss_reason" field.
 func (_u *RevenueActionUpdateOne) SetDismissReason(v string) *RevenueActionUpdateOne {
 	_u.mutation.SetDismissReason(v)
@@ -2360,6 +2602,16 @@ func (_u *RevenueActionUpdateOne) check() error {
 			return &ValidationError{Name: "execution_mode", err: fmt.Errorf(`ent: validator failed for field "RevenueAction.execution_mode": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ReconciliationStatus(); ok {
+		if err := revenueaction.ReconciliationStatusValidator(v); err != nil {
+			return &ValidationError{Name: "reconciliation_status", err: fmt.Errorf(`ent: validator failed for field "RevenueAction.reconciliation_status": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ReconciliationAttempts(); ok {
+		if err := revenueaction.ReconciliationAttemptsValidator(v); err != nil {
+			return &ValidationError{Name: "reconciliation_attempts", err: fmt.Errorf(`ent: validator failed for field "RevenueAction.reconciliation_attempts": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RevenueAction.workspace"`)
 	}
@@ -2544,6 +2796,36 @@ func (_u *RevenueActionUpdateOne) sqlSave(ctx context.Context) (_node *RevenueAc
 	}
 	if _u.mutation.ExecutionErrorCleared() {
 		_spec.ClearField(revenueaction.FieldExecutionError, field.TypeString)
+	}
+	if value, ok := _u.mutation.ReconciliationStatus(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationStatus, field.TypeString, value)
+	}
+	if _u.mutation.ReconciliationStatusCleared() {
+		_spec.ClearField(revenueaction.FieldReconciliationStatus, field.TypeString)
+	}
+	if value, ok := _u.mutation.ReconciliationAttempts(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationAttempts, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedReconciliationAttempts(); ok {
+		_spec.AddField(revenueaction.FieldReconciliationAttempts, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ReconciliationCheckedAt(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationCheckedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ReconciliationCheckedAtCleared() {
+		_spec.ClearField(revenueaction.FieldReconciliationCheckedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.ReconciliationNextAt(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationNextAt, field.TypeTime, value)
+	}
+	if _u.mutation.ReconciliationNextAtCleared() {
+		_spec.ClearField(revenueaction.FieldReconciliationNextAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.ReconciliationError(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationError, field.TypeString, value)
+	}
+	if _u.mutation.ReconciliationErrorCleared() {
+		_spec.ClearField(revenueaction.FieldReconciliationError, field.TypeString)
 	}
 	if value, ok := _u.mutation.DismissReason(); ok {
 		_spec.SetField(revenueaction.FieldDismissReason, field.TypeString, value)

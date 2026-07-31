@@ -120,6 +120,9 @@ type Relationship func(*sql.Selector)
 // RelationshipAssertion is the predicate function for relationshipassertion builders.
 type RelationshipAssertion func(*sql.Selector)
 
+// RelationshipIdentity is the predicate function for relationshipidentity builders.
+type RelationshipIdentity func(*sql.Selector)
+
 // RelationshipObservation is the predicate function for relationshipobservation builders.
 type RelationshipObservation func(*sql.Selector)
 

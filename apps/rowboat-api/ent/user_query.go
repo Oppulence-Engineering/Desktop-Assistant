@@ -46,6 +46,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
@@ -108,6 +109,7 @@ type UserQuery struct {
 	withMailBodyCaches                         *MailBodyCacheQuery
 	withMailSignals                            *MailSignalQuery
 	withRelationshipParticipants               *RelationshipParticipantQuery
+	withRelationshipIdentities                 *RelationshipIdentityQuery
 	withRelationshipObservations               *RelationshipObservationQuery
 	withRelationshipAssertions                 *RelationshipAssertionQuery
 	withRelationshipStateSnapshots             *RelationshipStateSnapshotQuery
@@ -154,6 +156,7 @@ type UserQuery struct {
 	withNamedMailBodyCaches                    map[string]*MailBodyCacheQuery
 	withNamedMailSignals                       map[string]*MailSignalQuery
 	withNamedRelationshipParticipants          map[string]*RelationshipParticipantQuery
+	withNamedRelationshipIdentities            map[string]*RelationshipIdentityQuery
 	withNamedRelationshipObservations          map[string]*RelationshipObservationQuery
 	withNamedRelationshipAssertions            map[string]*RelationshipAssertionQuery
 	withNamedRelationshipStateSnapshots        map[string]*RelationshipStateSnapshotQuery
@@ -1054,6 +1057,28 @@ func (_q *UserQuery) QueryRelationshipParticipants() *RelationshipParticipantQue
 	return query
 }
 
+// QueryRelationshipIdentities chains the current query on the "relationship_identities" edge.
+func (_q *UserQuery) QueryRelationshipIdentities() *RelationshipIdentityQuery {
+	query := (&RelationshipIdentityClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(relationshipidentity.Table, relationshipidentity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RelationshipIdentitiesTable, user.RelationshipIdentitiesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryRelationshipObservations chains the current query on the "relationship_observations" edge.
 func (_q *UserQuery) QueryRelationshipObservations() *RelationshipObservationQuery {
 	query := (&RelationshipObservationClient{config: _q.config}).Query()
@@ -1417,6 +1442,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withMailBodyCaches:                    _q.withMailBodyCaches.Clone(),
 		withMailSignals:                       _q.withMailSignals.Clone(),
 		withRelationshipParticipants:          _q.withRelationshipParticipants.Clone(),
+		withRelationshipIdentities:            _q.withRelationshipIdentities.Clone(),
 		withRelationshipObservations:          _q.withRelationshipObservations.Clone(),
 		withRelationshipAssertions:            _q.withRelationshipAssertions.Clone(),
 		withRelationshipStateSnapshots:        _q.withRelationshipStateSnapshots.Clone(),
@@ -1858,6 +1884,17 @@ func (_q *UserQuery) WithRelationshipParticipants(opts ...func(*RelationshipPart
 	return _q
 }
 
+// WithRelationshipIdentities tells the query-builder to eager-load the nodes that are connected to
+// the "relationship_identities" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRelationshipIdentities(opts ...func(*RelationshipIdentityQuery)) *UserQuery {
+	query := (&RelationshipIdentityClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRelationshipIdentities = query
+	return _q
+}
+
 // WithRelationshipObservations tells the query-builder to eager-load the nodes that are connected to
 // the "relationship_observations" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithRelationshipObservations(opts ...func(*RelationshipObservationQuery)) *UserQuery {
@@ -2002,7 +2039,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [45]bool{
+		loadedTypes = [46]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -2042,6 +2079,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withMailBodyCaches != nil,
 			_q.withMailSignals != nil,
 			_q.withRelationshipParticipants != nil,
+			_q.withRelationshipIdentities != nil,
 			_q.withRelationshipObservations != nil,
 			_q.withRelationshipAssertions != nil,
 			_q.withRelationshipStateSnapshots != nil,
@@ -2371,6 +2409,15 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withRelationshipIdentities; query != nil {
+		if err := _q.loadRelationshipIdentities(ctx, query, nodes,
+			func(n *User) { n.Edges.RelationshipIdentities = []*RelationshipIdentity{} },
+			func(n *User, e *RelationshipIdentity) {
+				n.Edges.RelationshipIdentities = append(n.Edges.RelationshipIdentities, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withRelationshipObservations; query != nil {
 		if err := _q.loadRelationshipObservations(ctx, query, nodes,
 			func(n *User) { n.Edges.RelationshipObservations = []*RelationshipObservation{} },
@@ -2686,6 +2733,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadRelationshipParticipants(ctx, query, nodes,
 			func(n *User) { n.appendNamedRelationshipParticipants(name) },
 			func(n *User, e *RelationshipParticipant) { n.appendNamedRelationshipParticipants(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRelationshipIdentities {
+		if err := _q.loadRelationshipIdentities(ctx, query, nodes,
+			func(n *User) { n.appendNamedRelationshipIdentities(name) },
+			func(n *User, e *RelationshipIdentity) { n.appendNamedRelationshipIdentities(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -3945,6 +3999,37 @@ func (_q *UserQuery) loadRelationshipParticipants(ctx context.Context, query *Re
 	}
 	return nil
 }
+func (_q *UserQuery) loadRelationshipIdentities(ctx context.Context, query *RelationshipIdentityQuery, nodes []*User, init func(*User), assign func(*User, *RelationshipIdentity)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RelationshipIdentity(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RelationshipIdentitiesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_relationship_identities
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_relationship_identities" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_relationship_identities" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (_q *UserQuery) loadRelationshipObservations(ctx context.Context, query *RelationshipObservationQuery, nodes []*User, init func(*User), assign func(*User, *RelationshipObservation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*User)
@@ -4745,6 +4830,20 @@ func (_q *UserQuery) WithNamedRelationshipParticipants(name string, opts ...func
 		_q.withNamedRelationshipParticipants = make(map[string]*RelationshipParticipantQuery)
 	}
 	_q.withNamedRelationshipParticipants[name] = query
+	return _q
+}
+
+// WithNamedRelationshipIdentities tells the query-builder to eager-load the nodes that are connected to the "relationship_identities"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedRelationshipIdentities(name string, opts ...func(*RelationshipIdentityQuery)) *UserQuery {
+	query := (&RelationshipIdentityClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRelationshipIdentities == nil {
+		_q.withNamedRelationshipIdentities = make(map[string]*RelationshipIdentityQuery)
+	}
+	_q.withNamedRelationshipIdentities[name] = query
 	return _q
 }
 

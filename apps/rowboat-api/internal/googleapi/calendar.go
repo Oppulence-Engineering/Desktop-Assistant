@@ -38,6 +38,9 @@ type CalendarEventMutation struct {
 	End         string
 	TimeZone    string
 	Attendees   []string
+	// PrivateExtendedProperties are visible only to this application and make
+	// an event discoverable after an ambiguous insert response.
+	PrivateExtendedProperties map[string]string
 }
 
 // ListEvents lists upcoming events on the user's primary calendar.
@@ -166,7 +169,32 @@ func calendarEventBody(in CalendarEventMutation, allowEmptyTime bool) (map[strin
 		}
 		body["attendees"] = attendees
 	}
+	if len(in.PrivateExtendedProperties) > 0 {
+		body["extendedProperties"] = map[string]any{"private": in.PrivateExtendedProperties}
+	}
 	return body, nil
+}
+
+// FindEventByPrivateExtendedProperty performs the Calendar-supported exact
+// privateExtendedProperty lookup used to reconcile an ambiguous insert.
+func (c *Client) FindEventByPrivateExtendedProperty(ctx context.Context, token, name, value string) (*CalendarEvent, error) {
+	if name == "" || value == "" {
+		return nil, fmt.Errorf("calendar reconciliation property is required")
+	}
+	q := url.Values{}
+	q.Set("privateExtendedProperty", name+"="+value)
+	q.Set("maxResults", "2")
+	var list struct {
+		Items []calendarAPIEvent `json:"items"`
+	}
+	if err := c.GetJSON(ctx, token, c.cfg.CalendarBaseURL+"/calendars/primary/events", q, &list); err != nil {
+		return nil, fmt.Errorf("calendar events.list reconciliation: %w", err)
+	}
+	if len(list.Items) == 0 {
+		return nil, nil
+	}
+	event := list.Items[0].toCalendarEvent()
+	return &event, nil
 }
 
 func calendarDateTime(value, tz string) map[string]string {

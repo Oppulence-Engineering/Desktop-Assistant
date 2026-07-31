@@ -43,6 +43,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
@@ -1633,6 +1634,57 @@ func init() {
 	relationshipassertionDescID := relationshipassertionMixinFields0[0].Descriptor()
 	// relationshipassertion.DefaultID holds the default value on creation for the id field.
 	relationshipassertion.DefaultID = relationshipassertionDescID.Default.(func() uuid.UUID)
+	relationshipidentityMixin := schema.RelationshipIdentity{}.Mixin()
+	relationshipidentityMixinFields0 := relationshipidentityMixin[0].Fields()
+	_ = relationshipidentityMixinFields0
+	relationshipidentityFields := schema.RelationshipIdentity{}.Fields()
+	_ = relationshipidentityFields
+	// relationshipidentityDescCreatedAt is the schema descriptor for created_at field.
+	relationshipidentityDescCreatedAt := relationshipidentityMixinFields0[1].Descriptor()
+	// relationshipidentity.DefaultCreatedAt holds the default value on creation for the created_at field.
+	relationshipidentity.DefaultCreatedAt = relationshipidentityDescCreatedAt.Default.(func() time.Time)
+	// relationshipidentityDescUpdatedAt is the schema descriptor for updated_at field.
+	relationshipidentityDescUpdatedAt := relationshipidentityMixinFields0[2].Descriptor()
+	// relationshipidentity.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	relationshipidentity.DefaultUpdatedAt = relationshipidentityDescUpdatedAt.Default.(func() time.Time)
+	// relationshipidentity.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	relationshipidentity.UpdateDefaultUpdatedAt = relationshipidentityDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// relationshipidentityDescKind is the schema descriptor for kind field.
+	relationshipidentityDescKind := relationshipidentityFields[0].Descriptor()
+	// relationshipidentity.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	relationshipidentity.KindValidator = relationshipidentityDescKind.Validators[0].(func(string) error)
+	// relationshipidentityDescKeyHash is the schema descriptor for key_hash field.
+	relationshipidentityDescKeyHash := relationshipidentityFields[2].Descriptor()
+	// relationshipidentity.KeyHashValidator is a validator for the "key_hash" field. It is called by the builders before save.
+	relationshipidentity.KeyHashValidator = relationshipidentityDescKeyHash.Validators[0].(func(string) error)
+	// relationshipidentityDescNormalizedValue is the schema descriptor for normalized_value field.
+	relationshipidentityDescNormalizedValue := relationshipidentityFields[3].Descriptor()
+	// relationshipidentity.NormalizedValueValidator is a validator for the "normalized_value" field. It is called by the builders before save.
+	relationshipidentity.NormalizedValueValidator = relationshipidentityDescNormalizedValue.Validators[0].(func(string) error)
+	// relationshipidentityDescConfidence is the schema descriptor for confidence field.
+	relationshipidentityDescConfidence := relationshipidentityFields[5].Descriptor()
+	// relationshipidentity.DefaultConfidence holds the default value on creation for the confidence field.
+	relationshipidentity.DefaultConfidence = relationshipidentityDescConfidence.Default.(float64)
+	// relationshipidentity.ConfidenceValidator is a validator for the "confidence" field. It is called by the builders before save.
+	relationshipidentity.ConfidenceValidator = func() func(float64) error {
+		validators := relationshipidentityDescConfidence.Validators
+		fns := [...]func(float64) error{
+			validators[0].(func(float64) error),
+			validators[1].(func(float64) error),
+		}
+		return func(confidence float64) error {
+			for _, fn := range fns {
+				if err := fn(confidence); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// relationshipidentityDescID is the schema descriptor for id field.
+	relationshipidentityDescID := relationshipidentityMixinFields0[0].Descriptor()
+	// relationshipidentity.DefaultID holds the default value on creation for the id field.
+	relationshipidentity.DefaultID = relationshipidentityDescID.Default.(func() uuid.UUID)
 	relationshipobservationMixin := schema.RelationshipObservation{}.Mixin()
 	relationshipobservationMixinFields0 := relationshipobservationMixin[0].Fields()
 	_ = relationshipobservationMixinFields0
@@ -1884,6 +1936,16 @@ func init() {
 	revenueaction.DefaultExecutionMode = revenueactionDescExecutionMode.Default.(string)
 	// revenueaction.ExecutionModeValidator is a validator for the "execution_mode" field. It is called by the builders before save.
 	revenueaction.ExecutionModeValidator = revenueactionDescExecutionMode.Validators[0].(func(string) error)
+	// revenueactionDescReconciliationStatus is the schema descriptor for reconciliation_status field.
+	revenueactionDescReconciliationStatus := revenueactionFields[29].Descriptor()
+	// revenueaction.ReconciliationStatusValidator is a validator for the "reconciliation_status" field. It is called by the builders before save.
+	revenueaction.ReconciliationStatusValidator = revenueactionDescReconciliationStatus.Validators[0].(func(string) error)
+	// revenueactionDescReconciliationAttempts is the schema descriptor for reconciliation_attempts field.
+	revenueactionDescReconciliationAttempts := revenueactionFields[30].Descriptor()
+	// revenueaction.DefaultReconciliationAttempts holds the default value on creation for the reconciliation_attempts field.
+	revenueaction.DefaultReconciliationAttempts = revenueactionDescReconciliationAttempts.Default.(int)
+	// revenueaction.ReconciliationAttemptsValidator is a validator for the "reconciliation_attempts" field. It is called by the builders before save.
+	revenueaction.ReconciliationAttemptsValidator = revenueactionDescReconciliationAttempts.Validators[0].(func(int) error)
 	// revenueactionDescID is the schema descriptor for id field.
 	revenueactionDescID := revenueactionMixinFields0[0].Descriptor()
 	// revenueaction.DefaultID holds the default value on creation for the id field.

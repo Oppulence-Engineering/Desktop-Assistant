@@ -37,8 +37,31 @@ func NewRoutingExecutor(email, slack, calendar, crm Executor) *RoutingExecutor {
 
 // Execute dispatches an approved action to the executor for its bound channel.
 func (e *RoutingExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecResult, error) {
+	target, err := e.target(req.Action.Channel)
+	if err != nil {
+		return nil, err
+	}
+	return target.Execute(ctx, req)
+}
+
+// Reconcile routes the read-only lookup through the same provider binding as
+// Execute. It never falls back to Execute and therefore cannot duplicate a
+// write when the provider still has not indexed the marker.
+func (e *RoutingExecutor) Reconcile(ctx context.Context, req ExecRequest) (*ExecResult, bool, error) {
+	target, err := e.target(req.Action.Channel)
+	if err != nil {
+		return nil, false, err
+	}
+	reconciler, ok := target.(Reconciler)
+	if !ok {
+		return nil, false, fmt.Errorf("revenue: execution backend for channel %q cannot reconcile provider state", req.Action.Channel)
+	}
+	return reconciler.Reconcile(ctx, req)
+}
+
+func (e *RoutingExecutor) target(channel string) (Executor, error) {
 	var target Executor
-	switch req.Action.Channel {
+	switch channel {
 	case "email":
 		target = e.email
 	case "slack":
@@ -48,12 +71,12 @@ func (e *RoutingExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecRe
 	case "crm", "crm_task", "task":
 		target = e.crm
 	default:
-		return nil, fmt.Errorf("revenue: no execution backend for channel %q", req.Action.Channel)
+		return nil, fmt.Errorf("revenue: no execution backend for channel %q", channel)
 	}
 	if target == nil {
-		return nil, fmt.Errorf("revenue: execution backend for channel %q is not configured", req.Action.Channel)
+		return nil, fmt.Errorf("revenue: execution backend for channel %q is not configured", channel)
 	}
-	return target.Execute(ctx, req)
+	return target, nil
 }
 
 type slackCredentialResolver interface {
@@ -117,6 +140,10 @@ func (e *SlackExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecResu
 		slackgo.MsgOptionText(message, false),
 		slackgo.MsgOptionDisableLinkUnfurl(),
 		slackgo.MsgOptionDisableMediaUnfurl(),
+		slackgo.MsgOptionMetadata(slackgo.SlackMetadata{
+			EventType:    "oppulence_action",
+			EventPayload: map[string]any{"idempotency_key": req.IdempotencyKey},
+		}),
 	}
 	if thread != "" {
 		options = append(options, slackgo.MsgOptionTS(thread))
@@ -126,6 +153,69 @@ func (e *SlackExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecResu
 		return nil, classifySubmitError(err)
 	}
 	return &ExecResult{ProviderMessageID: resultTS, ProviderThreadID: firstNonEmptyString(thread, resultChannel)}, nil
+}
+
+// Reconcile searches Slack message metadata through slack-go. The channel and
+// optional thread remain review-bound to the original action target.
+func (e *SlackExecutor) Reconcile(ctx context.Context, req ExecRequest) (*ExecResult, bool, error) {
+	team, channel, thread, err := slackTarget(req.Action)
+	if err != nil {
+		return nil, false, err
+	}
+	var token string
+	if team != "" {
+		token, err = e.tokens.ResolveTeam(ctx, req.UserID.String(), team)
+	} else {
+		token, err = e.tokens.Resolve(ctx, req.UserID.String(), "slack")
+	}
+	if err != nil {
+		return nil, false, fmt.Errorf("revenue: resolve Slack workspace: %w", err)
+	}
+	client := slackgo.New(token, slackgo.OptionHTTPClient(e.http), slackgo.OptionAPIURL(e.apiURL))
+	messages := make([]slackgo.Message, 0, 100)
+	cursor := ""
+	if thread != "" {
+		for page := 0; page < 5; page++ {
+			var batch []slackgo.Message
+			var hasMore bool
+			batch, hasMore, cursor, err = client.GetConversationRepliesContext(ctx, &slackgo.GetConversationRepliesParameters{
+				ChannelID: channel, Timestamp: thread, Cursor: cursor, Limit: 100, IncludeAllMetadata: true,
+			})
+			messages = append(messages, batch...)
+			if err != nil || !hasMore || cursor == "" {
+				break
+			}
+		}
+	} else {
+		for page := 0; page < 5; page++ {
+			var history *slackgo.GetConversationHistoryResponse
+			history, err = client.GetConversationHistoryContext(ctx, &slackgo.GetConversationHistoryParameters{
+				ChannelID: channel, Cursor: cursor, Limit: 100, IncludeAllMetadata: true,
+			})
+			if history != nil {
+				messages = append(messages, history.Messages...)
+				cursor = history.ResponseMetaData.NextCursor
+			}
+			if err != nil || history == nil || !history.HasMore || cursor == "" {
+				break
+			}
+		}
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	for _, message := range messages {
+		if message.Metadata.EventType != "oppulence_action" {
+			continue
+		}
+		if key, _ := message.Metadata.EventPayload["idempotency_key"].(string); key == req.IdempotencyKey {
+			return &ExecResult{
+				ProviderMessageID: message.Timestamp,
+				ProviderThreadID:  firstNonEmptyString(thread, channel),
+			}, true, nil
+		}
+	}
+	return nil, false, nil
 }
 
 func slackTarget(action *ent.RevenueAction) (team, channel, thread string, err error) {
@@ -192,6 +282,9 @@ func (e *CalendarExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecR
 		End:         start.Add(30 * time.Minute).Format(time.RFC3339),
 		TimeZone:    "UTC",
 	}
+	if req.IdempotencyKey != "" {
+		mutation.PrivateExtendedProperties = map[string]string{"oppulence_action": req.IdempotencyKey}
+	}
 	if attendee := strings.TrimSpace(req.Action.RecipientEmail); attendee != "" {
 		mutation.Attendees = []string{attendee}
 	}
@@ -200,6 +293,25 @@ func (e *CalendarExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecR
 		return nil, classifySubmitError(err)
 	}
 	return &ExecResult{ProviderMessageID: event.ID, ProviderThreadID: event.HTMLLink}, nil
+}
+
+// Reconcile uses Calendar's exact privateExtendedProperty lookup.
+func (e *CalendarExecutor) Reconcile(ctx context.Context, req ExecRequest) (*ExecResult, bool, error) {
+	if e.google == nil {
+		return nil, false, errors.New("revenue: Google Calendar executor is not configured")
+	}
+	_, token, err := e.google.connection(ctx, req.UserID, scopeCalendarEvents)
+	if err != nil {
+		return nil, false, err
+	}
+	event, err := e.google.google.FindEventByPrivateExtendedProperty(ctx, token, "oppulence_action", req.IdempotencyKey)
+	if err != nil {
+		return nil, false, err
+	}
+	if event == nil {
+		return nil, false, nil
+	}
+	return &ExecResult{ProviderMessageID: event.ID, ProviderThreadID: event.HTMLLink}, true, nil
 }
 
 // HubSpotExecutor writes approved notes and tasks with the private-app token
@@ -246,7 +358,7 @@ func (e *HubSpotExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecRe
 			due = req.Action.DueAt.UTC()
 		}
 		result, createErr := e.hubspot.CreateTask(ctx, req.UserID, target,
-			strings.TrimSpace(req.Action.ProposedSubject), strings.TrimSpace(req.Action.ProposedMessage), due)
+			strings.TrimSpace(req.Action.ProposedSubject), hubspotapi.WithActionMarker(req.Action.ProposedMessage, req.IdempotencyKey), due)
 		if createErr != nil {
 			return nil, classifySubmitError(createErr)
 		}
@@ -255,7 +367,7 @@ func (e *HubSpotExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecRe
 		}
 	} else {
 		result, createErr := e.hubspot.CreateNote(ctx, req.UserID, target,
-			strings.TrimSpace(req.Action.ProposedMessage), e.now().UTC())
+			hubspotapi.WithActionMarker(req.Action.ProposedMessage, req.IdempotencyKey), e.now().UTC())
 		if createErr != nil {
 			return nil, classifySubmitError(createErr)
 		}
@@ -267,6 +379,29 @@ func (e *HubSpotExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecRe
 		return nil, fmt.Errorf("%w: HubSpot accepted the action without returning an object id", ErrAmbiguous)
 	}
 	return &ExecResult{ProviderMessageID: resultID, ProviderThreadID: "hubspot:" + targetType + ":" + targetID}, nil
+}
+
+// Reconcile searches Notes or Tasks through HubSpot's official Go SDK.
+func (e *HubSpotExecutor) Reconcile(ctx context.Context, req ExecRequest) (*ExecResult, bool, error) {
+	targetType, targetID, err := hubSpotTarget(req.Action)
+	if err != nil {
+		return nil, false, err
+	}
+	engagement := "note"
+	if req.Action.Channel == "task" || req.Action.Channel == "crm_task" {
+		engagement = "task"
+	}
+	result, err := e.hubspot.FindEngagementByActionMarker(ctx, req.UserID, engagement, req.IdempotencyKey)
+	if err != nil {
+		return nil, false, err
+	}
+	if result == nil {
+		return nil, false, nil
+	}
+	return &ExecResult{
+		ProviderMessageID: result.ID,
+		ProviderThreadID:  "hubspot:" + targetType + ":" + targetID,
+	}, true, nil
 }
 
 func (e *HubSpotExecutor) token(ctx context.Context, userID uuid.UUID) (string, error) {
@@ -302,6 +437,10 @@ func firstNonEmptyString(values ...string) string {
 }
 
 var _ Executor = (*RoutingExecutor)(nil)
+var _ Reconciler = (*RoutingExecutor)(nil)
 var _ Executor = (*SlackExecutor)(nil)
+var _ Reconciler = (*SlackExecutor)(nil)
 var _ Executor = (*CalendarExecutor)(nil)
+var _ Reconciler = (*CalendarExecutor)(nil)
 var _ Executor = (*HubSpotExecutor)(nil)
+var _ Reconciler = (*HubSpotExecutor)(nil)

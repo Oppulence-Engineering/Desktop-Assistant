@@ -62,9 +62,18 @@ func (f *fakeFacade) ReportRevenueActionOutcome(context.Context, OutcomeReport) 
 
 // fakeExecutor returns a scripted result (or error) and counts calls.
 type fakeExecutor struct {
-	result *ExecResult
-	err    error
-	calls  int
+	result          *ExecResult
+	err             error
+	calls           int
+	reconcileResult *ExecResult
+	reconcileFound  bool
+	reconcileErr    error
+	reconcileCalls  int
+}
+
+func (f *fakeExecutor) Reconcile(context.Context, ExecRequest) (*ExecResult, bool, error) {
+	f.reconcileCalls++
+	return f.reconcileResult, f.reconcileFound, f.reconcileErr
 }
 
 func (f *fakeExecutor) Execute(context.Context, ExecRequest) (*ExecResult, error) {
@@ -345,6 +354,60 @@ func TestAmbiguousExecutionNeverAutoResends(t *testing.T) {
 	}
 	if f.exec.calls != 1 {
 		t.Fatalf("provider must not be called again after ambiguous, got %d", f.exec.calls)
+	}
+}
+
+func TestAmbiguousExecutionReconcilesByLookupWithoutResend(t *testing.T) {
+	f := newFixture(t)
+	action := f.action(t, ExecModeDraft)
+	if _, err := f.svc.Approve(f.ctx, f.user, action.ID, false); err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+	f.exec.err = ErrAmbiguous
+	ambiguous, err := f.svc.Execute(f.ctx, f.user, action.ID)
+	if err != nil || ambiguous.ExecutionStatus != ExecAmbiguous {
+		t.Fatalf("ambiguous execute: action=%+v err=%v", ambiguous, err)
+	}
+	if ambiguous.ReconciliationStatus != "pending" || ambiguous.ReconciliationNextAt == nil {
+		t.Fatalf("ambiguous action must be scheduled for lookup: %+v", ambiguous)
+	}
+	f.exec.err = nil
+	f.exec.reconcileFound = true
+	f.exec.reconcileResult = &ExecResult{ProviderMessageID: "recovered-msg", ProviderThreadID: "recovered-thread"}
+	reconciled, err := f.svc.ReconcileAmbiguousAction(f.ctx, f.user, action.ID)
+	if err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+	if reconciled.ExecutionStatus != ExecSent || reconciled.QueueStatus != QueueHandled ||
+		reconciled.ProviderMessageID != "recovered-msg" || reconciled.ReconciliationStatus != "found" {
+		t.Fatalf("reconciled action = %+v", reconciled)
+	}
+	if f.exec.calls != 1 || f.exec.reconcileCalls != 1 {
+		t.Fatalf("want one write and one lookup, writes=%d lookups=%d", f.exec.calls, f.exec.reconcileCalls)
+	}
+}
+
+func TestAmbiguousLookupNotFoundSchedulesAnotherReadOnlyAttempt(t *testing.T) {
+	f := newFixture(t)
+	action := f.action(t, ExecModeDraft)
+	if _, err := f.svc.Approve(f.ctx, f.user, action.ID, false); err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+	f.exec.err = ErrAmbiguous
+	if _, err := f.svc.Execute(f.ctx, f.user, action.ID); err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	f.exec.err = nil
+	got, err := f.svc.ReconcileAmbiguousAction(f.ctx, f.user, action.ID)
+	if err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+	if got.ExecutionStatus != ExecAmbiguous || got.ReconciliationStatus != "not_found" ||
+		got.ReconciliationAttempts != 1 || got.ReconciliationNextAt == nil {
+		t.Fatalf("not-found lookup must remain ambiguous and scheduled: %+v", got)
+	}
+	if f.exec.calls != 1 || f.exec.reconcileCalls != 1 {
+		t.Fatalf("not-found lookup must not resend: writes=%d lookups=%d", f.exec.calls, f.exec.reconcileCalls)
 	}
 }
 

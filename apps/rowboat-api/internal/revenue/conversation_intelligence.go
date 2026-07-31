@@ -14,9 +14,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/google/uuid"
 )
 
@@ -417,46 +415,6 @@ func (s *Service) materializeConversationEvidence(
 		}
 	}
 	return s.applyCommitmentUpdates(ctx, client, ws, u, rel, observation, input)
-}
-
-func (s *Service) outcomeLearningLift(
-	ctx context.Context,
-	client *ent.Client,
-	ws *ent.RevenueWorkspace,
-	actionType, channel string,
-) (int, error) {
-	actions, err := client.RevenueAction.Query().
-		Where(
-			revenueaction.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
-			revenueaction.ActionTypeEQ(actionType),
-			revenueaction.ChannelEQ(channel),
-		).
-		WithOutcomes().
-		Limit(200).
-		All(ctx)
-	if err != nil {
-		return 0, err
-	}
-	positive, negative := 0, 0
-	for _, action := range actions {
-		outcomes, _ := action.Edges.OutcomesOrErr()
-		for _, outcome := range outcomes {
-			switch outcome.Kind {
-			case "delivered", "replied", "meeting_booked", "won", "deal_advanced", "onboarding_progressed", "renewed":
-				positive++
-			case "bounced", "lost", "dismissed", "bad_recommendation", "escalated", "churned", "corrected":
-				negative++
-			}
-		}
-	}
-	lift := (positive - negative) * 3
-	if lift > 15 {
-		lift = 15
-	}
-	if lift < -15 {
-		lift = -15
-	}
-	return lift, nil
 }
 
 func (s *Service) createConversationAction(

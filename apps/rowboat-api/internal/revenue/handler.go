@@ -392,38 +392,43 @@ func relationshipToDTOWithOpen(rel *ent.Relationship) relationshipDTO {
 }
 
 type actionDTO struct {
-	ID                 string              `json:"id"`
-	RelationshipID     string              `json:"relationshipId,omitempty"`
-	ActionType         string              `json:"actionType"`
-	Channel            string              `json:"channel"`
-	Detector           string              `json:"detector"`
-	Revision           int                 `json:"revision"`
-	RevisionHash       string              `json:"revisionHash"`
-	Reason             string              `json:"reason"`
-	RecipientEmail     string              `json:"recipientEmail,omitempty"`
-	ProposedSubject    string              `json:"proposedSubject,omitempty"`
-	ProposedMessage    string              `json:"proposedMessage,omitempty"`
-	SenderAccountRef   string              `json:"senderAccountRef,omitempty"`
-	PriorityScore      int                 `json:"priorityScore"`
-	PriorityComponents json.RawMessage     `json:"priorityComponents,omitempty"`
-	QueueStatus        string              `json:"queueStatus"`
-	PolicyStatus       string              `json:"policyStatus"`
-	ApprovalStatus     string              `json:"approvalStatus"`
-	ExecutionStatus    string              `json:"executionStatus"`
-	ExecutionOwner     string              `json:"executionOwner"`
-	ExecutionMode      string              `json:"executionMode"`
-	ApprovedRevision   int                 `json:"approvedRevision,omitempty"`
-	ApprovedAt         *time.Time          `json:"approvedAt,omitempty"`
-	ProviderMessageID  string              `json:"providerMessageId,omitempty"`
-	ProviderThreadID   string              `json:"providerThreadId,omitempty"`
-	ExecutedAt         *time.Time          `json:"executedAt,omitempty"`
-	ExecutionError     string              `json:"executionError,omitempty"`
-	DismissReason      string              `json:"dismissReason,omitempty"`
-	SnoozedUntil       *time.Time          `json:"snoozedUntil,omitempty"`
-	DueAt              *time.Time          `json:"dueAt,omitempty"`
-	CreatedAt          time.Time           `json:"createdAt"`
-	UpdatedAt          time.Time           `json:"updatedAt"`
-	Evidence           []actionEvidenceDTO `json:"evidence"`
+	ID                      string              `json:"id"`
+	RelationshipID          string              `json:"relationshipId,omitempty"`
+	ActionType              string              `json:"actionType"`
+	Channel                 string              `json:"channel"`
+	Detector                string              `json:"detector"`
+	Revision                int                 `json:"revision"`
+	RevisionHash            string              `json:"revisionHash"`
+	Reason                  string              `json:"reason"`
+	RecipientEmail          string              `json:"recipientEmail,omitempty"`
+	ProposedSubject         string              `json:"proposedSubject,omitempty"`
+	ProposedMessage         string              `json:"proposedMessage,omitempty"`
+	SenderAccountRef        string              `json:"senderAccountRef,omitempty"`
+	PriorityScore           int                 `json:"priorityScore"`
+	PriorityComponents      json.RawMessage     `json:"priorityComponents,omitempty"`
+	QueueStatus             string              `json:"queueStatus"`
+	PolicyStatus            string              `json:"policyStatus"`
+	ApprovalStatus          string              `json:"approvalStatus"`
+	ExecutionStatus         string              `json:"executionStatus"`
+	ExecutionOwner          string              `json:"executionOwner"`
+	ExecutionMode           string              `json:"executionMode"`
+	ApprovedRevision        int                 `json:"approvedRevision,omitempty"`
+	ApprovedAt              *time.Time          `json:"approvedAt,omitempty"`
+	ProviderMessageID       string              `json:"providerMessageId,omitempty"`
+	ProviderThreadID        string              `json:"providerThreadId,omitempty"`
+	ExecutedAt              *time.Time          `json:"executedAt,omitempty"`
+	ExecutionError          string              `json:"executionError,omitempty"`
+	ReconciliationStatus    string              `json:"reconciliationStatus,omitempty"`
+	ReconciliationAttempts  int                 `json:"reconciliationAttempts,omitempty"`
+	ReconciliationCheckedAt *time.Time          `json:"reconciliationCheckedAt,omitempty"`
+	ReconciliationNextAt    *time.Time          `json:"reconciliationNextAt,omitempty"`
+	ReconciliationError     string              `json:"reconciliationError,omitempty"`
+	DismissReason           string              `json:"dismissReason,omitempty"`
+	SnoozedUntil            *time.Time          `json:"snoozedUntil,omitempty"`
+	DueAt                   *time.Time          `json:"dueAt,omitempty"`
+	CreatedAt               time.Time           `json:"createdAt"`
+	UpdatedAt               time.Time           `json:"updatedAt"`
+	Evidence                []actionEvidenceDTO `json:"evidence"`
 }
 
 type actionEvidenceDTO struct {
@@ -437,36 +442,41 @@ type actionEvidenceDTO struct {
 
 func actionToDTO(a *ent.RevenueAction) actionDTO {
 	dto := actionDTO{
-		ID:                a.ID.String(),
-		ActionType:        a.ActionType,
-		Channel:           a.Channel,
-		Detector:          a.Detector,
-		Revision:          a.Revision,
-		RevisionHash:      a.RevisionHash,
-		Reason:            a.Reason,
-		RecipientEmail:    a.RecipientEmail,
-		ProposedSubject:   a.ProposedSubject,
-		ProposedMessage:   a.ProposedMessage,
-		SenderAccountRef:  a.SenderAccountRef,
-		PriorityScore:     a.PriorityScore,
-		QueueStatus:       a.QueueStatus,
-		PolicyStatus:      a.PolicyStatus,
-		ApprovalStatus:    a.ApprovalStatus,
-		ExecutionStatus:   a.ExecutionStatus,
-		ExecutionOwner:    a.ExecutionOwner,
-		ExecutionMode:     a.ExecutionMode,
-		ApprovedRevision:  a.ApprovedRevision,
-		ApprovedAt:        a.ApprovedAt,
-		ProviderMessageID: a.ProviderMessageID,
-		ProviderThreadID:  a.ProviderThreadID,
-		ExecutedAt:        a.ExecutedAt,
-		ExecutionError:    a.ExecutionError,
-		DismissReason:     a.DismissReason,
-		SnoozedUntil:      a.SnoozedUntil,
-		DueAt:             a.DueAt,
-		CreatedAt:         a.CreatedAt,
-		UpdatedAt:         a.UpdatedAt,
-		Evidence:          []actionEvidenceDTO{},
+		ID:                      a.ID.String(),
+		ActionType:              a.ActionType,
+		Channel:                 a.Channel,
+		Detector:                a.Detector,
+		Revision:                a.Revision,
+		RevisionHash:            a.RevisionHash,
+		Reason:                  a.Reason,
+		RecipientEmail:          a.RecipientEmail,
+		ProposedSubject:         a.ProposedSubject,
+		ProposedMessage:         a.ProposedMessage,
+		SenderAccountRef:        a.SenderAccountRef,
+		PriorityScore:           a.PriorityScore,
+		QueueStatus:             a.QueueStatus,
+		PolicyStatus:            a.PolicyStatus,
+		ApprovalStatus:          a.ApprovalStatus,
+		ExecutionStatus:         a.ExecutionStatus,
+		ExecutionOwner:          a.ExecutionOwner,
+		ExecutionMode:           a.ExecutionMode,
+		ApprovedRevision:        a.ApprovedRevision,
+		ApprovedAt:              a.ApprovedAt,
+		ProviderMessageID:       a.ProviderMessageID,
+		ProviderThreadID:        a.ProviderThreadID,
+		ExecutedAt:              a.ExecutedAt,
+		ExecutionError:          a.ExecutionError,
+		ReconciliationStatus:    a.ReconciliationStatus,
+		ReconciliationAttempts:  a.ReconciliationAttempts,
+		ReconciliationCheckedAt: a.ReconciliationCheckedAt,
+		ReconciliationNextAt:    a.ReconciliationNextAt,
+		ReconciliationError:     a.ReconciliationError,
+		DismissReason:           a.DismissReason,
+		SnoozedUntil:            a.SnoozedUntil,
+		DueAt:                   a.DueAt,
+		CreatedAt:               a.CreatedAt,
+		UpdatedAt:               a.UpdatedAt,
+		Evidence:                []actionEvidenceDTO{},
 	}
 	if evidences, err := a.Edges.EvidencesOrErr(); err == nil {
 		for _, evidence := range evidences {
