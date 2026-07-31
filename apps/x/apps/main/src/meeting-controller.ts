@@ -15,6 +15,7 @@ import type {
   MeetingTranscript,
   MeetingTranscriptSegment,
 } from "@x/shared/dist/meetings.js";
+import type { RelationshipLiveCue } from "@x/shared/dist/relationships.js";
 import {
   calendarEventFromMeta,
   createSessionDir,
@@ -71,8 +72,10 @@ import {
 } from "@x/core/dist/relationships/evidence-outbox.js";
 import {
   confirmedCommitmentObservation,
+  commitmentStatusObservation,
   meetingTranscriptObservation,
 } from "@x/core/dist/relationships/meeting-evidence.js";
+import { getRelationship, listRelationships } from "@x/core/dist/relationships/client.js";
 
 /**
  * The one owner of a native capture session: spawns the sidecar, holds the live
@@ -305,6 +308,11 @@ export class MeetingController {
       const sessionId = path.basename(dir);
       if (!this.standbySeconds) await this.writePlaceholderNote(dir);
 
+      const liveIdentity = resolveCounterparty(calendarEvent).counterparty;
+      this.liveCounterparty = liveIdentity?.label;
+      this.liveCues = [];
+      if (liveIdentity) void this.loadLiveCues(liveIdentity, sessionId);
+
       // Live transcription only once actually recording — there is no file to read
       // while standing by, which is the entire point of standing by.
       if (this.standbySeconds === 0 && config.meetings?.liveTranscript) {
@@ -312,7 +320,6 @@ export class MeetingController {
         // a whole-vault scan at that moment would stall the app exactly when the user is
         // watching it begin. The calendar's own display name is good enough for a live
         // panel; the note gets the canonical one afterwards.
-        this.liveCounterparty = resolveCounterparty(calendarEvent).counterparty?.label;
         this.startLive(dir, tracks);
       }
       this.setState(this.standbySeconds > 0 ? "standby" : "recording");
@@ -620,6 +627,33 @@ export class MeetingController {
 
   /** Display name for `them` in the live transcript, when the meeting is a named 1:1. */
   private liveCounterparty: string | undefined;
+  private liveCues: RelationshipLiveCue[] = [];
+
+  private async loadLiveCues(
+    counterparty: { label: string; email?: string },
+    sessionId: string,
+  ): Promise<void> {
+    try {
+      const query = counterparty.email || counterparty.label;
+      const { relationships } = await listRelationships({ q: query });
+      const normalizedEmail = counterparty.email?.trim().toLowerCase();
+      const match = relationships.find((relationship) =>
+        normalizedEmail
+          ? relationship.primaryEmail?.trim().toLowerCase() === normalizedEmail
+          : relationship.displayName.trim().toLowerCase() ===
+            counterparty.label.trim().toLowerCase(),
+      );
+      if (!match) return;
+      const detail = await getRelationship(match.id);
+      // Do not let a slow request from an ended meeting leak relationship context into
+      // a later session. Session identity, not timing, decides whether the result is live.
+      if (!this.sessionDir || path.basename(this.sessionDir) !== sessionId) return;
+      this.liveCues = detail.intelligence?.liveCues ?? [];
+      broadcast("meeting:liveCues", { cues: this.liveCues });
+    } catch (err) {
+      console.warn("[meeting] account-aware cue cards could not be loaded:", err);
+    }
+  }
 
   /** The in-progress transcript, in order. */
   liveTranscript(): {
@@ -627,8 +661,9 @@ export class MeetingController {
     sessionId?: string;
     counterparty?: string;
     segments: MeetingTranscriptSegment[];
+    cues: RelationshipLiveCue[];
   } {
-    if (!this.live.active) return { active: false, segments: [] };
+    if (!this.live.active) return { active: false, segments: [], cues: this.liveCues };
     return {
       active: true,
       sessionId: this.sessionDir ? path.basename(this.sessionDir) : undefined,
@@ -636,6 +671,7 @@ export class MeetingController {
       // Ordered by their own track clocks. Offsets are unknown until the session ends,
       // so this is approximate — fine for reading, and the final pass fixes it.
       segments: [...this.liveSegments].sort((a, b) => a.start_ms - b.start_ms),
+      cues: this.liveCues,
     };
   }
 
@@ -837,6 +873,7 @@ export class MeetingController {
         meta,
         transcript,
         counterparty,
+        settings: settings.meetings,
       }),
     );
     void this.flushRelationshipEvidence();
@@ -859,7 +896,30 @@ export class MeetingController {
   }
 
   async setCommitmentStatus(id: string, status: "open" | "done" | "dropped"): Promise<boolean> {
-    return setCommitmentStatus(id, status);
+    const updated = await setCommitmentStatus(id, status);
+    if (!updated) return false;
+    try {
+      const settings = await getTranscriptionConfig();
+      if (!settings.meetings.syncRelationshipEvidence) return true;
+      const entry = (await readLedger()).find((commitment) => commitment.id === id);
+      if (!entry) return true;
+      const dir = await this.sessionPath(entry.session_id);
+      const meta = dir ? await readMeta(dir) : null;
+      const { counterparty } = this.resolveMeetingCounterparty(
+        meta ? calendarEventFromMeta(meta) : undefined,
+      );
+      if (!counterparty) return true;
+      await enqueueRelationshipEvidence(
+        commitmentStatusObservation({ commitment: entry, status, counterparty }),
+      );
+      void this.flushRelationshipEvidence();
+    } catch (err) {
+      console.warn(
+        "[meeting] commitment status was saved locally but cloud reconciliation was queued unsuccessfully:",
+        err,
+      );
+    }
+    return true;
   }
 
   /** A session directory, or null when the id does not name one inside the root. */
@@ -1031,6 +1091,7 @@ export class MeetingController {
               meta,
               transcript,
               counterparty,
+              settings: settings.meetings,
             }),
           );
           await this.flushRelationshipEvidence();
@@ -1124,6 +1185,11 @@ export class MeetingController {
 
   private setState(state: MeetingCaptureState): void {
     this.state = state;
+    if (state === "idle") {
+      this.liveCounterparty = undefined;
+      this.liveCues = [];
+      broadcast("meeting:liveCues", { cues: [] });
+    }
     // The tray, any open window, and the indicator are all views onto this one piece
     // of state, so every transition notifies all three rather than any of them polling.
     this.onStateChange?.();

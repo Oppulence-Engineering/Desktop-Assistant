@@ -3060,6 +3060,235 @@
         "required": ["connectors"],
         "type": "object"
       },
+      "ConversationClaim": {
+        "description": "A material conversation claim anchored to exact words, time, speaker confidence, and capture caveats.",
+        "properties": {
+          "captureCaveats": {
+            "description": "Capture caveats.",
+            "items": {
+              "description": "Caveat.",
+              "example": "Remote channel may contain multiple speakers.",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "confidence": {
+            "description": "Claim confidence.",
+            "example": 0.72,
+            "type": "number"
+          },
+          "endMs": {
+            "description": "End offset in milliseconds.",
+            "example": 16000,
+            "type": "integer"
+          },
+          "exactQuote": {
+            "description": "Exact supporting transcript words.",
+            "example": "We are concerned security could delay the renewal.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "kind": {
+            "description": "Claim kind.",
+            "enum": [
+              "risk",
+              "objection",
+              "decision",
+              "milestone",
+              "sentiment",
+              "stakeholder",
+              "lifecycle",
+              "commitment"
+            ],
+            "example": "risk",
+            "type": "string"
+          },
+          "material": {
+            "description": "Whether the claim can affect state or action.",
+            "example": true,
+            "type": "boolean"
+          },
+          "observationId": {
+            "description": "Supporting immutable observation.",
+            "example": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "speakerConfidence": {
+            "description": "Speaker attribution confidence.",
+            "example": 0.55,
+            "type": "number"
+          },
+          "speakerId": {
+            "description": "Meeting-scoped speaker id; never a persistent voiceprint.",
+            "example": "anonymous:remote-channel",
+            "type": "string"
+          },
+          "speakerLabel": {
+            "description": "Current meeting-scoped speaker label.",
+            "example": "Other",
+            "type": "string"
+          },
+          "startMs": {
+            "description": "Start offset in milliseconds.",
+            "example": 12000,
+            "type": "integer"
+          },
+          "stateDimension": {
+            "description": "Projected state dimension when applicable.",
+            "example": "risk",
+            "type": "string"
+          },
+          "value": {
+            "description": "Normalized claim value.",
+            "example": "Security review may delay renewal.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "value",
+          "exactQuote",
+          "startMs",
+          "endMs",
+          "speakerId",
+          "speakerLabel",
+          "speakerConfidence",
+          "confidence",
+          "captureCaveats",
+          "material"
+        ],
+        "type": "object"
+      },
+      "ConversationGovernanceReceipt": {
+        "description": "Capture, routing, retention, disclosure, legal-hold, deletion, and evidence-clip receipt stored beside a transcript.",
+        "properties": {
+          "capturePolicy": {
+            "description": "Capture policy in force.",
+            "example": "manual_capture",
+            "type": "string"
+          },
+          "capturedAt": {
+            "description": "Capture time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "deletionOutcome": {
+            "description": "Observed deletion outcome.",
+            "example": "scheduled_after_transcription",
+            "type": "string"
+          },
+          "evidenceClip": {
+            "description": "Material audio evidence status; retained clips may only be encrypted.",
+            "enum": ["not_retained", "encrypted"],
+            "example": "not_retained",
+            "type": "string"
+          },
+          "legalHold": {
+            "description": "Whether deletion is blocked by legal hold.",
+            "example": false,
+            "type": "boolean"
+          },
+          "participantDisclosure": {
+            "description": "Recorded participant disclosure status.",
+            "example": "not_recorded",
+            "type": "string"
+          },
+          "receiptId": {
+            "description": "Receipt id.",
+            "example": "governance:ab12",
+            "type": "string"
+          },
+          "region": {
+            "description": "Processing region or boundary.",
+            "example": "local_device",
+            "type": "string"
+          },
+          "retention": {
+            "description": "Retention policy.",
+            "example": "untilTranscribed",
+            "type": "string"
+          },
+          "routing": {
+            "description": "Evidence routing path.",
+            "example": "local_transcription_to_oppulence",
+            "type": "string"
+          }
+        },
+        "required": [
+          "receiptId",
+          "capturedAt",
+          "capturePolicy",
+          "routing",
+          "region",
+          "retention",
+          "participantDisclosure",
+          "legalHold",
+          "deletionOutcome",
+          "evidenceClip"
+        ],
+        "type": "object"
+      },
+      "ConversationReviewItem": {
+        "description": "One low-confidence word, speaker, entity, or material claim requiring focused correction.",
+        "properties": {
+          "claimId": {
+            "description": "Material claim id.",
+            "example": "claim:ab12",
+            "type": "string"
+          },
+          "confidence": {
+            "description": "Current confidence.",
+            "example": 0.55,
+            "type": "number"
+          },
+          "currentValue": {
+            "description": "Current inferred value.",
+            "example": "Other",
+            "type": "string"
+          },
+          "exactQuote": {
+            "description": "Exact words under review.",
+            "example": "We are concerned.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "kind": {
+            "description": "Review kind.",
+            "enum": ["word", "speaker", "entity", "claim", "capture"],
+            "example": "speaker",
+            "type": "string"
+          },
+          "label": {
+            "description": "Review prompt.",
+            "example": "Resolve the speaker for a material statement.",
+            "type": "string"
+          },
+          "observationId": {
+            "description": "Supporting observation.",
+            "example": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "stateDimension": {
+            "description": "Canonical state dimension affected by correction.",
+            "example": "risk",
+            "type": "string"
+          }
+        },
+        "required": ["id", "kind", "label", "currentValue", "confidence", "observationId"],
+        "type": "object"
+      },
       "CreditLedger": {
         "description": "Append-only credit grant, reservation, settlement, refund, or consumption entry.",
         "properties": {
@@ -5234,6 +5463,49 @@
         "required": ["id", "direction", "text", "status", "confidence", "userConfirmed"],
         "type": "object"
       },
+      "RelationshipIntelligence": {
+        "description": "Derived trust surface for a relationship: conversation claims, focused review, exact delta, governance, contradictions, and live cue cards.",
+        "properties": {
+          "claims": {
+            "description": "Material quote-backed claims.",
+            "items": {
+              "$ref": "#/components/schemas/ConversationClaim"
+            },
+            "type": "array"
+          },
+          "delta": {
+            "additionalProperties": true,
+            "description": "Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.",
+            "example": -42,
+            "type": "object"
+          },
+          "governanceReceipts": {
+            "description": "Transcript governance receipts.",
+            "items": {
+              "$ref": "#/components/schemas/ConversationGovernanceReceipt"
+            },
+            "type": "array"
+          },
+          "liveCues": {
+            "description": "Account-history cue cards for the next/live meeting.",
+            "items": {
+              "additionalProperties": true,
+              "description": "Cue card.",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "reviewItems": {
+            "description": "Only low-confidence review items.",
+            "items": {
+              "$ref": "#/components/schemas/ConversationReviewItem"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["claims", "reviewItems", "governanceReceipts", "delta", "liveCues"],
+        "type": "object"
+      },
       "RelationshipObservation": {
         "description": "Immutable, idempotent provider evidence used to project relationship state.",
         "properties": {
@@ -5455,7 +5727,12 @@
               "proposal_nudge",
               "referral_reconnect",
               "customer_risk",
-              "meeting_follow_up"
+              "meeting_follow_up",
+              "meeting_recap",
+              "crm_update",
+              "follow_up_task",
+              "calendar_hold",
+              "commitment_rescue"
             ],
             "example": "warm_follow_up",
             "type": "string"
@@ -5480,7 +5757,7 @@
           },
           "channel": {
             "description": "Delivery channel.",
-            "enum": ["email", "slack", "call", "crm_task"],
+            "enum": ["email", "slack", "call", "crm_task", "crm", "task", "calendar"],
             "example": "email",
             "type": "string"
           },
@@ -5499,6 +5776,8 @@
               "dormant_warm_opportunity",
               "neglected_referral",
               "former_customer_reconnect",
+              "conversation_action_pack",
+              "commitment_due",
               "manual"
             ],
             "example": "manual",
@@ -5515,6 +5794,53 @@
             "format": "date-time",
             "nullable": true,
             "type": "string"
+          },
+          "evidence": {
+            "description": "Exact supporting evidence available in the approval UI.",
+            "items": {
+              "description": "Action evidence.",
+              "properties": {
+                "excerpt": {
+                  "description": "Exact supporting words.",
+                  "example": "We are concerned security could delay renewal.",
+                  "type": "string"
+                },
+                "externalEvidenceRefs": {
+                  "description": "Observation, timestamp, and speaker references.",
+                  "items": {
+                    "description": "Reference.",
+                    "example": "timestamp:12000-16000",
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "id": {
+                  "description": "Evidence id.",
+                  "example": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "occurredAt": {
+                  "description": "Evidence time.",
+                  "example": "2026-07-31T14:00:00Z",
+                  "format": "date-time",
+                  "type": "string"
+                },
+                "source": {
+                  "description": "Evidence source.",
+                  "example": "meeting",
+                  "type": "string"
+                },
+                "sourceRecordId": {
+                  "description": "Source record id.",
+                  "example": "oppulence:session-42:claim:claim-risk",
+                  "type": "string"
+                }
+              },
+              "required": ["id", "source", "sourceRecordId", "occurredAt", "externalEvidenceRefs"],
+              "type": "object"
+            },
+            "type": "array"
           },
           "executedAt": {
             "description": "Execution time.",
@@ -5662,7 +5988,8 @@
           "approvalStatus",
           "executionStatus",
           "executionOwner",
-          "executionMode"
+          "executionMode",
+          "evidence"
         ],
         "type": "object"
       },
@@ -6203,7 +6530,13 @@
               "won",
               "lost",
               "dismissed",
-              "bad_recommendation"
+              "bad_recommendation",
+              "deal_advanced",
+              "onboarding_progressed",
+              "renewed",
+              "escalated",
+              "churned",
+              "corrected"
             ],
             "example": "replied",
             "type": "string"
@@ -6216,7 +6549,7 @@
           },
           "source": {
             "description": "Observing source.",
-            "enum": ["gmail", "calendar", "crm", "user", "outbound"],
+            "enum": ["gmail", "calendar", "crm", "user", "outbound", "slack", "meeting", "task"],
             "example": "gmail",
             "type": "string"
           },
@@ -12049,6 +12382,9 @@
                       },
                       "type": "array"
                     },
+                    "intelligence": {
+                      "$ref": "#/components/schemas/RelationshipIntelligence"
+                    },
                     "participants": {
                       "description": "Relationship participants.",
                       "items": {
@@ -12139,6 +12475,97 @@
           }
         ],
         "summary": "Get relationship changes",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/conversation-corrections": {
+      "post": {
+        "description": "Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.",
+        "operationId": "correctConversationEvidence",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "correctedValue": "Avery Chen",
+                "reason": "Avery was the speaker.",
+                "reviewItemId": "review:ab12"
+              },
+              "schema": {
+                "description": "Conversation correction.",
+                "properties": {
+                  "correctedValue": {
+                    "description": "Human-corrected value.",
+                    "example": "Avery Chen",
+                    "type": "string"
+                  },
+                  "reason": {
+                    "description": "Correction reason.",
+                    "example": "Avery was the speaker.",
+                    "type": "string"
+                  },
+                  "reviewItemId": {
+                    "description": "Focused review item id.",
+                    "example": "review:ab12",
+                    "type": "string"
+                  }
+                },
+                "required": ["reviewItemId", "correctedValue", "reason"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Focused correction.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Correction result.",
+                  "properties": {
+                    "intelligence": {
+                      "$ref": "#/components/schemas/RelationshipIntelligence"
+                    },
+                    "relationship": {
+                      "$ref": "#/components/schemas/RevenueRelationship"
+                    }
+                  },
+                  "required": ["relationship", "intelligence"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Corrected relationship and refreshed intelligence."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Correct reviewed conversation evidence",
         "tags": ["Relationship Intelligence"]
       }
     },
@@ -12424,14 +12851,19 @@
                       "proposal_nudge",
                       "referral_reconnect",
                       "customer_risk",
-                      "meeting_follow_up"
+                      "meeting_follow_up",
+                      "meeting_recap",
+                      "crm_update",
+                      "follow_up_task",
+                      "calendar_hold",
+                      "commitment_rescue"
                     ],
                     "example": "warm_follow_up",
                     "type": "string"
                   },
                   "channel": {
                     "description": "Delivery channel.",
-                    "enum": ["email", "slack", "call", "crm_task"],
+                    "enum": ["email", "slack", "call", "crm_task", "crm", "task", "calendar"],
                     "example": "email",
                     "type": "string"
                   },

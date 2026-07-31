@@ -208,6 +208,18 @@ export interface RelationshipCorrectionInput {
 export const correctRelationship = (id: string, input: RelationshipCorrectionInput) =>
   post(`/relationships/${id}/corrections`, input) as Promise<RevenueRelationship>;
 
+export const correctConversationReview = (
+  id: string,
+  input: {
+    reviewItemId: string;
+    correctedValue: string;
+    reason: string;
+  },
+) =>
+  post(`/relationships/${id}/conversation-corrections`, input) as Promise<
+    Pick<RelationshipDetail, "relationship" | "intelligence">
+  >;
+
 export const listRelationshipSourceStatuses = () =>
   call<{ sources: RelationshipSourceStatus[] }>("/relationship-sources/status").then(
     (body) => body.sources ?? [],
@@ -287,6 +299,8 @@ export const DETECTOR_LABELS: Record<string, string> = {
   dormant_warm_opportunity: "Dormant opportunity",
   neglected_referral: "Neglected referral",
   former_customer_reconnect: "Former customer",
+  conversation_action_pack: "Conversation action pack",
+  commitment_due: "Commitment due",
   manual: "Manual",
 };
 
@@ -296,6 +310,11 @@ export const ACTION_TYPE_LABELS: Record<string, string> = {
   referral_reconnect: "Referral reconnect",
   customer_risk: "Customer risk",
   meeting_follow_up: "Meeting follow-up",
+  meeting_recap: "Meeting recap",
+  crm_update: "CRM update",
+  follow_up_task: "Follow-up task",
+  calendar_hold: "Calendar hold",
+  commitment_rescue: "Commitment rescue",
 };
 
 export const RELATIONSHIP_KIND_LABELS: Record<string, string> = {

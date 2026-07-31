@@ -1140,6 +1140,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/relationships/{relationshipId}/conversation-corrections": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Correct reviewed conversation evidence
+     * @description Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.
+     */
+    post: operations["correctConversationEvidence"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/relationships/{relationshipId}/corrections": {
     parameters: {
       query?: never;
@@ -3745,6 +3765,191 @@ export interface components {
       /** @description Available connectors in configured order. */
       connectors: components["schemas"]["Connector"][];
     };
+    /** @description A material conversation claim anchored to exact words, time, speaker confidence, and capture caveats. */
+    ConversationClaim: {
+      /** @description Capture caveats. */
+      captureCaveats: string[];
+      /**
+       * @description Claim confidence.
+       * @example 0.72
+       */
+      confidence: number;
+      /**
+       * @description End offset in milliseconds.
+       * @example 16000
+       */
+      endMs: number;
+      /**
+       * @description Exact supporting transcript words.
+       * @example We are concerned security could delay the renewal.
+       */
+      exactQuote: string;
+      /**
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Claim kind.
+       * @example risk
+       * @enum {string}
+       */
+      kind:
+        | "risk"
+        | "objection"
+        | "decision"
+        | "milestone"
+        | "sentiment"
+        | "stakeholder"
+        | "lifecycle"
+        | "commitment";
+      /**
+       * @description Whether the claim can affect state or action.
+       * @example true
+       */
+      material: boolean;
+      /**
+       * Format: uuid
+       * @description Supporting immutable observation.
+       * @example 6b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      observationId?: string;
+      /**
+       * @description Speaker attribution confidence.
+       * @example 0.55
+       */
+      speakerConfidence: number;
+      /**
+       * @description Meeting-scoped speaker id; never a persistent voiceprint.
+       * @example anonymous:remote-channel
+       */
+      speakerId: string;
+      /**
+       * @description Current meeting-scoped speaker label.
+       * @example Other
+       */
+      speakerLabel: string;
+      /**
+       * @description Start offset in milliseconds.
+       * @example 12000
+       */
+      startMs: number;
+      /**
+       * @description Projected state dimension when applicable.
+       * @example risk
+       */
+      stateDimension?: string;
+      /**
+       * @description Normalized claim value.
+       * @example Security review may delay renewal.
+       */
+      value: string;
+    };
+    /** @description Capture, routing, retention, disclosure, legal-hold, deletion, and evidence-clip receipt stored beside a transcript. */
+    ConversationGovernanceReceipt: {
+      /**
+       * @description Capture policy in force.
+       * @example manual_capture
+       */
+      capturePolicy: string;
+      /**
+       * Format: date-time
+       * @description Capture time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      capturedAt: string;
+      /**
+       * @description Observed deletion outcome.
+       * @example scheduled_after_transcription
+       */
+      deletionOutcome: string;
+      /**
+       * @description Material audio evidence status; retained clips may only be encrypted.
+       * @example not_retained
+       * @enum {string}
+       */
+      evidenceClip: "not_retained" | "encrypted";
+      /**
+       * @description Whether deletion is blocked by legal hold.
+       * @example false
+       */
+      legalHold: boolean;
+      /**
+       * @description Recorded participant disclosure status.
+       * @example not_recorded
+       */
+      participantDisclosure: string;
+      /**
+       * @description Receipt id.
+       * @example governance:ab12
+       */
+      receiptId: string;
+      /**
+       * @description Processing region or boundary.
+       * @example local_device
+       */
+      region: string;
+      /**
+       * @description Retention policy.
+       * @example untilTranscribed
+       */
+      retention: string;
+      /**
+       * @description Evidence routing path.
+       * @example local_transcription_to_oppulence
+       */
+      routing: string;
+    };
+    /** @description One low-confidence word, speaker, entity, or material claim requiring focused correction. */
+    ConversationReviewItem: {
+      /**
+       * @description Material claim id.
+       * @example claim:ab12
+       */
+      claimId?: string;
+      /**
+       * @description Current confidence.
+       * @example 0.55
+       */
+      confidence: number;
+      /**
+       * @description Current inferred value.
+       * @example Other
+       */
+      currentValue: string;
+      /**
+       * @description Exact words under review.
+       * @example We are concerned.
+       */
+      exactQuote?: string;
+      /**
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Review kind.
+       * @example speaker
+       * @enum {string}
+       */
+      kind: "word" | "speaker" | "entity" | "claim" | "capture";
+      /**
+       * @description Review prompt.
+       * @example Resolve the speaker for a material statement.
+       */
+      label: string;
+      /**
+       * Format: uuid
+       * @description Supporting observation.
+       * @example 6b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      observationId: string;
+      /**
+       * @description Canonical state dimension affected by correction.
+       * @example risk
+       */
+      stateDimension?: string;
+    };
     /** @description Append-only credit grant, reservation, settlement, refund, or consumption entry. */
     CreditLedger: {
       /**
@@ -5232,6 +5437,26 @@ export interface components {
        */
       userConfirmed: boolean;
     };
+    /** @description Derived trust surface for a relationship: conversation claims, focused review, exact delta, governance, contradictions, and live cue cards. */
+    RelationshipIntelligence: {
+      /** @description Material quote-backed claims. */
+      claims: components["schemas"]["ConversationClaim"][];
+      /**
+       * @description Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.
+       * @example -42
+       */
+      delta: {
+        [key: string]: unknown;
+      };
+      /** @description Transcript governance receipts. */
+      governanceReceipts: components["schemas"]["ConversationGovernanceReceipt"][];
+      /** @description Account-history cue cards for the next/live meeting. */
+      liveCues: {
+        [key: string]: unknown;
+      }[];
+      /** @description Only low-confidence review items. */
+      reviewItems: components["schemas"]["ConversationReviewItem"][];
+    };
     /** @description Immutable, idempotent provider evidence used to project relationship state. */
     RelationshipObservation: {
       /**
@@ -5406,7 +5631,12 @@ export interface components {
         | "proposal_nudge"
         | "referral_reconnect"
         | "customer_risk"
-        | "meeting_follow_up";
+        | "meeting_follow_up"
+        | "meeting_recap"
+        | "crm_update"
+        | "follow_up_task"
+        | "calendar_hold"
+        | "commitment_rescue";
       /**
        * @description Approval state, bound to the exact revision and decision.
        * @example pending
@@ -5429,7 +5659,7 @@ export interface components {
        * @example email
        * @enum {string}
        */
-      channel: "email" | "slack" | "call" | "crm_task";
+      channel: "email" | "slack" | "call" | "crm_task" | "crm" | "task" | "calendar";
       /**
        * Format: date-time
        * @description Creation time.
@@ -5448,6 +5678,8 @@ export interface components {
         | "dormant_warm_opportunity"
         | "neglected_referral"
         | "former_customer_reconnect"
+        | "conversation_action_pack"
+        | "commitment_due"
         | "manual";
       /**
        * @description Dismissal reason label.
@@ -5460,6 +5692,38 @@ export interface components {
        * @example 2026-07-15T00:00:00Z
        */
       dueAt?: string | null;
+      /** @description Exact supporting evidence available in the approval UI. */
+      evidence: {
+        /**
+         * @description Exact supporting words.
+         * @example We are concerned security could delay renewal.
+         */
+        excerpt?: string;
+        /** @description Observation, timestamp, and speaker references. */
+        externalEvidenceRefs: string[];
+        /**
+         * Format: uuid
+         * @description Evidence id.
+         * @example 4b8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
+        id: string;
+        /**
+         * Format: date-time
+         * @description Evidence time.
+         * @example 2026-07-31T14:00:00Z
+         */
+        occurredAt: string;
+        /**
+         * @description Evidence source.
+         * @example meeting
+         */
+        source: string;
+        /**
+         * @description Source record id.
+         * @example oppulence:session-42:claim:claim-risk
+         */
+        sourceRecordId: string;
+      }[];
       /**
        * Format: date-time
        * @description Execution time.
@@ -5952,7 +6216,13 @@ export interface components {
         | "won"
         | "lost"
         | "dismissed"
-        | "bad_recommendation";
+        | "bad_recommendation"
+        | "deal_advanced"
+        | "onboarding_progressed"
+        | "renewed"
+        | "escalated"
+        | "churned"
+        | "corrected";
       /**
        * Format: date-time
        * @description When the outcome occurred.
@@ -5964,7 +6234,7 @@ export interface components {
        * @example gmail
        * @enum {string}
        */
-      source: "gmail" | "calendar" | "crm" | "user" | "outbound";
+      source: "gmail" | "calendar" | "crm" | "user" | "outbound" | "slack" | "meeting" | "task";
       /**
        * @description Source event id used for deduplication.
        * @example msg_01
@@ -10141,6 +10411,7 @@ export interface operations {
             actions?: components["schemas"]["RevenueAction"][];
             /** @description Open and completed commitments. */
             commitments?: components["schemas"]["RelationshipCommitment"][];
+            intelligence?: components["schemas"]["RelationshipIntelligence"];
             /** @description Relationship participants. */
             participants?: components["schemas"]["RelationshipParticipant"][];
             /** @description Governed recommendations. */
@@ -10177,6 +10448,63 @@ export interface operations {
           };
         };
       };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  correctConversationEvidence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Focused correction. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "correctedValue": "Avery Chen",
+         *       "reason": "Avery was the speaker.",
+         *       "reviewItemId": "review:ab12"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Human-corrected value.
+           * @example Avery Chen
+           */
+          correctedValue: string;
+          /**
+           * @description Correction reason.
+           * @example Avery was the speaker.
+           */
+          reason: string;
+          /**
+           * @description Focused review item id.
+           * @example review:ab12
+           */
+          reviewItemId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Corrected relationship and refreshed intelligence. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            intelligence: components["schemas"]["RelationshipIntelligence"];
+            relationship: components["schemas"]["RevenueRelationship"];
+          };
+        };
+      };
+      400: components["responses"]["400"];
       401: components["responses"]["401"];
       404: components["responses"]["404"];
     };
@@ -10350,13 +10678,18 @@ export interface operations {
             | "proposal_nudge"
             | "referral_reconnect"
             | "customer_risk"
-            | "meeting_follow_up";
+            | "meeting_follow_up"
+            | "meeting_recap"
+            | "crm_update"
+            | "follow_up_task"
+            | "calendar_hold"
+            | "commitment_rescue";
           /**
            * @description Delivery channel.
            * @example email
            * @enum {string}
            */
-          channel: "email" | "slack" | "call" | "crm_task";
+          channel: "email" | "slack" | "call" | "crm_task" | "crm" | "task" | "calendar";
           /**
            * Format: date-time
            * @description Due time.

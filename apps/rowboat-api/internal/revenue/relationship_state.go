@@ -36,6 +36,7 @@ type RelationshipState struct {
 	StateVersion int      `json:"stateVersion"`
 }
 
+// RelationshipParticipantInput identifies a participant observed in a relationship event.
 type RelationshipParticipantInput struct {
 	DisplayName  string   `json:"displayName"`
 	Email        string   `json:"email"`
@@ -44,6 +45,7 @@ type RelationshipParticipantInput struct {
 	ExternalRefs []string `json:"externalRefs"`
 }
 
+// RelationshipAssertionInput describes a sourced candidate value for canonical state.
 type RelationshipAssertionInput struct {
 	Dimension  string    `json:"dimension"`
 	Value      string    `json:"value"`
@@ -75,6 +77,7 @@ type RelationshipObservationInput struct {
 	Assertions      []RelationshipAssertionInput
 }
 
+// RelationshipObservationResult reports the stored observation and projected relationship.
 type RelationshipObservationResult struct {
 	Observation  *ent.RelationshipObservation
 	Relationship *ent.Relationship
@@ -245,6 +248,9 @@ func (s *Service) ingestRelationshipObservation(
 	if err := s.createConfirmedCommitmentAction(ctx, client, ws, u, rel, evidence, input); err != nil {
 		return RelationshipObservationResult{}, err
 	}
+	if err := s.materializeConversationEvidence(ctx, client, ws, u, rel, observation, input); err != nil {
+		return RelationshipObservationResult{}, err
+	}
 	if err := updateRelationshipSourceStatus(ctx, client, ws, u, input); err != nil {
 		return RelationshipObservationResult{}, err
 	}
@@ -279,7 +285,7 @@ func createConfirmedCommitment(
 	default:
 		return nil, fmt.Errorf("%w: invalid commitment_direction", ErrInvalidInput)
 	}
-	commitment, err := client.Commitment.Create().
+	create := client.Commitment.Create().
 		SetWorkspace(ws).
 		SetRelationship(rel).
 		SetUser(u).
@@ -287,8 +293,15 @@ func createConfirmedCommitment(
 		SetText(text).
 		SetStatus("open").
 		SetConfidence(1).
-		SetUserConfirmed(true).
-		Save(ctx)
+		SetUserConfirmed(true)
+	if dueAtRaw, _ := input.Facts["commitment_due_at"].(string); strings.TrimSpace(dueAtRaw) != "" {
+		dueAt, parseErr := time.Parse(time.RFC3339, dueAtRaw)
+		if parseErr != nil {
+			return nil, fmt.Errorf("%w: invalid commitment_due_at", ErrInvalidInput)
+		}
+		create.SetDueAt(dueAt.UTC())
+	}
+	commitment, err := create.Save(ctx)
 	if err != nil && isValidationError(err) {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
 	}
@@ -419,6 +432,11 @@ func (s *Service) createConfirmedCommitmentAction(
 		SetAssignedUserID(u.ID).
 		SetPriorityScore(actionInput.PriorityScore).
 		SetPriorityComponentsJSON(string(priorityJSON))
+	if dueAtRaw, _ := input.Facts["commitment_due_at"].(string); strings.TrimSpace(dueAtRaw) != "" {
+		if dueAt, parseErr := time.Parse(time.RFC3339, dueAtRaw); parseErr == nil {
+			create.SetDueAt(dueAt.UTC())
+		}
+	}
 	if evidence != nil {
 		create.AddEvidences(evidence)
 	}
@@ -798,6 +816,7 @@ func equalStrings(left, right []string) bool {
 	return true
 }
 
+// RelationshipCorrectionInput contains a user-confirmed canonical state correction.
 type RelationshipCorrectionInput struct {
 	Dimension             string
 	Value                 string
@@ -805,6 +824,7 @@ type RelationshipCorrectionInput struct {
 	SupersedesAssertionID string
 }
 
+// CorrectRelationship appends a user correction and deterministically reprojects state.
 func (s *Service) CorrectRelationship(
 	ctx context.Context,
 	u *ent.User,
@@ -843,6 +863,7 @@ func (s *Service) CorrectRelationship(
 	return projectRelationshipState(ctx, s.client, ws, u, rel)
 }
 
+// RelationshipTimeline returns relationship observations in chronological order.
 func (s *Service) RelationshipTimeline(
 	ctx context.Context,
 	relationshipID uuid.UUID,
@@ -864,6 +885,7 @@ func (s *Service) RelationshipTimeline(
 		All(ctx)
 }
 
+// RelationshipObservation returns one observation that belongs to a relationship.
 func (s *Service) RelationshipObservation(
 	ctx context.Context,
 	relationshipID uuid.UUID,
@@ -881,6 +903,7 @@ func (s *Service) RelationshipObservation(
 	return observation, err
 }
 
+// RelationshipObservationPayload returns the original payload for an observation.
 func (s *Service) RelationshipObservationPayload(
 	ctx context.Context,
 	relationshipID uuid.UUID,
@@ -903,6 +926,7 @@ func (s *Service) RelationshipObservationPayload(
 	return observation, payload, nil
 }
 
+// RelationshipChanges returns projected state snapshots for a relationship.
 func (s *Service) RelationshipChanges(
 	ctx context.Context,
 	relationshipID uuid.UUID,
@@ -920,6 +944,7 @@ func (s *Service) RelationshipChanges(
 		All(ctx)
 }
 
+// RelationshipSourceStatuses returns the current ingestion state of relationship sources.
 func (s *Service) RelationshipSourceStatuses(
 	ctx context.Context,
 	u *ent.User,

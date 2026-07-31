@@ -105,6 +105,19 @@ export const correctRelationship = (
     body: JSON.stringify(input),
   });
 
+export const correctConversationReview = (
+  id: string,
+  input: {
+    reviewItemId: string;
+    correctedValue: string;
+    reason: string;
+  },
+) =>
+  call<Pick<RelationshipDetail, "relationship" | "intelligence">>(
+    `/v1/relationships/${encodeURIComponent(id)}/conversation-corrections`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+
 export const approveRelationshipRecommendation = (actionId: string, acceptRisk = false) =>
   call<RelationshipAction>(
     `/v1/relationship-recommendations/${encodeURIComponent(actionId)}/approve`,

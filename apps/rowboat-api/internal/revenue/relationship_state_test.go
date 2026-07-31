@@ -171,6 +171,7 @@ func TestConfirmedMeetingCommitmentBecomesSharedCommitmentExactlyOnce(t *testing
 			"commitment_text":      "Send the proposal",
 			"commitment_direction": "promised_by_me",
 			"commitment_id":        "session-1:0-2000",
+			"commitment_due_at":    now.Add(24 * time.Hour).Format(time.RFC3339),
 			"evidence_quote":       "I will send the proposal.",
 			"evidence_start_ms":    0,
 			"evidence_end_ms":      2000,
@@ -209,6 +210,9 @@ func TestConfirmedMeetingCommitmentBecomesSharedCommitmentExactlyOnce(t *testing
 	if rows[0].Text != "Send the proposal" || rows[0].Direction != "promised_by_me" || !rows[0].UserConfirmed {
 		t.Fatalf("unexpected shared commitment: %#v", rows[0])
 	}
+	if rows[0].DueAt == nil || !rows[0].DueAt.Equal(now.Add(24*time.Hour)) {
+		t.Fatalf("spoken due date was not persisted: %#v", rows[0].DueAt)
+	}
 	if len(rows[0].Edges.Evidences) != 1 {
 		t.Fatalf("confirmed commitment must retain one source evidence edge, got %d", len(rows[0].Edges.Evidences))
 	}
@@ -237,6 +241,24 @@ func TestConfirmedMeetingCommitmentBecomesSharedCommitmentExactlyOnce(t *testing
 	}
 	if len(action.Edges.Evidences) != 1 || action.Edges.Evidences[0].Source != "meeting" {
 		t.Fatalf("follow-up must link the confirmed meeting evidence: %#v", action.Edges.Evidences)
+	}
+	_, err = f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		RelationshipID: rel.ID,
+		Source:         "meeting",
+		ExternalID:     "commitment-update:session-1:0-2000:fulfilled",
+		EventType:      "commitment_status_changed",
+		OccurredAt:     now.Add(2 * time.Hour),
+		ReceivedAt:     now.Add(2 * time.Hour),
+		Facts: map[string]any{"commitment_updates": []map[string]any{{
+			"commitmentId": "session-1:0-2000", "status": "fulfilled",
+		}}},
+	}})
+	if err != nil {
+		t.Fatalf("reconcile commitment fulfillment: %v", err)
+	}
+	fulfilled, err := f.client.Commitment.Get(f.ctx, rows[0].ID)
+	if err != nil || fulfilled.Status != "fulfilled" {
+		t.Fatalf("commitment was not closed: %#v err=%v", fulfilled, err)
 	}
 }
 

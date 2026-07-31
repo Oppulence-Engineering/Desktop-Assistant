@@ -1,10 +1,16 @@
 import type {
+  MeetingsSettings,
   MeetingSessionMeta,
   MeetingTranscript,
   MeetingTranscriptSegment,
 } from "@x/shared/dist/meetings.js";
 import type { RelationshipObservationInput } from "@x/shared/dist/relationships.js";
 import type { Counterparty, LedgerCommitment } from "../meetings/meetings.js";
+import {
+  canonicalTranscriptObservation,
+  conversationFingerprint,
+  resolveSpokenDueAt,
+} from "./conversation-evidence.js";
 
 const MAX_TRANSCRIPT_PAYLOAD_CHARS = 250_000;
 const PERSONAL_EMAIL_DOMAINS = new Set([
@@ -83,21 +89,71 @@ export function meetingTranscriptObservation(args: {
   meta: MeetingSessionMeta;
   transcript: MeetingTranscript;
   counterparty: Counterparty;
+  settings?: Pick<MeetingsSettings, "keepAudio" | "syncRelationshipEvidence">;
+  capturePolicy?: string;
+  participantDisclosure?: string;
 }): RelationshipObservationInput {
   const bounded = boundedSegments(args.transcript.segments);
   const title = meetingTitle(args.meta);
   const identity = relationshipIdentity(args.counterparty);
-  return {
-    ...identity,
-    source: "meeting",
-    externalId: args.sessionId,
-    sourceVersion: "1",
-    eventType: "meeting_transcribed",
-    occurredAt: args.meta.started,
-    summary: `${title} · ${args.transcript.segments.length} transcript segment${
-      args.transcript.segments.length === 1 ? "" : "s"
+  const remoteSpeakerIsAggregate = bounded.segments.some((segment) => segment.speaker === "them");
+  const counterpartySpeakerId = `meeting-participant:${conversationFingerprint(
+    `${args.sessionId}:${
+      args.counterparty.email?.trim().toLowerCase() || args.counterparty.label.trim().toLowerCase()
     }`,
+  )}`;
+  const receiptSeed = `${args.sessionId}:${args.meta.started}`;
+  const observation = canonicalTranscriptObservation({
+    identity,
+    source: {
+      provider: "oppulence",
+      sourceRecordId: args.sessionId,
+      title,
+      occurredAt: args.meta.started,
+      participants: identity.participants,
+      segments: bounded.segments.map((segment) => ({
+        speakerId: segment.speaker === "me" ? "local-user" : counterpartySpeakerId,
+        speakerLabel: segment.speaker === "me" ? "You" : args.counterparty.label,
+        speakerConfidence: segment.speaker === "me" ? 1 : 0.9,
+        startMs: segment.start_ms,
+        endMs: segment.end_ms,
+        text: segment.text,
+      })),
+      captureCaveats: [
+        ...args.meta.warnings,
+        ...(bounded.truncated ? ["transcript payload was truncated"] : []),
+        ...(remoteSpeakerIsAggregate
+          ? [
+              "remote speaker was resolved from the 1:1 calendar attendee; the system track may still contain other voices and no persistent voiceprint was created",
+            ]
+          : []),
+      ],
+      governance: {
+        receiptId: `governance:${receiptSeed}`,
+        capturedAt: args.meta.started,
+        capturePolicy:
+          args.capturePolicy ??
+          (args.meta.calendar_event ? "calendar_prompt_or_manual" : "manual_capture"),
+        routing: args.settings?.syncRelationshipEvidence
+          ? "local_transcription_to_oppulence"
+          : "local_only",
+        region: "local_device",
+        retention: args.settings?.keepAudio ?? "untilTranscribed",
+        participantDisclosure: args.participantDisclosure ?? "not_recorded",
+        legalHold: false,
+        deletionOutcome: args.meta.audio_deleted_at
+          ? `deleted:${args.meta.audio_deleted_at}`
+          : args.settings?.keepAudio === "always"
+            ? "retained_by_user_policy"
+            : "scheduled_after_transcription",
+        evidenceClip: "not_retained",
+      },
+    },
+  });
+  return {
+    ...observation,
     normalizedFacts: {
+      ...observation.normalizedFacts,
       session_id: args.sessionId,
       meeting_title: title,
       transcript_segments: args.transcript.segments.length,
@@ -109,14 +165,6 @@ export function meetingTranscriptObservation(args: {
         silent: track.silent,
         peak: track.peak,
       })),
-    },
-    payload: {
-      sessionId: args.sessionId,
-      transcript: {
-        ...args.transcript,
-        segments: bounded.segments,
-        truncated: bounded.truncated,
-      },
     },
   };
 }
@@ -152,6 +200,7 @@ export function confirmedCommitmentObservation(args: {
       commitment_text: commitment.text,
       commitment_status: commitment.status,
       commitment_due_phrase: commitment.due_phrase,
+      commitment_due_at: resolveSpokenDueAt(commitment.due_phrase, commitment.confirmed_at),
       user_confirmed: true,
       session_id: commitment.session_id,
       evidence_quote: commitment.evidence,
@@ -179,5 +228,43 @@ export function confirmedCommitmentObservation(args: {
           },
         ]
       : [],
+  };
+}
+
+/** Later user-confirmed fulfillment/cancellation reconciles the durable cloud promise. */
+export function commitmentStatusObservation(args: {
+  commitment: LedgerCommitment;
+  status: "open" | "done" | "dropped";
+  counterparty: Counterparty;
+  occurredAt?: string;
+}): RelationshipObservationInput {
+  const occurredAt = args.occurredAt ?? new Date().toISOString();
+  const status =
+    args.status === "done" ? "fulfilled" : args.status === "dropped" ? "cancelled" : "open";
+  return {
+    ...relationshipIdentity(args.counterparty),
+    source: "meeting",
+    externalId: `commitment-update:${args.commitment.id}:${status}`,
+    sourceVersion: "1",
+    eventType: "commitment_status_changed",
+    occurredAt,
+    summary: `Commitment marked ${status}: ${args.commitment.text}`,
+    normalizedFacts: {
+      session_id: args.commitment.session_id,
+      commitment_updates: [
+        {
+          commitmentId: args.commitment.id,
+          status,
+          text: args.commitment.text,
+          dueAt: resolveSpokenDueAt(args.commitment.due_phrase, args.commitment.confirmed_at),
+        },
+      ],
+      user_confirmed: true,
+    },
+    payload: {
+      commitmentId: args.commitment.id,
+      previousEvidence: args.commitment.evidence,
+      status,
+    },
   };
 }

@@ -14,8 +14,10 @@ import (
 // outrank deterministic derivations and AI inferences.
 type RelationshipAssertion struct{ ent.Schema }
 
+// Mixin adds the shared base fields to relationship assertions.
 func (RelationshipAssertion) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
 
+// Fields defines the relationship assertion columns.
 func (RelationshipAssertion) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("dimension").
@@ -34,6 +36,7 @@ func (RelationshipAssertion) Fields() []ent.Field {
 	}
 }
 
+// Edges defines the relationship assertion graph connections.
 func (RelationshipAssertion) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
@@ -47,6 +50,7 @@ func (RelationshipAssertion) Edges() []ent.Edge {
 	}
 }
 
+// Indexes defines lookup and uniqueness constraints for relationship assertions.
 func (RelationshipAssertion) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("relationship").Fields("dimension", "valid_from"),

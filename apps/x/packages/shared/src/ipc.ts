@@ -50,6 +50,7 @@ import { BillingInfoSchema } from "./billing.js";
 import {
   RelationshipActionSchema,
   RelationshipDetailSchema,
+  RelationshipLiveCueSchema,
   RelationshipObservationSchema,
   RelationshipSchema,
   RelationshipSemanticMatchSchema,
@@ -1410,6 +1411,7 @@ const ipcSchemas = {
       sessionId: z.string().optional(),
       counterparty: z.string().optional(),
       segments: z.array(meetings.MeetingTranscriptSegment).default([]),
+      cues: z.array(RelationshipLiveCueSchema).default([]),
     }),
   },
   /** Ask a question about the meeting in progress. */
@@ -1423,6 +1425,11 @@ const ipcSchemas = {
       sessionId: z.string(),
       segments: z.array(meetings.MeetingTranscriptSegment),
     }),
+    res: z.null(),
+  },
+  /** Event (ipc.on): account-history cues resolved for the current meeting. */
+  "meeting:liveCues": {
+    req: z.object({ cues: z.array(RelationshipLiveCueSchema) }),
     res: z.null(),
   },
   /** One-time UI flags — things shown once that must not be shown again. */
@@ -2063,6 +2070,15 @@ const ipcSchemas = {
       reason: z.string().min(1),
     }),
     res: RelationshipSchema,
+  },
+  "relationships:correctConversation": {
+    req: z.object({
+      id: z.string(),
+      reviewItemId: z.string(),
+      correctedValue: z.string().min(1),
+      reason: z.string().min(1),
+    }),
+    res: RelationshipDetailSchema.pick({ relationship: true, intelligence: true }),
   },
   "relationships:approve": {
     req: z.object({ actionId: z.string(), acceptRisk: z.boolean().optional() }),

@@ -21,7 +21,12 @@ export type ActionType =
   | "proposal_nudge"
   | "referral_reconnect"
   | "customer_risk"
-  | "meeting_follow_up";
+  | "meeting_follow_up"
+  | "meeting_recap"
+  | "crm_update"
+  | "follow_up_task"
+  | "calendar_hold"
+  | "commitment_rescue";
 
 export type Detector =
   | "requested_follow_up_due"
@@ -30,19 +35,16 @@ export type Detector =
   | "dormant_warm_opportunity"
   | "neglected_referral"
   | "former_customer_reconnect"
+  | "conversation_action_pack"
+  | "commitment_due"
   | "manual";
 
-export type Channel = "email" | "slack" | "call" | "crm_task";
+export type Channel = "email" | "slack" | "call" | "crm_task" | "crm" | "task" | "calendar";
 export type QueueStatus = "open" | "snoozed" | "dismissed" | "handled";
 export type PolicyStatus = "pending" | "passed" | "review_required" | "blocked" | "stale";
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 export type ExecutionStatus =
-  | "pending"
-  | "requested"
-  | "sent"
-  | "failed"
-  | "ambiguous"
-  | "cancelled";
+  "pending" | "requested" | "sent" | "failed" | "ambiguous" | "cancelled";
 export type ExecutionMode = "draft" | "send";
 
 export interface RevenueAction {
@@ -78,15 +80,18 @@ export interface RevenueAction {
   dueAt?: string;
   createdAt: string;
   updatedAt: string;
+  evidence: Array<{
+    id: string;
+    source: string;
+    sourceRecordId: string;
+    excerpt?: string;
+    occurredAt: string;
+    externalEvidenceRefs: string[];
+  }>;
 }
 
 export type RelationshipKind =
-  | "person"
-  | "company"
-  | "customer"
-  | "opportunity"
-  | "referral"
-  | "partner";
+  "person" | "company" | "customer" | "opportunity" | "referral" | "partner";
 
 export type RelationshipLifecycle =
   | "prospect"
@@ -217,12 +222,18 @@ export type OutcomeKind =
   | "won"
   | "lost"
   | "dismissed"
-  | "bad_recommendation";
+  | "bad_recommendation"
+  | "deal_advanced"
+  | "onboarding_progressed"
+  | "renewed"
+  | "escalated"
+  | "churned"
+  | "corrected";
 
 export interface RevenueOutcome {
   id: string;
   kind: OutcomeKind;
-  source: "gmail" | "calendar" | "crm" | "user" | "outbound";
+  source: "gmail" | "calendar" | "crm" | "user" | "outbound" | "slack" | "meeting" | "task";
   sourceEventId: string;
   occurredAt: string;
 }
@@ -248,6 +259,98 @@ export interface RelationshipDetail {
   recommendations: RevenueAction[];
   participants: RelationshipParticipant[];
   commitments: RelationshipCommitment[];
+  intelligence?: RelationshipIntelligence;
+}
+
+export interface ConversationClaim {
+  id: string;
+  kind:
+    | "risk"
+    | "objection"
+    | "decision"
+    | "milestone"
+    | "sentiment"
+    | "stakeholder"
+    | "lifecycle"
+    | "commitment";
+  value: string;
+  exactQuote: string;
+  startMs: number;
+  endMs: number;
+  speakerId: string;
+  speakerLabel: string;
+  speakerConfidence: number;
+  confidence: number;
+  captureCaveats: string[];
+  material: boolean;
+  stateDimension?: string;
+  observationId?: string;
+}
+
+export interface ConversationReviewItem {
+  id: string;
+  kind: "word" | "speaker" | "entity" | "claim" | "capture";
+  label: string;
+  currentValue: string;
+  confidence: number;
+  observationId: string;
+  claimId?: string;
+  stateDimension?: string;
+  exactQuote?: string;
+}
+
+export interface RelationshipDelta {
+  fromVersion: number;
+  toVersion: number;
+  changes: Array<{
+    dimension: string;
+    before?: unknown;
+    after?: unknown;
+    reason?: string;
+    assertionIds: string[];
+  }>;
+  uncertainClaimIds: string[];
+  contradictions: Array<{
+    dimension: string;
+    currentValue: string;
+    contradictedValue: string;
+    currentAssertionId: string;
+    contradictedAssertionId: string;
+  }>;
+  recommendationReason?: string;
+}
+
+export interface RelationshipLiveCue {
+  id: string;
+  kind:
+    | "overdue_commitment"
+    | "unresolved_objection"
+    | "renewal_context"
+    | "missing_next_step"
+    | "contradiction";
+  title: string;
+  detail: string;
+  severity: "info" | "attention" | "critical";
+  evidenceId?: string;
+}
+
+export interface RelationshipIntelligence {
+  claims: ConversationClaim[];
+  reviewItems: ConversationReviewItem[];
+  governanceReceipts: Array<{
+    receiptId: string;
+    capturedAt: string;
+    capturePolicy: string;
+    routing: string;
+    region: string;
+    retention: string;
+    participantDisclosure: string;
+    legalHold: boolean;
+    deletionOutcome: string;
+    evidenceClip: "not_retained" | "encrypted";
+  }>;
+  delta: RelationshipDelta;
+  liveCues: RelationshipLiveCue[];
 }
 
 export interface DetectorStat {
