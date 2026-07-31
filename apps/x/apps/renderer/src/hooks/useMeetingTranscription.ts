@@ -350,25 +350,30 @@ export function useMeetingTranscription(
       useLocalRef.current = meetingProvider === "whisper-local";
       analytics.transcriptionStarted({ provider: meetingProvider, mode: "meeting" });
 
-      // RFC 017: compute the meeting note provenance up front from the resolved
-      // provider + config. Local diarization runs only on the on-device path and
-      // only when the LOCAL_DIARIZATION beta is enabled; cloud meetings keep the
-      // provider's (Deepgram) diarization. Mirrors core voice/diarization/provenance.
+      // Compute provenance from the route that will actually run. Renderer-local
+      // capture keeps the two available audio channels labeled as You/Other; it
+      // does not perform speaker diarization within either channel. Deepgram's
+      // response may include provider-generated speaker labels.
       try {
         const cfg = await window.ipc.invoke("transcription:getConfig", null);
         const local = meetingProvider === "whisper-local";
-        const localDiarization = local && cfg.diarization?.enabled === true;
         provenanceRef.current = {
           transcription_provider: local ? "whisper.cpp" : meetingProvider,
           transcription_model: local ? cfg.whisper.model : "nova-3",
-          diarization_provider: localDiarization ? "local" : local ? "none" : "deepgram",
-          diarization_mode: localDiarization ? "beta" : local ? "off" : "default",
-          ...(localDiarization ? { diarization_model: cfg.diarization.model } : {}),
+          diarization_provider: local ? "none" : "deepgram",
+          diarization_mode: local ? "off" : "provider",
           audio_uploaded: !local,
-          speaker_identity_persistence: localDiarization ? "meeting_only" : "none",
+          speaker_identity_persistence: "none",
         };
       } catch {
-        provenanceRef.current = {};
+        const local = meetingProvider === "whisper-local";
+        provenanceRef.current = {
+          transcription_provider: local ? "whisper.cpp" : meetingProvider,
+          diarization_provider: local ? "none" : "deepgram",
+          diarization_mode: local ? "off" : "provider",
+          audio_uploaded: !local,
+          speaker_identity_persistence: "none",
+        };
       }
       const privacyGeneration = privacyGenerationRef.current;
       const localOnlyEnabled = async () => {
@@ -715,6 +720,24 @@ export function useMeetingTranscription(
     cleanup();
     interimRef.current = new Map();
     await writeTranscriptToFile();
+    const finalEntries = transcriptRef.current.filter((entry) => entry.text.trim().length > 0);
+    if (finalEntries.length > 0 && notePathRef.current && dateRef.current) {
+      try {
+        await window.ipc.invoke("meeting:publishRendererEvidence", {
+          sessionId: `renderer:${dateRef.current}`,
+          startedAt: dateRef.current,
+          ...(calendarEventRef.current
+            ? { calendarEventJson: JSON.stringify(calendarEventRef.current) }
+            : {}),
+          provider: useLocalRef.current ? "whisper-local" : "deepgram",
+          segments: finalEntries,
+        });
+      } catch (err) {
+        // The local note is already durable. Relationship publication is retriable and
+        // must never turn a successful recording into a failed one.
+        console.warn("[meeting] could not queue renderer relationship evidence:", err);
+      }
+    }
 
     analytics.transcriptionCompleted({
       provider: useLocalRef.current ? "whisper-local" : "deepgram",

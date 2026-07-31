@@ -232,10 +232,204 @@ func (s *Service) ingestRelationshipObservation(
 			return RelationshipObservationResult{}, err
 		}
 	}
+	commitment, err := createConfirmedCommitment(ctx, client, ws, u, rel, input)
+	if err != nil {
+		return RelationshipObservationResult{}, err
+	}
+	evidence, err := createConfirmedCommitmentEvidence(
+		ctx, client, ws, u, rel, observation, commitment, input,
+	)
+	if err != nil {
+		return RelationshipObservationResult{}, err
+	}
+	if err := s.createConfirmedCommitmentAction(ctx, client, ws, u, rel, evidence, input); err != nil {
+		return RelationshipObservationResult{}, err
+	}
 	if err := updateRelationshipSourceStatus(ctx, client, ws, u, input); err != nil {
 		return RelationshipObservationResult{}, err
 	}
 	return RelationshipObservationResult{Observation: observation, Relationship: rel}, nil
+}
+
+// createConfirmedCommitment promotes only the desktop's explicit human confirmation.
+// Model proposals remain observations/proposals and never appear as durable promises.
+// Observation deduplication runs before this helper, so an idempotent replay cannot
+// create a second commitment.
+func createConfirmedCommitment(
+	ctx context.Context,
+	client *ent.Client,
+	ws *ent.RevenueWorkspace,
+	u *ent.User,
+	rel *ent.Relationship,
+	input RelationshipObservationInput,
+) (*ent.Commitment, error) {
+	if strings.TrimSpace(input.EventType) != "commitment_confirmed" {
+		return nil, nil
+	}
+	confirmed, _ := input.Facts["user_confirmed"].(bool)
+	text, _ := input.Facts["commitment_text"].(string)
+	direction, _ := input.Facts["commitment_direction"].(string)
+	text = strings.TrimSpace(text)
+	direction = strings.TrimSpace(direction)
+	if !confirmed || text == "" {
+		return nil, fmt.Errorf("%w: confirmed commitment requires user_confirmed and commitment_text", ErrInvalidInput)
+	}
+	switch direction {
+	case "promised_by_me", "promised_by_them", "mutual":
+	default:
+		return nil, fmt.Errorf("%w: invalid commitment_direction", ErrInvalidInput)
+	}
+	commitment, err := client.Commitment.Create().
+		SetWorkspace(ws).
+		SetRelationship(rel).
+		SetUser(u).
+		SetDirection(direction).
+		SetText(text).
+		SetStatus("open").
+		SetConfidence(1).
+		SetUserConfirmed(true).
+		Save(ctx)
+	if err != nil && isValidationError(err) {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+	}
+	return commitment, err
+}
+
+// createConfirmedCommitmentEvidence bridges the append-only relationship observation
+// into the governed action system's evidence graph. The exact quote remains a bounded,
+// sensitive excerpt; the full structured payload remains sealed on the observation.
+func createConfirmedCommitmentEvidence(
+	ctx context.Context,
+	client *ent.Client,
+	ws *ent.RevenueWorkspace,
+	u *ent.User,
+	rel *ent.Relationship,
+	observation *ent.RelationshipObservation,
+	commitment *ent.Commitment,
+	input RelationshipObservationInput,
+) (*ent.RevenueEvidence, error) {
+	if commitment == nil {
+		return nil, nil
+	}
+	excerpt, _ := input.Facts["evidence_quote"].(string)
+	if strings.TrimSpace(excerpt) == "" {
+		excerpt, _ = input.Facts["commitment_text"].(string)
+	}
+	return client.RevenueEvidence.Create().
+		SetWorkspace(ws).
+		SetUser(u).
+		SetSource("meeting").
+		SetSourceAccountID(input.SourceAccountID).
+		SetSourceRecordID(input.ExternalID).
+		SetContentHash("sha256:" + observation.ContentHash).
+		SetExcerpt(truncateRunes(strings.TrimSpace(excerpt), excerptMaxRunes)).
+		SetOccurredAt(input.OccurredAt.UTC()).
+		SetObservedAt(input.ReceivedAt.UTC()).
+		SetExternalEvidenceRefs([]string{"relationship-observation:" + observation.ID.String()}).
+		AddRelationships(rel).
+		AddCommitments(commitment).
+		Save(ctx)
+}
+
+// createConfirmedCommitmentAction closes Recommend → Approve without skipping the
+// approval boundary. A promise by the local user becomes an email draft in the normal
+// governed queue; a counterparty promise remains tracked evidence and is not rewritten
+// as work for the user. Because this runs inside the observation transaction, either the
+// observation, commitment, assertion, and action all land or none of them do.
+func (s *Service) createConfirmedCommitmentAction(
+	ctx context.Context,
+	client *ent.Client,
+	ws *ent.RevenueWorkspace,
+	u *ent.User,
+	rel *ent.Relationship,
+	evidence *ent.RevenueEvidence,
+	input RelationshipObservationInput,
+) error {
+	if strings.TrimSpace(input.EventType) != "commitment_confirmed" {
+		return nil
+	}
+	confirmed, _ := input.Facts["user_confirmed"].(bool)
+	direction, _ := input.Facts["commitment_direction"].(string)
+	text, _ := input.Facts["commitment_text"].(string)
+	// Prefer the confirmed meeting's resolved counterparty over a potentially stale
+	// account-level primary contact. Falling back preserves person relationships and
+	// older adapters that do not supply observation identity.
+	recipient := strings.ToLower(strings.TrimSpace(input.PrimaryEmail))
+	if recipient == "" {
+		recipient = strings.ToLower(strings.TrimSpace(rel.PrimaryEmail))
+	}
+	text = strings.TrimSpace(text)
+	if !confirmed || strings.TrimSpace(direction) != "promised_by_me" || text == "" || recipient == "" {
+		return nil
+	}
+
+	subject := "Following up on our meeting"
+	message := fmt.Sprintf(
+		"Hi,\n\nFollowing up on our meeting, I wanted to confirm the next step: %s\n\nBest,",
+		strings.TrimSuffix(text, ".")+".",
+	)
+	reason := fmt.Sprintf(
+		"You confirmed this follow-up from source evidence meeting/%s.",
+		input.ExternalID,
+	)
+	dedupeKey := fmt.Sprintf(
+		"meeting_commitment:%s:%s:%s",
+		input.Source,
+		input.ExternalID,
+		input.SourceVersion,
+	)
+	actionInput := ActionInput{
+		ActionType:      "meeting_follow_up",
+		Channel:         "email",
+		Detector:        DetectorManual,
+		DedupeKey:       dedupeKey,
+		Reason:          reason,
+		RecipientEmail:  recipient,
+		ProposedSubject: subject,
+		ProposedMessage: message,
+		ExecutionMode:   ExecModeDraft,
+		PriorityScore:   75,
+		PriorityParts: map[string]int{
+			"commitment_urgency":  30,
+			"relationship_value":  20,
+			"evidence_quality":    25,
+			"uncertainty_penalty": 0,
+		},
+	}
+	priorityJSON, err := json.Marshal(actionInput.PriorityParts)
+	if err != nil {
+		return err
+	}
+	create := client.RevenueAction.Create().
+		SetWorkspace(ws).
+		SetRelationship(rel).
+		SetUser(u).
+		SetActionType(actionInput.ActionType).
+		SetChannel(actionInput.Channel).
+		SetDetector(actionInput.Detector).
+		SetDedupeKey(actionInput.DedupeKey).
+		SetRevision(1).
+		SetRevisionHash(actionInput.content(u.ID).Hash()).
+		SetReason(actionInput.Reason).
+		SetRecipientEmail(actionInput.RecipientEmail).
+		SetProposedSubject(actionInput.ProposedSubject).
+		SetProposedMessage(actionInput.ProposedMessage).
+		SetExecutionMode(actionInput.ExecutionMode).
+		SetExecutionOwner(OwnerRowboat).
+		SetAssignedUserID(u.ID).
+		SetPriorityScore(actionInput.PriorityScore).
+		SetPriorityComponentsJSON(string(priorityJSON))
+	if evidence != nil {
+		create.AddEvidences(evidence)
+	}
+	action, err := create.Save(ctx)
+	if err != nil {
+		if isValidationError(err) {
+			return fmt.Errorf("%w: %v", ErrInvalidInput, err)
+		}
+		return err
+	}
+	return s.snapshotRevision(ctx, client, action, u)
 }
 
 func resolveObservationRelationship(

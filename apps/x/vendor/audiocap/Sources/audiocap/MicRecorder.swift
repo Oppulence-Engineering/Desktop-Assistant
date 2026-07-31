@@ -24,12 +24,14 @@ import Foundation
 final class MicRecorder {
     enum RecorderError: Error, CustomStringConvertible {
         case engineStartFailed(Error)
+        case permissionDenied
         case formatUnsupported(AVAudioFormat)
         case writerFailed(Error)
 
         var code: String {
             switch self {
             case .engineStartFailed: return "mic_engine_start_failed"
+            case .permissionDenied: return "mic_permission_denied"
             case .formatUnsupported: return "mic_format_unsupported"
             case .writerFailed: return "mic_writer_failed"
             }
@@ -40,6 +42,9 @@ final class MicRecorder {
             case .engineStartFailed(let e):
                 return
                     "mic engine start failed: \(e) — check System Settings › Privacy & Security › Microphone"
+            case .permissionDenied:
+                return
+                    "microphone access denied — enable Oppulence in System Settings › Privacy & Security › Microphone"
             case .formatUnsupported(let f): return "unsupported mic format \(f)"
             case .writerFailed(let e): return "output file failed: \(e)"
             }
@@ -69,6 +74,15 @@ final class MicRecorder {
 
     func start(writingTo url: URL, voiceProcessing: Bool, standbySeconds: Double = 0) throws {
         guard !isRecording else { return }
+        // Check hardware before requesting TCC access. On a desktop with no input
+        // device there is nothing consent can enable, and waiting on a prompt here
+        // would leave an already-open system track stuck before the process installs
+        // its normal stop handlers.
+        let physicalFormat = engine.inputNode.inputFormat(forBus: 0)
+        guard physicalFormat.sampleRate > 0, physicalFormat.channelCount > 0 else {
+            throw RecorderError.formatUnsupported(physicalFormat)
+        }
+        guard requestMicrophoneAccess() else { throw RecorderError.permissionDenied }
         self.url = url
         self.standbySeconds = standbySeconds
         try attach(voiceProcessing: voiceProcessing)
@@ -85,6 +99,29 @@ final class MicRecorder {
     }
 
     // MARK: -
+
+    /// The Electron host asks first, but the standalone verification command and a
+    /// packaged helper with its own TCC identity must also be able to request access.
+    /// AVAudioEngine alone does not trigger the prompt; it simply fails to initialize.
+    private func requestMicrophoneAccess() -> Bool {
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized:
+            return true
+        case .denied, .restricted:
+            return false
+        case .notDetermined:
+            let semaphore = DispatchSemaphore(value: 0)
+            var granted = false
+            AVCaptureDevice.requestAccess(for: .audio) { result in
+                granted = result
+                semaphore.signal()
+            }
+            semaphore.wait()
+            return granted
+        @unknown default:
+            return false
+        }
+    }
 
     /// Build the graph, open the file, start capture. Called once at start and again
     /// with `voiceProcessing: false` if the liveness check trips.
@@ -113,7 +150,14 @@ final class MicRecorder {
             }
         }
 
-        let deviceFormat = input.outputFormat(forBus: 0)
+        // `inputFormat` is the hardware-facing format for AVAudioInputNode. Its
+        // `outputFormat` can instead reflect a downstream/default graph format (for
+        // example stereo when the physical mic is mono), and installing that value
+        // back on the tap raises an Objective-C format-mismatch exception.
+        let deviceFormat = input.inputFormat(forBus: 0)
+        guard deviceFormat.sampleRate > 0, deviceFormat.channelCount > 0 else {
+            throw RecorderError.formatUnsupported(deviceFormat)
+        }
         // One explicit mono client format. With voice processing this is the Voice I/O
         // boundary format on both sides of the duplex unit; never inherit the route's
         // channel count here. Speech models want one channel anyway.
@@ -126,11 +170,11 @@ final class MicRecorder {
             )
         else { throw RecorderError.formatUnsupported(deviceFormat) }
 
-        let tapFormat = voice ? monoFormat : deviceFormat
+        let writerFormat = voice ? monoFormat : deviceFormat
         let trackWriter: TrackWriter
         do {
             trackWriter = try TrackWriter(
-                url: url, inputFormat: tapFormat, standbySeconds: standbySeconds)
+                url: url, inputFormat: writerFormat, standbySeconds: standbySeconds)
         } catch {
             throw RecorderError.writerFailed(error)
         }
@@ -150,7 +194,16 @@ final class MicRecorder {
         // path swaps that property from the main thread while the audio thread is
         // reading it. A callback still in flight then writes to the old writer, which is
         // already finalized and ignores it, instead of racing on the reference.
-        installTap(on: input, format: tapFormat, writer: trackWriter, checkLiveness: voice)
+        // The raw path uses the input node's hardware-facing format. The
+        // VoiceProcessingIO path still needs the explicit mono format shared by both
+        // sides of its graph.
+        installTap(
+            on: input,
+            format: writerFormat,
+            sampleRate: writerFormat.sampleRate,
+            writer: trackWriter,
+            checkLiveness: voice
+        )
 
         engine.prepare()
         do {
@@ -164,17 +217,18 @@ final class MicRecorder {
 
         usedVoiceProcessing = voice
         Log.info(
-            "mic started → \(url.lastPathComponent) voiceProcessing=\(input.isVoiceProcessingEnabled) tap=\(tapFormat)"
+            "mic started → \(url.lastPathComponent) voiceProcessing=\(input.isVoiceProcessingEnabled) tap=\(writerFormat)"
         )
     }
 
     private func installTap(
         on input: AVAudioInputNode,
-        format: AVAudioFormat,
+        format: AVAudioFormat?,
+        sampleRate: Double,
         writer: TrackWriter,
         checkLiveness: Bool
     ) {
-        let checkFrames = Int(format.sampleRate)  // one second
+        let checkFrames = Int(sampleRate)  // one second
         input.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
             guard let self else { return }
 

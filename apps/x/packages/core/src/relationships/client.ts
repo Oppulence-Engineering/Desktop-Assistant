@@ -5,6 +5,8 @@ import type {
   RelationshipAction,
   RelationshipDetail,
   RelationshipObservation,
+  RelationshipObservationIngestResult,
+  RelationshipObservationInput,
   RelationshipSemanticMatch,
   RelationshipSourceStatus,
   RelationshipStateSnapshot,
@@ -87,6 +89,12 @@ export const getRelationshipEvidence = (relationshipId: string, evidenceId: stri
   call<{ observation: RelationshipObservation; payload: unknown }>(
     `/v1/relationships/${encodeURIComponent(relationshipId)}/evidence/${encodeURIComponent(evidenceId)}`,
   );
+
+export const ingestRelationshipObservations = (observations: RelationshipObservationInput[]) =>
+  call<{ results: RelationshipObservationIngestResult[] }>("/v1/relationship-observations/batch", {
+    method: "POST",
+    body: JSON.stringify({ observations }),
+  });
 
 export const correctRelationship = (
   id: string,

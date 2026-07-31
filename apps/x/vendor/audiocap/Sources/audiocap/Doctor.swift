@@ -83,7 +83,9 @@ enum Doctor {
 
     static func inputDevice() -> Check {
         let engine = AVAudioEngine()
-        let format = engine.inputNode.outputFormat(forBus: 0)
+        // The input bus is the physical device format. The output bus can reflect a
+        // graph default that the microphone cannot actually initialize.
+        let format = engine.inputNode.inputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else {
             return Check(
                 name: "input device",

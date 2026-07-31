@@ -74,6 +74,53 @@ export const RelationshipObservationSchema = z.object({
   contentHash: z.string(),
 });
 
+export const RelationshipObservationAssertionInputSchema = z.object({
+  dimension: z.string(),
+  value: z.string(),
+  sourceType: z.string(),
+  confidence: z.number().min(0).max(1),
+  reason: z.string(),
+  validFrom: z.string(),
+});
+
+export const RelationshipObservationParticipantInputSchema = z.object({
+  displayName: z.string(),
+  email: z.string().optional(),
+  role: z.string().optional(),
+  title: z.string().optional(),
+  externalRefs: z.array(z.string()).optional(),
+});
+
+/**
+ * Provider-neutral append-only evidence accepted by the shared relationship engine.
+ * At least one relationship identity field is required by the API when relationshipId
+ * is absent; the desktop only publishes automatically resolved 1:1 meetings.
+ */
+export const RelationshipObservationInputSchema = z.object({
+  relationshipId: z.string().optional(),
+  displayName: z.string().optional(),
+  primaryEmail: z.string().optional(),
+  accountDomain: z.string().optional(),
+  source: z.string(),
+  sourceAccountId: z.string().optional(),
+  externalId: z.string(),
+  sourceVersion: z.string().default("1"),
+  eventType: z.string(),
+  occurredAt: z.string(),
+  receivedAt: z.string().optional(),
+  summary: z.string().optional(),
+  normalizedFacts: z.record(z.string(), z.unknown()).default({}),
+  payload: z.unknown().optional(),
+  participants: z.array(RelationshipObservationParticipantInputSchema).optional(),
+  assertions: z.array(RelationshipObservationAssertionInputSchema).optional(),
+});
+
+export const RelationshipObservationIngestResultSchema = z.object({
+  observation: RelationshipObservationSchema,
+  relationship: RelationshipSchema,
+  duplicate: z.boolean(),
+});
+
 export const RelationshipStateSnapshotSchema = z.object({
   id: z.string(),
   version: z.number(),
@@ -113,6 +160,10 @@ export type Relationship = z.infer<typeof RelationshipSchema>;
 export type RelationshipAction = z.infer<typeof RelationshipActionSchema>;
 export type RelationshipDetail = z.infer<typeof RelationshipDetailSchema>;
 export type RelationshipObservation = z.infer<typeof RelationshipObservationSchema>;
+export type RelationshipObservationInput = z.infer<typeof RelationshipObservationInputSchema>;
+export type RelationshipObservationIngestResult = z.infer<
+  typeof RelationshipObservationIngestResultSchema
+>;
 export type RelationshipStateSnapshot = z.infer<typeof RelationshipStateSnapshotSchema>;
 export type RelationshipSourceStatus = z.infer<typeof RelationshipSourceStatusSchema>;
 export type RelationshipSemanticMatch = z.infer<typeof RelationshipSemanticMatchSchema>;

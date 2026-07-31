@@ -323,6 +323,8 @@ describe("meetings settings block", () => {
       // On by default: gated by a keyword pre-filter, runs once per meeting, and it is
       // the thing that turns a transcript into something you act on.
       extractCommitments: true,
+      // Transcript text only joins the shared relationship model after opt-in.
+      syncRelationshipEvidence: false,
     });
   });
 
