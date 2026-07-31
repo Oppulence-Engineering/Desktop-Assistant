@@ -10,7 +10,7 @@ import {
     flushRelationshipEvidence,
 } from '../relationships/evidence-outbox.js';
 import {
-    canonicalTranscriptObservation,
+    canonicalTranscriptObservationWithExtraction,
     conversationFingerprint,
 } from '../relationships/conversation-evidence.js';
 
@@ -112,7 +112,7 @@ interface McpToolResult {
     isError?: boolean;
 }
 
-function firefliesRelationshipObservation(meeting: FirefliesMeetingData) {
+async function firefliesRelationshipObservation(meeting: FirefliesMeetingData) {
     const organizer = (meeting.organizerEmail || meeting.organizer_email || '').trim().toLowerCase();
     const attendees = (meeting.meetingAttendees || [])
         .filter(attendee => attendee.email?.trim())
@@ -135,7 +135,7 @@ function firefliesRelationshipObservation(meeting: FirefliesMeetingData) {
     const occurredAt = meeting.dateString || meeting.date || new Date().toISOString();
     const sentences = meeting.sentences || meeting.transcript?.sentences || [];
     if (sentences.length === 0) return null;
-    return canonicalTranscriptObservation({
+    return canonicalTranscriptObservationWithExtraction({
         identity: {
             displayName: domain || counterparty.displayName,
             primaryEmail: counterparty.email,
@@ -182,7 +182,7 @@ function firefliesRelationshipObservation(meeting: FirefliesMeetingData) {
 async function publishFirefliesEvidence(meeting: FirefliesMeetingData): Promise<void> {
     const config = await getTranscriptionConfig();
     if (!config.meetings.syncRelationshipEvidence) return;
-    const observation = firefliesRelationshipObservation(meeting);
+    const observation = await firefliesRelationshipObservation(meeting);
     if (!observation) return;
     await enqueueRelationshipEvidence(observation);
     await flushRelationshipEvidence();

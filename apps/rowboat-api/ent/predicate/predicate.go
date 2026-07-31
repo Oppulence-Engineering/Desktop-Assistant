@@ -60,6 +60,15 @@ type CloudEvent func(*sql.Selector)
 // Commitment is the predicate function for commitment builders.
 type Commitment func(*sql.Selector)
 
+// CommitmentDependency is the predicate function for commitmentdependency builders.
+type CommitmentDependency func(*sql.Selector)
+
+// CommitmentEvent is the predicate function for commitmentevent builders.
+type CommitmentEvent func(*sql.Selector)
+
+// ConversationIntelligenceArtifact is the predicate function for conversationintelligenceartifact builders.
+type ConversationIntelligenceArtifact func(*sql.Selector)
+
 // CreditLedger is the predicate function for creditledger builders.
 type CreditLedger func(*sql.Selector)
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Send, Sparkles } from "@/lib/icons";
+import { Loader2, Send, Sparkles, X } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import type { MeetingTranscriptSegment } from "@x/shared/dist/meetings.js";
 import type { RelationshipLiveCue } from "@x/shared/dist/relationships.js";
@@ -104,9 +104,43 @@ export function MeetingLivePanel() {
           </h3>
           <div className="grid gap-2 md:grid-cols-2">
             {cues.map((cue) => (
-              <div key={cue.id} className="border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-                <p className="text-xs font-medium">{cue.title}</p>
+              <div
+                key={cue.id}
+                className="relative border border-amber-500/30 bg-amber-500/5 px-3 py-2 pr-8"
+              >
+                <button
+                  type="button"
+                  aria-label={`Dismiss ${cue.title}`}
+                  className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setCues((current) => current.filter((item) => item.id !== cue.id));
+                    void window.ipc.invoke("meeting:dismissLiveCue", { cueId: cue.id });
+                  }}
+                >
+                  <X className="size-3.5" />
+                </button>
+                <p className="text-xs font-medium capitalize">{cue.title}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{cue.detail}</p>
+                {cue.suggestedQuestion ? (
+                  <button
+                    type="button"
+                    className="mt-1.5 text-left text-xs font-medium text-primary hover:underline"
+                    onClick={() => {
+                      setQuestion(cue.suggestedQuestion ?? "");
+                      void window.ipc.invoke("meeting:liveCueFeedback", {
+                        cueId: cue.id,
+                        outcome: "question_used",
+                      });
+                    }}
+                  >
+                    Ask: {cue.suggestedQuestion}
+                  </button>
+                ) : null}
+                {cue.privacyRoute === "deterministic" ? (
+                  <p className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    Generated locally · source linked
+                  </p>
+                ) : null}
               </div>
             ))}
           </div>

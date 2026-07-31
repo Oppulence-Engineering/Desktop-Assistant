@@ -12,6 +12,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
@@ -136,6 +138,201 @@ func (_u *CommitmentUpdate) SetNillableUserConfirmed(v *bool) *CommitmentUpdate 
 	return _u
 }
 
+// SetOwnerParticipantRef sets the "owner_participant_ref" field.
+func (_u *CommitmentUpdate) SetOwnerParticipantRef(v string) *CommitmentUpdate {
+	_u.mutation.SetOwnerParticipantRef(v)
+	return _u
+}
+
+// SetNillableOwnerParticipantRef sets the "owner_participant_ref" field if the given value is not nil.
+func (_u *CommitmentUpdate) SetNillableOwnerParticipantRef(v *string) *CommitmentUpdate {
+	if v != nil {
+		_u.SetOwnerParticipantRef(*v)
+	}
+	return _u
+}
+
+// ClearOwnerParticipantRef clears the value of the "owner_participant_ref" field.
+func (_u *CommitmentUpdate) ClearOwnerParticipantRef() *CommitmentUpdate {
+	_u.mutation.ClearOwnerParticipantRef()
+	return _u
+}
+
+// SetCounterpartyParticipantRef sets the "counterparty_participant_ref" field.
+func (_u *CommitmentUpdate) SetCounterpartyParticipantRef(v string) *CommitmentUpdate {
+	_u.mutation.SetCounterpartyParticipantRef(v)
+	return _u
+}
+
+// SetNillableCounterpartyParticipantRef sets the "counterparty_participant_ref" field if the given value is not nil.
+func (_u *CommitmentUpdate) SetNillableCounterpartyParticipantRef(v *string) *CommitmentUpdate {
+	if v != nil {
+		_u.SetCounterpartyParticipantRef(*v)
+	}
+	return _u
+}
+
+// ClearCounterpartyParticipantRef clears the value of the "counterparty_participant_ref" field.
+func (_u *CommitmentUpdate) ClearCounterpartyParticipantRef() *CommitmentUpdate {
+	_u.mutation.ClearCounterpartyParticipantRef()
+	return _u
+}
+
+// SetBeneficiaryParticipantRef sets the "beneficiary_participant_ref" field.
+func (_u *CommitmentUpdate) SetBeneficiaryParticipantRef(v string) *CommitmentUpdate {
+	_u.mutation.SetBeneficiaryParticipantRef(v)
+	return _u
+}
+
+// SetNillableBeneficiaryParticipantRef sets the "beneficiary_participant_ref" field if the given value is not nil.
+func (_u *CommitmentUpdate) SetNillableBeneficiaryParticipantRef(v *string) *CommitmentUpdate {
+	if v != nil {
+		_u.SetBeneficiaryParticipantRef(*v)
+	}
+	return _u
+}
+
+// ClearBeneficiaryParticipantRef clears the value of the "beneficiary_participant_ref" field.
+func (_u *CommitmentUpdate) ClearBeneficiaryParticipantRef() *CommitmentUpdate {
+	_u.mutation.ClearBeneficiaryParticipantRef()
+	return _u
+}
+
+// SetSourcePhrase sets the "source_phrase" field.
+func (_u *CommitmentUpdate) SetSourcePhrase(v string) *CommitmentUpdate {
+	_u.mutation.SetSourcePhrase(v)
+	return _u
+}
+
+// SetNillableSourcePhrase sets the "source_phrase" field if the given value is not nil.
+func (_u *CommitmentUpdate) SetNillableSourcePhrase(v *string) *CommitmentUpdate {
+	if v != nil {
+		_u.SetSourcePhrase(*v)
+	}
+	return _u
+}
+
+// ClearSourcePhrase clears the value of the "source_phrase" field.
+func (_u *CommitmentUpdate) ClearSourcePhrase() *CommitmentUpdate {
+	_u.mutation.ClearSourcePhrase()
+	return _u
+}
+
+// SetDuePhrase sets the "due_phrase" field.
+func (_u *CommitmentUpdate) SetDuePhrase(v string) *CommitmentUpdate {
+	_u.mutation.SetDuePhrase(v)
+	return _u
+}
+
+// SetNillableDuePhrase sets the "due_phrase" field if the given value is not nil.
+func (_u *CommitmentUpdate) SetNillableDuePhrase(v *string) *CommitmentUpdate {
+	if v != nil {
+		_u.SetDuePhrase(*v)
+	}
+	return _u
+}
+
+// ClearDuePhrase clears the value of the "due_phrase" field.
+func (_u *CommitmentUpdate) ClearDuePhrase() *CommitmentUpdate {
+	_u.mutation.ClearDuePhrase()
+	return _u
+}
+
+// SetDueTimezone sets the "due_timezone" field.
+func (_u *CommitmentUpdate) SetDueTimezone(v string) *CommitmentUpdate {
+	_u.mutation.SetDueTimezone(v)
+	return _u
+}
+
+// SetNillableDueTimezone sets the "due_timezone" field if the given value is not nil.
+func (_u *CommitmentUpdate) SetNillableDueTimezone(v *string) *CommitmentUpdate {
+	if v != nil {
+		_u.SetDueTimezone(*v)
+	}
+	return _u
+}
+
+// ClearDueTimezone clears the value of the "due_timezone" field.
+func (_u *CommitmentUpdate) ClearDueTimezone() *CommitmentUpdate {
+	_u.mutation.ClearDueTimezone()
+	return _u
+}
+
+// SetAcceptance sets the "acceptance" field.
+func (_u *CommitmentUpdate) SetAcceptance(v string) *CommitmentUpdate {
+	_u.mutation.SetAcceptance(v)
+	return _u
+}
+
+// SetNillableAcceptance sets the "acceptance" field if the given value is not nil.
+func (_u *CommitmentUpdate) SetNillableAcceptance(v *string) *CommitmentUpdate {
+	if v != nil {
+		_u.SetAcceptance(*v)
+	}
+	return _u
+}
+
+// SetBlocker sets the "blocker" field.
+func (_u *CommitmentUpdate) SetBlocker(v string) *CommitmentUpdate {
+	_u.mutation.SetBlocker(v)
+	return _u
+}
+
+// SetNillableBlocker sets the "blocker" field if the given value is not nil.
+func (_u *CommitmentUpdate) SetNillableBlocker(v *string) *CommitmentUpdate {
+	if v != nil {
+		_u.SetBlocker(*v)
+	}
+	return _u
+}
+
+// ClearBlocker clears the value of the "blocker" field.
+func (_u *CommitmentUpdate) ClearBlocker() *CommitmentUpdate {
+	_u.mutation.ClearBlocker()
+	return _u
+}
+
+// SetCompletedAt sets the "completed_at" field.
+func (_u *CommitmentUpdate) SetCompletedAt(v time.Time) *CommitmentUpdate {
+	_u.mutation.SetCompletedAt(v)
+	return _u
+}
+
+// SetNillableCompletedAt sets the "completed_at" field if the given value is not nil.
+func (_u *CommitmentUpdate) SetNillableCompletedAt(v *time.Time) *CommitmentUpdate {
+	if v != nil {
+		_u.SetCompletedAt(*v)
+	}
+	return _u
+}
+
+// ClearCompletedAt clears the value of the "completed_at" field.
+func (_u *CommitmentUpdate) ClearCompletedAt() *CommitmentUpdate {
+	_u.mutation.ClearCompletedAt()
+	return _u
+}
+
+// SetCurrentEventVersion sets the "current_event_version" field.
+func (_u *CommitmentUpdate) SetCurrentEventVersion(v int) *CommitmentUpdate {
+	_u.mutation.ResetCurrentEventVersion()
+	_u.mutation.SetCurrentEventVersion(v)
+	return _u
+}
+
+// SetNillableCurrentEventVersion sets the "current_event_version" field if the given value is not nil.
+func (_u *CommitmentUpdate) SetNillableCurrentEventVersion(v *int) *CommitmentUpdate {
+	if v != nil {
+		_u.SetCurrentEventVersion(*v)
+	}
+	return _u
+}
+
+// AddCurrentEventVersion adds value to the "current_event_version" field.
+func (_u *CommitmentUpdate) AddCurrentEventVersion(v int) *CommitmentUpdate {
+	_u.mutation.AddCurrentEventVersion(v)
+	return _u
+}
+
 // SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
 func (_u *CommitmentUpdate) SetWorkspaceID(id uuid.UUID) *CommitmentUpdate {
 	_u.mutation.SetWorkspaceID(id)
@@ -184,6 +381,51 @@ func (_u *CommitmentUpdate) AddEvidences(v ...*RevenueEvidence) *CommitmentUpdat
 	return _u.AddEvidenceIDs(ids...)
 }
 
+// AddEventIDs adds the "events" edge to the CommitmentEvent entity by IDs.
+func (_u *CommitmentUpdate) AddEventIDs(ids ...uuid.UUID) *CommitmentUpdate {
+	_u.mutation.AddEventIDs(ids...)
+	return _u
+}
+
+// AddEvents adds the "events" edges to the CommitmentEvent entity.
+func (_u *CommitmentUpdate) AddEvents(v ...*CommitmentEvent) *CommitmentUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEventIDs(ids...)
+}
+
+// AddOutgoingDependencyIDs adds the "outgoing_dependencies" edge to the CommitmentDependency entity by IDs.
+func (_u *CommitmentUpdate) AddOutgoingDependencyIDs(ids ...uuid.UUID) *CommitmentUpdate {
+	_u.mutation.AddOutgoingDependencyIDs(ids...)
+	return _u
+}
+
+// AddOutgoingDependencies adds the "outgoing_dependencies" edges to the CommitmentDependency entity.
+func (_u *CommitmentUpdate) AddOutgoingDependencies(v ...*CommitmentDependency) *CommitmentUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOutgoingDependencyIDs(ids...)
+}
+
+// AddIncomingDependencyIDs adds the "incoming_dependencies" edge to the CommitmentDependency entity by IDs.
+func (_u *CommitmentUpdate) AddIncomingDependencyIDs(ids ...uuid.UUID) *CommitmentUpdate {
+	_u.mutation.AddIncomingDependencyIDs(ids...)
+	return _u
+}
+
+// AddIncomingDependencies adds the "incoming_dependencies" edges to the CommitmentDependency entity.
+func (_u *CommitmentUpdate) AddIncomingDependencies(v ...*CommitmentDependency) *CommitmentUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddIncomingDependencyIDs(ids...)
+}
+
 // Mutation returns the CommitmentMutation object of the builder.
 func (_u *CommitmentUpdate) Mutation() *CommitmentMutation {
 	return _u.mutation
@@ -226,6 +468,69 @@ func (_u *CommitmentUpdate) RemoveEvidences(v ...*RevenueEvidence) *CommitmentUp
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveEvidenceIDs(ids...)
+}
+
+// ClearEvents clears all "events" edges to the CommitmentEvent entity.
+func (_u *CommitmentUpdate) ClearEvents() *CommitmentUpdate {
+	_u.mutation.ClearEvents()
+	return _u
+}
+
+// RemoveEventIDs removes the "events" edge to CommitmentEvent entities by IDs.
+func (_u *CommitmentUpdate) RemoveEventIDs(ids ...uuid.UUID) *CommitmentUpdate {
+	_u.mutation.RemoveEventIDs(ids...)
+	return _u
+}
+
+// RemoveEvents removes "events" edges to CommitmentEvent entities.
+func (_u *CommitmentUpdate) RemoveEvents(v ...*CommitmentEvent) *CommitmentUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEventIDs(ids...)
+}
+
+// ClearOutgoingDependencies clears all "outgoing_dependencies" edges to the CommitmentDependency entity.
+func (_u *CommitmentUpdate) ClearOutgoingDependencies() *CommitmentUpdate {
+	_u.mutation.ClearOutgoingDependencies()
+	return _u
+}
+
+// RemoveOutgoingDependencyIDs removes the "outgoing_dependencies" edge to CommitmentDependency entities by IDs.
+func (_u *CommitmentUpdate) RemoveOutgoingDependencyIDs(ids ...uuid.UUID) *CommitmentUpdate {
+	_u.mutation.RemoveOutgoingDependencyIDs(ids...)
+	return _u
+}
+
+// RemoveOutgoingDependencies removes "outgoing_dependencies" edges to CommitmentDependency entities.
+func (_u *CommitmentUpdate) RemoveOutgoingDependencies(v ...*CommitmentDependency) *CommitmentUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOutgoingDependencyIDs(ids...)
+}
+
+// ClearIncomingDependencies clears all "incoming_dependencies" edges to the CommitmentDependency entity.
+func (_u *CommitmentUpdate) ClearIncomingDependencies() *CommitmentUpdate {
+	_u.mutation.ClearIncomingDependencies()
+	return _u
+}
+
+// RemoveIncomingDependencyIDs removes the "incoming_dependencies" edge to CommitmentDependency entities by IDs.
+func (_u *CommitmentUpdate) RemoveIncomingDependencyIDs(ids ...uuid.UUID) *CommitmentUpdate {
+	_u.mutation.RemoveIncomingDependencyIDs(ids...)
+	return _u
+}
+
+// RemoveIncomingDependencies removes "incoming_dependencies" edges to CommitmentDependency entities.
+func (_u *CommitmentUpdate) RemoveIncomingDependencies(v ...*CommitmentDependency) *CommitmentUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveIncomingDependencyIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -286,6 +591,16 @@ func (_u *CommitmentUpdate) check() error {
 			return &ValidationError{Name: "confidence", err: fmt.Errorf(`ent: validator failed for field "Commitment.confidence": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Acceptance(); ok {
+		if err := commitment.AcceptanceValidator(v); err != nil {
+			return &ValidationError{Name: "acceptance", err: fmt.Errorf(`ent: validator failed for field "Commitment.acceptance": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.CurrentEventVersion(); ok {
+		if err := commitment.CurrentEventVersionValidator(v); err != nil {
+			return &ValidationError{Name: "current_event_version", err: fmt.Errorf(`ent: validator failed for field "Commitment.current_event_version": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Commitment.workspace"`)
 	}
@@ -336,6 +651,63 @@ func (_u *CommitmentUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	}
 	if value, ok := _u.mutation.UserConfirmed(); ok {
 		_spec.SetField(commitment.FieldUserConfirmed, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.OwnerParticipantRef(); ok {
+		_spec.SetField(commitment.FieldOwnerParticipantRef, field.TypeString, value)
+	}
+	if _u.mutation.OwnerParticipantRefCleared() {
+		_spec.ClearField(commitment.FieldOwnerParticipantRef, field.TypeString)
+	}
+	if value, ok := _u.mutation.CounterpartyParticipantRef(); ok {
+		_spec.SetField(commitment.FieldCounterpartyParticipantRef, field.TypeString, value)
+	}
+	if _u.mutation.CounterpartyParticipantRefCleared() {
+		_spec.ClearField(commitment.FieldCounterpartyParticipantRef, field.TypeString)
+	}
+	if value, ok := _u.mutation.BeneficiaryParticipantRef(); ok {
+		_spec.SetField(commitment.FieldBeneficiaryParticipantRef, field.TypeString, value)
+	}
+	if _u.mutation.BeneficiaryParticipantRefCleared() {
+		_spec.ClearField(commitment.FieldBeneficiaryParticipantRef, field.TypeString)
+	}
+	if value, ok := _u.mutation.SourcePhrase(); ok {
+		_spec.SetField(commitment.FieldSourcePhrase, field.TypeString, value)
+	}
+	if _u.mutation.SourcePhraseCleared() {
+		_spec.ClearField(commitment.FieldSourcePhrase, field.TypeString)
+	}
+	if value, ok := _u.mutation.DuePhrase(); ok {
+		_spec.SetField(commitment.FieldDuePhrase, field.TypeString, value)
+	}
+	if _u.mutation.DuePhraseCleared() {
+		_spec.ClearField(commitment.FieldDuePhrase, field.TypeString)
+	}
+	if value, ok := _u.mutation.DueTimezone(); ok {
+		_spec.SetField(commitment.FieldDueTimezone, field.TypeString, value)
+	}
+	if _u.mutation.DueTimezoneCleared() {
+		_spec.ClearField(commitment.FieldDueTimezone, field.TypeString)
+	}
+	if value, ok := _u.mutation.Acceptance(); ok {
+		_spec.SetField(commitment.FieldAcceptance, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Blocker(); ok {
+		_spec.SetField(commitment.FieldBlocker, field.TypeString, value)
+	}
+	if _u.mutation.BlockerCleared() {
+		_spec.ClearField(commitment.FieldBlocker, field.TypeString)
+	}
+	if value, ok := _u.mutation.CompletedAt(); ok {
+		_spec.SetField(commitment.FieldCompletedAt, field.TypeTime, value)
+	}
+	if _u.mutation.CompletedAtCleared() {
+		_spec.ClearField(commitment.FieldCompletedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.CurrentEventVersion(); ok {
+		_spec.SetField(commitment.FieldCurrentEventVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCurrentEventVersion(); ok {
+		_spec.AddField(commitment.FieldCurrentEventVersion, field.TypeInt, value)
 	}
 	if _u.mutation.WorkspaceCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -462,6 +834,141 @@ func (_u *CommitmentUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(revenueevidence.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.EventsTable,
+			Columns: []string{commitment.EventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentevent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEventsIDs(); len(nodes) > 0 && !_u.mutation.EventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.EventsTable,
+			Columns: []string{commitment.EventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.EventsTable,
+			Columns: []string{commitment.EventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OutgoingDependenciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.OutgoingDependenciesTable,
+			Columns: []string{commitment.OutgoingDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOutgoingDependenciesIDs(); len(nodes) > 0 && !_u.mutation.OutgoingDependenciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.OutgoingDependenciesTable,
+			Columns: []string{commitment.OutgoingDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OutgoingDependenciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.OutgoingDependenciesTable,
+			Columns: []string{commitment.OutgoingDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.IncomingDependenciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.IncomingDependenciesTable,
+			Columns: []string{commitment.IncomingDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedIncomingDependenciesIDs(); len(nodes) > 0 && !_u.mutation.IncomingDependenciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.IncomingDependenciesTable,
+			Columns: []string{commitment.IncomingDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.IncomingDependenciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.IncomingDependenciesTable,
+			Columns: []string{commitment.IncomingDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -592,6 +1099,201 @@ func (_u *CommitmentUpdateOne) SetNillableUserConfirmed(v *bool) *CommitmentUpda
 	return _u
 }
 
+// SetOwnerParticipantRef sets the "owner_participant_ref" field.
+func (_u *CommitmentUpdateOne) SetOwnerParticipantRef(v string) *CommitmentUpdateOne {
+	_u.mutation.SetOwnerParticipantRef(v)
+	return _u
+}
+
+// SetNillableOwnerParticipantRef sets the "owner_participant_ref" field if the given value is not nil.
+func (_u *CommitmentUpdateOne) SetNillableOwnerParticipantRef(v *string) *CommitmentUpdateOne {
+	if v != nil {
+		_u.SetOwnerParticipantRef(*v)
+	}
+	return _u
+}
+
+// ClearOwnerParticipantRef clears the value of the "owner_participant_ref" field.
+func (_u *CommitmentUpdateOne) ClearOwnerParticipantRef() *CommitmentUpdateOne {
+	_u.mutation.ClearOwnerParticipantRef()
+	return _u
+}
+
+// SetCounterpartyParticipantRef sets the "counterparty_participant_ref" field.
+func (_u *CommitmentUpdateOne) SetCounterpartyParticipantRef(v string) *CommitmentUpdateOne {
+	_u.mutation.SetCounterpartyParticipantRef(v)
+	return _u
+}
+
+// SetNillableCounterpartyParticipantRef sets the "counterparty_participant_ref" field if the given value is not nil.
+func (_u *CommitmentUpdateOne) SetNillableCounterpartyParticipantRef(v *string) *CommitmentUpdateOne {
+	if v != nil {
+		_u.SetCounterpartyParticipantRef(*v)
+	}
+	return _u
+}
+
+// ClearCounterpartyParticipantRef clears the value of the "counterparty_participant_ref" field.
+func (_u *CommitmentUpdateOne) ClearCounterpartyParticipantRef() *CommitmentUpdateOne {
+	_u.mutation.ClearCounterpartyParticipantRef()
+	return _u
+}
+
+// SetBeneficiaryParticipantRef sets the "beneficiary_participant_ref" field.
+func (_u *CommitmentUpdateOne) SetBeneficiaryParticipantRef(v string) *CommitmentUpdateOne {
+	_u.mutation.SetBeneficiaryParticipantRef(v)
+	return _u
+}
+
+// SetNillableBeneficiaryParticipantRef sets the "beneficiary_participant_ref" field if the given value is not nil.
+func (_u *CommitmentUpdateOne) SetNillableBeneficiaryParticipantRef(v *string) *CommitmentUpdateOne {
+	if v != nil {
+		_u.SetBeneficiaryParticipantRef(*v)
+	}
+	return _u
+}
+
+// ClearBeneficiaryParticipantRef clears the value of the "beneficiary_participant_ref" field.
+func (_u *CommitmentUpdateOne) ClearBeneficiaryParticipantRef() *CommitmentUpdateOne {
+	_u.mutation.ClearBeneficiaryParticipantRef()
+	return _u
+}
+
+// SetSourcePhrase sets the "source_phrase" field.
+func (_u *CommitmentUpdateOne) SetSourcePhrase(v string) *CommitmentUpdateOne {
+	_u.mutation.SetSourcePhrase(v)
+	return _u
+}
+
+// SetNillableSourcePhrase sets the "source_phrase" field if the given value is not nil.
+func (_u *CommitmentUpdateOne) SetNillableSourcePhrase(v *string) *CommitmentUpdateOne {
+	if v != nil {
+		_u.SetSourcePhrase(*v)
+	}
+	return _u
+}
+
+// ClearSourcePhrase clears the value of the "source_phrase" field.
+func (_u *CommitmentUpdateOne) ClearSourcePhrase() *CommitmentUpdateOne {
+	_u.mutation.ClearSourcePhrase()
+	return _u
+}
+
+// SetDuePhrase sets the "due_phrase" field.
+func (_u *CommitmentUpdateOne) SetDuePhrase(v string) *CommitmentUpdateOne {
+	_u.mutation.SetDuePhrase(v)
+	return _u
+}
+
+// SetNillableDuePhrase sets the "due_phrase" field if the given value is not nil.
+func (_u *CommitmentUpdateOne) SetNillableDuePhrase(v *string) *CommitmentUpdateOne {
+	if v != nil {
+		_u.SetDuePhrase(*v)
+	}
+	return _u
+}
+
+// ClearDuePhrase clears the value of the "due_phrase" field.
+func (_u *CommitmentUpdateOne) ClearDuePhrase() *CommitmentUpdateOne {
+	_u.mutation.ClearDuePhrase()
+	return _u
+}
+
+// SetDueTimezone sets the "due_timezone" field.
+func (_u *CommitmentUpdateOne) SetDueTimezone(v string) *CommitmentUpdateOne {
+	_u.mutation.SetDueTimezone(v)
+	return _u
+}
+
+// SetNillableDueTimezone sets the "due_timezone" field if the given value is not nil.
+func (_u *CommitmentUpdateOne) SetNillableDueTimezone(v *string) *CommitmentUpdateOne {
+	if v != nil {
+		_u.SetDueTimezone(*v)
+	}
+	return _u
+}
+
+// ClearDueTimezone clears the value of the "due_timezone" field.
+func (_u *CommitmentUpdateOne) ClearDueTimezone() *CommitmentUpdateOne {
+	_u.mutation.ClearDueTimezone()
+	return _u
+}
+
+// SetAcceptance sets the "acceptance" field.
+func (_u *CommitmentUpdateOne) SetAcceptance(v string) *CommitmentUpdateOne {
+	_u.mutation.SetAcceptance(v)
+	return _u
+}
+
+// SetNillableAcceptance sets the "acceptance" field if the given value is not nil.
+func (_u *CommitmentUpdateOne) SetNillableAcceptance(v *string) *CommitmentUpdateOne {
+	if v != nil {
+		_u.SetAcceptance(*v)
+	}
+	return _u
+}
+
+// SetBlocker sets the "blocker" field.
+func (_u *CommitmentUpdateOne) SetBlocker(v string) *CommitmentUpdateOne {
+	_u.mutation.SetBlocker(v)
+	return _u
+}
+
+// SetNillableBlocker sets the "blocker" field if the given value is not nil.
+func (_u *CommitmentUpdateOne) SetNillableBlocker(v *string) *CommitmentUpdateOne {
+	if v != nil {
+		_u.SetBlocker(*v)
+	}
+	return _u
+}
+
+// ClearBlocker clears the value of the "blocker" field.
+func (_u *CommitmentUpdateOne) ClearBlocker() *CommitmentUpdateOne {
+	_u.mutation.ClearBlocker()
+	return _u
+}
+
+// SetCompletedAt sets the "completed_at" field.
+func (_u *CommitmentUpdateOne) SetCompletedAt(v time.Time) *CommitmentUpdateOne {
+	_u.mutation.SetCompletedAt(v)
+	return _u
+}
+
+// SetNillableCompletedAt sets the "completed_at" field if the given value is not nil.
+func (_u *CommitmentUpdateOne) SetNillableCompletedAt(v *time.Time) *CommitmentUpdateOne {
+	if v != nil {
+		_u.SetCompletedAt(*v)
+	}
+	return _u
+}
+
+// ClearCompletedAt clears the value of the "completed_at" field.
+func (_u *CommitmentUpdateOne) ClearCompletedAt() *CommitmentUpdateOne {
+	_u.mutation.ClearCompletedAt()
+	return _u
+}
+
+// SetCurrentEventVersion sets the "current_event_version" field.
+func (_u *CommitmentUpdateOne) SetCurrentEventVersion(v int) *CommitmentUpdateOne {
+	_u.mutation.ResetCurrentEventVersion()
+	_u.mutation.SetCurrentEventVersion(v)
+	return _u
+}
+
+// SetNillableCurrentEventVersion sets the "current_event_version" field if the given value is not nil.
+func (_u *CommitmentUpdateOne) SetNillableCurrentEventVersion(v *int) *CommitmentUpdateOne {
+	if v != nil {
+		_u.SetCurrentEventVersion(*v)
+	}
+	return _u
+}
+
+// AddCurrentEventVersion adds value to the "current_event_version" field.
+func (_u *CommitmentUpdateOne) AddCurrentEventVersion(v int) *CommitmentUpdateOne {
+	_u.mutation.AddCurrentEventVersion(v)
+	return _u
+}
+
 // SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
 func (_u *CommitmentUpdateOne) SetWorkspaceID(id uuid.UUID) *CommitmentUpdateOne {
 	_u.mutation.SetWorkspaceID(id)
@@ -640,6 +1342,51 @@ func (_u *CommitmentUpdateOne) AddEvidences(v ...*RevenueEvidence) *CommitmentUp
 	return _u.AddEvidenceIDs(ids...)
 }
 
+// AddEventIDs adds the "events" edge to the CommitmentEvent entity by IDs.
+func (_u *CommitmentUpdateOne) AddEventIDs(ids ...uuid.UUID) *CommitmentUpdateOne {
+	_u.mutation.AddEventIDs(ids...)
+	return _u
+}
+
+// AddEvents adds the "events" edges to the CommitmentEvent entity.
+func (_u *CommitmentUpdateOne) AddEvents(v ...*CommitmentEvent) *CommitmentUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEventIDs(ids...)
+}
+
+// AddOutgoingDependencyIDs adds the "outgoing_dependencies" edge to the CommitmentDependency entity by IDs.
+func (_u *CommitmentUpdateOne) AddOutgoingDependencyIDs(ids ...uuid.UUID) *CommitmentUpdateOne {
+	_u.mutation.AddOutgoingDependencyIDs(ids...)
+	return _u
+}
+
+// AddOutgoingDependencies adds the "outgoing_dependencies" edges to the CommitmentDependency entity.
+func (_u *CommitmentUpdateOne) AddOutgoingDependencies(v ...*CommitmentDependency) *CommitmentUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOutgoingDependencyIDs(ids...)
+}
+
+// AddIncomingDependencyIDs adds the "incoming_dependencies" edge to the CommitmentDependency entity by IDs.
+func (_u *CommitmentUpdateOne) AddIncomingDependencyIDs(ids ...uuid.UUID) *CommitmentUpdateOne {
+	_u.mutation.AddIncomingDependencyIDs(ids...)
+	return _u
+}
+
+// AddIncomingDependencies adds the "incoming_dependencies" edges to the CommitmentDependency entity.
+func (_u *CommitmentUpdateOne) AddIncomingDependencies(v ...*CommitmentDependency) *CommitmentUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddIncomingDependencyIDs(ids...)
+}
+
 // Mutation returns the CommitmentMutation object of the builder.
 func (_u *CommitmentUpdateOne) Mutation() *CommitmentMutation {
 	return _u.mutation
@@ -682,6 +1429,69 @@ func (_u *CommitmentUpdateOne) RemoveEvidences(v ...*RevenueEvidence) *Commitmen
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveEvidenceIDs(ids...)
+}
+
+// ClearEvents clears all "events" edges to the CommitmentEvent entity.
+func (_u *CommitmentUpdateOne) ClearEvents() *CommitmentUpdateOne {
+	_u.mutation.ClearEvents()
+	return _u
+}
+
+// RemoveEventIDs removes the "events" edge to CommitmentEvent entities by IDs.
+func (_u *CommitmentUpdateOne) RemoveEventIDs(ids ...uuid.UUID) *CommitmentUpdateOne {
+	_u.mutation.RemoveEventIDs(ids...)
+	return _u
+}
+
+// RemoveEvents removes "events" edges to CommitmentEvent entities.
+func (_u *CommitmentUpdateOne) RemoveEvents(v ...*CommitmentEvent) *CommitmentUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEventIDs(ids...)
+}
+
+// ClearOutgoingDependencies clears all "outgoing_dependencies" edges to the CommitmentDependency entity.
+func (_u *CommitmentUpdateOne) ClearOutgoingDependencies() *CommitmentUpdateOne {
+	_u.mutation.ClearOutgoingDependencies()
+	return _u
+}
+
+// RemoveOutgoingDependencyIDs removes the "outgoing_dependencies" edge to CommitmentDependency entities by IDs.
+func (_u *CommitmentUpdateOne) RemoveOutgoingDependencyIDs(ids ...uuid.UUID) *CommitmentUpdateOne {
+	_u.mutation.RemoveOutgoingDependencyIDs(ids...)
+	return _u
+}
+
+// RemoveOutgoingDependencies removes "outgoing_dependencies" edges to CommitmentDependency entities.
+func (_u *CommitmentUpdateOne) RemoveOutgoingDependencies(v ...*CommitmentDependency) *CommitmentUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOutgoingDependencyIDs(ids...)
+}
+
+// ClearIncomingDependencies clears all "incoming_dependencies" edges to the CommitmentDependency entity.
+func (_u *CommitmentUpdateOne) ClearIncomingDependencies() *CommitmentUpdateOne {
+	_u.mutation.ClearIncomingDependencies()
+	return _u
+}
+
+// RemoveIncomingDependencyIDs removes the "incoming_dependencies" edge to CommitmentDependency entities by IDs.
+func (_u *CommitmentUpdateOne) RemoveIncomingDependencyIDs(ids ...uuid.UUID) *CommitmentUpdateOne {
+	_u.mutation.RemoveIncomingDependencyIDs(ids...)
+	return _u
+}
+
+// RemoveIncomingDependencies removes "incoming_dependencies" edges to CommitmentDependency entities.
+func (_u *CommitmentUpdateOne) RemoveIncomingDependencies(v ...*CommitmentDependency) *CommitmentUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveIncomingDependencyIDs(ids...)
 }
 
 // Where appends a list predicates to the CommitmentUpdate builder.
@@ -755,6 +1565,16 @@ func (_u *CommitmentUpdateOne) check() error {
 			return &ValidationError{Name: "confidence", err: fmt.Errorf(`ent: validator failed for field "Commitment.confidence": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Acceptance(); ok {
+		if err := commitment.AcceptanceValidator(v); err != nil {
+			return &ValidationError{Name: "acceptance", err: fmt.Errorf(`ent: validator failed for field "Commitment.acceptance": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.CurrentEventVersion(); ok {
+		if err := commitment.CurrentEventVersionValidator(v); err != nil {
+			return &ValidationError{Name: "current_event_version", err: fmt.Errorf(`ent: validator failed for field "Commitment.current_event_version": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Commitment.workspace"`)
 	}
@@ -822,6 +1642,63 @@ func (_u *CommitmentUpdateOne) sqlSave(ctx context.Context) (_node *Commitment, 
 	}
 	if value, ok := _u.mutation.UserConfirmed(); ok {
 		_spec.SetField(commitment.FieldUserConfirmed, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.OwnerParticipantRef(); ok {
+		_spec.SetField(commitment.FieldOwnerParticipantRef, field.TypeString, value)
+	}
+	if _u.mutation.OwnerParticipantRefCleared() {
+		_spec.ClearField(commitment.FieldOwnerParticipantRef, field.TypeString)
+	}
+	if value, ok := _u.mutation.CounterpartyParticipantRef(); ok {
+		_spec.SetField(commitment.FieldCounterpartyParticipantRef, field.TypeString, value)
+	}
+	if _u.mutation.CounterpartyParticipantRefCleared() {
+		_spec.ClearField(commitment.FieldCounterpartyParticipantRef, field.TypeString)
+	}
+	if value, ok := _u.mutation.BeneficiaryParticipantRef(); ok {
+		_spec.SetField(commitment.FieldBeneficiaryParticipantRef, field.TypeString, value)
+	}
+	if _u.mutation.BeneficiaryParticipantRefCleared() {
+		_spec.ClearField(commitment.FieldBeneficiaryParticipantRef, field.TypeString)
+	}
+	if value, ok := _u.mutation.SourcePhrase(); ok {
+		_spec.SetField(commitment.FieldSourcePhrase, field.TypeString, value)
+	}
+	if _u.mutation.SourcePhraseCleared() {
+		_spec.ClearField(commitment.FieldSourcePhrase, field.TypeString)
+	}
+	if value, ok := _u.mutation.DuePhrase(); ok {
+		_spec.SetField(commitment.FieldDuePhrase, field.TypeString, value)
+	}
+	if _u.mutation.DuePhraseCleared() {
+		_spec.ClearField(commitment.FieldDuePhrase, field.TypeString)
+	}
+	if value, ok := _u.mutation.DueTimezone(); ok {
+		_spec.SetField(commitment.FieldDueTimezone, field.TypeString, value)
+	}
+	if _u.mutation.DueTimezoneCleared() {
+		_spec.ClearField(commitment.FieldDueTimezone, field.TypeString)
+	}
+	if value, ok := _u.mutation.Acceptance(); ok {
+		_spec.SetField(commitment.FieldAcceptance, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Blocker(); ok {
+		_spec.SetField(commitment.FieldBlocker, field.TypeString, value)
+	}
+	if _u.mutation.BlockerCleared() {
+		_spec.ClearField(commitment.FieldBlocker, field.TypeString)
+	}
+	if value, ok := _u.mutation.CompletedAt(); ok {
+		_spec.SetField(commitment.FieldCompletedAt, field.TypeTime, value)
+	}
+	if _u.mutation.CompletedAtCleared() {
+		_spec.ClearField(commitment.FieldCompletedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.CurrentEventVersion(); ok {
+		_spec.SetField(commitment.FieldCurrentEventVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCurrentEventVersion(); ok {
+		_spec.AddField(commitment.FieldCurrentEventVersion, field.TypeInt, value)
 	}
 	if _u.mutation.WorkspaceCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -948,6 +1825,141 @@ func (_u *CommitmentUpdateOne) sqlSave(ctx context.Context) (_node *Commitment, 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(revenueevidence.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.EventsTable,
+			Columns: []string{commitment.EventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentevent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEventsIDs(); len(nodes) > 0 && !_u.mutation.EventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.EventsTable,
+			Columns: []string{commitment.EventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.EventsTable,
+			Columns: []string{commitment.EventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OutgoingDependenciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.OutgoingDependenciesTable,
+			Columns: []string{commitment.OutgoingDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOutgoingDependenciesIDs(); len(nodes) > 0 && !_u.mutation.OutgoingDependenciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.OutgoingDependenciesTable,
+			Columns: []string{commitment.OutgoingDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OutgoingDependenciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.OutgoingDependenciesTable,
+			Columns: []string{commitment.OutgoingDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.IncomingDependenciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.IncomingDependenciesTable,
+			Columns: []string{commitment.IncomingDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedIncomingDependenciesIDs(); len(nodes) > 0 && !_u.mutation.IncomingDependenciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.IncomingDependenciesTable,
+			Columns: []string{commitment.IncomingDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.IncomingDependenciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.IncomingDependenciesTable,
+			Columns: []string{commitment.IncomingDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

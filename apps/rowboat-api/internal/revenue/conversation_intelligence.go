@@ -6,14 +6,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
@@ -72,19 +70,94 @@ type ConversationGovernanceReceipt struct {
 
 // ConversationReviewItem identifies a focused human verification task for conversation evidence.
 type ConversationReviewItem struct {
-	ID             string  `json:"id"`
-	Kind           string  `json:"kind"`
-	Label          string  `json:"label"`
-	CurrentValue   string  `json:"currentValue"`
-	Confidence     float64 `json:"confidence"`
-	ObservationID  string  `json:"observationId"`
-	ClaimID        string  `json:"claimId,omitempty"`
-	StateDimension string  `json:"stateDimension,omitempty"`
-	ExactQuote     string  `json:"exactQuote,omitempty"`
+	ID                 string   `json:"id"`
+	Kind               string   `json:"kind"`
+	Label              string   `json:"label"`
+	CurrentValue       string   `json:"currentValue"`
+	Confidence         float64  `json:"confidence"`
+	ObservationID      string   `json:"observationId"`
+	ClaimID            string   `json:"claimId,omitempty"`
+	StateDimension     string   `json:"stateDimension,omitempty"`
+	ExactQuote         string   `json:"exactQuote,omitempty"`
+	BatchID            string   `json:"batchId,omitempty"`
+	Status             string   `json:"status,omitempty"`
+	Before             any      `json:"before,omitempty"`
+	ProposedAfter      any      `json:"proposedAfter,omitempty"`
+	Caveats            []string `json:"caveats,omitempty"`
+	DependentActionIDs []string `json:"dependentActionIds,omitempty"`
+	BaselineVersion    int      `json:"baselineVersion,omitempty"`
 }
 
 type conversationReviewCorrection struct {
 	CorrectedValue string
+}
+
+type conversationCandidateEvidence struct {
+	ExactQuote string `json:"exactQuote"`
+}
+
+type conversationClaimCandidate struct {
+	CandidateID     string                          `json:"candidateId"`
+	Kind            string                          `json:"kind"`
+	NormalizedValue any                             `json:"normalizedValue"`
+	DisplayValue    string                          `json:"displayValue"`
+	Evidence        []conversationCandidateEvidence `json:"evidence"`
+	StateDimension  string                          `json:"stateDimension"`
+	Confidence      float64                         `json:"confidence"`
+	Caveats         []string                        `json:"caveats"`
+	DueAt           string                          `json:"dueAt"`
+}
+
+type conversationReviewMetadata struct {
+	BatchID            string `json:"batch_id"`
+	BaselineSnapshotID string `json:"baseline_snapshot_id"`
+	BaselineVersion    int    `json:"baseline_version"`
+}
+
+type conversationReviewDecisionRecord struct {
+	ItemID         string `json:"item_id"`
+	Kind           string `json:"kind"`
+	CorrectedValue string `json:"corrected_value"`
+	DeferUntil     string `json:"defer_until"`
+}
+
+// prepareConversationReview pins semantic candidates to the state visible before
+// ingestion and strips every unreviewed state/action effect at the server boundary.
+func prepareConversationReview(
+	ctx context.Context,
+	client *ent.Client,
+	rel *ent.Relationship,
+	input *RelationshipObservationInput,
+) error {
+	if input.Facts == nil {
+		input.Facts = map[string]any{}
+	}
+	if _, ok := input.Facts["conversation_claim_candidates"]; !ok {
+		return nil
+	}
+	var snapshotID string
+	snapshot, err := client.RelationshipStateSnapshot.Query().
+		Where(relationshipstatesnapshot.HasRelationshipWith(relationship.IDEQ(rel.ID))).
+		Order(ent.Desc(relationshipstatesnapshot.FieldVersion)).
+		First(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return err
+	}
+	if snapshot != nil {
+		snapshotID = snapshot.ID.String()
+	}
+	sum := sha256.Sum256([]byte(input.ExternalID + ":" + input.SourceVersion + ":conversation-review-v1"))
+	input.Facts["conversation_review"] = conversationReviewMetadata{
+		BatchID:            "review:" + hex.EncodeToString(sum[:12]),
+		BaselineSnapshotID: snapshotID,
+		BaselineVersion:    rel.StateVersion,
+	}
+	if actionPack, ok := input.Facts["action_pack"]; ok {
+		input.Facts["legacy_shadow_action_pack"] = actionPack
+	}
+	input.Facts["action_pack"] = []any{}
+	input.Assertions = nil
+	return nil
 }
 
 // RelationshipDeltaItem describes one canonical relationship state change.
@@ -103,6 +176,30 @@ type RelationshipContradiction struct {
 	ContradictedValue       string `json:"contradictedValue"`
 	CurrentAssertionID      string `json:"currentAssertionId"`
 	ContradictedAssertionID string `json:"contradictedAssertionId"`
+}
+
+type ConversationContradictionEvidenceSide struct {
+	AssertionID        string         `json:"assertionId"`
+	SourceType         string         `json:"sourceType"`
+	Source             string         `json:"source"`
+	Value              map[string]any `json:"value"`
+	ValidFrom          string         `json:"validFrom"`
+	ObservedAt         string         `json:"observedAt"`
+	EvidenceRefs       []string       `json:"evidenceRefs"`
+	IdentityConfidence float64        `json:"identityConfidence"`
+}
+
+type ConversationContradictionCase struct {
+	CaseID                string                                  `json:"caseId"`
+	RelationshipID        string                                  `json:"relationshipId"`
+	SubjectRef            string                                  `json:"subjectRef"`
+	Dimension             string                                  `json:"dimension"`
+	Status                string                                  `json:"status"`
+	Reason                string                                  `json:"reason"`
+	Sides                 []ConversationContradictionEvidenceSide `json:"sides"`
+	OpenedAt              string                                  `json:"openedAt"`
+	ResolvedAt            string                                  `json:"resolvedAt,omitempty"`
+	ResolutionAssertionID string                                  `json:"resolutionAssertionId,omitempty"`
 }
 
 // RelationshipDelta summarizes state changes and uncertainty between projections.
@@ -127,11 +224,18 @@ type RelationshipLiveCue struct {
 
 // RelationshipIntelligence is the derived trust and follow-through surface for a relationship.
 type RelationshipIntelligence struct {
-	Claims             []ConversationClaim             `json:"claims"`
-	ReviewItems        []ConversationReviewItem        `json:"reviewItems"`
-	GovernanceReceipts []ConversationGovernanceReceipt `json:"governanceReceipts"`
-	Delta              RelationshipDelta               `json:"delta"`
-	LiveCues           []RelationshipLiveCue           `json:"liveCues"`
+	Claims                    []ConversationClaim              `json:"claims"`
+	ReviewItems               []ConversationReviewItem         `json:"reviewItems"`
+	GovernanceReceipts        []ConversationGovernanceReceipt  `json:"governanceReceipts"`
+	Delta                     RelationshipDelta                `json:"delta"`
+	LiveCues                  []RelationshipLiveCue            `json:"liveCues"`
+	ContradictionCases        []ConversationContradictionCase  `json:"contradictionCases"`
+	RecoveryEvaluations       []CommitmentRecoveryEvaluation   `json:"recoveryEvaluations"`
+	RecommendationEvaluations []RecommendationEvaluation       `json:"recommendationEvaluations"`
+	MutualActionPlans         []MutualActionPlan               `json:"mutualActionPlans"`
+	EffectivePolicy           ResolvedConversationPolicy       `json:"effectivePolicy"`
+	GovernanceDecisions       []ConversationGovernanceDecision `json:"governanceDecisions"`
+	DeletionReceipts          []ConversationDeletionReceipt    `json:"deletionReceipts"`
 }
 
 type commitmentUpdate struct {
@@ -153,7 +257,7 @@ func decodeFact[T any](facts map[string]any, key string, target *T) error {
 	return json.Unmarshal(raw, target)
 }
 
-func exactQuotesInPayload(payload json.RawMessage) map[string]bool {
+func transcriptTextInPayload(payload json.RawMessage) (map[string]bool, string) {
 	var body struct {
 		Envelope struct {
 			Segments []struct {
@@ -163,12 +267,20 @@ func exactQuotesInPayload(payload json.RawMessage) map[string]bool {
 	}
 	quotes := map[string]bool{}
 	if json.Unmarshal(payload, &body) != nil {
-		return quotes
+		return quotes, ""
 	}
+	segments := make([]string, 0, len(body.Envelope.Segments))
 	for _, segment := range body.Envelope.Segments {
-		quotes[strings.TrimSpace(segment.Text)] = true
+		text := strings.Join(strings.Fields(segment.Text), " ")
+		quotes[text] = true
+		segments = append(segments, text)
 	}
-	return quotes
+	return quotes, strings.Join(segments, " ")
+}
+
+func payloadSupportsQuote(exactSegments map[string]bool, transcript, quote string) bool {
+	normalized := strings.Join(strings.Fields(quote), " ")
+	return normalized != "" && (exactSegments[normalized] || strings.Contains(transcript, normalized))
 }
 
 func evidenceSource(source string) string {
@@ -228,17 +340,36 @@ func (s *Service) materializeConversationEvidence(
 	if err := decodeFact(input.Facts, "action_pack", &proposals); err != nil {
 		return fmt.Errorf("%w: action pack: %v", ErrInvalidInput, err)
 	}
+	// Defense in depth for older clients: the presence of semantic candidates means
+	// this observation is review-only, even if a legacy action pack was also supplied.
+	if _, reviewOnly := input.Facts["conversation_claim_candidates"]; reviewOnly {
+		proposals = nil
+	}
+	exactSegments, transcript := transcriptTextInPayload(input.Payload)
+	var candidates []conversationClaimCandidate
+	if err := decodeFact(input.Facts, "conversation_claim_candidates", &candidates); err != nil {
+		return fmt.Errorf("%w: conversation claim candidates: %v", ErrInvalidInput, err)
+	}
+	for _, candidate := range candidates {
+		if strings.TrimSpace(candidate.CandidateID) == "" || len(candidate.Evidence) == 0 {
+			return fmt.Errorf("%w: every conversation candidate requires an id and transcript evidence", ErrInvalidInput)
+		}
+		for _, evidence := range candidate.Evidence {
+			if !payloadSupportsQuote(exactSegments, transcript, evidence.ExactQuote) {
+				return fmt.Errorf("%w: every conversation candidate must cite an exact transcript span", ErrInvalidInput)
+			}
+		}
+	}
 	if len(claims) == 0 && len(proposals) == 0 {
-		return s.applyCommitmentUpdates(ctx, client, rel, input)
+		return s.applyCommitmentUpdates(ctx, client, ws, u, rel, observation, input)
 	}
 
-	quotes := exactQuotesInPayload(input.Payload)
 	evidenceByClaim := make(map[string]*ent.RevenueEvidence, len(claims))
 	for index := range claims {
 		claim := &claims[index]
 		claim.ID = strings.TrimSpace(claim.ID)
 		claim.ExactQuote = strings.TrimSpace(claim.ExactQuote)
-		if claim.ID == "" || claim.ExactQuote == "" || !quotes[claim.ExactQuote] {
+		if claim.ID == "" || !payloadSupportsQuote(exactSegments, transcript, claim.ExactQuote) {
 			return fmt.Errorf("%w: every conversation claim must cite an exact transcript segment", ErrInvalidInput)
 		}
 		hash := sha256.Sum256([]byte(claim.ExactQuote))
@@ -283,7 +414,7 @@ func (s *Service) materializeConversationEvidence(
 			return err
 		}
 	}
-	return s.applyCommitmentUpdates(ctx, client, rel, input)
+	return s.applyCommitmentUpdates(ctx, client, ws, u, rel, observation, input)
 }
 
 func (s *Service) outcomeLearningLift(
@@ -413,7 +544,10 @@ func (s *Service) createConversationAction(
 func (s *Service) applyCommitmentUpdates(
 	ctx context.Context,
 	client *ent.Client,
+	ws *ent.RevenueWorkspace,
+	u *ent.User,
 	rel *ent.Relationship,
+	observation *ent.RelationshipObservation,
 	input RelationshipObservationInput,
 ) error {
 	var updates []commitmentUpdate
@@ -424,12 +558,19 @@ func (s *Service) applyCommitmentUpdates(
 		if update.CommitmentID == "" {
 			return fmt.Errorf("%w: commitment update requires commitmentId", ErrInvalidInput)
 		}
-		row, err := client.Commitment.Query().
+		query := client.Commitment.Query().
 			Where(
 				commitment.HasRelationshipWith(relationship.IDEQ(rel.ID)),
 				commitment.HasEvidencesWith(revenueevidence.SourceRecordIDEQ("commitment:"+update.CommitmentID)),
-			).
-			Only(ctx)
+			)
+		row, err := query.Only(ctx)
+		if ent.IsNotFound(err) {
+			if rowID, parseErr := uuid.Parse(update.CommitmentID); parseErr == nil {
+				row, err = client.Commitment.Query().Where(
+					commitment.IDEQ(rowID), commitment.HasRelationshipWith(relationship.IDEQ(rel.ID)),
+				).Only(ctx)
+			}
+		}
 		if ent.IsNotFound(err) {
 			return fmt.Errorf("%w: commitment", ErrNotFound)
 		}
@@ -437,24 +578,71 @@ func (s *Service) applyCommitmentUpdates(
 			return err
 		}
 		builder := row.Update()
+		eventKind := ""
+		payload := map[string]any{}
 		switch update.Status {
 		case "open", "fulfilled", "cancelled", "superseded":
-			builder.SetStatus(update.Status)
+			if update.Status != row.Status {
+				if update.Status == "open" {
+					return fmt.Errorf("%w: terminal commitments cannot be reopened without a renegotiation", ErrInvalidInput)
+				}
+				eventKind = update.Status
+				builder.SetStatus(update.Status)
+				payload["status"] = update.Status
+				if update.Status == "fulfilled" {
+					completedAt := input.OccurredAt.UTC()
+					builder.SetCompletedAt(completedAt)
+					payload["completedAt"] = completedAt.Format(time.RFC3339)
+				}
+			}
 		case "":
 		default:
 			return fmt.Errorf("%w: invalid commitment status", ErrInvalidInput)
 		}
 		if strings.TrimSpace(update.Text) != "" {
-			builder.SetText(strings.TrimSpace(update.Text))
+			text := strings.TrimSpace(update.Text)
+			if text != row.Text {
+				if eventKind == "" {
+					eventKind = "renegotiated"
+				}
+				builder.SetText(text)
+				payload["action"] = text
+			}
 		}
 		if update.DueAt != "" {
 			dueAt, parseErr := time.Parse(time.RFC3339, update.DueAt)
 			if parseErr != nil {
 				return fmt.Errorf("%w: invalid commitment dueAt", ErrInvalidInput)
 			}
-			builder.SetDueAt(dueAt.UTC())
+			dueAt = dueAt.UTC()
+			if row.DueAt == nil || !row.DueAt.Equal(dueAt) {
+				if eventKind == "" {
+					eventKind = "due_date_changed"
+				}
+				builder.SetDueAt(dueAt)
+				payload["dueAt"] = dueAt.Format(time.RFC3339)
+			}
 		}
+		if eventKind == "" {
+			continue
+		}
+		nextVersion := row.CurrentEventVersion + 1
+		builder.SetCurrentEventVersion(nextVersion)
 		if _, err := builder.Save(ctx); err != nil {
+			return err
+		}
+		payloadJSON, err := json.Marshal(payload)
+		if err != nil {
+			return err
+		}
+		sourceRef := "relationship-observation:" + observation.ID.String()
+		if _, err := client.CommitmentEvent.Create().
+			SetWorkspace(ws).SetRelationship(rel).SetUser(u).SetCommitment(row).
+			SetSourceEventID(fmt.Sprintf("%s:commitment-event:%s:%s", input.ExternalID, row.ID, eventKind)).
+			SetVersion(nextVersion).SetKind(eventKind).SetActorType("source_fact").
+			SetActorRef(input.Source).SetOccurredAt(input.OccurredAt.UTC()).
+			SetSourceObservationID(observation.ID.String()).SetEvidenceRefs([]string{sourceRef}).
+			SetPayloadJSON(string(payloadJSON)).Save(ctx); err != nil {
 			return err
 		}
 	}
@@ -489,7 +677,13 @@ func (s *Service) RelationshipIntelligenceFor(
 			UncertainClaimIDs: []string{},
 			Contradictions:    []RelationshipContradiction{},
 		},
-		LiveCues: []RelationshipLiveCue{},
+		LiveCues:                  []RelationshipLiveCue{},
+		ContradictionCases:        []ConversationContradictionCase{},
+		RecoveryEvaluations:       []CommitmentRecoveryEvaluation{},
+		RecommendationEvaluations: []RecommendationEvaluation{},
+		MutualActionPlans:         []MutualActionPlan{},
+		GovernanceDecisions:       []ConversationGovernanceDecision{},
+		DeletionReceipts:          []ConversationDeletionReceipt{},
 	}
 	observations, err := s.client.RelationshipObservation.Query().
 		Where(relationshipobservation.HasRelationshipWith(relationship.IDEQ(rel.ID))).
@@ -500,6 +694,7 @@ func (s *Service) RelationshipIntelligenceFor(
 		return result, err
 	}
 	resolved := map[string]conversationReviewCorrection{}
+	decisions := map[string]conversationReviewDecisionRecord{}
 	for _, observation := range observations {
 		facts := map[string]any{}
 		_ = json.Unmarshal([]byte(observation.NormalizedFactsJSON), &facts)
@@ -510,6 +705,14 @@ func (s *Service) RelationshipIntelligenceFor(
 					resolved[id] = conversationReviewCorrection{
 						CorrectedValue: correctedValue,
 					}
+				}
+			}
+		}
+		if rawDecision, ok := facts["review_decision"]; ok {
+			var decision conversationReviewDecisionRecord
+			if decodeFact(map[string]any{"decision": rawDecision}, "decision", &decision) == nil && decision.ItemID != "" {
+				if _, alreadyDecided := decisions[decision.ItemID]; !alreadyDecided {
+					decisions[decision.ItemID] = decision
 				}
 			}
 		}
@@ -586,6 +789,43 @@ func (s *Service) RelationshipIntelligenceFor(
 				}
 			}
 		}
+		var candidates []conversationClaimCandidate
+		_ = decodeFact(facts, "conversation_claim_candidates", &candidates)
+		var review conversationReviewMetadata
+		_ = decodeFact(facts, "conversation_review", &review)
+		baselineState := map[string]any{}
+		if review.BaselineSnapshotID != "" {
+			if snapshotID, parseErr := uuid.Parse(review.BaselineSnapshotID); parseErr == nil {
+				if baseline, getErr := s.client.RelationshipStateSnapshot.Get(ctx, snapshotID); getErr == nil {
+					_ = json.Unmarshal([]byte(baseline.StateJSON), &baselineState)
+				}
+			}
+		}
+		for _, candidate := range candidates {
+			itemID := reviewItemID(observation.ID.String(), candidate.CandidateID, "candidate")
+			decision, decided := decisions[itemID]
+			if decided && decision.Kind != "defer" {
+				continue
+			}
+			exactQuote := ""
+			if len(candidate.Evidence) > 0 {
+				exactQuote = candidate.Evidence[0].ExactQuote
+			}
+			status := "pending_review"
+			if decided && decision.Kind == "defer" {
+				status = "deferred"
+			}
+			result.ReviewItems = append(result.ReviewItems, ConversationReviewItem{
+				ID: itemID, Kind: "claim", Label: "Review proposed " + candidate.Kind,
+				CurrentValue: candidate.DisplayValue, Confidence: candidate.Confidence,
+				ObservationID: observation.ID.String(), ClaimID: candidate.CandidateID,
+				StateDimension: candidate.StateDimension, ExactQuote: exactQuote,
+				BatchID: review.BatchID, Status: status,
+				Before: baselineState[candidate.StateDimension], ProposedAfter: candidate.NormalizedValue,
+				Caveats: candidate.Caveats, DependentActionIDs: []string{},
+				BaselineVersion: review.BaselineVersion,
+			})
+		}
 		var receipt ConversationGovernanceReceipt
 		_ = decodeFact(facts, "governance_receipt", &receipt)
 		if receipt.ReceiptID != "" {
@@ -630,44 +870,54 @@ func (s *Service) RelationshipIntelligenceFor(
 	}
 	result.Delta.RecommendationReason = rel.StateReason
 
-	assertions, err := s.client.RelationshipAssertion.Query().
-		Where(relationshipassertion.HasRelationshipWith(relationship.IDEQ(rel.ID))).
+	commitments, err := s.client.Commitment.Query().
+		Where(commitment.HasRelationshipWith(relationship.IDEQ(rel.ID))).
 		All(ctx)
 	if err != nil {
 		return result, err
 	}
-	sort.SliceStable(assertions, func(i, j int) bool {
-		left, right := assertions[i], assertions[j]
-		if assertionPriority(left.SourceType) != assertionPriority(right.SourceType) {
-			return assertionPriority(left.SourceType) > assertionPriority(right.SourceType)
-		}
-		return left.ValidFrom.After(right.ValidFrom)
-	})
-	byDimension := map[string][]*ent.RelationshipAssertion{}
-	for _, assertion := range assertions {
-		byDimension[assertion.Dimension] = append(byDimension[assertion.Dimension], assertion)
+	result.ContradictionCases, err = contradictionCasesFor(ctx, s.client, rel)
+	if err != nil {
+		return result, err
 	}
-	for dimension, rows := range byDimension {
-		if len(rows) < 2 {
+	for _, contradiction := range result.ContradictionCases {
+		if len(contradiction.Sides) < 2 {
 			continue
 		}
-		currentAssertion := rows[0]
-		for _, prior := range rows[1:] {
-			if prior.Value == currentAssertion.Value {
-				continue
-			}
-			result.Delta.Contradictions = append(result.Delta.Contradictions, RelationshipContradiction{
-				Dimension: dimension, CurrentValue: currentAssertion.Value,
-				ContradictedValue: prior.Value, CurrentAssertionID: currentAssertion.ID.String(),
-				ContradictedAssertionID: prior.ID.String(),
-			})
-			break
-		}
+		current, prior := contradiction.Sides[0], contradiction.Sides[1]
+		result.Delta.Contradictions = append(result.Delta.Contradictions, RelationshipContradiction{
+			Dimension:               contradiction.Dimension,
+			CurrentValue:            fmt.Sprint(current.Value["value"]),
+			ContradictedValue:       fmt.Sprint(prior.Value["value"]),
+			CurrentAssertionID:      current.AssertionID,
+			ContradictedAssertionID: prior.AssertionID,
+		})
 	}
-
-	commitments, err := s.client.Commitment.Query().
-		Where(commitment.HasRelationshipWith(relationship.IDEQ(rel.ID))).
-		All(ctx)
+	result.RecoveryEvaluations, err = recoveryEvaluationsFor(ctx, s.client, rel)
+	if err != nil {
+		return result, err
+	}
+	result.RecommendationEvaluations, err = recommendationEvaluationsFor(ctx, s.client, rel)
+	if err != nil {
+		return result, err
+	}
+	result.MutualActionPlans, err = mutualActionPlansFor(ctx, s.client, rel)
+	if err != nil {
+		return result, err
+	}
+	owner, err := rel.QueryUser().Only(ctx)
+	if err != nil {
+		return result, err
+	}
+	result.EffectivePolicy, err = s.ResolveConversationPolicy(ctx, owner, rel)
+	if err != nil {
+		return result, err
+	}
+	result.GovernanceDecisions, err = governanceDecisionsFor(ctx, s.client, rel)
+	if err != nil {
+		return result, err
+	}
+	result.DeletionReceipts, err = conversationDeletionReceiptsFor(ctx, s.client, rel)
 	if err != nil {
 		return result, err
 	}
@@ -700,12 +950,14 @@ func (s *Service) RelationshipIntelligenceFor(
 			Title: "No next step", Detail: "Agree on an owner and a dated next step before the meeting ends.", Severity: "attention",
 		})
 	}
-	if len(result.Delta.Contradictions) > 0 {
-		contradiction := result.Delta.Contradictions[0]
+	for _, contradiction := range result.ContradictionCases {
+		if contradiction.Status != "open" || len(contradiction.Sides) < 2 {
+			continue
+		}
 		result.LiveCues = append(result.LiveCues, RelationshipLiveCue{
-			ID: "contradiction:" + contradiction.CurrentAssertionID, Kind: "contradiction",
-			Title: "Relationship evidence conflicts", Detail: fmt.Sprintf("%s changed from %q to %q", contradiction.Dimension, contradiction.ContradictedValue, contradiction.CurrentValue),
-			Severity: "attention",
+			ID: contradiction.CaseID, Kind: "contradiction", Title: "Relationship evidence conflicts",
+			Detail:   fmt.Sprintf("Which %s value should be current?", contradiction.Dimension),
+			Severity: "attention", EvidenceID: contradiction.CaseID,
 		})
 	}
 	return result, nil
@@ -830,4 +1082,222 @@ func (s *Service) CorrectConversationReview(
 	}
 	intelligence, err := s.RelationshipIntelligenceFor(ctx, updated)
 	return updated, intelligence, err
+}
+
+// ConversationReviewDecisionInput is one immutable approve/correct/reject/defer decision.
+type ConversationReviewDecisionInput struct {
+	ReviewItemID   string
+	Kind           string
+	CorrectedValue string
+	Reason         string
+	DeferUntil     time.Time
+}
+
+type ContradictionResolutionInput struct {
+	CaseID              string
+	SelectedAssertionID string
+	Reason              string
+}
+
+// ResolveContradiction records a provenance-bearing user correction referencing every
+// evidence side. It never edits the original assertions or case version.
+func (s *Service) ResolveContradiction(
+	ctx context.Context,
+	u *ent.User,
+	relationshipID uuid.UUID,
+	input ContradictionResolutionInput,
+) (*ent.Relationship, RelationshipIntelligence, error) {
+	rel, err := s.GetRelationship(ctx, relationshipID)
+	if err != nil {
+		return nil, RelationshipIntelligence{}, err
+	}
+	cases, err := contradictionCasesFor(ctx, s.client, rel)
+	if err != nil {
+		return nil, RelationshipIntelligence{}, err
+	}
+	var selectedCase ConversationContradictionCase
+	var selectedSide ConversationContradictionEvidenceSide
+	found := false
+	for _, candidate := range cases {
+		if candidate.CaseID != strings.TrimSpace(input.CaseID) || candidate.Status != "open" {
+			continue
+		}
+		for _, side := range candidate.Sides {
+			if side.AssertionID == strings.TrimSpace(input.SelectedAssertionID) {
+				selectedCase, selectedSide, found = candidate, side, true
+				break
+			}
+		}
+	}
+	if !found {
+		return nil, RelationshipIntelligence{}, fmt.Errorf("%w: open contradiction side", ErrNotFound)
+	}
+	value := fmt.Sprint(selectedSide.Value["value"])
+	if value == "" {
+		return nil, RelationshipIntelligence{}, fmt.Errorf("%w: selected contradiction value", ErrInvalidInput)
+	}
+	resolvedAt := s.now().UTC()
+	reason := strings.TrimSpace(input.Reason)
+	if reason == "" {
+		reason = "User selected the current value from a focused contradiction case."
+	}
+	resolutionAssertionID := uuid.NewString()
+	selectedCase.Status = "user_resolved"
+	selectedCase.Reason = reason
+	selectedCase.ResolvedAt = resolvedAt.Format(time.RFC3339)
+	selectedCase.ResolutionAssertionID = resolutionAssertionID
+	results, err := s.IngestRelationshipObservations(ctx, u, []RelationshipObservationInput{{
+		RelationshipID: relationshipID, Source: "user",
+		ExternalID:    "contradiction-resolution:" + selectedCase.CaseID,
+		SourceVersion: "1", EventType: "relationship_contradiction_resolved",
+		OccurredAt: resolvedAt, ReceivedAt: resolvedAt,
+		Summary: "User resolved a typed relationship contradiction.",
+		Facts:   map[string]any{"contradiction_resolution": selectedCase},
+		Assertions: []RelationshipAssertionInput{{
+			ID:        uuid.MustParse(resolutionAssertionID),
+			Dimension: selectedCase.Dimension, Value: value, SourceType: "user_correction",
+			Confidence: 1, Reason: reason, ValidFrom: resolvedAt,
+		}},
+	}})
+	if err != nil {
+		return nil, RelationshipIntelligence{}, err
+	}
+	updated, err := s.GetRelationship(ctx, results[0].Relationship.ID)
+	if err != nil {
+		return nil, RelationshipIntelligence{}, err
+	}
+	intelligence, err := s.RelationshipIntelligenceFor(ctx, updated)
+	return updated, intelligence, err
+}
+
+// DecideConversationReview applies the authority boundary transactionally through the
+// same append-only observation path as every other relationship change.
+func (s *Service) DecideConversationReview(
+	ctx context.Context,
+	u *ent.User,
+	relationshipID uuid.UUID,
+	input ConversationReviewDecisionInput,
+) (*ent.Relationship, RelationshipIntelligence, error) {
+	input.ReviewItemID = strings.TrimSpace(input.ReviewItemID)
+	input.Kind = strings.TrimSpace(input.Kind)
+	if input.ReviewItemID == "" {
+		return nil, RelationshipIntelligence{}, fmt.Errorf("%w: reviewItemId is required", ErrInvalidInput)
+	}
+	switch input.Kind {
+	case "approve", "correct", "reject", "defer":
+	default:
+		return nil, RelationshipIntelligence{}, fmt.Errorf("%w: invalid review decision", ErrInvalidInput)
+	}
+	if input.Kind == "correct" && strings.TrimSpace(input.CorrectedValue) == "" {
+		return nil, RelationshipIntelligence{}, fmt.Errorf("%w: a correction requires correctedValue", ErrInvalidInput)
+	}
+	if input.Kind == "defer" && !input.DeferUntil.After(s.now()) {
+		return nil, RelationshipIntelligence{}, fmt.Errorf("%w: deferUntil must be in the future", ErrInvalidInput)
+	}
+
+	rel, err := s.GetRelationship(ctx, relationshipID)
+	if err != nil {
+		return nil, RelationshipIntelligence{}, err
+	}
+	intelligence, err := s.RelationshipIntelligenceFor(ctx, rel)
+	if err != nil {
+		return nil, RelationshipIntelligence{}, err
+	}
+	var item ConversationReviewItem
+	found := false
+	for _, candidate := range intelligence.ReviewItems {
+		if candidate.ID == input.ReviewItemID && candidate.BatchID != "" {
+			item = candidate
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, RelationshipIntelligence{}, fmt.Errorf("%w: review item", ErrNotFound)
+	}
+	if rel.StateVersion != item.BaselineVersion {
+		return nil, RelationshipIntelligence{}, fmt.Errorf(
+			"%w: review baseline %d is stale; current state is %d",
+			ErrReviewRequired, item.BaselineVersion, rel.StateVersion,
+		)
+	}
+
+	decidedAt := s.now().UTC()
+	value := strings.TrimSpace(item.CurrentValue)
+	if input.Kind == "correct" {
+		value = strings.TrimSpace(input.CorrectedValue)
+	}
+	reason := strings.TrimSpace(input.Reason)
+	if reason == "" {
+		reason = "User decided a proposed conversation change."
+	}
+	decision := map[string]any{
+		"item_id": item.ID, "batch_id": item.BatchID, "kind": input.Kind,
+		"corrected_value": input.CorrectedValue, "reason": reason,
+		"baseline_version": item.BaselineVersion, "candidate_id": item.ClaimID,
+		"observation_id": item.ObservationID, "decided_at": decidedAt.Format(time.RFC3339Nano),
+	}
+	if input.Kind == "defer" {
+		decision["defer_until"] = input.DeferUntil.UTC().Format(time.RFC3339Nano)
+	}
+	facts := map[string]any{"review_decision": decision}
+	assertions := []RelationshipAssertionInput{}
+	eventType := "conversation_review_decided"
+	if input.Kind == "approve" || input.Kind == "correct" {
+		if proposed, ok := item.ProposedAfter.(map[string]any); ok {
+			kind, _ := proposed["kind"].(string)
+			if kind == "commitment" {
+				owner, _ := proposed["ownerSpeakerId"].(string)
+				direction := "promised_by_them"
+				if owner == "local-user" {
+					direction = "promised_by_me"
+				}
+				if input.Kind != "correct" {
+					if action, ok := proposed["action"].(string); ok && strings.TrimSpace(action) != "" {
+						value = strings.TrimSpace(action)
+					}
+				}
+				facts["commitment_id"] = item.ClaimID
+				facts["commitment_owner"] = owner
+				facts["commitment_direction"] = direction
+				facts["commitment_text"] = value
+				facts["commitment_status"] = "open"
+				facts["user_confirmed"] = true
+				facts["evidence_quote"] = item.ExactQuote
+				if duePhrase, ok := proposed["duePhrase"].(string); ok {
+					facts["commitment_due_phrase"] = duePhrase
+				}
+				if dueAt, ok := proposed["dueAt"].(string); ok {
+					facts["commitment_due_at"] = dueAt
+				}
+				eventType = "commitment_confirmed"
+			} else if item.StateDimension != "" {
+				sourceType := "ai_inference"
+				if input.Kind == "correct" {
+					sourceType = "user_correction"
+				}
+				assertions = append(assertions, RelationshipAssertionInput{
+					Dimension: item.StateDimension, Value: value, SourceType: sourceType,
+					Confidence: item.Confidence, Reason: reason, ValidFrom: decidedAt,
+				})
+			}
+		}
+	}
+	sum := sha256.Sum256([]byte(item.ID + ":" + input.Kind + ":" + value + ":" + u.ID.String()))
+	results, err := s.IngestRelationshipObservations(ctx, u, []RelationshipObservationInput{{
+		RelationshipID: relationshipID,
+		Source:         "user", ExternalID: "conversation-review-decision:" + hex.EncodeToString(sum[:16]),
+		SourceVersion: "1", EventType: eventType, OccurredAt: decidedAt, ReceivedAt: decidedAt,
+		Summary: "User decided a proposed conversation change.", Facts: facts,
+		Assertions: assertions,
+	}})
+	if err != nil {
+		return nil, RelationshipIntelligence{}, err
+	}
+	updated, err := s.GetRelationship(ctx, results[0].Relationship.ID)
+	if err != nil {
+		return nil, RelationshipIntelligence{}, err
+	}
+	updatedIntelligence, err := s.RelationshipIntelligenceFor(ctx, updated)
+	return updated, updatedIntelligence, err
 }

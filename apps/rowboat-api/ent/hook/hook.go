@@ -225,6 +225,42 @@ func (f CommitmentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommitmentMutation", m)
 }
 
+// The CommitmentDependencyFunc type is an adapter to allow the use of ordinary
+// function as CommitmentDependency mutator.
+type CommitmentDependencyFunc func(context.Context, *ent.CommitmentDependencyMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CommitmentDependencyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CommitmentDependencyMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommitmentDependencyMutation", m)
+}
+
+// The CommitmentEventFunc type is an adapter to allow the use of ordinary
+// function as CommitmentEvent mutator.
+type CommitmentEventFunc func(context.Context, *ent.CommitmentEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CommitmentEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CommitmentEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommitmentEventMutation", m)
+}
+
+// The ConversationIntelligenceArtifactFunc type is an adapter to allow the use of ordinary
+// function as ConversationIntelligenceArtifact mutator.
+type ConversationIntelligenceArtifactFunc func(context.Context, *ent.ConversationIntelligenceArtifactMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ConversationIntelligenceArtifactFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConversationIntelligenceArtifactMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConversationIntelligenceArtifactMutation", m)
+}
+
 // The CreditLedgerFunc type is an adapter to allow the use of ordinary
 // function as CreditLedger mutator.
 type CreditLedgerFunc func(context.Context, *ent.CreditLedgerMutation) (ent.Value, error)

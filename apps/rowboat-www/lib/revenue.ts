@@ -220,6 +220,70 @@ export const correctConversationReview = (
     Pick<RelationshipDetail, "relationship" | "intelligence">
   >;
 
+export const decideConversationReview = (
+  id: string,
+  input: {
+    reviewItemId: string;
+    kind: "approve" | "correct" | "reject" | "defer";
+    correctedValue?: string;
+    reason?: string;
+    deferUntil?: string;
+  },
+) =>
+  post(`/relationships/${id}/conversation-decisions`, input) as Promise<
+    Pick<RelationshipDetail, "relationship" | "intelligence">
+  >;
+
+export const resolveRelationshipContradiction = (
+  id: string,
+  caseId: string,
+  input: { selectedAssertionId: string; reason?: string },
+) =>
+  post(
+    `/relationships/${encodeURIComponent(id)}/contradictions/${encodeURIComponent(caseId)}/resolve`,
+    input,
+  ) as Promise<Pick<RelationshipDetail, "relationship" | "intelligence">>;
+
+export const runCommitmentRecovery = (id: string) =>
+  post(`/relationships/${encodeURIComponent(id)}/commitment-recovery/run`, {}) as Promise<{
+    evaluations: NonNullable<RelationshipDetail["intelligence"]>["recoveryEvaluations"];
+  }>;
+
+export const appendCommitmentTransition = (
+  relationshipId: string,
+  commitmentId: string,
+  input: { kind: string; idempotencyKey: string; reason?: string; evidenceRefs?: string[] },
+) =>
+  post(
+    `/relationships/${encodeURIComponent(relationshipId)}/commitments/${encodeURIComponent(commitmentId)}/transitions`,
+    input,
+  ) as Promise<RelationshipDetail["commitments"][number]>;
+
+export const createMutualActionPlan = (relationshipId: string, commitmentIds: string[]) =>
+  post(`/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans`, {
+    commitmentIds,
+  }) as Promise<NonNullable<RelationshipDetail["intelligence"]>["mutualActionPlans"][number]>;
+
+export const approveMutualActionPlan = (relationshipId: string, planId: string) =>
+  post(
+    `/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans/${encodeURIComponent(planId)}/approve`,
+    {},
+  ) as Promise<NonNullable<RelationshipDetail["intelligence"]>["mutualActionPlans"][number]>;
+
+export const shareMutualActionPlan = (relationshipId: string, planId: string) =>
+  post(
+    `/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans/${encodeURIComponent(planId)}/share`,
+    {},
+  ) as Promise<{
+    plan: NonNullable<RelationshipDetail["intelligence"]>["mutualActionPlans"][number];
+    responseToken: string;
+  }>;
+
+export const requestConversationDeletion = (relationshipId: string, requestId: string) =>
+  post(`/relationships/${encodeURIComponent(relationshipId)}/conversation-deletion`, {
+    requestId,
+  }) as Promise<NonNullable<RelationshipDetail["intelligence"]>["deletionReceipts"][number]>;
+
 export const listRelationshipSourceStatuses = () =>
   call<{ sources: RelationshipSourceStatus[] }>("/relationship-sources/status").then(
     (body) => body.sources ?? [],

@@ -13,6 +13,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
@@ -116,6 +118,146 @@ func (_c *CommitmentCreate) SetNillableUserConfirmed(v *bool) *CommitmentCreate 
 	return _c
 }
 
+// SetOwnerParticipantRef sets the "owner_participant_ref" field.
+func (_c *CommitmentCreate) SetOwnerParticipantRef(v string) *CommitmentCreate {
+	_c.mutation.SetOwnerParticipantRef(v)
+	return _c
+}
+
+// SetNillableOwnerParticipantRef sets the "owner_participant_ref" field if the given value is not nil.
+func (_c *CommitmentCreate) SetNillableOwnerParticipantRef(v *string) *CommitmentCreate {
+	if v != nil {
+		_c.SetOwnerParticipantRef(*v)
+	}
+	return _c
+}
+
+// SetCounterpartyParticipantRef sets the "counterparty_participant_ref" field.
+func (_c *CommitmentCreate) SetCounterpartyParticipantRef(v string) *CommitmentCreate {
+	_c.mutation.SetCounterpartyParticipantRef(v)
+	return _c
+}
+
+// SetNillableCounterpartyParticipantRef sets the "counterparty_participant_ref" field if the given value is not nil.
+func (_c *CommitmentCreate) SetNillableCounterpartyParticipantRef(v *string) *CommitmentCreate {
+	if v != nil {
+		_c.SetCounterpartyParticipantRef(*v)
+	}
+	return _c
+}
+
+// SetBeneficiaryParticipantRef sets the "beneficiary_participant_ref" field.
+func (_c *CommitmentCreate) SetBeneficiaryParticipantRef(v string) *CommitmentCreate {
+	_c.mutation.SetBeneficiaryParticipantRef(v)
+	return _c
+}
+
+// SetNillableBeneficiaryParticipantRef sets the "beneficiary_participant_ref" field if the given value is not nil.
+func (_c *CommitmentCreate) SetNillableBeneficiaryParticipantRef(v *string) *CommitmentCreate {
+	if v != nil {
+		_c.SetBeneficiaryParticipantRef(*v)
+	}
+	return _c
+}
+
+// SetSourcePhrase sets the "source_phrase" field.
+func (_c *CommitmentCreate) SetSourcePhrase(v string) *CommitmentCreate {
+	_c.mutation.SetSourcePhrase(v)
+	return _c
+}
+
+// SetNillableSourcePhrase sets the "source_phrase" field if the given value is not nil.
+func (_c *CommitmentCreate) SetNillableSourcePhrase(v *string) *CommitmentCreate {
+	if v != nil {
+		_c.SetSourcePhrase(*v)
+	}
+	return _c
+}
+
+// SetDuePhrase sets the "due_phrase" field.
+func (_c *CommitmentCreate) SetDuePhrase(v string) *CommitmentCreate {
+	_c.mutation.SetDuePhrase(v)
+	return _c
+}
+
+// SetNillableDuePhrase sets the "due_phrase" field if the given value is not nil.
+func (_c *CommitmentCreate) SetNillableDuePhrase(v *string) *CommitmentCreate {
+	if v != nil {
+		_c.SetDuePhrase(*v)
+	}
+	return _c
+}
+
+// SetDueTimezone sets the "due_timezone" field.
+func (_c *CommitmentCreate) SetDueTimezone(v string) *CommitmentCreate {
+	_c.mutation.SetDueTimezone(v)
+	return _c
+}
+
+// SetNillableDueTimezone sets the "due_timezone" field if the given value is not nil.
+func (_c *CommitmentCreate) SetNillableDueTimezone(v *string) *CommitmentCreate {
+	if v != nil {
+		_c.SetDueTimezone(*v)
+	}
+	return _c
+}
+
+// SetAcceptance sets the "acceptance" field.
+func (_c *CommitmentCreate) SetAcceptance(v string) *CommitmentCreate {
+	_c.mutation.SetAcceptance(v)
+	return _c
+}
+
+// SetNillableAcceptance sets the "acceptance" field if the given value is not nil.
+func (_c *CommitmentCreate) SetNillableAcceptance(v *string) *CommitmentCreate {
+	if v != nil {
+		_c.SetAcceptance(*v)
+	}
+	return _c
+}
+
+// SetBlocker sets the "blocker" field.
+func (_c *CommitmentCreate) SetBlocker(v string) *CommitmentCreate {
+	_c.mutation.SetBlocker(v)
+	return _c
+}
+
+// SetNillableBlocker sets the "blocker" field if the given value is not nil.
+func (_c *CommitmentCreate) SetNillableBlocker(v *string) *CommitmentCreate {
+	if v != nil {
+		_c.SetBlocker(*v)
+	}
+	return _c
+}
+
+// SetCompletedAt sets the "completed_at" field.
+func (_c *CommitmentCreate) SetCompletedAt(v time.Time) *CommitmentCreate {
+	_c.mutation.SetCompletedAt(v)
+	return _c
+}
+
+// SetNillableCompletedAt sets the "completed_at" field if the given value is not nil.
+func (_c *CommitmentCreate) SetNillableCompletedAt(v *time.Time) *CommitmentCreate {
+	if v != nil {
+		_c.SetCompletedAt(*v)
+	}
+	return _c
+}
+
+// SetCurrentEventVersion sets the "current_event_version" field.
+func (_c *CommitmentCreate) SetCurrentEventVersion(v int) *CommitmentCreate {
+	_c.mutation.SetCurrentEventVersion(v)
+	return _c
+}
+
+// SetNillableCurrentEventVersion sets the "current_event_version" field if the given value is not nil.
+func (_c *CommitmentCreate) SetNillableCurrentEventVersion(v *int) *CommitmentCreate {
+	if v != nil {
+		_c.SetCurrentEventVersion(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *CommitmentCreate) SetID(v uuid.UUID) *CommitmentCreate {
 	_c.mutation.SetID(v)
@@ -178,6 +320,51 @@ func (_c *CommitmentCreate) AddEvidences(v ...*RevenueEvidence) *CommitmentCreat
 	return _c.AddEvidenceIDs(ids...)
 }
 
+// AddEventIDs adds the "events" edge to the CommitmentEvent entity by IDs.
+func (_c *CommitmentCreate) AddEventIDs(ids ...uuid.UUID) *CommitmentCreate {
+	_c.mutation.AddEventIDs(ids...)
+	return _c
+}
+
+// AddEvents adds the "events" edges to the CommitmentEvent entity.
+func (_c *CommitmentCreate) AddEvents(v ...*CommitmentEvent) *CommitmentCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddEventIDs(ids...)
+}
+
+// AddOutgoingDependencyIDs adds the "outgoing_dependencies" edge to the CommitmentDependency entity by IDs.
+func (_c *CommitmentCreate) AddOutgoingDependencyIDs(ids ...uuid.UUID) *CommitmentCreate {
+	_c.mutation.AddOutgoingDependencyIDs(ids...)
+	return _c
+}
+
+// AddOutgoingDependencies adds the "outgoing_dependencies" edges to the CommitmentDependency entity.
+func (_c *CommitmentCreate) AddOutgoingDependencies(v ...*CommitmentDependency) *CommitmentCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddOutgoingDependencyIDs(ids...)
+}
+
+// AddIncomingDependencyIDs adds the "incoming_dependencies" edge to the CommitmentDependency entity by IDs.
+func (_c *CommitmentCreate) AddIncomingDependencyIDs(ids ...uuid.UUID) *CommitmentCreate {
+	_c.mutation.AddIncomingDependencyIDs(ids...)
+	return _c
+}
+
+// AddIncomingDependencies adds the "incoming_dependencies" edges to the CommitmentDependency entity.
+func (_c *CommitmentCreate) AddIncomingDependencies(v ...*CommitmentDependency) *CommitmentCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddIncomingDependencyIDs(ids...)
+}
+
 // Mutation returns the CommitmentMutation object of the builder.
 func (_c *CommitmentCreate) Mutation() *CommitmentMutation {
 	return _c.mutation
@@ -229,6 +416,14 @@ func (_c *CommitmentCreate) defaults() {
 		v := commitment.DefaultUserConfirmed
 		_c.mutation.SetUserConfirmed(v)
 	}
+	if _, ok := _c.mutation.Acceptance(); !ok {
+		v := commitment.DefaultAcceptance
+		_c.mutation.SetAcceptance(v)
+	}
+	if _, ok := _c.mutation.CurrentEventVersion(); !ok {
+		v := commitment.DefaultCurrentEventVersion
+		_c.mutation.SetCurrentEventVersion(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := commitment.DefaultID()
 		_c.mutation.SetID(v)
@@ -277,6 +472,22 @@ func (_c *CommitmentCreate) check() error {
 	}
 	if _, ok := _c.mutation.UserConfirmed(); !ok {
 		return &ValidationError{Name: "user_confirmed", err: errors.New(`ent: missing required field "Commitment.user_confirmed"`)}
+	}
+	if _, ok := _c.mutation.Acceptance(); !ok {
+		return &ValidationError{Name: "acceptance", err: errors.New(`ent: missing required field "Commitment.acceptance"`)}
+	}
+	if v, ok := _c.mutation.Acceptance(); ok {
+		if err := commitment.AcceptanceValidator(v); err != nil {
+			return &ValidationError{Name: "acceptance", err: fmt.Errorf(`ent: validator failed for field "Commitment.acceptance": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.CurrentEventVersion(); !ok {
+		return &ValidationError{Name: "current_event_version", err: errors.New(`ent: missing required field "Commitment.current_event_version"`)}
+	}
+	if v, ok := _c.mutation.CurrentEventVersion(); ok {
+		if err := commitment.CurrentEventVersionValidator(v); err != nil {
+			return &ValidationError{Name: "current_event_version", err: fmt.Errorf(`ent: validator failed for field "Commitment.current_event_version": %w`, err)}
+		}
 	}
 	if len(_c.mutation.WorkspaceIDs()) == 0 {
 		return &ValidationError{Name: "workspace", err: errors.New(`ent: missing required edge "Commitment.workspace"`)}
@@ -355,6 +566,46 @@ func (_c *CommitmentCreate) createSpec() (*Commitment, *sqlgraph.CreateSpec) {
 		_spec.SetField(commitment.FieldUserConfirmed, field.TypeBool, value)
 		_node.UserConfirmed = value
 	}
+	if value, ok := _c.mutation.OwnerParticipantRef(); ok {
+		_spec.SetField(commitment.FieldOwnerParticipantRef, field.TypeString, value)
+		_node.OwnerParticipantRef = value
+	}
+	if value, ok := _c.mutation.CounterpartyParticipantRef(); ok {
+		_spec.SetField(commitment.FieldCounterpartyParticipantRef, field.TypeString, value)
+		_node.CounterpartyParticipantRef = value
+	}
+	if value, ok := _c.mutation.BeneficiaryParticipantRef(); ok {
+		_spec.SetField(commitment.FieldBeneficiaryParticipantRef, field.TypeString, value)
+		_node.BeneficiaryParticipantRef = value
+	}
+	if value, ok := _c.mutation.SourcePhrase(); ok {
+		_spec.SetField(commitment.FieldSourcePhrase, field.TypeString, value)
+		_node.SourcePhrase = value
+	}
+	if value, ok := _c.mutation.DuePhrase(); ok {
+		_spec.SetField(commitment.FieldDuePhrase, field.TypeString, value)
+		_node.DuePhrase = value
+	}
+	if value, ok := _c.mutation.DueTimezone(); ok {
+		_spec.SetField(commitment.FieldDueTimezone, field.TypeString, value)
+		_node.DueTimezone = value
+	}
+	if value, ok := _c.mutation.Acceptance(); ok {
+		_spec.SetField(commitment.FieldAcceptance, field.TypeString, value)
+		_node.Acceptance = value
+	}
+	if value, ok := _c.mutation.Blocker(); ok {
+		_spec.SetField(commitment.FieldBlocker, field.TypeString, value)
+		_node.Blocker = value
+	}
+	if value, ok := _c.mutation.CompletedAt(); ok {
+		_spec.SetField(commitment.FieldCompletedAt, field.TypeTime, value)
+		_node.CompletedAt = &value
+	}
+	if value, ok := _c.mutation.CurrentEventVersion(); ok {
+		_spec.SetField(commitment.FieldCurrentEventVersion, field.TypeInt, value)
+		_node.CurrentEventVersion = value
+	}
 	if nodes := _c.mutation.WorkspaceIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -415,6 +666,54 @@ func (_c *CommitmentCreate) createSpec() (*Commitment, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(revenueevidence.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.EventsTable,
+			Columns: []string{commitment.EventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.OutgoingDependenciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.OutgoingDependenciesTable,
+			Columns: []string{commitment.OutgoingDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.IncomingDependenciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   commitment.IncomingDependenciesTable,
+			Columns: []string{commitment.IncomingDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -567,6 +866,180 @@ func (u *CommitmentUpsert) SetUserConfirmed(v bool) *CommitmentUpsert {
 // UpdateUserConfirmed sets the "user_confirmed" field to the value that was provided on create.
 func (u *CommitmentUpsert) UpdateUserConfirmed() *CommitmentUpsert {
 	u.SetExcluded(commitment.FieldUserConfirmed)
+	return u
+}
+
+// SetOwnerParticipantRef sets the "owner_participant_ref" field.
+func (u *CommitmentUpsert) SetOwnerParticipantRef(v string) *CommitmentUpsert {
+	u.Set(commitment.FieldOwnerParticipantRef, v)
+	return u
+}
+
+// UpdateOwnerParticipantRef sets the "owner_participant_ref" field to the value that was provided on create.
+func (u *CommitmentUpsert) UpdateOwnerParticipantRef() *CommitmentUpsert {
+	u.SetExcluded(commitment.FieldOwnerParticipantRef)
+	return u
+}
+
+// ClearOwnerParticipantRef clears the value of the "owner_participant_ref" field.
+func (u *CommitmentUpsert) ClearOwnerParticipantRef() *CommitmentUpsert {
+	u.SetNull(commitment.FieldOwnerParticipantRef)
+	return u
+}
+
+// SetCounterpartyParticipantRef sets the "counterparty_participant_ref" field.
+func (u *CommitmentUpsert) SetCounterpartyParticipantRef(v string) *CommitmentUpsert {
+	u.Set(commitment.FieldCounterpartyParticipantRef, v)
+	return u
+}
+
+// UpdateCounterpartyParticipantRef sets the "counterparty_participant_ref" field to the value that was provided on create.
+func (u *CommitmentUpsert) UpdateCounterpartyParticipantRef() *CommitmentUpsert {
+	u.SetExcluded(commitment.FieldCounterpartyParticipantRef)
+	return u
+}
+
+// ClearCounterpartyParticipantRef clears the value of the "counterparty_participant_ref" field.
+func (u *CommitmentUpsert) ClearCounterpartyParticipantRef() *CommitmentUpsert {
+	u.SetNull(commitment.FieldCounterpartyParticipantRef)
+	return u
+}
+
+// SetBeneficiaryParticipantRef sets the "beneficiary_participant_ref" field.
+func (u *CommitmentUpsert) SetBeneficiaryParticipantRef(v string) *CommitmentUpsert {
+	u.Set(commitment.FieldBeneficiaryParticipantRef, v)
+	return u
+}
+
+// UpdateBeneficiaryParticipantRef sets the "beneficiary_participant_ref" field to the value that was provided on create.
+func (u *CommitmentUpsert) UpdateBeneficiaryParticipantRef() *CommitmentUpsert {
+	u.SetExcluded(commitment.FieldBeneficiaryParticipantRef)
+	return u
+}
+
+// ClearBeneficiaryParticipantRef clears the value of the "beneficiary_participant_ref" field.
+func (u *CommitmentUpsert) ClearBeneficiaryParticipantRef() *CommitmentUpsert {
+	u.SetNull(commitment.FieldBeneficiaryParticipantRef)
+	return u
+}
+
+// SetSourcePhrase sets the "source_phrase" field.
+func (u *CommitmentUpsert) SetSourcePhrase(v string) *CommitmentUpsert {
+	u.Set(commitment.FieldSourcePhrase, v)
+	return u
+}
+
+// UpdateSourcePhrase sets the "source_phrase" field to the value that was provided on create.
+func (u *CommitmentUpsert) UpdateSourcePhrase() *CommitmentUpsert {
+	u.SetExcluded(commitment.FieldSourcePhrase)
+	return u
+}
+
+// ClearSourcePhrase clears the value of the "source_phrase" field.
+func (u *CommitmentUpsert) ClearSourcePhrase() *CommitmentUpsert {
+	u.SetNull(commitment.FieldSourcePhrase)
+	return u
+}
+
+// SetDuePhrase sets the "due_phrase" field.
+func (u *CommitmentUpsert) SetDuePhrase(v string) *CommitmentUpsert {
+	u.Set(commitment.FieldDuePhrase, v)
+	return u
+}
+
+// UpdateDuePhrase sets the "due_phrase" field to the value that was provided on create.
+func (u *CommitmentUpsert) UpdateDuePhrase() *CommitmentUpsert {
+	u.SetExcluded(commitment.FieldDuePhrase)
+	return u
+}
+
+// ClearDuePhrase clears the value of the "due_phrase" field.
+func (u *CommitmentUpsert) ClearDuePhrase() *CommitmentUpsert {
+	u.SetNull(commitment.FieldDuePhrase)
+	return u
+}
+
+// SetDueTimezone sets the "due_timezone" field.
+func (u *CommitmentUpsert) SetDueTimezone(v string) *CommitmentUpsert {
+	u.Set(commitment.FieldDueTimezone, v)
+	return u
+}
+
+// UpdateDueTimezone sets the "due_timezone" field to the value that was provided on create.
+func (u *CommitmentUpsert) UpdateDueTimezone() *CommitmentUpsert {
+	u.SetExcluded(commitment.FieldDueTimezone)
+	return u
+}
+
+// ClearDueTimezone clears the value of the "due_timezone" field.
+func (u *CommitmentUpsert) ClearDueTimezone() *CommitmentUpsert {
+	u.SetNull(commitment.FieldDueTimezone)
+	return u
+}
+
+// SetAcceptance sets the "acceptance" field.
+func (u *CommitmentUpsert) SetAcceptance(v string) *CommitmentUpsert {
+	u.Set(commitment.FieldAcceptance, v)
+	return u
+}
+
+// UpdateAcceptance sets the "acceptance" field to the value that was provided on create.
+func (u *CommitmentUpsert) UpdateAcceptance() *CommitmentUpsert {
+	u.SetExcluded(commitment.FieldAcceptance)
+	return u
+}
+
+// SetBlocker sets the "blocker" field.
+func (u *CommitmentUpsert) SetBlocker(v string) *CommitmentUpsert {
+	u.Set(commitment.FieldBlocker, v)
+	return u
+}
+
+// UpdateBlocker sets the "blocker" field to the value that was provided on create.
+func (u *CommitmentUpsert) UpdateBlocker() *CommitmentUpsert {
+	u.SetExcluded(commitment.FieldBlocker)
+	return u
+}
+
+// ClearBlocker clears the value of the "blocker" field.
+func (u *CommitmentUpsert) ClearBlocker() *CommitmentUpsert {
+	u.SetNull(commitment.FieldBlocker)
+	return u
+}
+
+// SetCompletedAt sets the "completed_at" field.
+func (u *CommitmentUpsert) SetCompletedAt(v time.Time) *CommitmentUpsert {
+	u.Set(commitment.FieldCompletedAt, v)
+	return u
+}
+
+// UpdateCompletedAt sets the "completed_at" field to the value that was provided on create.
+func (u *CommitmentUpsert) UpdateCompletedAt() *CommitmentUpsert {
+	u.SetExcluded(commitment.FieldCompletedAt)
+	return u
+}
+
+// ClearCompletedAt clears the value of the "completed_at" field.
+func (u *CommitmentUpsert) ClearCompletedAt() *CommitmentUpsert {
+	u.SetNull(commitment.FieldCompletedAt)
+	return u
+}
+
+// SetCurrentEventVersion sets the "current_event_version" field.
+func (u *CommitmentUpsert) SetCurrentEventVersion(v int) *CommitmentUpsert {
+	u.Set(commitment.FieldCurrentEventVersion, v)
+	return u
+}
+
+// UpdateCurrentEventVersion sets the "current_event_version" field to the value that was provided on create.
+func (u *CommitmentUpsert) UpdateCurrentEventVersion() *CommitmentUpsert {
+	u.SetExcluded(commitment.FieldCurrentEventVersion)
+	return u
+}
+
+// AddCurrentEventVersion adds v to the "current_event_version" field.
+func (u *CommitmentUpsert) AddCurrentEventVersion(v int) *CommitmentUpsert {
+	u.Add(commitment.FieldCurrentEventVersion, v)
 	return u
 }
 
@@ -730,6 +1203,209 @@ func (u *CommitmentUpsertOne) SetUserConfirmed(v bool) *CommitmentUpsertOne {
 func (u *CommitmentUpsertOne) UpdateUserConfirmed() *CommitmentUpsertOne {
 	return u.Update(func(s *CommitmentUpsert) {
 		s.UpdateUserConfirmed()
+	})
+}
+
+// SetOwnerParticipantRef sets the "owner_participant_ref" field.
+func (u *CommitmentUpsertOne) SetOwnerParticipantRef(v string) *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetOwnerParticipantRef(v)
+	})
+}
+
+// UpdateOwnerParticipantRef sets the "owner_participant_ref" field to the value that was provided on create.
+func (u *CommitmentUpsertOne) UpdateOwnerParticipantRef() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateOwnerParticipantRef()
+	})
+}
+
+// ClearOwnerParticipantRef clears the value of the "owner_participant_ref" field.
+func (u *CommitmentUpsertOne) ClearOwnerParticipantRef() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearOwnerParticipantRef()
+	})
+}
+
+// SetCounterpartyParticipantRef sets the "counterparty_participant_ref" field.
+func (u *CommitmentUpsertOne) SetCounterpartyParticipantRef(v string) *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetCounterpartyParticipantRef(v)
+	})
+}
+
+// UpdateCounterpartyParticipantRef sets the "counterparty_participant_ref" field to the value that was provided on create.
+func (u *CommitmentUpsertOne) UpdateCounterpartyParticipantRef() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateCounterpartyParticipantRef()
+	})
+}
+
+// ClearCounterpartyParticipantRef clears the value of the "counterparty_participant_ref" field.
+func (u *CommitmentUpsertOne) ClearCounterpartyParticipantRef() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearCounterpartyParticipantRef()
+	})
+}
+
+// SetBeneficiaryParticipantRef sets the "beneficiary_participant_ref" field.
+func (u *CommitmentUpsertOne) SetBeneficiaryParticipantRef(v string) *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetBeneficiaryParticipantRef(v)
+	})
+}
+
+// UpdateBeneficiaryParticipantRef sets the "beneficiary_participant_ref" field to the value that was provided on create.
+func (u *CommitmentUpsertOne) UpdateBeneficiaryParticipantRef() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateBeneficiaryParticipantRef()
+	})
+}
+
+// ClearBeneficiaryParticipantRef clears the value of the "beneficiary_participant_ref" field.
+func (u *CommitmentUpsertOne) ClearBeneficiaryParticipantRef() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearBeneficiaryParticipantRef()
+	})
+}
+
+// SetSourcePhrase sets the "source_phrase" field.
+func (u *CommitmentUpsertOne) SetSourcePhrase(v string) *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetSourcePhrase(v)
+	})
+}
+
+// UpdateSourcePhrase sets the "source_phrase" field to the value that was provided on create.
+func (u *CommitmentUpsertOne) UpdateSourcePhrase() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateSourcePhrase()
+	})
+}
+
+// ClearSourcePhrase clears the value of the "source_phrase" field.
+func (u *CommitmentUpsertOne) ClearSourcePhrase() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearSourcePhrase()
+	})
+}
+
+// SetDuePhrase sets the "due_phrase" field.
+func (u *CommitmentUpsertOne) SetDuePhrase(v string) *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetDuePhrase(v)
+	})
+}
+
+// UpdateDuePhrase sets the "due_phrase" field to the value that was provided on create.
+func (u *CommitmentUpsertOne) UpdateDuePhrase() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateDuePhrase()
+	})
+}
+
+// ClearDuePhrase clears the value of the "due_phrase" field.
+func (u *CommitmentUpsertOne) ClearDuePhrase() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearDuePhrase()
+	})
+}
+
+// SetDueTimezone sets the "due_timezone" field.
+func (u *CommitmentUpsertOne) SetDueTimezone(v string) *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetDueTimezone(v)
+	})
+}
+
+// UpdateDueTimezone sets the "due_timezone" field to the value that was provided on create.
+func (u *CommitmentUpsertOne) UpdateDueTimezone() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateDueTimezone()
+	})
+}
+
+// ClearDueTimezone clears the value of the "due_timezone" field.
+func (u *CommitmentUpsertOne) ClearDueTimezone() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearDueTimezone()
+	})
+}
+
+// SetAcceptance sets the "acceptance" field.
+func (u *CommitmentUpsertOne) SetAcceptance(v string) *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetAcceptance(v)
+	})
+}
+
+// UpdateAcceptance sets the "acceptance" field to the value that was provided on create.
+func (u *CommitmentUpsertOne) UpdateAcceptance() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateAcceptance()
+	})
+}
+
+// SetBlocker sets the "blocker" field.
+func (u *CommitmentUpsertOne) SetBlocker(v string) *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetBlocker(v)
+	})
+}
+
+// UpdateBlocker sets the "blocker" field to the value that was provided on create.
+func (u *CommitmentUpsertOne) UpdateBlocker() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateBlocker()
+	})
+}
+
+// ClearBlocker clears the value of the "blocker" field.
+func (u *CommitmentUpsertOne) ClearBlocker() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearBlocker()
+	})
+}
+
+// SetCompletedAt sets the "completed_at" field.
+func (u *CommitmentUpsertOne) SetCompletedAt(v time.Time) *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetCompletedAt(v)
+	})
+}
+
+// UpdateCompletedAt sets the "completed_at" field to the value that was provided on create.
+func (u *CommitmentUpsertOne) UpdateCompletedAt() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateCompletedAt()
+	})
+}
+
+// ClearCompletedAt clears the value of the "completed_at" field.
+func (u *CommitmentUpsertOne) ClearCompletedAt() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearCompletedAt()
+	})
+}
+
+// SetCurrentEventVersion sets the "current_event_version" field.
+func (u *CommitmentUpsertOne) SetCurrentEventVersion(v int) *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetCurrentEventVersion(v)
+	})
+}
+
+// AddCurrentEventVersion adds v to the "current_event_version" field.
+func (u *CommitmentUpsertOne) AddCurrentEventVersion(v int) *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.AddCurrentEventVersion(v)
+	})
+}
+
+// UpdateCurrentEventVersion sets the "current_event_version" field to the value that was provided on create.
+func (u *CommitmentUpsertOne) UpdateCurrentEventVersion() *CommitmentUpsertOne {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateCurrentEventVersion()
 	})
 }
 
@@ -1060,6 +1736,209 @@ func (u *CommitmentUpsertBulk) SetUserConfirmed(v bool) *CommitmentUpsertBulk {
 func (u *CommitmentUpsertBulk) UpdateUserConfirmed() *CommitmentUpsertBulk {
 	return u.Update(func(s *CommitmentUpsert) {
 		s.UpdateUserConfirmed()
+	})
+}
+
+// SetOwnerParticipantRef sets the "owner_participant_ref" field.
+func (u *CommitmentUpsertBulk) SetOwnerParticipantRef(v string) *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetOwnerParticipantRef(v)
+	})
+}
+
+// UpdateOwnerParticipantRef sets the "owner_participant_ref" field to the value that was provided on create.
+func (u *CommitmentUpsertBulk) UpdateOwnerParticipantRef() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateOwnerParticipantRef()
+	})
+}
+
+// ClearOwnerParticipantRef clears the value of the "owner_participant_ref" field.
+func (u *CommitmentUpsertBulk) ClearOwnerParticipantRef() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearOwnerParticipantRef()
+	})
+}
+
+// SetCounterpartyParticipantRef sets the "counterparty_participant_ref" field.
+func (u *CommitmentUpsertBulk) SetCounterpartyParticipantRef(v string) *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetCounterpartyParticipantRef(v)
+	})
+}
+
+// UpdateCounterpartyParticipantRef sets the "counterparty_participant_ref" field to the value that was provided on create.
+func (u *CommitmentUpsertBulk) UpdateCounterpartyParticipantRef() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateCounterpartyParticipantRef()
+	})
+}
+
+// ClearCounterpartyParticipantRef clears the value of the "counterparty_participant_ref" field.
+func (u *CommitmentUpsertBulk) ClearCounterpartyParticipantRef() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearCounterpartyParticipantRef()
+	})
+}
+
+// SetBeneficiaryParticipantRef sets the "beneficiary_participant_ref" field.
+func (u *CommitmentUpsertBulk) SetBeneficiaryParticipantRef(v string) *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetBeneficiaryParticipantRef(v)
+	})
+}
+
+// UpdateBeneficiaryParticipantRef sets the "beneficiary_participant_ref" field to the value that was provided on create.
+func (u *CommitmentUpsertBulk) UpdateBeneficiaryParticipantRef() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateBeneficiaryParticipantRef()
+	})
+}
+
+// ClearBeneficiaryParticipantRef clears the value of the "beneficiary_participant_ref" field.
+func (u *CommitmentUpsertBulk) ClearBeneficiaryParticipantRef() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearBeneficiaryParticipantRef()
+	})
+}
+
+// SetSourcePhrase sets the "source_phrase" field.
+func (u *CommitmentUpsertBulk) SetSourcePhrase(v string) *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetSourcePhrase(v)
+	})
+}
+
+// UpdateSourcePhrase sets the "source_phrase" field to the value that was provided on create.
+func (u *CommitmentUpsertBulk) UpdateSourcePhrase() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateSourcePhrase()
+	})
+}
+
+// ClearSourcePhrase clears the value of the "source_phrase" field.
+func (u *CommitmentUpsertBulk) ClearSourcePhrase() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearSourcePhrase()
+	})
+}
+
+// SetDuePhrase sets the "due_phrase" field.
+func (u *CommitmentUpsertBulk) SetDuePhrase(v string) *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetDuePhrase(v)
+	})
+}
+
+// UpdateDuePhrase sets the "due_phrase" field to the value that was provided on create.
+func (u *CommitmentUpsertBulk) UpdateDuePhrase() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateDuePhrase()
+	})
+}
+
+// ClearDuePhrase clears the value of the "due_phrase" field.
+func (u *CommitmentUpsertBulk) ClearDuePhrase() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearDuePhrase()
+	})
+}
+
+// SetDueTimezone sets the "due_timezone" field.
+func (u *CommitmentUpsertBulk) SetDueTimezone(v string) *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetDueTimezone(v)
+	})
+}
+
+// UpdateDueTimezone sets the "due_timezone" field to the value that was provided on create.
+func (u *CommitmentUpsertBulk) UpdateDueTimezone() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateDueTimezone()
+	})
+}
+
+// ClearDueTimezone clears the value of the "due_timezone" field.
+func (u *CommitmentUpsertBulk) ClearDueTimezone() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearDueTimezone()
+	})
+}
+
+// SetAcceptance sets the "acceptance" field.
+func (u *CommitmentUpsertBulk) SetAcceptance(v string) *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetAcceptance(v)
+	})
+}
+
+// UpdateAcceptance sets the "acceptance" field to the value that was provided on create.
+func (u *CommitmentUpsertBulk) UpdateAcceptance() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateAcceptance()
+	})
+}
+
+// SetBlocker sets the "blocker" field.
+func (u *CommitmentUpsertBulk) SetBlocker(v string) *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetBlocker(v)
+	})
+}
+
+// UpdateBlocker sets the "blocker" field to the value that was provided on create.
+func (u *CommitmentUpsertBulk) UpdateBlocker() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateBlocker()
+	})
+}
+
+// ClearBlocker clears the value of the "blocker" field.
+func (u *CommitmentUpsertBulk) ClearBlocker() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearBlocker()
+	})
+}
+
+// SetCompletedAt sets the "completed_at" field.
+func (u *CommitmentUpsertBulk) SetCompletedAt(v time.Time) *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetCompletedAt(v)
+	})
+}
+
+// UpdateCompletedAt sets the "completed_at" field to the value that was provided on create.
+func (u *CommitmentUpsertBulk) UpdateCompletedAt() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateCompletedAt()
+	})
+}
+
+// ClearCompletedAt clears the value of the "completed_at" field.
+func (u *CommitmentUpsertBulk) ClearCompletedAt() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.ClearCompletedAt()
+	})
+}
+
+// SetCurrentEventVersion sets the "current_event_version" field.
+func (u *CommitmentUpsertBulk) SetCurrentEventVersion(v int) *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.SetCurrentEventVersion(v)
+	})
+}
+
+// AddCurrentEventVersion adds v to the "current_event_version" field.
+func (u *CommitmentUpsertBulk) AddCurrentEventVersion(v int) *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.AddCurrentEventVersion(v)
+	})
+}
+
+// UpdateCurrentEventVersion sets the "current_event_version" field to the value that was provided on create.
+func (u *CommitmentUpsertBulk) UpdateCurrentEventVersion() *CommitmentUpsertBulk {
+	return u.Update(func(s *CommitmentUpsert) {
+		s.UpdateCurrentEventVersion()
 	})
 }
 

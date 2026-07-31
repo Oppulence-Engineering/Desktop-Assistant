@@ -47,6 +47,7 @@ type RelationshipParticipantInput struct {
 
 // RelationshipAssertionInput describes a sourced candidate value for canonical state.
 type RelationshipAssertionInput struct {
+	ID         uuid.UUID `json:"-"`
 	Dimension  string    `json:"dimension"`
 	Value      string    `json:"value"`
 	SourceType string    `json:"sourceType"`
@@ -126,6 +127,10 @@ func (s *Service) IngestRelationshipObservations(
 			_ = tx.Rollback()
 			return nil, err
 		}
+		if err := persistContradictionArtifacts(ctx, txc, ws, u, rel, s.now()); err != nil {
+			_ = tx.Rollback()
+			return nil, err
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -185,6 +190,12 @@ func (s *Service) ingestRelationshipObservation(
 	if err != nil {
 		return RelationshipObservationResult{}, err
 	}
+	if err := prepareConversationReview(ctx, client, rel, &input); err != nil {
+		return RelationshipObservationResult{}, err
+	}
+	if err := enforceConversationObservationPolicy(ctx, client, ws, u, rel, &input, s.now()); err != nil {
+		return RelationshipObservationResult{}, err
+	}
 	factsJSON, err := json.Marshal(input.Facts)
 	if err != nil {
 		return RelationshipObservationResult{}, fmt.Errorf("%w: normalized facts: %v", ErrInvalidInput, err)
@@ -222,6 +233,9 @@ func (s *Service) ingestRelationshipObservation(
 		}
 		return RelationshipObservationResult{}, err
 	}
+	if err := persistConversationObservationArtifacts(ctx, client, ws, u, rel, observation, input); err != nil {
+		return RelationshipObservationResult{}, err
+	}
 
 	for _, participant := range input.Participants {
 		if err := upsertRelationshipParticipant(ctx, client, ws, u, rel, participant); err != nil {
@@ -235,7 +249,7 @@ func (s *Service) ingestRelationshipObservation(
 			return RelationshipObservationResult{}, err
 		}
 	}
-	commitment, err := createConfirmedCommitment(ctx, client, ws, u, rel, input)
+	commitment, err := createConfirmedCommitment(ctx, client, ws, u, rel, observation, input)
 	if err != nil {
 		return RelationshipObservationResult{}, err
 	}
@@ -267,6 +281,7 @@ func createConfirmedCommitment(
 	ws *ent.RevenueWorkspace,
 	u *ent.User,
 	rel *ent.Relationship,
+	observation *ent.RelationshipObservation,
 	input RelationshipObservationInput,
 ) (*ent.Commitment, error) {
 	if strings.TrimSpace(input.EventType) != "commitment_confirmed" {
@@ -293,19 +308,85 @@ func createConfirmedCommitment(
 		SetText(text).
 		SetStatus("open").
 		SetConfidence(1).
-		SetUserConfirmed(true)
+		SetUserConfirmed(true).
+		SetAcceptance("internally_confirmed").
+		SetCurrentEventVersion(2)
+	ownerRef, _ := input.Facts["owner_participant_ref"].(string)
+	counterpartyRef, _ := input.Facts["counterparty_participant_ref"].(string)
+	beneficiaryRef, _ := input.Facts["beneficiary_participant_ref"].(string)
+	if strings.TrimSpace(ownerRef) == "" {
+		if direction == "promised_by_me" {
+			ownerRef = "local-user"
+		} else {
+			ownerRef = "meeting-counterparty"
+		}
+	}
+	if strings.TrimSpace(counterpartyRef) == "" {
+		if direction == "promised_by_me" {
+			counterpartyRef = "meeting-counterparty"
+		} else {
+			counterpartyRef = "local-user"
+		}
+	}
+	create.SetOwnerParticipantRef(ownerRef).
+		SetCounterpartyParticipantRef(counterpartyRef)
+	if beneficiaryRef != "" {
+		create.SetBeneficiaryParticipantRef(beneficiaryRef)
+	}
+	sourcePhrase, _ := input.Facts["evidence_quote"].(string)
+	duePhrase, _ := input.Facts["commitment_due_phrase"].(string)
+	dueTimezone, _ := input.Facts["commitment_due_timezone"].(string)
+	if strings.TrimSpace(sourcePhrase) != "" {
+		create.SetSourcePhrase(strings.TrimSpace(sourcePhrase))
+	}
+	if strings.TrimSpace(duePhrase) != "" {
+		create.SetDuePhrase(strings.TrimSpace(duePhrase))
+	}
+	if strings.TrimSpace(dueTimezone) != "" {
+		create.SetDueTimezone(strings.TrimSpace(dueTimezone))
+	}
+	dueAtValue := ""
 	if dueAtRaw, _ := input.Facts["commitment_due_at"].(string); strings.TrimSpace(dueAtRaw) != "" {
 		dueAt, parseErr := time.Parse(time.RFC3339, dueAtRaw)
 		if parseErr != nil {
 			return nil, fmt.Errorf("%w: invalid commitment_due_at", ErrInvalidInput)
 		}
 		create.SetDueAt(dueAt.UTC())
+		dueAtValue = dueAt.UTC().Format(time.RFC3339)
 	}
 	commitment, err := create.Save(ctx)
 	if err != nil && isValidationError(err) {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
 	}
-	return commitment, err
+	if err != nil {
+		return nil, err
+	}
+	payload, marshalErr := json.Marshal(map[string]any{
+		"ownerParticipantRef": ownerRef, "counterpartyParticipantRef": counterpartyRef,
+		"beneficiaryParticipantRef": beneficiaryRef, "action": text,
+		"duePhrase": duePhrase, "dueAt": dueAtValue, "dueTimezone": dueTimezone,
+	})
+	if marshalErr != nil {
+		return nil, marshalErr
+	}
+	evidenceRefs := []string{"relationship-observation:" + observation.ID.String()}
+	for version, eventKind := range []string{"proposed", "internally_confirmed"} {
+		actorType := "ai_candidate"
+		if eventKind == "internally_confirmed" {
+			actorType = "user"
+		}
+		_, eventErr := client.CommitmentEvent.Create().
+			SetWorkspace(ws).SetRelationship(rel).SetUser(u).SetCommitment(commitment).
+			SetSourceEventID(input.ExternalID + ":" + eventKind).
+			SetVersion(version + 1).SetKind(eventKind).SetActorType(actorType).
+			SetActorRef(u.ID.String()).SetOccurredAt(input.OccurredAt.UTC()).
+			SetSourceObservationID(observation.ID.String()).SetEvidenceRefs(evidenceRefs).
+			SetPayloadJSON(string(payload)).Save(ctx)
+		if eventErr != nil {
+			return nil, eventErr
+		}
+	}
+	return commitment, nil
 }
 
 // createConfirmedCommitmentEvidence bridges the append-only relationship observation
@@ -615,6 +696,9 @@ func createRelationshipAssertion(
 		SetConfidence(input.Confidence).
 		SetReason(input.Reason).
 		SetValidFrom(input.ValidFrom.UTC())
+	if input.ID != uuid.Nil {
+		create.SetID(input.ID)
+	}
 	if observation != nil {
 		create.SetObservation(observation).
 			SetSupportingObservationIds([]string{observation.ID.String()})

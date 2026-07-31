@@ -147,6 +147,16 @@ export interface RelationshipCommitment {
   dueAt?: string;
   confidence: number;
   userConfirmed: boolean;
+  ownerParticipantRef?: string;
+  counterpartyParticipantRef?: string;
+  beneficiaryParticipantRef?: string;
+  sourcePhrase?: string;
+  duePhrase?: string;
+  dueTimezone?: string;
+  acceptance?: "candidate" | "internally_confirmed" | "offered" | "accepted" | "disputed";
+  blocker?: string;
+  completedAt?: string;
+  currentEventVersion?: number;
 }
 
 export interface RelationshipObservation {
@@ -259,7 +269,18 @@ export interface RelationshipDetail {
   recommendations: RevenueAction[];
   participants: RelationshipParticipant[];
   commitments: RelationshipCommitment[];
+  commitmentDependencies: CommitmentDependency[];
   intelligence?: RelationshipIntelligence;
+}
+
+export interface CommitmentDependency {
+  dependencyId: string;
+  relationshipId: string;
+  fromCommitmentId: string;
+  toCommitmentId: string;
+  kind: "blocks" | "requires" | "supersedes";
+  evidenceRefs: string[];
+  createdAt: string;
 }
 
 export interface ConversationClaim {
@@ -297,6 +318,13 @@ export interface ConversationReviewItem {
   claimId?: string;
   stateDimension?: string;
   exactQuote?: string;
+  batchId?: string;
+  status?: "pending_review" | "accepted" | "corrected" | "rejected" | "deferred";
+  before?: unknown;
+  proposedAfter?: unknown;
+  caveats?: string[];
+  dependentActionIds?: string[];
+  baselineVersion?: number;
 }
 
 export interface RelationshipDelta {
@@ -327,11 +355,23 @@ export interface RelationshipLiveCue {
     | "unresolved_objection"
     | "renewal_context"
     | "missing_next_step"
-    | "contradiction";
+    | "contradiction"
+    | "stakeholder_gap"
+    | "competitor_resurfaced"
+    | "promise_missing_owner"
+    | "promise_missing_date";
   title: string;
   detail: string;
   severity: "info" | "attention" | "critical";
   evidenceId?: string;
+  sourceRefs?: string[];
+  suggestedQuestion?: string;
+  triggerReason?: string;
+  createdAt?: string;
+  expiresAt?: string;
+  confidence?: number;
+  privacyRoute?: "device" | "cloud" | "deterministic";
+  dismissalState?: "visible" | "dismissed_for_meeting" | "never_show_kind";
 }
 
 export interface RelationshipIntelligence {
@@ -351,6 +391,115 @@ export interface RelationshipIntelligence {
   }>;
   delta: RelationshipDelta;
   liveCues: RelationshipLiveCue[];
+  contradictionCases: Array<{
+    caseId: string;
+    relationshipId: string;
+    subjectRef: string;
+    dimension: string;
+    status: "open" | "auto_resolved_by_authority" | "user_resolved" | "source_corrected" | "deferred" | "obsolete";
+    reason: string;
+    sides: Array<{
+      assertionId: string;
+      sourceType: string;
+      source: string;
+      value: { kind: string; value?: string };
+      validFrom: string;
+      observedAt: string;
+      evidenceRefs: string[];
+      identityConfidence: number;
+    }>;
+    openedAt: string;
+    resolvedAt?: string;
+  }>;
+  recoveryEvaluations: Array<{
+    evaluationId: string;
+    commitmentId: string;
+    commitmentVersion: number;
+    recoveryWindow: string;
+    reconcilerVersion: string;
+    classification: string;
+    evidenceRefs: string[];
+    staleSources: string[];
+    requiresReview: boolean;
+    proposedActionType?: string;
+    explanation: string;
+    evaluatedAt: string;
+  }>;
+  recommendationEvaluations: Array<{
+    evaluationId: string;
+    recommendationId: string;
+    rankerVersion: string;
+    baselineScore: number;
+    finalScore: number;
+    factors: Array<{ factor: string; value: string | number | boolean; contribution: number; reason: string }>;
+    evaluatedAt: string;
+    sampleScope: "cold_start" | "workspace" | "user";
+  }>;
+  mutualActionPlans: Array<{
+    planId: string;
+    relationshipId: string;
+    internalOwnerRef: string;
+    counterpartyRef: string;
+    status: string;
+    currentRevision: {
+      revisionId: string;
+      planId: string;
+      version: number;
+      revisionHash: string;
+      createdAt: string;
+      createdBy: string;
+      items: Array<{
+        itemId: string;
+        commitmentId?: string;
+        milestoneRef?: string;
+        title: string;
+        ownerParticipantRef: string;
+        dependencyItemIds: string[];
+        dueAt?: string;
+        status: string;
+        evidenceRefs: string[];
+      }>;
+    };
+    sharePolicyDecisionId?: string;
+    tokenState: string;
+  }>;
+  effectivePolicy: {
+    capture: "deny" | "require_consent" | "allow";
+    modelRoute: "local_only" | "region_restricted" | "hosted_allowed";
+    publishEvidence: boolean;
+    externalShare: boolean;
+    retentionDays: number;
+    redactionClasses: string[];
+    legalHold: boolean;
+    policyVersion: string;
+    sourceLayerIds: string[];
+    resolvedAt: string;
+  };
+  governanceDecisions: Array<{
+    decisionId: string;
+    checkpoint: string;
+    policyVersion: string;
+    allowed: boolean;
+    route: "none" | "device" | "cloud";
+    reason: string;
+    redactionClasses: string[];
+    decidedAt: string;
+  }>;
+  deletionReceipts: Array<{
+    receiptId: string;
+    requestedAt: string;
+    scopeRef: string;
+    legalHold: boolean;
+    status: "pending" | "blocked" | "partial" | "verified";
+    targets: Array<{
+      target: string;
+      status: "pending" | "deleted" | "not_found" | "blocked" | "failed";
+      verificationHash?: string;
+      errorCode?: string;
+      attempts: number;
+    }>;
+    completedAt?: string;
+  }>;
 }
 
 export interface DetectorStat {

@@ -43,6 +43,9 @@ final class TrackWriter {
     /// main-thread `finalize()` / `takePeak()` calls.
     private let lock = NSLock()
     private var frames: Int64 = 0
+    /// Converted frames observed from this source, including standby frames that may
+    /// later roll out of the bounded ring. This is the runtime liveness counter.
+    private var observedFrames: Int64 = 0
     private var closed = false
     private var overallPeak: Float = 0
     private var windowPeak: Float = 0
@@ -168,6 +171,7 @@ final class TrackWriter {
         guard out.frameLength > 0, let samples = out.int16ChannelData?[0] else { return }
 
         let count = Int(out.frameLength)
+        observedFrames += Int64(count)
         var peak: Float = 0
         for i in 0..<count {
             let magnitude = abs(Float(samples[i])) / 32768
@@ -215,10 +219,10 @@ final class TrackWriter {
         try? handle.close()
     }
 
-    var summary: (frames: Int64, peak: Float, firstBufferAt: Date?) {
+    var summary: (frames: Int64, observedFrames: Int64, peak: Float, firstBufferAt: Date?) {
         lock.lock()
         defer { lock.unlock() }
-        return (frames, overallPeak, firstBuffer)
+        return (frames, observedFrames, overallPeak, firstBuffer)
     }
 
     // MARK: -

@@ -169,6 +169,7 @@ function Indicator() {
   // Mic-only is worth saying here and not only in the app: it is the difference between
   // a transcript of a conversation and a transcript of one person talking.
   const micOnly = recording && !tracks.includes("system");
+  const captureProblem = status?.captureHealth?.activeEvents[0];
 
   const stop = async () => {
     setStopping(true);
@@ -203,6 +204,11 @@ function Indicator() {
         {micOnly && (
           <span className="warn" title="System audio is not being captured">
             mic only
+          </span>
+        )}
+        {captureProblem && (
+          <span className="warn" title={`${captureProblem.impact} ${captureProblem.remediation}`}>
+            capture warning
           </span>
         )}
         <div className="tracks">

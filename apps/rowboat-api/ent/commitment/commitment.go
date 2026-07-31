@@ -31,6 +31,26 @@ const (
 	FieldConfidence = "confidence"
 	// FieldUserConfirmed holds the string denoting the user_confirmed field in the database.
 	FieldUserConfirmed = "user_confirmed"
+	// FieldOwnerParticipantRef holds the string denoting the owner_participant_ref field in the database.
+	FieldOwnerParticipantRef = "owner_participant_ref"
+	// FieldCounterpartyParticipantRef holds the string denoting the counterparty_participant_ref field in the database.
+	FieldCounterpartyParticipantRef = "counterparty_participant_ref"
+	// FieldBeneficiaryParticipantRef holds the string denoting the beneficiary_participant_ref field in the database.
+	FieldBeneficiaryParticipantRef = "beneficiary_participant_ref"
+	// FieldSourcePhrase holds the string denoting the source_phrase field in the database.
+	FieldSourcePhrase = "source_phrase"
+	// FieldDuePhrase holds the string denoting the due_phrase field in the database.
+	FieldDuePhrase = "due_phrase"
+	// FieldDueTimezone holds the string denoting the due_timezone field in the database.
+	FieldDueTimezone = "due_timezone"
+	// FieldAcceptance holds the string denoting the acceptance field in the database.
+	FieldAcceptance = "acceptance"
+	// FieldBlocker holds the string denoting the blocker field in the database.
+	FieldBlocker = "blocker"
+	// FieldCompletedAt holds the string denoting the completed_at field in the database.
+	FieldCompletedAt = "completed_at"
+	// FieldCurrentEventVersion holds the string denoting the current_event_version field in the database.
+	FieldCurrentEventVersion = "current_event_version"
 	// EdgeWorkspace holds the string denoting the workspace edge name in mutations.
 	EdgeWorkspace = "workspace"
 	// EdgeRelationship holds the string denoting the relationship edge name in mutations.
@@ -39,6 +59,12 @@ const (
 	EdgeUser = "user"
 	// EdgeEvidences holds the string denoting the evidences edge name in mutations.
 	EdgeEvidences = "evidences"
+	// EdgeEvents holds the string denoting the events edge name in mutations.
+	EdgeEvents = "events"
+	// EdgeOutgoingDependencies holds the string denoting the outgoing_dependencies edge name in mutations.
+	EdgeOutgoingDependencies = "outgoing_dependencies"
+	// EdgeIncomingDependencies holds the string denoting the incoming_dependencies edge name in mutations.
+	EdgeIncomingDependencies = "incoming_dependencies"
 	// Table holds the table name of the commitment in the database.
 	Table = "commitments"
 	// WorkspaceTable is the table that holds the workspace relation/edge.
@@ -67,6 +93,27 @@ const (
 	// EvidencesInverseTable is the table name for the RevenueEvidence entity.
 	// It exists in this package in order to avoid circular dependency with the "revenueevidence" package.
 	EvidencesInverseTable = "revenue_evidences"
+	// EventsTable is the table that holds the events relation/edge.
+	EventsTable = "commitment_events"
+	// EventsInverseTable is the table name for the CommitmentEvent entity.
+	// It exists in this package in order to avoid circular dependency with the "commitmentevent" package.
+	EventsInverseTable = "commitment_events"
+	// EventsColumn is the table column denoting the events relation/edge.
+	EventsColumn = "commitment_id"
+	// OutgoingDependenciesTable is the table that holds the outgoing_dependencies relation/edge.
+	OutgoingDependenciesTable = "commitment_dependencies"
+	// OutgoingDependenciesInverseTable is the table name for the CommitmentDependency entity.
+	// It exists in this package in order to avoid circular dependency with the "commitmentdependency" package.
+	OutgoingDependenciesInverseTable = "commitment_dependencies"
+	// OutgoingDependenciesColumn is the table column denoting the outgoing_dependencies relation/edge.
+	OutgoingDependenciesColumn = "from_commitment_id"
+	// IncomingDependenciesTable is the table that holds the incoming_dependencies relation/edge.
+	IncomingDependenciesTable = "commitment_dependencies"
+	// IncomingDependenciesInverseTable is the table name for the CommitmentDependency entity.
+	// It exists in this package in order to avoid circular dependency with the "commitmentdependency" package.
+	IncomingDependenciesInverseTable = "commitment_dependencies"
+	// IncomingDependenciesColumn is the table column denoting the incoming_dependencies relation/edge.
+	IncomingDependenciesColumn = "to_commitment_id"
 )
 
 // Columns holds all SQL columns for commitment fields.
@@ -80,6 +127,16 @@ var Columns = []string{
 	FieldDueAt,
 	FieldConfidence,
 	FieldUserConfirmed,
+	FieldOwnerParticipantRef,
+	FieldCounterpartyParticipantRef,
+	FieldBeneficiaryParticipantRef,
+	FieldSourcePhrase,
+	FieldDuePhrase,
+	FieldDueTimezone,
+	FieldAcceptance,
+	FieldBlocker,
+	FieldCompletedAt,
+	FieldCurrentEventVersion,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "commitments"
@@ -130,6 +187,14 @@ var (
 	ConfidenceValidator func(float64) error
 	// DefaultUserConfirmed holds the default value on creation for the "user_confirmed" field.
 	DefaultUserConfirmed bool
+	// DefaultAcceptance holds the default value on creation for the "acceptance" field.
+	DefaultAcceptance string
+	// AcceptanceValidator is a validator for the "acceptance" field. It is called by the builders before save.
+	AcceptanceValidator func(string) error
+	// DefaultCurrentEventVersion holds the default value on creation for the "current_event_version" field.
+	DefaultCurrentEventVersion int
+	// CurrentEventVersionValidator is a validator for the "current_event_version" field. It is called by the builders before save.
+	CurrentEventVersionValidator func(int) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -182,6 +247,56 @@ func ByUserConfirmed(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUserConfirmed, opts...).ToFunc()
 }
 
+// ByOwnerParticipantRef orders the results by the owner_participant_ref field.
+func ByOwnerParticipantRef(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOwnerParticipantRef, opts...).ToFunc()
+}
+
+// ByCounterpartyParticipantRef orders the results by the counterparty_participant_ref field.
+func ByCounterpartyParticipantRef(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCounterpartyParticipantRef, opts...).ToFunc()
+}
+
+// ByBeneficiaryParticipantRef orders the results by the beneficiary_participant_ref field.
+func ByBeneficiaryParticipantRef(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBeneficiaryParticipantRef, opts...).ToFunc()
+}
+
+// BySourcePhrase orders the results by the source_phrase field.
+func BySourcePhrase(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSourcePhrase, opts...).ToFunc()
+}
+
+// ByDuePhrase orders the results by the due_phrase field.
+func ByDuePhrase(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDuePhrase, opts...).ToFunc()
+}
+
+// ByDueTimezone orders the results by the due_timezone field.
+func ByDueTimezone(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDueTimezone, opts...).ToFunc()
+}
+
+// ByAcceptance orders the results by the acceptance field.
+func ByAcceptance(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAcceptance, opts...).ToFunc()
+}
+
+// ByBlocker orders the results by the blocker field.
+func ByBlocker(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBlocker, opts...).ToFunc()
+}
+
+// ByCompletedAt orders the results by the completed_at field.
+func ByCompletedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCompletedAt, opts...).ToFunc()
+}
+
+// ByCurrentEventVersion orders the results by the current_event_version field.
+func ByCurrentEventVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCurrentEventVersion, opts...).ToFunc()
+}
+
 // ByWorkspaceField orders the results by workspace field.
 func ByWorkspaceField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -216,6 +331,48 @@ func ByEvidences(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newEvidencesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByEventsCount orders the results by events count.
+func ByEventsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEventsStep(), opts...)
+	}
+}
+
+// ByEvents orders the results by events terms.
+func ByEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByOutgoingDependenciesCount orders the results by outgoing_dependencies count.
+func ByOutgoingDependenciesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newOutgoingDependenciesStep(), opts...)
+	}
+}
+
+// ByOutgoingDependencies orders the results by outgoing_dependencies terms.
+func ByOutgoingDependencies(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOutgoingDependenciesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByIncomingDependenciesCount orders the results by incoming_dependencies count.
+func ByIncomingDependenciesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newIncomingDependenciesStep(), opts...)
+	}
+}
+
+// ByIncomingDependencies orders the results by incoming_dependencies terms.
+func ByIncomingDependencies(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newIncomingDependenciesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newWorkspaceStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -242,5 +399,26 @@ func newEvidencesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(EvidencesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, EvidencesTable, EvidencesPrimaryKey...),
+	)
+}
+func newEventsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EventsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, EventsTable, EventsColumn),
+	)
+}
+func newOutgoingDependenciesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OutgoingDependenciesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, OutgoingDependenciesTable, OutgoingDependenciesColumn),
+	)
+}
+func newIncomingDependenciesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(IncomingDependenciesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, IncomingDependenciesTable, IncomingDependenciesColumn),
 	)
 }

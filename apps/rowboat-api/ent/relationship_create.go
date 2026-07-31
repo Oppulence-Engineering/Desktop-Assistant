@@ -13,6 +13,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -365,6 +368,51 @@ func (_c *RelationshipCreate) AddCommitments(v ...*Commitment) *RelationshipCrea
 		ids[i] = v[i].ID
 	}
 	return _c.AddCommitmentIDs(ids...)
+}
+
+// AddCommitmentEventIDs adds the "commitment_events" edge to the CommitmentEvent entity by IDs.
+func (_c *RelationshipCreate) AddCommitmentEventIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddCommitmentEventIDs(ids...)
+	return _c
+}
+
+// AddCommitmentEvents adds the "commitment_events" edges to the CommitmentEvent entity.
+func (_c *RelationshipCreate) AddCommitmentEvents(v ...*CommitmentEvent) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCommitmentEventIDs(ids...)
+}
+
+// AddCommitmentDependencyIDs adds the "commitment_dependencies" edge to the CommitmentDependency entity by IDs.
+func (_c *RelationshipCreate) AddCommitmentDependencyIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddCommitmentDependencyIDs(ids...)
+	return _c
+}
+
+// AddCommitmentDependencies adds the "commitment_dependencies" edges to the CommitmentDependency entity.
+func (_c *RelationshipCreate) AddCommitmentDependencies(v ...*CommitmentDependency) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCommitmentDependencyIDs(ids...)
+}
+
+// AddConversationIntelligenceArtifactIDs adds the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity by IDs.
+func (_c *RelationshipCreate) AddConversationIntelligenceArtifactIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddConversationIntelligenceArtifactIDs(ids...)
+	return _c
+}
+
+// AddConversationIntelligenceArtifacts adds the "conversation_intelligence_artifacts" edges to the ConversationIntelligenceArtifact entity.
+func (_c *RelationshipCreate) AddConversationIntelligenceArtifacts(v ...*ConversationIntelligenceArtifact) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddConversationIntelligenceArtifactIDs(ids...)
 }
 
 // AddActionIDs adds the "actions" edge to the RevenueAction entity by IDs.
@@ -815,6 +863,54 @@ func (_c *RelationshipCreate) createSpec() (*Relationship, *sqlgraph.CreateSpec)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(commitment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CommitmentEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.CommitmentEventsTable,
+			Columns: []string{relationship.CommitmentEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CommitmentDependenciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.CommitmentDependenciesTable,
+			Columns: []string{relationship.CommitmentDependenciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(commitmentdependency.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ConversationIntelligenceArtifactsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ConversationIntelligenceArtifactsTable,
+			Columns: []string{relationship.ConversationIntelligenceArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationintelligenceartifact.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

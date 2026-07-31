@@ -200,9 +200,13 @@ final class Session {
         timer.setEventHandler { [weak self] in
             guard let self else { return }
             var peaks: [String: Float] = [:]
-            for track in self.tracks { peaks[track.id] = track.writer.takePeak() }
+            var frames: [String: Int64] = [:]
+            for track in self.tracks {
+                peaks[track.id] = track.writer.takePeak()
+                frames[track.id] = track.writer.summary.observedFrames
+            }
             guard !peaks.isEmpty else { return }
-            Event.level(peaks: peaks).emit()
+            Event.level(peaks: peaks, frames: frames).emit()
         }
         timer.resume()
         levelTimer = timer

@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
@@ -216,6 +218,12 @@ func TestConfirmedMeetingCommitmentBecomesSharedCommitmentExactlyOnce(t *testing
 	if len(rows[0].Edges.Evidences) != 1 {
 		t.Fatalf("confirmed commitment must retain one source evidence edge, got %d", len(rows[0].Edges.Evidences))
 	}
+	events, err := f.client.CommitmentEvent.Query().
+		Where(commitmentevent.HasCommitmentWith(commitment.IDEQ(rows[0].ID))).
+		Order(ent.Asc(commitmentevent.FieldVersion)).All(f.ctx)
+	if err != nil || len(events) != 2 || events[0].Kind != "proposed" || events[1].Kind != "internally_confirmed" {
+		t.Fatalf("confirmed commitment must start with two immutable events: %#v err=%v", events, err)
+	}
 	rel, err := f.svc.GetRelationship(f.ctx, first[0].Relationship.ID)
 	if err != nil {
 		t.Fatalf("get relationship: %v", err)
@@ -257,8 +265,14 @@ func TestConfirmedMeetingCommitmentBecomesSharedCommitmentExactlyOnce(t *testing
 		t.Fatalf("reconcile commitment fulfillment: %v", err)
 	}
 	fulfilled, err := f.client.Commitment.Get(f.ctx, rows[0].ID)
-	if err != nil || fulfilled.Status != "fulfilled" {
+	if err != nil || fulfilled.Status != "fulfilled" || fulfilled.CurrentEventVersion != 3 || fulfilled.CompletedAt == nil {
 		t.Fatalf("commitment was not closed: %#v err=%v", fulfilled, err)
+	}
+	events, err = f.client.CommitmentEvent.Query().
+		Where(commitmentevent.HasCommitmentWith(commitment.IDEQ(rows[0].ID))).
+		Order(ent.Asc(commitmentevent.FieldVersion)).All(f.ctx)
+	if err != nil || len(events) != 3 || events[2].Kind != "fulfilled" || events[2].Version != 3 {
+		t.Fatalf("fulfillment must append event version 3: %#v err=%v", events, err)
 	}
 }
 

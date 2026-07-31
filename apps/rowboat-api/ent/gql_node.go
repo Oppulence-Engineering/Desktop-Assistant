@@ -26,6 +26,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -151,6 +154,21 @@ var commitmentImplementors = []string{"Commitment", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*Commitment) IsNode() {}
+
+var commitmentdependencyImplementors = []string{"CommitmentDependency", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CommitmentDependency) IsNode() {}
+
+var commitmenteventImplementors = []string{"CommitmentEvent", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CommitmentEvent) IsNode() {}
+
+var conversationintelligenceartifactImplementors = []string{"ConversationIntelligenceArtifact", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*ConversationIntelligenceArtifact) IsNode() {}
 
 var creditledgerImplementors = []string{"CreditLedger", "Node"}
 
@@ -503,6 +521,33 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(commitment.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, commitmentImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case commitmentdependency.Table:
+		query := c.CommitmentDependency.Query().
+			Where(commitmentdependency.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, commitmentdependencyImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case commitmentevent.Table:
+		query := c.CommitmentEvent.Query().
+			Where(commitmentevent.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, commitmenteventImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case conversationintelligenceartifact.Table:
+		query := c.ConversationIntelligenceArtifact.Query().
+			Where(conversationintelligenceartifact.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, conversationintelligenceartifactImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -1099,6 +1144,54 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.Commitment.Query().
 			Where(commitment.IDIn(ids...))
 		query, err := query.CollectFields(ctx, commitmentImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case commitmentdependency.Table:
+		query := c.CommitmentDependency.Query().
+			Where(commitmentdependency.IDIn(ids...))
+		query, err := query.CollectFields(ctx, commitmentdependencyImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case commitmentevent.Table:
+		query := c.CommitmentEvent.Query().
+			Where(commitmentevent.IDIn(ids...))
+		query, err := query.CollectFields(ctx, commitmenteventImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case conversationintelligenceartifact.Table:
+		query := c.ConversationIntelligenceArtifact.Query().
+			Where(conversationintelligenceartifact.IDIn(ids...))
+		query, err := query.CollectFields(ctx, conversationintelligenceartifactImplementors...)
 		if err != nil {
 			return nil, err
 		}

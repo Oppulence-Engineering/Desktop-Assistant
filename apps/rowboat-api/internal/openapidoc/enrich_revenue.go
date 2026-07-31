@@ -57,6 +57,37 @@ func addRevenueSchemas(schemas obj) {
 		"confidence":    numberSchema("Extraction confidence.", 0.94),
 		"userConfirmed": boolSchema("Whether a human confirmed it.", false),
 	}, "id", "direction", "text", "status", "confidence", "userConfirmed")
+	schemas["CommitmentDependency"] = objectSchema("An evidence-backed directed edge between two commitments.", obj{
+		"dependencyId":     uuidSchema("Dependency id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"relationshipId":   uuidSchema("Relationship id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"fromCommitmentId": uuidSchema("Origin commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"toCommitmentId":   uuidSchema("Target commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"kind":             stringEnum("Dependency semantics.", "blocks", "blocks", "requires", "supersedes"),
+		"evidenceRefs":     arraySchema("Evidence references.", stringSchema("Reference.", "relationship-observation:ab12")),
+		"createdAt":        stringSchema("Creation time.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
+	}, "dependencyId", "relationshipId", "fromCommitmentId", "toCommitmentId", "kind", "evidenceRefs", "createdAt")
+	schemas["CommitmentEvent"] = objectSchema("One immutable event in a commitment transition stream.", obj{
+		"eventId":                    uuidSchema("Event id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"commitmentId":               uuidSchema("Commitment id.", "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51"),
+		"sourceEventId":              stringSchema("Idempotent source event id.", "user-accept:commitment-1"),
+		"version":                    obj{"type": "integer", "minimum": 1},
+		"kind":                       stringEnum("Transition kind.", "accepted", "proposed", "internally_confirmed", "offered", "accepted", "disputed", "blocked", "unblocked", "due_date_changed", "renegotiated", "fulfilled", "cancelled", "superseded"),
+		"actorType":                  stringEnum("Transition authority.", "user", "user", "source_fact", "deterministic_rule", "ai_candidate"),
+		"actorRef":                   stringSchema("Actor reference.", "participant:owner"),
+		"occurredAt":                 stringSchema("Event time.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
+		"sourceObservationId":        stringSchema("Source observation id.", "relationship-observation:ab12"),
+		"evidenceRefs":               arraySchema("Exact evidence references.", stringSchema("Reference.", "relationship-observation:ab12")),
+		"ownerParticipantRef":        stringSchema("Promise owner.", "participant:owner"),
+		"counterpartyParticipantRef": stringSchema("Promise counterparty.", "participant:customer"),
+		"beneficiaryParticipantRef":  stringSchema("Promise beneficiary.", "participant:beneficiary"),
+		"action":                     stringSchema("Promised action at this event.", "Send the security packet."),
+		"duePhrase":                  stringSchema("Original due phrase.", "by Friday"),
+		"dueAt":                      stringSchema("Resolved due time.", "2026-08-07T17:00:00Z", obj{"format": "date-time"}),
+		"dueTimezone":                stringSchema("Due-time timezone.", "America/New_York"),
+		"blocker":                    stringSchema("Blocker detail.", "Waiting on legal."),
+		"reason":                     stringSchema("Transition rationale.", "Counterparty accepted in writing."),
+		"supersedesCommitmentId":     uuidSchema("Superseded commitment id.", "a13cf25b-d195-45f3-a665-3a38ba575392"),
+	}, "eventId", "commitmentId", "sourceEventId", "version", "kind", "actorType", "occurredAt", "evidenceRefs")
 
 	schemas["RelationshipObservation"] = objectSchema("Immutable, idempotent provider evidence used to project relationship state.", obj{
 		"id":              uuidSchema("Observation id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
@@ -107,16 +138,23 @@ func addRevenueSchemas(schemas obj) {
 		"observationId":     uuidSchema("Supporting immutable observation.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 	}, "id", "kind", "value", "exactQuote", "startMs", "endMs", "speakerId", "speakerLabel", "speakerConfidence", "confidence", "captureCaveats", "material")
 
-	schemas["ConversationReviewItem"] = objectSchema("One low-confidence word, speaker, entity, or material claim requiring focused correction.", obj{
-		"id":             stringSchema("Stable review item id.", "review:ab12"),
-		"kind":           stringEnum("Review kind.", "speaker", "word", "speaker", "entity", "claim", "capture"),
-		"label":          stringSchema("Review prompt.", "Resolve the speaker for a material statement."),
-		"currentValue":   stringSchema("Current inferred value.", "Other"),
-		"confidence":     numberSchema("Current confidence.", 0.55),
-		"observationId":  uuidSchema("Supporting observation.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-		"claimId":        stringSchema("Material claim id.", "claim:ab12"),
-		"stateDimension": stringSchema("Canonical state dimension affected by correction.", "risk"),
-		"exactQuote":     stringSchema("Exact words under review.", "We are concerned."),
+	schemas["ConversationReviewItem"] = objectSchema("One evidence-backed proposed change requiring approve, correct, reject, or defer review.", obj{
+		"id":                 stringSchema("Stable review item id.", "review:ab12"),
+		"kind":               stringEnum("Review kind.", "speaker", "word", "speaker", "entity", "claim", "capture"),
+		"label":              stringSchema("Review prompt.", "Resolve the speaker for a material statement."),
+		"currentValue":       stringSchema("Current inferred value.", "Other"),
+		"confidence":         numberSchema("Current confidence.", 0.55),
+		"observationId":      uuidSchema("Supporting observation.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"claimId":            stringSchema("Material claim id.", "claim:ab12"),
+		"stateDimension":     stringSchema("Canonical state dimension affected by correction.", "risk"),
+		"exactQuote":         stringSchema("Exact words under review.", "We are concerned."),
+		"batchId":            stringSchema("Idempotent review batch id.", "review:ab12"),
+		"status":             stringEnum("Review state.", "pending_review", "pending_review", "accepted", "corrected", "rejected", "deferred"),
+		"before":             freeFormSchema("State pinned before conversation processing."),
+		"proposedAfter":      freeFormSchema("Typed proposed value after this item."),
+		"caveats":            arraySchema("Extraction and capture caveats.", stringSchema("Caveat.", "Speaker assignment requires review.")),
+		"dependentActionIds": arraySchema("Actions invalidated by rejection or correction.", stringSchema("Action id.", "action:ab12")),
+		"baselineVersion":    intSchema("Pinned relationship-state version.", 4),
 	}, "id", "kind", "label", "currentValue", "confidence", "observationId")
 
 	schemas["ConversationGovernanceReceipt"] = objectSchema("Capture, routing, retention, disclosure, legal-hold, deletion, and evidence-clip receipt stored beside a transcript.", obj{
@@ -132,13 +170,49 @@ func addRevenueSchemas(schemas obj) {
 		"evidenceClip":          stringEnum("Material audio evidence status; retained clips may only be encrypted.", "not_retained", "not_retained", "encrypted"),
 	}, "receiptId", "capturedAt", "capturePolicy", "routing", "region", "retention", "participantDisclosure", "legalHold", "deletionOutcome", "evidenceClip")
 
+	schemas["ResolvedConversationPolicy"] = objectSchema("Monotonically resolved conversation policy with every contributing layer recorded.", obj{
+		"capture":          stringEnum("Capture rule.", "require_consent", "deny", "require_consent", "allow"),
+		"modelRoute":       stringEnum("Most permissive model route allowed.", "local_only", "local_only", "region_restricted", "hosted_allowed"),
+		"publishEvidence":  boolSchema("Whether shared evidence publication is allowed.", true),
+		"externalShare":    boolSchema("Whether externally scoped plan sharing is allowed.", true),
+		"retentionDays":    intSchema("Maximum retention in days.", 30),
+		"redactionClasses": arraySchema("Classes removed at outbound boundaries.", stringSchema("Redaction class.", "personal_identifier")),
+		"legalHold":        boolSchema("Whether required deletion is blocked.", false),
+		"policyVersion":    stringSchema("Hash-bound effective policy version.", "policy:ab12"),
+		"sourceLayerIds":   arraySchema("Policy layers that contributed.", stringSchema("Layer id.", "workspace:default")),
+		"resolvedAt":       stringSchema("Resolution time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
+	}, "capture", "modelRoute", "publishEvidence", "externalShare", "retentionDays", "redactionClasses", "legalHold", "policyVersion", "sourceLayerIds", "resolvedAt")
+
+	schemas["ConversationDeletionReceipt"] = objectSchema("Immutable deletion request and per-target verification state. Pending device or provider targets keep the receipt partial.", obj{
+		"receiptId":   stringSchema("Idempotent request id.", "delete:ab12"),
+		"requestedAt": stringSchema("Request time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
+		"scopeRef":    stringSchema("Relationship scope.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"legalHold":   boolSchema("Whether legal hold blocked deletion.", false),
+		"status":      stringEnum("Aggregate deletion state.", "partial", "pending", "blocked", "partial", "verified"),
+		"targets": arraySchema("Per-target outcomes.", objectSchema("Deletion target outcome.", obj{
+			"target":           stringEnum("Deletion target.", "api_evidence", "local_recording", "local_note", "outbox", "api_evidence", "embedding", "plan_share", "provider"),
+			"status":           stringEnum("Target state.", "deleted", "pending", "deleted", "not_found", "blocked", "failed"),
+			"verificationHash": stringSchema("Content-free verification hash.", "sha256:ab12"),
+			"errorCode":        stringSchema("Bounded failure code.", "legal_hold"),
+			"attempts":         intSchema("Attempts made.", 1),
+		}, "target", "status", "attempts")),
+		"completedAt": stringSchema("Time every required target was verified.", "2026-07-31T14:01:00Z", obj{"format": "date-time"}, nullable()),
+	}, "receiptId", "requestedAt", "scopeRef", "legalHold", "status", "targets")
+
 	schemas["RelationshipIntelligence"] = objectSchema("Derived trust surface for a relationship: conversation claims, focused review, exact delta, governance, contradictions, and live cue cards.", obj{
-		"claims":             arraySchema("Material quote-backed claims.", ref("ConversationClaim")),
-		"reviewItems":        arraySchema("Only low-confidence review items.", ref("ConversationReviewItem")),
-		"governanceReceipts": arraySchema("Transcript governance receipts.", ref("ConversationGovernanceReceipt")),
-		"delta":              freeFormSchema("Exact before/after values, uncertain claim ids, contradictions, and recommendation reason."),
-		"liveCues":           arraySchema("Account-history cue cards for the next/live meeting.", freeFormSchema("Cue card.")),
-	}, "claims", "reviewItems", "governanceReceipts", "delta", "liveCues")
+		"claims":                    arraySchema("Material quote-backed claims.", ref("ConversationClaim")),
+		"reviewItems":               arraySchema("Only low-confidence review items.", ref("ConversationReviewItem")),
+		"governanceReceipts":        arraySchema("Transcript governance receipts.", ref("ConversationGovernanceReceipt")),
+		"delta":                     freeFormSchema("Exact before/after values, uncertain claim ids, contradictions, and recommendation reason."),
+		"liveCues":                  arraySchema("Account-history cue cards for the next/live meeting.", freeFormSchema("Cue card.")),
+		"contradictionCases":        arraySchema("Typed durable conflicts.", freeFormSchema("Contradiction case.")),
+		"recoveryEvaluations":       arraySchema("Bounded commitment recovery evaluations.", freeFormSchema("Recovery evaluation.")),
+		"recommendationEvaluations": arraySchema("Immutable contextual ranking factors.", freeFormSchema("Recommendation evaluation.")),
+		"mutualActionPlans":         arraySchema("Revision-bound bilateral plans.", freeFormSchema("Mutual action plan.")),
+		"effectivePolicy":           ref("ResolvedConversationPolicy"),
+		"governanceDecisions":       arraySchema("Immutable checkpoint decisions.", freeFormSchema("Governance decision.")),
+		"deletionReceipts":          arraySchema("Deletion status and verification.", ref("ConversationDeletionReceipt")),
+	}, "claims", "reviewItems", "governanceReceipts", "delta", "liveCues", "contradictionCases", "recoveryEvaluations", "recommendationEvaluations", "mutualActionPlans", "effectivePolicy", "governanceDecisions", "deletionReceipts")
 
 	schemas["RevenueAction"] = objectSchema("One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval.", obj{
 		"id":                 uuidSchema("Action id.", "1a8dfa9b-a7b2-46ea-982c-622a914c00e5"),
@@ -336,12 +410,13 @@ func addRevenuePaths(paths obj) {
 	relationshipParam := []any{obj{"name": "relationshipId", "in": "path", "required": true, "description": "Relationship id.", "schema": obj{"type": "string", "format": "uuid"}}}
 	paths["/v1/relationships/{relationshipId}"] = obj{"get": operation("Relationship Intelligence", "Get relationship mission control", "Returns living relationship state, governed recommendations, participants, and commitments.", "getRelationship", bearer(), relationshipParam, nil, obj{
 		"200": jsonResponse("Relationship detail.", objectSchema("Relationship detail.", obj{
-			"relationship":    ref("RevenueRelationship"),
-			"actions":         arraySchema("Actions for this relationship.", ref("RevenueAction")),
-			"recommendations": arraySchema("Governed recommendations.", ref("RevenueAction")),
-			"participants":    arraySchema("Relationship participants.", ref("RelationshipParticipant")),
-			"commitments":     arraySchema("Open and completed commitments.", ref("RelationshipCommitment")),
-			"intelligence":    ref("RelationshipIntelligence"),
+			"relationship":           ref("RevenueRelationship"),
+			"actions":                arraySchema("Actions for this relationship.", ref("RevenueAction")),
+			"recommendations":        arraySchema("Governed recommendations.", ref("RevenueAction")),
+			"participants":           arraySchema("Relationship participants.", ref("RelationshipParticipant")),
+			"commitments":            arraySchema("Open and completed commitments.", ref("RelationshipCommitment")),
+			"commitmentDependencies": arraySchema("Evidence-backed commitment graph edges.", ref("CommitmentDependency")),
+			"intelligence":           ref("RelationshipIntelligence"),
 		}), nil),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
@@ -381,6 +456,94 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
+	paths["/v1/relationships/{relationshipId}/conversation-decisions"] = obj{"post": operation("Relationship Intelligence", "Decide a proposed conversation change", "Approves, corrects, rejects, or defers one evidence-backed semantic candidate. A stale baseline returns 409 and no state mutation.", "decideConversationChange", bearer(), relationshipParam, jsonRequest("Review decision.", objectSchema("Conversation review decision.", obj{
+		"reviewItemId":   stringSchema("Review item id.", "review:ab12"),
+		"kind":           stringEnum("Decision kind.", "approve", "approve", "correct", "reject", "defer"),
+		"correctedValue": stringSchema("Required replacement for correct.", "Security review is complete."),
+		"reason":         stringSchema("Decision reason.", "Customer clarified this in the meeting."),
+		"deferUntil":     stringSchema("Future reminder for defer.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
+	}, "reviewItemId", "kind"), obj{"reviewItemId": "review:ab12", "kind": "approve", "reason": "Customer stated this directly."}), obj{
+		"201": jsonResponse("Updated relationship and refreshed review queue.", objectSchema("Decision result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), nil),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+		"409": responseRef("409"),
+	})}
+	caseParam := append(relationshipParam, obj{"name": "caseId", "in": "path", "required": true, "description": "Contradiction case id.", "schema": obj{"type": "string"}})
+	paths["/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve"] = obj{"post": operation("Relationship Intelligence", "Resolve a typed contradiction", "Records the user's selected evidence side as a top-authority correction without rewriting either source.", "resolveRelationshipContradiction", bearer(), caseParam, jsonRequest("Resolution.", objectSchema("Contradiction resolution.", obj{
+		"selectedAssertionId": stringSchema("Selected assertion id.", "assertion:ab12"),
+		"reason":              stringSchema("Optional rationale.", "CRM was updated after the meeting."),
+	}, "selectedAssertionId"), obj{"selectedAssertionId": "assertion:ab12"}), obj{
+		"201": jsonResponse("Updated relationship and intelligence.", freeFormSchema("Relationship detail result."), nil),
+		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
+	})}
+	paths["/v1/relationships/{relationshipId}/commitment-recovery/run"] = obj{"post": operation("Relationship Intelligence", "Run commitment recovery", "Reconciles due commitments against bounded fresh evidence, closes only explicit fulfillment, and queues governed recovery proposals otherwise.", "runCommitmentRecovery", bearer(), relationshipParam, jsonRequestOptional("Empty request.", objectSchema("Recovery request.", obj{}), obj{}), obj{
+		"200": jsonResponse("Recovery evaluations.", freeFormSchema("Recovery evaluation result."), nil),
+		"401": responseRef("401"), "404": responseRef("404"),
+	})}
+	commitmentParam := append(relationshipParam, obj{"name": "commitmentId", "in": "path", "required": true, "description": "Commitment id.", "schema": obj{"type": "string", "format": "uuid"}})
+	paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/events"] = obj{"get": operation("Relationship Intelligence", "Get commitment history", "Returns the append-only transition history for one commitment.", "getCommitmentEvents", bearer(), commitmentParam, nil, obj{
+		"200": jsonResponse("Commitment events.", objectSchema("Commitment history.", obj{"events": arraySchema("Ordered immutable events.", ref("CommitmentEvent"))}, "events"), nil),
+		"401": responseRef("401"), "404": responseRef("404"),
+	})}
+	paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"] = obj{"post": operation("Relationship Intelligence", "Append a commitment transition", "Validates the state machine and appends one idempotent event before atomically updating the materialized projection.", "appendCommitmentTransition", bearer(), commitmentParam, jsonRequest("Transition.", objectSchema("Commitment transition.", obj{
+		"kind":           stringEnum("Event kind.", "accepted", "internally_confirmed", "offered", "accepted", "disputed", "blocked", "unblocked", "due_date_changed", "renegotiated", "fulfilled", "cancelled", "superseded"),
+		"idempotencyKey": stringSchema("Stable source event id.", "ui:accept:ab12"),
+		"reason":         stringSchema("Optional reason.", "Counterparty accepted in writing."),
+		"dueAt":          stringSchema("Replacement due date.", "2026-08-07T17:00:00Z", obj{"format": "date-time"}),
+		"action":         stringSchema("Replacement action for renegotiation.", "Send revised packet."),
+		"blocker":        stringSchema("Blocker detail.", "Waiting on legal."),
+		"evidenceRefs":   arraySchema("Evidence references.", stringSchema("Reference.", "relationship-observation:ab12")),
+	}, "kind", "idempotencyKey"), obj{"kind": "accepted", "idempotencyKey": "ui:accept:ab12", "evidenceRefs": []any{"counterparty:accepted"}}), obj{
+		"200": jsonResponse("Updated commitment.", ref("RelationshipCommitment"), nil),
+		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
+	})}
+	paths["/v1/relationships/{relationshipId}/commitment-dependencies"] = obj{"post": operation("Relationship Intelligence", "Create a commitment dependency", "Creates an evidence-backed dependency after enforcing tenant and relationship scope and rejecting graph cycles.", "createCommitmentDependency", bearer(), relationshipParam, jsonRequest("Dependency.", objectSchema("Commitment dependency request.", obj{
+		"fromCommitmentId": uuidSchema("Origin commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"toCommitmentId":   uuidSchema("Target commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"kind":             stringEnum("Dependency semantics.", "blocks", "blocks", "requires", "supersedes"),
+		"evidenceRefs":     arraySchema("Evidence references.", stringSchema("Reference.", "relationship-observation:ab12")),
+	}, "fromCommitmentId", "toCommitmentId", "kind", "evidenceRefs"), obj{"fromCommitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5", "toCommitmentId": "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51", "kind": "blocks", "evidenceRefs": []any{"relationship-observation:ab12"}}), obj{
+		"201": jsonResponse("Created dependency.", ref("CommitmentDependency"), nil),
+		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
+	})}
+	paths["/v1/relationships/{relationshipId}/mutual-action-plans"] = obj{"post": operation("Relationship Intelligence", "Create a mutual action plan", "Creates an evidence-backed plan only from accepted or open commitments.", "createMutualActionPlan", bearer(), relationshipParam, jsonRequest("Accepted commitments.", objectSchema("Plan create request.", obj{
+		"commitmentIds": arraySchema("Commitment ids.", uuidSchema("Commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5")),
+	}, "commitmentIds"), obj{"commitmentIds": []any{"8b8dfa9b-a7b2-46ea-982c-622a914c00e5"}}), obj{
+		"201": jsonResponse("Draft plan.", freeFormSchema("Mutual action plan."), nil),
+		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
+	})}
+	planParam := append(relationshipParam, obj{"name": "planId", "in": "path", "required": true, "description": "Mutual action plan id.", "schema": obj{"type": "string"}})
+	paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}"] = obj{"put": operation("Relationship Intelligence", "Revise a mutual action plan", "Appends a validated revision and invalidates any approval bound to the prior hash.", "reviseMutualActionPlan", bearer(), planParam, jsonRequest("Replacement items.", objectSchema("Plan revision request.", obj{
+		"items": arraySchema("Plan items.", freeFormSchema("Mutual action plan item.")),
+	}, "items"), nil), obj{
+		"200": jsonResponse("Revised plan.", freeFormSchema("Mutual action plan."), nil),
+		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
+	})}
+	paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/approve"] = obj{"post": operation("Relationship Intelligence", "Approve a plan revision", "Binds internal approval to the exact current revision hash.", "approveMutualActionPlan", bearer(), planParam, jsonRequestOptional("Empty request.", objectSchema("Plan approval request.", obj{}), obj{}), obj{
+		"200": jsonResponse("Approved plan.", freeFormSchema("Mutual action plan."), nil),
+		"401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
+	})}
+	paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share"] = obj{"post": operation("Relationship Intelligence", "Queue an approved plan share", "Re-evaluates effective policy, creates a scoped expiring token, stores only its hash, and queues the exact approved revision for operator approval.", "shareMutualActionPlan", bearer(), planParam, jsonRequestOptional("Empty request.", objectSchema("Plan share request.", obj{}), obj{}), obj{
+		"200": jsonResponse("Shared plan metadata and one-time response token.", freeFormSchema("Plan share result."), nil),
+		"401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
+	})}
+	paths["/v1/relationships/{relationshipId}/conversation-policy"] = obj{
+		"get": operation("Relationship Intelligence", "Inspect conversation policy", "Returns all applicable layers and the monotonically resolved effective policy.", "getConversationPolicy", bearer(), relationshipParam, nil, obj{
+			"200": jsonResponse("Policy layers and effective policy.", freeFormSchema("Conversation policy result."), nil), "401": responseRef("401"), "404": responseRef("404"),
+		}),
+		"put": operation("Relationship Intelligence", "Update conversation policy", "Appends authorized policy-layer versions; lower layers may only make handling stricter.", "putConversationPolicy", bearer(), relationshipParam, jsonRequest("Policy layers.", objectSchema("Policy update.", obj{
+			"layers": arraySchema("Versioned policy layers.", freeFormSchema("Conversation policy layer.")),
+		}, "layers"), nil), obj{
+			"201": jsonResponse("Resolved effective policy.", freeFormSchema("Conversation policy result."), nil), "400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"),
+		}),
+	}
+	paths["/v1/relationships/{relationshipId}/conversation-deletion"] = obj{"post": operation("Relationship Intelligence", "Request conversation deletion", "Evaluates legal hold at execution time, removes server-side content transactionally, and returns an idempotent per-target receipt. Device and provider work remains pending until separately verified.", "requestConversationDeletion", bearer(), relationshipParam, jsonRequest("Deletion request.", objectSchema("Deletion request.", obj{
+		"requestId": stringSchema("Idempotency key.", "delete:ab12"),
+	}, "requestId"), obj{"requestId": "delete:ab12"}), obj{
+		"202": jsonResponse("Deletion receipt.", ref("ConversationDeletionReceipt"), nil),
+		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
+	})}
 	paths["/v1/relationship-observations/batch"] = obj{"post": operation("Relationship Intelligence", "Ingest relationship observations", "Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.", "ingestRelationshipObservations", bearer(), nil, jsonRequest("Observation batch.", objectSchema("Observation batch.", obj{
 		"observations": arraySchema("Provider-neutral observations.", objectSchema("Observation input.", obj{
 			"relationshipId":  uuidSchema("Known relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
@@ -402,6 +565,19 @@ func addRevenuePaths(paths obj) {
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"409": responseRef("409"),
+	})}
+	planTokenParam := []any{obj{"name": "X-Oppulence-Plan-Token", "in": "header", "required": true, "description": "Scoped plan response token. Never put this token in a URL or query parameter.", "schema": obj{"type": "string"}}}
+	paths["/v1/public/mutual-action-plan"] = obj{"get": operation("Relationship Intelligence", "Open a scoped mutual action plan", "Returns only the externally authorized plan revision with internal evidence references removed and policy redactions applied.", "getPublicMutualActionPlan", nil, planTokenParam, nil, obj{
+		"200": jsonResponse("Scoped public plan.", freeFormSchema("Public mutual action plan."), nil), "404": responseRef("404"),
+	})}
+	paths["/v1/public/mutual-action-plan/responses"] = obj{"post": operation("Relationship Intelligence", "Respond to a scoped plan", "Appends an idempotent external response for internal review; it never directly changes canonical commitments.", "respondPublicMutualActionPlan", nil, planTokenParam, jsonRequest("External response.", objectSchema("Plan response.", obj{
+		"responseId":    stringSchema("Counterparty-generated idempotency key.", "response:ab12"),
+		"kind":          stringEnum("Response kind.", "confirm", "confirm", "correct", "blocked", "completed", "comment"),
+		"itemId":        stringSchema("Plan item id when applicable.", "item:ab12"),
+		"proposedValue": stringSchema("Proposed correction.", "Move due date to Friday."),
+		"comment":       stringSchema("Counterparty comment.", "Waiting on legal."),
+	}, "responseId", "kind"), obj{"responseId": "response:ab12", "kind": "confirm"}), obj{
+		"201": jsonResponse("Recorded response.", freeFormSchema("Response receipt."), nil), "400": responseRef("400"), "404": responseRef("404"),
 	})}
 	paths["/v1/relationship-sources/status"] = obj{"get": operation("Relationship Intelligence", "Get source health", "Returns freshness and failure state for each relationship evidence source.", "getRelationshipSourceStatuses", bearer(), nil, nil, obj{
 		"200": jsonResponse("Evidence source health.", objectSchema("Source status list.", obj{"sources": arraySchema("Sources.", ref("RelationshipSourceStatus"))}), nil),

@@ -8,9 +8,12 @@ import type { RelationshipObservationInput } from "@x/shared/dist/relationships.
 import type { Counterparty, LedgerCommitment } from "../meetings/meetings.js";
 import {
   canonicalTranscriptObservation,
+  attachConversationExtraction,
   conversationFingerprint,
   resolveSpokenDueAt,
 } from "./conversation-evidence.js";
+import type { ConversationExtractor } from "./conversation-extractor.js";
+import { HybridConversationExtractor } from "./conversation-extractor.js";
 
 const MAX_TRANSCRIPT_PAYLOAD_CHARS = 250_000;
 const PERSONAL_EMAIL_DOMAINS = new Set([
@@ -167,6 +170,36 @@ export function meetingTranscriptObservation(args: {
       })),
     },
   };
+}
+
+/** Run validated semantic extraction in shadow mode for a finished meeting. */
+export async function meetingTranscriptObservationWithExtraction(
+  args: Parameters<typeof meetingTranscriptObservation>[0] & {
+    extractor?: ConversationExtractor;
+  },
+): Promise<RelationshipObservationInput> {
+  const observation = meetingTranscriptObservation(args);
+  const envelope = (
+    observation.payload as {
+      envelope: import("@x/shared/dist/relationships.js").CanonicalTranscriptEnvelope;
+    }
+  ).envelope;
+  const extractor = args.extractor ?? new HybridConversationExtractor();
+  const extraction = await extractor.extract({
+    envelope,
+    extractorVersion: extractor.version,
+    requestedClaimKinds: [
+      "risk",
+      "objection",
+      "decision",
+      "milestone",
+      "sentiment",
+      "stakeholder",
+      "lifecycle",
+      "commitment",
+    ],
+  });
+  return attachConversationExtraction(observation, extraction);
 }
 
 /**

@@ -35,3 +35,6 @@ jobs:
         run: npm run quality
         working-directory: apps/x
 
+      - name: Run conversation intelligence evaluation gate
+        run: npm run test:conversation-eval
+        working-directory: apps/x/packages/core

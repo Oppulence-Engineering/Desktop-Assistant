@@ -113,6 +113,9 @@ export const MeetingsSettings = z.object({
    * battery on without asking.
    */
   liveTranscript: z.boolean().default(false),
+  /** Sparse local relationship cues derived from the live transcript. Off until the
+   *  user explicitly chooses a cadence; cue generation never enables a cloud route. */
+  liveCoachingFrequency: z.enum(["off", "minimal", "standard"]).default("off"),
   /**
    * Propose commitments from a finished transcript.
    *
@@ -147,6 +150,7 @@ export const DEFAULT_MEETINGS_SETTINGS: MeetingsSettings = {
   standbySeconds: 300,
   standbyBeforeMeetings: false,
   liveTranscript: false,
+  liveCoachingFrequency: "off",
   extractCommitments: true,
   syncRelationshipEvidence: false,
 };
@@ -247,6 +251,44 @@ export type MeetingTranscript = z.infer<typeof MeetingTranscript>;
 export const MeetingCaptureState = z.enum(["idle", "starting", "standby", "recording", "stopping"]);
 export type MeetingCaptureState = z.infer<typeof MeetingCaptureState>;
 
+export const CaptureHealthKind = z.enum([
+  "microphone_missing",
+  "microphone_silent",
+  "microphone_stalled",
+  "system_track_missing",
+  "system_track_silent",
+  "system_track_stalled",
+  "sidecar_stalled",
+  "sidecar_crashed",
+  "disk_pressure",
+  "model_unavailable",
+  "live_transcription_stale",
+  "post_transcription_stuck",
+]);
+export type CaptureHealthKind = z.infer<typeof CaptureHealthKind>;
+
+export const CaptureHealthEvent = z.object({
+  eventId: z.string(),
+  sessionId: z.string(),
+  kind: CaptureHealthKind,
+  severity: z.enum(["warning", "critical", "recovered"]),
+  detectedAt: z.string(),
+  impact: z.string(),
+  remediation: z.string(),
+  trackId: MeetingTrackId.optional(),
+  redactedDiagnostics: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
+});
+export type CaptureHealthEvent = z.infer<typeof CaptureHealthEvent>;
+
+export const CaptureHealthSnapshot = z.object({
+  guardianVersion: z.literal("capture-guardian-v1"),
+  status: z.enum(["healthy", "warning", "critical"]),
+  activeEvents: z.array(CaptureHealthEvent),
+  timeline: z.array(CaptureHealthEvent),
+  lastCheckedAt: z.string(),
+});
+export type CaptureHealthSnapshot = z.infer<typeof CaptureHealthSnapshot>;
+
 export const MeetingCaptureStatus = z.object({
   state: MeetingCaptureState,
   engine: MeetingResolvedEngine.optional(),
@@ -262,6 +304,7 @@ export const MeetingCaptureStatus = z.object({
   /** Sessions waiting to transcribe, plus the one in flight. */
   queueDepth: z.number().default(0),
   transcribingSessionId: z.string().optional(),
+  captureHealth: CaptureHealthSnapshot.optional(),
 });
 export type MeetingCaptureStatus = z.infer<typeof MeetingCaptureStatus>;
 

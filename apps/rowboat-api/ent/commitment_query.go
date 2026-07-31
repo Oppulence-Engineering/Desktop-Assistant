@@ -13,6 +13,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
@@ -24,18 +26,24 @@ import (
 // CommitmentQuery is the builder for querying Commitment entities.
 type CommitmentQuery struct {
 	config
-	ctx                *QueryContext
-	order              []commitment.OrderOption
-	inters             []Interceptor
-	predicates         []predicate.Commitment
-	withWorkspace      *RevenueWorkspaceQuery
-	withRelationship   *RelationshipQuery
-	withUser           *UserQuery
-	withEvidences      *RevenueEvidenceQuery
-	withFKs            bool
-	modifiers          []func(*sql.Selector)
-	loadTotal          []func(context.Context, []*Commitment) error
-	withNamedEvidences map[string]*RevenueEvidenceQuery
+	ctx                           *QueryContext
+	order                         []commitment.OrderOption
+	inters                        []Interceptor
+	predicates                    []predicate.Commitment
+	withWorkspace                 *RevenueWorkspaceQuery
+	withRelationship              *RelationshipQuery
+	withUser                      *UserQuery
+	withEvidences                 *RevenueEvidenceQuery
+	withEvents                    *CommitmentEventQuery
+	withOutgoingDependencies      *CommitmentDependencyQuery
+	withIncomingDependencies      *CommitmentDependencyQuery
+	withFKs                       bool
+	modifiers                     []func(*sql.Selector)
+	loadTotal                     []func(context.Context, []*Commitment) error
+	withNamedEvidences            map[string]*RevenueEvidenceQuery
+	withNamedEvents               map[string]*CommitmentEventQuery
+	withNamedOutgoingDependencies map[string]*CommitmentDependencyQuery
+	withNamedIncomingDependencies map[string]*CommitmentDependencyQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -153,6 +161,72 @@ func (_q *CommitmentQuery) QueryEvidences() *RevenueEvidenceQuery {
 			sqlgraph.From(commitment.Table, commitment.FieldID, selector),
 			sqlgraph.To(revenueevidence.Table, revenueevidence.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, commitment.EvidencesTable, commitment.EvidencesPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEvents chains the current query on the "events" edge.
+func (_q *CommitmentQuery) QueryEvents() *CommitmentEventQuery {
+	query := (&CommitmentEventClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(commitment.Table, commitment.FieldID, selector),
+			sqlgraph.To(commitmentevent.Table, commitmentevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, commitment.EventsTable, commitment.EventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOutgoingDependencies chains the current query on the "outgoing_dependencies" edge.
+func (_q *CommitmentQuery) QueryOutgoingDependencies() *CommitmentDependencyQuery {
+	query := (&CommitmentDependencyClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(commitment.Table, commitment.FieldID, selector),
+			sqlgraph.To(commitmentdependency.Table, commitmentdependency.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, commitment.OutgoingDependenciesTable, commitment.OutgoingDependenciesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryIncomingDependencies chains the current query on the "incoming_dependencies" edge.
+func (_q *CommitmentQuery) QueryIncomingDependencies() *CommitmentDependencyQuery {
+	query := (&CommitmentDependencyClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(commitment.Table, commitment.FieldID, selector),
+			sqlgraph.To(commitmentdependency.Table, commitmentdependency.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, commitment.IncomingDependenciesTable, commitment.IncomingDependenciesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -347,15 +421,18 @@ func (_q *CommitmentQuery) Clone() *CommitmentQuery {
 		return nil
 	}
 	return &CommitmentQuery{
-		config:           _q.config,
-		ctx:              _q.ctx.Clone(),
-		order:            append([]commitment.OrderOption{}, _q.order...),
-		inters:           append([]Interceptor{}, _q.inters...),
-		predicates:       append([]predicate.Commitment{}, _q.predicates...),
-		withWorkspace:    _q.withWorkspace.Clone(),
-		withRelationship: _q.withRelationship.Clone(),
-		withUser:         _q.withUser.Clone(),
-		withEvidences:    _q.withEvidences.Clone(),
+		config:                   _q.config,
+		ctx:                      _q.ctx.Clone(),
+		order:                    append([]commitment.OrderOption{}, _q.order...),
+		inters:                   append([]Interceptor{}, _q.inters...),
+		predicates:               append([]predicate.Commitment{}, _q.predicates...),
+		withWorkspace:            _q.withWorkspace.Clone(),
+		withRelationship:         _q.withRelationship.Clone(),
+		withUser:                 _q.withUser.Clone(),
+		withEvidences:            _q.withEvidences.Clone(),
+		withEvents:               _q.withEvents.Clone(),
+		withOutgoingDependencies: _q.withOutgoingDependencies.Clone(),
+		withIncomingDependencies: _q.withIncomingDependencies.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -403,6 +480,39 @@ func (_q *CommitmentQuery) WithEvidences(opts ...func(*RevenueEvidenceQuery)) *C
 		opt(query)
 	}
 	_q.withEvidences = query
+	return _q
+}
+
+// WithEvents tells the query-builder to eager-load the nodes that are connected to
+// the "events" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *CommitmentQuery) WithEvents(opts ...func(*CommitmentEventQuery)) *CommitmentQuery {
+	query := (&CommitmentEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEvents = query
+	return _q
+}
+
+// WithOutgoingDependencies tells the query-builder to eager-load the nodes that are connected to
+// the "outgoing_dependencies" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *CommitmentQuery) WithOutgoingDependencies(opts ...func(*CommitmentDependencyQuery)) *CommitmentQuery {
+	query := (&CommitmentDependencyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withOutgoingDependencies = query
+	return _q
+}
+
+// WithIncomingDependencies tells the query-builder to eager-load the nodes that are connected to
+// the "incoming_dependencies" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *CommitmentQuery) WithIncomingDependencies(opts ...func(*CommitmentDependencyQuery)) *CommitmentQuery {
+	query := (&CommitmentDependencyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withIncomingDependencies = query
 	return _q
 }
 
@@ -485,11 +595,14 @@ func (_q *CommitmentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*C
 		nodes       = []*Commitment{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [7]bool{
 			_q.withWorkspace != nil,
 			_q.withRelationship != nil,
 			_q.withUser != nil,
 			_q.withEvidences != nil,
+			_q.withEvents != nil,
+			_q.withOutgoingDependencies != nil,
+			_q.withIncomingDependencies != nil,
 		}
 	)
 	if _q.withWorkspace != nil || _q.withRelationship != nil || _q.withUser != nil {
@@ -544,10 +657,56 @@ func (_q *CommitmentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*C
 			return nil, err
 		}
 	}
+	if query := _q.withEvents; query != nil {
+		if err := _q.loadEvents(ctx, query, nodes,
+			func(n *Commitment) { n.Edges.Events = []*CommitmentEvent{} },
+			func(n *Commitment, e *CommitmentEvent) { n.Edges.Events = append(n.Edges.Events, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withOutgoingDependencies; query != nil {
+		if err := _q.loadOutgoingDependencies(ctx, query, nodes,
+			func(n *Commitment) { n.Edges.OutgoingDependencies = []*CommitmentDependency{} },
+			func(n *Commitment, e *CommitmentDependency) {
+				n.Edges.OutgoingDependencies = append(n.Edges.OutgoingDependencies, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withIncomingDependencies; query != nil {
+		if err := _q.loadIncomingDependencies(ctx, query, nodes,
+			func(n *Commitment) { n.Edges.IncomingDependencies = []*CommitmentDependency{} },
+			func(n *Commitment, e *CommitmentDependency) {
+				n.Edges.IncomingDependencies = append(n.Edges.IncomingDependencies, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedEvidences {
 		if err := _q.loadEvidences(ctx, query, nodes,
 			func(n *Commitment) { n.appendNamedEvidences(name) },
 			func(n *Commitment, e *RevenueEvidence) { n.appendNamedEvidences(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedEvents {
+		if err := _q.loadEvents(ctx, query, nodes,
+			func(n *Commitment) { n.appendNamedEvents(name) },
+			func(n *Commitment, e *CommitmentEvent) { n.appendNamedEvents(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedOutgoingDependencies {
+		if err := _q.loadOutgoingDependencies(ctx, query, nodes,
+			func(n *Commitment) { n.appendNamedOutgoingDependencies(name) },
+			func(n *Commitment, e *CommitmentDependency) { n.appendNamedOutgoingDependencies(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedIncomingDependencies {
+		if err := _q.loadIncomingDependencies(ctx, query, nodes,
+			func(n *Commitment) { n.appendNamedIncomingDependencies(name) },
+			func(n *Commitment, e *CommitmentDependency) { n.appendNamedIncomingDependencies(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -716,6 +875,99 @@ func (_q *CommitmentQuery) loadEvidences(ctx context.Context, query *RevenueEvid
 	}
 	return nil
 }
+func (_q *CommitmentQuery) loadEvents(ctx context.Context, query *CommitmentEventQuery, nodes []*Commitment, init func(*Commitment), assign func(*Commitment, *CommitmentEvent)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Commitment)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommitmentEvent(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(commitment.EventsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.commitment_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "commitment_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "commitment_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *CommitmentQuery) loadOutgoingDependencies(ctx context.Context, query *CommitmentDependencyQuery, nodes []*Commitment, init func(*Commitment), assign func(*Commitment, *CommitmentDependency)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Commitment)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommitmentDependency(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(commitment.OutgoingDependenciesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.from_commitment_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "from_commitment_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "from_commitment_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *CommitmentQuery) loadIncomingDependencies(ctx context.Context, query *CommitmentDependencyQuery, nodes []*Commitment, init func(*Commitment), assign func(*Commitment, *CommitmentDependency)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Commitment)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommitmentDependency(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(commitment.IncomingDependenciesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.to_commitment_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "to_commitment_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "to_commitment_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *CommitmentQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -812,6 +1064,48 @@ func (_q *CommitmentQuery) WithNamedEvidences(name string, opts ...func(*Revenue
 		_q.withNamedEvidences = make(map[string]*RevenueEvidenceQuery)
 	}
 	_q.withNamedEvidences[name] = query
+	return _q
+}
+
+// WithNamedEvents tells the query-builder to eager-load the nodes that are connected to the "events"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *CommitmentQuery) WithNamedEvents(name string, opts ...func(*CommitmentEventQuery)) *CommitmentQuery {
+	query := (&CommitmentEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedEvents == nil {
+		_q.withNamedEvents = make(map[string]*CommitmentEventQuery)
+	}
+	_q.withNamedEvents[name] = query
+	return _q
+}
+
+// WithNamedOutgoingDependencies tells the query-builder to eager-load the nodes that are connected to the "outgoing_dependencies"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *CommitmentQuery) WithNamedOutgoingDependencies(name string, opts ...func(*CommitmentDependencyQuery)) *CommitmentQuery {
+	query := (&CommitmentDependencyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedOutgoingDependencies == nil {
+		_q.withNamedOutgoingDependencies = make(map[string]*CommitmentDependencyQuery)
+	}
+	_q.withNamedOutgoingDependencies[name] = query
+	return _q
+}
+
+// WithNamedIncomingDependencies tells the query-builder to eager-load the nodes that are connected to the "incoming_dependencies"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *CommitmentQuery) WithNamedIncomingDependencies(name string, opts ...func(*CommitmentDependencyQuery)) *CommitmentQuery {
+	query := (&CommitmentDependencyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedIncomingDependencies == nil {
+		_q.withNamedIncomingDependencies = make(map[string]*CommitmentDependencyQuery)
+	}
+	_q.withNamedIncomingDependencies[name] = query
 	return _q
 }
 

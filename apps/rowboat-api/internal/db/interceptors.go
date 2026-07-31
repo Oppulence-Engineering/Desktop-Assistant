@@ -22,6 +22,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/intercept"
@@ -59,48 +62,51 @@ import (
 // this generated entity/foreign-key map to inject the authenticated user's id
 // into every update/delete predicate.
 var tenantUserColumns = map[string]string{
-	ent.TypeActionOutcome:               actionoutcome.UserColumn,
-	ent.TypeActionProposal:              actionproposal.UserColumn,
-	ent.TypeApprovalToken:               approvaltoken.UserColumn,
-	ent.TypeAgentApproval:               agentapproval.UserColumn,
-	ent.TypeAgentDefinition:             agentdefinition.UserColumn,
-	ent.TypeAgentSession:                agentsession.UserColumn,
-	ent.TypeAgentSessionEvent:           agentsessionevent.UserColumn,
-	ent.TypeAgentToolCall:               agenttoolcall.UserColumn,
-	ent.TypeAgentToolResultBlob:         agenttoolresultblob.UserColumn,
-	ent.TypeAgentTurn:                   agentturn.UserColumn,
-	ent.TypeBackgroundTask:              backgroundtask.UserColumn,
-	ent.TypeBackgroundTaskArtifact:      backgroundtaskartifact.UserColumn,
-	ent.TypeBackgroundTaskRun:           backgroundtaskrun.UserColumn,
-	ent.TypeBackgroundTaskRunEvent:      backgroundtaskrunevent.UserColumn,
-	ent.TypeBackgroundTaskScheduleState: backgroundtaskschedulestate.UserColumn,
-	ent.TypeCloudEvent:                  cloudevent.UserColumn,
-	ent.TypeCreditLedger:                creditledger.UserColumn,
-	ent.TypeGoogleWatch:                 googlewatch.UserColumn,
-	ent.TypeLLMUsage:                    llmusage.UserColumn,
-	ent.TypeMCPConnection:               mcpconnection.UserColumn,
-	ent.TypeMeetingMinuteUsage:          meetingminuteusage.UserColumn,
-	ent.TypeOAuthConnection:             oauthconnection.UserColumn,
-	ent.TypeSubscription:                subscription.UserColumn,
-	ent.TypeCommitment:                  commitment.UserColumn,
-	ent.TypeMailBodyCache:               mailbodycache.UserColumn,
-	ent.TypeMailSignal:                  mailsignal.UserColumn,
-	ent.TypeMailMessageMeta:             mailmessagemeta.UserColumn,
-	ent.TypeMailThread:                  mailthread.UserColumn,
-	ent.TypePolicyDecisionSnapshot:      policydecisionsnapshot.UserColumn,
-	ent.TypeRelationship:                relationship.UserColumn,
-	ent.TypeRelationshipAssertion:       relationshipassertion.UserColumn,
-	ent.TypeRelationshipObservation:     relationshipobservation.UserColumn,
-	ent.TypeRelationshipParticipant:     relationshipparticipant.UserColumn,
-	ent.TypeRelationshipSourceStatus:    relationshipsourcestatus.UserColumn,
-	ent.TypeRelationshipStateSnapshot:   relationshipstatesnapshot.UserColumn,
-	ent.TypeRevenueAction:               revenueaction.UserColumn,
-	ent.TypeRevenueActionRevision:       revenueactionrevision.UserColumn,
-	ent.TypeRevenueEvidence:             revenueevidence.UserColumn,
-	ent.TypeRevenueLeakScan:             revenueleakscan.UserColumn,
-	ent.TypeRevenueOutboxEvent:          revenueoutboxevent.UserColumn,
-	ent.TypeRevenueWorkspace:            revenueworkspace.UserColumn,
-	ent.TypeRevenueWorkspaceMember:      revenueworkspacemember.UserColumn,
+	ent.TypeActionOutcome:                    actionoutcome.UserColumn,
+	ent.TypeActionProposal:                   actionproposal.UserColumn,
+	ent.TypeApprovalToken:                    approvaltoken.UserColumn,
+	ent.TypeAgentApproval:                    agentapproval.UserColumn,
+	ent.TypeAgentDefinition:                  agentdefinition.UserColumn,
+	ent.TypeAgentSession:                     agentsession.UserColumn,
+	ent.TypeAgentSessionEvent:                agentsessionevent.UserColumn,
+	ent.TypeAgentToolCall:                    agenttoolcall.UserColumn,
+	ent.TypeAgentToolResultBlob:              agenttoolresultblob.UserColumn,
+	ent.TypeAgentTurn:                        agentturn.UserColumn,
+	ent.TypeBackgroundTask:                   backgroundtask.UserColumn,
+	ent.TypeBackgroundTaskArtifact:           backgroundtaskartifact.UserColumn,
+	ent.TypeBackgroundTaskRun:                backgroundtaskrun.UserColumn,
+	ent.TypeBackgroundTaskRunEvent:           backgroundtaskrunevent.UserColumn,
+	ent.TypeBackgroundTaskScheduleState:      backgroundtaskschedulestate.UserColumn,
+	ent.TypeCloudEvent:                       cloudevent.UserColumn,
+	ent.TypeCreditLedger:                     creditledger.UserColumn,
+	ent.TypeGoogleWatch:                      googlewatch.UserColumn,
+	ent.TypeLLMUsage:                         llmusage.UserColumn,
+	ent.TypeMCPConnection:                    mcpconnection.UserColumn,
+	ent.TypeMeetingMinuteUsage:               meetingminuteusage.UserColumn,
+	ent.TypeOAuthConnection:                  oauthconnection.UserColumn,
+	ent.TypeSubscription:                     subscription.UserColumn,
+	ent.TypeCommitment:                       commitment.UserColumn,
+	ent.TypeCommitmentDependency:             commitmentdependency.UserColumn,
+	ent.TypeCommitmentEvent:                  commitmentevent.UserColumn,
+	ent.TypeConversationIntelligenceArtifact: conversationintelligenceartifact.UserColumn,
+	ent.TypeMailBodyCache:                    mailbodycache.UserColumn,
+	ent.TypeMailSignal:                       mailsignal.UserColumn,
+	ent.TypeMailMessageMeta:                  mailmessagemeta.UserColumn,
+	ent.TypeMailThread:                       mailthread.UserColumn,
+	ent.TypePolicyDecisionSnapshot:           policydecisionsnapshot.UserColumn,
+	ent.TypeRelationship:                     relationship.UserColumn,
+	ent.TypeRelationshipAssertion:            relationshipassertion.UserColumn,
+	ent.TypeRelationshipObservation:          relationshipobservation.UserColumn,
+	ent.TypeRelationshipParticipant:          relationshipparticipant.UserColumn,
+	ent.TypeRelationshipSourceStatus:         relationshipsourcestatus.UserColumn,
+	ent.TypeRelationshipStateSnapshot:        relationshipstatesnapshot.UserColumn,
+	ent.TypeRevenueAction:                    revenueaction.UserColumn,
+	ent.TypeRevenueActionRevision:            revenueactionrevision.UserColumn,
+	ent.TypeRevenueEvidence:                  revenueevidence.UserColumn,
+	ent.TypeRevenueLeakScan:                  revenueleakscan.UserColumn,
+	ent.TypeRevenueOutboxEvent:               revenueoutboxevent.UserColumn,
+	ent.TypeRevenueWorkspace:                 revenueworkspace.UserColumn,
+	ent.TypeRevenueWorkspaceMember:           revenueworkspacemember.UserColumn,
 }
 
 // ErrNoViewer is returned when a per-user entity is queried with neither an
@@ -371,6 +377,27 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.CommitmentQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(commitment.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.CommitmentEvent.Intercept(intercept.TraverseCommitmentEvent(
+		func(ctx context.Context, q *ent.CommitmentEventQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(commitmentevent.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.CommitmentDependency.Intercept(intercept.TraverseCommitmentDependency(
+		func(ctx context.Context, q *ent.CommitmentDependencyQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(commitmentdependency.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.ConversationIntelligenceArtifact.Intercept(intercept.TraverseConversationIntelligenceArtifact(
+		func(ctx context.Context, q *ent.ConversationIntelligenceArtifactQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(conversationintelligenceartifact.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 
