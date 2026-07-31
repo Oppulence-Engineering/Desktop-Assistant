@@ -26,16 +26,19 @@ func (RevenueAction) Fields() []ent.Field {
 		field.String("action_type").
 			Validate(oneOfRevenue("action_type",
 				"warm_follow_up", "proposal_nudge", "referral_reconnect",
-				"customer_risk", "meeting_follow_up")),
+				"customer_risk", "meeting_follow_up", "meeting_recap",
+				"crm_update", "follow_up_task", "calendar_hold", "commitment_rescue")),
 		field.String("channel").
-			Validate(oneOfRevenue("channel", "email", "slack", "call", "crm_task")),
+			Validate(oneOfRevenue("channel", "email", "slack", "call", "crm_task",
+				"crm", "task", "calendar")),
 		// detector records which RFC 030 detector produced the action; the
 		// scan's dedupe_key keeps reruns from duplicating queue items.
 		field.String("detector").
 			Validate(oneOfRevenue("detector",
 				"requested_follow_up_due", "unanswered_proposal", "waiting_on_me",
 				"dormant_warm_opportunity", "neglected_referral",
-				"former_customer_reconnect", "manual")),
+				"former_customer_reconnect", "conversation_action_pack",
+				"commitment_due", "manual")),
 		field.String("dedupe_key").NotEmpty(),
 		field.Int("revision").Default(1).Positive(),
 		field.String("revision_hash").NotEmpty(),

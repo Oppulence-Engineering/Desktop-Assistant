@@ -14,6 +14,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import type {
+  ConversationReviewItem,
   Relationship,
   RelationshipDetail,
   RelationshipObservation,
@@ -76,6 +77,8 @@ const DETECTOR_LABELS: Record<string, string> = {
   dormant_warm_opportunity: "Dormant opportunity",
   neglected_referral: "Neglected referral",
   former_customer_reconnect: "Former customer",
+  conversation_action_pack: "Conversation action pack",
+  commitment_due: "Commitment due",
   manual: "Manual",
 };
 
@@ -85,6 +88,11 @@ const ACTION_TYPE_LABELS: Record<string, string> = {
   referral_reconnect: "Referral reconnect",
   customer_risk: "Customer risk",
   meeting_follow_up: "Meeting follow-up",
+  meeting_recap: "Meeting recap",
+  crm_update: "CRM update",
+  follow_up_task: "Follow-up task",
+  calendar_hold: "Calendar hold",
+  commitment_rescue: "Commitment rescue",
 };
 
 const humanize = (value?: string) => (value || "unknown").replaceAll("_", " ");
@@ -549,6 +557,40 @@ function RelationshipSheet({
               }
             />
 
+            {data.intelligence ? (
+              <CorrectionReview
+                items={data.intelligence.reviewItems}
+                disabled={Boolean(busy)}
+                onCorrect={(item, correctedValue) =>
+                  act(`review:${item.id}`, () =>
+                    window.ipc.invoke("relationships:correctConversation", {
+                      id,
+                      reviewItemId: item.id,
+                      correctedValue,
+                      reason: "User corrected conversation evidence during focused review.",
+                    }),
+                  )
+                }
+              />
+            ) : null}
+
+            {data.intelligence?.liveCues.length ? (
+              <section>
+                <SectionTitle title={`Live cue cards (${data.intelligence.liveCues.length})`} />
+                <ul className="grid gap-2 sm:grid-cols-2">
+                  {data.intelligence.liveCues.map((cue) => (
+                    <li
+                      key={cue.id}
+                      className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+                    >
+                      <p className="text-xs font-medium text-primary">{cue.title}</p>
+                      <p className="mt-1 text-xs text-primary/60">{cue.detail}</p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
             <TwoColumnList
               leftTitle="Risks"
               left={data.relationship.risks}
@@ -578,6 +620,18 @@ function RelationshipSheet({
                         <span>priority {action.priorityScore}</span>
                         <span>{action.policyStatus}</span>
                       </div>
+                      {action.evidence.length > 0 ? (
+                        <details className="mt-2 text-xs text-primary/55">
+                          <summary className="cursor-pointer">Inspect supporting words</summary>
+                          <ul className="mt-2 space-y-1 border-l border-border pl-3">
+                            {action.evidence.map((item) => (
+                              <li key={item.id}>
+                                “{item.excerpt || "Evidence excerpt unavailable"}”
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      ) : null}
                       {action.approvalStatus === "pending" ? (
                         <div className="mt-3 flex gap-2">
                           <Button
@@ -640,6 +694,51 @@ function RelationshipSheet({
 
             <section>
               <SectionTitle title={`What changed (${changes.length})`} />
+              {data.intelligence?.delta.changes.length ? (
+                <ul className="mb-3 flex flex-col gap-2">
+                  {data.intelligence.delta.changes.map((change) => (
+                    <li key={change.dimension} className="rounded-[2px] border border-border p-3">
+                      <p className="text-xs font-medium capitalize text-primary">
+                        {humanize(change.dimension)}
+                      </p>
+                      <p className="mt-1 text-xs text-primary/60">
+                        {JSON.stringify(change.before ?? "unknown")} →{" "}
+                        {JSON.stringify(change.after ?? "unknown")}
+                      </p>
+                      {change.reason ? (
+                        <p className="mt-1 text-[11px] text-primary/40">{change.reason}</p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {data.intelligence?.delta.contradictions.length ? (
+                <ul className="mb-3 space-y-2 rounded-[2px] border border-amber-500/30 p-3 text-xs text-primary/60">
+                  {data.intelligence.delta.contradictions.map((item) => (
+                    <li key={item.contradictedAssertionId}>
+                      <span className="font-medium capitalize text-primary">
+                        {humanize(item.dimension)}:
+                      </span>{" "}
+                      “{item.contradictedValue}” was superseded by “{item.currentValue}”.
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {data.intelligence?.delta.uncertainClaimIds.length ? (
+                <p className="mb-3 text-xs text-primary/50">
+                  {data.intelligence.delta.uncertainClaimIds.length} material claim
+                  {data.intelligence.delta.uncertainClaimIds.length === 1
+                    ? " remains"
+                    : "s remain"}{" "}
+                  uncertain and queued for focused review.
+                </p>
+              ) : null}
+              {data.intelligence?.delta.recommendationReason ? (
+                <p className="mb-3 rounded-[2px] border border-border p-3 text-xs text-primary/60">
+                  <span className="font-medium text-primary">Why the recommendation changed:</span>{" "}
+                  {data.intelligence.delta.recommendationReason}
+                </p>
+              ) : null}
               {changes.length === 0 ? (
                 <EmptyText>No projected state changes yet.</EmptyText>
               ) : (
@@ -660,6 +759,33 @@ function RelationshipSheet({
                 </ul>
               )}
             </section>
+
+            {data.intelligence?.governanceReceipts.length ? (
+              <section>
+                <SectionTitle title="Consent and governance" />
+                <ul className="flex flex-col gap-2">
+                  {data.intelligence.governanceReceipts.slice(0, 5).map((receipt) => (
+                    <li
+                      key={receipt.receiptId}
+                      className="rounded-[2px] border border-border p-3 text-xs text-primary/60"
+                    >
+                      <p>
+                        {humanize(receipt.capturePolicy)} · {humanize(receipt.routing)}
+                      </p>
+                      <p className="mt-1 text-[11px] text-primary/40">
+                        {receipt.region} · retention {receipt.retention} · disclosure{" "}
+                        {humanize(receipt.participantDisclosure)} ·{" "}
+                        {humanize(receipt.deletionOutcome)}
+                      </p>
+                      <p className="mt-1 text-[11px] text-primary/40">
+                        legal hold {receipt.legalHold ? "active" : "off"} · evidence clip{" "}
+                        {humanize(receipt.evidenceClip)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
             <section>
               <SectionTitle title={`Evidence timeline (${timeline.length})`} />
@@ -700,6 +826,63 @@ function RelationshipSheet({
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+function CorrectionReview({
+  items,
+  disabled,
+  onCorrect,
+}: {
+  items: ConversationReviewItem[];
+  disabled: boolean;
+  onCorrect: (item: ConversationReviewItem, correctedValue: string) => void;
+}) {
+  const [drafts, setDrafts] = React.useState<Record<string, string>>({});
+  if (items.length === 0) return null;
+  return (
+    <section className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3">
+      <SectionTitle title={`Focused evidence review (${items.length})`} />
+      <p className="mb-3 text-xs text-primary/55">
+        Only low-confidence words, speakers, entities, and material claims appear here.
+      </p>
+      <ul className="flex flex-col gap-3">
+        {items.map((item) => {
+          const draft = drafts[item.id] ?? item.currentValue;
+          return (
+            <li key={item.id} className="rounded-[2px] border border-border bg-background p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-medium text-primary">{item.label}</p>
+                <span className="text-[11px] text-primary/40">
+                  {Math.round(item.confidence * 100)}% · {item.kind}
+                </span>
+              </div>
+              {item.exactQuote ? (
+                <blockquote className="my-2 border-l border-border pl-2 text-xs text-primary/55">
+                  “{item.exactQuote}”
+                </blockquote>
+              ) : null}
+              <div className="flex gap-2">
+                <Input
+                  value={draft}
+                  onChange={(event) =>
+                    setDrafts((current) => ({ ...current, [item.id]: event.target.value }))
+                  }
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={disabled || !draft.trim() || draft.trim() === item.currentValue}
+                  onClick={() => onCorrect(item, draft.trim())}
+                >
+                  Correct
+                </Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 

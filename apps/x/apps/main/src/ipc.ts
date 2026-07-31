@@ -137,6 +137,7 @@ import { getInstallationId } from "@x/core/dist/analytics/installation.js";
 import { API_URL } from "@x/core/dist/config/env.js";
 import {
   approveRelationshipRecommendation,
+  correctConversationReview,
   correctRelationship,
   createRelationship,
   getRelationship,
@@ -908,6 +909,12 @@ export function setupIpcHandlers() {
       correctRelationship(args.id, {
         dimension: args.dimension,
         value: args.value,
+        reason: args.reason,
+      }),
+    "relationships:correctConversation": async (_event, args) =>
+      correctConversationReview(args.id, {
+        reviewItemId: args.reviewItemId,
+        correctedValue: args.correctedValue,
         reason: args.reason,
       }),
     "relationships:approve": async (_event, args) =>

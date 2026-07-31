@@ -20,6 +20,10 @@ import (
 // maxBody bounds revenue request bodies; every payload is a small envelope.
 const maxBody = 256 << 10
 
+// Canonical transcript observations repeat bounded quote evidence beside their
+// encrypted envelope, so they need a larger—but still explicit—ingestion ceiling.
+const maxObservationBody = 4 << 20
+
 // Handler serves the RFC 030 revenue API surface.
 type Handler struct {
 	svc *Service
@@ -52,6 +56,7 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Get("/{relationshipId}/changes", h.RelationshipChanges)
 		r.Get("/{relationshipId}/evidence/{evidenceId}", h.RelationshipEvidence)
 		r.Post("/{relationshipId}/corrections", h.CorrectRelationship)
+		r.Post("/{relationshipId}/conversation-corrections", h.CorrectConversationReview)
 	})
 	r.Post("/v1/relationship-observations/batch", h.IngestRelationshipObservations)
 	r.Get("/v1/relationship-sources/status", h.RelationshipSourceStatuses)
@@ -272,37 +277,47 @@ func relationshipToDTOWithOpen(rel *ent.Relationship) relationshipDTO {
 }
 
 type actionDTO struct {
-	ID                 string          `json:"id"`
-	RelationshipID     string          `json:"relationshipId,omitempty"`
-	ActionType         string          `json:"actionType"`
-	Channel            string          `json:"channel"`
-	Detector           string          `json:"detector"`
-	Revision           int             `json:"revision"`
-	RevisionHash       string          `json:"revisionHash"`
-	Reason             string          `json:"reason"`
-	RecipientEmail     string          `json:"recipientEmail,omitempty"`
-	ProposedSubject    string          `json:"proposedSubject,omitempty"`
-	ProposedMessage    string          `json:"proposedMessage,omitempty"`
-	SenderAccountRef   string          `json:"senderAccountRef,omitempty"`
-	PriorityScore      int             `json:"priorityScore"`
-	PriorityComponents json.RawMessage `json:"priorityComponents,omitempty"`
-	QueueStatus        string          `json:"queueStatus"`
-	PolicyStatus       string          `json:"policyStatus"`
-	ApprovalStatus     string          `json:"approvalStatus"`
-	ExecutionStatus    string          `json:"executionStatus"`
-	ExecutionOwner     string          `json:"executionOwner"`
-	ExecutionMode      string          `json:"executionMode"`
-	ApprovedRevision   int             `json:"approvedRevision,omitempty"`
-	ApprovedAt         *time.Time      `json:"approvedAt,omitempty"`
-	ProviderMessageID  string          `json:"providerMessageId,omitempty"`
-	ProviderThreadID   string          `json:"providerThreadId,omitempty"`
-	ExecutedAt         *time.Time      `json:"executedAt,omitempty"`
-	ExecutionError     string          `json:"executionError,omitempty"`
-	DismissReason      string          `json:"dismissReason,omitempty"`
-	SnoozedUntil       *time.Time      `json:"snoozedUntil,omitempty"`
-	DueAt              *time.Time      `json:"dueAt,omitempty"`
-	CreatedAt          time.Time       `json:"createdAt"`
-	UpdatedAt          time.Time       `json:"updatedAt"`
+	ID                 string              `json:"id"`
+	RelationshipID     string              `json:"relationshipId,omitempty"`
+	ActionType         string              `json:"actionType"`
+	Channel            string              `json:"channel"`
+	Detector           string              `json:"detector"`
+	Revision           int                 `json:"revision"`
+	RevisionHash       string              `json:"revisionHash"`
+	Reason             string              `json:"reason"`
+	RecipientEmail     string              `json:"recipientEmail,omitempty"`
+	ProposedSubject    string              `json:"proposedSubject,omitempty"`
+	ProposedMessage    string              `json:"proposedMessage,omitempty"`
+	SenderAccountRef   string              `json:"senderAccountRef,omitempty"`
+	PriorityScore      int                 `json:"priorityScore"`
+	PriorityComponents json.RawMessage     `json:"priorityComponents,omitempty"`
+	QueueStatus        string              `json:"queueStatus"`
+	PolicyStatus       string              `json:"policyStatus"`
+	ApprovalStatus     string              `json:"approvalStatus"`
+	ExecutionStatus    string              `json:"executionStatus"`
+	ExecutionOwner     string              `json:"executionOwner"`
+	ExecutionMode      string              `json:"executionMode"`
+	ApprovedRevision   int                 `json:"approvedRevision,omitempty"`
+	ApprovedAt         *time.Time          `json:"approvedAt,omitempty"`
+	ProviderMessageID  string              `json:"providerMessageId,omitempty"`
+	ProviderThreadID   string              `json:"providerThreadId,omitempty"`
+	ExecutedAt         *time.Time          `json:"executedAt,omitempty"`
+	ExecutionError     string              `json:"executionError,omitempty"`
+	DismissReason      string              `json:"dismissReason,omitempty"`
+	SnoozedUntil       *time.Time          `json:"snoozedUntil,omitempty"`
+	DueAt              *time.Time          `json:"dueAt,omitempty"`
+	CreatedAt          time.Time           `json:"createdAt"`
+	UpdatedAt          time.Time           `json:"updatedAt"`
+	Evidence           []actionEvidenceDTO `json:"evidence"`
+}
+
+type actionEvidenceDTO struct {
+	ID                   string    `json:"id"`
+	Source               string    `json:"source"`
+	SourceRecordID       string    `json:"sourceRecordId"`
+	Excerpt              string    `json:"excerpt,omitempty"`
+	OccurredAt           time.Time `json:"occurredAt"`
+	ExternalEvidenceRefs []string  `json:"externalEvidenceRefs"`
 }
 
 func actionToDTO(a *ent.RevenueAction) actionDTO {
@@ -336,6 +351,17 @@ func actionToDTO(a *ent.RevenueAction) actionDTO {
 		DueAt:             a.DueAt,
 		CreatedAt:         a.CreatedAt,
 		UpdatedAt:         a.UpdatedAt,
+		Evidence:          []actionEvidenceDTO{},
+	}
+	if evidences, err := a.Edges.EvidencesOrErr(); err == nil {
+		for _, evidence := range evidences {
+			dto.Evidence = append(dto.Evidence, actionEvidenceDTO{
+				ID: evidence.ID.String(), Source: evidence.Source,
+				SourceRecordID: evidence.SourceRecordID, Excerpt: evidence.Excerpt,
+				OccurredAt:           evidence.OccurredAt,
+				ExternalEvidenceRefs: evidence.ExternalEvidenceRefs,
+			})
+		}
 	}
 	if a.PriorityComponentsJSON != "" {
 		dto.PriorityComponents = json.RawMessage(a.PriorityComponentsJSON)
@@ -771,6 +797,11 @@ func (h *Handler) GetRelationship(w http.ResponseWriter, r *http.Request) {
 		h.writeServiceError(w, err)
 		return
 	}
+	intelligence, err := h.svc.RelationshipIntelligenceFor(r.Context(), rel)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
 	dto := relationshipToDTO(rel)
 	actions := make([]actionDTO, 0)
 	if list, err := rel.Edges.ActionsOrErr(); err == nil {
@@ -799,6 +830,40 @@ func (h *Handler) GetRelationship(w http.ResponseWriter, r *http.Request) {
 		"recommendations": actions,
 		"participants":    participants,
 		"commitments":     commitments,
+		"intelligence":    intelligence,
+	})
+}
+
+// CorrectConversationReview resolves a low-confidence word, speaker, entity, or
+// material claim. State-bearing corrections become top-precedence assertions;
+// attribution-only corrections remain immutable meeting-scoped evidence.
+func (h *Handler) CorrectConversationReview(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	var body struct {
+		ReviewItemID   string `json:"reviewItemId"`
+		CorrectedValue string `json:"correctedValue"`
+		Reason         string `json:"reason"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	rel, intelligence, err := h.svc.CorrectConversationReview(r.Context(), u, id, ConversationReviewCorrectionInput{
+		ReviewItemID:   body.ReviewItemID,
+		CorrectedValue: body.CorrectedValue, Reason: body.Reason,
+	})
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, map[string]any{
+		"relationship": relationshipToDTO(rel), "intelligence": intelligence,
 	})
 }
 
@@ -829,7 +894,7 @@ func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.
 			Assertions      []RelationshipAssertionInput   `json:"assertions"`
 		} `json:"observations"`
 	}
-	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+	if !httpx.DecodeJSON(w, r, maxObservationBody, &body) {
 		return
 	}
 	inputs := make([]RelationshipObservationInput, 0, len(body.Observations))

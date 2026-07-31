@@ -90,12 +90,62 @@ func addRevenueSchemas(schemas obj) {
 		"lastError":         stringSchema("Bounded provider error.", ""),
 	}, "source", "sourceAccountId", "status")
 
+	schemas["ConversationClaim"] = objectSchema("A material conversation claim anchored to exact words, time, speaker confidence, and capture caveats.", obj{
+		"id":                stringSchema("Stable claim id.", "claim:ab12"),
+		"kind":              stringEnum("Claim kind.", "risk", "risk", "objection", "decision", "milestone", "sentiment", "stakeholder", "lifecycle", "commitment"),
+		"value":             stringSchema("Normalized claim value.", "Security review may delay renewal."),
+		"exactQuote":        stringSchema("Exact supporting transcript words.", "We are concerned security could delay the renewal."),
+		"startMs":           intSchema("Start offset in milliseconds.", 12000),
+		"endMs":             intSchema("End offset in milliseconds.", 16000),
+		"speakerId":         stringSchema("Meeting-scoped speaker id; never a persistent voiceprint.", "anonymous:remote-channel"),
+		"speakerLabel":      stringSchema("Current meeting-scoped speaker label.", "Other"),
+		"speakerConfidence": numberSchema("Speaker attribution confidence.", 0.55),
+		"confidence":        numberSchema("Claim confidence.", 0.72),
+		"captureCaveats":    arraySchema("Capture caveats.", stringSchema("Caveat.", "Remote channel may contain multiple speakers.")),
+		"material":          boolSchema("Whether the claim can affect state or action.", true),
+		"stateDimension":    stringSchema("Projected state dimension when applicable.", "risk"),
+		"observationId":     uuidSchema("Supporting immutable observation.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+	}, "id", "kind", "value", "exactQuote", "startMs", "endMs", "speakerId", "speakerLabel", "speakerConfidence", "confidence", "captureCaveats", "material")
+
+	schemas["ConversationReviewItem"] = objectSchema("One low-confidence word, speaker, entity, or material claim requiring focused correction.", obj{
+		"id":             stringSchema("Stable review item id.", "review:ab12"),
+		"kind":           stringEnum("Review kind.", "speaker", "word", "speaker", "entity", "claim", "capture"),
+		"label":          stringSchema("Review prompt.", "Resolve the speaker for a material statement."),
+		"currentValue":   stringSchema("Current inferred value.", "Other"),
+		"confidence":     numberSchema("Current confidence.", 0.55),
+		"observationId":  uuidSchema("Supporting observation.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"claimId":        stringSchema("Material claim id.", "claim:ab12"),
+		"stateDimension": stringSchema("Canonical state dimension affected by correction.", "risk"),
+		"exactQuote":     stringSchema("Exact words under review.", "We are concerned."),
+	}, "id", "kind", "label", "currentValue", "confidence", "observationId")
+
+	schemas["ConversationGovernanceReceipt"] = objectSchema("Capture, routing, retention, disclosure, legal-hold, deletion, and evidence-clip receipt stored beside a transcript.", obj{
+		"receiptId":             stringSchema("Receipt id.", "governance:ab12"),
+		"capturedAt":            stringSchema("Capture time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
+		"capturePolicy":         stringSchema("Capture policy in force.", "manual_capture"),
+		"routing":               stringSchema("Evidence routing path.", "local_transcription_to_oppulence"),
+		"region":                stringSchema("Processing region or boundary.", "local_device"),
+		"retention":             stringSchema("Retention policy.", "untilTranscribed"),
+		"participantDisclosure": stringSchema("Recorded participant disclosure status.", "not_recorded"),
+		"legalHold":             boolSchema("Whether deletion is blocked by legal hold.", false),
+		"deletionOutcome":       stringSchema("Observed deletion outcome.", "scheduled_after_transcription"),
+		"evidenceClip":          stringEnum("Material audio evidence status; retained clips may only be encrypted.", "not_retained", "not_retained", "encrypted"),
+	}, "receiptId", "capturedAt", "capturePolicy", "routing", "region", "retention", "participantDisclosure", "legalHold", "deletionOutcome", "evidenceClip")
+
+	schemas["RelationshipIntelligence"] = objectSchema("Derived trust surface for a relationship: conversation claims, focused review, exact delta, governance, contradictions, and live cue cards.", obj{
+		"claims":             arraySchema("Material quote-backed claims.", ref("ConversationClaim")),
+		"reviewItems":        arraySchema("Only low-confidence review items.", ref("ConversationReviewItem")),
+		"governanceReceipts": arraySchema("Transcript governance receipts.", ref("ConversationGovernanceReceipt")),
+		"delta":              freeFormSchema("Exact before/after values, uncertain claim ids, contradictions, and recommendation reason."),
+		"liveCues":           arraySchema("Account-history cue cards for the next/live meeting.", freeFormSchema("Cue card.")),
+	}, "claims", "reviewItems", "governanceReceipts", "delta", "liveCues")
+
 	schemas["RevenueAction"] = objectSchema("One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval.", obj{
 		"id":                 uuidSchema("Action id.", "1a8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"relationshipId":     uuidSchema("Owning relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-		"actionType":         stringEnum("Action type.", "warm_follow_up", "warm_follow_up", "proposal_nudge", "referral_reconnect", "customer_risk", "meeting_follow_up"),
-		"channel":            stringEnum("Delivery channel.", "email", "email", "slack", "call", "crm_task"),
-		"detector":           stringEnum("Detector that produced the action.", "manual", "requested_follow_up_due", "unanswered_proposal", "waiting_on_me", "dormant_warm_opportunity", "neglected_referral", "former_customer_reconnect", "manual"),
+		"actionType":         stringEnum("Action type.", "warm_follow_up", "warm_follow_up", "proposal_nudge", "referral_reconnect", "customer_risk", "meeting_follow_up", "meeting_recap", "crm_update", "follow_up_task", "calendar_hold", "commitment_rescue"),
+		"channel":            stringEnum("Delivery channel.", "email", "email", "slack", "call", "crm_task", "crm", "task", "calendar"),
+		"detector":           stringEnum("Detector that produced the action.", "manual", "requested_follow_up_due", "unanswered_proposal", "waiting_on_me", "dormant_warm_opportunity", "neglected_referral", "former_customer_reconnect", "conversation_action_pack", "commitment_due", "manual"),
 		"revision":           intSchema("Current revision number.", 1),
 		"revisionHash":       stringSchema("Canonical hash of the revision content.", "sha256:ab12..."),
 		"reason":             stringSchema("Human-readable evidence-backed reason.", "They asked for a follow-up in July."),
@@ -122,7 +172,15 @@ func addRevenueSchemas(schemas obj) {
 		"dueAt":              stringSchema("Due time.", "2026-07-15T00:00:00Z", obj{"format": "date-time"}, nullable()),
 		"createdAt":          stringSchema("Creation time.", "2026-07-12T12:00:00Z", obj{"format": "date-time"}),
 		"updatedAt":          stringSchema("Last update time.", "2026-07-12T12:06:00Z", obj{"format": "date-time"}),
-	}, "id", "actionType", "channel", "detector", "revision", "revisionHash", "reason", "priorityScore", "queueStatus", "policyStatus", "approvalStatus", "executionStatus", "executionOwner", "executionMode")
+		"evidence": arraySchema("Exact supporting evidence available in the approval UI.", objectSchema("Action evidence.", obj{
+			"id":                   uuidSchema("Evidence id.", "4b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+			"source":               stringSchema("Evidence source.", "meeting"),
+			"sourceRecordId":       stringSchema("Source record id.", "oppulence:session-42:claim:claim-risk"),
+			"excerpt":              stringSchema("Exact supporting words.", "We are concerned security could delay renewal."),
+			"occurredAt":           stringSchema("Evidence time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
+			"externalEvidenceRefs": arraySchema("Observation, timestamp, and speaker references.", stringSchema("Reference.", "timestamp:12000-16000")),
+		}, "id", "source", "sourceRecordId", "occurredAt", "externalEvidenceRefs")),
+	}, "id", "actionType", "channel", "detector", "revision", "revisionHash", "reason", "priorityScore", "queueStatus", "policyStatus", "approvalStatus", "executionStatus", "executionOwner", "executionMode", "evidence")
 
 	schemas["RevenuePolicyDecision"] = objectSchema("Immutable OutboundConsole preflight decision for one exact action revision. Rowboat snapshots the decision; it never composes one.", obj{
 		"id":           uuidSchema("Decision snapshot id.", "2b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
@@ -192,8 +250,8 @@ func addRevenueSchemas(schemas obj) {
 
 	schemas["RevenueOutcome"] = objectSchema("One observed action outcome, append-only and idempotent on (action, source, sourceEventId).", obj{
 		"id":            uuidSchema("Outcome id.", "3c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-		"kind":          stringEnum("Outcome kind.", "replied", "sent", "delivered", "bounced", "replied", "meeting_booked", "won", "lost", "dismissed", "bad_recommendation"),
-		"source":        stringEnum("Observing source.", "gmail", "gmail", "calendar", "crm", "user", "outbound"),
+		"kind":          stringEnum("Outcome kind.", "replied", "sent", "delivered", "bounced", "replied", "meeting_booked", "won", "lost", "dismissed", "bad_recommendation", "deal_advanced", "onboarding_progressed", "renewed", "escalated", "churned", "corrected"),
+		"source":        stringEnum("Observing source.", "gmail", "gmail", "calendar", "crm", "user", "outbound", "slack", "meeting", "task"),
 		"sourceEventId": stringSchema("Source event id used for deduplication.", "msg_01"),
 		"occurredAt":    stringSchema("When the outcome occurred.", "2026-07-12T14:00:00Z", obj{"format": "date-time"}),
 	}, "id", "kind", "source", "sourceEventId", "occurredAt")
@@ -283,6 +341,7 @@ func addRevenuePaths(paths obj) {
 			"recommendations": arraySchema("Governed recommendations.", ref("RevenueAction")),
 			"participants":    arraySchema("Relationship participants.", ref("RelationshipParticipant")),
 			"commitments":     arraySchema("Open and completed commitments.", ref("RelationshipCommitment")),
+			"intelligence":    ref("RelationshipIntelligence"),
 		}), nil),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
@@ -308,6 +367,16 @@ func addRevenuePaths(paths obj) {
 		"reason":    stringSchema("Why the model is wrong.", "The review happened yesterday."),
 	}, "dimension", "value", "reason"), obj{"dimension": "health", "value": "healthy", "reason": "The review happened yesterday."}), obj{
 		"201": jsonResponse("Reprojected relationship.", ref("RevenueRelationship"), nil),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+	})}
+	paths["/v1/relationships/{relationshipId}/conversation-corrections"] = obj{"post": operation("Relationship Intelligence", "Correct reviewed conversation evidence", "Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.", "correctConversationEvidence", bearer(), relationshipParam, jsonRequest("Focused correction.", objectSchema("Conversation correction.", obj{
+		"reviewItemId":   stringSchema("Focused review item id.", "review:ab12"),
+		"correctedValue": stringSchema("Human-corrected value.", "Avery Chen"),
+		"reason":         stringSchema("Correction reason.", "Avery was the speaker."),
+	}, "reviewItemId", "correctedValue", "reason"), obj{"reviewItemId": "review:ab12", "correctedValue": "Avery Chen", "reason": "Avery was the speaker."}), obj{
+		"201": jsonResponse("Corrected relationship and refreshed intelligence.", objectSchema("Correction result.", obj{"relationship": ref("RevenueRelationship"), "intelligence": ref("RelationshipIntelligence")}, "relationship", "intelligence"), nil),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
@@ -361,8 +430,8 @@ func addRevenuePaths(paths obj) {
 		}),
 		"post": operation("Revenue", "Create a manual action", "Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.", "createRevenueAction", bearer(), nil, jsonRequest("Action.", objectSchema("Create request.", obj{
 			"relationshipId":     uuidSchema("Owning relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-			"actionType":         stringEnum("Action type.", "warm_follow_up", "warm_follow_up", "proposal_nudge", "referral_reconnect", "customer_risk", "meeting_follow_up"),
-			"channel":            stringEnum("Delivery channel.", "email", "email", "slack", "call", "crm_task"),
+			"actionType":         stringEnum("Action type.", "warm_follow_up", "warm_follow_up", "proposal_nudge", "referral_reconnect", "customer_risk", "meeting_follow_up", "meeting_recap", "crm_update", "follow_up_task", "calendar_hold", "commitment_rescue"),
+			"channel":            stringEnum("Delivery channel.", "email", "email", "slack", "call", "crm_task", "crm", "task", "calendar"),
 			"reason":             stringSchema("Evidence-backed reason.", "They asked for a follow-up in July."),
 			"recipientEmail":     stringSchema("Recipient email.", "buyer@example.com"),
 			"proposedSubject":    stringSchema("Proposed subject.", "Following up as promised"),

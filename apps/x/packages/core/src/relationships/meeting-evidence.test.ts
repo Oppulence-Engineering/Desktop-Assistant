@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { MeetingSessionMeta, MeetingTranscript } from "@x/shared/dist/meetings.js";
 import type { LedgerCommitment } from "../meetings/meetings.js";
 import {
+  commitmentStatusObservation,
   confirmedCommitmentObservation,
   meetingTranscriptObservation,
 } from "./meeting-evidence.js";
@@ -51,7 +52,7 @@ const counterparty = {
 };
 
 describe("meeting relationship evidence", () => {
-  it("preserves transcript provenance without creating inferred assertions", () => {
+  it("compiles quote-backed claims, actions, speaker caveats, and governance", () => {
     const result = meetingTranscriptObservation({
       sessionId: "session-1",
       meta,
@@ -64,15 +65,86 @@ describe("meeting relationship evidence", () => {
       primaryEmail: "avery@acme.example",
       accountDomain: "acme.example",
       source: "meeting",
-      externalId: "session-1",
-      eventType: "meeting_transcribed",
+      externalId: "oppulence:session-1",
+      eventType: "conversation_evidence_compiled",
     });
-    expect(result.assertions).toBeUndefined();
+    expect(result.assertions).toEqual([
+      expect.objectContaining({
+        dimension: "next_action",
+        sourceType: "ai_inference",
+      }),
+    ]);
     expect(result.normalizedFacts).toMatchObject({
       session_id: "session-1",
       transcript_segments: 1,
       transcription_engine: "whisper.cpp",
+      governance_receipt: expect.objectContaining({
+        region: "local_device",
+        evidenceClip: "not_retained",
+      }),
+      conversation_claims: [
+        expect.objectContaining({
+          kind: "commitment",
+          exactQuote: "I will send the proposal.",
+          startMs: 0,
+          endMs: 2_000,
+          speakerConfidence: 1,
+        }),
+      ],
     });
+    expect(result.normalizedFacts.action_pack).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ channel: "email" }),
+        expect.objectContaining({ channel: "slack" }),
+        expect.objectContaining({ channel: "crm" }),
+        expect.objectContaining({ channel: "task" }),
+      ]),
+    );
+  });
+
+  it("uses the resolved 1:1 calendar attendee only as a meeting-scoped speaker", () => {
+    const result = meetingTranscriptObservation({
+      sessionId: "session-2",
+      meta,
+      transcript: {
+        ...transcript,
+        segments: [
+          {
+            speaker: "them",
+            start_ms: 1_000,
+            end_ms: 3_000,
+            text: "We are concerned about the renewal timing.",
+          },
+        ],
+      },
+      counterparty,
+    });
+
+    expect(result.normalizedFacts.conversation_claims).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "risk",
+          exactQuote: "We are concerned about the renewal timing.",
+          speakerLabel: "Avery",
+          speakerConfidence: 0.9,
+        }),
+        expect.objectContaining({
+          kind: "lifecycle",
+          speakerLabel: "Avery",
+          speakerConfidence: 0.9,
+        }),
+      ]),
+    );
+    expect(result.normalizedFacts.participant_resolution).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: "Avery",
+          scope: "meeting",
+          persistent_voiceprint: false,
+        }),
+      ]),
+    );
+    expect(JSON.stringify(result)).toContain("resolved from the 1:1 calendar attendee");
   });
 
   it("projects only a user-confirmed promise by me into next action", () => {
@@ -87,6 +159,7 @@ describe("meeting relationship evidence", () => {
       start_ms: 0,
       end_ms: 2_000,
       note_path: "/Users/alice/Relationships/Acme/private-meeting.md",
+      due_phrase: "tomorrow",
     };
     const mine = confirmedCommitmentObservation({ commitment: base, counterparty });
     expect(JSON.stringify(mine)).not.toContain("/Users/alice");
@@ -99,6 +172,7 @@ describe("meeting relationship evidence", () => {
         confidence: 1,
       }),
     ]);
+    expect(mine.normalizedFacts.commitment_due_at).toBe("2026-08-01T17:00:00.000Z");
 
     const theirs = confirmedCommitmentObservation({
       commitment: { ...base, owner: "them" },
@@ -108,6 +182,35 @@ describe("meeting relationship evidence", () => {
     expect(theirs.normalizedFacts).toMatchObject({
       commitment_direction: "promised_by_them",
       user_confirmed: true,
+    });
+  });
+
+  it("publishes fulfillment as an idempotent commitment update", () => {
+    const commitment: LedgerCommitment = {
+      id: "session-1:0-2000",
+      owner: "me",
+      text: "Send the proposal",
+      status: "done",
+      confirmed_at: "2026-07-31T12:35:00.000Z",
+      session_id: "session-1",
+      evidence: "I will send the proposal.",
+      start_ms: 0,
+      end_ms: 2_000,
+    };
+    const result = commitmentStatusObservation({
+      commitment,
+      status: "done",
+      counterparty,
+      occurredAt: "2026-08-01T10:00:00.000Z",
+    });
+    expect(result).toMatchObject({
+      externalId: "commitment-update:session-1:0-2000:fulfilled",
+      eventType: "commitment_status_changed",
+      normalizedFacts: {
+        commitment_updates: [
+          expect.objectContaining({ commitmentId: "session-1:0-2000", status: "fulfilled" }),
+        ],
+      },
     });
   });
 });

@@ -331,7 +331,7 @@ func (s *Service) GetRelationship(ctx context.Context, id uuid.UUID) (*ent.Relat
 		WithCommitments().
 		WithParticipants().
 		WithActions(func(q *ent.RevenueActionQuery) {
-			q.Order(ent.Desc(revenueaction.FieldPriorityScore))
+			q.WithEvidences().Order(ent.Desc(revenueaction.FieldPriorityScore))
 		}).
 		Only(ctx)
 	if ent.IsNotFound(err) {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Send, Sparkles } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import type { MeetingTranscriptSegment } from "@x/shared/dist/meetings.js";
+import type { RelationshipLiveCue } from "@x/shared/dist/relationships.js";
 
 /**
  * The meeting, as it happens — and a box to ask it questions.
@@ -29,6 +30,7 @@ export function MeetingLivePanel() {
   const [active, setActive] = useState(false);
   const [counterparty, setCounterparty] = useState<string | undefined>();
   const [segments, setSegments] = useState<MeetingTranscriptSegment[]>([]);
+  const [cues, setCues] = useState<RelationshipLiveCue[]>([]);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
@@ -43,6 +45,7 @@ export function MeetingLivePanel() {
         setActive(state.active);
         setCounterparty(state.counterparty);
         setSegments(state.segments);
+        setCues(state.cues);
       })
       .catch(() => {});
 
@@ -57,12 +60,15 @@ export function MeetingLivePanel() {
         setActive(false);
         setSegments([]);
         setAnswer(null);
+        setCues([]);
       }
     });
+    const offCues = window.ipc.on("meeting:liveCues", ({ cues: next }) => setCues(next));
     return () => {
       cancelled = true;
       offSegments();
       offState();
+      offCues();
     };
   }, []);
 
@@ -87,72 +93,95 @@ export function MeetingLivePanel() {
     }
   }, [question]);
 
-  if (!active) return null;
+  if (!active && cues.length === 0) return null;
 
   return (
     <div className="border-b border-border bg-muted/10 px-6 py-3">
-      <div className="mb-2 flex items-baseline gap-2">
-        <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Live transcript
-        </h3>
-        {/* Rough live text is expected, not a defect — say so before anyone reports it. */}
-        <span className="text-xs text-muted-foreground">
-          rough while recording · the note gets a clean re-transcription afterwards
-        </span>
-      </div>
+      {cues.length > 0 ? (
+        <div className="mb-3">
+          <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Account-aware cue cards
+          </h3>
+          <div className="grid gap-2 md:grid-cols-2">
+            {cues.map((cue) => (
+              <div key={cue.id} className="border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+                <p className="text-xs font-medium">{cue.title}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{cue.detail}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {active ? (
+        <>
+          <div className="mb-2 flex items-baseline gap-2">
+            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Live transcript
+            </h3>
+            {/* Rough live text is expected, not a defect — say so before anyone reports it. */}
+            <span className="text-xs text-muted-foreground">
+              rough while recording · the note gets a clean re-transcription afterwards
+            </span>
+          </div>
 
-      <div
-        ref={scroller}
-        className="max-h-48 overflow-y-auto rounded-none border border-border/60 bg-card px-3 py-2 text-sm"
-      >
-        {segments.length === 0 ? (
-          <p className="text-xs text-muted-foreground">Listening…</p>
-        ) : (
-          segments.map((segment, index) => (
-            <p key={index} className="mb-1 last:mb-0">
-              <span className="mr-2 text-xs tabular-nums text-muted-foreground">
-                {clock(segment.start_ms)}
-              </span>
-              <span className="font-medium">
-                {segment.speaker === "me" ? "You" : (counterparty ?? "Other")}
-              </span>
-              <span className="text-muted-foreground">: {segment.text}</span>
+          <div
+            ref={scroller}
+            className="max-h-48 overflow-y-auto rounded-none border border-border/60 bg-card px-3 py-2 text-sm"
+          >
+            {segments.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Listening…</p>
+            ) : (
+              segments.map((segment, index) => (
+                <p key={index} className="mb-1 last:mb-0">
+                  <span className="mr-2 text-xs tabular-nums text-muted-foreground">
+                    {clock(segment.start_ms)}
+                  </span>
+                  <span className="font-medium">
+                    {segment.speaker === "me" ? "You" : (counterparty ?? "Other")}
+                  </span>
+                  <span className="text-muted-foreground">: {segment.text}</span>
+                </p>
+              ))
+            )}
+          </div>
+
+          <div className="mt-2 flex items-center gap-2">
+            <Sparkles className="size-3.5 shrink-0 text-muted-foreground" />
+            <input
+              type="text"
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void ask();
+                }
+              }}
+              placeholder="Ask about this meeting — what did they say about pricing?"
+              className="min-w-0 flex-1 border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-ring"
+            />
+            <Button
+              type="button"
+              size="sm"
+              disabled={asking || !question.trim()}
+              onClick={() => void ask()}
+            >
+              {asking ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Send className="size-3.5" />
+              )}
+              Ask
+            </Button>
+          </div>
+
+          {answer && (
+            <p className="mt-2 whitespace-pre-wrap border-l-2 border-primary/40 py-1 pl-3 text-sm">
+              {answer}
             </p>
-          ))
-        )}
-      </div>
-
-      <div className="mt-2 flex items-center gap-2">
-        <Sparkles className="size-3.5 shrink-0 text-muted-foreground" />
-        <input
-          type="text"
-          value={question}
-          onChange={(event) => setQuestion(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              void ask();
-            }
-          }}
-          placeholder="Ask about this meeting — what did they say about pricing?"
-          className="min-w-0 flex-1 border border-border bg-background px-2.5 py-1.5 text-sm outline-none focus:border-ring"
-        />
-        <Button
-          type="button"
-          size="sm"
-          disabled={asking || !question.trim()}
-          onClick={() => void ask()}
-        >
-          {asking ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
-          Ask
-        </Button>
-      </div>
-
-      {answer && (
-        <p className="mt-2 whitespace-pre-wrap border-l-2 border-primary/40 py-1 pl-3 text-sm">
-          {answer}
-        </p>
-      )}
+          )}
+        </>
+      ) : null}
     </div>
   );
 }

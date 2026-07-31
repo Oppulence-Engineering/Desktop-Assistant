@@ -6,6 +6,15 @@ import container from '../../di/container.js';
 import { IGranolaConfigRepo } from './repo.js';
 import { serviceLogger } from '../../services/service_logger.js';
 import { limitEventItems } from '../limit_event_items.js';
+import { getTranscriptionConfig } from '../../voice/voice.js';
+import {
+    enqueueRelationshipEvidence,
+    flushRelationshipEvidence,
+} from '../../relationships/evidence-outbox.js';
+import {
+    canonicalTranscriptObservation,
+    conversationFingerprint,
+} from '../../relationships/conversation-evidence.js';
 import {
     GetDocumentsResponse,
     SyncState,
@@ -324,6 +333,82 @@ function documentToMarkdown(doc: Document): string {
     return md;
 }
 
+function granolaAttendees(doc: Document): Array<{ displayName: string; email: string; role: string }> {
+    const raw = (doc as Record<string, unknown>).attendees || (doc as Record<string, unknown>).people;
+    if (!Array.isArray(raw)) return [];
+    const result: Array<{ displayName: string; email: string; role: string }> = [];
+    for (const item of raw) {
+        if (!item || typeof item !== 'object') continue;
+        const record = item as Record<string, unknown>;
+        const email = typeof record.email === 'string' ? record.email.trim().toLowerCase() : '';
+        if (!email.includes('@')) continue;
+        const displayName = typeof record.name === 'string'
+            ? record.name.trim()
+            : typeof record.display_name === 'string'
+                ? record.display_name.trim()
+                : email;
+        result.push({ displayName: displayName || email, email, role: 'contact' });
+    }
+    return result;
+}
+
+async function publishGranolaEvidence(doc: Document): Promise<void> {
+    const config = await getTranscriptionConfig();
+    if (!config.meetings.syncRelationshipEvidence) return;
+    const attendees = granolaAttendees(doc);
+    // Without exactly one resolvable counterparty the note remains in the local inbox;
+    // creating an account from the document title would silently merge bad identity.
+    if (attendees.length !== 1) return;
+    const counterparty = attendees[0];
+    const domain = counterparty.email.split('@')[1];
+    const text = doc.notes_plain || doc.notes_markdown || convertProseMirrorToMarkdown(
+        (doc.last_viewed_panel?.content && typeof doc.last_viewed_panel.content === 'object'
+            ? doc.last_viewed_panel.content
+            : doc.notes) as ProseMirrorNode | undefined,
+    );
+    if (!text.trim()) return;
+    const observation = canonicalTranscriptObservation({
+        identity: {
+            displayName: domain || counterparty.displayName,
+            primaryEmail: counterparty.email,
+            ...(domain ? { accountDomain: domain } : {}),
+            participants: attendees,
+        },
+        source: {
+            provider: 'granola',
+            sourceRecordId: doc.id,
+            title: doc.title || 'Granola meeting',
+            occurredAt: doc.created_at,
+            participants: attendees,
+            segments: [{
+                speakerId: `meeting-notes:${conversationFingerprint(doc.id)}`,
+                speakerLabel: 'Granola notes',
+                speakerConfidence: 0.25,
+                startMs: 0,
+                endMs: 0,
+                text: text.trim(),
+            }],
+            captureCaveats: [
+                'Granola supplied meeting notes rather than a timestamped verbatim transcript.',
+                'Speaker attribution and wording require focused review before material use.',
+            ],
+            governance: {
+                capturedAt: doc.created_at,
+                capturePolicy: 'provider_import',
+                routing: 'granola_to_oppulence',
+                region: 'provider_managed',
+                retention: 'provider_policy_plus_oppulence_evidence',
+                participantDisclosure: 'provider_reported',
+                legalHold: false,
+                deletionOutcome: doc.deleted_at ? `provider_deleted:${doc.deleted_at}` : 'not_applicable',
+                evidenceClip: 'not_retained',
+            },
+        },
+    });
+    await enqueueRelationshipEvidence(observation);
+    await flushRelationshipEvidence();
+}
+
 // --- Sync Logic ---
 
 async function syncNotes(): Promise<void> {
@@ -439,6 +524,14 @@ async function syncNotes(): Promise<void> {
                 } else {
                     console.log(`[Granola] Saved: ${filename}`);
                     newCount++;
+                }
+
+                try {
+                    await publishGranolaEvidence(doc);
+                } catch (error) {
+                    // The local note remains the durable provider import; relationship
+                    // publication retries independently through its outbox.
+                    console.warn('[Granola] Could not publish relationship evidence:', error);
                 }
 
                 // Update state

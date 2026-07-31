@@ -245,6 +245,9 @@ func (s *Service) ingestRelationshipObservation(
 	if err := s.createConfirmedCommitmentAction(ctx, client, ws, u, rel, evidence, input); err != nil {
 		return RelationshipObservationResult{}, err
 	}
+	if err := s.materializeConversationEvidence(ctx, client, ws, u, rel, observation, input); err != nil {
+		return RelationshipObservationResult{}, err
+	}
 	if err := updateRelationshipSourceStatus(ctx, client, ws, u, input); err != nil {
 		return RelationshipObservationResult{}, err
 	}
@@ -279,7 +282,7 @@ func createConfirmedCommitment(
 	default:
 		return nil, fmt.Errorf("%w: invalid commitment_direction", ErrInvalidInput)
 	}
-	commitment, err := client.Commitment.Create().
+	create := client.Commitment.Create().
 		SetWorkspace(ws).
 		SetRelationship(rel).
 		SetUser(u).
@@ -287,8 +290,15 @@ func createConfirmedCommitment(
 		SetText(text).
 		SetStatus("open").
 		SetConfidence(1).
-		SetUserConfirmed(true).
-		Save(ctx)
+		SetUserConfirmed(true)
+	if dueAtRaw, _ := input.Facts["commitment_due_at"].(string); strings.TrimSpace(dueAtRaw) != "" {
+		dueAt, parseErr := time.Parse(time.RFC3339, dueAtRaw)
+		if parseErr != nil {
+			return nil, fmt.Errorf("%w: invalid commitment_due_at", ErrInvalidInput)
+		}
+		create.SetDueAt(dueAt.UTC())
+	}
+	commitment, err := create.Save(ctx)
 	if err != nil && isValidationError(err) {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
 	}
@@ -419,6 +429,11 @@ func (s *Service) createConfirmedCommitmentAction(
 		SetAssignedUserID(u.ID).
 		SetPriorityScore(actionInput.PriorityScore).
 		SetPriorityComponentsJSON(string(priorityJSON))
+	if dueAtRaw, _ := input.Facts["commitment_due_at"].(string); strings.TrimSpace(dueAtRaw) != "" {
+		if dueAt, parseErr := time.Parse(time.RFC3339, dueAtRaw); parseErr == nil {
+			create.SetDueAt(dueAt.UTC())
+		}
+	}
 	if evidence != nil {
 		create.AddEvidences(evidence)
 	}
