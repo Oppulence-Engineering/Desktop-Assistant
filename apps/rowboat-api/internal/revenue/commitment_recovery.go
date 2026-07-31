@@ -21,6 +21,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// CommitmentRecoveryEvidence is a fresh source fact considered by reconciliation.
 type CommitmentRecoveryEvidence struct {
 	CommitmentID string `json:"commitmentId"`
 	EvidenceRef  string `json:"evidenceRef"`
@@ -30,6 +31,7 @@ type CommitmentRecoveryEvidence struct {
 	OccurredAt   string `json:"occurredAt"`
 }
 
+// CommitmentRecoveryEvaluation records one immutable due-commitment classification.
 type CommitmentRecoveryEvaluation struct {
 	EvaluationID       string   `json:"evaluationId"`
 	CommitmentID       string   `json:"commitmentId"`
@@ -45,6 +47,7 @@ type CommitmentRecoveryEvaluation struct {
 	EvaluatedAt        string   `json:"evaluatedAt"`
 }
 
+// RecommendationFactor exposes one inspectable ranking input.
 type RecommendationFactor struct {
 	Factor       string `json:"factor"`
 	Value        any    `json:"value"`
@@ -52,6 +55,7 @@ type RecommendationFactor struct {
 	Reason       string `json:"reason"`
 }
 
+// RecommendationEvaluation records the selected recovery action and ranking factors.
 type RecommendationEvaluation struct {
 	EvaluationID     string                 `json:"evaluationId"`
 	RecommendationID string                 `json:"recommendationId"`
@@ -332,11 +336,12 @@ func (s *Service) ReconcileDueCommitments(
 			EvidenceRefs: refs, StaleSources: append([]string(nil), staleSources...),
 			RequiresReview: review, ProposedActionType: actionType, EvaluatedAt: now.Format(time.RFC3339),
 		}
-		if len(staleSources) > 0 {
+		switch {
+		case len(staleSources) > 0:
 			evaluation.Explanation = "Evidence is incomplete; stale sources: " + strings.Join(staleSources, ", ") + "."
-		} else if classification == "fulfilled" {
+		case classification == "fulfilled":
 			evaluation.Explanation = "Fresh explicit source evidence proves fulfillment."
-		} else {
+		default:
 			evaluation.Explanation = "Fresh evidence suggests " + classification + "; human review is required."
 		}
 		if _, err := appendConversationArtifact(ctx, s.client, ws, u, rel, conversationArtifactInput{

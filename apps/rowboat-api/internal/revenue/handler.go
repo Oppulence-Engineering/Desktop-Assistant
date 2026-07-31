@@ -962,6 +962,7 @@ func (h *Handler) GetRelationship(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// CreateCommitmentDependency creates a cycle-checked evidence-backed graph edge.
 func (h *Handler) CreateCommitmentDependency(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -1082,6 +1083,7 @@ func (h *Handler) DecideConversationReview(w http.ResponseWriter, r *http.Reques
 	})
 }
 
+// ResolveContradiction records a user-selected authoritative contradiction side.
 func (h *Handler) ResolveContradiction(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -1110,6 +1112,7 @@ func (h *Handler) ResolveContradiction(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// RunCommitmentRecovery reconciles due commitments against bounded fresh evidence.
 func (h *Handler) RunCommitmentRecovery(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -1127,6 +1130,7 @@ func (h *Handler) RunCommitmentRecovery(w http.ResponseWriter, r *http.Request) 
 	httpx.WriteJSON(w, http.StatusCreated, map[string]any{"evaluations": evaluations})
 }
 
+// AppendCommitmentTransition appends one validated idempotent event.
 func (h *Handler) AppendCommitmentTransition(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -1172,6 +1176,7 @@ func (h *Handler) AppendCommitmentTransition(w http.ResponseWriter, r *http.Requ
 	httpx.WriteJSON(w, http.StatusCreated, commitmentToDTO(row))
 }
 
+// CommitmentEvents returns the replayable event history for one commitment.
 func (h *Handler) CommitmentEvents(w http.ResponseWriter, r *http.Request) {
 	if _, ok := h.viewer(w, r); !ok {
 		return
@@ -1196,6 +1201,7 @@ func (h *Handler) CommitmentEvents(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"events": result})
 }
 
+// CreateMutualActionPlan creates a plan draft from accepted commitments.
 func (h *Handler) CreateMutualActionPlan(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -1228,6 +1234,7 @@ func (h *Handler) CreateMutualActionPlan(w http.ResponseWriter, r *http.Request)
 	httpx.WriteJSON(w, http.StatusCreated, plan)
 }
 
+// ReviseMutualActionPlan appends a validated replacement revision.
 func (h *Handler) ReviseMutualActionPlan(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -1251,6 +1258,7 @@ func (h *Handler) ReviseMutualActionPlan(w http.ResponseWriter, r *http.Request)
 	httpx.WriteJSON(w, http.StatusCreated, plan)
 }
 
+// ApproveMutualActionPlan approves the exact current revision.
 func (h *Handler) ApproveMutualActionPlan(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -1268,6 +1276,7 @@ func (h *Handler) ApproveMutualActionPlan(w http.ResponseWriter, r *http.Request
 	httpx.WriteJSON(w, http.StatusCreated, plan)
 }
 
+// ShareMutualActionPlan creates a governed token and queued draft action.
 func (h *Handler) ShareMutualActionPlan(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -1289,6 +1298,7 @@ func planToken(r *http.Request) string {
 	return strings.TrimSpace(r.Header.Get("X-Oppulence-Plan-Token"))
 }
 
+// GetPublicMutualActionPlan serves a redacted token-scoped plan.
 func (h *Handler) GetPublicMutualActionPlan(w http.ResponseWriter, r *http.Request) {
 	plan, err := h.svc.PublicMutualActionPlan(r.Context(), planToken(r))
 	if err != nil {
@@ -1299,6 +1309,7 @@ func (h *Handler) GetPublicMutualActionPlan(w http.ResponseWriter, r *http.Reque
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"plan": plan})
 }
 
+// ReceivePublicMutualActionPlanResponse records an external proposal for review.
 func (h *Handler) ReceivePublicMutualActionPlanResponse(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		ResponseID    string `json:"responseId"`
@@ -1322,6 +1333,7 @@ func (h *Handler) ReceivePublicMutualActionPlanResponse(w http.ResponseWriter, r
 	httpx.WriteJSON(w, http.StatusCreated, map[string]any{"responseId": responseID, "recorded": true})
 }
 
+// GetConversationPolicy returns applicable layers and the effective policy.
 func (h *Handler) GetConversationPolicy(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -1350,6 +1362,7 @@ func (h *Handler) GetConversationPolicy(w http.ResponseWriter, r *http.Request) 
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"layers": layers, "effectivePolicy": effective})
 }
 
+// PutConversationPolicy appends validated policy-layer versions.
 func (h *Handler) PutConversationPolicy(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -1373,6 +1386,7 @@ func (h *Handler) PutConversationPolicy(w http.ResponseWriter, r *http.Request) 
 	httpx.WriteJSON(w, http.StatusCreated, map[string]any{"effectivePolicy": effective})
 }
 
+// RequestConversationDeletion executes a legal-hold-aware deletion request.
 func (h *Handler) RequestConversationDeletion(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {

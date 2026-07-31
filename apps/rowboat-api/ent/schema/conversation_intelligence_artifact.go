@@ -15,10 +15,12 @@ import (
 // versions append rows; services never update prior versions.
 type ConversationIntelligenceArtifact struct{ ent.Schema }
 
+// Mixin adds shared identifiers and timestamps.
 func (ConversationIntelligenceArtifact) Mixin() []ent.Mixin {
 	return []ent.Mixin{mixin.BaseMixin{}}
 }
 
+// Fields defines the bounded, versioned artifact envelope.
 func (ConversationIntelligenceArtifact) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("kind").Validate(oneOfRevenue("kind",
@@ -37,6 +39,7 @@ func (ConversationIntelligenceArtifact) Fields() []ent.Field {
 	}
 }
 
+// Edges scopes artifacts to their tenant and optional relationship.
 func (ConversationIntelligenceArtifact) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
@@ -48,6 +51,7 @@ func (ConversationIntelligenceArtifact) Edges() []ent.Edge {
 	}
 }
 
+// Indexes enforces immutable logical versions and supports current-state reads.
 func (ConversationIntelligenceArtifact) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("workspace").Fields("kind", "stable_id", "version").Unique(),

@@ -12,8 +12,10 @@ import (
 // CommitmentEvent is the append-only authority for commitment transitions (RFC 037).
 type CommitmentEvent struct{ ent.Schema }
 
+// Mixin adds shared identifiers and timestamps.
 func (CommitmentEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
 
+// Fields defines immutable transition provenance and payload data.
 func (CommitmentEvent) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("source_event_id").NotEmpty(),
@@ -32,6 +34,7 @@ func (CommitmentEvent) Fields() []ent.Field {
 	}
 }
 
+// Edges scopes each event to its tenant, relationship, actor, and commitment.
 func (CommitmentEvent) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).Ref("commitment_events").Unique().Required(),
@@ -41,6 +44,7 @@ func (CommitmentEvent) Edges() []ent.Edge {
 	}
 }
 
+// Indexes enforces one ordered event version per commitment and source-event dedupe.
 func (CommitmentEvent) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("commitment").Fields("version").Unique(),

@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// ConversationDeletionTargetOutcome reports verified work for one storage boundary.
 type ConversationDeletionTargetOutcome struct {
 	Target           string `json:"target"`
 	Status           string `json:"status"`
@@ -36,6 +37,7 @@ type ConversationDeletionTargetOutcome struct {
 	Attempts         int    `json:"attempts"`
 }
 
+// ConversationDeletionReceipt is an immutable, per-target deletion audit record.
 type ConversationDeletionReceipt struct {
 	ReceiptID   string                              `json:"receiptId"`
 	RequestedAt string                              `json:"requestedAt"`
@@ -113,6 +115,7 @@ func defaultStateValue(dimension string) string {
 	}
 }
 
+// RequestConversationDeletion executes legal-hold-aware server deletion idempotently.
 func (s *Service) RequestConversationDeletion(
 	ctx context.Context,
 	u *ent.User,

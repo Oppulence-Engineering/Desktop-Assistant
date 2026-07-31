@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// ConversationPolicyLayer is one versioned rule at a policy-hierarchy scope.
 type ConversationPolicyLayer struct {
 	LayerID          string   `json:"layerId"`
 	Scope            string   `json:"scope"`
@@ -31,6 +32,7 @@ type ConversationPolicyLayer struct {
 	LegalHold        bool     `json:"legalHold"`
 }
 
+// ResolvedConversationPolicy is the monotonic effective rule at an operation boundary.
 type ResolvedConversationPolicy struct {
 	Capture          string   `json:"capture"`
 	ModelRoute       string   `json:"modelRoute"`
@@ -44,6 +46,7 @@ type ResolvedConversationPolicy struct {
 	ResolvedAt       string   `json:"resolvedAt"`
 }
 
+// ConversationGovernanceDecision records the policy evaluated at one checkpoint.
 type ConversationGovernanceDecision struct {
 	DecisionID       string   `json:"decisionId"`
 	Checkpoint       string   `json:"checkpoint"`
@@ -182,6 +185,7 @@ func (s *Service) conversationPolicyLayersFor(
 	return layers, nil
 }
 
+// ResolveConversationPolicy returns the strictest applicable conversation policy.
 func (s *Service) ResolveConversationPolicy(
 	ctx context.Context,
 	u *ent.User,
@@ -202,7 +206,7 @@ func enforceConversationObservationPolicy(
 	ctx context.Context,
 	client *ent.Client,
 	ws *ent.RevenueWorkspace,
-	u *ent.User,
+	_ *ent.User,
 	rel *ent.Relationship,
 	input *RelationshipObservationInput,
 	now time.Time,
@@ -229,6 +233,7 @@ func enforceConversationObservationPolicy(
 	return nil
 }
 
+// SaveConversationPolicyLayers transactionally appends validated policy versions.
 func (s *Service) SaveConversationPolicyLayers(
 	ctx context.Context,
 	u *ent.User,
@@ -310,14 +315,15 @@ func evaluateGovernanceDecision(
 	now time.Time,
 ) ConversationGovernanceDecision {
 	allowed, reason := true, "effective policy permits this operation"
-	if route == "cloud" && policy.ModelRoute == "local_only" &&
-		(checkpoint == "transcription" || checkpoint == "semantic_enrichment" || checkpoint == "evidence_publication") {
+	switch {
+	case route == "cloud" && policy.ModelRoute == "local_only" &&
+		(checkpoint == "transcription" || checkpoint == "semantic_enrichment" || checkpoint == "evidence_publication"):
 		allowed, route, reason = false, "none", "local-only policy prohibits a cloud route"
-	} else if checkpoint == "evidence_publication" && !policy.PublishEvidence {
+	case checkpoint == "evidence_publication" && !policy.PublishEvidence:
 		allowed, reason = false, "shared evidence publication is disabled"
-	} else if checkpoint == "external_share" && !policy.ExternalShare {
+	case checkpoint == "external_share" && !policy.ExternalShare:
 		allowed, reason = false, "external sharing is disabled"
-	} else if checkpoint == "retention_deletion" && policy.LegalHold {
+	case checkpoint == "retention_deletion" && policy.LegalHold:
 		allowed, reason = false, "legal hold blocks deletion"
 	}
 	sum := sha256.Sum256([]byte(policy.PolicyVersion + ":" + checkpoint + ":" + correlationID))

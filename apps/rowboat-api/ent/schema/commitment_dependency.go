@@ -12,8 +12,10 @@ import (
 // CommitmentDependency is an evidence-backed directed graph edge.
 type CommitmentDependency struct{ ent.Schema }
 
+// Mixin adds shared identifiers and timestamps.
 func (CommitmentDependency) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
 
+// Fields defines dependency semantics and evidence references.
 func (CommitmentDependency) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("kind").Validate(oneOfRevenue("kind", "blocks", "requires", "supersedes")),
@@ -21,6 +23,7 @@ func (CommitmentDependency) Fields() []ent.Field {
 	}
 }
 
+// Edges scopes both endpoints to one tenant and relationship.
 func (CommitmentDependency) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).Ref("commitment_dependencies").Unique().Required(),
@@ -31,6 +34,7 @@ func (CommitmentDependency) Edges() []ent.Edge {
 	}
 }
 
+// Indexes rejects duplicate typed edges between the same commitments.
 func (CommitmentDependency) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("from_commitment", "to_commitment").Fields("kind").Unique(),

@@ -178,6 +178,7 @@ type RelationshipContradiction struct {
 	ContradictedAssertionID string `json:"contradictedAssertionId"`
 }
 
+// ConversationContradictionEvidenceSide identifies one typed, cited assertion side.
 type ConversationContradictionEvidenceSide struct {
 	AssertionID        string         `json:"assertionId"`
 	SourceType         string         `json:"sourceType"`
@@ -189,6 +190,7 @@ type ConversationContradictionEvidenceSide struct {
 	IdentityConfidence float64        `json:"identityConfidence"`
 }
 
+// ConversationContradictionCase preserves conflicting typed evidence for review.
 type ConversationContradictionCase struct {
 	CaseID                string                                  `json:"caseId"`
 	RelationshipID        string                                  `json:"relationshipId"`
@@ -1093,6 +1095,7 @@ type ConversationReviewDecisionInput struct {
 	DeferUntil     time.Time
 }
 
+// ContradictionResolutionInput selects one cited assertion without rewriting sources.
 type ContradictionResolutionInput struct {
 	CaseID              string
 	SelectedAssertionID string

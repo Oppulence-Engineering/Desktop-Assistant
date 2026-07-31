@@ -469,7 +469,9 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 		"409": responseRef("409"),
 	})}
-	caseParam := append(relationshipParam, obj{"name": "caseId", "in": "path", "required": true, "description": "Contradiction case id.", "schema": obj{"type": "string"}})
+	caseParam := make([]any, len(relationshipParam), len(relationshipParam)+1)
+	copy(caseParam, relationshipParam)
+	caseParam = append(caseParam, obj{"name": "caseId", "in": "path", "required": true, "description": "Contradiction case id.", "schema": obj{"type": "string"}})
 	paths["/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve"] = obj{"post": operation("Relationship Intelligence", "Resolve a typed contradiction", "Records the user's selected evidence side as a top-authority correction without rewriting either source.", "resolveRelationshipContradiction", bearer(), caseParam, jsonRequest("Resolution.", objectSchema("Contradiction resolution.", obj{
 		"selectedAssertionId": stringSchema("Selected assertion id.", "assertion:ab12"),
 		"reason":              stringSchema("Optional rationale.", "CRM was updated after the meeting."),
@@ -481,7 +483,9 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Recovery evaluations.", freeFormSchema("Recovery evaluation result."), nil),
 		"401": responseRef("401"), "404": responseRef("404"),
 	})}
-	commitmentParam := append(relationshipParam, obj{"name": "commitmentId", "in": "path", "required": true, "description": "Commitment id.", "schema": obj{"type": "string", "format": "uuid"}})
+	commitmentParam := make([]any, len(relationshipParam), len(relationshipParam)+1)
+	copy(commitmentParam, relationshipParam)
+	commitmentParam = append(commitmentParam, obj{"name": "commitmentId", "in": "path", "required": true, "description": "Commitment id.", "schema": obj{"type": "string", "format": "uuid"}})
 	paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/events"] = obj{"get": operation("Relationship Intelligence", "Get commitment history", "Returns the append-only transition history for one commitment.", "getCommitmentEvents", bearer(), commitmentParam, nil, obj{
 		"200": jsonResponse("Commitment events.", objectSchema("Commitment history.", obj{"events": arraySchema("Ordered immutable events.", ref("CommitmentEvent"))}, "events"), nil),
 		"401": responseRef("401"), "404": responseRef("404"),
@@ -513,7 +517,9 @@ func addRevenuePaths(paths obj) {
 		"201": jsonResponse("Draft plan.", freeFormSchema("Mutual action plan."), nil),
 		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "409": responseRef("409"),
 	})}
-	planParam := append(relationshipParam, obj{"name": "planId", "in": "path", "required": true, "description": "Mutual action plan id.", "schema": obj{"type": "string"}})
+	planParam := make([]any, len(relationshipParam), len(relationshipParam)+1)
+	copy(planParam, relationshipParam)
+	planParam = append(planParam, obj{"name": "planId", "in": "path", "required": true, "description": "Mutual action plan id.", "schema": obj{"type": "string"}})
 	paths["/v1/relationships/{relationshipId}/mutual-action-plans/{planId}"] = obj{"put": operation("Relationship Intelligence", "Revise a mutual action plan", "Appends a validated revision and invalidates any approval bound to the prior hash.", "reviseMutualActionPlan", bearer(), planParam, jsonRequest("Replacement items.", objectSchema("Plan revision request.", obj{
 		"items": arraySchema("Plan items.", freeFormSchema("Mutual action plan item.")),
 	}, "items"), nil), obj{

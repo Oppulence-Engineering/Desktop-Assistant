@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// CommitmentTransitionInput describes one idempotent append to a commitment stream.
 type CommitmentTransitionInput struct {
 	Kind           string
 	IdempotencyKey string
@@ -27,6 +28,7 @@ type CommitmentTransitionInput struct {
 	EvidenceRefs   []string
 }
 
+// CommitmentDependencyInput describes one evidence-backed directed graph edge.
 type CommitmentDependencyInput struct {
 	FromCommitmentID uuid.UUID
 	ToCommitmentID   uuid.UUID
@@ -177,6 +179,7 @@ func (s *Service) CreateCommitmentDependency(
 		WithFromCommitment().WithToCommitment().Only(ctx)
 }
 
+// CommitmentDependencies returns the complete directed graph for a relationship.
 func (s *Service) CommitmentDependencies(
 	ctx context.Context,
 	relationshipID uuid.UUID,
@@ -214,6 +217,7 @@ func permittedCommitmentTransition(state, kind string) bool {
 	return allowed[state][kind]
 }
 
+// AppendCommitmentTransition validates and atomically appends one state transition.
 func (s *Service) AppendCommitmentTransition(
 	ctx context.Context,
 	u *ent.User,
@@ -337,6 +341,7 @@ func (s *Service) AppendCommitmentTransition(
 	return s.client.Commitment.Get(ctx, commitmentID)
 }
 
+// CommitmentEventHistory returns an ordered, append-only event stream.
 func (s *Service) CommitmentEventHistory(
 	ctx context.Context,
 	relationshipID, commitmentID uuid.UUID,

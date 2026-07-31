@@ -22,6 +22,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// MutualActionPlanItem is one evidence-backed, dependency-aware plan step.
 type MutualActionPlanItem struct {
 	ItemID              string   `json:"itemId"`
 	CommitmentID        string   `json:"commitmentId,omitempty"`
@@ -34,6 +35,7 @@ type MutualActionPlanItem struct {
 	EvidenceRefs        []string `json:"evidenceRefs"`
 }
 
+// MutualActionPlanRevision binds an immutable item set to a content hash.
 type MutualActionPlanRevision struct {
 	RevisionID   string                 `json:"revisionId"`
 	PlanID       string                 `json:"planId"`
@@ -44,6 +46,7 @@ type MutualActionPlanRevision struct {
 	Items        []MutualActionPlanItem `json:"items"`
 }
 
+// MutualActionPlan is an internally approved, optionally shared plan projection.
 type MutualActionPlan struct {
 	PlanID                string                   `json:"planId"`
 	RelationshipID        string                   `json:"relationshipId"`
@@ -171,6 +174,7 @@ func (s *Service) planRecordFor(
 	return row, record, nil
 }
 
+// CreateMutualActionPlan creates a draft from accepted, evidence-backed commitments.
 func (s *Service) CreateMutualActionPlan(
 	ctx context.Context,
 	u *ent.User,
@@ -248,6 +252,7 @@ func (s *Service) CreateMutualActionPlan(
 	return plan, nil
 }
 
+// ReviseMutualActionPlan appends a replacement revision and invalidates prior approval.
 func (s *Service) ReviseMutualActionPlan(
 	ctx context.Context,
 	u *ent.User,
@@ -303,6 +308,7 @@ func (s *Service) ReviseMutualActionPlan(
 	return record.MutualActionPlan, nil
 }
 
+// ApproveMutualActionPlan binds internal approval to the exact current revision.
 func (s *Service) ApproveMutualActionPlan(
 	ctx context.Context,
 	u *ent.User,
@@ -337,6 +343,7 @@ func (s *Service) ApproveMutualActionPlan(
 	return record.MutualActionPlan, err
 }
 
+// ShareMutualActionPlan creates a governed scoped token and draft share action.
 func (s *Service) ShareMutualActionPlan(
 	ctx context.Context,
 	u *ent.User,
@@ -476,6 +483,7 @@ func mutualActionPlansFor(ctx context.Context, client *ent.Client, rel *ent.Rela
 	return result, nil
 }
 
+// PublicMutualActionPlanResponse is an untrusted counterparty proposal for review.
 type PublicMutualActionPlanResponse struct {
 	ResponseID    string `json:"responseId"`
 	Kind          string `json:"kind"`
@@ -545,6 +553,7 @@ func publicPlan(record mutualActionPlanRecord, policy ResolvedConversationPolicy
 	return plan
 }
 
+// PublicMutualActionPlan returns a currently permitted, redacted token-scoped view.
 func (s *Service) PublicMutualActionPlan(ctx context.Context, token string) (MutualActionPlan, error) {
 	_, record, u, rel, err := s.sharedPlanByToken(ctx, token)
 	if err != nil {
