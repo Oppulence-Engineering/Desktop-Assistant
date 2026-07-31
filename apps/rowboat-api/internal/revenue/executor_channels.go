@@ -29,10 +29,13 @@ type RoutingExecutor struct {
 	crm      Executor
 }
 
+// NewRoutingExecutor builds the approved-action dispatcher for every supported
+// delivery channel.
 func NewRoutingExecutor(email, slack, calendar, crm Executor) *RoutingExecutor {
 	return &RoutingExecutor{email: email, slack: slack, calendar: calendar, crm: crm}
 }
 
+// Execute dispatches an approved action to the executor for its bound channel.
 func (e *RoutingExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecResult, error) {
 	var target Executor
 	switch req.Action.Channel {
@@ -67,6 +70,8 @@ type SlackExecutor struct {
 	apiURL string
 }
 
+// NewSlackExecutor builds an approved Slack action executor backed by managed
+// workspace credentials.
 func NewSlackExecutor(tokens slackCredentialResolver, policy outbound.Policy) *SlackExecutor {
 	policy.Name = "slack-revenue"
 	if policy.Timeout == 0 {
@@ -75,12 +80,14 @@ func NewSlackExecutor(tokens slackCredentialResolver, policy outbound.Policy) *S
 	return &SlackExecutor{tokens: tokens, http: outbound.NewClient(policy), apiURL: "https://slack.com/api/"}
 }
 
+// SetAPIURL overrides the Slack API base URL, primarily for deterministic tests.
 func (e *SlackExecutor) SetAPIURL(raw string) {
 	if strings.TrimSpace(raw) != "" {
 		e.apiURL = strings.TrimRight(strings.TrimSpace(raw), "/") + "/"
 	}
 }
 
+// Execute posts an approved message to its explicit Slack destination.
 func (e *SlackExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecResult, error) {
 	if req.Mode != ExecModeSend {
 		return nil, errors.New("revenue: Slack has no provider draft; change execution mode to send after reviewing the action")
@@ -153,10 +160,12 @@ func slackTarget(action *ent.RevenueAction) (team, channel, thread string, err e
 // Google Calendar. due_at is the start, and the default duration is 30 minutes.
 type CalendarExecutor struct{ google *GmailExecutor }
 
+// NewCalendarExecutor builds an approved Google Calendar action executor.
 func NewCalendarExecutor(google *GmailExecutor) *CalendarExecutor {
 	return &CalendarExecutor{google: google}
 }
 
+// Execute creates an approved calendar event and sends attendee updates.
 func (e *CalendarExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecResult, error) {
 	if req.Mode != ExecModeSend {
 		return nil, errors.New("revenue: Google Calendar has no provider draft; change execution mode to send after reviewing the action")
@@ -201,6 +210,7 @@ type HubSpotExecutor struct {
 	now     func() time.Time
 }
 
+// NewHubSpotExecutor builds an approved HubSpot CRM action executor.
 func NewHubSpotExecutor(client *ent.Client, sealer *crypto.Sealer, policy outbound.Policy) *HubSpotExecutor {
 	return &HubSpotExecutor{
 		hubspot: hubspotapi.New(client, sealer, policy),
@@ -208,12 +218,15 @@ func NewHubSpotExecutor(client *ent.Client, sealer *crypto.Sealer, policy outbou
 	}
 }
 
+// SetBaseURL overrides the HubSpot API base URL, primarily for deterministic tests.
 func (e *HubSpotExecutor) SetBaseURL(raw string) {
 	if e != nil && e.hubspot != nil {
 		e.hubspot.SetBaseURL(raw)
 	}
 }
 
+// Execute creates an approved HubSpot note or task and associates it with the
+// relationship record named by the action target.
 func (e *HubSpotExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecResult, error) {
 	if req.Mode != ExecModeSend {
 		return nil, errors.New("revenue: HubSpot has no provider draft; change execution mode to send after reviewing the action")

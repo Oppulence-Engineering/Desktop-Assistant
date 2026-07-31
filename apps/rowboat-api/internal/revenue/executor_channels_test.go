@@ -21,16 +21,14 @@ import (
 )
 
 type staticSlackTokens struct {
-	token  string
-	teamID string
+	token string
 }
 
 func (s staticSlackTokens) Resolve(context.Context, string, string) (string, error) {
 	return s.token, nil
 }
 
-func (s staticSlackTokens) ResolveTeam(_ context.Context, _, teamID string) (string, error) {
-	s.teamID = teamID
+func (s staticSlackTokens) ResolveTeam(context.Context, string, string) (string, error) {
 	return s.token, nil
 }
 
