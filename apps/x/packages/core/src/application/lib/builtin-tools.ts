@@ -51,7 +51,7 @@ import { getCurrentUseCase, withUseCase } from "../../analytics/use_case.js";
 import { isSignedIn } from "../../account/account.js";
 import { getAccessToken } from "../../auth/tokens.js";
 import { API_URL } from "../../config/env.js";
-import { getConnectorMCPTokenViaBackend, listConnectorsViaBackend } from "../../connectors/connectors-backend.js";
+import { getConnectorMCPTokenViaBackend, listConnectorsViaBackend, searchHubSpotViaBackend } from "../../connectors/connectors-backend.js";
 import {
     buildSlackReplyDraft,
     buildSlackThreadReadRequest,
@@ -1356,6 +1356,7 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
                                 block.category,
                             ]),
                             ...(connector.mcpTools ?? []).map((tool) => tool.name),
+                            ...(connector.nativeTools ?? []).map((tool) => tool.name),
                         ].join(' ').toLowerCase();
                         return haystack.includes(q);
                     })
@@ -1368,6 +1369,8 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
                         serverName: rowboatIntegrationServerName(connector.name),
                         templateBlocks: connector.templateBlocks ?? [],
                         mcpTools: connector.mcpTools ?? [],
+                        nativeTools: connector.nativeTools ?? [],
+                        transport: connector.transport ?? 'mcp',
                     }));
 
                 return {
@@ -1447,6 +1450,17 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
                     };
                 }
 
+                if (integration.transport === 'native') {
+                    return {
+                        success: false,
+                        connectorName: integration.name,
+                        displayName: integration.displayName,
+                        error: `${integration.displayName} uses server-side native SDK tools and does not expose an MCP endpoint.`,
+                        nativeTools: integration.nativeTools ?? [],
+                        hint: 'Use a cloud agent or approved action workflow that allows these native tools.',
+                    };
+                }
+
                 const token = await getConnectorMCPTokenViaBackend(integration.name);
                 const tokenType = token.token_type || 'Bearer';
                 const serverName = rowboatIntegrationServerName(integration.name);
@@ -1476,6 +1490,23 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
                     success: false,
                     error: error instanceof Error ? error.message : String(error),
                 };
+            }
+        },
+        isAvailable: async () => isSignedIn(),
+    },
+    'rowboat-search-hubspot': {
+        description: 'Search the signed-in user’s connected HubSpot CRM through the server-side official SDK. Read-only; returns bounded contact, company, deal, or ticket records.',
+        inputSchema: z.object({
+            objectType: z.enum(['contact', 'company', 'deal', 'ticket']),
+            query: z.string().min(1).describe('HubSpot free-text search query.'),
+            limit: z.number().int().min(1).max(25).optional(),
+        }),
+        execute: async (input: { objectType: 'contact' | 'company' | 'deal' | 'ticket'; query: string; limit?: number }) => {
+            try {
+                const result = await searchHubSpotViaBackend(input);
+                return { success: true, ...result, count: result.results.length };
+            } catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : String(error) };
             }
         },
         isAvailable: async () => isSignedIn(),

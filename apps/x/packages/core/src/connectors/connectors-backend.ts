@@ -35,6 +35,7 @@ export interface IntegrationTemplateBlock {
     category: string;
     requiredScopes?: string[];
     mcpTools?: string[];
+    nativeTools?: string[];
     trustTier: "read" | "write" | "act" | "money-moving";
     samplePrompt?: string;
 }
@@ -44,10 +45,12 @@ export interface ConnectorView {
     displayName: string;
     description: string;
     mcpUrl: string;
+    transport?: "mcp" | "native";
     authType: "oauth" | "api_key";
     scopes?: string[];
     iconUrl?: string;
     mcpTools?: ConnectorMCPToolPolicy[];
+    nativeTools?: ConnectorMCPToolPolicy[];
     templateBlocks?: IntegrationTemplateBlock[];
     connected: boolean;
     connectedAt?: string;
@@ -62,6 +65,18 @@ export interface ConnectorMCPTokenResponse {
     token_type?: string;
     expires_at?: number;
     mcpUrl: string;
+}
+
+export interface HubSpotSearchResponse {
+    objectType: "contact" | "company" | "deal" | "ticket";
+    total: number;
+    results: Array<{
+        id: string;
+        properties: Record<string, string>;
+        createdAt?: string;
+        updatedAt?: string;
+        archived?: boolean;
+    }>;
 }
 
 async function getWithBearer(path: string): Promise<Response> {
@@ -143,6 +158,19 @@ export async function getConnectorMCPTokenViaBackend(connector: string): Promise
         throw new Error(`connector mcp token failed: ${res.status} ${await readError(res)}`.trim());
     }
     return (await res.json()) as ConnectorMCPTokenResponse;
+}
+
+/** Search the signed-in user's server-held HubSpot connection through the native SDK. */
+export async function searchHubSpotViaBackend(input: {
+    objectType: "contact" | "company" | "deal" | "ticket";
+    query: string;
+    limit?: number;
+}): Promise<HubSpotSearchResponse> {
+    const res = await postWithBearer("/v1/hubspot/search", input);
+    if (!res.ok) {
+        throw new Error(`HubSpot search failed: ${res.status} ${await readError(res)}`.trim());
+    }
+    return (await res.json()) as HubSpotSearchResponse;
 }
 
 /**

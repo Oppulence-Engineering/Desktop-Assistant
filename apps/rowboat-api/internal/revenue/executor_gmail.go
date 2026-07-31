@@ -17,6 +17,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/hubspotapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 )
 
@@ -206,6 +207,17 @@ func classifySubmitError(err error) error {
 	}
 	var nerr net.Error
 	if errors.As(err, &nerr) && nerr.Timeout() {
+		return fmt.Errorf("%w: %v", ErrAmbiguous, err)
+	}
+	if status, ok := hubspotapi.StatusCode(err); ok && status >= 500 {
+		return fmt.Errorf("%w: %v", ErrAmbiguous, err)
+	}
+	// Official provider SDKs such as slack-go expose transport status through
+	// this small interface. A 5xx means the write reached the provider boundary
+	// but does not prove whether it committed, so a blind retry could duplicate
+	// a message or activity.
+	var statusErr interface{ HTTPStatusCode() int }
+	if errors.As(err, &statusErr) && statusErr.HTTPStatusCode() >= 500 {
 		return fmt.Errorf("%w: %v", ErrAmbiguous, err)
 	}
 	// A 5xx answer proves the request arrived but not whether it was applied;

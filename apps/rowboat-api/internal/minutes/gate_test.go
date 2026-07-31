@@ -3,6 +3,7 @@ package minutes_test
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
@@ -95,6 +96,50 @@ func TestReserveExhaustionIsRejected(t *testing.T) {
 	_, err := g.Reserve(ctx, "free", 200)
 	if !errors.Is(err, minutes.ErrMinutesExhausted) {
 		t.Fatalf("second reserve err = %v, want ErrMinutesExhausted", err)
+	}
+}
+
+func TestConcurrentReservationsCannotSpendSameAllowance(t *testing.T) {
+	client, ctx := setup(t)
+	g := minutes.New(client, zap.NewNop(), allowance)
+	// Materialize the period row before the race so this test isolates the
+	// atomic balance predicate on the reservation UPDATE.
+	if _, err := g.Reserve(ctx, "free", 0); err != nil {
+		t.Fatalf("materialize usage: %v", err)
+	}
+
+	start := make(chan struct{})
+	errs := make(chan error, 2)
+	var wg sync.WaitGroup
+	for range 2 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			_, err := g.Reserve(ctx, "free", 600)
+			errs <- err
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	var succeeded, exhausted int
+	for err := range errs {
+		switch {
+		case err == nil:
+			succeeded++
+		case errors.Is(err, minutes.ErrMinutesExhausted):
+			exhausted++
+		default:
+			t.Fatalf("unexpected reserve error: %v", err)
+		}
+	}
+	if succeeded != 1 || exhausted != 1 {
+		t.Fatalf("concurrent reservations: succeeded=%d exhausted=%d", succeeded, exhausted)
+	}
+	if remaining, err := g.Remaining(ctx, "free"); err != nil || remaining != 0 {
+		t.Fatalf("remaining=%d err=%v, want 0", remaining, err)
 	}
 }
 

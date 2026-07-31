@@ -10,6 +10,7 @@ export const skill = String.raw`
 | **rowboat-list-integrations** | List managed integrations, connection status, template blocks, and allowed MCP tools |
 | **rowboat-connect-integration** | Show a connect card for an integration that is not connected |
 | **rowboat-configure-integration-mcp** | Mint the integration MCP credential and configure a local MCP server |
+| **rowboat-search-hubspot** | Search connected HubSpot records through the server-side native SDK |
 | **rowboat-list-slack-workspaces** | List connected managed Slack workspaces |
 | **rowboat-read-slack-thread** | Read a connected Slack thread through the server-held Slack app token |
 | **rowboat-draft-slack-reply** | Prepare an unsent copyable Slack reply draft for a connected thread |
@@ -22,7 +23,7 @@ export const skill = String.raw`
 
 1. Call \`rowboat-list-integrations\` first. Use the result to identify the connector name and whether it is already connected.
 2. If the connector is not connected, call \`rowboat-connect-integration\` once. The UI will render a connect card. Wait for the user to finish connecting, then continue.
-3. Once connected, call \`rowboat-configure-integration-mcp\` with the connector name.
+3. Once connected, call \`rowboat-configure-integration-mcp\` for MCP integrations. For HubSpot, call \`rowboat-search-hubspot\` instead; HubSpot is SDK-native and intentionally has no MCP endpoint.
 4. Use the returned \`serverName\` with \`listMcpTools\`.
 5. Read the \`inputSchema\` carefully, then call \`executeMcpTool\` with the exact tool name and required arguments.
 

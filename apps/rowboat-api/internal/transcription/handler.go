@@ -14,19 +14,25 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/minutes"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 )
 
 // Handler serves the authenticated transcription quota endpoint.
 type Handler struct {
-	gate   *minutes.Gate
-	client *ent.Client
-	cfg    appconfig.Config
-	log    *zap.Logger
+	gate        *minutes.Gate
+	client      *ent.Client
+	cfg         appconfig.Config
+	log         *zap.Logger
+	secrets     *secrets.Store
+	deepgramURL string
 }
 
 // New builds the transcription handler.
-func New(gate *minutes.Gate, client *ent.Client, cfg appconfig.Config, log *zap.Logger) *Handler {
-	return &Handler{gate: gate, client: client, cfg: cfg, log: log}
+func New(gate *minutes.Gate, client *ent.Client, cfg appconfig.Config, sec *secrets.Store, log *zap.Logger) *Handler {
+	return &Handler{
+		gate: gate, client: client, cfg: cfg, secrets: sec, log: log,
+		deepgramURL: "wss://api.deepgram.com/v1/listen",
+	}
 }
 
 type transcriptionDefaults struct {

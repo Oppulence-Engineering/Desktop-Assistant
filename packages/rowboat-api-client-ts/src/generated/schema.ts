@@ -856,6 +856,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/hubspot/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Search HubSpot CRM
+     * @description Searches contacts, companies, deals, or tickets through HubSpot's official server-side SDK. The connected private-app token remains sealed server-side.
+     */
+    post: operations["searchHubSpot"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/internal/connections/invalidate": {
     parameters: {
       query?: never;
@@ -4202,7 +4222,7 @@ export interface components {
       /** @description Allowlisted upstream MCP tools and trust tiers for cloud runtime calls. */
       mcpTools?: components["schemas"]["MCPToolPolicy"][];
       /**
-       * @description MCP endpoint the desktop should call after obtaining an MCP token.
+       * @description MCP endpoint the desktop should call after obtaining an MCP token. Empty for native SDK connectors.
        * @example https://api.canvas.solomon-ai.co/v1/mcp
        */
       mcpUrl: string;
@@ -4211,6 +4231,8 @@ export interface components {
        * @example canvas
        */
       name: string;
+      /** @description Allowlisted server-side native SDK tools and trust tiers. */
+      nativeTools?: components["schemas"]["MCPToolPolicy"][];
       /**
        * @description OAuth scopes granted or requested.
        * @example [
@@ -4221,6 +4243,12 @@ export interface components {
       scopes?: string[];
       /** @description Onboarding capability blocks shown when a user browses or connects this integration. */
       templateBlocks?: components["schemas"]["IntegrationTemplateBlock"][];
+      /**
+       * @description Connector execution transport. MCP is the default; native uses server-side SDK tools.
+       * @example mcp
+       * @enum {string}
+       */
+      transport?: "mcp" | "native";
     };
     /** @description Connector registry plus per-user connection state. */
     ConnectorsResponse: {
@@ -4864,6 +4892,68 @@ export interface components {
        */
       status: "ok";
     };
+    /** @description Bounded HubSpot CRM record. */
+    HubSpotSearchObject: {
+      /**
+       * @description Whether HubSpot archived the record.
+       * @example false
+       */
+      archived?: boolean;
+      /**
+       * @description Record creation timestamp.
+       * @example 2026-07-31T12:00:00Z
+       */
+      createdAt?: string | null;
+      /**
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      properties: {
+        [key: string]: string;
+      };
+      /**
+       * @description Record update timestamp.
+       * @example 2026-07-31T12:00:00Z
+       */
+      updatedAt?: string | null;
+    };
+    /** @description Bounded search of the authenticated user's connected HubSpot CRM. */
+    HubSpotSearchRequest: {
+      /**
+       * @description Maximum records returned (1-25).
+       * @example 10
+       */
+      limit?: number;
+      /**
+       * @description CRM object type.
+       * @example contact
+       * @enum {string}
+       */
+      objectType: "contact" | "company" | "deal" | "ticket";
+      /**
+       * @description HubSpot free-text search query.
+       * @example buyer@example.com
+       */
+      query: string;
+    };
+    /** @description Native HubSpot SDK search result. */
+    HubSpotSearchResponse: {
+      /**
+       * @description Canonical CRM object type.
+       * @example contact
+       * @enum {string}
+       */
+      objectType: "contact" | "company" | "deal" | "ticket";
+      /** @description Bounded matching records. */
+      results: components["schemas"]["HubSpotSearchObject"][];
+      /**
+       * Format: int64
+       * @description Total matching HubSpot records.
+       * @example 1
+       */
+      total: number;
+    };
     /** @description User-facing integration onboarding capability block. Blocks describe what an integration unlocks; they are not executable workflow nodes. */
     IntegrationTemplateBlock: {
       /**
@@ -4881,8 +4971,10 @@ export interface components {
        * @example 123e4567-e89b-12d3-a456-426614174000
        */
       id: string;
-      /** @description Connector MCP tools backing this capability. */
+      /** @description MCP tools backing this capability for an MCP transport connector. */
       mcpTools?: string[];
+      /** @description Server-side SDK tools backing this capability for a native transport connector. */
+      nativeTools?: string[];
       /** @description OAuth scopes required by this capability. */
       requiredScopes?: string[];
       /**
@@ -9950,6 +10042,7 @@ export interface operations {
           "application/json": components["schemas"]["MCPTokenResponse"];
         };
       };
+      400: components["responses"]["400"];
       401: components["responses"]["401"];
       404: components["responses"]["404"];
       500: components["responses"]["500"];
@@ -10393,6 +10486,57 @@ export interface operations {
       401: components["responses"]["401"];
       500: components["responses"]["500"];
       502: components["responses"]["502"];
+    };
+  };
+  searchHubSpot: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description HubSpot search. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "limit": 10,
+         *       "objectType": "contact",
+         *       "query": "buyer@example.com"
+         *     }
+         */
+        "application/json": components["schemas"]["HubSpotSearchRequest"];
+      };
+    };
+    responses: {
+      /** @description HubSpot search result. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "objectType": "contact",
+           *       "results": [
+           *         {
+           *           "id": "101",
+           *           "properties": {
+           *             "email": "buyer@example.com"
+           *           }
+           *         }
+           *       ],
+           *       "total": 1
+           *     }
+           */
+          "application/json": components["schemas"]["HubSpotSearchResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      409: components["responses"]["409"];
+      502: components["responses"]["502"];
+      503: components["responses"]["503"];
     };
   };
   invalidateConnection: {

@@ -27,6 +27,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/hubspotapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
@@ -89,6 +90,7 @@ type ToolDeps struct {
 	Sealer      *crypto.Sealer
 	Secrets     *secrets.Store
 	Google      *googleapi.Client
+	HubSpot     *hubspotapi.Client
 	Web         *websearch.Client
 	Conduit     *faculties.Client
 	Eigen       *faculties.Client

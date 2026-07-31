@@ -39,13 +39,24 @@ config:
   JWKS_URL: ""
   OTEL_EXPORTER_OTLP_ENDPOINT: ""
   PUBLIC_BASE_URL: https://api.oppulence.io
+  WEBSOCKET_API_URL: wss://api.oppulence.io
   # Google OAuth broker callback — the API host serving /oauth/google/callback (NOT
   # APP_URL, which the default would use). Register this exact URI in Google Cloud.
   GOOGLE_REDIRECT_URI: https://api.oppulence.io/oauth/google/callback
+  # Slack OAuth callback served by this API. Register this exact URI in the
+  # Slack app alongside the production client credentials.
+  SLACK_REDIRECT_URI: https://api.oppulence.io/oauth/slack/callback
   # Production secrets are synced from Infisical into `rowboat-api-secrets`
   # before Helm deploys. Runtime app-level Infisical refresh stays disabled so
   # the app does not need an Infisical machine token at boot.
   INFISICAL_ENABLED: "false"
+  # Signed-in desktop inference/transcription. OpenAI is the fleet default;
+  # OpenRouter remains available for explicitly selected Anthropic models.
+  LLM_ALLOWED_MODELS: openai/gpt-4.1-mini,openai/gpt-4.1,anthropic/claude-haiku-4-5,anthropic/claude-sonnet-4-5
+  TRANSCRIPTION_VOICE_DEFAULT: solomon
+  TRANSCRIPTION_MEETING_DEFAULT: solomon
+  CLOUD_RUNTIME_MODEL: openai/gpt-4.1-mini
+  CLOUD_EVENTS_ROUTER_MODEL: openai/gpt-4.1-mini
   # --- Temporal Cloud (API-native background task worker) -------------------
   # Production executes API-target runs on the dedicated Rowboat Temporal Cloud
   # namespace using API-key auth over TLS. TEMPORAL_API_KEY lives only in
@@ -56,6 +67,10 @@ config:
   TEMPORAL_TASK_QUEUE: rowboat-api-background-tasks
   TEMPORAL_TLS_ENABLED: "true"
   TEMPORAL_WORKER_ENABLED: "true"
+  CLOUD_EVENTS_ROUTING_ENABLED: "true"
+  GOOGLE_WATCH_ENABLED: "true"
+  REVENUE_AUTO_SCAN_ENABLED: "true"
+  REVENUE_MAIL_PUSH_SYNC_ENABLED: "true"
 
 worker:
   enabled: true
@@ -65,6 +80,10 @@ worker:
     minReplicas: 2
     maxReplicas: 20
     targetCPUUtilizationPercentage: 65
+
+scheduler:
+  enabled: true
+  replicaCount: 2
 
 # Secrets live in the cluster Secret `rowboat-api-secrets` (sealed-secrets /
 # external-secrets / Infisical operator). Do NOT inline secret values here.

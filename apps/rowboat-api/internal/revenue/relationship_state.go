@@ -5,7 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -64,6 +66,7 @@ type RelationshipObservationInput struct {
 	DisplayName     string
 	PrimaryEmail    string
 	AccountDomain   string
+	ResourceRefs    []string
 	Source          string
 	SourceAccountID string
 	ExternalID      string
@@ -538,12 +541,19 @@ func resolveObservationRelationship(
 	u *ent.User,
 	input RelationshipObservationInput,
 ) (*ent.Relationship, error) {
+	refs, err := normalizeResourceRefs(input.ResourceRefs)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+	}
 	if input.RelationshipID != uuid.Nil {
 		rel, err := client.Relationship.Get(ctx, input.RelationshipID)
 		if ent.IsNotFound(err) {
 			return nil, fmt.Errorf("%w: relationship", ErrNotFound)
 		}
-		return rel, err
+		if err != nil {
+			return nil, err
+		}
+		return mergeRelationshipResourceRefs(ctx, rel, refs)
 	}
 
 	domain := strings.ToLower(strings.TrimSpace(input.AccountDomain))
@@ -576,7 +586,7 @@ func resolveObservationRelationship(
 		return nil, fmt.Errorf("%w: ambiguous relationship identity requires review", ErrConflict)
 	}
 	for _, rel := range matches {
-		return rel, nil
+		return mergeRelationshipResourceRefs(ctx, rel, refs)
 	}
 
 	displayName := strings.TrimSpace(input.DisplayName)
@@ -602,7 +612,53 @@ func resolveObservationRelationship(
 	if email != "" {
 		create.SetPrimaryEmail(email)
 	}
+	if len(refs) > 0 {
+		create.SetResourceRefs(refs)
+	}
 	return create.Save(ctx)
+}
+
+func normalizeResourceRefs(refs []string) ([]string, error) {
+	if len(refs) > 50 {
+		return nil, errors.New("at most 50 resource refs are allowed")
+	}
+	seen := make(map[string]struct{}, len(refs))
+	out := make([]string, 0, len(refs))
+	for _, raw := range refs {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			continue
+		}
+		if len(raw) > 512 {
+			return nil, errors.New("resource ref exceeds 512 bytes")
+		}
+		parts := strings.SplitN(raw, ":", 3)
+		if len(parts) != 3 || strings.TrimSpace(parts[0]) == "" || strings.TrimSpace(parts[1]) == "" || strings.TrimSpace(parts[2]) == "" {
+			return nil, fmt.Errorf("resource ref %q must use product:type:externalId", raw)
+		}
+		ref := strings.ToLower(strings.TrimSpace(parts[0])) + ":" + strings.ToLower(strings.TrimSpace(parts[1])) + ":" + strings.TrimSpace(parts[2])
+		if _, ok := seen[ref]; ok {
+			continue
+		}
+		seen[ref] = struct{}{}
+		out = append(out, ref)
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
+func mergeRelationshipResourceRefs(ctx context.Context, rel *ent.Relationship, refs []string) (*ent.Relationship, error) {
+	if len(refs) == 0 {
+		return rel, nil
+	}
+	merged, err := normalizeResourceRefs(append(append([]string{}, rel.ResourceRefs...), refs...))
+	if err != nil {
+		return nil, err
+	}
+	if slices.Equal(merged, rel.ResourceRefs) {
+		return rel, nil
+	}
+	return rel.Update().SetResourceRefs(merged).Save(ctx)
 }
 
 func upsertRelationshipParticipant(

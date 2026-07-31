@@ -87,10 +87,12 @@ type connectorView struct {
 	DisplayName    string                     `json:"displayName"`
 	Description    string                     `json:"description"`
 	MCPURL         string                     `json:"mcpUrl"`
+	Transport      string                     `json:"transport,omitempty"`
 	AuthType       string                     `json:"authType"`
 	Scopes         []string                   `json:"scopes,omitempty"`
 	IconURL        string                     `json:"iconUrl,omitempty"`
 	MCPTools       []MCPToolPolicy            `json:"mcpTools,omitempty"`
+	NativeTools    []MCPToolPolicy            `json:"nativeTools,omitempty"`
 	TemplateBlocks []IntegrationTemplateBlock `json:"templateBlocks,omitempty"`
 	Connected      bool                       `json:"connected"`
 	ConnectedAt    string                     `json:"connectedAt,omitempty"`
@@ -117,7 +119,8 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	for _, c := range h.registry.List() {
 		v := connectorView{
 			Name: c.Name, DisplayName: c.DisplayName, Description: c.Description,
-			MCPURL: c.MCPURL, AuthType: c.AuthType, Scopes: c.Scopes, IconURL: c.IconURL, MCPTools: c.MCPTools, TemplateBlocks: c.TemplateBlocks,
+			MCPURL: c.MCPURL, Transport: c.Transport, AuthType: c.AuthType, Scopes: c.Scopes, IconURL: c.IconURL,
+			MCPTools: c.MCPTools, NativeTools: c.NativeTools, TemplateBlocks: c.TemplateBlocks,
 		}
 		if mc, ok := connected[c.Name]; ok {
 			v.Connected = true
@@ -447,6 +450,10 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 	c, ok := h.registry.Get(name)
 	if !ok {
 		httpx.Error(w, http.StatusNotFound, "unknown connector", "not_found")
+		return
+	}
+	if c.Transport == "native" {
+		httpx.Error(w, http.StatusBadRequest, "connector uses server-side native tools, not MCP", "unsupported_transport")
 		return
 	}
 	ctx := r.Context()

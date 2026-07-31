@@ -19,11 +19,13 @@ import (
 // user, returning a ready GmailExecutor wired against them.
 type gmailFixture struct {
 	*fixture
-	exec      *GmailExecutor
-	gmailSrv  *httptest.Server
-	sent      int
-	drafted   int
-	gmailCode int // response status for gmail calls; 0 = 200
+	exec                *GmailExecutor
+	gmailSrv            *httptest.Server
+	sent                int
+	drafted             int
+	calendar            int
+	calendarSendUpdates string
+	gmailCode           int // response status for gmail calls; 0 = 200
 }
 
 func newGmailFixture(t *testing.T, scopes []string) *gmailFixture {
@@ -67,13 +69,21 @@ func newGmailFixture(t *testing.T, scopes []string) *gmailFixture {
 		g.sent++
 		_ = json.NewEncoder(w).Encode(map[string]any{"id": "msg_s1", "threadId": "thr_s1"})
 	})
+	mux.HandleFunc("/calendars/primary/events", func(w http.ResponseWriter, r *http.Request) {
+		g.calendar++
+		g.calendarSendUpdates = r.URL.Query().Get("sendUpdates")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id": "evt_1", "htmlLink": "https://calendar.test/evt_1",
+		})
+	})
 	g.gmailSrv = httptest.NewServer(mux)
 	t.Cleanup(g.gmailSrv.Close)
 
 	sec := secrets.NewFromConfig(appconfig.Config{GoogleOAuthClientID: "cid", GoogleOAuthClientSecret: "csec"})
 	g.exec = NewGmailExecutor(f.client, sealer, sec, googleapi.New(googleapi.Config{
-		TokenURL:     g.gmailSrv.URL + "/token",
-		GmailBaseURL: g.gmailSrv.URL,
+		TokenURL:        g.gmailSrv.URL + "/token",
+		GmailBaseURL:    g.gmailSrv.URL,
+		CalendarBaseURL: g.gmailSrv.URL,
 	}))
 	return g
 }
