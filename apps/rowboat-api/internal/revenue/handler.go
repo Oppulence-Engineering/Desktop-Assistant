@@ -154,6 +154,7 @@ type relationshipDTO struct {
 	LastChangedAt *time.Time `json:"lastChangedAt,omitempty"`
 	Risks         []string   `json:"risks"`
 	Milestones    []string   `json:"milestones"`
+	ResourceRefs  []string   `json:"resourceRefs"`
 }
 
 func relationshipToDTO(rel *ent.Relationship) relationshipDTO {
@@ -177,6 +178,7 @@ func relationshipToDTO(rel *ent.Relationship) relationshipDTO {
 		LastChangedAt: rel.LastChangedAt,
 		Risks:         rel.Risks,
 		Milestones:    rel.Milestones,
+		ResourceRefs:  rel.ResourceRefs,
 	}
 }
 
@@ -873,11 +875,12 @@ func (h *Handler) CreateRelationship(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Kind          string `json:"kind"`
-		DisplayName   string `json:"displayName"`
-		PrimaryEmail  string `json:"primaryEmail"`
-		AccountDomain string `json:"accountDomain"`
-		Summary       string `json:"summary"`
+		Kind          string   `json:"kind"`
+		DisplayName   string   `json:"displayName"`
+		PrimaryEmail  string   `json:"primaryEmail"`
+		AccountDomain string   `json:"accountDomain"`
+		Summary       string   `json:"summary"`
+		ResourceRefs  []string `json:"resourceRefs"`
 	}
 	if !httpx.DecodeJSON(w, r, maxBody, &body) {
 		return
@@ -888,6 +891,7 @@ func (h *Handler) CreateRelationship(w http.ResponseWriter, r *http.Request) {
 		PrimaryEmail:  body.PrimaryEmail,
 		AccountDomain: body.AccountDomain,
 		Summary:       body.Summary,
+		ResourceRefs:  body.ResourceRefs,
 	})
 	if err != nil {
 		h.writeServiceError(w, err)
@@ -1423,6 +1427,7 @@ func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.
 			DisplayName     string                         `json:"displayName"`
 			PrimaryEmail    string                         `json:"primaryEmail"`
 			AccountDomain   string                         `json:"accountDomain"`
+			ResourceRefs    []string                       `json:"resourceRefs"`
 			Source          string                         `json:"source"`
 			SourceAccountID string                         `json:"sourceAccountId"`
 			ExternalID      string                         `json:"externalId"`
@@ -1446,6 +1451,7 @@ func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.
 			DisplayName:     observation.DisplayName,
 			PrimaryEmail:    observation.PrimaryEmail,
 			AccountDomain:   observation.AccountDomain,
+			ResourceRefs:    observation.ResourceRefs,
 			Source:          observation.Source,
 			SourceAccountID: observation.SourceAccountID,
 			ExternalID:      observation.ExternalID,

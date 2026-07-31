@@ -245,8 +245,16 @@ jobs:
             INTERNAL_API_SECRET
             OPENAI_API_KEY
             OPENROUTER_API_KEY
+            DEEPGRAM_API_KEY
             GOOGLE_OAUTH_CLIENT_ID
             GOOGLE_OAUTH_CLIENT_SECRET
+            GOOGLE_WEBHOOK_TOKEN
+            GMAIL_PUBSUB_TOPIC
+            GOOGLE_WEBHOOK_OIDC_AUDIENCE
+            GOOGLE_WEBHOOK_OIDC_SERVICE_ACCOUNT
+            SLACK_CLIENT_ID
+            SLACK_CLIENT_SECRET
+            SLACK_SIGNING_SECRET
             TEMPORAL_API_KEY
           )
 
@@ -385,6 +393,8 @@ jobs:
           set -euo pipefail
 
           kubectl -n "${KUBE_NAMESPACE}" rollout status deploy/rowboat-api-rowboat-api --timeout=5m
+          kubectl -n "${KUBE_NAMESPACE}" rollout status deploy/rowboat-api-rowboat-api-worker --timeout=5m
+          kubectl -n "${KUBE_NAMESPACE}" rollout status deploy/rowboat-api-rowboat-api-scheduler --timeout=5m
           kubectl -n "${KUBE_NAMESPACE}" get pods,deploy,hpa,ingress,certificate
           curl -fsS https://api.oppulence.io/healthz
           echo

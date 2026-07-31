@@ -14,6 +14,7 @@ import (
 	"errors"
 	"time"
 
+	entsql "entgo.io/ent/dialect/sql"
 	"go.uber.org/zap"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
@@ -97,16 +98,11 @@ type Charge struct {
 // Reserve debits an estimate against the month's allowance inside a transaction
 // after a balance check. Paid/unlimited callers get a no-op charge.
 //
-// NOTE — this reserve→settle/refund path is not yet wired to any route (only
-// Remaining is reachable today via GET /v1/transcription/quota). Before a caller
-// that fronts Deepgram uses it, two things must be added to match the credit
-// gate's retry-safety contract: (1) a requestID + idempotency key so a retried
-// reserve/settle does not double-debit (the credit gate keys its ledger on
-// request_id); (2) on the first reservation of a UTC month, two concurrent txns
-// can both miss the row and race the (period,user) unique create — handle that
-// with an ON CONFLICT upsert/retry rather than surfacing a 500. The balance
-// check is also a plain SELECT (no FOR UPDATE), the same accepted residual-race
-// tradeoff the credit gate documents.
+// The Deepgram WebSocket proxy reserves the free user's entire remaining
+// allowance once per live connection, then settles elapsed wall-clock seconds.
+// The period row is materialized with an ON CONFLICT-safe insert, and the
+// balance predicate plus increment run in one UPDATE so concurrent streams
+// cannot both reserve the same remaining seconds.
 func (g *Gate) Reserve(ctx context.Context, plan string, estSeconds int) (*Charge, error) {
 	if estSeconds < 0 {
 		estSeconds = 0
@@ -117,44 +113,43 @@ func (g *Gate) Reserve(ctx context.Context, plan string, estSeconds int) (*Charg
 	}
 
 	period := Period(time.Now())
-	tx, err := g.client.Tx(ctx)
-	if err != nil {
-		return nil, err
-	}
-	row, err := g.txRow(ctx, tx, period)
-	if err != nil {
-		_ = tx.Rollback()
-		return nil, err
-	}
-	if row.UsedSeconds+row.ReservedSeconds+estSeconds > allow {
-		_ = tx.Rollback()
-		return nil, ErrMinutesExhausted
-	}
-	if _, err := tx.Client().MeetingMinuteUsage.UpdateOne(row).AddReservedSeconds(estSeconds).Save(ctx); err != nil {
-		_ = tx.Rollback()
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	return &Charge{gate: g, period: period, reserved: estSeconds}, nil
-}
-
-// txRow gets-or-creates the (scoped user, period) row within the transaction.
-func (g *Gate) txRow(ctx context.Context, tx *ent.Tx, period string) (*ent.MeetingMinuteUsage, error) {
-	txc := tx.Client()
-	row, err := txc.MeetingMinuteUsage.Query().Where(meetingminuteusage.Period(period)).Only(ctx)
-	if err == nil {
-		return row, nil
-	}
-	if !ent.IsNotFound(err) {
-		return nil, err
-	}
 	u, ok := auth.UserFromCtx(ctx)
 	if !ok {
 		return nil, ErrNoUser
 	}
-	return txc.MeetingMinuteUsage.Create().SetUser(u).SetPeriod(period).Save(ctx)
+	// Materialize the period row with a conflict-safe insert before opening the
+	// accounting transaction. This removes the first-use race where two API
+	// replicas both observed a missing row and one failed its reservation.
+	if err := g.client.MeetingMinuteUsage.Create().
+		SetUser(u).
+		SetPeriod(period).
+		OnConflictColumns(meetingminuteusage.FieldPeriod, meetingminuteusage.UserColumn).
+		Ignore().
+		Exec(ctx); err != nil {
+		return nil, err
+	}
+	affected, err := g.client.MeetingMinuteUsage.Update().
+		Where(
+			meetingminuteusage.PeriodEQ(period),
+			func(s *entsql.Selector) {
+				s.Where(entsql.P(func(b *entsql.Builder) {
+					b.Ident(s.C(meetingminuteusage.FieldUsedSeconds)).
+						WriteOp(entsql.OpAdd).
+						Ident(s.C(meetingminuteusage.FieldReservedSeconds)).
+						WriteOp(entsql.OpLTE).
+						Arg(allow - estSeconds)
+				}))
+			},
+		).
+		AddReservedSeconds(estSeconds).
+		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if affected == 0 {
+		return nil, ErrMinutesExhausted
+	}
+	return &Charge{gate: g, period: period, reserved: estSeconds}, nil
 }
 
 // Settle converts the reservation to actual usage: count the real seconds and

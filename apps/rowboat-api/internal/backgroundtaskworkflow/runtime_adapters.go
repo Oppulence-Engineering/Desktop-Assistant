@@ -15,9 +15,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
 	"github.com/google/uuid"
@@ -188,6 +190,19 @@ func (a *Activities) toolRegistry(ctx context.Context, task *ent.BackgroundTask,
 			if slices.Contains(conn.Scopes, backgroundtaskruntime.ScopeDriveFile) {
 				tools = append(tools, backgroundtaskruntime.NewDriveUpdateTool(a.Client, a.Sealer, a.Secrets, a.Google, owner.ID))
 			}
+		}
+	}
+	if owner != nil && a.HubSpot != nil {
+		_, err := a.Client.MCPConnection.Query().Where(
+			mcpconnection.ConnectorEQ("hubspot"),
+			mcpconnection.HasUserWith(user.IDEQ(owner.ID)),
+		).Only(auth.WithInternal(ctx))
+		if err == nil {
+			tools = append(tools,
+				backgroundtaskruntime.NewHubSpotSearchTool(a.HubSpot, owner.ID),
+				backgroundtaskruntime.NewHubSpotNoteTool(a.HubSpot, owner.ID),
+				backgroundtaskruntime.NewHubSpotTaskTool(a.HubSpot, owner.ID),
+			)
 		}
 	}
 	if owner != nil && a.ActionProposer != nil {

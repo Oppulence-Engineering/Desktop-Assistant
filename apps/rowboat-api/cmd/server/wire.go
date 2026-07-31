@@ -35,6 +35,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/google"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/gqlapi"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/hubspotapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/minutes"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
@@ -237,7 +238,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			return cfg.FreeMeetingSecondsPerMonth
 		}
 	}
-	transcriptionH := transcription.New(minutes.New(client, log, meetingAllowance), client, cfg, log)
+	transcriptionH := transcription.New(minutes.New(client, log, meetingAllowance), client, cfg, sec, log)
 	googleH := google.New(client, sealer, sec, log)
 	googleH.SetOutboundPolicy(vendorPolicy)
 	googleH.SetTokenURL(cfg.GoogleTokenURL) // empty → real Google endpoint
@@ -270,10 +271,9 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		slackRedirect = strings.TrimRight(cfg.AppURL, "/") + "/oauth/slack/callback"
 	}
 	slackH.SetOAuthFlow(cfg.SlackAuthorizeURL, cfg.SlackTokenURL, slackRedirect, cfg.DesktopDeepLinkScheme, cfg.SlackOAuthScopes)
-	slackH.SetRuntimeClients(
-		slacktoken.New(client, sealer, sec, cfg.SlackTokenURL, vendorPolicy),
-		slackclient.New(vendorPolicy),
-	)
+	slackTokens := slacktoken.New(client, sealer, sec, cfg.SlackTokenURL, vendorPolicy)
+	slackAPI := slackclient.New(vendorPolicy)
+	slackH.SetRuntimeClients(slackTokens, slackAPI)
 
 	// Cloud event ingestion (RFC 003). The route controller is wired only when
 	// routing is enabled (it needs Temporal); without it events are stored with
@@ -315,6 +315,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}, log)
 	connectorsH.SetOutboundPolicy(vendorPolicy)
 	connectorsH.SetRefreshDedup(refreshCache, sealer)
+	hubspotH := hubspotapi.NewHandler(hubspotapi.New(client, sealer, vendorPolicy))
 
 	plainLabels, err := feedback.ParseLabelMap(cfg.PlainLabelTypeIDs)
 	if err != nil {
@@ -379,15 +380,22 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			Timeout:      cfg.RevenueFacadeTimeout,
 		})
 	}
-	// Gmail is the first execution owner (draft in the operator's own
-	// mailbox by default; sends stay gated behind approval + preflight).
+	// Approved action execution is routed to the assigned user's connected
+	// provider. Email retains provider-native Gmail drafts; Slack, Calendar,
+	// and HubSpot are send-mode only and remain approval + preflight gated.
 	gmailExec := revenue.NewGmailExecutor(client, sealer, sec, googleapi.New(googleapi.Config{
 		TokenURL:        cfg.GoogleTokenURL,
 		GmailBaseURL:    cfg.GmailAPIBaseURL,
 		CalendarBaseURL: cfg.CalendarAPIBaseURL,
 		DriveBaseURL:    cfg.DriveAPIBaseURL,
 	}))
-	revenueSvc := revenue.NewService(client, facade, gmailExec, log)
+	routedExec := revenue.NewRoutingExecutor(
+		gmailExec,
+		revenue.NewSlackExecutor(slackTokens, vendorPolicy),
+		revenue.NewCalendarExecutor(gmailExec),
+		revenue.NewHubSpotExecutor(client, sealer, vendorPolicy),
+	)
+	revenueSvc := revenue.NewService(client, facade, routedExec, log)
 	// The Gmail backend also feeds the leak scan (read-only sweep).
 	revenueSvc.SetSweeper(gmailExec)
 	// Gate execution behind a paid plan: scan/queue/draft/ROI stay free,
@@ -462,6 +470,15 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	r.Get("/openapi.json", docsH.OpenAPI)
 	r.Get("/docs/openapi.json", docsH.OpenAPI)
 	r.Get("/v1/config", configH.Config)
+	// Browser WebSockets cannot set Authorization directly, so the desktop
+	// carries its normal JWT as the second subprotocol. Promote it before the
+	// standard verifier, then proxy the authenticated stream to Deepgram.
+	r.With(
+		transcription.WebSocketBearer,
+		authMW.RequireJWT,
+		rl.PerUser(ratelimit.GroupVoice, 30),
+		rl.PerUserWindow(ratelimit.GroupVoiceBurst, 6, 10*time.Second),
+	).Get("/deepgram/v1/listen", transcriptionH.Listen)
 
 	// WorkOS sign-in broker (public: the caller has no bearer yet; the
 	// credential is the WorkOS code/refresh token + the server-held API key).
@@ -690,6 +707,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		}
 
 		r.Get("/v1/connectors", connectorsH.List)
+		r.With(rl.PerUserWindow(ratelimit.GroupConnections, 60, time.Minute)).
+			Post("/v1/hubspot/search", hubspotH.Search)
 		r.Route("/v1/connections", func(r chi.Router) {
 			r.Use(rl.PerUser(ratelimit.GroupConnections, 30))
 			r.Use(rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second))

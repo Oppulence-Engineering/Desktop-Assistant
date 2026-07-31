@@ -239,6 +239,7 @@ type RelationshipInput struct {
 	PrimaryEmail  string
 	AccountDomain string
 	Summary       string
+	ResourceRefs  []string
 }
 
 // CreateRelationship records a relationship in the caller's workspace.
@@ -263,6 +264,13 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 	}
 	if in.Summary != "" {
 		create.SetSummary(in.Summary)
+	}
+	refs, err := normalizeResourceRefs(in.ResourceRefs)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+	}
+	if len(refs) > 0 {
+		create.SetResourceRefs(refs)
 	}
 	rel, err := create.Save(ctx)
 	if err != nil && isValidationError(err) {

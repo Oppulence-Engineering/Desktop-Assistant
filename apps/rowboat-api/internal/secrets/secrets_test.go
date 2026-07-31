@@ -24,6 +24,9 @@ func TestEnvSeeding(t *testing.T) {
 	if s.OpenAI() != "" {
 		t.Errorf("unset key should be empty, got %q", s.OpenAI())
 	}
+	if s.Deepgram() != "" {
+		t.Errorf("unset deepgram key should be empty, got %q", s.Deepgram())
+	}
 }
 
 func TestInfisicalOverlay(t *testing.T) {

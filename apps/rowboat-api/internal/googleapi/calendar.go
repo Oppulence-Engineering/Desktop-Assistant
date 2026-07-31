@@ -104,7 +104,15 @@ func (c *Client) CreateEvent(ctx context.Context, token string, in CalendarEvent
 		return CalendarEvent{}, err
 	}
 	var out calendarAPIEvent
-	if err := c.PostJSON(ctx, token, c.cfg.CalendarBaseURL+"/calendars/primary/events", body, &out); err != nil {
+	endpoint := c.cfg.CalendarBaseURL + "/calendars/primary/events"
+	if len(in.Attendees) > 0 {
+		// An approved customer-facing calendar action must actually notify its
+		// attendee. Google's default can create the event without sending an
+		// invitation, which would make the provider receipt look successful while
+		// no external follow-up occurred.
+		endpoint += "?sendUpdates=all"
+	}
+	if err := c.PostJSON(ctx, token, endpoint, body, &out); err != nil {
 		return CalendarEvent{}, fmt.Errorf("calendar events.insert: %w", err)
 	}
 	return out.toCalendarEvent(), nil

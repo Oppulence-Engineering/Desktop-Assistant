@@ -3275,7 +3275,7 @@
             "type": "array"
           },
           "mcpUrl": {
-            "description": "MCP endpoint the desktop should call after obtaining an MCP token.",
+            "description": "MCP endpoint the desktop should call after obtaining an MCP token. Empty for native SDK connectors.",
             "example": "https://api.canvas.solomon-ai.co/v1/mcp",
             "type": "string"
           },
@@ -3283,6 +3283,13 @@
             "description": "Stable connector slug.",
             "example": "canvas",
             "type": "string"
+          },
+          "nativeTools": {
+            "description": "Allowlisted server-side native SDK tools and trust tiers.",
+            "items": {
+              "$ref": "#/components/schemas/MCPToolPolicy"
+            },
+            "type": "array"
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
@@ -3300,6 +3307,12 @@
               "$ref": "#/components/schemas/IntegrationTemplateBlock"
             },
             "type": "array"
+          },
+          "transport": {
+            "description": "Connector execution transport. MCP is the default; native uses server-side SDK tools.",
+            "enum": ["mcp", "native"],
+            "example": "mcp",
+            "type": "string"
           }
         },
         "required": ["name", "displayName", "description", "mcpUrl", "authType", "connected"],
@@ -4184,6 +4197,90 @@
         "required": ["status"],
         "type": "object"
       },
+      "HubSpotSearchObject": {
+        "description": "Bounded HubSpot CRM record.",
+        "properties": {
+          "archived": {
+            "description": "Whether HubSpot archived the record.",
+            "example": false,
+            "type": "boolean"
+          },
+          "createdAt": {
+            "description": "Record creation timestamp.",
+            "example": "2026-07-31T12:00:00Z",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "properties": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "updatedAt": {
+            "description": "Record update timestamp.",
+            "example": "2026-07-31T12:00:00Z",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": ["id", "properties"],
+        "type": "object"
+      },
+      "HubSpotSearchRequest": {
+        "description": "Bounded search of the authenticated user's connected HubSpot CRM.",
+        "properties": {
+          "limit": {
+            "description": "Maximum records returned (1-25).",
+            "example": 10,
+            "type": "integer"
+          },
+          "objectType": {
+            "description": "CRM object type.",
+            "enum": ["contact", "company", "deal", "ticket"],
+            "example": "contact",
+            "type": "string"
+          },
+          "query": {
+            "description": "HubSpot free-text search query.",
+            "example": "buyer@example.com",
+            "type": "string"
+          }
+        },
+        "required": ["objectType", "query"],
+        "type": "object"
+      },
+      "HubSpotSearchResponse": {
+        "description": "Native HubSpot SDK search result.",
+        "properties": {
+          "objectType": {
+            "description": "Canonical CRM object type.",
+            "enum": ["contact", "company", "deal", "ticket"],
+            "example": "contact",
+            "type": "string"
+          },
+          "results": {
+            "description": "Bounded matching records.",
+            "items": {
+              "$ref": "#/components/schemas/HubSpotSearchObject"
+            },
+            "type": "array"
+          },
+          "total": {
+            "description": "Total matching HubSpot records.",
+            "example": 1,
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": ["objectType", "total", "results"],
+        "type": "object"
+      },
       "IntegrationTemplateBlock": {
         "description": "User-facing integration onboarding capability block. Blocks describe what an integration unlocks; they are not executable workflow nodes.",
         "properties": {
@@ -4203,10 +4300,19 @@
             "type": "string"
           },
           "mcpTools": {
-            "description": "Connector MCP tools backing this capability.",
+            "description": "MCP tools backing this capability for an MCP transport connector.",
             "items": {
               "description": "MCP tool name.",
               "example": "invoice.lookup",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "nativeTools": {
+            "description": "Server-side SDK tools backing this capability for a native transport connector.",
+            "items": {
+              "description": "Native tool name.",
+              "example": "connector.read.hubspot_search",
               "type": "string"
             },
             "type": "array"
@@ -11342,6 +11448,9 @@
             },
             "description": "MCP token and endpoint."
           },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
           "401": {
             "$ref": "#/components/responses/401"
           },
@@ -11997,6 +12106,74 @@
         ],
         "summary": "Start Google OAuth consent",
         "tags": ["Google OAuth"]
+      }
+    },
+    "/v1/hubspot/search": {
+      "post": {
+        "description": "Searches contacts, companies, deals, or tickets through HubSpot's official server-side SDK. The connected private-app token remains sealed server-side.",
+        "operationId": "searchHubSpot",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "limit": 10,
+                "objectType": "contact",
+                "query": "buyer@example.com"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/HubSpotSearchRequest"
+              }
+            }
+          },
+          "description": "HubSpot search.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "objectType": "contact",
+                  "results": [
+                    {
+                      "id": "101",
+                      "properties": {
+                        "email": "buyer@example.com"
+                      }
+                    }
+                  ],
+                  "total": 1
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/HubSpotSearchResponse"
+                }
+              }
+            },
+            "description": "HubSpot search result."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Search HubSpot CRM",
+        "tags": ["Connectors"]
       }
     },
     "/v1/internal/connections/invalidate": {

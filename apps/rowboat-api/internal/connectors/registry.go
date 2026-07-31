@@ -22,13 +22,15 @@ type Connector struct {
 	DisplayName    string                     `json:"displayName"`
 	Description    string                     `json:"description"`
 	MCPURL         string                     `json:"mcpUrl"`
-	AuthType       string                     `json:"authType"` // "oauth" | "api_key"
-	Audience       string                     `json:"audience"` // Ory token audience (e.g. canvas-api)
+	Transport      string                     `json:"transport,omitempty"` // mcp (default) | native
+	AuthType       string                     `json:"authType"`            // "oauth" | "api_key"
+	Audience       string                     `json:"audience"`            // Ory token audience (e.g. canvas-api)
 	Scopes         []string                   `json:"scopes,omitempty"`
 	IconURL        string                     `json:"iconUrl,omitempty"`
 	PolicyURL      string                     `json:"policyUrl,omitempty"`
 	RequiredPlan   string                     `json:"requiredPlan,omitempty"`   // "" = available on all plans
 	MCPTools       []MCPToolPolicy            `json:"mcpTools,omitempty"`       // explicit upstream MCP allowlist
+	NativeTools    []MCPToolPolicy            `json:"nativeTools,omitempty"`    // server-side SDK capability allowlist
 	TemplateBlocks []IntegrationTemplateBlock `json:"templateBlocks,omitempty"` // onboarding capability blocks
 }
 
@@ -48,6 +50,7 @@ type IntegrationTemplateBlock struct {
 	Category       string   `json:"category"`
 	RequiredScopes []string `json:"requiredScopes,omitempty"`
 	MCPTools       []string `json:"mcpTools,omitempty"`
+	NativeTools    []string `json:"nativeTools,omitempty"`
 	TrustTier      string   `json:"trustTier"`
 	SamplePrompt   string   `json:"samplePrompt,omitempty"`
 }
@@ -84,6 +87,11 @@ func parseRegistry(data []byte) ([]Connector, error) {
 	if err := json.Unmarshal(data, &list); err != nil {
 		return nil, err
 	}
+	for i := range list {
+		if strings.TrimSpace(list[i].Transport) == "" {
+			list[i].Transport = "mcp"
+		}
+	}
 	if err := validateRegistry(list); err != nil {
 		return nil, err
 	}
@@ -105,6 +113,28 @@ func validateRegistry(list []Connector) error {
 		if authType != "oauth" && authType != "api_key" {
 			return fmt.Errorf("connector %q authType must be oauth or api_key", name)
 		}
+		transport := strings.TrimSpace(c.Transport)
+		if transport != "mcp" && transport != "native" {
+			return fmt.Errorf("connector %q transport must be mcp or native", name)
+		}
+		if transport == "native" {
+			if strings.TrimSpace(c.MCPURL) != "" || len(c.MCPTools) > 0 {
+				return fmt.Errorf("connector %q native transport cannot declare mcpUrl or mcpTools", name)
+			}
+			if len(c.NativeTools) == 0 {
+				return fmt.Errorf("connector %q native transport requires nativeTools", name)
+			}
+			if err := validateToolPolicies(name, "native", c.NativeTools); err != nil {
+				return err
+			}
+			if err := validateTemplateBlocks(c, c.NativeTools); err != nil {
+				return err
+			}
+			continue
+		}
+		if len(c.NativeTools) > 0 {
+			return fmt.Errorf("connector %q mcp transport cannot declare nativeTools", name)
+		}
 		if strings.TrimSpace(c.MCPURL) == "" {
 			if len(c.MCPTools) > 0 {
 				return fmt.Errorf("connector %q declares mcpTools without mcpUrl", name)
@@ -121,25 +151,25 @@ func validateRegistry(list []Connector) error {
 		if len(c.MCPTools) == 0 {
 			return fmt.Errorf("connector %q has mcpUrl but no mcpTools allowlist", name)
 		}
-		if err := validateMCPTools(name, c.MCPTools); err != nil {
+		if err := validateToolPolicies(name, "MCP", c.MCPTools); err != nil {
 			return err
 		}
-		if err := validateTemplateBlocks(c); err != nil {
+		if err := validateTemplateBlocks(c, c.MCPTools); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func validateMCPTools(connector string, tools []MCPToolPolicy) error {
+func validateToolPolicies(connector, transport string, tools []MCPToolPolicy) error {
 	seen := map[string]struct{}{}
 	for i, tool := range tools {
 		name := strings.TrimSpace(tool.Name)
 		if name == "" {
-			return fmt.Errorf("connector %q mcpTools[%d].name is required", connector, i)
+			return fmt.Errorf("connector %q %sTools[%d].name is required", connector, strings.ToLower(transport), i)
 		}
 		if _, ok := seen[name]; ok {
-			return fmt.Errorf("connector %q declares duplicate MCP tool %q", connector, name)
+			return fmt.Errorf("connector %q declares duplicate %s tool %q", connector, transport, name)
 		}
 		seen[name] = struct{}{}
 		if !validMCPTrustTier(tool.TrustTier) {
@@ -158,14 +188,14 @@ func validMCPTrustTier(tier string) bool {
 	}
 }
 
-func validateTemplateBlocks(c Connector) error {
+func validateTemplateBlocks(c Connector, policies []MCPToolPolicy) error {
 	seen := map[string]struct{}{}
 	scopes := map[string]struct{}{}
 	for _, scope := range c.Scopes {
 		scopes[scope] = struct{}{}
 	}
 	tools := map[string]struct{}{}
-	for _, tool := range c.MCPTools {
+	for _, tool := range policies {
 		tools[tool.Name] = struct{}{}
 	}
 	for i, block := range c.TemplateBlocks {
@@ -194,9 +224,20 @@ func validateTemplateBlocks(c Connector) error {
 				return fmt.Errorf("connector %q template block %q references unknown scope %q", c.Name, id, scope)
 			}
 		}
-		for _, tool := range block.MCPTools {
+		blockTools := block.MCPTools
+		label := "MCP tool"
+		if c.Transport == "native" {
+			if len(block.MCPTools) > 0 {
+				return fmt.Errorf("connector %q native template block %q cannot declare mcpTools", c.Name, id)
+			}
+			blockTools = block.NativeTools
+			label = "native tool"
+		} else if len(block.NativeTools) > 0 {
+			return fmt.Errorf("connector %q MCP template block %q cannot declare nativeTools", c.Name, id)
+		}
+		for _, tool := range blockTools {
 			if _, ok := tools[tool]; !ok {
-				return fmt.Errorf("connector %q template block %q references unknown MCP tool %q", c.Name, id, tool)
+				return fmt.Errorf("connector %q template block %q references unknown %s %q", c.Name, id, label, tool)
 			}
 		}
 	}

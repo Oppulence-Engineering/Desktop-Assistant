@@ -14,6 +14,7 @@ type AdapterEvent struct {
 	SourceAccountID string
 	AccountName     string
 	AccountDomain   string
+	ResourceRefs    []string
 	PrimaryEmail    string
 	EventType       string
 	Summary         string
@@ -65,6 +66,7 @@ func adaptRelationshipEvent(source string, event AdapterEvent) (RelationshipObse
 		DisplayName:     strings.TrimSpace(event.AccountName),
 		PrimaryEmail:    email,
 		AccountDomain:   domain,
+		ResourceRefs:    event.ResourceRefs,
 		Source:          source,
 		SourceAccountID: strings.TrimSpace(event.SourceAccountID),
 		ExternalID:      strings.TrimSpace(event.ExternalID),

@@ -127,6 +127,7 @@ type Config struct {
 	OpenAIAPIKey            string
 	OpenRouterAPIKey        string
 	GoogleAPIKey            string
+	DeepgramAPIKey          string
 	ElevenLabsAPIKey        string
 	ExaAPIKey               string
 	GoogleOAuthClientID     string
@@ -541,6 +542,7 @@ func Load() Config {
 		OpenAIAPIKey:                getenv("OPENAI_API_KEY", ""),
 		OpenRouterAPIKey:            getenv("OPENROUTER_API_KEY", ""),
 		GoogleAPIKey:                getenv("GOOGLE_API_KEY", ""),
+		DeepgramAPIKey:              getenv("DEEPGRAM_API_KEY", ""),
 		ElevenLabsAPIKey:            getenv("ELEVENLABS_API_KEY", ""),
 		ExaAPIKey:                   getenv("EXA_API_KEY", ""),
 		GoogleOAuthClientID:         getenv("GOOGLE_OAUTH_CLIENT_ID", ""),

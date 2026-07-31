@@ -88,15 +88,14 @@
     "name": "hubspot",
     "displayName": "HubSpot",
     "description": "CRM contacts, deals, companies, tickets, and notes",
-    "mcpUrl": "https://mcp.hubspot.solomon-ai.co/mcp",
+    "mcpUrl": "",
+    "transport": "native",
     "authType": "api_key",
     "audience": "hubspot-api",
-    "mcpTools": [
-      { "name": "contact.lookup", "trustTier": "read" },
-      { "name": "company.lookup", "trustTier": "read" },
-      { "name": "deal.search", "trustTier": "read" },
-      { "name": "ticket.create", "trustTier": "act" },
-      { "name": "note.create", "trustTier": "act" }
+    "nativeTools": [
+      { "name": "connector.read.hubspot_search", "trustTier": "read" },
+      { "name": "connector.write.hubspot_note", "trustTier": "act" },
+      { "name": "connector.write.hubspot_task", "trustTier": "act" }
     ],
     "templateBlocks": [
       {
@@ -104,16 +103,16 @@
         "title": "CRM research",
         "description": "Look up contacts, companies, deals, and tickets before customer work.",
         "category": "crm",
-        "mcpTools": ["contact.lookup", "company.lookup", "deal.search"],
+        "nativeTools": ["connector.read.hubspot_search"],
         "trustTier": "read",
         "samplePrompt": "Brief me on the current HubSpot deal for Acme."
       },
       {
         "id": "crm-actions",
         "title": "CRM actions",
-        "description": "Create tickets and notes from agent follow-up workflows.",
+        "description": "Create notes and follow-up tasks from approved agent workflows.",
         "category": "crm",
-        "mcpTools": ["ticket.create", "note.create"],
+        "nativeTools": ["connector.write.hubspot_note", "connector.write.hubspot_task"],
         "trustTier": "act",
         "samplePrompt": "Create a follow-up note on this HubSpot company."
       }

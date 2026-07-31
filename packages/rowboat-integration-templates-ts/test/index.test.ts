@@ -21,6 +21,11 @@ describe("integration template catalog", () => {
     ]);
     expect(getIntegrationTemplate("github")?.displayName).toBe("GitHub");
     expect(getTemplateBlocks("github").length).toBeGreaterThan(0);
+    const hubspot = getIntegrationTemplate("hubspot");
+    expect(hubspot?.blocks.flatMap((block) => block.nativeTools)).toContain(
+      "connector.read.hubspot_search",
+    );
+    expect(hubspot?.blocks.flatMap((block) => block.mcpTools)).toEqual([]);
   });
 
   it("rejects duplicate connector and block ids", () => {

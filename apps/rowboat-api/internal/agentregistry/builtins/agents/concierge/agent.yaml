@@ -11,6 +11,11 @@ spec:
     - name: demo.payment
       requiresApproval: true
     - subagent.delegate
+    - connector.read.hubspot_search
+    - name: connector.write.hubspot_note
+      requiresApproval: true
+    - name: connector.write.hubspot_task
+      requiresApproval: true
   subagents:
     - assistant
   channels: [http]

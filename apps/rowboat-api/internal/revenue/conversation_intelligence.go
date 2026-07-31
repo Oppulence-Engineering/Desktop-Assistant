@@ -492,11 +492,18 @@ func (s *Service) createConversationAction(
 		return err
 	}
 	recipient := ""
-	if proposal.Channel == "email" {
+	if proposal.Channel == "email" || proposal.Channel == "calendar" {
 		recipient = strings.ToLower(strings.TrimSpace(input.PrimaryEmail))
 		if recipient == "" {
 			recipient = strings.ToLower(strings.TrimSpace(rel.PrimaryEmail))
 		}
+	}
+	executionMode := ExecModeSend
+	if proposal.Channel == "email" {
+		// Gmail supports a real provider draft. Slack, HubSpot, and Calendar do
+		// not, so those independently reviewed proposals enter send mode and
+		// receive the full policy/preflight gate before execution.
+		executionMode = ExecModeDraft
 	}
 	actionInput := ActionInput{
 		ActionType:      proposal.ActionType,
@@ -504,7 +511,7 @@ func (s *Service) createConversationAction(
 		RecipientEmail:  recipient,
 		ProposedSubject: proposal.ProposedSubject,
 		ProposedMessage: proposal.ProposedMessage,
-		ExecutionMode:   ExecModeDraft,
+		ExecutionMode:   executionMode,
 	}
 	dedupeKey := fmt.Sprintf("conversation:%s:%s:%s", input.ExternalID, input.SourceVersion, proposal.ID)
 	create := client.RevenueAction.Create().
@@ -520,7 +527,7 @@ func (s *Service) createConversationAction(
 		SetReason(proposal.Reason).
 		SetProposedSubject(proposal.ProposedSubject).
 		SetProposedMessage(proposal.ProposedMessage).
-		SetExecutionMode(ExecModeDraft).
+		SetExecutionMode(executionMode).
 		SetExecutionOwner(OwnerRowboat).
 		SetAssignedUserID(u.ID).
 		SetPriorityScore(priority).
