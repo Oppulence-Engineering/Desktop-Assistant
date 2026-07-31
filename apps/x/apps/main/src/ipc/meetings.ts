@@ -26,6 +26,7 @@ type MeetingCaptureHandlers = {
   "meeting:captureEngine": InvokeHandler<"meeting:captureEngine">;
   "meeting:startCapture": InvokeHandler<"meeting:startCapture">;
   "meeting:stopCapture": InvokeHandler<"meeting:stopCapture">;
+  "meeting:publishRendererEvidence": InvokeHandler<"meeting:publishRendererEvidence">;
   "meeting:captureStatus": InvokeHandler<"meeting:captureStatus">;
   "meeting:listSessions": InvokeHandler<"meeting:listSessions">;
   "meeting:retranscribe": InvokeHandler<"meeting:retranscribe">;
@@ -100,6 +101,9 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
 
     "meeting:stopCapture": async () => {
       return controller().stop();
+    },
+    "meeting:publishRendererEvidence": async (_event, args) => {
+      return controller().publishRendererEvidence(args);
     },
 
     "meeting:captureStatus": async () => {

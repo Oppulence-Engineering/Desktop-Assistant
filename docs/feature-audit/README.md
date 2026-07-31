@@ -5,11 +5,13 @@ Electron desktop app and the artifacts produced while testing and hardening it.
 
 ## Files
 
-| File                | Purpose                                                                                                                                                              |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FEATURE_AUDIT.csv` | **THE canonical spreadsheet.** One row per user-facing feature/sub-feature, with a user story + the expected behavior derived from the code, plus lifecycle columns. |
-| `ERRORS.md`         | Catalogue of logistical/UX errors found while testing each user story (Phase 2), with severity, evidence, and proposed fix.                                          |
-| `README.md`         | This file.                                                                                                                                                           |
+| File                                  | Purpose                                                                                                                                                              |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FEATURE_AUDIT.csv`                   | **THE canonical spreadsheet.** One row per user-facing feature/sub-feature, with a user story + the expected behavior derived from the code, plus lifecycle columns. |
+| `ERRORS.md`                           | Catalogue of logistical/UX errors found while testing each user story (Phase 2), with severity, evidence, and proposed fix.                                          |
+| `TRANSCRIPTION_CAPABILITIES_AUDIT.md` | Mission-oriented audit of desktop dictation, voice notes, meeting capture/transcription, transcript intelligence, product gaps, and adjacent opportunities.          |
+| `TRANSCRIPTION_IMPLEMENTATION.md`     | Implementation and verification record for the route/privacy repair, unified voice memos, and opt-in relationship-evidence/commitment loop.                          |
+| `README.md`                           | This file.                                                                                                                                                           |
 
 ## `FEATURE_AUDIT.csv` columns
 

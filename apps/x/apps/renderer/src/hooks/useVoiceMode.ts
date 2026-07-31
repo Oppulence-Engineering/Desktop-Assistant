@@ -229,8 +229,11 @@ export function useVoiceMode() {
     };
   }, [stopAudioCapture]);
 
-  const start = useCallback(async () => {
-    if (state !== "idle") return;
+  const start = useCallback(async (): Promise<{
+    provider: TranscriptionProvider;
+    started: boolean;
+  }> => {
+    if (state !== "idle") return { provider: providerRef.current, started: false };
 
     transcriptBufferRef.current = "";
     interimRef.current = "";
@@ -252,7 +255,7 @@ export function useVoiceMode() {
         code: "device_unsupported",
       });
       setState("idle");
-      return;
+      return { provider: "none", started: false };
     }
     const useLocal = provider === "whisper-local";
     console.log("[voice] starting mic capture", { provider });
@@ -270,7 +273,7 @@ export function useVoiceMode() {
     if (!stream) {
       console.warn("[voice] mic capture did not start");
       setState("idle");
-      return;
+      return { provider: providerRef.current, started: false };
     }
 
     mediaStreamRef.current = stream;
@@ -311,6 +314,7 @@ export function useVoiceMode() {
 
     source.connect(processor);
     processor.connect(audioCtx.destination);
+    return { provider: providerRef.current, started: true };
   }, [state, connectWs, resolveProvider]);
 
   /** Concatenate buffered on-device PCM, transcribe via IPC, return the text. */

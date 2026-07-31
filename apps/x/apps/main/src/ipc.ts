@@ -42,6 +42,11 @@ import { ServiceEvent } from "@x/shared/dist/service-events.js";
 import container from "@x/core/dist/di/container.js";
 import { listOnboardingModels } from "@x/core/dist/models/models-dev.js";
 import { testModelConnection } from "@x/core/dist/models/models.js";
+import {
+  getDefaultModelAndProvider,
+  getMeetingNotesModel,
+  resolveProviderConfig,
+} from "@x/core/dist/models/defaults.js";
 import { isSignedIn } from "@x/core/dist/account/account.js";
 import { listGatewayModels } from "@x/core/dist/models/gateway.js";
 import type { IModelConfigRepo } from "@x/core/dist/models/repo.js";
@@ -83,8 +88,12 @@ import {
   executeVoiceCommand,
   type VoiceEmailActions,
 } from "@x/core/dist/voice/commands/executor.js";
+import { buildTranscriptionRouting, providerDataLocation } from "@x/core/dist/voice/routing.js";
 import { WhisperUtilityRunner } from "./whisper-utility-client.js";
-import type { TranscriptionProvider } from "@x/shared/dist/transcription.js";
+import type {
+  TranscriptionDataLocation,
+  TranscriptionProvider,
+} from "@x/shared/dist/transcription.js";
 import {
   classifySchedule,
   processSolomonInstruction,
@@ -174,7 +183,7 @@ import {
 import { browserIpcHandlers } from "./browser/ipc.js";
 import { mailboxIpcHandlers } from "./ipc/mailbox.js";
 import { createMeetingIpcHandlers } from "./ipc/meetings.js";
-import { nativeCaptureAvailable } from "./meeting-capture.js";
+import { nativeCaptureAvailable, resolveCaptureEngine } from "./meeting-capture.js";
 import { getMeetingController } from "./meeting-controller.js";
 import { initMeetingTray } from "./tray.js";
 import { ensureAgentSlackAvailable } from "./agent-slack.js";
@@ -641,11 +650,16 @@ function getWhisper(): WhisperService {
  * the renderer pipeline and there is nothing for a tray to control.
  */
 export function initMeetingCapture(): void {
+  const controller = getMeetingController({ whisper: getWhisper });
   if (!nativeCaptureAvailable()) {
     console.log("[meeting] native capture unavailable — using the in-app pipeline");
+    // Renderer-only platforms still own the shared evidence outbox. Refreshing the
+    // controller at launch retries consented items left by an offline prior session.
+    void controller
+      .refreshSettings()
+      .catch((err) => console.error("[meeting] evidence retry failed:", err));
     return;
   }
-  const controller = getMeetingController({ whisper: getWhisper });
   initMeetingTray(controller);
   void controller
     .refreshSettings()
@@ -796,6 +810,69 @@ async function resolveMeetingProviderMain(): Promise<{
     cloudAvailable: !!voiceCfg.deepgram || hasSolomonWebsocket,
     meetingMinutesRemaining: remote?.meetingMinutesRemaining ?? null,
     localOnly: cfg?.privacy.localOnly ?? false,
+  });
+}
+
+/**
+ * The effective data-flow receipt used by both Transcription and Privacy settings.
+ *
+ * This is intentionally assembled in main: only main can see all four inputs that
+ * change the answer — account/provider tiering, the packaged native-capture helper,
+ * persisted transcription settings, and the configured language-model endpoint.
+ */
+async function transcriptionRoutingMain() {
+  const cfg = await voice.getTranscriptionConfig();
+  const [effectiveVoiceProvider, effectiveMeeting, modelDefaults, meetingModel] = await Promise.all(
+    [
+      resolveVoiceProviderMain(),
+      resolveMeetingProviderMain(),
+      getDefaultModelAndProvider().catch(() => ({ provider: "unconfigured", model: "" })),
+      getMeetingNotesModel().catch(() => ""),
+    ],
+  );
+
+  let enrichmentLocation: TranscriptionDataLocation = "unknown";
+  if (modelDefaults.provider !== "unconfigured") {
+    try {
+      const provider = await resolveProviderConfig(modelDefaults.provider);
+      enrichmentLocation = providerDataLocation({
+        flavor: provider.flavor,
+        baseURL: provider.baseURL,
+      });
+    } catch {
+      enrichmentLocation = "unknown";
+    }
+  }
+
+  const captureEngine = resolveCaptureEngine(cfg.meetings.captureEngine);
+  const nativeProcessing = captureEngine === "native" && cfg.meetings.transcribeOnStop;
+  return buildTranscriptionRouting({
+    localOnly: cfg.privacy.localOnly,
+    configuredVoiceProvider: cfg.voiceProvider,
+    effectiveVoiceProvider,
+    configuredMeetingProvider: cfg.meetingProvider,
+    effectiveRendererMeetingProvider: effectiveMeeting.provider,
+    meetingProviderReason: effectiveMeeting.reason,
+    captureEngine,
+    nativeTranscriptionEngine: cfg.meetings.transcriptionEngine,
+    enrichment: {
+      provider: modelDefaults.provider,
+      model: meetingModel || modelDefaults.model,
+      location: enrichmentLocation,
+      // Renderer meetings summarize on stop. Native meetings do so as part of the
+      // post-stop queue, which can be disabled explicitly.
+      summariesEnabled: captureEngine === "renderer" || nativeProcessing,
+      commitmentsEnabled: nativeProcessing && cfg.meetings.extractCommitments !== false,
+      liveQuestionsEnabled: captureEngine === "native" && cfg.meetings.liveTranscript === true,
+    },
+    relationshipEvidence: {
+      enabled: cfg.meetings.syncRelationshipEvidence === true,
+      location: providerDataLocation({
+        flavor: "openai-compatible",
+        baseURL: API_URL,
+      }),
+      destination: "Oppulence relationship state",
+    },
   });
 }
 
@@ -1551,11 +1628,14 @@ export function setupIpcHandlers() {
     "transcription:getMeetingProvider": async () => {
       return resolveMeetingProviderMain();
     },
+    "transcription:getRouting": async () => {
+      return transcriptionRoutingMain();
+    },
     "transcription:getConfig": async () => {
       return voice.getTranscriptionConfig();
     },
     "transcription:setConfig": async (_event, patch) => {
-      return voice.setTranscriptionConfig({
+      const next = await voice.setTranscriptionConfig({
         voiceProvider: patch.voiceProvider,
         meetingProvider: patch.meetingProvider,
         ...(patch.model ? { whisper: { model: patch.model } } : {}),
@@ -1565,6 +1645,10 @@ export function setupIpcHandlers() {
         // Native capture: engine choice, echo cancellation, audio retention.
         ...(patch.meetings ? { meetings: patch.meetings } : {}),
       });
+      if (patch.meetings) {
+        await getMeetingController({ whisper: getWhisper }).refreshSettings();
+      }
+      return next;
     },
     "notifications:getConfig": async () => {
       return getNotificationsConfig();

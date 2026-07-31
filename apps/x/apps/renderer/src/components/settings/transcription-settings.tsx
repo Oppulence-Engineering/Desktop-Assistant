@@ -24,6 +24,7 @@ import type {
   WhisperCapability,
   WhisperModelHealth,
   TranscriptionProvider,
+  TranscriptionRouting,
   WhisperBenchmarkProfile,
 } from "@x/shared/dist/transcription.js";
 import type { MeetingResolvedEngine, MeetingsSettings } from "@x/shared/dist/meetings.js";
@@ -84,8 +85,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const [voiceProvider, setVoiceProvider] = useState<TranscriptionProvider>("whisper-local");
   const [meetingProvider, setMeetingProvider] = useState<TranscriptionProvider>("deepgram");
   const [localOnly, setLocalOnly] = useState(false);
-  // RFC 017: on-device meeting diarization (beta). Off by default.
-  const [diarizationEnabled, setDiarizationEnabled] = useState(false);
+  const [routing, setRouting] = useState<TranscriptionRouting | null>(null);
   const [meetings, setMeetings] = useState<MeetingsSettings | null>(null);
   // What a start would actually use, as opposed to what is configured — the
   // difference is the whole point of showing it.
@@ -100,6 +100,14 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const [benchmarkBusy, setBenchmarkBusy] = useState(false);
   const [benchmarkResult, setBenchmarkResult] = useState<BenchmarkResultState | null>(null);
   const [benchmarkFailure, setBenchmarkFailure] = useState<BenchmarkFailureState | null>(null);
+
+  const refreshRouting = useCallback(async () => {
+    try {
+      setRouting(await window.ipc.invoke("transcription:getRouting", null));
+    } catch {
+      setRouting(null);
+    }
+  }, []);
 
   const refreshModels = useCallback(async () => {
     const result = await window.ipc.invoke("whisper:listModels", null);
@@ -139,10 +147,10 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
         setMeetingProvider(cfg.meetingProvider);
         setLocalOnly(cfg.privacy.localOnly);
         setActiveModel(cfg.whisper.model);
-        setDiarizationEnabled(cfg.diarization?.enabled ?? false);
         setMeetings(cfg.meetings);
       })
       .catch(() => {});
+    void refreshRouting();
     void window.ipc
       .invoke("meeting:captureEngine", null)
       .then((r) => setResolvedEngine(r.engine))
@@ -169,7 +177,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       off?.();
       offMeetingModels?.();
     };
-  }, [dialogOpen]);
+  }, [dialogOpen, refreshRouting]);
 
   const downloadFastModels = useCallback(async () => {
     setModelDownload(0);
@@ -189,8 +197,10 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       setVoiceProvider(next);
       await window.ipc.invoke("transcription:setConfig", { voiceProvider: next });
       analytics.transcriptionProviderChanged({ feature: "voice", from, to: next, reason: "user" });
+      window.dispatchEvent(new CustomEvent(TRANSCRIPTION_CONFIG_CHANGED_EVENT));
+      await refreshRouting();
     },
-    [voiceProvider],
+    [refreshRouting, voiceProvider],
   );
 
   const changeMeetingProvider = useCallback(
@@ -204,8 +214,10 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
         to: next,
         reason: "user",
       });
+      window.dispatchEvent(new CustomEvent(TRANSCRIPTION_CONFIG_CHANGED_EVENT));
+      await refreshRouting();
     },
-    [meetingProvider],
+    [meetingProvider, refreshRouting],
   );
 
   const changeLocalOnly = useCallback(
@@ -222,11 +234,12 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
             detail: { privacy: cfg.privacy },
           }),
         );
+        await refreshRouting();
       } catch {
         setLocalOnly(previous);
       }
     },
-    [localOnly],
+    [localOnly, refreshRouting],
   );
 
   const changeMeetings = useCallback(
@@ -239,28 +252,13 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
         // The engine can change as a result (auto → renderer when forced off).
         const { engine } = await window.ipc.invoke("meeting:captureEngine", null);
         setResolvedEngine(engine);
+        window.dispatchEvent(new CustomEvent(TRANSCRIPTION_CONFIG_CHANGED_EVENT));
+        await refreshRouting();
       } catch {
         setMeetings(previous);
       }
     },
-    [meetings],
-  );
-
-  const changeDiarizationEnabled = useCallback(
-    async (next: boolean) => {
-      const previous = diarizationEnabled;
-      setDiarizationEnabled(next);
-      try {
-        // Enabling the beta also turns on the beta UI surface (RFC 017 flags).
-        const cfg = await window.ipc.invoke("transcription:setConfig", {
-          diarization: { enabled: next, betaUI: next },
-        });
-        setDiarizationEnabled(cfg.diarization?.enabled ?? false);
-      } catch {
-        setDiarizationEnabled(previous);
-      }
-    },
-    [diarizationEnabled],
+    [meetings, refreshRouting],
   );
 
   const selectModel = useCallback(
@@ -446,18 +444,35 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
         <div className="space-y-2">
           <ProviderOption
             icon={Laptop}
-            selected={voiceProvider === "whisper-local"}
+            selected={
+              (routing?.voice.effectiveProvider ??
+                (localOnly ? "whisper-local" : voiceProvider)) === "whisper-local"
+            }
             onSelect={() => changeVoiceProvider("whisper-local")}
             title="On-device (Whisper)"
-            hint="Private · offline · free"
+            hint={
+              localOnly && voiceProvider !== "whisper-local"
+                ? "Active because local-only overrides the saved cloud preference"
+                : "Microphone audio stays on this device · offline · free"
+            }
             disabled={capability?.supported === false}
+            disabledHint={
+              localOnly
+                ? "Unavailable on this device while local-only is enabled"
+                : "Not supported on this device · choose a cloud provider to transcribe"
+            }
           />
           <ProviderOption
             icon={Cloud}
-            selected={voiceProvider === "deepgram"}
+            selected={
+              routing?.voice.effectiveProvider === "deepgram" ||
+              routing?.voice.effectiveProvider === "solomon"
+            }
             onSelect={() => changeVoiceProvider("deepgram")}
             title="Cloud (Deepgram)"
-            hint="Most accurate · live partials"
+            hint="When selected, microphone audio is sent to Deepgram · live partials"
+            disabled={localOnly}
+            disabledHint="Unavailable while local-only transcription is enabled"
           />
         </div>
         <div className="inline-flex items-center gap-1.5 rounded-none border bg-muted/40 px-2 py-1 text-xs text-muted-foreground">
@@ -670,59 +685,84 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
         </div>
       </SettingsSection>
 
-      <SettingsSection title="Meetings" description="Transcription for recorded meetings.">
-        <div className="space-y-2">
-          <ProviderOption
-            icon={Cloud}
-            selected={meetingProvider === "deepgram" || meetingProvider === "solomon"}
-            onSelect={() => changeMeetingProvider("deepgram")}
-            title="Cloud (Deepgram)"
-            hint="Speaker labels · system audio"
-          />
-          <ProviderOption
-            icon={Laptop}
-            selected={meetingProvider === "whisper-local"}
-            onSelect={() => changeMeetingProvider("whisper-local")}
-            title="On-device"
-            hint={
-              meetingProvider === "whisper-local" && diarizationEnabled
-                ? "Private · local beta speaker labels"
-                : "Private · no speaker labels"
-            }
-            disabled={capability?.supported === false}
-          />
-          {meetingProvider === "whisper-local" && (
-            <button
-              type="button"
-              onClick={() => void changeDiarizationEnabled(!diarizationEnabled)}
-              aria-pressed={diarizationEnabled}
-              className={cn(
-                "flex w-full items-center justify-between gap-3 rounded-none border px-3.5 py-3 text-left transition-all",
-                diarizationEnabled
-                  ? "border-primary bg-primary/[0.03] ring-2 ring-primary/20"
-                  : "border-border hover:border-primary/40 hover:bg-muted/40",
-              )}
-            >
-              <span className="flex flex-col">
-                <span className="text-sm font-medium">Local diarization (beta)</span>
-                <span className="text-xs text-muted-foreground">
-                  Anonymous speaker labels on-device · falls back to no labels when uncertain
-                </span>
-              </span>
-              <span
-                className={cn(
-                  "shrink-0 rounded-none border px-2 py-0.5 text-xs",
-                  diarizationEnabled
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "bg-card text-muted-foreground",
-                )}
-              >
-                {diarizationEnabled ? "On" : "Off"}
-              </span>
-            </button>
-          )}
-        </div>
+      <SettingsSection
+        title="Meetings"
+        description={
+          resolvedEngine === "native"
+            ? "The active two-track capture route is transcribed on-device."
+            : "Choose where microphone and available system audio are transcribed."
+        }
+      >
+        {resolvedEngine === "native" ? (
+          <div className="space-y-2">
+            <ProviderOption
+              icon={Laptop}
+              selected
+              onSelect={() => {}}
+              title={`On-device (${meetings?.transcriptionEngine === "parakeet" ? "Parakeet" : "Whisper"})`}
+              hint="Active for native two-track capture · meeting audio does not leave this device"
+              disabled
+              disabledHint="Active for native two-track capture · meeting audio does not leave this device"
+            />
+            {meetingProvider === "deepgram" || meetingProvider === "solomon" ? (
+              <p className="px-1 text-xs leading-5 text-muted-foreground">
+                Your cloud preference is saved for the renderer fallback. Turn off two-track capture
+                below if you want meeting audio sent to Deepgram.
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <ProviderOption
+              icon={Cloud}
+              selected={
+                routing?.meeting.effectiveProvider === "deepgram" ||
+                routing?.meeting.effectiveProvider === "solomon"
+              }
+              onSelect={() => changeMeetingProvider("deepgram")}
+              title="Cloud (Deepgram)"
+              hint="When selected, microphone and system audio are sent to Deepgram · cloud speaker labels"
+              disabled={localOnly}
+              disabledHint="Unavailable while local-only transcription is enabled"
+            />
+            <ProviderOption
+              icon={Laptop}
+              selected={routing?.meeting.effectiveProvider === "whisper-local"}
+              onSelect={() => changeMeetingProvider("whisper-local")}
+              title="On-device (Whisper)"
+              hint={
+                localOnly && meetingProvider !== "whisper-local"
+                  ? "Active because local-only overrides the saved cloud preference"
+                  : "Audio stays on this device · channel labels distinguish You and Other"
+              }
+              disabled={capability?.supported === false}
+              disabledHint={
+                localOnly
+                  ? "Unavailable on this device while local-only is enabled"
+                  : "Not supported on this device · choose cloud to transcribe meetings"
+              }
+            />
+          </div>
+        )}
       </SettingsSection>
+
+      {meetings && (
+        <SettingsSection
+          title="Relationship evidence"
+          description="Choose whether completed meeting text becomes shared, source-linked relationship evidence."
+        >
+          <SettingToggle
+            title="Sync meeting evidence"
+            hint={
+              meetings.syncRelationshipEvidence
+                ? "Resolved counterparty identity, finished 1:1 transcript text, and human-confirmed commitments are sent to Oppulence relationship state. Meeting audio and local file paths are never sent by this step."
+                : "Off · transcripts and confirmed commitments remain in your local workspace"
+            }
+            value={meetings.syncRelationshipEvidence}
+            onChange={(next) => void changeMeetings({ syncRelationshipEvidence: next })}
+          />
+        </SettingsSection>
+      )}
 
       {meetings && (
         <SettingsSection
@@ -739,10 +779,12 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
               hint={
                 resolvedEngine === "native"
                   ? "Recommended · survives closing the window, and both sides are transcribed separately"
-                  : "Unavailable on this device"
+                  : fastModels?.available
+                    ? "Off · enable to use crash-resilient, on-device two-track capture"
+                    : "Unavailable on this device"
               }
               value={meetings.captureEngine !== "renderer"}
-              disabled={resolvedEngine !== "native"}
+              disabled={fastModels?.available !== true}
               onChange={(next) =>
                 void changeMeetings({ captureEngine: next ? "auto" : "renderer" })
               }
@@ -933,6 +975,7 @@ function ProviderOption({
   title,
   hint,
   disabled = false,
+  disabledHint,
 }: {
   selected: boolean;
   onSelect: () => void;
@@ -940,6 +983,7 @@ function ProviderOption({
   title: string;
   hint: string;
   disabled?: boolean;
+  disabledHint?: string;
 }) {
   return (
     <button
@@ -969,7 +1013,7 @@ function ProviderOption({
       <span className="min-w-0 flex-1">
         <span className="block text-[13px] font-medium text-foreground">{title}</span>
         <span className="block text-xs text-muted-foreground">
-          {disabled ? "Not supported on this device — will use cloud" : hint}
+          {disabled ? (disabledHint ?? hint) : hint}
         </span>
       </span>
       <span

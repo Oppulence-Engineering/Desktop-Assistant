@@ -82,6 +82,7 @@ import {
   WhisperDiagnosticResult,
   VoicePrivacySettings,
   DiarizationSettings,
+  TranscriptionRouting,
 } from "./transcription.js";
 import * as meetings from "./meetings.js";
 
@@ -1112,6 +1113,14 @@ const ipcSchemas = {
         .optional(),
     }),
   },
+  /**
+   * One effective, reader-facing data-flow receipt. Unlike the config endpoint, this
+   * includes capability fallbacks, native-capture overrides, and transcript enrichment.
+   */
+  "transcription:getRouting": {
+    req: z.null(),
+    res: TranscriptionRouting,
+  },
   // Read/write the user's explicit transcription.json (settings UI).
   "transcription:getConfig": {
     req: z.null(),
@@ -1202,6 +1211,21 @@ const ipcSchemas = {
       sessionId: z.string().optional(),
       queued: z.boolean().default(false),
     }),
+  },
+  /**
+   * Publish the renderer fallback's finished text through the same durable
+   * relationship-evidence outbox as native capture. The handler rechecks the explicit
+   * sync setting and resolves a 1:1 counterparty before anything can leave the device.
+   */
+  "meeting:publishRendererEvidence": {
+    req: z.object({
+      sessionId: z.string(),
+      startedAt: z.string(),
+      calendarEventJson: z.string().optional(),
+      provider: TranscriptionProvider,
+      segments: z.array(z.object({ speaker: z.string(), text: z.string() })),
+    }),
+    res: z.object({ queued: z.boolean(), reason: z.string().optional() }),
   },
   "meeting:captureStatus": {
     req: z.null(),

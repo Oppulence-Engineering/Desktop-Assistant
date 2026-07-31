@@ -17,9 +17,10 @@ import { CommitmentSpeaker, type ProposedCommitment } from "./commitments.js";
  * so months later "where did this come from?" is answerable by playing the audio rather
  * than by trusting the row. A ledger you cannot audit is a list of assertions.
  *
- * Stored as JSON in the vault rather than pushed to `rowboat-api`: the `Commitment` ent
- * schema exists there with zero write paths or routes, so syncing is a later, opt-in
- * step — and the local record has to be the durable one either way.
+ * JSON in the local vault is the authoritative first write. When the user enables
+ * relationship-evidence sync, the desktop also queues a provenance-bearing observation
+ * that the shared API promotes into a commitment and (for promises by the user) a next
+ * action. Offline/auth failures leave this local record intact and the outbox retries.
  */
 
 export const CommitmentStatus = z.enum(["open", "done", "dropped"]);

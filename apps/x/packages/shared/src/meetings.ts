@@ -122,6 +122,14 @@ export const MeetingsSettings = z.object({
    * gets a switch like every other model-backed feature here.
    */
   extractCommitments: z.boolean().default(true),
+  /**
+   * Publish finished 1:1 meeting evidence and human-confirmed commitments to the
+   * shared relationship model.
+   *
+   * Off by default because this sends transcript text to the Oppulence API even when
+   * speech-to-text itself ran locally. The settings copy is the consent surface.
+   */
+  syncRelationshipEvidence: z.boolean().default(false),
 });
 export type MeetingsSettings = z.infer<typeof MeetingsSettings>;
 
@@ -140,6 +148,7 @@ export const DEFAULT_MEETINGS_SETTINGS: MeetingsSettings = {
   standbyBeforeMeetings: false,
   liveTranscript: false,
   extractCommitments: true,
+  syncRelationshipEvidence: false,
 };
 
 // ---------------------------------------------------------------------------

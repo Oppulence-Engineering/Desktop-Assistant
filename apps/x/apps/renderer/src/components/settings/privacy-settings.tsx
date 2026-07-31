@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Check, HardDrive, Loader2, Trash2, TriangleAlertIcon } from "@/lib/icons";
+import { Check, Cloud, HardDrive, Laptop, Loader2, Trash2, TriangleAlertIcon } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import type {
+  TranscriptionDataLocation,
+  TranscriptionRouting,
+} from "@x/shared/dist/transcription.js";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -13,18 +17,11 @@ import {
 import { SettingsSection } from "@/components/settings/settings-ui";
 
 /**
- * Privacy, stated rather than implied.
+ * A live data-flow receipt rather than platform-wide privacy copy.
  *
- * Every fact on this page was already true — audio is captured by a local sidecar,
- * transcribed by a local model, and written to a folder on this machine. None of it had
- * ever been said out loud, and the Preferences tab was already *promising* privacy
- * controls that did not exist anywhere in the app.
- *
- * The design rule here is that nothing on this page may overstate. Meeting audio and
- * transcripts genuinely never leave the device; summaries and chat go to whichever model
- * is configured, which is frequently a cloud API. Both are said plainly. A privacy page
- * that rounds "mostly local" up to "nothing leaves" is worse than no page at all, because
- * the one claim a user checks and finds false discredits every other claim on it.
+ * Main resolves the actual provider/capture/model routes; this page only renders that
+ * result. Cloud routes are permitted when the user selected them and are stated plainly.
+ * Unknown endpoints remain unknown, and local-only is shown as the effective override.
  */
 
 function formatBytes(bytes: number): string {
@@ -45,51 +42,126 @@ interface Usage {
   dir: string;
 }
 
-/** What stays here, and what does not. Ordered most- to least-reassuring so the
- *  qualified line is read, not buried. */
-const FACTS: { local: boolean; label: string; detail: string }[] = [
-  {
-    local: true,
-    label: "Meeting audio",
-    detail: "Captured and stored on this Mac. Never uploaded anywhere.",
-  },
-  {
-    local: true,
-    label: "Transcription",
-    detail: "Runs on this Mac, on-device. The audio is never sent to a service.",
-  },
-  {
-    local: true,
-    label: "Your notes and files",
-    detail: "Plain Markdown in a folder you control. No sync, no server copy.",
-  },
-  {
-    local: false,
-    label: "Summaries and chat",
-    detail:
-      "Sent to whichever model you configured. If that is a cloud provider, the text goes to them — set a local model to keep it here.",
-  },
-];
+interface RouteFact {
+  location: TranscriptionDataLocation;
+  label: string;
+  detail: string;
+}
+
+function providerLabel(provider: string): string {
+  if (provider === "whisper-local") return "Whisper on this device";
+  if (provider === "solomon") return "Oppulence Cloud (Deepgram)";
+  if (provider === "deepgram") return "Deepgram Cloud";
+  if (provider === "none" || provider === "unconfigured") return "Unavailable";
+  return provider;
+}
+
+function speechRouteDetail(
+  route: TranscriptionRouting["voice"] | TranscriptionRouting["meeting"],
+  subject: string,
+): string {
+  if (route.location === "device") {
+    return `${subject} stays on this device and is transcribed by ${route.engine ?? providerLabel(route.effectiveProvider)}.`;
+  }
+  if (route.location === "cloud") {
+    return `Cloud is selected in Transcription settings. ${subject} is sent to ${providerLabel(route.effectiveProvider)} for transcription.`;
+  }
+  if (route.location === "unavailable") {
+    return "No permitted transcription route is available with the current settings.";
+  }
+  return "The app cannot determine whether this route is local or remote.";
+}
+
+function routeFacts(routing: TranscriptionRouting | null): RouteFact[] {
+  if (!routing) {
+    return [
+      {
+        location: "unknown",
+        label: "Transcription routing",
+        detail: "Loading the effective data route…",
+      },
+    ];
+  }
+
+  const enrichment = routing.enrichment;
+  const enrichmentDetail =
+    enrichment.location === "device"
+      ? `Meeting summaries, commitment suggestions, and live answers use ${providerLabel(enrichment.provider)} on this device.`
+      : enrichment.location === "cloud"
+        ? `Meeting transcript text is sent to ${providerLabel(enrichment.provider)} (${enrichment.model}) for enabled summaries, commitment suggestions, or live answers. Audio is not sent for this enrichment step.`
+        : `Meeting transcript text may leave this device for enabled summaries, commitment suggestions, or live answers because the location of ${providerLabel(enrichment.provider)} could not be verified.`;
+  const relationshipEvidence = routing.relationshipEvidence;
+  const relationshipEvidenceDetail = !relationshipEvidence.enabled
+    ? "Off. Finished meeting transcripts and confirmed commitments remain in the local workspace."
+    : relationshipEvidence.location === "device"
+      ? `Enabled. Meeting evidence is published to ${relationshipEvidence.destination} on this device.`
+      : relationshipEvidence.location === "cloud"
+        ? `Enabled in Transcription settings. The resolved counterparty identity, finished 1:1 transcript text, and confirmed commitments are sent to ${relationshipEvidence.destination}; meeting audio and local file paths are not sent by this step.`
+        : `Enabled. Counterparty identity and transcript text may leave this device because the location of ${relationshipEvidence.destination} could not be verified.`;
+
+  return [
+    {
+      location: routing.voice.location,
+      label: "Push-to-talk and dictation",
+      detail: speechRouteDetail(routing.voice, "Microphone audio"),
+    },
+    {
+      location: routing.voiceMemo.location,
+      label: "Voice memos",
+      detail: `${speechRouteDetail(routing.voiceMemo, "Microphone audio")} Raw voice-memo audio is not retained after transcription.`,
+    },
+    {
+      location: routing.meeting.location,
+      label: "Meeting transcription",
+      detail: `${speechRouteDetail(
+        routing.meeting,
+        routing.meeting.captureEngine === "native"
+          ? "The two recorded tracks"
+          : "Microphone and available system audio",
+      )} Capture engine: ${routing.meeting.captureEngine}.`,
+    },
+    {
+      location: enrichment.location,
+      label: "Transcript enrichment",
+      detail: enrichmentDetail,
+    },
+    {
+      location: relationshipEvidence.enabled ? relationshipEvidence.location : "device",
+      label: "Shared relationship evidence",
+      detail: relationshipEvidenceDetail,
+    },
+    {
+      location: "device",
+      label: "Notes and transcript files",
+      detail:
+        "Stored as inspectable files in the local workspace. Model-backed enrichment and shared relationship state have their own routes above.",
+    },
+  ];
+}
 
 export function PrivacySettings({ dialogOpen }: { dialogOpen?: boolean }) {
   const [usage, setUsage] = useState<Usage | null>(null);
+  const [routing, setRouting] = useState<TranscriptionRouting | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [alsoDeleteNotes, setAlsoDeleteNotes] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    try {
-      setUsage(await window.ipc.invoke("meeting:storageUsage", null));
-    } catch {
-      // Capture may be unavailable on this platform — the facts above still apply.
-      setUsage(null);
-    }
+    const [nextUsage, nextRouting] = await Promise.allSettled([
+      window.ipc.invoke("meeting:storageUsage", null),
+      window.ipc.invoke("transcription:getRouting", null),
+    ]);
+    setUsage(nextUsage.status === "fulfilled" ? nextUsage.value : null);
+    setRouting(nextRouting.status === "fulfilled" ? nextRouting.value : null);
   }, []);
 
   useEffect(() => {
     if (dialogOpen === false) return;
     void refresh();
+    const onConfigChanged = () => void refresh();
+    window.addEventListener("transcription-config-changed", onConfigChanged);
+    return () => window.removeEventListener("transcription-config-changed", onConfigChanged);
   }, [dialogOpen, refresh]);
 
   const confirmDeleteAll = useCallback(async () => {
@@ -117,16 +189,24 @@ export function PrivacySettings({ dialogOpen }: { dialogOpen?: boolean }) {
   return (
     <div className="space-y-7">
       <SettingsSection
-        title="What stays on this Mac"
-        description="Where each kind of data actually goes."
+        title="Where transcription data goes"
+        description={
+          routing?.localOnly
+            ? "Local-only is on. Speech audio stays on this device."
+            : "The effective route after provider choices, device capability, and capture-engine overrides."
+        }
       >
         <div className="settings-panel divide-y divide-border/60">
-          {FACTS.map((fact) => (
+          {routeFacts(routing).map((fact) => (
             <div key={fact.label} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-              {fact.local ? (
+              {fact.location === "device" ? (
                 <Check className="mt-0.5 size-4 shrink-0 text-emerald-500" />
-              ) : (
+              ) : fact.location === "cloud" ? (
+                <Cloud className="mt-0.5 size-4 shrink-0 text-blue-500" />
+              ) : fact.location === "unavailable" ? (
                 <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-amber-500" />
+              ) : (
+                <Laptop className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
               )}
               <div className="min-w-0">
                 <p className="settings-row-label">{fact.label}</p>

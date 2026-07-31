@@ -65,6 +65,14 @@ import {
   createParakeetTranscriber,
   type ParakeetModel,
 } from "./meeting-engines.js";
+import {
+  enqueueRelationshipEvidence,
+  flushRelationshipEvidence,
+} from "@x/core/dist/relationships/evidence-outbox.js";
+import {
+  confirmedCommitmentObservation,
+  meetingTranscriptObservation,
+} from "@x/core/dist/relationships/meeting-evidence.js";
 
 /**
  * The one owner of a native capture session: spawns the sidecar, holds the live
@@ -721,8 +729,118 @@ export class MeetingController {
       meetingStarted: stored?.meetingStarted,
       counterpartyLabel: stored?.counterparty,
     });
+    const settings = await getTranscriptionConfig();
+    if (settings.meetings.syncRelationshipEvidence) {
+      try {
+        const meta = await readMeta(dir);
+        if (meta) {
+          const { counterparty } = this.resolveMeetingCounterparty(calendarEventFromMeta(meta));
+          if (counterparty) {
+            await enqueueRelationshipEvidence(
+              confirmedCommitmentObservation({ commitment: entry, counterparty }),
+            );
+            void this.flushRelationshipEvidence();
+          }
+        }
+      } catch (err) {
+        // The local ledger is the first durable write. A relationship-sync problem
+        // cannot turn a confirmed commitment back into a pending model proposal.
+        console.warn("[meeting] could not queue confirmed relationship evidence:", err);
+      }
+    }
     await removeCommitmentProposal(dir, startMs, endMs);
     return { confirmed: true, id: entry.id };
+  }
+
+  /**
+   * Compile the window-owned fallback transcript into the same shared evidence shape
+   * as native capture. Renderer notes do not retain timed audio, so their segments use
+   * zero spans and the payload says nothing stronger.
+   */
+  async publishRendererEvidence(args: {
+    sessionId: string;
+    startedAt: string;
+    calendarEventJson?: string;
+    provider: string;
+    segments: { speaker: string; text: string }[];
+  }): Promise<{ queued: boolean; reason?: string }> {
+    const settings = await getTranscriptionConfig();
+    if (!settings.meetings.syncRelationshipEvidence) {
+      return { queued: false, reason: "relationship evidence sync is off" };
+    }
+    if (args.segments.length === 0) return { queued: false, reason: "transcript is empty" };
+
+    let calendarEvent: MeetingCalendarEvent | undefined;
+    if (args.calendarEventJson) {
+      try {
+        calendarEvent = JSON.parse(args.calendarEventJson) as MeetingCalendarEvent;
+      } catch {
+        return { queued: false, reason: "calendar event is invalid" };
+      }
+    }
+    const { counterparty, reason } = this.resolveMeetingCounterparty(calendarEvent);
+    if (!counterparty) return { queued: false, reason: reason ?? "counterparty is unresolved" };
+
+    const ended = new Date().toISOString();
+    const startedMs = new Date(args.startedAt).getTime();
+    const endedMs = new Date(ended).getTime();
+    const speakers = new Set(
+      args.segments.map((segment) =>
+        segment.speaker.trim().toLowerCase() === "you" ? "mic" : "system",
+      ),
+    );
+    const meta = {
+      schema: 1 as const,
+      started: args.startedAt,
+      ended,
+      duration_seconds:
+        Number.isFinite(startedMs) && Number.isFinite(endedMs)
+          ? Math.max(0, (endedMs - startedMs) / 1000)
+          : 0,
+      audio: {
+        sample_rate: 16_000,
+        channels: 2,
+        encoding: "pcm_s16le" as const,
+        container: "wav" as const,
+      },
+      tracks: [...speakers].map((id) => ({
+        id: id as MeetingTrackId,
+        speaker: (id === "mic" ? "me" : "them") as "me" | "them",
+        file: "not-retained",
+        offset_ms: 0,
+        frames: 0,
+        duration_ms: 0,
+        peak: 0,
+        silent: false,
+      })),
+      warnings: ["renderer fallback: timed audio evidence was not retained"],
+      ...(args.calendarEventJson ? { calendar_event: args.calendarEventJson } : {}),
+    };
+    const transcript = {
+      schema: 1 as const,
+      engine: args.provider === "whisper-local" ? "whisper.cpp" : args.provider,
+      model: args.provider === "whisper-local" ? settings.whisper.model : "nova-3",
+      created_at: ended,
+      segments: args.segments
+        .map((segment) => ({
+          speaker:
+            segment.speaker.trim().toLowerCase() === "you" ? ("me" as const) : ("them" as const),
+          start_ms: 0,
+          end_ms: 0,
+          text: segment.text.trim(),
+        }))
+        .filter((segment) => segment.text.length > 0),
+    };
+    await enqueueRelationshipEvidence(
+      meetingTranscriptObservation({
+        sessionId: args.sessionId,
+        meta,
+        transcript,
+        counterparty,
+      }),
+    );
+    void this.flushRelationshipEvidence();
+    return { queued: true };
   }
 
   async dismissCommitment(
@@ -889,12 +1007,36 @@ export class MeetingController {
         });
       },
       onTranscribed: async ({ dir, meta, transcript, notePath }) => {
-        await publishMeetingTranscribed({
-          sessionId: path.basename(dir),
-          meta,
-          transcript,
-          notePath,
-        });
+        const sessionId = path.basename(dir);
+        try {
+          await publishMeetingTranscribed({
+            sessionId,
+            meta,
+            transcript,
+            notePath,
+          });
+        } catch (err) {
+          // Local automation and shared relationship publication are independent
+          // observers. A broken local task must not suppress consented shared evidence.
+          console.warn("[meeting] local transcribed event could not be published:", err);
+        }
+        const settings = await getTranscriptionConfig();
+        if (!settings.meetings.syncRelationshipEvidence) return;
+        const { counterparty } = this.resolveMeetingCounterparty(calendarEventFromMeta(meta));
+        if (!counterparty) return;
+        try {
+          await enqueueRelationshipEvidence(
+            meetingTranscriptObservation({
+              sessionId,
+              meta,
+              transcript,
+              counterparty,
+            }),
+          );
+          await this.flushRelationshipEvidence();
+        } catch (err) {
+          console.warn("[meeting] shared relationship evidence could not be queued:", err);
+        }
       },
       onProgress: (progress) => {
         this.lastProgress = progress;
@@ -916,6 +1058,29 @@ export class MeetingController {
   private transcriptionEngine: MeetingTranscriptionEngine = "whisper";
   private parakeetModel: ParakeetModel = "v3";
   private compressRetainedAudio = true;
+
+  private async flushRelationshipEvidence(): Promise<void> {
+    try {
+      // Renderer-only platforms do not initialize the native capture controller at
+      // launch, so a cached setting can remain false after restart. Re-read the durable
+      // consent immediately before every network drain.
+      const config = await getTranscriptionConfig();
+      if (!config.meetings.syncRelationshipEvidence) return;
+      const result = await flushRelationshipEvidence();
+      if (result.error) {
+        console.warn(
+          `[meeting] ${result.pending} relationship evidence item(s) pending: ${result.error}`,
+        );
+      } else if (result.sent > 0) {
+        console.log(`[meeting] synced ${result.sent} relationship evidence item(s)`);
+      }
+    } catch (err) {
+      // Corruption and filesystem errors are intentionally not converted into an empty
+      // outbox. Surface them without creating an unhandled rejection on fire-and-forget
+      // launch/config refresh calls.
+      console.warn("[meeting] relationship evidence outbox could not be read:", err);
+    }
+  }
 
   /**
    * The engine for the next job. Falls back to whisper when Parakeet is selected but
@@ -950,6 +1115,7 @@ export class MeetingController {
         ? `parakeet-tdt-0.6b-${this.parakeetModel}-coreml`
         : (config.whisper?.model ?? this.modelId);
     this.keepAudio = config.meetings?.keepAudio ?? this.keepAudio;
+    if (config.meetings?.syncRelationshipEvidence) void this.flushRelationshipEvidence();
   }
 
   get transcriptionProgress(): MeetingTranscriptionProgress | null {

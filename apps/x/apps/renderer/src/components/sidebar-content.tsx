@@ -50,8 +50,10 @@ import { cn } from "@/lib/utils";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { extractConferenceLink } from "@/lib/calendar-event";
 import { useBilling } from "@/hooks/useBilling";
+import { useVoiceMode } from "@/hooks/useVoiceMode";
 import { toast } from "@/lib/toast";
 import { ServiceEvent } from "@x/shared/src/service-events.js";
+import type { TranscriptionProvider } from "@x/shared/dist/transcription.js";
 import {
   PRODUCT_NAME,
   PRODUCT_PROVIDER_ID,
@@ -1194,40 +1196,6 @@ export function SidebarContentPanel({
   );
 }
 
-async function transcribeWithDeepgram(audioBlob: Blob): Promise<string | null> {
-  try {
-    const exists = await window.ipc.invoke("workspace:exists", {
-      path: "config/deepgram.json",
-    });
-    if (!exists.exists) return null;
-    const configResult = await window.ipc.invoke("workspace:readFile", {
-      path: "config/deepgram.json",
-      encoding: "utf8",
-    });
-    const { apiKey } = JSON.parse(configResult.data) as { apiKey: string };
-    if (!apiKey) throw new Error("No apiKey in deepgram.json");
-
-    const response = await fetch(
-      "https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Token ${apiKey}`,
-          "Content-Type": audioBlob.type,
-        },
-        body: audioBlob,
-      },
-    );
-
-    if (!response.ok) throw new Error(`Deepgram API error: ${response.status}`);
-    const result = await response.json();
-    return result.results?.channels?.[0]?.alternatives?.[0]?.transcript ?? null;
-  } catch (err) {
-    console.error("Deepgram transcription failed:", err);
-    return null;
-  }
-}
-
 // Voice Note Recording Button
 export function VoiceNoteButton({
   onNoteCreated,
@@ -1236,13 +1204,13 @@ export function VoiceNoteButton({
   onNoteCreated?: (path: string) => void;
   variant?: "icon" | "action";
 }) {
+  const voice = useVoiceMode();
   const [isRecording, setIsRecording] = React.useState(false);
-  const [hasDeepgramKey, setHasDeepgramKey] = React.useState(false);
-  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
-  const chunksRef = React.useRef<Blob[]>([]);
+  const [available, setAvailable] = React.useState(false);
   const notePathRef = React.useRef<string | null>(null);
-  const timestampRef = React.useRef<string | null>(null);
   const relativePathRef = React.useRef<string | null>(null);
+  const recordedAtRef = React.useRef<string | null>(null);
+  const providerRef = React.useRef<TranscriptionProvider>("none");
   // Keep a ref to always call the latest onNoteCreated (avoids stale closure in recorder.onstop)
   const onNoteCreatedRef = React.useRef(onNoteCreated);
   React.useEffect(() => {
@@ -1250,26 +1218,73 @@ export function VoiceNoteButton({
   }, [onNoteCreated]);
 
   React.useEffect(() => {
-    void (async () => {
-      try {
-        const exists = await window.ipc.invoke("workspace:exists", {
-          path: "config/deepgram.json",
+    let cancelled = false;
+    const refresh = () => {
+      void window.ipc
+        .invoke("transcription:getRouting", null)
+        .then((routing) => {
+          if (!cancelled) setAvailable(routing.voiceMemo.location !== "unavailable");
+        })
+        .catch(() => {
+          if (!cancelled) setAvailable(false);
         });
-        if (!exists.exists) {
-          setHasDeepgramKey(false);
-          return;
-        }
-        const result = await window.ipc.invoke("workspace:readFile", {
-          path: "config/deepgram.json",
-          encoding: "utf8",
-        });
-        const { apiKey } = JSON.parse(result.data) as { apiKey: string };
-        setHasDeepgramKey(!!apiKey);
-      } catch {
-        setHasDeepgramKey(false);
-      }
-    })();
+    };
+    refresh();
+    voice.warmup();
+    const onConfigChanged = () => refresh();
+    window.addEventListener("transcription-config-changed", onConfigChanged);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("transcription-config-changed", onConfigChanged);
+      voice.cancel();
+    };
+  }, [voice.cancel, voice.warmup]);
+
+  const noteContent = React.useCallback((body: string, provider: TranscriptionProvider) => {
+    const recordedAt = recordedAtRef.current ?? new Date().toISOString();
+    const relativePath = relativePathRef.current ?? "";
+    const local = provider === "whisper-local";
+    const unavailable = provider === "none";
+    const providerLabel =
+      provider === "whisper-local"
+        ? "whisper.cpp"
+        : provider === "solomon"
+          ? "solomon-deepgram"
+          : provider;
+    return `---
+type: voice memo
+recorded: "${recordedAt}"
+path: ${relativePath}
+transcription_provider: ${providerLabel}
+transcription_location: ${unavailable ? "unavailable" : local ? "device" : "cloud"}
+audio_uploaded: ${!unavailable && !local ? "true" : "false"}
+raw_audio_retained: false
+---
+# Voice Memo
+
+## Transcript
+
+${body}
+`;
   }, []);
+
+  const writeCurrentNote = React.useCallback(
+    async (body: string, provider = providerRef.current) => {
+      const notePath = notePathRef.current;
+      if (!notePath) return;
+      try {
+        await window.ipc.invoke("workspace:writeFile", {
+          path: notePath,
+          data: noteContent(body, provider),
+          opts: { encoding: "utf8", mkdirp: true },
+        });
+        onNoteCreatedRef.current?.(notePath);
+      } catch (err) {
+        console.error("Failed to update voice note:", err);
+      }
+    },
+    [noteContent],
+  );
 
   const startRecording = async () => {
     try {
@@ -1280,8 +1295,8 @@ export function VoiceNoteButton({
       const noteName = `voice-memo-${timestamp}`;
       const notePath = `knowledge/Voice Memos/${dateStr}/${noteName}.md`;
 
-      timestampRef.current = timestamp;
       notePathRef.current = notePath;
+      recordedAtRef.current = now.toISOString();
       // Relative path for linking (from knowledge/ root, without .md extension)
       const relativePath = `Voice Memos/${dateStr}/${noteName}`;
       relativePathRef.current = relativePath;
@@ -1292,149 +1307,58 @@ export function VoiceNoteButton({
         recursive: true,
       });
 
-      const initialContent = `---
-type: voice memo
-recorded: "${now.toISOString()}"
-path: ${relativePath}
----
-# Voice Memo
+      // Resolve and open the same provider path push-to-talk uses. A selected cloud
+      // provider is allowed to receive audio; local-only mode resolves to Whisper (or
+      // unavailable) before the microphone opens.
+      const { provider, started } = await voice.start();
+      providerRef.current = provider;
+      if (!started) {
+        await writeCurrentNote(
+          provider === "none"
+            ? "*Transcription is unavailable. Install an on-device model or allow a cloud provider in Settings → Transcription.*"
+            : "*Recording could not start. Check microphone access and try again.*",
+          "none",
+        );
+        toast(
+          provider === "none"
+            ? "Voice transcription is unavailable"
+            : "Could not access microphone",
+          "error",
+        );
+        return;
+      }
 
-## Transcript
-
-*Recording in progress...*
-`;
       await window.ipc.invoke("workspace:writeFile", {
         path: notePath,
-        data: initialContent,
+        data: noteContent("*Recording in progress...*", provider),
         opts: { encoding: "utf8" },
       });
 
       // Select the note so the user can see it
       onNoteCreatedRef.current?.(notePath);
-
-      // Start actual recording
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "audio/webm";
-      const recorder = new MediaRecorder(stream, { mimeType });
-      chunksRef.current = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        const ext = mimeType === "audio/mp4" ? "m4a" : "webm";
-        const audioFilename = `voice-memo-${timestampRef.current}.${ext}`;
-
-        // Save audio file to voice_memos folder (for backup/reference)
-        try {
-          await window.ipc.invoke("workspace:mkdir", {
-            path: "voice_memos",
-            recursive: true,
-          });
-
-          const arrayBuffer = await blob.arrayBuffer();
-          const base64 = btoa(
-            new Uint8Array(arrayBuffer).reduce(
-              (data, byte) => data + String.fromCharCode(byte),
-              "",
-            ),
-          );
-
-          await window.ipc.invoke("workspace:writeFile", {
-            path: `voice_memos/${audioFilename}`,
-            data: base64,
-            opts: { encoding: "base64" },
-          });
-        } catch {
-          console.error("Failed to save audio file");
-        }
-
-        // Update note to show transcribing status
-        const currentNotePath = notePathRef.current;
-        const currentRelativePath = relativePathRef.current;
-        if (currentNotePath && currentRelativePath) {
-          const transcribingContent = `---
-type: voice memo
-recorded: "${new Date().toISOString()}"
-path: ${currentRelativePath}
----
-# Voice Memo
-
-## Transcript
-
-*Transcribing...*
-`;
-          await window.ipc.invoke("workspace:writeFile", {
-            path: currentNotePath,
-            data: transcribingContent,
-            opts: { encoding: "utf8" },
-          });
-        }
-
-        // Transcribe and update the note with the transcript
-        const transcript = await transcribeWithDeepgram(blob);
-        if (currentNotePath && currentRelativePath) {
-          const finalContent = transcript
-            ? `---
-type: voice memo
-recorded: "${new Date().toISOString()}"
-path: ${currentRelativePath}
----
-# Voice Memo
-
-## Transcript
-
-${transcript}
-`
-            : `---
-type: voice memo
-recorded: "${new Date().toISOString()}"
-path: ${currentRelativePath}
----
-# Voice Memo
-
-## Transcript
-
-*Transcription failed. Please try again.*
-`;
-          await window.ipc.invoke("workspace:writeFile", {
-            path: currentNotePath,
-            data: finalContent,
-            opts: { encoding: "utf8" },
-          });
-
-          // Re-select to trigger refresh
-          onNoteCreatedRef.current?.(currentNotePath);
-
-          if (transcript) {
-            toast("Voice note transcribed", "success");
-          } else {
-            toast("Transcription failed", "error");
-          }
-        }
-      };
-
-      recorder.start();
-      mediaRecorderRef.current = recorder;
       setIsRecording(true);
       toast("Recording started", "success");
-    } catch {
+    } catch (err) {
+      voice.cancel();
+      console.error("Could not start voice note:", err);
       toast("Could not access microphone", "error");
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-    }
-    mediaRecorderRef.current = null;
+  const stopRecording = async () => {
     setIsRecording(false);
+    await writeCurrentNote("*Transcribing...*");
+    const transcript = await voice.submit();
+    if (transcript) {
+      await writeCurrentNote(transcript);
+      toast("Voice note transcribed", "success");
+    } else {
+      await writeCurrentNote("*Transcription failed. Please try again.*");
+      toast("Transcription failed", "error");
+    }
   };
 
-  if (!hasDeepgramKey) return null;
+  if (!available) return null;
 
   const actionClass =
     "flex h-9 flex-1 items-center justify-center rounded-none border border-sidebar-border text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors";
@@ -1446,11 +1370,18 @@ path: ${currentRelativePath}
       <TooltipTrigger asChild>
         <button
           type="button"
-          onClick={isRecording ? stopRecording : startRecording}
+          onClick={() => void (isRecording ? stopRecording() : startRecording())}
+          disabled={voice.state === "transcribing"}
           className={variant === "action" ? actionClass : iconClass}
-          aria-label={isRecording ? "Stop recording" : "New voice note"}
+          aria-label={
+            voice.state === "transcribing"
+              ? "Transcribing voice note"
+              : isRecording
+                ? "Stop recording"
+                : "New voice note"
+          }
         >
-          {isRecording ? (
+          {isRecording || voice.state === "transcribing" ? (
             <Square className="size-4 fill-red-500 text-red-500 animate-pulse" />
           ) : (
             <Mic className="size-4" />
@@ -1458,7 +1389,11 @@ path: ${currentRelativePath}
         </button>
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        {isRecording ? "Stop Recording" : "New Voice Note"}
+        {voice.state === "transcribing"
+          ? "Transcribing…"
+          : isRecording
+            ? "Stop Recording"
+            : "New Voice Note"}
       </TooltipContent>
     </Tooltip>
   );

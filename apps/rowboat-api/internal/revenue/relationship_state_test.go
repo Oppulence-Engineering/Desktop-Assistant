@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -139,6 +140,103 @@ func TestRelationshipObservationProjectionAndCorrection(t *testing.T) {
 	}
 	if state.Health != "healthy" || state.StateReason != "Customer confirmed the plan in a call." {
 		t.Fatalf("snapshot explanation mismatch: %#v", state)
+	}
+}
+
+func TestConfirmedMeetingCommitmentBecomesSharedCommitmentExactlyOnce(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 7, 31, 12, 35, 0, 0, time.UTC)
+	existing, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind:          "company",
+		DisplayName:   "Acme",
+		PrimaryEmail:  "sales@acme.example",
+		AccountDomain: "acme.example",
+	})
+	if err != nil {
+		t.Fatalf("create existing account: %v", err)
+	}
+	input := RelationshipObservationInput{
+		DisplayName:   "Acme",
+		PrimaryEmail:  "avery@acme.example",
+		AccountDomain: "acme.example",
+		Source:        "meeting",
+		ExternalID:    "commitment:session-1:0-2000",
+		SourceVersion: "1",
+		EventType:     "commitment_confirmed",
+		OccurredAt:    now,
+		ReceivedAt:    now,
+		Summary:       "We committed to send the proposal.",
+		Facts: map[string]any{
+			"user_confirmed":       true,
+			"commitment_text":      "Send the proposal",
+			"commitment_direction": "promised_by_me",
+			"commitment_id":        "session-1:0-2000",
+			"evidence_quote":       "I will send the proposal.",
+			"evidence_start_ms":    0,
+			"evidence_end_ms":      2000,
+		},
+		Assertions: []RelationshipAssertionInput{{
+			Dimension:  "next_action",
+			Value:      "Send the proposal",
+			SourceType: "source_fact",
+			Confidence: 1,
+			Reason:     "User confirmed the cited meeting commitment.",
+			ValidFrom:  now,
+		}},
+	}
+
+	first, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{input})
+	if err != nil {
+		t.Fatalf("ingest confirmed commitment: %v", err)
+	}
+	second, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{input})
+	if err != nil {
+		t.Fatalf("replay confirmed commitment: %v", err)
+	}
+	if len(first) != 1 || first[0].Duplicate || len(second) != 1 || !second[0].Duplicate {
+		t.Fatalf("unexpected idempotency results: first=%#v second=%#v", first, second)
+	}
+	if first[0].Relationship.ID != existing.ID {
+		t.Fatalf("meeting should resolve to existing account, got %s", first[0].Relationship.ID)
+	}
+	rows, err := f.client.Commitment.Query().WithEvidences().All(f.ctx)
+	if err != nil {
+		t.Fatalf("query commitments: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("want one shared commitment after replay, got %d", len(rows))
+	}
+	if rows[0].Text != "Send the proposal" || rows[0].Direction != "promised_by_me" || !rows[0].UserConfirmed {
+		t.Fatalf("unexpected shared commitment: %#v", rows[0])
+	}
+	if len(rows[0].Edges.Evidences) != 1 {
+		t.Fatalf("confirmed commitment must retain one source evidence edge, got %d", len(rows[0].Edges.Evidences))
+	}
+	rel, err := f.svc.GetRelationship(f.ctx, first[0].Relationship.ID)
+	if err != nil {
+		t.Fatalf("get relationship: %v", err)
+	}
+	if rel.NextAction != "Send the proposal" {
+		t.Fatalf("confirmed promise should project next action, got %q", rel.NextAction)
+	}
+	actions, err := f.client.RevenueAction.Query().WithEvidences().All(f.ctx)
+	if err != nil {
+		t.Fatalf("query follow-up actions: %v", err)
+	}
+	if len(actions) != 1 {
+		t.Fatalf("want one approval-gated follow-up after replay, got %d", len(actions))
+	}
+	action := actions[0]
+	if action.ActionType != "meeting_follow_up" || action.Channel != "email" ||
+		action.RecipientEmail != "avery@acme.example" || action.ApprovalStatus != "pending" ||
+		action.ExecutionStatus != "pending" {
+		t.Fatalf("unexpected follow-up action: %#v", action)
+	}
+	if !strings.Contains(action.Reason, input.ExternalID) {
+		t.Fatalf("follow-up reason must cite the immutable observation: %q", action.Reason)
+	}
+	if len(action.Edges.Evidences) != 1 || action.Edges.Evidences[0].Source != "meeting" {
+		t.Fatalf("follow-up must link the confirmed meeting evidence: %#v", action.Edges.Evidences)
 	}
 }
 

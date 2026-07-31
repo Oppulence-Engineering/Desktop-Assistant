@@ -70,7 +70,9 @@ oppulence-audiocap                ├─▶ note.ts ─▶ knowledge/Meetings/so
    `native` only on macOS ≥ 14.2 with the helper present, else `renderer`.
 2. `ensureMicrophoneAccess()` prompts. The native path never calls `getUserMedia`, so
    nothing else in the app would ever trigger this — without it the first sign of a
-   denied microphone is a silent track after the meeting.
+   denied microphone is a silent track after the meeting. The helper also requests
+   access under its own process identity so standalone verification and packaged
+   execution do not depend on the Electron prompt having run first.
 3. `createSessionDir` claims `<recordingsDir>/yyyy.MM.dd-HHmm` with `mkdir` (no
    recursive), which makes claiming the name atomic and suffixes on collision.
 4. The sidecar starts both recorders. **Either may fail alone** — a denied system-audio
@@ -217,25 +219,35 @@ lost meeting. A persisted `never` now reads as `untilTranscribed`.
 ## Verification runbook
 
 CI can assert staging and IPC shape but cannot grant microphone or system-audio TCC, so
-signal has to be checked by hand.
+signal has to be checked by hand. macOS attributes system-audio access to the
+**responsible app**, not necessarily the child executable. A helper started from a
+terminal can therefore receive timed buffers full of zeroes when that terminal lacks
+`NSAudioCaptureUsageDescription`, even if the helper itself appears in System Settings.
+Use a packaged Oppulence build (or a signed test app wrapper carrying the same usage
+description) for the system-track assertion.
 
 ```bash
 # 1. Build the helper
 cd apps/x/vendor/audiocap && ./build.sh
 ./out/oppulence-audiocap doctor --json | python3 -m json.tool
 
-# 2. Record standalone, with a video playing AND you talking
+# 2. Record standalone to verify mic, events, finalization, and helper lifecycle.
+#    This verifies system signal only when the responsible app is TCC-authorized.
 ./out/oppulence-audiocap record --out /tmp/s1     # ^C to stop
 
 # 3. Assert LEVEL, not duration. The failure mode this guards against is a
 #    correctly-timed file at -91 dB: right duration, no signal.
 afinfo /tmp/s1/mic.wav /tmp/s1/system.wav | grep -E "duration|dur"
-python3 - <<'PY'
-import wave, audioop
-for f in ("/tmp/s1/mic.wav", "/tmp/s1/system.wav"):
-    w = wave.open(f); pcm = w.readframes(w.getnframes())
-    print(f, "frames", w.getnframes(), "peak", audioop.max(pcm, 2))
-PY
+node -e '
+const fs = require("fs");
+for (const file of process.argv.slice(1)) {
+  const wav = fs.readFileSync(file);
+  let peak = 0;
+  for (let i = 44; i + 1 < wav.length; i += 2) {
+    peak = Math.max(peak, Math.abs(wav.readInt16LE(i)));
+  }
+  console.log(file, "bytes", wav.length, "peak", peak);
+}' /tmp/s1/mic.wav /tmp/s1/system.wav
 
 # 4. Crash safety
 ./out/oppulence-audiocap record --out /tmp/s2 &
@@ -243,10 +255,17 @@ sleep 5; kill -9 %1
 # both files still decode; the header says 0 bytes and core repairs it
 ```
 
-In the app: `npm run dev`, start from the Meetings view, **talk over the other party
-deliberately**, stop. Assert the note has interleaved `You`/`Other` turns with your
-interruption present, that no screen-recording prompt appeared, and that closing every
-window mid-recording does not stop the session (the tray keeps counting).
+In a packaged app: start from the Meetings view, **talk over the other party
+deliberately**, stop. Assert both live meters rise and the note has interleaved
+`You`/`Other` turns with your interruption present. Also assert no screen-recording
+prompt appeared and that closing every window mid-recording does not stop the session
+(the tray keeps counting). A terminal-launched dev build is not a substitute for this
+TCC check because the terminal can remain the responsible app.
+
+If `doctor` reports `no usable default input device`, confirm the same state in System
+Settings → Sound → Input. System-only capture should still start, but that machine
+cannot validate microphone signal; repeat the two-track assertion on hardware with a
+real input device.
 
 ## File map
 
@@ -279,6 +298,10 @@ window mid-recording does not stop the session (the tray keeps counting).
 
 - **The system tap is global.** Notification sounds and music land in `system.wav`.
   There is no per-process picker.
+- **TCC follows the responsible app.** A command-line run can create the process tap
+  successfully yet receive only zero samples when its terminal parent lacks the system
+  audio usage description. Treat a zero track from a terminal run as inconclusive until
+  a packaged-app run is checked.
 - **Echo cancellation is off by default.** On speakers, turn it on or the meeting audio
   is transcribed twice — once as them, once as you.
 - **`VoiceProcessingIO` is a duplex unit, not an input effect.** Enabling it and then
@@ -286,6 +309,11 @@ window mid-recording does not stop the session (the tray keeps counting).
   silence on multichannel routes. `MicRecorder` completes the graph explicitly and
   still checks the first second for signal, restarting raw if it is flat. **When
   testing a mic change, assert level, not duration.**
+- **Check the physical input before installing a tap.** On a Mac without an input
+  device, the input node's output side can still advertise a default graph format.
+  Treating that as capture hardware can raise an uncaught channel-count exception;
+  `inputFormat(forBus:)` is the physical-device check and must have a nonzero rate and
+  channel count.
 - **A stale `module.modulemap`** in an older Command Line Tools install breaks every
   Objective-C module import with an error that points at the SDK. `build.sh` detects it
   and prints the fix.
