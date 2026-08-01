@@ -218,14 +218,21 @@ printf '%s' '{"transcription":[{"offsets":{"from":0,"to":500},"text":" Clean."}]
     await fs.rm(argsLog, { force: true });
     const bin = await fakeBin(
       "vad-empty-retry.sh",
-      `prev=""; prefix=""
+      `prev=""; prefix=""; input=""
 has_vad=0
 for a in "$@"; do
   if [ "$prev" = "-of" ]; then prefix="$a"; fi
+  if [ "$prev" = "-f" ]; then input="$a"; fi
   if [ "$a" = "--vad" ]; then has_vad=1; fi
   prev="$a"
 done
 printf '%s\\n' "$*" >> ${JSON.stringify(argsLog)}
+# Behave like the real binary and actually require the input file. Without this the
+# retry appeared to work while the temp WAV was already deleted underneath it.
+if [ ! -f "$input" ]; then
+  echo "error: input file not found '$input'" >&2
+  exit 2
+fi
 if [ "$has_vad" = "1" ]; then
   printf '%s' '{"transcription":[]}' > "$prefix.json"
 else

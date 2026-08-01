@@ -79,6 +79,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/relationships/{relationshipId}/changes",
 		"/v1/relationships/{relationshipId}/evidence/{evidenceId}",
 		"/v1/relationships/{relationshipId}/corrections",
+		"/v1/relationships/{relationshipId}/conversation-corrections",
 		"/v1/relationship-observations/batch",
 		"/v1/relationship-sources/status",
 		"/v1/relationship-recommendations/{actionId}/approve",

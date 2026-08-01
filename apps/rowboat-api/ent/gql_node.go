@@ -26,6 +26,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -40,6 +43,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
@@ -152,6 +156,21 @@ var commitmentImplementors = []string{"Commitment", "Node"}
 // IsNode implements the Node interface check for GQLGen.
 func (*Commitment) IsNode() {}
 
+var commitmentdependencyImplementors = []string{"CommitmentDependency", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CommitmentDependency) IsNode() {}
+
+var commitmenteventImplementors = []string{"CommitmentEvent", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CommitmentEvent) IsNode() {}
+
+var conversationintelligenceartifactImplementors = []string{"ConversationIntelligenceArtifact", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*ConversationIntelligenceArtifact) IsNode() {}
+
 var creditledgerImplementors = []string{"CreditLedger", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
@@ -221,6 +240,11 @@ var relationshipassertionImplementors = []string{"RelationshipAssertion", "Node"
 
 // IsNode implements the Node interface check for GQLGen.
 func (*RelationshipAssertion) IsNode() {}
+
+var relationshipidentityImplementors = []string{"RelationshipIdentity", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelationshipIdentity) IsNode() {}
 
 var relationshipobservationImplementors = []string{"RelationshipObservation", "Node"}
 
@@ -507,6 +531,33 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			}
 		}
 		return query.Only(ctx)
+	case commitmentdependency.Table:
+		query := c.CommitmentDependency.Query().
+			Where(commitmentdependency.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, commitmentdependencyImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case commitmentevent.Table:
+		query := c.CommitmentEvent.Query().
+			Where(commitmentevent.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, commitmenteventImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case conversationintelligenceartifact.Table:
+		query := c.ConversationIntelligenceArtifact.Query().
+			Where(conversationintelligenceartifact.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, conversationintelligenceartifactImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case creditledger.Table:
 		query := c.CreditLedger.Query().
 			Where(creditledger.ID(id))
@@ -629,6 +680,15 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(relationshipassertion.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipassertionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relationshipidentity.Table:
+		query := c.RelationshipIdentity.Query().
+			Where(relationshipidentity.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipidentityImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -1111,6 +1171,54 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 				*noder = node
 			}
 		}
+	case commitmentdependency.Table:
+		query := c.CommitmentDependency.Query().
+			Where(commitmentdependency.IDIn(ids...))
+		query, err := query.CollectFields(ctx, commitmentdependencyImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case commitmentevent.Table:
+		query := c.CommitmentEvent.Query().
+			Where(commitmentevent.IDIn(ids...))
+		query, err := query.CollectFields(ctx, commitmenteventImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case conversationintelligenceartifact.Table:
+		query := c.ConversationIntelligenceArtifact.Query().
+			Where(conversationintelligenceartifact.IDIn(ids...))
+		query, err := query.CollectFields(ctx, conversationintelligenceartifactImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case creditledger.Table:
 		query := c.CreditLedger.Query().
 			Where(creditledger.IDIn(ids...))
@@ -1323,6 +1431,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.RelationshipAssertion.Query().
 			Where(relationshipassertion.IDIn(ids...))
 		query, err := query.CollectFields(ctx, relationshipassertionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relationshipidentity.Table:
+		query := c.RelationshipIdentity.Query().
+			Where(relationshipidentity.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relationshipidentityImplementors...)
 		if err != nil {
 			return nil, err
 		}

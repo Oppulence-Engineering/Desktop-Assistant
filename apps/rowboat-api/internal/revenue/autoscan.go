@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
@@ -82,6 +83,28 @@ func (a *AutoScanner) Run(ctx context.Context) error {
 func (a *AutoScanner) sweep(ctx context.Context) {
 	// Candidate discovery is a system query across tenants.
 	ictx := auth.WithInternal(ctx)
+	recoveryUsers, err := a.svc.client.User.Query().
+		Where(user.HasCommitmentsWith(
+			commitment.StatusEQ("open"),
+			commitment.DueAtLTE(a.svc.now().Add(72*time.Hour)),
+		)).
+		Order(ent.Asc(user.FieldCreatedAt)).
+		Limit(a.cfg.MaxPerCycle).
+		All(ictx)
+	if err != nil {
+		a.log.Warn("commitment recovery: list candidates", zap.Error(err))
+	} else {
+		for _, u := range recoveryUsers {
+			if ctx.Err() != nil {
+				return
+			}
+			if _, err := a.svc.ReconcileDueCommitments(auth.WithUser(ctx, u), u, nil); err != nil {
+				a.log.Debug("commitment recovery sweep", zap.String("user", u.ID.String()), zap.Error(err))
+			}
+		}
+	}
+
+	// Mail leak scanning remains restricted to users with a connected Google account.
 	users, err := a.svc.client.User.Query().
 		Where(user.HasOauthConnectionsWith(oauthconnection.ProviderEQ("google"))).
 		Order(ent.Asc(user.FieldCreatedAt)).
@@ -96,12 +119,12 @@ func (a *AutoScanner) sweep(ctx context.Context) {
 		if ctx.Err() != nil {
 			return
 		}
-		if !a.due(ictx, u) {
-			continue
-		}
 		// Each scan runs under the owning user's context so tenancy scoping
 		// and the workspace get-or-create resolve to that user.
 		uctx := auth.WithUser(ctx, u)
+		if !a.due(ictx, u) {
+			continue
+		}
 		if _, err := a.svc.StartScan(uctx, u, a.cfg.LookbackDays); err != nil {
 			// scan_unavailable (already running, or Gmail not connected mid-flight)
 			// is expected and benign; anything else is worth a debug line.

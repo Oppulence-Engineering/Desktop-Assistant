@@ -10,6 +10,7 @@ import {
   WhisperBenchmarkProfile as WhisperBenchmarkProfileSchema,
   isCloudProvider,
   type DiarizationSettings,
+  type MeetingsSettings,
   type TranscriptionProvider,
   type VoicePrivacySettings,
   type WhisperBenchmarkProfile,
@@ -179,6 +180,8 @@ export interface TranscriptionConfigPatch {
   privacy?: Partial<VoicePrivacySettings>;
   /** RFC 017 on-device diarization settings (partial). */
   diarization?: Partial<DiarizationSettings>;
+  /** Native dual-track meeting capture settings (partial). */
+  meetings?: Partial<MeetingsSettings>;
 }
 
 /** Persist `transcription.json`, merging a partial update over the current config. */
@@ -196,6 +199,7 @@ export async function setTranscriptionConfig(
     whisper: { ...current.whisper, ...(patch.whisper ?? {}) },
     privacy: { ...current.privacy, ...(patch.privacy ?? {}) },
     diarization: { ...current.diarization, ...(patch.diarization ?? {}) },
+    meetings: { ...current.meetings, ...(patch.meetings ?? {}) },
   });
   const configPath = transcriptionConfigPath();
   await fs.mkdir(path.dirname(configPath), { recursive: true });

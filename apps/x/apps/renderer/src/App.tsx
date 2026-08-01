@@ -996,9 +996,19 @@ function App() {
   voiceRef.current = voice;
 
   const handleToggleMeetingRef = useRef<(() => void) | undefined>(undefined);
-  const meetingTranscription = useMeetingTranscription(() => {
-    handleToggleMeetingRef.current?.();
-  });
+  const meetingTranscription = useMeetingTranscription(
+    () => {
+      handleToggleMeetingRef.current?.();
+    },
+    () => {
+      // Recording continues with mic only — say so, because a transcript with
+      // nothing but "You" turns otherwise looks like the meeting was silent.
+      toast.warning("System audio unavailable — recording your microphone only.", {
+        description:
+          "Grant Screen & System Audio Recording in System Settings to capture the other side of the call.",
+      });
+    },
+  );
   // Mirror of the live transcription state for the [] -dep join handler. (ERRORS.md E18)
   const meetingStateRef = useRef(meetingTranscription.state);
   meetingStateRef.current = meetingTranscription.state;
@@ -5833,13 +5843,16 @@ function App() {
 
   const handleToggleMeeting = useCallback(async () => {
     if (meetingTranscription.state === "recording") {
-      await meetingTranscription.stop();
+      const { engine } = await meetingTranscription.stop();
       setRecordingMeetingSource(null);
       // Clear any stale pending calendar event so it can't attach to a later run. (ERRORS.md E18)
       pendingCalendarEventRef.current = undefined;
 
-      // Read the final transcript and generate meeting notes via LLM
-      const notePath = meetingNotePathRef.current;
+      // Read the final transcript and generate meeting notes via LLM.
+      // Native capture transcribes asynchronously after stop, so its note is still the
+      // empty placeholder here — summarizing it produced invented notes that the queue
+      // then overwrote. That path summarizes in the queue instead, once a transcript exists.
+      const notePath = engine === "native" ? null : meetingNotePathRef.current;
       if (notePath) {
         setMeetingSummarizing(true);
         try {

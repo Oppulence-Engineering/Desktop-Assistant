@@ -3,6 +3,7 @@ package revenue
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,6 +21,10 @@ import (
 // maxBody bounds revenue request bodies; every payload is a small envelope.
 const maxBody = 256 << 10
 
+// Canonical transcript observations repeat bounded quote evidence beside their
+// encrypted envelope, so they need a larger—but still explicit—ingestion ceiling.
+const maxObservationBody = 4 << 20
+
 // Handler serves the RFC 030 revenue API surface.
 type Handler struct {
 	svc *Service
@@ -29,6 +34,13 @@ type Handler struct {
 // NewHandler builds the revenue HTTP handler.
 func NewHandler(svc *Service, log *zap.Logger) *Handler {
 	return &Handler{svc: svc, log: log}
+}
+
+// MountPublic exposes the single-plan, token-scoped response surface. Tokens travel in
+// a header so access logs never receive them as URL path or query parameters.
+func (h *Handler) MountPublic(r chi.Router) {
+	r.Get("/v1/public/mutual-action-plan", h.GetPublicMutualActionPlan)
+	r.Post("/v1/public/mutual-action-plan/responses", h.ReceivePublicMutualActionPlanResponse)
 }
 
 // Mount registers the revenue routes on an authenticated router group.
@@ -52,6 +64,20 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Get("/{relationshipId}/changes", h.RelationshipChanges)
 		r.Get("/{relationshipId}/evidence/{evidenceId}", h.RelationshipEvidence)
 		r.Post("/{relationshipId}/corrections", h.CorrectRelationship)
+		r.Post("/{relationshipId}/conversation-corrections", h.CorrectConversationReview)
+		r.Post("/{relationshipId}/conversation-decisions", h.DecideConversationReview)
+		r.Post("/{relationshipId}/contradictions/{caseId}/resolve", h.ResolveContradiction)
+		r.Post("/{relationshipId}/commitment-recovery/run", h.RunCommitmentRecovery)
+		r.Get("/{relationshipId}/commitments/{commitmentId}/events", h.CommitmentEvents)
+		r.Post("/{relationshipId}/commitments/{commitmentId}/transitions", h.AppendCommitmentTransition)
+		r.Post("/{relationshipId}/commitment-dependencies", h.CreateCommitmentDependency)
+		r.Post("/{relationshipId}/mutual-action-plans", h.CreateMutualActionPlan)
+		r.Put("/{relationshipId}/mutual-action-plans/{planId}", h.ReviseMutualActionPlan)
+		r.Post("/{relationshipId}/mutual-action-plans/{planId}/approve", h.ApproveMutualActionPlan)
+		r.Post("/{relationshipId}/mutual-action-plans/{planId}/share", h.ShareMutualActionPlan)
+		r.Get("/{relationshipId}/conversation-policy", h.GetConversationPolicy)
+		r.Put("/{relationshipId}/conversation-policy", h.PutConversationPolicy)
+		r.Post("/{relationshipId}/conversation-deletion", h.RequestConversationDeletion)
 	})
 	r.Post("/v1/relationship-observations/batch", h.IngestRelationshipObservations)
 	r.Get("/v1/relationship-sources/status", h.RelationshipSourceStatuses)
@@ -128,6 +154,7 @@ type relationshipDTO struct {
 	LastChangedAt *time.Time `json:"lastChangedAt,omitempty"`
 	Risks         []string   `json:"risks"`
 	Milestones    []string   `json:"milestones"`
+	ResourceRefs  []string   `json:"resourceRefs"`
 }
 
 func relationshipToDTO(rel *ent.Relationship) relationshipDTO {
@@ -151,6 +178,7 @@ func relationshipToDTO(rel *ent.Relationship) relationshipDTO {
 		LastChangedAt: rel.LastChangedAt,
 		Risks:         rel.Risks,
 		Milestones:    rel.Milestones,
+		ResourceRefs:  rel.ResourceRefs,
 	}
 }
 
@@ -177,25 +205,117 @@ func participantToDTO(participant *ent.RelationshipParticipant) participantDTO {
 }
 
 type commitmentDTO struct {
-	ID            string     `json:"id"`
-	Direction     string     `json:"direction"`
-	Text          string     `json:"text"`
-	Status        string     `json:"status"`
-	DueAt         *time.Time `json:"dueAt,omitempty"`
-	Confidence    float64    `json:"confidence"`
-	UserConfirmed bool       `json:"userConfirmed"`
+	ID                         string     `json:"id"`
+	Direction                  string     `json:"direction"`
+	Text                       string     `json:"text"`
+	Status                     string     `json:"status"`
+	DueAt                      *time.Time `json:"dueAt,omitempty"`
+	Confidence                 float64    `json:"confidence"`
+	UserConfirmed              bool       `json:"userConfirmed"`
+	OwnerParticipantRef        string     `json:"ownerParticipantRef,omitempty"`
+	CounterpartyParticipantRef string     `json:"counterpartyParticipantRef,omitempty"`
+	BeneficiaryParticipantRef  string     `json:"beneficiaryParticipantRef,omitempty"`
+	SourcePhrase               string     `json:"sourcePhrase,omitempty"`
+	DuePhrase                  string     `json:"duePhrase,omitempty"`
+	DueTimezone                string     `json:"dueTimezone,omitempty"`
+	Acceptance                 string     `json:"acceptance,omitempty"`
+	Blocker                    string     `json:"blocker,omitempty"`
+	CompletedAt                *time.Time `json:"completedAt,omitempty"`
+	CurrentEventVersion        int        `json:"currentEventVersion,omitempty"`
 }
 
 func commitmentToDTO(commitment *ent.Commitment) commitmentDTO {
 	return commitmentDTO{
-		ID:            commitment.ID.String(),
-		Direction:     commitment.Direction,
-		Text:          commitment.Text,
-		Status:        commitment.Status,
-		DueAt:         commitment.DueAt,
-		Confidence:    commitment.Confidence,
-		UserConfirmed: commitment.UserConfirmed,
+		ID:                         commitment.ID.String(),
+		Direction:                  commitment.Direction,
+		Text:                       commitment.Text,
+		Status:                     commitment.Status,
+		DueAt:                      commitment.DueAt,
+		Confidence:                 commitment.Confidence,
+		UserConfirmed:              commitment.UserConfirmed,
+		OwnerParticipantRef:        commitment.OwnerParticipantRef,
+		CounterpartyParticipantRef: commitment.CounterpartyParticipantRef,
+		BeneficiaryParticipantRef:  commitment.BeneficiaryParticipantRef,
+		SourcePhrase:               commitment.SourcePhrase,
+		DuePhrase:                  commitment.DuePhrase,
+		DueTimezone:                commitment.DueTimezone,
+		Acceptance:                 commitment.Acceptance,
+		Blocker:                    commitment.Blocker,
+		CompletedAt:                commitment.CompletedAt,
+		CurrentEventVersion:        commitment.CurrentEventVersion,
 	}
+}
+
+type commitmentEventDTO struct {
+	EventID                    string    `json:"eventId"`
+	CommitmentID               string    `json:"commitmentId"`
+	SourceEventID              string    `json:"sourceEventId"`
+	Version                    int       `json:"version"`
+	Kind                       string    `json:"kind"`
+	ActorType                  string    `json:"actorType"`
+	ActorRef                   string    `json:"actorRef,omitempty"`
+	OccurredAt                 time.Time `json:"occurredAt"`
+	SourceObservationID        string    `json:"sourceObservationId,omitempty"`
+	EvidenceRefs               []string  `json:"evidenceRefs"`
+	OwnerParticipantRef        string    `json:"ownerParticipantRef,omitempty"`
+	CounterpartyParticipantRef string    `json:"counterpartyParticipantRef,omitempty"`
+	BeneficiaryParticipantRef  string    `json:"beneficiaryParticipantRef,omitempty"`
+	Action                     string    `json:"action,omitempty"`
+	DuePhrase                  string    `json:"duePhrase,omitempty"`
+	DueAt                      string    `json:"dueAt,omitempty"`
+	DueTimezone                string    `json:"dueTimezone,omitempty"`
+	Blocker                    string    `json:"blocker,omitempty"`
+	Reason                     string    `json:"reason,omitempty"`
+	SupersedesCommitmentID     string    `json:"supersedesCommitmentId,omitempty"`
+}
+
+func commitmentEventToDTO(commitmentID uuid.UUID, event *ent.CommitmentEvent) commitmentEventDTO {
+	payload := map[string]any{}
+	_ = json.Unmarshal([]byte(event.PayloadJSON), &payload)
+	stringValue := func(key string) string {
+		value, _ := payload[key].(string)
+		return value
+	}
+	return commitmentEventDTO{
+		EventID: event.ID.String(), CommitmentID: commitmentID.String(),
+		SourceEventID: event.SourceEventID, Version: event.Version,
+		Kind: event.Kind, ActorType: event.ActorType, ActorRef: event.ActorRef,
+		OccurredAt: event.OccurredAt, SourceObservationID: event.SourceObservationID,
+		EvidenceRefs:               event.EvidenceRefs,
+		OwnerParticipantRef:        stringValue("ownerParticipantRef"),
+		CounterpartyParticipantRef: stringValue("counterpartyParticipantRef"),
+		BeneficiaryParticipantRef:  stringValue("beneficiaryParticipantRef"),
+		Action:                     stringValue("action"), DuePhrase: stringValue("duePhrase"),
+		DueAt: stringValue("dueAt"), DueTimezone: stringValue("dueTimezone"),
+		Blocker: stringValue("blocker"), Reason: stringValue("reason"),
+		SupersedesCommitmentID: stringValue("supersedesCommitmentId"),
+	}
+}
+
+type commitmentDependencyDTO struct {
+	ID               string    `json:"dependencyId"`
+	RelationshipID   string    `json:"relationshipId"`
+	FromCommitmentID string    `json:"fromCommitmentId"`
+	ToCommitmentID   string    `json:"toCommitmentId"`
+	Kind             string    `json:"kind"`
+	EvidenceRefs     []string  `json:"evidenceRefs"`
+	CreatedAt        time.Time `json:"createdAt"`
+}
+
+func commitmentDependencyToDTO(relationshipID uuid.UUID, dependency *ent.CommitmentDependency) (commitmentDependencyDTO, error) {
+	from, err := dependency.Edges.FromCommitmentOrErr()
+	if err != nil {
+		return commitmentDependencyDTO{}, err
+	}
+	to, err := dependency.Edges.ToCommitmentOrErr()
+	if err != nil {
+		return commitmentDependencyDTO{}, err
+	}
+	return commitmentDependencyDTO{
+		ID: dependency.ID.String(), RelationshipID: relationshipID.String(),
+		FromCommitmentID: from.ID.String(), ToCommitmentID: to.ID.String(),
+		Kind: dependency.Kind, EvidenceRefs: dependency.EvidenceRefs, CreatedAt: dependency.CreatedAt,
+	}, nil
 }
 
 type observationDTO struct {
@@ -272,70 +392,101 @@ func relationshipToDTOWithOpen(rel *ent.Relationship) relationshipDTO {
 }
 
 type actionDTO struct {
-	ID                 string          `json:"id"`
-	RelationshipID     string          `json:"relationshipId,omitempty"`
-	ActionType         string          `json:"actionType"`
-	Channel            string          `json:"channel"`
-	Detector           string          `json:"detector"`
-	Revision           int             `json:"revision"`
-	RevisionHash       string          `json:"revisionHash"`
-	Reason             string          `json:"reason"`
-	RecipientEmail     string          `json:"recipientEmail,omitempty"`
-	ProposedSubject    string          `json:"proposedSubject,omitempty"`
-	ProposedMessage    string          `json:"proposedMessage,omitempty"`
-	SenderAccountRef   string          `json:"senderAccountRef,omitempty"`
-	PriorityScore      int             `json:"priorityScore"`
-	PriorityComponents json.RawMessage `json:"priorityComponents,omitempty"`
-	QueueStatus        string          `json:"queueStatus"`
-	PolicyStatus       string          `json:"policyStatus"`
-	ApprovalStatus     string          `json:"approvalStatus"`
-	ExecutionStatus    string          `json:"executionStatus"`
-	ExecutionOwner     string          `json:"executionOwner"`
-	ExecutionMode      string          `json:"executionMode"`
-	ApprovedRevision   int             `json:"approvedRevision,omitempty"`
-	ApprovedAt         *time.Time      `json:"approvedAt,omitempty"`
-	ProviderMessageID  string          `json:"providerMessageId,omitempty"`
-	ProviderThreadID   string          `json:"providerThreadId,omitempty"`
-	ExecutedAt         *time.Time      `json:"executedAt,omitempty"`
-	ExecutionError     string          `json:"executionError,omitempty"`
-	DismissReason      string          `json:"dismissReason,omitempty"`
-	SnoozedUntil       *time.Time      `json:"snoozedUntil,omitempty"`
-	DueAt              *time.Time      `json:"dueAt,omitempty"`
-	CreatedAt          time.Time       `json:"createdAt"`
-	UpdatedAt          time.Time       `json:"updatedAt"`
+	ID                      string              `json:"id"`
+	RelationshipID          string              `json:"relationshipId,omitempty"`
+	ActionType              string              `json:"actionType"`
+	Channel                 string              `json:"channel"`
+	Detector                string              `json:"detector"`
+	Revision                int                 `json:"revision"`
+	RevisionHash            string              `json:"revisionHash"`
+	Reason                  string              `json:"reason"`
+	RecipientEmail          string              `json:"recipientEmail,omitempty"`
+	ProposedSubject         string              `json:"proposedSubject,omitempty"`
+	ProposedMessage         string              `json:"proposedMessage,omitempty"`
+	SenderAccountRef        string              `json:"senderAccountRef,omitempty"`
+	PriorityScore           int                 `json:"priorityScore"`
+	PriorityComponents      json.RawMessage     `json:"priorityComponents,omitempty"`
+	QueueStatus             string              `json:"queueStatus"`
+	PolicyStatus            string              `json:"policyStatus"`
+	ApprovalStatus          string              `json:"approvalStatus"`
+	ExecutionStatus         string              `json:"executionStatus"`
+	ExecutionOwner          string              `json:"executionOwner"`
+	ExecutionMode           string              `json:"executionMode"`
+	ApprovedRevision        int                 `json:"approvedRevision,omitempty"`
+	ApprovedAt              *time.Time          `json:"approvedAt,omitempty"`
+	ProviderMessageID       string              `json:"providerMessageId,omitempty"`
+	ProviderThreadID        string              `json:"providerThreadId,omitempty"`
+	ExecutedAt              *time.Time          `json:"executedAt,omitempty"`
+	ExecutionError          string              `json:"executionError,omitempty"`
+	ReconciliationStatus    string              `json:"reconciliationStatus,omitempty"`
+	ReconciliationAttempts  int                 `json:"reconciliationAttempts,omitempty"`
+	ReconciliationCheckedAt *time.Time          `json:"reconciliationCheckedAt,omitempty"`
+	ReconciliationNextAt    *time.Time          `json:"reconciliationNextAt,omitempty"`
+	ReconciliationError     string              `json:"reconciliationError,omitempty"`
+	DismissReason           string              `json:"dismissReason,omitempty"`
+	SnoozedUntil            *time.Time          `json:"snoozedUntil,omitempty"`
+	DueAt                   *time.Time          `json:"dueAt,omitempty"`
+	CreatedAt               time.Time           `json:"createdAt"`
+	UpdatedAt               time.Time           `json:"updatedAt"`
+	Evidence                []actionEvidenceDTO `json:"evidence"`
+}
+
+type actionEvidenceDTO struct {
+	ID                   string    `json:"id"`
+	Source               string    `json:"source"`
+	SourceRecordID       string    `json:"sourceRecordId"`
+	Excerpt              string    `json:"excerpt,omitempty"`
+	OccurredAt           time.Time `json:"occurredAt"`
+	ExternalEvidenceRefs []string  `json:"externalEvidenceRefs"`
 }
 
 func actionToDTO(a *ent.RevenueAction) actionDTO {
 	dto := actionDTO{
-		ID:                a.ID.String(),
-		ActionType:        a.ActionType,
-		Channel:           a.Channel,
-		Detector:          a.Detector,
-		Revision:          a.Revision,
-		RevisionHash:      a.RevisionHash,
-		Reason:            a.Reason,
-		RecipientEmail:    a.RecipientEmail,
-		ProposedSubject:   a.ProposedSubject,
-		ProposedMessage:   a.ProposedMessage,
-		SenderAccountRef:  a.SenderAccountRef,
-		PriorityScore:     a.PriorityScore,
-		QueueStatus:       a.QueueStatus,
-		PolicyStatus:      a.PolicyStatus,
-		ApprovalStatus:    a.ApprovalStatus,
-		ExecutionStatus:   a.ExecutionStatus,
-		ExecutionOwner:    a.ExecutionOwner,
-		ExecutionMode:     a.ExecutionMode,
-		ApprovedRevision:  a.ApprovedRevision,
-		ApprovedAt:        a.ApprovedAt,
-		ProviderMessageID: a.ProviderMessageID,
-		ProviderThreadID:  a.ProviderThreadID,
-		ExecutedAt:        a.ExecutedAt,
-		ExecutionError:    a.ExecutionError,
-		DismissReason:     a.DismissReason,
-		SnoozedUntil:      a.SnoozedUntil,
-		DueAt:             a.DueAt,
-		CreatedAt:         a.CreatedAt,
-		UpdatedAt:         a.UpdatedAt,
+		ID:                      a.ID.String(),
+		ActionType:              a.ActionType,
+		Channel:                 a.Channel,
+		Detector:                a.Detector,
+		Revision:                a.Revision,
+		RevisionHash:            a.RevisionHash,
+		Reason:                  a.Reason,
+		RecipientEmail:          a.RecipientEmail,
+		ProposedSubject:         a.ProposedSubject,
+		ProposedMessage:         a.ProposedMessage,
+		SenderAccountRef:        a.SenderAccountRef,
+		PriorityScore:           a.PriorityScore,
+		QueueStatus:             a.QueueStatus,
+		PolicyStatus:            a.PolicyStatus,
+		ApprovalStatus:          a.ApprovalStatus,
+		ExecutionStatus:         a.ExecutionStatus,
+		ExecutionOwner:          a.ExecutionOwner,
+		ExecutionMode:           a.ExecutionMode,
+		ApprovedRevision:        a.ApprovedRevision,
+		ApprovedAt:              a.ApprovedAt,
+		ProviderMessageID:       a.ProviderMessageID,
+		ProviderThreadID:        a.ProviderThreadID,
+		ExecutedAt:              a.ExecutedAt,
+		ExecutionError:          a.ExecutionError,
+		ReconciliationStatus:    a.ReconciliationStatus,
+		ReconciliationAttempts:  a.ReconciliationAttempts,
+		ReconciliationCheckedAt: a.ReconciliationCheckedAt,
+		ReconciliationNextAt:    a.ReconciliationNextAt,
+		ReconciliationError:     a.ReconciliationError,
+		DismissReason:           a.DismissReason,
+		SnoozedUntil:            a.SnoozedUntil,
+		DueAt:                   a.DueAt,
+		CreatedAt:               a.CreatedAt,
+		UpdatedAt:               a.UpdatedAt,
+		Evidence:                []actionEvidenceDTO{},
+	}
+	if evidences, err := a.Edges.EvidencesOrErr(); err == nil {
+		for _, evidence := range evidences {
+			dto.Evidence = append(dto.Evidence, actionEvidenceDTO{
+				ID: evidence.ID.String(), Source: evidence.Source,
+				SourceRecordID: evidence.SourceRecordID, Excerpt: evidence.Excerpt,
+				OccurredAt:           evidence.OccurredAt,
+				ExternalEvidenceRefs: evidence.ExternalEvidenceRefs,
+			})
+		}
 	}
 	if a.PriorityComponentsJSON != "" {
 		dto.PriorityComponents = json.RawMessage(a.PriorityComponentsJSON)
@@ -734,11 +885,12 @@ func (h *Handler) CreateRelationship(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Kind          string `json:"kind"`
-		DisplayName   string `json:"displayName"`
-		PrimaryEmail  string `json:"primaryEmail"`
-		AccountDomain string `json:"accountDomain"`
-		Summary       string `json:"summary"`
+		Kind          string   `json:"kind"`
+		DisplayName   string   `json:"displayName"`
+		PrimaryEmail  string   `json:"primaryEmail"`
+		AccountDomain string   `json:"accountDomain"`
+		Summary       string   `json:"summary"`
+		ResourceRefs  []string `json:"resourceRefs"`
 	}
 	if !httpx.DecodeJSON(w, r, maxBody, &body) {
 		return
@@ -749,6 +901,7 @@ func (h *Handler) CreateRelationship(w http.ResponseWriter, r *http.Request) {
 		PrimaryEmail:  body.PrimaryEmail,
 		AccountDomain: body.AccountDomain,
 		Summary:       body.Summary,
+		ResourceRefs:  body.ResourceRefs,
 	})
 	if err != nil {
 		h.writeServiceError(w, err)
@@ -767,6 +920,11 @@ func (h *Handler) GetRelationship(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rel, err := h.svc.GetRelationship(r.Context(), id)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	intelligence, err := h.svc.RelationshipIntelligenceFor(r.Context(), rel)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
@@ -793,13 +951,477 @@ func (h *Handler) GetRelationship(w http.ResponseWriter, r *http.Request) {
 			commitments = append(commitments, commitmentToDTO(commitment))
 		}
 	}
+	dependencies := make([]commitmentDependencyDTO, 0)
+	if list, err := h.svc.CommitmentDependencies(r.Context(), id); err == nil {
+		for _, dependency := range list {
+			dto, dtoErr := commitmentDependencyToDTO(id, dependency)
+			if dtoErr != nil {
+				h.writeServiceError(w, dtoErr)
+				return
+			}
+			dependencies = append(dependencies, dto)
+		}
+	} else {
+		h.writeServiceError(w, err)
+		return
+	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{
-		"relationship":    dto,
-		"actions":         actions,
-		"recommendations": actions,
-		"participants":    participants,
-		"commitments":     commitments,
+		"relationship":           dto,
+		"actions":                actions,
+		"recommendations":        actions,
+		"participants":           participants,
+		"commitments":            commitments,
+		"commitmentDependencies": dependencies,
+		"intelligence":           intelligence,
 	})
+}
+
+// CreateCommitmentDependency creates a cycle-checked evidence-backed graph edge.
+func (h *Handler) CreateCommitmentDependency(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	relationshipID, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	var body struct {
+		FromCommitmentID string   `json:"fromCommitmentId"`
+		ToCommitmentID   string   `json:"toCommitmentId"`
+		Kind             string   `json:"kind"`
+		EvidenceRefs     []string `json:"evidenceRefs"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	fromID, err := uuid.Parse(body.FromCommitmentID)
+	if err != nil {
+		h.writeServiceError(w, fmt.Errorf("%w: invalid from commitment id", ErrInvalidInput))
+		return
+	}
+	toID, err := uuid.Parse(body.ToCommitmentID)
+	if err != nil {
+		h.writeServiceError(w, fmt.Errorf("%w: invalid to commitment id", ErrInvalidInput))
+		return
+	}
+	dependency, err := h.svc.CreateCommitmentDependency(r.Context(), u, relationshipID, CommitmentDependencyInput{
+		FromCommitmentID: fromID, ToCommitmentID: toID, Kind: body.Kind, EvidenceRefs: body.EvidenceRefs,
+	})
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	dto, err := commitmentDependencyToDTO(relationshipID, dependency)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, dto)
+}
+
+// CorrectConversationReview resolves a low-confidence word, speaker, entity, or
+// material claim. State-bearing corrections become top-precedence assertions;
+// attribution-only corrections remain immutable meeting-scoped evidence.
+func (h *Handler) CorrectConversationReview(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	var body struct {
+		ReviewItemID   string `json:"reviewItemId"`
+		CorrectedValue string `json:"correctedValue"`
+		Reason         string `json:"reason"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	rel, intelligence, err := h.svc.CorrectConversationReview(r.Context(), u, id, ConversationReviewCorrectionInput{
+		ReviewItemID:   body.ReviewItemID,
+		CorrectedValue: body.CorrectedValue, Reason: body.Reason,
+	})
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, map[string]any{
+		"relationship": relationshipToDTO(rel), "intelligence": intelligence,
+	})
+}
+
+// DecideConversationReview approves, corrects, rejects, or defers one semantic candidate.
+func (h *Handler) DecideConversationReview(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	var body struct {
+		ReviewItemID   string `json:"reviewItemId"`
+		Kind           string `json:"kind"`
+		CorrectedValue string `json:"correctedValue"`
+		Reason         string `json:"reason"`
+		DeferUntil     string `json:"deferUntil"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	var deferUntil time.Time
+	var err error
+	if strings.TrimSpace(body.DeferUntil) != "" {
+		deferUntil, err = time.Parse(time.RFC3339, body.DeferUntil)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid deferUntil", ErrInvalidInput))
+			return
+		}
+	}
+	rel, intelligence, err := h.svc.DecideConversationReview(
+		r.Context(), u, id, ConversationReviewDecisionInput{
+			ReviewItemID: body.ReviewItemID, Kind: body.Kind,
+			CorrectedValue: body.CorrectedValue, Reason: body.Reason, DeferUntil: deferUntil,
+		},
+	)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, map[string]any{
+		"relationship": relationshipToDTO(rel), "intelligence": intelligence,
+	})
+}
+
+// ResolveContradiction records a user-selected authoritative contradiction side.
+func (h *Handler) ResolveContradiction(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	var body struct {
+		SelectedAssertionID string `json:"selectedAssertionId"`
+		Reason              string `json:"reason"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	rel, intelligence, err := h.svc.ResolveContradiction(r.Context(), u, id, ContradictionResolutionInput{
+		CaseID: chi.URLParam(r, "caseId"), SelectedAssertionID: body.SelectedAssertionID, Reason: body.Reason,
+	})
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, map[string]any{
+		"relationship": relationshipToDTO(rel), "intelligence": intelligence,
+	})
+}
+
+// RunCommitmentRecovery reconciles due commitments against bounded fresh evidence.
+func (h *Handler) RunCommitmentRecovery(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	evaluations, err := h.svc.ReconcileDueCommitments(r.Context(), u, &id)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, map[string]any{"evaluations": evaluations})
+}
+
+// AppendCommitmentTransition appends one validated idempotent event.
+func (h *Handler) AppendCommitmentTransition(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	relationshipID, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	commitmentID, ok := pathUUID(w, r, "commitmentId")
+	if !ok {
+		return
+	}
+	var body struct {
+		Kind           string   `json:"kind"`
+		IdempotencyKey string   `json:"idempotencyKey"`
+		Reason         string   `json:"reason"`
+		DueAt          string   `json:"dueAt"`
+		Action         string   `json:"action"`
+		Blocker        string   `json:"blocker"`
+		EvidenceRefs   []string `json:"evidenceRefs"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	var dueAt time.Time
+	var err error
+	if strings.TrimSpace(body.DueAt) != "" {
+		dueAt, err = time.Parse(time.RFC3339, body.DueAt)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid dueAt", ErrInvalidInput))
+			return
+		}
+	}
+	row, err := h.svc.AppendCommitmentTransition(r.Context(), u, relationshipID, commitmentID, CommitmentTransitionInput{
+		Kind: body.Kind, IdempotencyKey: body.IdempotencyKey, Reason: body.Reason,
+		DueAt: dueAt, Action: body.Action, Blocker: body.Blocker, EvidenceRefs: body.EvidenceRefs,
+	})
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, commitmentToDTO(row))
+}
+
+// CommitmentEvents returns the replayable event history for one commitment.
+func (h *Handler) CommitmentEvents(w http.ResponseWriter, r *http.Request) {
+	if _, ok := h.viewer(w, r); !ok {
+		return
+	}
+	relationshipID, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	commitmentID, ok := pathUUID(w, r, "commitmentId")
+	if !ok {
+		return
+	}
+	events, err := h.svc.CommitmentEventHistory(r.Context(), relationshipID, commitmentID)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	result := make([]commitmentEventDTO, 0, len(events))
+	for _, event := range events {
+		result = append(result, commitmentEventToDTO(commitmentID, event))
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"events": result})
+}
+
+// CreateMutualActionPlan creates a plan draft from accepted commitments.
+func (h *Handler) CreateMutualActionPlan(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	relationshipID, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	var body struct {
+		CommitmentIDs []string `json:"commitmentIds"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	ids := make([]uuid.UUID, 0, len(body.CommitmentIDs))
+	for _, raw := range body.CommitmentIDs {
+		id, err := uuid.Parse(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid commitment id", ErrInvalidInput))
+			return
+		}
+		ids = append(ids, id)
+	}
+	plan, err := h.svc.CreateMutualActionPlan(r.Context(), u, relationshipID, ids)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, plan)
+}
+
+// ReviseMutualActionPlan appends a validated replacement revision.
+func (h *Handler) ReviseMutualActionPlan(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	relationshipID, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	var body struct {
+		Items []MutualActionPlanItem `json:"items"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	plan, err := h.svc.ReviseMutualActionPlan(r.Context(), u, relationshipID, chi.URLParam(r, "planId"), body.Items)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, plan)
+}
+
+// ApproveMutualActionPlan approves the exact current revision.
+func (h *Handler) ApproveMutualActionPlan(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	relationshipID, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	plan, err := h.svc.ApproveMutualActionPlan(r.Context(), u, relationshipID, chi.URLParam(r, "planId"))
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, plan)
+}
+
+// ShareMutualActionPlan creates a governed token and queued draft action.
+func (h *Handler) ShareMutualActionPlan(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	relationshipID, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	plan, token, err := h.svc.ShareMutualActionPlan(r.Context(), u, relationshipID, chi.URLParam(r, "planId"))
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, map[string]any{"plan": plan, "responseToken": token})
+}
+
+func planToken(r *http.Request) string {
+	return strings.TrimSpace(r.Header.Get("X-Oppulence-Plan-Token"))
+}
+
+// GetPublicMutualActionPlan serves a redacted token-scoped plan.
+func (h *Handler) GetPublicMutualActionPlan(w http.ResponseWriter, r *http.Request) {
+	plan, err := h.svc.PublicMutualActionPlan(r.Context(), planToken(r))
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"plan": plan})
+}
+
+// ReceivePublicMutualActionPlanResponse records an external proposal for review.
+func (h *Handler) ReceivePublicMutualActionPlanResponse(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		ResponseID    string `json:"responseId"`
+		Kind          string `json:"kind"`
+		ItemID        string `json:"itemId"`
+		ProposedValue string `json:"proposedValue"`
+		Comment       string `json:"comment"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	responseID, err := h.svc.ReceiveMutualActionPlanResponse(r.Context(), planToken(r), PublicMutualActionPlanResponse{
+		ResponseID: body.ResponseID, Kind: body.Kind, ItemID: body.ItemID,
+		ProposedValue: body.ProposedValue, Comment: body.Comment,
+	})
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	httpx.WriteJSON(w, http.StatusCreated, map[string]any{"responseId": responseID, "recorded": true})
+}
+
+// GetConversationPolicy returns applicable layers and the effective policy.
+func (h *Handler) GetConversationPolicy(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	relationshipID, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	rel, err := h.svc.GetRelationship(r.Context(), relationshipID)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	ws, err := h.svc.CurrentWorkspace(r.Context(), u)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	layers, err := h.svc.conversationPolicyLayersFor(r.Context(), h.svc.client, ws, rel)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	effective := resolveConversationPolicyLayers(layers, h.svc.now())
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"layers": layers, "effectivePolicy": effective})
+}
+
+// PutConversationPolicy appends validated policy-layer versions.
+func (h *Handler) PutConversationPolicy(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	relationshipID, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	var body struct {
+		Layers []ConversationPolicyLayer `json:"layers"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	effective, err := h.svc.SaveConversationPolicyLayers(r.Context(), u, relationshipID, body.Layers)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, map[string]any{"effectivePolicy": effective})
+}
+
+// RequestConversationDeletion executes a legal-hold-aware deletion request.
+func (h *Handler) RequestConversationDeletion(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	relationshipID, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	var body struct {
+		RequestID string `json:"requestId"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	receipt, err := h.svc.RequestConversationDeletion(r.Context(), u, relationshipID, body.RequestID)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusAccepted, receipt)
 }
 
 // IngestRelationshipObservations is the shared adapter/desktop append-only
@@ -815,6 +1437,7 @@ func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.
 			DisplayName     string                         `json:"displayName"`
 			PrimaryEmail    string                         `json:"primaryEmail"`
 			AccountDomain   string                         `json:"accountDomain"`
+			ResourceRefs    []string                       `json:"resourceRefs"`
 			Source          string                         `json:"source"`
 			SourceAccountID string                         `json:"sourceAccountId"`
 			ExternalID      string                         `json:"externalId"`
@@ -829,7 +1452,7 @@ func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.
 			Assertions      []RelationshipAssertionInput   `json:"assertions"`
 		} `json:"observations"`
 	}
-	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+	if !httpx.DecodeJSON(w, r, maxObservationBody, &body) {
 		return
 	}
 	inputs := make([]RelationshipObservationInput, 0, len(body.Observations))
@@ -838,6 +1461,7 @@ func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.
 			DisplayName:     observation.DisplayName,
 			PrimaryEmail:    observation.PrimaryEmail,
 			AccountDomain:   observation.AccountDomain,
+			ResourceRefs:    observation.ResourceRefs,
 			Source:          observation.Source,
 			SourceAccountID: observation.SourceAccountID,
 			ExternalID:      observation.ExternalID,
@@ -881,6 +1505,7 @@ func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.
 	httpx.WriteJSON(w, http.StatusCreated, map[string]any{"results": out})
 }
 
+// RelationshipTimeline returns the relationship's immutable observation timeline.
 func (h *Handler) RelationshipTimeline(w http.ResponseWriter, r *http.Request) {
 	if _, ok := h.viewer(w, r); !ok {
 		return
@@ -907,6 +1532,7 @@ func (h *Handler) RelationshipTimeline(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"observations": out})
 }
 
+// RelationshipChanges returns projected state changes for a relationship.
 func (h *Handler) RelationshipChanges(w http.ResponseWriter, r *http.Request) {
 	if _, ok := h.viewer(w, r); !ok {
 		return
@@ -927,6 +1553,7 @@ func (h *Handler) RelationshipChanges(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"snapshots": out})
 }
 
+// RelationshipEvidence returns a single evidence record and its source references.
 func (h *Handler) RelationshipEvidence(w http.ResponseWriter, r *http.Request) {
 	if _, ok := h.viewer(w, r); !ok {
 		return
@@ -958,6 +1585,7 @@ func (h *Handler) RelationshipEvidence(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// CorrectRelationship appends a user correction and reprojects relationship state.
 func (h *Handler) CorrectRelationship(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -989,6 +1617,7 @@ func (h *Handler) CorrectRelationship(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusCreated, relationshipToDTO(rel))
 }
 
+// RelationshipSourceStatuses returns ingestion status for configured relationship sources.
 func (h *Handler) RelationshipSourceStatuses(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -1331,6 +1960,7 @@ func (h *Handler) ApproveRecommendation(w http.ResponseWriter, r *http.Request) 
 	httpx.WriteJSON(w, http.StatusOK, actionToDTO(action))
 }
 
+// RejectRecommendation records rejection of a governed recommendation revision.
 func (h *Handler) RejectRecommendation(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {

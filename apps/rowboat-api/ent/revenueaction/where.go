@@ -211,6 +211,31 @@ func ExecutionError(v string) predicate.RevenueAction {
 	return predicate.RevenueAction(sql.FieldEQ(FieldExecutionError, v))
 }
 
+// ReconciliationStatus applies equality check predicate on the "reconciliation_status" field. It's identical to ReconciliationStatusEQ.
+func ReconciliationStatus(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldEQ(FieldReconciliationStatus, v))
+}
+
+// ReconciliationAttempts applies equality check predicate on the "reconciliation_attempts" field. It's identical to ReconciliationAttemptsEQ.
+func ReconciliationAttempts(v int) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldEQ(FieldReconciliationAttempts, v))
+}
+
+// ReconciliationCheckedAt applies equality check predicate on the "reconciliation_checked_at" field. It's identical to ReconciliationCheckedAtEQ.
+func ReconciliationCheckedAt(v time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldEQ(FieldReconciliationCheckedAt, v))
+}
+
+// ReconciliationNextAt applies equality check predicate on the "reconciliation_next_at" field. It's identical to ReconciliationNextAtEQ.
+func ReconciliationNextAt(v time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldEQ(FieldReconciliationNextAt, v))
+}
+
+// ReconciliationError applies equality check predicate on the "reconciliation_error" field. It's identical to ReconciliationErrorEQ.
+func ReconciliationError(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldEQ(FieldReconciliationError, v))
+}
+
 // DismissReason applies equality check predicate on the "dismiss_reason" field. It's identical to DismissReasonEQ.
 func DismissReason(v string) predicate.RevenueAction {
 	return predicate.RevenueAction(sql.FieldEQ(FieldDismissReason, v))
@@ -2144,6 +2169,296 @@ func ExecutionErrorEqualFold(v string) predicate.RevenueAction {
 // ExecutionErrorContainsFold applies the ContainsFold predicate on the "execution_error" field.
 func ExecutionErrorContainsFold(v string) predicate.RevenueAction {
 	return predicate.RevenueAction(sql.FieldContainsFold(FieldExecutionError, v))
+}
+
+// ReconciliationStatusEQ applies the EQ predicate on the "reconciliation_status" field.
+func ReconciliationStatusEQ(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldEQ(FieldReconciliationStatus, v))
+}
+
+// ReconciliationStatusNEQ applies the NEQ predicate on the "reconciliation_status" field.
+func ReconciliationStatusNEQ(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldNEQ(FieldReconciliationStatus, v))
+}
+
+// ReconciliationStatusIn applies the In predicate on the "reconciliation_status" field.
+func ReconciliationStatusIn(vs ...string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldIn(FieldReconciliationStatus, vs...))
+}
+
+// ReconciliationStatusNotIn applies the NotIn predicate on the "reconciliation_status" field.
+func ReconciliationStatusNotIn(vs ...string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldNotIn(FieldReconciliationStatus, vs...))
+}
+
+// ReconciliationStatusGT applies the GT predicate on the "reconciliation_status" field.
+func ReconciliationStatusGT(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldGT(FieldReconciliationStatus, v))
+}
+
+// ReconciliationStatusGTE applies the GTE predicate on the "reconciliation_status" field.
+func ReconciliationStatusGTE(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldGTE(FieldReconciliationStatus, v))
+}
+
+// ReconciliationStatusLT applies the LT predicate on the "reconciliation_status" field.
+func ReconciliationStatusLT(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldLT(FieldReconciliationStatus, v))
+}
+
+// ReconciliationStatusLTE applies the LTE predicate on the "reconciliation_status" field.
+func ReconciliationStatusLTE(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldLTE(FieldReconciliationStatus, v))
+}
+
+// ReconciliationStatusContains applies the Contains predicate on the "reconciliation_status" field.
+func ReconciliationStatusContains(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldContains(FieldReconciliationStatus, v))
+}
+
+// ReconciliationStatusHasPrefix applies the HasPrefix predicate on the "reconciliation_status" field.
+func ReconciliationStatusHasPrefix(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldHasPrefix(FieldReconciliationStatus, v))
+}
+
+// ReconciliationStatusHasSuffix applies the HasSuffix predicate on the "reconciliation_status" field.
+func ReconciliationStatusHasSuffix(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldHasSuffix(FieldReconciliationStatus, v))
+}
+
+// ReconciliationStatusIsNil applies the IsNil predicate on the "reconciliation_status" field.
+func ReconciliationStatusIsNil() predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldIsNull(FieldReconciliationStatus))
+}
+
+// ReconciliationStatusNotNil applies the NotNil predicate on the "reconciliation_status" field.
+func ReconciliationStatusNotNil() predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldNotNull(FieldReconciliationStatus))
+}
+
+// ReconciliationStatusEqualFold applies the EqualFold predicate on the "reconciliation_status" field.
+func ReconciliationStatusEqualFold(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldEqualFold(FieldReconciliationStatus, v))
+}
+
+// ReconciliationStatusContainsFold applies the ContainsFold predicate on the "reconciliation_status" field.
+func ReconciliationStatusContainsFold(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldContainsFold(FieldReconciliationStatus, v))
+}
+
+// ReconciliationAttemptsEQ applies the EQ predicate on the "reconciliation_attempts" field.
+func ReconciliationAttemptsEQ(v int) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldEQ(FieldReconciliationAttempts, v))
+}
+
+// ReconciliationAttemptsNEQ applies the NEQ predicate on the "reconciliation_attempts" field.
+func ReconciliationAttemptsNEQ(v int) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldNEQ(FieldReconciliationAttempts, v))
+}
+
+// ReconciliationAttemptsIn applies the In predicate on the "reconciliation_attempts" field.
+func ReconciliationAttemptsIn(vs ...int) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldIn(FieldReconciliationAttempts, vs...))
+}
+
+// ReconciliationAttemptsNotIn applies the NotIn predicate on the "reconciliation_attempts" field.
+func ReconciliationAttemptsNotIn(vs ...int) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldNotIn(FieldReconciliationAttempts, vs...))
+}
+
+// ReconciliationAttemptsGT applies the GT predicate on the "reconciliation_attempts" field.
+func ReconciliationAttemptsGT(v int) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldGT(FieldReconciliationAttempts, v))
+}
+
+// ReconciliationAttemptsGTE applies the GTE predicate on the "reconciliation_attempts" field.
+func ReconciliationAttemptsGTE(v int) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldGTE(FieldReconciliationAttempts, v))
+}
+
+// ReconciliationAttemptsLT applies the LT predicate on the "reconciliation_attempts" field.
+func ReconciliationAttemptsLT(v int) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldLT(FieldReconciliationAttempts, v))
+}
+
+// ReconciliationAttemptsLTE applies the LTE predicate on the "reconciliation_attempts" field.
+func ReconciliationAttemptsLTE(v int) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldLTE(FieldReconciliationAttempts, v))
+}
+
+// ReconciliationCheckedAtEQ applies the EQ predicate on the "reconciliation_checked_at" field.
+func ReconciliationCheckedAtEQ(v time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldEQ(FieldReconciliationCheckedAt, v))
+}
+
+// ReconciliationCheckedAtNEQ applies the NEQ predicate on the "reconciliation_checked_at" field.
+func ReconciliationCheckedAtNEQ(v time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldNEQ(FieldReconciliationCheckedAt, v))
+}
+
+// ReconciliationCheckedAtIn applies the In predicate on the "reconciliation_checked_at" field.
+func ReconciliationCheckedAtIn(vs ...time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldIn(FieldReconciliationCheckedAt, vs...))
+}
+
+// ReconciliationCheckedAtNotIn applies the NotIn predicate on the "reconciliation_checked_at" field.
+func ReconciliationCheckedAtNotIn(vs ...time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldNotIn(FieldReconciliationCheckedAt, vs...))
+}
+
+// ReconciliationCheckedAtGT applies the GT predicate on the "reconciliation_checked_at" field.
+func ReconciliationCheckedAtGT(v time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldGT(FieldReconciliationCheckedAt, v))
+}
+
+// ReconciliationCheckedAtGTE applies the GTE predicate on the "reconciliation_checked_at" field.
+func ReconciliationCheckedAtGTE(v time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldGTE(FieldReconciliationCheckedAt, v))
+}
+
+// ReconciliationCheckedAtLT applies the LT predicate on the "reconciliation_checked_at" field.
+func ReconciliationCheckedAtLT(v time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldLT(FieldReconciliationCheckedAt, v))
+}
+
+// ReconciliationCheckedAtLTE applies the LTE predicate on the "reconciliation_checked_at" field.
+func ReconciliationCheckedAtLTE(v time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldLTE(FieldReconciliationCheckedAt, v))
+}
+
+// ReconciliationCheckedAtIsNil applies the IsNil predicate on the "reconciliation_checked_at" field.
+func ReconciliationCheckedAtIsNil() predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldIsNull(FieldReconciliationCheckedAt))
+}
+
+// ReconciliationCheckedAtNotNil applies the NotNil predicate on the "reconciliation_checked_at" field.
+func ReconciliationCheckedAtNotNil() predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldNotNull(FieldReconciliationCheckedAt))
+}
+
+// ReconciliationNextAtEQ applies the EQ predicate on the "reconciliation_next_at" field.
+func ReconciliationNextAtEQ(v time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldEQ(FieldReconciliationNextAt, v))
+}
+
+// ReconciliationNextAtNEQ applies the NEQ predicate on the "reconciliation_next_at" field.
+func ReconciliationNextAtNEQ(v time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldNEQ(FieldReconciliationNextAt, v))
+}
+
+// ReconciliationNextAtIn applies the In predicate on the "reconciliation_next_at" field.
+func ReconciliationNextAtIn(vs ...time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldIn(FieldReconciliationNextAt, vs...))
+}
+
+// ReconciliationNextAtNotIn applies the NotIn predicate on the "reconciliation_next_at" field.
+func ReconciliationNextAtNotIn(vs ...time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldNotIn(FieldReconciliationNextAt, vs...))
+}
+
+// ReconciliationNextAtGT applies the GT predicate on the "reconciliation_next_at" field.
+func ReconciliationNextAtGT(v time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldGT(FieldReconciliationNextAt, v))
+}
+
+// ReconciliationNextAtGTE applies the GTE predicate on the "reconciliation_next_at" field.
+func ReconciliationNextAtGTE(v time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldGTE(FieldReconciliationNextAt, v))
+}
+
+// ReconciliationNextAtLT applies the LT predicate on the "reconciliation_next_at" field.
+func ReconciliationNextAtLT(v time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldLT(FieldReconciliationNextAt, v))
+}
+
+// ReconciliationNextAtLTE applies the LTE predicate on the "reconciliation_next_at" field.
+func ReconciliationNextAtLTE(v time.Time) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldLTE(FieldReconciliationNextAt, v))
+}
+
+// ReconciliationNextAtIsNil applies the IsNil predicate on the "reconciliation_next_at" field.
+func ReconciliationNextAtIsNil() predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldIsNull(FieldReconciliationNextAt))
+}
+
+// ReconciliationNextAtNotNil applies the NotNil predicate on the "reconciliation_next_at" field.
+func ReconciliationNextAtNotNil() predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldNotNull(FieldReconciliationNextAt))
+}
+
+// ReconciliationErrorEQ applies the EQ predicate on the "reconciliation_error" field.
+func ReconciliationErrorEQ(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldEQ(FieldReconciliationError, v))
+}
+
+// ReconciliationErrorNEQ applies the NEQ predicate on the "reconciliation_error" field.
+func ReconciliationErrorNEQ(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldNEQ(FieldReconciliationError, v))
+}
+
+// ReconciliationErrorIn applies the In predicate on the "reconciliation_error" field.
+func ReconciliationErrorIn(vs ...string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldIn(FieldReconciliationError, vs...))
+}
+
+// ReconciliationErrorNotIn applies the NotIn predicate on the "reconciliation_error" field.
+func ReconciliationErrorNotIn(vs ...string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldNotIn(FieldReconciliationError, vs...))
+}
+
+// ReconciliationErrorGT applies the GT predicate on the "reconciliation_error" field.
+func ReconciliationErrorGT(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldGT(FieldReconciliationError, v))
+}
+
+// ReconciliationErrorGTE applies the GTE predicate on the "reconciliation_error" field.
+func ReconciliationErrorGTE(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldGTE(FieldReconciliationError, v))
+}
+
+// ReconciliationErrorLT applies the LT predicate on the "reconciliation_error" field.
+func ReconciliationErrorLT(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldLT(FieldReconciliationError, v))
+}
+
+// ReconciliationErrorLTE applies the LTE predicate on the "reconciliation_error" field.
+func ReconciliationErrorLTE(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldLTE(FieldReconciliationError, v))
+}
+
+// ReconciliationErrorContains applies the Contains predicate on the "reconciliation_error" field.
+func ReconciliationErrorContains(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldContains(FieldReconciliationError, v))
+}
+
+// ReconciliationErrorHasPrefix applies the HasPrefix predicate on the "reconciliation_error" field.
+func ReconciliationErrorHasPrefix(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldHasPrefix(FieldReconciliationError, v))
+}
+
+// ReconciliationErrorHasSuffix applies the HasSuffix predicate on the "reconciliation_error" field.
+func ReconciliationErrorHasSuffix(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldHasSuffix(FieldReconciliationError, v))
+}
+
+// ReconciliationErrorIsNil applies the IsNil predicate on the "reconciliation_error" field.
+func ReconciliationErrorIsNil() predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldIsNull(FieldReconciliationError))
+}
+
+// ReconciliationErrorNotNil applies the NotNil predicate on the "reconciliation_error" field.
+func ReconciliationErrorNotNil() predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldNotNull(FieldReconciliationError))
+}
+
+// ReconciliationErrorEqualFold applies the EqualFold predicate on the "reconciliation_error" field.
+func ReconciliationErrorEqualFold(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldEqualFold(FieldReconciliationError, v))
+}
+
+// ReconciliationErrorContainsFold applies the ContainsFold predicate on the "reconciliation_error" field.
+func ReconciliationErrorContainsFold(v string) predicate.RevenueAction {
+	return predicate.RevenueAction(sql.FieldContainsFold(FieldReconciliationError, v))
 }
 
 // DismissReasonEQ applies the EQ predicate on the "dismiss_reason" field.

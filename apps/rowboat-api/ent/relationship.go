@@ -83,6 +83,12 @@ type RelationshipEdges struct {
 	User *User `json:"user,omitempty"`
 	// Commitments holds the value of the commitments edge.
 	Commitments []*Commitment `json:"commitments,omitempty"`
+	// CommitmentEvents holds the value of the commitment_events edge.
+	CommitmentEvents []*CommitmentEvent `json:"commitment_events,omitempty"`
+	// CommitmentDependencies holds the value of the commitment_dependencies edge.
+	CommitmentDependencies []*CommitmentDependency `json:"commitment_dependencies,omitempty"`
+	// ConversationIntelligenceArtifacts holds the value of the conversation_intelligence_artifacts edge.
+	ConversationIntelligenceArtifacts []*ConversationIntelligenceArtifact `json:"conversation_intelligence_artifacts,omitempty"`
 	// Actions holds the value of the actions edge.
 	Actions []*RevenueAction `json:"actions,omitempty"`
 	// Evidences holds the value of the evidences edge.
@@ -91,6 +97,8 @@ type RelationshipEdges struct {
 	MailThreads []*MailThread `json:"mail_threads,omitempty"`
 	// Participants holds the value of the participants edge.
 	Participants []*RelationshipParticipant `json:"participants,omitempty"`
+	// Identities holds the value of the identities edge.
+	Identities []*RelationshipIdentity `json:"identities,omitempty"`
 	// Observations holds the value of the observations edge.
 	Observations []*RelationshipObservation `json:"observations,omitempty"`
 	// Assertions holds the value of the assertions edge.
@@ -99,18 +107,22 @@ type RelationshipEdges struct {
 	Snapshots []*RelationshipStateSnapshot `json:"snapshots,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [10]bool
+	loadedTypes [14]bool
 	// totalCount holds the count of the edges above.
-	totalCount [10]map[string]int
+	totalCount [14]map[string]int
 
-	namedCommitments  map[string][]*Commitment
-	namedActions      map[string][]*RevenueAction
-	namedEvidences    map[string][]*RevenueEvidence
-	namedMailThreads  map[string][]*MailThread
-	namedParticipants map[string][]*RelationshipParticipant
-	namedObservations map[string][]*RelationshipObservation
-	namedAssertions   map[string][]*RelationshipAssertion
-	namedSnapshots    map[string][]*RelationshipStateSnapshot
+	namedCommitments                       map[string][]*Commitment
+	namedCommitmentEvents                  map[string][]*CommitmentEvent
+	namedCommitmentDependencies            map[string][]*CommitmentDependency
+	namedConversationIntelligenceArtifacts map[string][]*ConversationIntelligenceArtifact
+	namedActions                           map[string][]*RevenueAction
+	namedEvidences                         map[string][]*RevenueEvidence
+	namedMailThreads                       map[string][]*MailThread
+	namedParticipants                      map[string][]*RelationshipParticipant
+	namedIdentities                        map[string][]*RelationshipIdentity
+	namedObservations                      map[string][]*RelationshipObservation
+	namedAssertions                        map[string][]*RelationshipAssertion
+	namedSnapshots                         map[string][]*RelationshipStateSnapshot
 }
 
 // WorkspaceOrErr returns the Workspace value or an error if the edge
@@ -144,10 +156,37 @@ func (e RelationshipEdges) CommitmentsOrErr() ([]*Commitment, error) {
 	return nil, &NotLoadedError{edge: "commitments"}
 }
 
+// CommitmentEventsOrErr returns the CommitmentEvents value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) CommitmentEventsOrErr() ([]*CommitmentEvent, error) {
+	if e.loadedTypes[3] {
+		return e.CommitmentEvents, nil
+	}
+	return nil, &NotLoadedError{edge: "commitment_events"}
+}
+
+// CommitmentDependenciesOrErr returns the CommitmentDependencies value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) CommitmentDependenciesOrErr() ([]*CommitmentDependency, error) {
+	if e.loadedTypes[4] {
+		return e.CommitmentDependencies, nil
+	}
+	return nil, &NotLoadedError{edge: "commitment_dependencies"}
+}
+
+// ConversationIntelligenceArtifactsOrErr returns the ConversationIntelligenceArtifacts value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) ConversationIntelligenceArtifactsOrErr() ([]*ConversationIntelligenceArtifact, error) {
+	if e.loadedTypes[5] {
+		return e.ConversationIntelligenceArtifacts, nil
+	}
+	return nil, &NotLoadedError{edge: "conversation_intelligence_artifacts"}
+}
+
 // ActionsOrErr returns the Actions value or an error if the edge
 // was not loaded in eager-loading.
 func (e RelationshipEdges) ActionsOrErr() ([]*RevenueAction, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[6] {
 		return e.Actions, nil
 	}
 	return nil, &NotLoadedError{edge: "actions"}
@@ -156,7 +195,7 @@ func (e RelationshipEdges) ActionsOrErr() ([]*RevenueAction, error) {
 // EvidencesOrErr returns the Evidences value or an error if the edge
 // was not loaded in eager-loading.
 func (e RelationshipEdges) EvidencesOrErr() ([]*RevenueEvidence, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[7] {
 		return e.Evidences, nil
 	}
 	return nil, &NotLoadedError{edge: "evidences"}
@@ -165,7 +204,7 @@ func (e RelationshipEdges) EvidencesOrErr() ([]*RevenueEvidence, error) {
 // MailThreadsOrErr returns the MailThreads value or an error if the edge
 // was not loaded in eager-loading.
 func (e RelationshipEdges) MailThreadsOrErr() ([]*MailThread, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[8] {
 		return e.MailThreads, nil
 	}
 	return nil, &NotLoadedError{edge: "mail_threads"}
@@ -174,16 +213,25 @@ func (e RelationshipEdges) MailThreadsOrErr() ([]*MailThread, error) {
 // ParticipantsOrErr returns the Participants value or an error if the edge
 // was not loaded in eager-loading.
 func (e RelationshipEdges) ParticipantsOrErr() ([]*RelationshipParticipant, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[9] {
 		return e.Participants, nil
 	}
 	return nil, &NotLoadedError{edge: "participants"}
 }
 
+// IdentitiesOrErr returns the Identities value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) IdentitiesOrErr() ([]*RelationshipIdentity, error) {
+	if e.loadedTypes[10] {
+		return e.Identities, nil
+	}
+	return nil, &NotLoadedError{edge: "identities"}
+}
+
 // ObservationsOrErr returns the Observations value or an error if the edge
 // was not loaded in eager-loading.
 func (e RelationshipEdges) ObservationsOrErr() ([]*RelationshipObservation, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[11] {
 		return e.Observations, nil
 	}
 	return nil, &NotLoadedError{edge: "observations"}
@@ -192,7 +240,7 @@ func (e RelationshipEdges) ObservationsOrErr() ([]*RelationshipObservation, erro
 // AssertionsOrErr returns the Assertions value or an error if the edge
 // was not loaded in eager-loading.
 func (e RelationshipEdges) AssertionsOrErr() ([]*RelationshipAssertion, error) {
-	if e.loadedTypes[8] {
+	if e.loadedTypes[12] {
 		return e.Assertions, nil
 	}
 	return nil, &NotLoadedError{edge: "assertions"}
@@ -201,7 +249,7 @@ func (e RelationshipEdges) AssertionsOrErr() ([]*RelationshipAssertion, error) {
 // SnapshotsOrErr returns the Snapshots value or an error if the edge
 // was not loaded in eager-loading.
 func (e RelationshipEdges) SnapshotsOrErr() ([]*RelationshipStateSnapshot, error) {
-	if e.loadedTypes[9] {
+	if e.loadedTypes[13] {
 		return e.Snapshots, nil
 	}
 	return nil, &NotLoadedError{edge: "snapshots"}
@@ -436,6 +484,21 @@ func (_m *Relationship) QueryCommitments() *CommitmentQuery {
 	return NewRelationshipClient(_m.config).QueryCommitments(_m)
 }
 
+// QueryCommitmentEvents queries the "commitment_events" edge of the Relationship entity.
+func (_m *Relationship) QueryCommitmentEvents() *CommitmentEventQuery {
+	return NewRelationshipClient(_m.config).QueryCommitmentEvents(_m)
+}
+
+// QueryCommitmentDependencies queries the "commitment_dependencies" edge of the Relationship entity.
+func (_m *Relationship) QueryCommitmentDependencies() *CommitmentDependencyQuery {
+	return NewRelationshipClient(_m.config).QueryCommitmentDependencies(_m)
+}
+
+// QueryConversationIntelligenceArtifacts queries the "conversation_intelligence_artifacts" edge of the Relationship entity.
+func (_m *Relationship) QueryConversationIntelligenceArtifacts() *ConversationIntelligenceArtifactQuery {
+	return NewRelationshipClient(_m.config).QueryConversationIntelligenceArtifacts(_m)
+}
+
 // QueryActions queries the "actions" edge of the Relationship entity.
 func (_m *Relationship) QueryActions() *RevenueActionQuery {
 	return NewRelationshipClient(_m.config).QueryActions(_m)
@@ -454,6 +517,11 @@ func (_m *Relationship) QueryMailThreads() *MailThreadQuery {
 // QueryParticipants queries the "participants" edge of the Relationship entity.
 func (_m *Relationship) QueryParticipants() *RelationshipParticipantQuery {
 	return NewRelationshipClient(_m.config).QueryParticipants(_m)
+}
+
+// QueryIdentities queries the "identities" edge of the Relationship entity.
+func (_m *Relationship) QueryIdentities() *RelationshipIdentityQuery {
+	return NewRelationshipClient(_m.config).QueryIdentities(_m)
 }
 
 // QueryObservations queries the "observations" edge of the Relationship entity.
@@ -595,6 +663,78 @@ func (_m *Relationship) appendNamedCommitments(name string, edges ...*Commitment
 	}
 }
 
+// NamedCommitmentEvents returns the CommitmentEvents named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedCommitmentEvents(name string) ([]*CommitmentEvent, error) {
+	if _m.Edges.namedCommitmentEvents == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedCommitmentEvents[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedCommitmentEvents(name string, edges ...*CommitmentEvent) {
+	if _m.Edges.namedCommitmentEvents == nil {
+		_m.Edges.namedCommitmentEvents = make(map[string][]*CommitmentEvent)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedCommitmentEvents[name] = []*CommitmentEvent{}
+	} else {
+		_m.Edges.namedCommitmentEvents[name] = append(_m.Edges.namedCommitmentEvents[name], edges...)
+	}
+}
+
+// NamedCommitmentDependencies returns the CommitmentDependencies named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedCommitmentDependencies(name string) ([]*CommitmentDependency, error) {
+	if _m.Edges.namedCommitmentDependencies == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedCommitmentDependencies[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedCommitmentDependencies(name string, edges ...*CommitmentDependency) {
+	if _m.Edges.namedCommitmentDependencies == nil {
+		_m.Edges.namedCommitmentDependencies = make(map[string][]*CommitmentDependency)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedCommitmentDependencies[name] = []*CommitmentDependency{}
+	} else {
+		_m.Edges.namedCommitmentDependencies[name] = append(_m.Edges.namedCommitmentDependencies[name], edges...)
+	}
+}
+
+// NamedConversationIntelligenceArtifacts returns the ConversationIntelligenceArtifacts named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedConversationIntelligenceArtifacts(name string) ([]*ConversationIntelligenceArtifact, error) {
+	if _m.Edges.namedConversationIntelligenceArtifacts == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedConversationIntelligenceArtifacts[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedConversationIntelligenceArtifacts(name string, edges ...*ConversationIntelligenceArtifact) {
+	if _m.Edges.namedConversationIntelligenceArtifacts == nil {
+		_m.Edges.namedConversationIntelligenceArtifacts = make(map[string][]*ConversationIntelligenceArtifact)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedConversationIntelligenceArtifacts[name] = []*ConversationIntelligenceArtifact{}
+	} else {
+		_m.Edges.namedConversationIntelligenceArtifacts[name] = append(_m.Edges.namedConversationIntelligenceArtifacts[name], edges...)
+	}
+}
+
 // NamedActions returns the Actions named value or an error if the edge was not
 // loaded in eager-loading with this name.
 func (_m *Relationship) NamedActions(name string) ([]*RevenueAction, error) {
@@ -688,6 +828,30 @@ func (_m *Relationship) appendNamedParticipants(name string, edges ...*Relations
 		_m.Edges.namedParticipants[name] = []*RelationshipParticipant{}
 	} else {
 		_m.Edges.namedParticipants[name] = append(_m.Edges.namedParticipants[name], edges...)
+	}
+}
+
+// NamedIdentities returns the Identities named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedIdentities(name string) ([]*RelationshipIdentity, error) {
+	if _m.Edges.namedIdentities == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedIdentities[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedIdentities(name string, edges ...*RelationshipIdentity) {
+	if _m.Edges.namedIdentities == nil {
+		_m.Edges.namedIdentities = make(map[string][]*RelationshipIdentity)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedIdentities[name] = []*RelationshipIdentity{}
+	} else {
+		_m.Edges.namedIdentities[name] = append(_m.Edges.namedIdentities[name], edges...)
 	}
 }
 

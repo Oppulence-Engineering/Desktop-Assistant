@@ -79,6 +79,9 @@ func (User) Edges() []ent.Edge {
 		edge.To("relationships", Relationship.Type).Annotations(entproto.Skip()),
 		edge.To("revenue_evidences", RevenueEvidence.Type).Annotations(entproto.Skip()),
 		edge.To("commitments", Commitment.Type).Annotations(entproto.Skip()),
+		edge.To("commitment_events", CommitmentEvent.Type).Annotations(entproto.Skip()),
+		edge.To("commitment_dependencies", CommitmentDependency.Type).Annotations(entproto.Skip()),
+		edge.To("conversation_intelligence_artifacts", ConversationIntelligenceArtifact.Type).Annotations(entproto.Skip()),
 		edge.To("revenue_actions", RevenueAction.Type).Annotations(entproto.Skip()),
 		edge.To("revenue_action_revisions", RevenueActionRevision.Type).Annotations(entproto.Skip()),
 		edge.To("policy_decision_snapshots", PolicyDecisionSnapshot.Type).Annotations(entproto.Skip()),
@@ -91,6 +94,7 @@ func (User) Edges() []ent.Edge {
 		edge.To("mail_signals", MailSignal.Type).Annotations(entproto.Skip()),
 		// Relationship intelligence state machine (RFC 036).
 		edge.To("relationship_participants", RelationshipParticipant.Type).Annotations(entproto.Skip()),
+		edge.To("relationship_identities", RelationshipIdentity.Type).Annotations(entproto.Skip()),
 		edge.To("relationship_observations", RelationshipObservation.Type).Annotations(entproto.Skip()),
 		edge.To("relationship_assertions", RelationshipAssertion.Type).Annotations(entproto.Skip()),
 		edge.To("relationship_state_snapshots", RelationshipStateSnapshot.Type).Annotations(entproto.Skip()),

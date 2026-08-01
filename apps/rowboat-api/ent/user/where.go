@@ -951,6 +951,75 @@ func HasCommitmentsWith(preds ...predicate.Commitment) predicate.User {
 	})
 }
 
+// HasCommitmentEvents applies the HasEdge predicate on the "commitment_events" edge.
+func HasCommitmentEvents() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommitmentEventsTable, CommitmentEventsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommitmentEventsWith applies the HasEdge predicate on the "commitment_events" edge with a given conditions (other predicates).
+func HasCommitmentEventsWith(preds ...predicate.CommitmentEvent) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newCommitmentEventsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCommitmentDependencies applies the HasEdge predicate on the "commitment_dependencies" edge.
+func HasCommitmentDependencies() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommitmentDependenciesTable, CommitmentDependenciesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommitmentDependenciesWith applies the HasEdge predicate on the "commitment_dependencies" edge with a given conditions (other predicates).
+func HasCommitmentDependenciesWith(preds ...predicate.CommitmentDependency) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newCommitmentDependenciesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasConversationIntelligenceArtifacts applies the HasEdge predicate on the "conversation_intelligence_artifacts" edge.
+func HasConversationIntelligenceArtifacts() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ConversationIntelligenceArtifactsTable, ConversationIntelligenceArtifactsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConversationIntelligenceArtifactsWith applies the HasEdge predicate on the "conversation_intelligence_artifacts" edge with a given conditions (other predicates).
+func HasConversationIntelligenceArtifactsWith(preds ...predicate.ConversationIntelligenceArtifact) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newConversationIntelligenceArtifactsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasRevenueActions applies the HasEdge predicate on the "revenue_actions" edge.
 func HasRevenueActions() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
@@ -1196,6 +1265,29 @@ func HasRelationshipParticipants() predicate.User {
 func HasRelationshipParticipantsWith(preds ...predicate.RelationshipParticipant) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newRelationshipParticipantsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRelationshipIdentities applies the HasEdge predicate on the "relationship_identities" edge.
+func HasRelationshipIdentities() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RelationshipIdentitiesTable, RelationshipIdentitiesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelationshipIdentitiesWith applies the HasEdge predicate on the "relationship_identities" edge with a given conditions (other predicates).
+func HasRelationshipIdentitiesWith(preds ...predicate.RelationshipIdentity) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newRelationshipIdentitiesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

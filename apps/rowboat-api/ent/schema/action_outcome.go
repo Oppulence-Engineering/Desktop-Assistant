@@ -23,9 +23,12 @@ func (ActionOutcome) Fields() []ent.Field {
 		field.String("kind").
 			Validate(oneOfRevenue("kind",
 				"sent", "delivered", "bounced", "replied", "meeting_booked",
-				"won", "lost", "dismissed", "bad_recommendation")),
+				"won", "lost", "dismissed", "bad_recommendation",
+				"deal_advanced", "onboarding_progressed", "renewed",
+				"escalated", "churned", "corrected")),
 		field.String("source").
-			Validate(oneOfRevenue("source", "gmail", "calendar", "crm", "user", "outbound")),
+			Validate(oneOfRevenue("source", "gmail", "calendar", "crm", "user", "outbound",
+				"slack", "meeting", "task")),
 		field.String("source_event_id").NotEmpty(),
 		field.Time("occurred_at"),
 		field.Text("metadata_json").Optional().Validate(validJSON),

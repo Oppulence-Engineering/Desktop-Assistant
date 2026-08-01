@@ -208,6 +208,82 @@ export interface RelationshipCorrectionInput {
 export const correctRelationship = (id: string, input: RelationshipCorrectionInput) =>
   post(`/relationships/${id}/corrections`, input) as Promise<RevenueRelationship>;
 
+export const correctConversationReview = (
+  id: string,
+  input: {
+    reviewItemId: string;
+    correctedValue: string;
+    reason: string;
+  },
+) =>
+  post(`/relationships/${id}/conversation-corrections`, input) as Promise<
+    Pick<RelationshipDetail, "relationship" | "intelligence">
+  >;
+
+export const decideConversationReview = (
+  id: string,
+  input: {
+    reviewItemId: string;
+    kind: "approve" | "correct" | "reject" | "defer";
+    correctedValue?: string;
+    reason?: string;
+    deferUntil?: string;
+  },
+) =>
+  post(`/relationships/${id}/conversation-decisions`, input) as Promise<
+    Pick<RelationshipDetail, "relationship" | "intelligence">
+  >;
+
+export const resolveRelationshipContradiction = (
+  id: string,
+  caseId: string,
+  input: { selectedAssertionId: string; reason?: string },
+) =>
+  post(
+    `/relationships/${encodeURIComponent(id)}/contradictions/${encodeURIComponent(caseId)}/resolve`,
+    input,
+  ) as Promise<Pick<RelationshipDetail, "relationship" | "intelligence">>;
+
+export const runCommitmentRecovery = (id: string) =>
+  post(`/relationships/${encodeURIComponent(id)}/commitment-recovery/run`, {}) as Promise<{
+    evaluations: NonNullable<RelationshipDetail["intelligence"]>["recoveryEvaluations"];
+  }>;
+
+export const appendCommitmentTransition = (
+  relationshipId: string,
+  commitmentId: string,
+  input: { kind: string; idempotencyKey: string; reason?: string; evidenceRefs?: string[] },
+) =>
+  post(
+    `/relationships/${encodeURIComponent(relationshipId)}/commitments/${encodeURIComponent(commitmentId)}/transitions`,
+    input,
+  ) as Promise<RelationshipDetail["commitments"][number]>;
+
+export const createMutualActionPlan = (relationshipId: string, commitmentIds: string[]) =>
+  post(`/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans`, {
+    commitmentIds,
+  }) as Promise<NonNullable<RelationshipDetail["intelligence"]>["mutualActionPlans"][number]>;
+
+export const approveMutualActionPlan = (relationshipId: string, planId: string) =>
+  post(
+    `/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans/${encodeURIComponent(planId)}/approve`,
+    {},
+  ) as Promise<NonNullable<RelationshipDetail["intelligence"]>["mutualActionPlans"][number]>;
+
+export const shareMutualActionPlan = (relationshipId: string, planId: string) =>
+  post(
+    `/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans/${encodeURIComponent(planId)}/share`,
+    {},
+  ) as Promise<{
+    plan: NonNullable<RelationshipDetail["intelligence"]>["mutualActionPlans"][number];
+    responseToken: string;
+  }>;
+
+export const requestConversationDeletion = (relationshipId: string, requestId: string) =>
+  post(`/relationships/${encodeURIComponent(relationshipId)}/conversation-deletion`, {
+    requestId,
+  }) as Promise<NonNullable<RelationshipDetail["intelligence"]>["deletionReceipts"][number]>;
+
 export const listRelationshipSourceStatuses = () =>
   call<{ sources: RelationshipSourceStatus[] }>("/relationship-sources/status").then(
     (body) => body.sources ?? [],
@@ -287,6 +363,8 @@ export const DETECTOR_LABELS: Record<string, string> = {
   dormant_warm_opportunity: "Dormant opportunity",
   neglected_referral: "Neglected referral",
   former_customer_reconnect: "Former customer",
+  conversation_action_pack: "Conversation action pack",
+  commitment_due: "Commitment due",
   manual: "Manual",
 };
 
@@ -296,6 +374,11 @@ export const ACTION_TYPE_LABELS: Record<string, string> = {
   referral_reconnect: "Referral reconnect",
   customer_risk: "Customer risk",
   meeting_follow_up: "Meeting follow-up",
+  meeting_recap: "Meeting recap",
+  crm_update: "CRM update",
+  follow_up_task: "Follow-up task",
+  calendar_hold: "Calendar hold",
+  commitment_rescue: "Commitment rescue",
 };
 
 export const RELATIONSHIP_KIND_LABELS: Record<string, string> = {

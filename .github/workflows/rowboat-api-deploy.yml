@@ -245,8 +245,16 @@ jobs:
             INTERNAL_API_SECRET
             OPENAI_API_KEY
             OPENROUTER_API_KEY
+            DEEPGRAM_API_KEY
             GOOGLE_OAUTH_CLIENT_ID
             GOOGLE_OAUTH_CLIENT_SECRET
+            GOOGLE_WEBHOOK_TOKEN
+            GMAIL_PUBSUB_TOPIC
+            GOOGLE_WEBHOOK_OIDC_AUDIENCE
+            GOOGLE_WEBHOOK_OIDC_SERVICE_ACCOUNT
+            SLACK_CLIENT_ID
+            SLACK_CLIENT_SECRET
+            SLACK_SIGNING_SECRET
             TEMPORAL_API_KEY
           )
 
@@ -330,17 +338,42 @@ jobs:
           TOKEN_ISSUER: https://api.workos.com
           WORKOS_API_KEY: migration-placeholder
           WORKOS_CLIENT_ID: migration-placeholder
+          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
         run: |
           set -euo pipefail
 
-          database_url="$(
-            kubectl -n "${KUBE_NAMESPACE}" get secret rowboat-api-secrets \
-              -o jsonpath='{.data.DATABASE_URL}' | base64 -d
-          )"
+          # Schema migrations need a direct Postgres connection (:25060), not the
+          # PgBouncer transaction pool (:25061) that DATABASE_URL points at for
+          # runtime. DDL and migration advisory locks are session-scoped and do
+          # not survive transaction-mode pooling.
+          database_url="${MIGRATION_DATABASE_URL:-}"
+          url_source="MIGRATION_DATABASE_URL (repository secret)"
 
           if [[ -z "${database_url}" ]]; then
-            echo "DATABASE_URL is missing from rowboat-api-secrets"
+            database_url="$(
+              kubectl -n "${KUBE_NAMESPACE}" get secret rowboat-api-secrets \
+                -o jsonpath='{.data.MIGRATION_DATABASE_URL}' 2>/dev/null | base64 -d || true
+            )"
+            url_source="MIGRATION_DATABASE_URL (rowboat-api-secrets)"
+          fi
+
+          if [[ -z "${database_url}" ]]; then
+            database_url="$(
+              kubectl -n "${KUBE_NAMESPACE}" get secret rowboat-api-secrets \
+                -o jsonpath='{.data.DATABASE_URL}' | base64 -d || true
+            )"
+            url_source="DATABASE_URL (rowboat-api-secrets, pooled fallback)"
+          fi
+
+          if [[ -z "${database_url}" ]]; then
+            echo "No migration database URL found (checked MIGRATION_DATABASE_URL, then DATABASE_URL)"
             exit 1
+          fi
+
+          echo "Running migrations using ${url_source}"
+
+          if [[ "${database_url}" == *":25061/"* ]]; then
+            echo "::warning::Migrations are running through the PgBouncer pool (:25061). Set the MIGRATION_DATABASE_URL secret to the direct :25060 connection."
           fi
 
           (
@@ -385,6 +418,8 @@ jobs:
           set -euo pipefail
 
           kubectl -n "${KUBE_NAMESPACE}" rollout status deploy/rowboat-api-rowboat-api --timeout=5m
+          kubectl -n "${KUBE_NAMESPACE}" rollout status deploy/rowboat-api-rowboat-api-worker --timeout=5m
+          kubectl -n "${KUBE_NAMESPACE}" rollout status deploy/rowboat-api-rowboat-api-scheduler --timeout=5m
           kubectl -n "${KUBE_NAMESPACE}" get pods,deploy,hpa,ingress,certificate
           curl -fsS https://api.oppulence.io/healthz
           echo

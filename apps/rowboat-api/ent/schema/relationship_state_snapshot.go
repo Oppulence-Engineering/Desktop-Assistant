@@ -13,8 +13,10 @@ import (
 // both clients for "what changed?" and deterministic replay verification.
 type RelationshipStateSnapshot struct{ ent.Schema }
 
+// Mixin adds the shared base fields to relationship state snapshots.
 func (RelationshipStateSnapshot) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
 
+// Fields defines the relationship state snapshot columns.
 func (RelationshipStateSnapshot) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int("version").Positive(),
@@ -24,6 +26,7 @@ func (RelationshipStateSnapshot) Fields() []ent.Field {
 	}
 }
 
+// Edges defines the relationship state snapshot graph connections.
 func (RelationshipStateSnapshot) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
@@ -35,6 +38,7 @@ func (RelationshipStateSnapshot) Edges() []ent.Edge {
 	}
 }
 
+// Indexes defines lookup and version constraints for relationship state snapshots.
 func (RelationshipStateSnapshot) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("relationship").Fields("version").Unique(),

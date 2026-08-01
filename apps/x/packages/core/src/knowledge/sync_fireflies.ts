@@ -4,6 +4,15 @@ import { WorkDir } from '../config/config.js';
 import { FirefliesClientFactory } from './fireflies-client-factory.js';
 import { serviceLogger, type ServiceRunContext } from '../services/service_logger.js';
 import { limitEventItems } from './limit_event_items.js';
+import { getTranscriptionConfig } from '../voice/voice.js';
+import {
+    enqueueRelationshipEvidence,
+    flushRelationshipEvidence,
+} from '../relationships/evidence-outbox.js';
+import {
+    canonicalTranscriptObservationWithExtraction,
+    conversationFingerprint,
+} from '../relationships/conversation-evidence.js';
 
 // Configuration
 const SYNC_DIR = path.join(WorkDir, 'knowledge', 'Meetings', 'fireflies');
@@ -101,6 +110,82 @@ interface McpToolResult {
         text?: string;
     }>;
     isError?: boolean;
+}
+
+async function firefliesRelationshipObservation(meeting: FirefliesMeetingData) {
+    const organizer = (meeting.organizerEmail || meeting.organizer_email || '').trim().toLowerCase();
+    const attendees = (meeting.meetingAttendees || [])
+        .filter(attendee => attendee.email?.trim())
+        .map(attendee => ({
+            displayName: attendee.displayName?.trim() || attendee.email.trim(),
+            email: attendee.email.trim().toLowerCase(),
+            role: 'contact',
+        }));
+    for (const value of meeting.participants || []) {
+        const email = value.trim().toLowerCase();
+        if (!email.includes('@') || attendees.some(attendee => attendee.email === email)) continue;
+        attendees.push({ displayName: email, email, role: 'contact' });
+    }
+    const external = attendees.filter(attendee => attendee.email !== organizer);
+    // Ambiguous group imports stay in the local inbox until participant resolution is
+    // available; never manufacture an account identity from a meeting title.
+    if (external.length !== 1) return null;
+    const counterparty = external[0];
+    const domain = counterparty.email.split('@')[1];
+    const occurredAt = meeting.dateString || meeting.date || new Date().toISOString();
+    const sentences = meeting.sentences || meeting.transcript?.sentences || [];
+    if (sentences.length === 0) return null;
+    return canonicalTranscriptObservationWithExtraction({
+        identity: {
+            displayName: domain || counterparty.displayName,
+            primaryEmail: counterparty.email,
+            ...(domain ? { accountDomain: domain } : {}),
+            participants: external,
+        },
+        source: {
+            provider: 'fireflies',
+            sourceRecordId: meeting.id,
+            title: meeting.title || 'Fireflies meeting',
+            occurredAt: new Date(occurredAt).toISOString(),
+            participants: attendees,
+            segments: sentences.map((sentence, index) => {
+                const label = sentence.speaker_name || sentence.speakerName || `Speaker ${index + 1}`;
+                const startSeconds = sentence.start_time ?? sentence.startTime ?? 0;
+                const endSeconds = sentence.end_time ?? sentence.endTime ?? startSeconds;
+                return {
+                    speakerId: `meeting-speaker:${conversationFingerprint(`${meeting.id}:${label.toLowerCase()}`)}`,
+                    speakerLabel: label,
+                    speakerConfidence: /^speaker\s+\d+$/i.test(label) ? 0.5 : 0.85,
+                    startMs: Math.max(0, Math.round(startSeconds * 1000)),
+                    endMs: Math.max(0, Math.round(endSeconds * 1000)),
+                    text: sentence.text,
+                };
+            }),
+            captureCaveats: [
+                'Imported from Fireflies; capture consent and audio retention remain governed by the provider.',
+            ],
+            governance: {
+                capturedAt: new Date(occurredAt).toISOString(),
+                capturePolicy: 'provider_import',
+                routing: 'fireflies_to_oppulence',
+                region: 'provider_managed',
+                retention: 'provider_policy_plus_oppulence_evidence',
+                participantDisclosure: 'provider_reported',
+                legalHold: false,
+                deletionOutcome: 'not_applicable',
+                evidenceClip: 'not_retained',
+            },
+        },
+    });
+}
+
+async function publishFirefliesEvidence(meeting: FirefliesMeetingData): Promise<void> {
+    const config = await getTranscriptionConfig();
+    if (!config.meetings.syncRelationshipEvidence) return;
+    const observation = await firefliesRelationshipObservation(meeting);
+    if (!observation) return;
+    await enqueueRelationshipEvidence(observation);
+    await flushRelationshipEvidence();
 }
 
 // --- Helper Functions ---
@@ -582,6 +667,14 @@ async function syncMeetings() {
                 
                 fs.writeFileSync(filePath, markdown);
                 console.log(`[Fireflies] Saved: ${filename}`);
+
+                try {
+                    await publishFirefliesEvidence(meetingData);
+                } catch (error) {
+                    // The inspectable local note is the durable import. Relationship
+                    // publication retries through its own outbox and never invalidates it.
+                    console.warn('[Fireflies] Could not publish relationship evidence:', error);
+                }
 
                 syncedIds.add(meetingId);
                 newCount++;

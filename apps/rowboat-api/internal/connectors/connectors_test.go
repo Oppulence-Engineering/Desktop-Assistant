@@ -230,6 +230,10 @@ func TestDefaultRegistryDeclaresMCPToolAllowlists(t *testing.T) {
 			t.Fatalf("default registry missing connector %q", want)
 		}
 	}
+	hubspot, ok := reg.Get("hubspot")
+	if !ok || hubspot.Transport != "native" || hubspot.MCPURL != "" || len(hubspot.NativeTools) != 3 {
+		t.Fatalf("HubSpot must use SDK-native tools, got %+v", hubspot)
+	}
 	stripe, ok := reg.Get("stripe")
 	if !ok {
 		t.Fatal("missing stripe connector")
@@ -287,6 +291,26 @@ func TestLoadRegistryRejectsInvalidMCPPolicies(t *testing.T) {
 			want: "declares templateBlocks without mcpUrl",
 		},
 		{
+			name: "native-without-tools",
+			body: `[{"name":"x","displayName":"X","transport":"native","authType":"api_key","audience":"x"}]`,
+			want: "native transport requires nativeTools",
+		},
+		{
+			name: "native-with-mcp-url",
+			body: `[{"name":"x","displayName":"X","transport":"native","mcpUrl":"https://mcp.test","authType":"api_key","audience":"x","nativeTools":[{"name":"thing.read","trustTier":"read"}]}]`,
+			want: "cannot declare mcpUrl",
+		},
+		{
+			name: "native-template-with-mcp-tools",
+			body: `[{"name":"x","displayName":"X","transport":"native","authType":"api_key","audience":"x","nativeTools":[{"name":"thing.read","trustTier":"read"}],"templateBlocks":[{"id":"b","title":"B","description":"D","category":"c","mcpTools":["thing.read"],"trustTier":"read"}]}]`,
+			want: "cannot declare mcpTools",
+		},
+		{
+			name: "mcp-template-with-native-tools",
+			body: `[{"name":"x","displayName":"X","mcpUrl":"https://mcp.test","authType":"api_key","audience":"x","mcpTools":[{"name":"thing.read","trustTier":"read"}],"templateBlocks":[{"id":"b","title":"B","description":"D","category":"c","nativeTools":["thing.read"],"trustTier":"read"}]}]`,
+			want: "cannot declare nativeTools",
+		},
+		{
 			name: "duplicate-template-block",
 			body: `[{"name":"x","displayName":"X","mcpUrl":"https://mcp.test","authType":"api_key","audience":"x","mcpTools":[{"name":"thing.read","trustTier":"read"}],"templateBlocks":[{"id":"b","title":"B","description":"D","category":"c","mcpTools":["thing.read"],"trustTier":"read"},{"id":"b","title":"B","description":"D","category":"c","mcpTools":["thing.read"],"trustTier":"read"}]}]`,
 			want: `duplicate template block "b"`,
@@ -302,6 +326,28 @@ func TestLoadRegistryRejectsInvalidMCPPolicies(t *testing.T) {
 				t.Fatalf("LoadRegistry err = %v, want containing %q", err, tc.want)
 			}
 		})
+	}
+}
+
+func TestNativeConnectorDoesNotMintMCPToken(t *testing.T) {
+	client, u, h := setup(t, connectors.DefaultRegistry())
+	authed := auth.WithUser(context.Background(), u)
+
+	keyRec := httptest.NewRecorder()
+	h.SetAPIKey(keyRec, httptest.NewRequest(http.MethodPost, "/v1/connections/hubspot/api-key", strings.NewReader(`{"apiKey":"pat-test"}`)).
+		WithContext(withParam(authed, "name", "hubspot")))
+	if keyRec.Code != http.StatusOK {
+		t.Fatalf("save HubSpot key: %d %s", keyRec.Code, keyRec.Body.String())
+	}
+	if client.MCPConnection.Query().CountX(authed) != 1 {
+		t.Fatal("expected native HubSpot credential to be stored")
+	}
+
+	tokenRec := httptest.NewRecorder()
+	h.MCPToken(tokenRec, httptest.NewRequest(http.MethodPost, "/v1/connections/hubspot/mcp-token", nil).
+		WithContext(withParam(authed, "name", "hubspot")))
+	if tokenRec.Code != http.StatusBadRequest || !strings.Contains(tokenRec.Body.String(), "unsupported_transport") {
+		t.Fatalf("native MCP token response: %d %s", tokenRec.Code, tokenRec.Body.String())
 	}
 }
 

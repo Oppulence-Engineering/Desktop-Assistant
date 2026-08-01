@@ -77,6 +77,16 @@ const (
 	FieldExecutedAt = "executed_at"
 	// FieldExecutionError holds the string denoting the execution_error field in the database.
 	FieldExecutionError = "execution_error"
+	// FieldReconciliationStatus holds the string denoting the reconciliation_status field in the database.
+	FieldReconciliationStatus = "reconciliation_status"
+	// FieldReconciliationAttempts holds the string denoting the reconciliation_attempts field in the database.
+	FieldReconciliationAttempts = "reconciliation_attempts"
+	// FieldReconciliationCheckedAt holds the string denoting the reconciliation_checked_at field in the database.
+	FieldReconciliationCheckedAt = "reconciliation_checked_at"
+	// FieldReconciliationNextAt holds the string denoting the reconciliation_next_at field in the database.
+	FieldReconciliationNextAt = "reconciliation_next_at"
+	// FieldReconciliationError holds the string denoting the reconciliation_error field in the database.
+	FieldReconciliationError = "reconciliation_error"
 	// FieldDismissReason holds the string denoting the dismiss_reason field in the database.
 	FieldDismissReason = "dismiss_reason"
 	// FieldSnoozedUntil holds the string denoting the snoozed_until field in the database.
@@ -184,6 +194,11 @@ var Columns = []string{
 	FieldProviderThreadID,
 	FieldExecutedAt,
 	FieldExecutionError,
+	FieldReconciliationStatus,
+	FieldReconciliationAttempts,
+	FieldReconciliationCheckedAt,
+	FieldReconciliationNextAt,
+	FieldReconciliationError,
 	FieldDismissReason,
 	FieldSnoozedUntil,
 	FieldDueAt,
@@ -270,6 +285,12 @@ var (
 	DefaultExecutionMode string
 	// ExecutionModeValidator is a validator for the "execution_mode" field. It is called by the builders before save.
 	ExecutionModeValidator func(string) error
+	// ReconciliationStatusValidator is a validator for the "reconciliation_status" field. It is called by the builders before save.
+	ReconciliationStatusValidator func(string) error
+	// DefaultReconciliationAttempts holds the default value on creation for the "reconciliation_attempts" field.
+	DefaultReconciliationAttempts int
+	// ReconciliationAttemptsValidator is a validator for the "reconciliation_attempts" field. It is called by the builders before save.
+	ReconciliationAttemptsValidator func(int) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -435,6 +456,31 @@ func ByExecutedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByExecutionError orders the results by the execution_error field.
 func ByExecutionError(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldExecutionError, opts...).ToFunc()
+}
+
+// ByReconciliationStatus orders the results by the reconciliation_status field.
+func ByReconciliationStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReconciliationStatus, opts...).ToFunc()
+}
+
+// ByReconciliationAttempts orders the results by the reconciliation_attempts field.
+func ByReconciliationAttempts(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReconciliationAttempts, opts...).ToFunc()
+}
+
+// ByReconciliationCheckedAt orders the results by the reconciliation_checked_at field.
+func ByReconciliationCheckedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReconciliationCheckedAt, opts...).ToFunc()
+}
+
+// ByReconciliationNextAt orders the results by the reconciliation_next_at field.
+func ByReconciliationNextAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReconciliationNextAt, opts...).ToFunc()
+}
+
+// ByReconciliationError orders the results by the reconciliation_error field.
+func ByReconciliationError(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReconciliationError, opts...).ToFunc()
 }
 
 // ByDismissReason orders the results by the dismiss_reason field.

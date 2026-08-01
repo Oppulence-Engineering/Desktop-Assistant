@@ -2,10 +2,12 @@ package revenue
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
@@ -19,11 +21,18 @@ import (
 // user, returning a ready GmailExecutor wired against them.
 type gmailFixture struct {
 	*fixture
-	exec      *GmailExecutor
-	gmailSrv  *httptest.Server
-	sent      int
-	drafted   int
-	gmailCode int // response status for gmail calls; 0 = 200
+	exec                 *GmailExecutor
+	gmailSrv             *httptest.Server
+	sent                 int
+	drafted              int
+	calendar             int
+	calendarSendUpdates  string
+	gmailCode            int // response status for gmail calls; 0 = 200
+	gmailFound           bool
+	gmailQuery           string
+	lastMIME             string
+	calendarBody         map[string]any
+	calendarPrivateQuery string
 }
 
 func newGmailFixture(t *testing.T, scopes []string) *gmailFixture {
@@ -51,11 +60,19 @@ func newGmailFixture(t *testing.T, scopes []string) *gmailFixture {
 	mux.HandleFunc("/token", func(w http.ResponseWriter, _ *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]string{"access_token": "ya29.test"})
 	})
-	mux.HandleFunc("/gmail/v1/users/me/drafts", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/gmail/v1/users/me/drafts", func(w http.ResponseWriter, r *http.Request) {
 		if g.gmailCode != 0 {
 			w.WriteHeader(g.gmailCode)
 			return
 		}
+		var payload struct {
+			Message struct {
+				Raw string `json:"raw"`
+			} `json:"message"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&payload)
+		decoded, _ := base64.URLEncoding.DecodeString(payload.Message.Raw)
+		g.lastMIME = string(decoded)
 		g.drafted++
 		_ = json.NewEncoder(w).Encode(map[string]any{"id": "draft_1", "message": map[string]string{"id": "msg_d1"}})
 	})
@@ -67,13 +84,43 @@ func newGmailFixture(t *testing.T, scopes []string) *gmailFixture {
 		g.sent++
 		_ = json.NewEncoder(w).Encode(map[string]any{"id": "msg_s1", "threadId": "thr_s1"})
 	})
+	mux.HandleFunc("/gmail/v1/users/me/messages", func(w http.ResponseWriter, r *http.Request) {
+		g.gmailQuery = r.URL.Query().Get("q")
+		messages := []map[string]string{}
+		if g.gmailFound {
+			messages = append(messages, map[string]string{"id": "msg_recovered", "threadId": "thr_recovered"})
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"messages": messages})
+	})
+	mux.HandleFunc("/gmail/v1/users/me/messages/msg_recovered", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id": "msg_recovered", "threadId": "thr_recovered", "payload": map[string]any{"headers": []any{}},
+		})
+	})
+	mux.HandleFunc("/calendars/primary/events", func(w http.ResponseWriter, r *http.Request) {
+		g.calendar++
+		g.calendarSendUpdates = r.URL.Query().Get("sendUpdates")
+		if r.Method == http.MethodPost {
+			_ = json.NewDecoder(r.Body).Decode(&g.calendarBody)
+		} else {
+			g.calendarPrivateQuery = r.URL.Query().Get("privateExtendedProperty")
+			_ = json.NewEncoder(w).Encode(map[string]any{"items": []map[string]any{{
+				"id": "evt_1", "htmlLink": "https://calendar.test/evt_1",
+			}}})
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id": "evt_1", "htmlLink": "https://calendar.test/evt_1",
+		})
+	})
 	g.gmailSrv = httptest.NewServer(mux)
 	t.Cleanup(g.gmailSrv.Close)
 
 	sec := secrets.NewFromConfig(appconfig.Config{GoogleOAuthClientID: "cid", GoogleOAuthClientSecret: "csec"})
 	g.exec = NewGmailExecutor(f.client, sealer, sec, googleapi.New(googleapi.Config{
-		TokenURL:     g.gmailSrv.URL + "/token",
-		GmailBaseURL: g.gmailSrv.URL,
+		TokenURL:        g.gmailSrv.URL + "/token",
+		GmailBaseURL:    g.gmailSrv.URL,
+		CalendarBaseURL: g.gmailSrv.URL,
 	}))
 	return g
 }
@@ -91,12 +138,32 @@ func (g *gmailFixture) execRequest(t *testing.T, mode string) ExecRequest {
 
 func TestGmailExecutorDraft(t *testing.T) {
 	g := newGmailFixture(t, []string{scopeGmailCompose, scopeGmailSend})
-	res, err := g.exec.Execute(g.ctx, g.execRequest(t, ExecModeDraft))
+	req := g.execRequest(t, ExecModeDraft)
+	res, err := g.exec.Execute(g.ctx, req)
 	if err != nil {
 		t.Fatalf("draft: %v", err)
 	}
 	if res.ProviderMessageID != "draft_1" || g.drafted != 1 || g.sent != 0 {
 		t.Fatalf("draft result=%+v drafted=%d sent=%d", res, g.drafted, g.sent)
+	}
+	if !strings.Contains(g.lastMIME, "Message-ID: "+gmailActionMessageID(req.IdempotencyKey)) {
+		t.Fatalf("draft MIME is missing reconciliation marker: %q", g.lastMIME)
+	}
+}
+
+func TestGmailExecutorReconcilesByMessageIDWithoutWriting(t *testing.T) {
+	g := newGmailFixture(t, []string{scopeGmailCompose, scopeGmailReadonly})
+	g.gmailFound = true
+	req := g.execRequest(t, ExecModeDraft)
+	result, found, err := g.exec.Reconcile(g.ctx, req)
+	if err != nil || !found || result == nil || result.ProviderMessageID != "msg_recovered" || result.ProviderThreadID != "thr_recovered" {
+		t.Fatalf("Gmail reconciliation result=%+v found=%v err=%v", result, found, err)
+	}
+	if g.drafted != 0 || g.sent != 0 {
+		t.Fatalf("Gmail reconciliation must not write: drafted=%d sent=%d", g.drafted, g.sent)
+	}
+	if !strings.Contains(g.gmailQuery, "rfc822msgid:<oppulence-") || !strings.Contains(g.gmailQuery, "@actions.oppulence.ai>") {
+		t.Fatalf("Gmail reconciliation query = %q", g.gmailQuery)
 	}
 }
 

@@ -4,11 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
@@ -139,6 +145,137 @@ func TestRelationshipObservationProjectionAndCorrection(t *testing.T) {
 	}
 	if state.Health != "healthy" || state.StateReason != "Customer confirmed the plan in a call." {
 		t.Fatalf("snapshot explanation mismatch: %#v", state)
+	}
+}
+
+func TestConfirmedMeetingCommitmentBecomesSharedCommitmentExactlyOnce(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 7, 31, 12, 35, 0, 0, time.UTC)
+	existing, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind:          "company",
+		DisplayName:   "Acme",
+		PrimaryEmail:  "sales@acme.example",
+		AccountDomain: "acme.example",
+	})
+	if err != nil {
+		t.Fatalf("create existing account: %v", err)
+	}
+	input := RelationshipObservationInput{
+		DisplayName:   "Acme",
+		PrimaryEmail:  "avery@acme.example",
+		AccountDomain: "acme.example",
+		Source:        "meeting",
+		ExternalID:    "commitment:session-1:0-2000",
+		SourceVersion: "1",
+		EventType:     "commitment_confirmed",
+		OccurredAt:    now,
+		ReceivedAt:    now,
+		Summary:       "We committed to send the proposal.",
+		Facts: map[string]any{
+			"user_confirmed":       true,
+			"commitment_text":      "Send the proposal",
+			"commitment_direction": "promised_by_me",
+			"commitment_id":        "session-1:0-2000",
+			"commitment_due_at":    now.Add(24 * time.Hour).Format(time.RFC3339),
+			"evidence_quote":       "I will send the proposal.",
+			"evidence_start_ms":    0,
+			"evidence_end_ms":      2000,
+		},
+		Assertions: []RelationshipAssertionInput{{
+			Dimension:  "next_action",
+			Value:      "Send the proposal",
+			SourceType: "source_fact",
+			Confidence: 1,
+			Reason:     "User confirmed the cited meeting commitment.",
+			ValidFrom:  now,
+		}},
+	}
+
+	first, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{input})
+	if err != nil {
+		t.Fatalf("ingest confirmed commitment: %v", err)
+	}
+	second, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{input})
+	if err != nil {
+		t.Fatalf("replay confirmed commitment: %v", err)
+	}
+	if len(first) != 1 || first[0].Duplicate || len(second) != 1 || !second[0].Duplicate {
+		t.Fatalf("unexpected idempotency results: first=%#v second=%#v", first, second)
+	}
+	if first[0].Relationship.ID != existing.ID {
+		t.Fatalf("meeting should resolve to existing account, got %s", first[0].Relationship.ID)
+	}
+	rows, err := f.client.Commitment.Query().WithEvidences().All(f.ctx)
+	if err != nil {
+		t.Fatalf("query commitments: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("want one shared commitment after replay, got %d", len(rows))
+	}
+	if rows[0].Text != "Send the proposal" || rows[0].Direction != "promised_by_me" || !rows[0].UserConfirmed {
+		t.Fatalf("unexpected shared commitment: %#v", rows[0])
+	}
+	if rows[0].DueAt == nil || !rows[0].DueAt.Equal(now.Add(24*time.Hour)) {
+		t.Fatalf("spoken due date was not persisted: %#v", rows[0].DueAt)
+	}
+	if len(rows[0].Edges.Evidences) != 1 {
+		t.Fatalf("confirmed commitment must retain one source evidence edge, got %d", len(rows[0].Edges.Evidences))
+	}
+	events, err := f.client.CommitmentEvent.Query().
+		Where(commitmentevent.HasCommitmentWith(commitment.IDEQ(rows[0].ID))).
+		Order(ent.Asc(commitmentevent.FieldVersion)).All(f.ctx)
+	if err != nil || len(events) != 2 || events[0].Kind != "proposed" || events[1].Kind != "internally_confirmed" {
+		t.Fatalf("confirmed commitment must start with two immutable events: %#v err=%v", events, err)
+	}
+	rel, err := f.svc.GetRelationship(f.ctx, first[0].Relationship.ID)
+	if err != nil {
+		t.Fatalf("get relationship: %v", err)
+	}
+	if rel.NextAction != "Send the proposal" {
+		t.Fatalf("confirmed promise should project next action, got %q", rel.NextAction)
+	}
+	actions, err := f.client.RevenueAction.Query().WithEvidences().All(f.ctx)
+	if err != nil {
+		t.Fatalf("query follow-up actions: %v", err)
+	}
+	if len(actions) != 1 {
+		t.Fatalf("want one approval-gated follow-up after replay, got %d", len(actions))
+	}
+	action := actions[0]
+	if action.ActionType != "meeting_follow_up" || action.Channel != "email" ||
+		action.RecipientEmail != "avery@acme.example" || action.ApprovalStatus != "pending" ||
+		action.ExecutionStatus != "pending" {
+		t.Fatalf("unexpected follow-up action: %#v", action)
+	}
+	if !strings.Contains(action.Reason, input.ExternalID) {
+		t.Fatalf("follow-up reason must cite the immutable observation: %q", action.Reason)
+	}
+	if len(action.Edges.Evidences) != 1 || action.Edges.Evidences[0].Source != "meeting" {
+		t.Fatalf("follow-up must link the confirmed meeting evidence: %#v", action.Edges.Evidences)
+	}
+	_, err = f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		RelationshipID: rel.ID,
+		Source:         "meeting",
+		ExternalID:     "commitment-update:session-1:0-2000:fulfilled",
+		EventType:      "commitment_status_changed",
+		OccurredAt:     now.Add(2 * time.Hour),
+		ReceivedAt:     now.Add(2 * time.Hour),
+		Facts: map[string]any{"commitment_updates": []map[string]any{{
+			"commitmentId": "session-1:0-2000", "status": "fulfilled",
+		}}},
+	}})
+	if err != nil {
+		t.Fatalf("reconcile commitment fulfillment: %v", err)
+	}
+	fulfilled, err := f.client.Commitment.Get(f.ctx, rows[0].ID)
+	if err != nil || fulfilled.Status != "fulfilled" || fulfilled.CurrentEventVersion != 3 || fulfilled.CompletedAt == nil {
+		t.Fatalf("commitment was not closed: %#v err=%v", fulfilled, err)
+	}
+	events, err = f.client.CommitmentEvent.Query().
+		Where(commitmentevent.HasCommitmentWith(commitment.IDEQ(rows[0].ID))).
+		Order(ent.Asc(commitmentevent.FieldVersion)).All(f.ctx)
+	if err != nil || len(events) != 3 || events[2].Kind != "fulfilled" || events[2].Version != 3 {
+		t.Fatalf("fulfillment must append event version 3: %#v err=%v", events, err)
 	}
 }
 
@@ -292,6 +429,210 @@ func TestAcmeGoldenPathProjectsFourSourcesIntoOneRelationship(t *testing.T) {
 	sources, err := f.svc.RelationshipSourceStatuses(f.ctx, f.user)
 	if err != nil || len(sources) != 4 {
 		t.Fatalf("want four source statuses, got %d err=%v", len(sources), err)
+	}
+}
+
+func TestCrossChannelIdentityAnchorsResolveProviderOnlyEvents(t *testing.T) {
+	f := newFixture(t)
+	base := time.Date(2026, 7, 31, 14, 0, 0, 0, time.UTC)
+	events := []struct {
+		adapt func(AdapterEvent) (RelationshipObservationInput, error)
+		event AdapterEvent
+	}{
+		{AdaptHubSpotEvent, AdapterEvent{
+			ExternalID: "company-created", AccountName: "Acme", AccountDomain: "acme.example",
+			PrimaryEmail: "avery@acme.example", ResourceRefs: []string{"hubspot:company:123"},
+			EventType: "company.created", OccurredAt: base,
+		}},
+		{AdaptSlackEvent, AdapterEvent{
+			ExternalID: "message-1", PrimaryEmail: "avery@acme.example",
+			ResourceRefs: []string{"slack:user:U123"}, EventType: "message.posted",
+			OccurredAt: base.Add(time.Minute), Participants: []RelationshipParticipantInput{{
+				DisplayName: "Avery", Email: "avery@acme.example", ExternalRefs: []string{"slack:user:U123"},
+			}},
+		}},
+		{AdaptCalendarEvent, AdapterEvent{
+			ExternalID: "event-1", PrimaryEmail: "avery@acme.example",
+			ResourceRefs: []string{"calendar:event:evt-1"}, EventType: "event.updated",
+			OccurredAt: base.Add(2 * time.Minute),
+		}},
+		{AdaptGmailEvent, AdapterEvent{
+			ExternalID: "thread-1", PrimaryEmail: "avery@acme.example",
+			ResourceRefs: []string{"gmail:thread:thread-1"}, EventType: "thread.updated",
+			OccurredAt: base.Add(3 * time.Minute),
+		}},
+		// No email or domain remains on these later events. The learned SDK/provider
+		// record IDs are sufficient to recover the same canonical relationship.
+		{AdaptSlackEvent, AdapterEvent{
+			ExternalID: "message-2", ResourceRefs: []string{"slack:user:U123"},
+			EventType: "message.posted", OccurredAt: base.Add(4 * time.Minute),
+			Participants: []RelationshipParticipantInput{{
+				DisplayName: "Avery Chen", ExternalRefs: []string{"slack:user:U123"},
+			}},
+		}},
+		{AdaptHubSpotEvent, AdapterEvent{
+			ExternalID: "company-updated", ResourceRefs: []string{"hubspot:company:123"},
+			EventType: "company.updated", OccurredAt: base.Add(5 * time.Minute),
+		}},
+	}
+	var relationshipID string
+	for _, fixture := range events {
+		input, err := fixture.adapt(fixture.event)
+		if err != nil {
+			t.Fatalf("adapt: %v", err)
+		}
+		results, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{input})
+		if err != nil {
+			t.Fatalf("ingest %s: %v", fixture.event.ExternalID, err)
+		}
+		if relationshipID == "" {
+			relationshipID = results[0].Relationship.ID.String()
+		} else if got := results[0].Relationship.ID.String(); got != relationshipID {
+			t.Fatalf("cross-channel event split relationship: got %s want %s", got, relationshipID)
+		}
+	}
+	identities, err := f.client.RelationshipIdentity.Query().
+		Where(relationshipidentity.ProviderIn("hubspot", "slack", "calendar", "gmail")).
+		All(f.ctx)
+	if err != nil {
+		t.Fatalf("query identities: %v", err)
+	}
+	if len(identities) != 4 {
+		t.Fatalf("want four persisted provider identities, got %d", len(identities))
+	}
+	participants, err := f.client.RelationshipParticipant.Query().All(f.ctx)
+	if err != nil || len(participants) != 1 || participants[0].DisplayName != "Avery Chen" || !slices.Contains(participants[0].ExternalRefs, "slack:user:U123") {
+		t.Fatalf("participant aliases were not retained: %#v err=%v", participants, err)
+	}
+}
+
+func TestIdentityAnchorConflictWaitsForReview(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 7, 31, 14, 30, 0, 0, time.UTC)
+	first, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Acme", Source: "hubspot", ExternalID: "acme-created", EventType: "company.created",
+		ResourceRefs: []string{"hubspot:company:123"}, OccurredAt: now,
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{Kind: "company", DisplayName: "Other Co"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		RelationshipID: other.ID, Source: "hubspot", ExternalID: "wrong-link", EventType: "company.updated",
+		ResourceRefs: []string{"hubspot:company:123"}, OccurredAt: now.Add(time.Minute),
+	}})
+	if !errors.Is(err, ErrConflict) {
+		t.Fatalf("identity collision must wait for review, got %v", err)
+	}
+	identities, err := f.client.RelationshipIdentity.Query().WithRelationship().All(f.ctx)
+	if err != nil || len(identities) != 1 {
+		t.Fatalf("conflict must not create another identity: %#v err=%v", identities, err)
+	}
+	owner, _ := identities[0].Edges.RelationshipOrErr()
+	if owner.ID != first[0].Relationship.ID {
+		t.Fatalf("identity owner changed during conflict: got %s", owner.ID)
+	}
+}
+
+func TestPublicMailboxDomainsNeverMergeUnrelatedPeople(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 7, 31, 15, 0, 0, 0, time.UTC)
+	inputs := []RelationshipObservationInput{
+		{DisplayName: "Avery", PrimaryEmail: "avery@gmail.com", AccountDomain: "gmail.com", Source: "gmail", ExternalID: "a", EventType: "thread", OccurredAt: now},
+		{DisplayName: "Morgan", PrimaryEmail: "morgan@gmail.com", AccountDomain: "gmail.com", Source: "gmail", ExternalID: "b", EventType: "thread", OccurredAt: now},
+	}
+	results, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, inputs)
+	if err != nil {
+		t.Fatalf("ingest public mailboxes: %v", err)
+	}
+	if results[0].Relationship.ID == results[1].Relationship.ID {
+		t.Fatal("unrelated gmail.com people must never auto-merge by mailbox domain")
+	}
+	domains, err := f.client.RelationshipIdentity.Query().Where(relationshipidentity.KindEQ("domain")).Count(f.ctx)
+	if err != nil || domains != 0 {
+		t.Fatalf("public domain must not become an account anchor: count=%d err=%v", domains, err)
+	}
+}
+
+func TestCorporateDomainDoesNotCollapsePersonRelationships(t *testing.T) {
+	f := newFixture(t)
+	avery, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "person", DisplayName: "Avery", PrimaryEmail: "avery@acme.example", AccountDomain: "acme.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	morgan, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
+		Kind: "person", DisplayName: "Morgan", PrimaryEmail: "morgan@acme.example", AccountDomain: "acme.example",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 7, 31, 16, 0, 0, 0, time.UTC)
+	results, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Avery", PrimaryEmail: "avery@acme.example", AccountDomain: "acme.example",
+		Source: "slack", ExternalID: "avery-message", EventType: "message.posted",
+		ResourceRefs: []string{"slack:user:U-AVERY"}, OccurredAt: now,
+	}})
+	if err != nil {
+		t.Fatalf("ingest person identity: %v", err)
+	}
+	if results[0].Relationship.ID != avery.ID || results[0].Relationship.ID == morgan.ID {
+		t.Fatalf("email must select Avery without collapsing Morgan: got=%s avery=%s morgan=%s",
+			results[0].Relationship.ID, avery.ID, morgan.ID)
+	}
+	providerOnly, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		Source: "slack", ExternalID: "avery-message-2", EventType: "message.posted",
+		ResourceRefs: []string{"slack:user:U-AVERY"}, OccurredAt: now.Add(time.Minute),
+	}})
+	if err != nil || providerOnly[0].Relationship.ID != avery.ID {
+		t.Fatalf("provider alias must resolve Avery: results=%#v err=%v", providerOnly, err)
+	}
+	domainAnchors, err := f.client.RelationshipIdentity.Query().
+		Where(relationshipidentity.KindEQ("domain")).Count(f.ctx)
+	if err != nil || domainAnchors != 0 {
+		t.Fatalf("person rows must not claim shared corporate domains: count=%d err=%v", domainAnchors, err)
+	}
+}
+
+func TestResourceRefLimitCountsUniqueAliases(t *testing.T) {
+	duplicates := make([]string, 51)
+	for i := range duplicates {
+		duplicates[i] = "slack:user:U123"
+	}
+	refs, err := normalizeResourceRefs(duplicates)
+	if err != nil || len(refs) != 1 {
+		t.Fatalf("duplicate aliases should count once: refs=%#v err=%v", refs, err)
+	}
+	unique := make([]string, 51)
+	for i := range unique {
+		unique[i] = fmt.Sprintf("slack:user:U%d", i)
+	}
+	if _, err := normalizeResourceRefs(unique); err == nil {
+		t.Fatal("more than 50 unique aliases must fail")
+	}
+}
+
+func TestIdentityFirstSeenTracksEarliestObservation(t *testing.T) {
+	f := newFixture(t)
+	later := time.Date(2026, 7, 31, 18, 0, 0, 0, time.UTC)
+	for _, event := range []RelationshipObservationInput{
+		{DisplayName: "Acme", Source: "hubspot", ExternalID: "later", EventType: "company.updated",
+			ResourceRefs: []string{"hubspot:company:123"}, OccurredAt: later, ReceivedAt: later},
+		{DisplayName: "Acme", Source: "hubspot", ExternalID: "earlier", EventType: "company.created",
+			ResourceRefs: []string{"hubspot:company:123"}, OccurredAt: later.Add(-24 * time.Hour), ReceivedAt: later.Add(-24 * time.Hour)},
+	} {
+		if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{event}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	identity, err := f.client.RelationshipIdentity.Query().
+		Where(relationshipidentity.ProviderEQ("hubspot")).Only(f.ctx)
+	if err != nil || !identity.FirstSeenAt.Equal(later.Add(-24*time.Hour)) || !identity.LastSeenAt.Equal(later) {
+		t.Fatalf("identity observation times not preserved: identity=%+v err=%v", identity, err)
 	}
 }
 

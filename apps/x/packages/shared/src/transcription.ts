@@ -1,4 +1,9 @@
 import { z } from "zod";
+import { DEFAULT_MEETINGS_SETTINGS, MeetingsSettings } from "./meetings.js";
+
+// Re-exported so consumers of the transcription config can reach the nested block
+// without also importing ./meetings.js.
+export { MeetingsSettings, DEFAULT_MEETINGS_SETTINGS };
 
 /**
  * Transcription provider abstraction (RFC 009 §12).
@@ -260,6 +265,8 @@ export const TranscriptionConfig = z.object({
   }),
   // RFC 017: on-device meeting diarization (off by default, beta).
   diarization: DiarizationSettings.default(DEFAULT_DIARIZATION_SETTINGS),
+  // Native dual-track meeting capture: engine choice, echo cancellation, retention.
+  meetings: MeetingsSettings.default(DEFAULT_MEETINGS_SETTINGS),
 });
 export type TranscriptionConfig = z.infer<typeof TranscriptionConfig>;
 
@@ -277,3 +284,75 @@ export const TranscriptionDefaults = z.object({
   diarizationEnabled: z.boolean().optional(),
 });
 export type TranscriptionDefaults = z.infer<typeof TranscriptionDefaults>;
+
+// ---------------------------------------------------------------------------
+// Effective data routing
+// ---------------------------------------------------------------------------
+
+/**
+ * Where a piece of speech or transcript text is processed.
+ *
+ * `unknown` is deliberately distinct from `cloud`: an OpenAI-compatible endpoint can
+ * be local or remote, and privacy UI must not claim either without enough evidence.
+ */
+export const TranscriptionDataLocation = z.enum(["device", "cloud", "unavailable", "unknown"]);
+export type TranscriptionDataLocation = z.infer<typeof TranscriptionDataLocation>;
+
+/**
+ * The route a feature will actually use, not merely the persisted preference.
+ *
+ * `configuredProvider` is retained so the UI can explain an override (for example,
+ * local-only mode or native meeting capture). `cloudAllowedByUser` means the effective
+ * cloud route comes from a cloud option that is enabled in settings; it is never true
+ * while local-only mode is active.
+ */
+export const EffectiveTranscriptionRoute = z.object({
+  configuredProvider: TranscriptionProvider,
+  effectiveProvider: TranscriptionProvider,
+  location: TranscriptionDataLocation,
+  audioLeavesDevice: z.boolean(),
+  cloudAllowedByUser: z.boolean(),
+  reason: z.string().optional(),
+  engine: z.string().optional(),
+});
+export type EffectiveTranscriptionRoute = z.infer<typeof EffectiveTranscriptionRoute>;
+
+/** Text-only model work performed after speech-to-text. */
+export const TranscriptEnrichmentRoute = z.object({
+  provider: z.string(),
+  model: z.string(),
+  location: TranscriptionDataLocation,
+  transcriptTextMayLeaveDevice: z.boolean(),
+  summariesEnabled: z.boolean(),
+  commitmentsEnabled: z.boolean(),
+  liveQuestionsEnabled: z.boolean(),
+});
+export type TranscriptEnrichmentRoute = z.infer<typeof TranscriptEnrichmentRoute>;
+
+/** Optional publication of transcript evidence into shared relationship state. */
+export const RelationshipEvidenceRoute = z.object({
+  enabled: z.boolean(),
+  location: TranscriptionDataLocation,
+  transcriptTextMayLeaveDevice: z.boolean(),
+  destination: z.string(),
+});
+export type RelationshipEvidenceRoute = z.infer<typeof RelationshipEvidenceRoute>;
+
+/**
+ * One truthful receipt for every transcription-adjacent desktop surface.
+ *
+ * Voice memos intentionally share the voice route. Keeping a separate route in this
+ * response makes that product promise independently visible and guards against a future
+ * legacy implementation silently bypassing it again.
+ */
+export const TranscriptionRouting = z.object({
+  localOnly: z.boolean(),
+  voice: EffectiveTranscriptionRoute,
+  voiceMemo: EffectiveTranscriptionRoute,
+  meeting: EffectiveTranscriptionRoute.extend({
+    captureEngine: z.enum(["native", "renderer"]),
+  }),
+  enrichment: TranscriptEnrichmentRoute,
+  relationshipEvidence: RelationshipEvidenceRoute,
+});
+export type TranscriptionRouting = z.infer<typeof TranscriptionRouting>;

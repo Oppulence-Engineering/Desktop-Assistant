@@ -96,6 +96,56 @@ func UserConfirmed(v bool) predicate.Commitment {
 	return predicate.Commitment(sql.FieldEQ(FieldUserConfirmed, v))
 }
 
+// OwnerParticipantRef applies equality check predicate on the "owner_participant_ref" field. It's identical to OwnerParticipantRefEQ.
+func OwnerParticipantRef(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldOwnerParticipantRef, v))
+}
+
+// CounterpartyParticipantRef applies equality check predicate on the "counterparty_participant_ref" field. It's identical to CounterpartyParticipantRefEQ.
+func CounterpartyParticipantRef(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldCounterpartyParticipantRef, v))
+}
+
+// BeneficiaryParticipantRef applies equality check predicate on the "beneficiary_participant_ref" field. It's identical to BeneficiaryParticipantRefEQ.
+func BeneficiaryParticipantRef(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldBeneficiaryParticipantRef, v))
+}
+
+// SourcePhrase applies equality check predicate on the "source_phrase" field. It's identical to SourcePhraseEQ.
+func SourcePhrase(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldSourcePhrase, v))
+}
+
+// DuePhrase applies equality check predicate on the "due_phrase" field. It's identical to DuePhraseEQ.
+func DuePhrase(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldDuePhrase, v))
+}
+
+// DueTimezone applies equality check predicate on the "due_timezone" field. It's identical to DueTimezoneEQ.
+func DueTimezone(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldDueTimezone, v))
+}
+
+// Acceptance applies equality check predicate on the "acceptance" field. It's identical to AcceptanceEQ.
+func Acceptance(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldAcceptance, v))
+}
+
+// Blocker applies equality check predicate on the "blocker" field. It's identical to BlockerEQ.
+func Blocker(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldBlocker, v))
+}
+
+// CompletedAt applies equality check predicate on the "completed_at" field. It's identical to CompletedAtEQ.
+func CompletedAt(v time.Time) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldCompletedAt, v))
+}
+
+// CurrentEventVersion applies equality check predicate on the "current_event_version" field. It's identical to CurrentEventVersionEQ.
+func CurrentEventVersion(v int) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldCurrentEventVersion, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Commitment {
 	return predicate.Commitment(sql.FieldEQ(FieldCreatedAt, v))
@@ -471,6 +521,686 @@ func UserConfirmedNEQ(v bool) predicate.Commitment {
 	return predicate.Commitment(sql.FieldNEQ(FieldUserConfirmed, v))
 }
 
+// OwnerParticipantRefEQ applies the EQ predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldOwnerParticipantRef, v))
+}
+
+// OwnerParticipantRefNEQ applies the NEQ predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefNEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNEQ(FieldOwnerParticipantRef, v))
+}
+
+// OwnerParticipantRefIn applies the In predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldIn(FieldOwnerParticipantRef, vs...))
+}
+
+// OwnerParticipantRefNotIn applies the NotIn predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefNotIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotIn(FieldOwnerParticipantRef, vs...))
+}
+
+// OwnerParticipantRefGT applies the GT predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefGT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGT(FieldOwnerParticipantRef, v))
+}
+
+// OwnerParticipantRefGTE applies the GTE predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefGTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGTE(FieldOwnerParticipantRef, v))
+}
+
+// OwnerParticipantRefLT applies the LT predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefLT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLT(FieldOwnerParticipantRef, v))
+}
+
+// OwnerParticipantRefLTE applies the LTE predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefLTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLTE(FieldOwnerParticipantRef, v))
+}
+
+// OwnerParticipantRefContains applies the Contains predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefContains(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContains(FieldOwnerParticipantRef, v))
+}
+
+// OwnerParticipantRefHasPrefix applies the HasPrefix predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefHasPrefix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasPrefix(FieldOwnerParticipantRef, v))
+}
+
+// OwnerParticipantRefHasSuffix applies the HasSuffix predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefHasSuffix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasSuffix(FieldOwnerParticipantRef, v))
+}
+
+// OwnerParticipantRefIsNil applies the IsNil predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefIsNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldIsNull(FieldOwnerParticipantRef))
+}
+
+// OwnerParticipantRefNotNil applies the NotNil predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefNotNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotNull(FieldOwnerParticipantRef))
+}
+
+// OwnerParticipantRefEqualFold applies the EqualFold predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefEqualFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEqualFold(FieldOwnerParticipantRef, v))
+}
+
+// OwnerParticipantRefContainsFold applies the ContainsFold predicate on the "owner_participant_ref" field.
+func OwnerParticipantRefContainsFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContainsFold(FieldOwnerParticipantRef, v))
+}
+
+// CounterpartyParticipantRefEQ applies the EQ predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldCounterpartyParticipantRef, v))
+}
+
+// CounterpartyParticipantRefNEQ applies the NEQ predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefNEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNEQ(FieldCounterpartyParticipantRef, v))
+}
+
+// CounterpartyParticipantRefIn applies the In predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldIn(FieldCounterpartyParticipantRef, vs...))
+}
+
+// CounterpartyParticipantRefNotIn applies the NotIn predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefNotIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotIn(FieldCounterpartyParticipantRef, vs...))
+}
+
+// CounterpartyParticipantRefGT applies the GT predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefGT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGT(FieldCounterpartyParticipantRef, v))
+}
+
+// CounterpartyParticipantRefGTE applies the GTE predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefGTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGTE(FieldCounterpartyParticipantRef, v))
+}
+
+// CounterpartyParticipantRefLT applies the LT predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefLT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLT(FieldCounterpartyParticipantRef, v))
+}
+
+// CounterpartyParticipantRefLTE applies the LTE predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefLTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLTE(FieldCounterpartyParticipantRef, v))
+}
+
+// CounterpartyParticipantRefContains applies the Contains predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefContains(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContains(FieldCounterpartyParticipantRef, v))
+}
+
+// CounterpartyParticipantRefHasPrefix applies the HasPrefix predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefHasPrefix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasPrefix(FieldCounterpartyParticipantRef, v))
+}
+
+// CounterpartyParticipantRefHasSuffix applies the HasSuffix predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefHasSuffix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasSuffix(FieldCounterpartyParticipantRef, v))
+}
+
+// CounterpartyParticipantRefIsNil applies the IsNil predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefIsNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldIsNull(FieldCounterpartyParticipantRef))
+}
+
+// CounterpartyParticipantRefNotNil applies the NotNil predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefNotNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotNull(FieldCounterpartyParticipantRef))
+}
+
+// CounterpartyParticipantRefEqualFold applies the EqualFold predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefEqualFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEqualFold(FieldCounterpartyParticipantRef, v))
+}
+
+// CounterpartyParticipantRefContainsFold applies the ContainsFold predicate on the "counterparty_participant_ref" field.
+func CounterpartyParticipantRefContainsFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContainsFold(FieldCounterpartyParticipantRef, v))
+}
+
+// BeneficiaryParticipantRefEQ applies the EQ predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldBeneficiaryParticipantRef, v))
+}
+
+// BeneficiaryParticipantRefNEQ applies the NEQ predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefNEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNEQ(FieldBeneficiaryParticipantRef, v))
+}
+
+// BeneficiaryParticipantRefIn applies the In predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldIn(FieldBeneficiaryParticipantRef, vs...))
+}
+
+// BeneficiaryParticipantRefNotIn applies the NotIn predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefNotIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotIn(FieldBeneficiaryParticipantRef, vs...))
+}
+
+// BeneficiaryParticipantRefGT applies the GT predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefGT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGT(FieldBeneficiaryParticipantRef, v))
+}
+
+// BeneficiaryParticipantRefGTE applies the GTE predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefGTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGTE(FieldBeneficiaryParticipantRef, v))
+}
+
+// BeneficiaryParticipantRefLT applies the LT predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefLT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLT(FieldBeneficiaryParticipantRef, v))
+}
+
+// BeneficiaryParticipantRefLTE applies the LTE predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefLTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLTE(FieldBeneficiaryParticipantRef, v))
+}
+
+// BeneficiaryParticipantRefContains applies the Contains predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefContains(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContains(FieldBeneficiaryParticipantRef, v))
+}
+
+// BeneficiaryParticipantRefHasPrefix applies the HasPrefix predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefHasPrefix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasPrefix(FieldBeneficiaryParticipantRef, v))
+}
+
+// BeneficiaryParticipantRefHasSuffix applies the HasSuffix predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefHasSuffix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasSuffix(FieldBeneficiaryParticipantRef, v))
+}
+
+// BeneficiaryParticipantRefIsNil applies the IsNil predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefIsNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldIsNull(FieldBeneficiaryParticipantRef))
+}
+
+// BeneficiaryParticipantRefNotNil applies the NotNil predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefNotNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotNull(FieldBeneficiaryParticipantRef))
+}
+
+// BeneficiaryParticipantRefEqualFold applies the EqualFold predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefEqualFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEqualFold(FieldBeneficiaryParticipantRef, v))
+}
+
+// BeneficiaryParticipantRefContainsFold applies the ContainsFold predicate on the "beneficiary_participant_ref" field.
+func BeneficiaryParticipantRefContainsFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContainsFold(FieldBeneficiaryParticipantRef, v))
+}
+
+// SourcePhraseEQ applies the EQ predicate on the "source_phrase" field.
+func SourcePhraseEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldSourcePhrase, v))
+}
+
+// SourcePhraseNEQ applies the NEQ predicate on the "source_phrase" field.
+func SourcePhraseNEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNEQ(FieldSourcePhrase, v))
+}
+
+// SourcePhraseIn applies the In predicate on the "source_phrase" field.
+func SourcePhraseIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldIn(FieldSourcePhrase, vs...))
+}
+
+// SourcePhraseNotIn applies the NotIn predicate on the "source_phrase" field.
+func SourcePhraseNotIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotIn(FieldSourcePhrase, vs...))
+}
+
+// SourcePhraseGT applies the GT predicate on the "source_phrase" field.
+func SourcePhraseGT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGT(FieldSourcePhrase, v))
+}
+
+// SourcePhraseGTE applies the GTE predicate on the "source_phrase" field.
+func SourcePhraseGTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGTE(FieldSourcePhrase, v))
+}
+
+// SourcePhraseLT applies the LT predicate on the "source_phrase" field.
+func SourcePhraseLT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLT(FieldSourcePhrase, v))
+}
+
+// SourcePhraseLTE applies the LTE predicate on the "source_phrase" field.
+func SourcePhraseLTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLTE(FieldSourcePhrase, v))
+}
+
+// SourcePhraseContains applies the Contains predicate on the "source_phrase" field.
+func SourcePhraseContains(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContains(FieldSourcePhrase, v))
+}
+
+// SourcePhraseHasPrefix applies the HasPrefix predicate on the "source_phrase" field.
+func SourcePhraseHasPrefix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasPrefix(FieldSourcePhrase, v))
+}
+
+// SourcePhraseHasSuffix applies the HasSuffix predicate on the "source_phrase" field.
+func SourcePhraseHasSuffix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasSuffix(FieldSourcePhrase, v))
+}
+
+// SourcePhraseIsNil applies the IsNil predicate on the "source_phrase" field.
+func SourcePhraseIsNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldIsNull(FieldSourcePhrase))
+}
+
+// SourcePhraseNotNil applies the NotNil predicate on the "source_phrase" field.
+func SourcePhraseNotNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotNull(FieldSourcePhrase))
+}
+
+// SourcePhraseEqualFold applies the EqualFold predicate on the "source_phrase" field.
+func SourcePhraseEqualFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEqualFold(FieldSourcePhrase, v))
+}
+
+// SourcePhraseContainsFold applies the ContainsFold predicate on the "source_phrase" field.
+func SourcePhraseContainsFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContainsFold(FieldSourcePhrase, v))
+}
+
+// DuePhraseEQ applies the EQ predicate on the "due_phrase" field.
+func DuePhraseEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldDuePhrase, v))
+}
+
+// DuePhraseNEQ applies the NEQ predicate on the "due_phrase" field.
+func DuePhraseNEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNEQ(FieldDuePhrase, v))
+}
+
+// DuePhraseIn applies the In predicate on the "due_phrase" field.
+func DuePhraseIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldIn(FieldDuePhrase, vs...))
+}
+
+// DuePhraseNotIn applies the NotIn predicate on the "due_phrase" field.
+func DuePhraseNotIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotIn(FieldDuePhrase, vs...))
+}
+
+// DuePhraseGT applies the GT predicate on the "due_phrase" field.
+func DuePhraseGT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGT(FieldDuePhrase, v))
+}
+
+// DuePhraseGTE applies the GTE predicate on the "due_phrase" field.
+func DuePhraseGTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGTE(FieldDuePhrase, v))
+}
+
+// DuePhraseLT applies the LT predicate on the "due_phrase" field.
+func DuePhraseLT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLT(FieldDuePhrase, v))
+}
+
+// DuePhraseLTE applies the LTE predicate on the "due_phrase" field.
+func DuePhraseLTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLTE(FieldDuePhrase, v))
+}
+
+// DuePhraseContains applies the Contains predicate on the "due_phrase" field.
+func DuePhraseContains(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContains(FieldDuePhrase, v))
+}
+
+// DuePhraseHasPrefix applies the HasPrefix predicate on the "due_phrase" field.
+func DuePhraseHasPrefix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasPrefix(FieldDuePhrase, v))
+}
+
+// DuePhraseHasSuffix applies the HasSuffix predicate on the "due_phrase" field.
+func DuePhraseHasSuffix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasSuffix(FieldDuePhrase, v))
+}
+
+// DuePhraseIsNil applies the IsNil predicate on the "due_phrase" field.
+func DuePhraseIsNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldIsNull(FieldDuePhrase))
+}
+
+// DuePhraseNotNil applies the NotNil predicate on the "due_phrase" field.
+func DuePhraseNotNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotNull(FieldDuePhrase))
+}
+
+// DuePhraseEqualFold applies the EqualFold predicate on the "due_phrase" field.
+func DuePhraseEqualFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEqualFold(FieldDuePhrase, v))
+}
+
+// DuePhraseContainsFold applies the ContainsFold predicate on the "due_phrase" field.
+func DuePhraseContainsFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContainsFold(FieldDuePhrase, v))
+}
+
+// DueTimezoneEQ applies the EQ predicate on the "due_timezone" field.
+func DueTimezoneEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldDueTimezone, v))
+}
+
+// DueTimezoneNEQ applies the NEQ predicate on the "due_timezone" field.
+func DueTimezoneNEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNEQ(FieldDueTimezone, v))
+}
+
+// DueTimezoneIn applies the In predicate on the "due_timezone" field.
+func DueTimezoneIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldIn(FieldDueTimezone, vs...))
+}
+
+// DueTimezoneNotIn applies the NotIn predicate on the "due_timezone" field.
+func DueTimezoneNotIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotIn(FieldDueTimezone, vs...))
+}
+
+// DueTimezoneGT applies the GT predicate on the "due_timezone" field.
+func DueTimezoneGT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGT(FieldDueTimezone, v))
+}
+
+// DueTimezoneGTE applies the GTE predicate on the "due_timezone" field.
+func DueTimezoneGTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGTE(FieldDueTimezone, v))
+}
+
+// DueTimezoneLT applies the LT predicate on the "due_timezone" field.
+func DueTimezoneLT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLT(FieldDueTimezone, v))
+}
+
+// DueTimezoneLTE applies the LTE predicate on the "due_timezone" field.
+func DueTimezoneLTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLTE(FieldDueTimezone, v))
+}
+
+// DueTimezoneContains applies the Contains predicate on the "due_timezone" field.
+func DueTimezoneContains(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContains(FieldDueTimezone, v))
+}
+
+// DueTimezoneHasPrefix applies the HasPrefix predicate on the "due_timezone" field.
+func DueTimezoneHasPrefix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasPrefix(FieldDueTimezone, v))
+}
+
+// DueTimezoneHasSuffix applies the HasSuffix predicate on the "due_timezone" field.
+func DueTimezoneHasSuffix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasSuffix(FieldDueTimezone, v))
+}
+
+// DueTimezoneIsNil applies the IsNil predicate on the "due_timezone" field.
+func DueTimezoneIsNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldIsNull(FieldDueTimezone))
+}
+
+// DueTimezoneNotNil applies the NotNil predicate on the "due_timezone" field.
+func DueTimezoneNotNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotNull(FieldDueTimezone))
+}
+
+// DueTimezoneEqualFold applies the EqualFold predicate on the "due_timezone" field.
+func DueTimezoneEqualFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEqualFold(FieldDueTimezone, v))
+}
+
+// DueTimezoneContainsFold applies the ContainsFold predicate on the "due_timezone" field.
+func DueTimezoneContainsFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContainsFold(FieldDueTimezone, v))
+}
+
+// AcceptanceEQ applies the EQ predicate on the "acceptance" field.
+func AcceptanceEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldAcceptance, v))
+}
+
+// AcceptanceNEQ applies the NEQ predicate on the "acceptance" field.
+func AcceptanceNEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNEQ(FieldAcceptance, v))
+}
+
+// AcceptanceIn applies the In predicate on the "acceptance" field.
+func AcceptanceIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldIn(FieldAcceptance, vs...))
+}
+
+// AcceptanceNotIn applies the NotIn predicate on the "acceptance" field.
+func AcceptanceNotIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotIn(FieldAcceptance, vs...))
+}
+
+// AcceptanceGT applies the GT predicate on the "acceptance" field.
+func AcceptanceGT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGT(FieldAcceptance, v))
+}
+
+// AcceptanceGTE applies the GTE predicate on the "acceptance" field.
+func AcceptanceGTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGTE(FieldAcceptance, v))
+}
+
+// AcceptanceLT applies the LT predicate on the "acceptance" field.
+func AcceptanceLT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLT(FieldAcceptance, v))
+}
+
+// AcceptanceLTE applies the LTE predicate on the "acceptance" field.
+func AcceptanceLTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLTE(FieldAcceptance, v))
+}
+
+// AcceptanceContains applies the Contains predicate on the "acceptance" field.
+func AcceptanceContains(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContains(FieldAcceptance, v))
+}
+
+// AcceptanceHasPrefix applies the HasPrefix predicate on the "acceptance" field.
+func AcceptanceHasPrefix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasPrefix(FieldAcceptance, v))
+}
+
+// AcceptanceHasSuffix applies the HasSuffix predicate on the "acceptance" field.
+func AcceptanceHasSuffix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasSuffix(FieldAcceptance, v))
+}
+
+// AcceptanceEqualFold applies the EqualFold predicate on the "acceptance" field.
+func AcceptanceEqualFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEqualFold(FieldAcceptance, v))
+}
+
+// AcceptanceContainsFold applies the ContainsFold predicate on the "acceptance" field.
+func AcceptanceContainsFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContainsFold(FieldAcceptance, v))
+}
+
+// BlockerEQ applies the EQ predicate on the "blocker" field.
+func BlockerEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldBlocker, v))
+}
+
+// BlockerNEQ applies the NEQ predicate on the "blocker" field.
+func BlockerNEQ(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNEQ(FieldBlocker, v))
+}
+
+// BlockerIn applies the In predicate on the "blocker" field.
+func BlockerIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldIn(FieldBlocker, vs...))
+}
+
+// BlockerNotIn applies the NotIn predicate on the "blocker" field.
+func BlockerNotIn(vs ...string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotIn(FieldBlocker, vs...))
+}
+
+// BlockerGT applies the GT predicate on the "blocker" field.
+func BlockerGT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGT(FieldBlocker, v))
+}
+
+// BlockerGTE applies the GTE predicate on the "blocker" field.
+func BlockerGTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGTE(FieldBlocker, v))
+}
+
+// BlockerLT applies the LT predicate on the "blocker" field.
+func BlockerLT(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLT(FieldBlocker, v))
+}
+
+// BlockerLTE applies the LTE predicate on the "blocker" field.
+func BlockerLTE(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLTE(FieldBlocker, v))
+}
+
+// BlockerContains applies the Contains predicate on the "blocker" field.
+func BlockerContains(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContains(FieldBlocker, v))
+}
+
+// BlockerHasPrefix applies the HasPrefix predicate on the "blocker" field.
+func BlockerHasPrefix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasPrefix(FieldBlocker, v))
+}
+
+// BlockerHasSuffix applies the HasSuffix predicate on the "blocker" field.
+func BlockerHasSuffix(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldHasSuffix(FieldBlocker, v))
+}
+
+// BlockerIsNil applies the IsNil predicate on the "blocker" field.
+func BlockerIsNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldIsNull(FieldBlocker))
+}
+
+// BlockerNotNil applies the NotNil predicate on the "blocker" field.
+func BlockerNotNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotNull(FieldBlocker))
+}
+
+// BlockerEqualFold applies the EqualFold predicate on the "blocker" field.
+func BlockerEqualFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEqualFold(FieldBlocker, v))
+}
+
+// BlockerContainsFold applies the ContainsFold predicate on the "blocker" field.
+func BlockerContainsFold(v string) predicate.Commitment {
+	return predicate.Commitment(sql.FieldContainsFold(FieldBlocker, v))
+}
+
+// CompletedAtEQ applies the EQ predicate on the "completed_at" field.
+func CompletedAtEQ(v time.Time) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldCompletedAt, v))
+}
+
+// CompletedAtNEQ applies the NEQ predicate on the "completed_at" field.
+func CompletedAtNEQ(v time.Time) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNEQ(FieldCompletedAt, v))
+}
+
+// CompletedAtIn applies the In predicate on the "completed_at" field.
+func CompletedAtIn(vs ...time.Time) predicate.Commitment {
+	return predicate.Commitment(sql.FieldIn(FieldCompletedAt, vs...))
+}
+
+// CompletedAtNotIn applies the NotIn predicate on the "completed_at" field.
+func CompletedAtNotIn(vs ...time.Time) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotIn(FieldCompletedAt, vs...))
+}
+
+// CompletedAtGT applies the GT predicate on the "completed_at" field.
+func CompletedAtGT(v time.Time) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGT(FieldCompletedAt, v))
+}
+
+// CompletedAtGTE applies the GTE predicate on the "completed_at" field.
+func CompletedAtGTE(v time.Time) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGTE(FieldCompletedAt, v))
+}
+
+// CompletedAtLT applies the LT predicate on the "completed_at" field.
+func CompletedAtLT(v time.Time) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLT(FieldCompletedAt, v))
+}
+
+// CompletedAtLTE applies the LTE predicate on the "completed_at" field.
+func CompletedAtLTE(v time.Time) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLTE(FieldCompletedAt, v))
+}
+
+// CompletedAtIsNil applies the IsNil predicate on the "completed_at" field.
+func CompletedAtIsNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldIsNull(FieldCompletedAt))
+}
+
+// CompletedAtNotNil applies the NotNil predicate on the "completed_at" field.
+func CompletedAtNotNil() predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotNull(FieldCompletedAt))
+}
+
+// CurrentEventVersionEQ applies the EQ predicate on the "current_event_version" field.
+func CurrentEventVersionEQ(v int) predicate.Commitment {
+	return predicate.Commitment(sql.FieldEQ(FieldCurrentEventVersion, v))
+}
+
+// CurrentEventVersionNEQ applies the NEQ predicate on the "current_event_version" field.
+func CurrentEventVersionNEQ(v int) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNEQ(FieldCurrentEventVersion, v))
+}
+
+// CurrentEventVersionIn applies the In predicate on the "current_event_version" field.
+func CurrentEventVersionIn(vs ...int) predicate.Commitment {
+	return predicate.Commitment(sql.FieldIn(FieldCurrentEventVersion, vs...))
+}
+
+// CurrentEventVersionNotIn applies the NotIn predicate on the "current_event_version" field.
+func CurrentEventVersionNotIn(vs ...int) predicate.Commitment {
+	return predicate.Commitment(sql.FieldNotIn(FieldCurrentEventVersion, vs...))
+}
+
+// CurrentEventVersionGT applies the GT predicate on the "current_event_version" field.
+func CurrentEventVersionGT(v int) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGT(FieldCurrentEventVersion, v))
+}
+
+// CurrentEventVersionGTE applies the GTE predicate on the "current_event_version" field.
+func CurrentEventVersionGTE(v int) predicate.Commitment {
+	return predicate.Commitment(sql.FieldGTE(FieldCurrentEventVersion, v))
+}
+
+// CurrentEventVersionLT applies the LT predicate on the "current_event_version" field.
+func CurrentEventVersionLT(v int) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLT(FieldCurrentEventVersion, v))
+}
+
+// CurrentEventVersionLTE applies the LTE predicate on the "current_event_version" field.
+func CurrentEventVersionLTE(v int) predicate.Commitment {
+	return predicate.Commitment(sql.FieldLTE(FieldCurrentEventVersion, v))
+}
+
 // HasWorkspace applies the HasEdge predicate on the "workspace" edge.
 func HasWorkspace() predicate.Commitment {
 	return predicate.Commitment(func(s *sql.Selector) {
@@ -555,6 +1285,75 @@ func HasEvidences() predicate.Commitment {
 func HasEvidencesWith(preds ...predicate.RevenueEvidence) predicate.Commitment {
 	return predicate.Commitment(func(s *sql.Selector) {
 		step := newEvidencesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEvents applies the HasEdge predicate on the "events" edge.
+func HasEvents() predicate.Commitment {
+	return predicate.Commitment(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EventsTable, EventsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEventsWith applies the HasEdge predicate on the "events" edge with a given conditions (other predicates).
+func HasEventsWith(preds ...predicate.CommitmentEvent) predicate.Commitment {
+	return predicate.Commitment(func(s *sql.Selector) {
+		step := newEventsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasOutgoingDependencies applies the HasEdge predicate on the "outgoing_dependencies" edge.
+func HasOutgoingDependencies() predicate.Commitment {
+	return predicate.Commitment(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, OutgoingDependenciesTable, OutgoingDependenciesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOutgoingDependenciesWith applies the HasEdge predicate on the "outgoing_dependencies" edge with a given conditions (other predicates).
+func HasOutgoingDependenciesWith(preds ...predicate.CommitmentDependency) predicate.Commitment {
+	return predicate.Commitment(func(s *sql.Selector) {
+		step := newOutgoingDependenciesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasIncomingDependencies applies the HasEdge predicate on the "incoming_dependencies" edge.
+func HasIncomingDependencies() predicate.Commitment {
+	return predicate.Commitment(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, IncomingDependenciesTable, IncomingDependenciesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasIncomingDependenciesWith applies the HasEdge predicate on the "incoming_dependencies" edge with a given conditions (other predicates).
+func HasIncomingDependenciesWith(preds ...predicate.CommitmentDependency) predicate.Commitment {
+	return predicate.Commitment(func(s *sql.Selector) {
+		step := newIncomingDependenciesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -539,10 +539,12 @@ func addConnectorSchemas(schemas obj) {
 		"name":        stringSchema("Stable connector slug.", "canvas"),
 		"displayName": stringSchema("Human-readable connector name.", "Canvas"),
 		"description": stringSchema("Short product capability description.", "Banking, invoicing, dunning, transactions"),
-		"mcpUrl":      stringSchema("MCP endpoint the desktop should call after obtaining an MCP token.", "https://api.canvas.solomon-ai.co/v1/mcp"),
+		"mcpUrl":      stringSchema("MCP endpoint the desktop should call after obtaining an MCP token. Empty for native SDK connectors.", "https://api.canvas.solomon-ai.co/v1/mcp"),
+		"transport":   stringEnum("Connector execution transport. MCP is the default; native uses server-side SDK tools.", "mcp", "mcp", "native"),
 		"authType":    stringEnum("Connector credential flow.", "oauth", "oauth", "api_key"),
 		"scopes":      arraySchema("OAuth scopes requested for this connector.", stringSchema("Scope.", "invoices:read")),
 		"mcpTools":    arraySchema("Allowlisted upstream MCP tools and trust tiers for cloud runtime calls.", ref("MCPToolPolicy")),
+		"nativeTools": arraySchema("Allowlisted server-side native SDK tools and trust tiers.", ref("MCPToolPolicy")),
 		"templateBlocks": arraySchema(
 			"Onboarding capability blocks shown when a user browses or connects this integration.",
 			ref("IntegrationTemplateBlock"),
@@ -557,7 +559,8 @@ func addConnectorSchemas(schemas obj) {
 		"description":    stringSchema("Human-readable capability description.", "Look up invoices, customers, balances, and current payment status."),
 		"category":       stringSchema("UI grouping category.", "finance"),
 		"requiredScopes": arraySchema("OAuth scopes required by this capability.", stringSchema("Scope.", "invoices:read")),
-		"mcpTools":       arraySchema("Connector MCP tools backing this capability.", stringSchema("MCP tool name.", "invoice.lookup")),
+		"mcpTools":       arraySchema("MCP tools backing this capability for an MCP transport connector.", stringSchema("MCP tool name.", "invoice.lookup")),
+		"nativeTools":    arraySchema("Server-side SDK tools backing this capability for a native transport connector.", stringSchema("Native tool name.", "connector.read.hubspot_search")),
 		"trustTier":      stringEnum("Highest trust tier needed by this capability.", "read", "read", "write", "act", "money-moving"),
 		"samplePrompt":   stringSchema("Optional prompt example for the onboarding UI.", "Show me the current invoice status for Acme.", nullable()),
 	}, "id", "title", "description", "category", "trustTier")
@@ -586,6 +589,23 @@ func addConnectorSchemas(schemas obj) {
 		"expires_at":   int64Schema("Unix timestamp in seconds for OAuth connector tokens. API-key connectors may omit it.", 1790784000),
 		"mcpUrl":       stringSchema("Connector MCP endpoint URL.", "https://api.canvas.solomon-ai.co/v1/mcp"),
 	}, "access_token", "token_type", "mcpUrl")
+	schemas["HubSpotSearchRequest"] = objectSchema("Bounded search of the authenticated user's connected HubSpot CRM.", obj{
+		"objectType": stringEnum("CRM object type.", "contact", "contact", "company", "deal", "ticket"),
+		"query":      stringSchema("HubSpot free-text search query.", "buyer@example.com"),
+		"limit":      intSchema("Maximum records returned (1-25).", 10),
+	}, "objectType", "query")
+	schemas["HubSpotSearchObject"] = objectSchema("Bounded HubSpot CRM record.", obj{
+		"id":         stringSchema("HubSpot record id.", "101"),
+		"properties": obj{"type": "object", "additionalProperties": obj{"type": "string"}},
+		"createdAt":  stringSchema("Record creation timestamp.", "2026-07-31T12:00:00Z", nullable()),
+		"updatedAt":  stringSchema("Record update timestamp.", "2026-07-31T12:00:00Z", nullable()),
+		"archived":   boolSchema("Whether HubSpot archived the record.", false),
+	}, "id", "properties")
+	schemas["HubSpotSearchResponse"] = objectSchema("Native HubSpot SDK search result.", obj{
+		"objectType": stringEnum("Canonical CRM object type.", "contact", "contact", "company", "deal", "ticket"),
+		"total":      int64Schema("Total matching HubSpot records.", 1),
+		"results":    arraySchema("Bounded matching records.", ref("HubSpotSearchObject")),
+	}, "objectType", "total", "results")
 }
 
 func addSlackOAuthSchemas(schemas obj) {
@@ -1285,6 +1305,14 @@ func addConnectorPaths(paths obj) {
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
+	paths["/v1/hubspot/search"] = obj{"post": operation("Connectors", "Search HubSpot CRM", "Searches contacts, companies, deals, or tickets through HubSpot's official server-side SDK. The connected private-app token remains sealed server-side.", "searchHubSpot", bearer(), nil, jsonRequest("HubSpot search.", ref("HubSpotSearchRequest"), obj{"objectType": "contact", "query": "buyer@example.com", "limit": 10}), obj{
+		"200": jsonResponse("HubSpot search result.", ref("HubSpotSearchResponse"), obj{"objectType": "contact", "total": 1, "results": []any{obj{"id": "101", "properties": obj{"email": "buyer@example.com"}}}}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"409": responseRef("409"),
+		"502": responseRef("502"),
+		"503": responseRef("503"),
+	})}
 	paths["/v1/connections/{name}/start"] = obj{"post": operation("Connectors", "Start connector OAuth flow", "Creates a sealed pending connection ticket, builds the Ory authorize URL with PKCE, and returns it for the desktop to open in a browser.", "startConnection", bearer(), connectorNameParam(), nil, obj{
 		"200": jsonResponse("Connector authorize URL.", ref("ConnectionStartResponse"), obj{"authorize_url": "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api&state=..."}),
 		"400": responseRef("400"),
@@ -1324,6 +1352,7 @@ func addConnectorPaths(paths obj) {
 	paths["/v1/connections/{name}/mcp-token"] = obj{"post": operation("Connectors", "Mint connector MCP token", "Returns a short-lived MCP access token and target MCP URL for a connected connector. OAuth connectors refresh through Ory; api_key connectors return the sealed vendor key directly.", "createMCPToken", bearer(), connectorNameParam(), nil, obj{
 		"200": jsonResponse("MCP token and endpoint.", ref("MCPTokenResponse"), obj{"access_token": "mcp_access_token", "token_type": "Bearer", "expires_at": 1790784000, "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp"}),
 		"401": responseRef("401"),
+		"400": responseRef("400"),
 		"404": responseRef("404"),
 		"500": responseRef("500"),
 		"502": responseRef("502"),

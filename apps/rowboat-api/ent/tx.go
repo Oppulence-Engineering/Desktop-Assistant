@@ -48,6 +48,12 @@ type Tx struct {
 	CloudEvent *CloudEventClient
 	// Commitment is the client for interacting with the Commitment builders.
 	Commitment *CommitmentClient
+	// CommitmentDependency is the client for interacting with the CommitmentDependency builders.
+	CommitmentDependency *CommitmentDependencyClient
+	// CommitmentEvent is the client for interacting with the CommitmentEvent builders.
+	CommitmentEvent *CommitmentEventClient
+	// ConversationIntelligenceArtifact is the client for interacting with the ConversationIntelligenceArtifact builders.
+	ConversationIntelligenceArtifact *ConversationIntelligenceArtifactClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
 	// GoogleWatch is the client for interacting with the GoogleWatch builders.
@@ -82,6 +88,8 @@ type Tx struct {
 	Relationship *RelationshipClient
 	// RelationshipAssertion is the client for interacting with the RelationshipAssertion builders.
 	RelationshipAssertion *RelationshipAssertionClient
+	// RelationshipIdentity is the client for interacting with the RelationshipIdentity builders.
+	RelationshipIdentity *RelationshipIdentityClient
 	// RelationshipObservation is the client for interacting with the RelationshipObservation builders.
 	RelationshipObservation *RelationshipObservationClient
 	// RelationshipParticipant is the client for interacting with the RelationshipParticipant builders.
@@ -261,6 +269,9 @@ func (tx *Tx) init() {
 	tx.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(tx.config)
 	tx.CloudEvent = NewCloudEventClient(tx.config)
 	tx.Commitment = NewCommitmentClient(tx.config)
+	tx.CommitmentDependency = NewCommitmentDependencyClient(tx.config)
+	tx.CommitmentEvent = NewCommitmentEventClient(tx.config)
+	tx.ConversationIntelligenceArtifact = NewConversationIntelligenceArtifactClient(tx.config)
 	tx.CreditLedger = NewCreditLedgerClient(tx.config)
 	tx.GoogleWatch = NewGoogleWatchClient(tx.config)
 	tx.LLMUsage = NewLLMUsageClient(tx.config)
@@ -278,6 +289,7 @@ func (tx *Tx) init() {
 	tx.PolicyDecisionSnapshot = NewPolicyDecisionSnapshotClient(tx.config)
 	tx.Relationship = NewRelationshipClient(tx.config)
 	tx.RelationshipAssertion = NewRelationshipAssertionClient(tx.config)
+	tx.RelationshipIdentity = NewRelationshipIdentityClient(tx.config)
 	tx.RelationshipObservation = NewRelationshipObservationClient(tx.config)
 	tx.RelationshipParticipant = NewRelationshipParticipantClient(tx.config)
 	tx.RelationshipSourceStatus = NewRelationshipSourceStatusClient(tx.config)

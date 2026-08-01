@@ -23,6 +23,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/hubspotapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
@@ -262,6 +263,7 @@ type Activities struct {
 	Sealer        *crypto.Sealer
 	Secrets       *secrets.Store
 	Google        *googleapi.Client
+	HubSpot       *hubspotapi.Client
 	SlackTokens   backgroundtaskruntime.SlackTeamTokenResolver
 	Slack         *slackclient.Client
 	MCPResolver   backgroundtaskruntime.MCPConnectorResolver

@@ -29,6 +29,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -43,6 +46,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
@@ -62,95 +66,103 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx                                   *QueryContext
-	order                                 []user.OrderOption
-	inters                                []Interceptor
-	predicates                            []predicate.User
-	withSubscription                      *SubscriptionQuery
-	withLedgerEntries                     *CreditLedgerQuery
-	withMeetingMinuteUsages               *MeetingMinuteUsageQuery
-	withLlmUsages                         *LLMUsageQuery
-	withOauthConnections                  *OAuthConnectionQuery
-	withMcpConnections                    *MCPConnectionQuery
-	withBackgroundTasks                   *BackgroundTaskQuery
-	withBackgroundTaskArtifacts           *BackgroundTaskArtifactQuery
-	withBackgroundTaskRuns                *BackgroundTaskRunQuery
-	withBackgroundTaskRunEvents           *BackgroundTaskRunEventQuery
-	withBackgroundTaskScheduleStates      *BackgroundTaskScheduleStateQuery
-	withCloudEvents                       *CloudEventQuery
-	withGoogleWatches                     *GoogleWatchQuery
-	withAgentDefinitions                  *AgentDefinitionQuery
-	withAgentSessions                     *AgentSessionQuery
-	withAgentTurns                        *AgentTurnQuery
-	withAgentSessionEvents                *AgentSessionEventQuery
-	withAgentToolCalls                    *AgentToolCallQuery
-	withAgentApprovals                    *AgentApprovalQuery
-	withAgentToolResultBlobs              *AgentToolResultBlobQuery
-	withRevenueWorkspaces                 *RevenueWorkspaceQuery
-	withRevenueWorkspaceMembers           *RevenueWorkspaceMemberQuery
-	withRelationships                     *RelationshipQuery
-	withRevenueEvidences                  *RevenueEvidenceQuery
-	withCommitments                       *CommitmentQuery
-	withRevenueActions                    *RevenueActionQuery
-	withRevenueActionRevisions            *RevenueActionRevisionQuery
-	withPolicyDecisionSnapshots           *PolicyDecisionSnapshotQuery
-	withActionOutcomes                    *ActionOutcomeQuery
-	withRevenueOutboxEvents               *RevenueOutboxEventQuery
-	withRevenueLeakScans                  *RevenueLeakScanQuery
-	withMailThreads                       *MailThreadQuery
-	withMailMessageMetas                  *MailMessageMetaQuery
-	withMailBodyCaches                    *MailBodyCacheQuery
-	withMailSignals                       *MailSignalQuery
-	withRelationshipParticipants          *RelationshipParticipantQuery
-	withRelationshipObservations          *RelationshipObservationQuery
-	withRelationshipAssertions            *RelationshipAssertionQuery
-	withRelationshipStateSnapshots        *RelationshipStateSnapshotQuery
-	withRelationshipSourceStatuses        *RelationshipSourceStatusQuery
-	withActionProposals                   *ActionProposalQuery
-	withApprovalTokens                    *ApprovalTokenQuery
-	modifiers                             []func(*sql.Selector)
-	loadTotal                             []func(context.Context, []*User) error
-	withNamedLedgerEntries                map[string]*CreditLedgerQuery
-	withNamedMeetingMinuteUsages          map[string]*MeetingMinuteUsageQuery
-	withNamedLlmUsages                    map[string]*LLMUsageQuery
-	withNamedOauthConnections             map[string]*OAuthConnectionQuery
-	withNamedMcpConnections               map[string]*MCPConnectionQuery
-	withNamedBackgroundTasks              map[string]*BackgroundTaskQuery
-	withNamedBackgroundTaskArtifacts      map[string]*BackgroundTaskArtifactQuery
-	withNamedBackgroundTaskRuns           map[string]*BackgroundTaskRunQuery
-	withNamedBackgroundTaskRunEvents      map[string]*BackgroundTaskRunEventQuery
-	withNamedBackgroundTaskScheduleStates map[string]*BackgroundTaskScheduleStateQuery
-	withNamedCloudEvents                  map[string]*CloudEventQuery
-	withNamedGoogleWatches                map[string]*GoogleWatchQuery
-	withNamedAgentDefinitions             map[string]*AgentDefinitionQuery
-	withNamedAgentSessions                map[string]*AgentSessionQuery
-	withNamedAgentTurns                   map[string]*AgentTurnQuery
-	withNamedAgentSessionEvents           map[string]*AgentSessionEventQuery
-	withNamedAgentToolCalls               map[string]*AgentToolCallQuery
-	withNamedAgentApprovals               map[string]*AgentApprovalQuery
-	withNamedAgentToolResultBlobs         map[string]*AgentToolResultBlobQuery
-	withNamedRevenueWorkspaces            map[string]*RevenueWorkspaceQuery
-	withNamedRevenueWorkspaceMembers      map[string]*RevenueWorkspaceMemberQuery
-	withNamedRelationships                map[string]*RelationshipQuery
-	withNamedRevenueEvidences             map[string]*RevenueEvidenceQuery
-	withNamedCommitments                  map[string]*CommitmentQuery
-	withNamedRevenueActions               map[string]*RevenueActionQuery
-	withNamedRevenueActionRevisions       map[string]*RevenueActionRevisionQuery
-	withNamedPolicyDecisionSnapshots      map[string]*PolicyDecisionSnapshotQuery
-	withNamedActionOutcomes               map[string]*ActionOutcomeQuery
-	withNamedRevenueOutboxEvents          map[string]*RevenueOutboxEventQuery
-	withNamedRevenueLeakScans             map[string]*RevenueLeakScanQuery
-	withNamedMailThreads                  map[string]*MailThreadQuery
-	withNamedMailMessageMetas             map[string]*MailMessageMetaQuery
-	withNamedMailBodyCaches               map[string]*MailBodyCacheQuery
-	withNamedMailSignals                  map[string]*MailSignalQuery
-	withNamedRelationshipParticipants     map[string]*RelationshipParticipantQuery
-	withNamedRelationshipObservations     map[string]*RelationshipObservationQuery
-	withNamedRelationshipAssertions       map[string]*RelationshipAssertionQuery
-	withNamedRelationshipStateSnapshots   map[string]*RelationshipStateSnapshotQuery
-	withNamedRelationshipSourceStatuses   map[string]*RelationshipSourceStatusQuery
-	withNamedActionProposals              map[string]*ActionProposalQuery
-	withNamedApprovalTokens               map[string]*ApprovalTokenQuery
+	ctx                                        *QueryContext
+	order                                      []user.OrderOption
+	inters                                     []Interceptor
+	predicates                                 []predicate.User
+	withSubscription                           *SubscriptionQuery
+	withLedgerEntries                          *CreditLedgerQuery
+	withMeetingMinuteUsages                    *MeetingMinuteUsageQuery
+	withLlmUsages                              *LLMUsageQuery
+	withOauthConnections                       *OAuthConnectionQuery
+	withMcpConnections                         *MCPConnectionQuery
+	withBackgroundTasks                        *BackgroundTaskQuery
+	withBackgroundTaskArtifacts                *BackgroundTaskArtifactQuery
+	withBackgroundTaskRuns                     *BackgroundTaskRunQuery
+	withBackgroundTaskRunEvents                *BackgroundTaskRunEventQuery
+	withBackgroundTaskScheduleStates           *BackgroundTaskScheduleStateQuery
+	withCloudEvents                            *CloudEventQuery
+	withGoogleWatches                          *GoogleWatchQuery
+	withAgentDefinitions                       *AgentDefinitionQuery
+	withAgentSessions                          *AgentSessionQuery
+	withAgentTurns                             *AgentTurnQuery
+	withAgentSessionEvents                     *AgentSessionEventQuery
+	withAgentToolCalls                         *AgentToolCallQuery
+	withAgentApprovals                         *AgentApprovalQuery
+	withAgentToolResultBlobs                   *AgentToolResultBlobQuery
+	withRevenueWorkspaces                      *RevenueWorkspaceQuery
+	withRevenueWorkspaceMembers                *RevenueWorkspaceMemberQuery
+	withRelationships                          *RelationshipQuery
+	withRevenueEvidences                       *RevenueEvidenceQuery
+	withCommitments                            *CommitmentQuery
+	withCommitmentEvents                       *CommitmentEventQuery
+	withCommitmentDependencies                 *CommitmentDependencyQuery
+	withConversationIntelligenceArtifacts      *ConversationIntelligenceArtifactQuery
+	withRevenueActions                         *RevenueActionQuery
+	withRevenueActionRevisions                 *RevenueActionRevisionQuery
+	withPolicyDecisionSnapshots                *PolicyDecisionSnapshotQuery
+	withActionOutcomes                         *ActionOutcomeQuery
+	withRevenueOutboxEvents                    *RevenueOutboxEventQuery
+	withRevenueLeakScans                       *RevenueLeakScanQuery
+	withMailThreads                            *MailThreadQuery
+	withMailMessageMetas                       *MailMessageMetaQuery
+	withMailBodyCaches                         *MailBodyCacheQuery
+	withMailSignals                            *MailSignalQuery
+	withRelationshipParticipants               *RelationshipParticipantQuery
+	withRelationshipIdentities                 *RelationshipIdentityQuery
+	withRelationshipObservations               *RelationshipObservationQuery
+	withRelationshipAssertions                 *RelationshipAssertionQuery
+	withRelationshipStateSnapshots             *RelationshipStateSnapshotQuery
+	withRelationshipSourceStatuses             *RelationshipSourceStatusQuery
+	withActionProposals                        *ActionProposalQuery
+	withApprovalTokens                         *ApprovalTokenQuery
+	modifiers                                  []func(*sql.Selector)
+	loadTotal                                  []func(context.Context, []*User) error
+	withNamedLedgerEntries                     map[string]*CreditLedgerQuery
+	withNamedMeetingMinuteUsages               map[string]*MeetingMinuteUsageQuery
+	withNamedLlmUsages                         map[string]*LLMUsageQuery
+	withNamedOauthConnections                  map[string]*OAuthConnectionQuery
+	withNamedMcpConnections                    map[string]*MCPConnectionQuery
+	withNamedBackgroundTasks                   map[string]*BackgroundTaskQuery
+	withNamedBackgroundTaskArtifacts           map[string]*BackgroundTaskArtifactQuery
+	withNamedBackgroundTaskRuns                map[string]*BackgroundTaskRunQuery
+	withNamedBackgroundTaskRunEvents           map[string]*BackgroundTaskRunEventQuery
+	withNamedBackgroundTaskScheduleStates      map[string]*BackgroundTaskScheduleStateQuery
+	withNamedCloudEvents                       map[string]*CloudEventQuery
+	withNamedGoogleWatches                     map[string]*GoogleWatchQuery
+	withNamedAgentDefinitions                  map[string]*AgentDefinitionQuery
+	withNamedAgentSessions                     map[string]*AgentSessionQuery
+	withNamedAgentTurns                        map[string]*AgentTurnQuery
+	withNamedAgentSessionEvents                map[string]*AgentSessionEventQuery
+	withNamedAgentToolCalls                    map[string]*AgentToolCallQuery
+	withNamedAgentApprovals                    map[string]*AgentApprovalQuery
+	withNamedAgentToolResultBlobs              map[string]*AgentToolResultBlobQuery
+	withNamedRevenueWorkspaces                 map[string]*RevenueWorkspaceQuery
+	withNamedRevenueWorkspaceMembers           map[string]*RevenueWorkspaceMemberQuery
+	withNamedRelationships                     map[string]*RelationshipQuery
+	withNamedRevenueEvidences                  map[string]*RevenueEvidenceQuery
+	withNamedCommitments                       map[string]*CommitmentQuery
+	withNamedCommitmentEvents                  map[string]*CommitmentEventQuery
+	withNamedCommitmentDependencies            map[string]*CommitmentDependencyQuery
+	withNamedConversationIntelligenceArtifacts map[string]*ConversationIntelligenceArtifactQuery
+	withNamedRevenueActions                    map[string]*RevenueActionQuery
+	withNamedRevenueActionRevisions            map[string]*RevenueActionRevisionQuery
+	withNamedPolicyDecisionSnapshots           map[string]*PolicyDecisionSnapshotQuery
+	withNamedActionOutcomes                    map[string]*ActionOutcomeQuery
+	withNamedRevenueOutboxEvents               map[string]*RevenueOutboxEventQuery
+	withNamedRevenueLeakScans                  map[string]*RevenueLeakScanQuery
+	withNamedMailThreads                       map[string]*MailThreadQuery
+	withNamedMailMessageMetas                  map[string]*MailMessageMetaQuery
+	withNamedMailBodyCaches                    map[string]*MailBodyCacheQuery
+	withNamedMailSignals                       map[string]*MailSignalQuery
+	withNamedRelationshipParticipants          map[string]*RelationshipParticipantQuery
+	withNamedRelationshipIdentities            map[string]*RelationshipIdentityQuery
+	withNamedRelationshipObservations          map[string]*RelationshipObservationQuery
+	withNamedRelationshipAssertions            map[string]*RelationshipAssertionQuery
+	withNamedRelationshipStateSnapshots        map[string]*RelationshipStateSnapshotQuery
+	withNamedRelationshipSourceStatuses        map[string]*RelationshipSourceStatusQuery
+	withNamedActionProposals                   map[string]*ActionProposalQuery
+	withNamedApprovalTokens                    map[string]*ApprovalTokenQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -737,6 +749,72 @@ func (_q *UserQuery) QueryCommitments() *CommitmentQuery {
 	return query
 }
 
+// QueryCommitmentEvents chains the current query on the "commitment_events" edge.
+func (_q *UserQuery) QueryCommitmentEvents() *CommitmentEventQuery {
+	query := (&CommitmentEventClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(commitmentevent.Table, commitmentevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CommitmentEventsTable, user.CommitmentEventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommitmentDependencies chains the current query on the "commitment_dependencies" edge.
+func (_q *UserQuery) QueryCommitmentDependencies() *CommitmentDependencyQuery {
+	query := (&CommitmentDependencyClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(commitmentdependency.Table, commitmentdependency.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CommitmentDependenciesTable, user.CommitmentDependenciesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryConversationIntelligenceArtifacts chains the current query on the "conversation_intelligence_artifacts" edge.
+func (_q *UserQuery) QueryConversationIntelligenceArtifacts() *ConversationIntelligenceArtifactQuery {
+	query := (&ConversationIntelligenceArtifactClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(conversationintelligenceartifact.Table, conversationintelligenceartifact.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ConversationIntelligenceArtifactsTable, user.ConversationIntelligenceArtifactsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryRevenueActions chains the current query on the "revenue_actions" edge.
 func (_q *UserQuery) QueryRevenueActions() *RevenueActionQuery {
 	query := (&RevenueActionClient{config: _q.config}).Query()
@@ -972,6 +1050,28 @@ func (_q *UserQuery) QueryRelationshipParticipants() *RelationshipParticipantQue
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(relationshipparticipant.Table, relationshipparticipant.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.RelationshipParticipantsTable, user.RelationshipParticipantsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRelationshipIdentities chains the current query on the "relationship_identities" edge.
+func (_q *UserQuery) QueryRelationshipIdentities() *RelationshipIdentityQuery {
+	query := (&RelationshipIdentityClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(relationshipidentity.Table, relationshipidentity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RelationshipIdentitiesTable, user.RelationshipIdentitiesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -1298,53 +1398,57 @@ func (_q *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:                           _q.config,
-		ctx:                              _q.ctx.Clone(),
-		order:                            append([]user.OrderOption{}, _q.order...),
-		inters:                           append([]Interceptor{}, _q.inters...),
-		predicates:                       append([]predicate.User{}, _q.predicates...),
-		withSubscription:                 _q.withSubscription.Clone(),
-		withLedgerEntries:                _q.withLedgerEntries.Clone(),
-		withMeetingMinuteUsages:          _q.withMeetingMinuteUsages.Clone(),
-		withLlmUsages:                    _q.withLlmUsages.Clone(),
-		withOauthConnections:             _q.withOauthConnections.Clone(),
-		withMcpConnections:               _q.withMcpConnections.Clone(),
-		withBackgroundTasks:              _q.withBackgroundTasks.Clone(),
-		withBackgroundTaskArtifacts:      _q.withBackgroundTaskArtifacts.Clone(),
-		withBackgroundTaskRuns:           _q.withBackgroundTaskRuns.Clone(),
-		withBackgroundTaskRunEvents:      _q.withBackgroundTaskRunEvents.Clone(),
-		withBackgroundTaskScheduleStates: _q.withBackgroundTaskScheduleStates.Clone(),
-		withCloudEvents:                  _q.withCloudEvents.Clone(),
-		withGoogleWatches:                _q.withGoogleWatches.Clone(),
-		withAgentDefinitions:             _q.withAgentDefinitions.Clone(),
-		withAgentSessions:                _q.withAgentSessions.Clone(),
-		withAgentTurns:                   _q.withAgentTurns.Clone(),
-		withAgentSessionEvents:           _q.withAgentSessionEvents.Clone(),
-		withAgentToolCalls:               _q.withAgentToolCalls.Clone(),
-		withAgentApprovals:               _q.withAgentApprovals.Clone(),
-		withAgentToolResultBlobs:         _q.withAgentToolResultBlobs.Clone(),
-		withRevenueWorkspaces:            _q.withRevenueWorkspaces.Clone(),
-		withRevenueWorkspaceMembers:      _q.withRevenueWorkspaceMembers.Clone(),
-		withRelationships:                _q.withRelationships.Clone(),
-		withRevenueEvidences:             _q.withRevenueEvidences.Clone(),
-		withCommitments:                  _q.withCommitments.Clone(),
-		withRevenueActions:               _q.withRevenueActions.Clone(),
-		withRevenueActionRevisions:       _q.withRevenueActionRevisions.Clone(),
-		withPolicyDecisionSnapshots:      _q.withPolicyDecisionSnapshots.Clone(),
-		withActionOutcomes:               _q.withActionOutcomes.Clone(),
-		withRevenueOutboxEvents:          _q.withRevenueOutboxEvents.Clone(),
-		withRevenueLeakScans:             _q.withRevenueLeakScans.Clone(),
-		withMailThreads:                  _q.withMailThreads.Clone(),
-		withMailMessageMetas:             _q.withMailMessageMetas.Clone(),
-		withMailBodyCaches:               _q.withMailBodyCaches.Clone(),
-		withMailSignals:                  _q.withMailSignals.Clone(),
-		withRelationshipParticipants:     _q.withRelationshipParticipants.Clone(),
-		withRelationshipObservations:     _q.withRelationshipObservations.Clone(),
-		withRelationshipAssertions:       _q.withRelationshipAssertions.Clone(),
-		withRelationshipStateSnapshots:   _q.withRelationshipStateSnapshots.Clone(),
-		withRelationshipSourceStatuses:   _q.withRelationshipSourceStatuses.Clone(),
-		withActionProposals:              _q.withActionProposals.Clone(),
-		withApprovalTokens:               _q.withApprovalTokens.Clone(),
+		config:                                _q.config,
+		ctx:                                   _q.ctx.Clone(),
+		order:                                 append([]user.OrderOption{}, _q.order...),
+		inters:                                append([]Interceptor{}, _q.inters...),
+		predicates:                            append([]predicate.User{}, _q.predicates...),
+		withSubscription:                      _q.withSubscription.Clone(),
+		withLedgerEntries:                     _q.withLedgerEntries.Clone(),
+		withMeetingMinuteUsages:               _q.withMeetingMinuteUsages.Clone(),
+		withLlmUsages:                         _q.withLlmUsages.Clone(),
+		withOauthConnections:                  _q.withOauthConnections.Clone(),
+		withMcpConnections:                    _q.withMcpConnections.Clone(),
+		withBackgroundTasks:                   _q.withBackgroundTasks.Clone(),
+		withBackgroundTaskArtifacts:           _q.withBackgroundTaskArtifacts.Clone(),
+		withBackgroundTaskRuns:                _q.withBackgroundTaskRuns.Clone(),
+		withBackgroundTaskRunEvents:           _q.withBackgroundTaskRunEvents.Clone(),
+		withBackgroundTaskScheduleStates:      _q.withBackgroundTaskScheduleStates.Clone(),
+		withCloudEvents:                       _q.withCloudEvents.Clone(),
+		withGoogleWatches:                     _q.withGoogleWatches.Clone(),
+		withAgentDefinitions:                  _q.withAgentDefinitions.Clone(),
+		withAgentSessions:                     _q.withAgentSessions.Clone(),
+		withAgentTurns:                        _q.withAgentTurns.Clone(),
+		withAgentSessionEvents:                _q.withAgentSessionEvents.Clone(),
+		withAgentToolCalls:                    _q.withAgentToolCalls.Clone(),
+		withAgentApprovals:                    _q.withAgentApprovals.Clone(),
+		withAgentToolResultBlobs:              _q.withAgentToolResultBlobs.Clone(),
+		withRevenueWorkspaces:                 _q.withRevenueWorkspaces.Clone(),
+		withRevenueWorkspaceMembers:           _q.withRevenueWorkspaceMembers.Clone(),
+		withRelationships:                     _q.withRelationships.Clone(),
+		withRevenueEvidences:                  _q.withRevenueEvidences.Clone(),
+		withCommitments:                       _q.withCommitments.Clone(),
+		withCommitmentEvents:                  _q.withCommitmentEvents.Clone(),
+		withCommitmentDependencies:            _q.withCommitmentDependencies.Clone(),
+		withConversationIntelligenceArtifacts: _q.withConversationIntelligenceArtifacts.Clone(),
+		withRevenueActions:                    _q.withRevenueActions.Clone(),
+		withRevenueActionRevisions:            _q.withRevenueActionRevisions.Clone(),
+		withPolicyDecisionSnapshots:           _q.withPolicyDecisionSnapshots.Clone(),
+		withActionOutcomes:                    _q.withActionOutcomes.Clone(),
+		withRevenueOutboxEvents:               _q.withRevenueOutboxEvents.Clone(),
+		withRevenueLeakScans:                  _q.withRevenueLeakScans.Clone(),
+		withMailThreads:                       _q.withMailThreads.Clone(),
+		withMailMessageMetas:                  _q.withMailMessageMetas.Clone(),
+		withMailBodyCaches:                    _q.withMailBodyCaches.Clone(),
+		withMailSignals:                       _q.withMailSignals.Clone(),
+		withRelationshipParticipants:          _q.withRelationshipParticipants.Clone(),
+		withRelationshipIdentities:            _q.withRelationshipIdentities.Clone(),
+		withRelationshipObservations:          _q.withRelationshipObservations.Clone(),
+		withRelationshipAssertions:            _q.withRelationshipAssertions.Clone(),
+		withRelationshipStateSnapshots:        _q.withRelationshipStateSnapshots.Clone(),
+		withRelationshipSourceStatuses:        _q.withRelationshipSourceStatuses.Clone(),
+		withActionProposals:                   _q.withActionProposals.Clone(),
+		withApprovalTokens:                    _q.withApprovalTokens.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -1626,6 +1730,39 @@ func (_q *UserQuery) WithCommitments(opts ...func(*CommitmentQuery)) *UserQuery 
 	return _q
 }
 
+// WithCommitmentEvents tells the query-builder to eager-load the nodes that are connected to
+// the "commitment_events" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithCommitmentEvents(opts ...func(*CommitmentEventQuery)) *UserQuery {
+	query := (&CommitmentEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCommitmentEvents = query
+	return _q
+}
+
+// WithCommitmentDependencies tells the query-builder to eager-load the nodes that are connected to
+// the "commitment_dependencies" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithCommitmentDependencies(opts ...func(*CommitmentDependencyQuery)) *UserQuery {
+	query := (&CommitmentDependencyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCommitmentDependencies = query
+	return _q
+}
+
+// WithConversationIntelligenceArtifacts tells the query-builder to eager-load the nodes that are connected to
+// the "conversation_intelligence_artifacts" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithConversationIntelligenceArtifacts(opts ...func(*ConversationIntelligenceArtifactQuery)) *UserQuery {
+	query := (&ConversationIntelligenceArtifactClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withConversationIntelligenceArtifacts = query
+	return _q
+}
+
 // WithRevenueActions tells the query-builder to eager-load the nodes that are connected to
 // the "revenue_actions" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithRevenueActions(opts ...func(*RevenueActionQuery)) *UserQuery {
@@ -1744,6 +1881,17 @@ func (_q *UserQuery) WithRelationshipParticipants(opts ...func(*RelationshipPart
 		opt(query)
 	}
 	_q.withRelationshipParticipants = query
+	return _q
+}
+
+// WithRelationshipIdentities tells the query-builder to eager-load the nodes that are connected to
+// the "relationship_identities" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRelationshipIdentities(opts ...func(*RelationshipIdentityQuery)) *UserQuery {
+	query := (&RelationshipIdentityClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRelationshipIdentities = query
 	return _q
 }
 
@@ -1891,7 +2039,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [42]bool{
+		loadedTypes = [46]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -1917,6 +2065,9 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withRelationships != nil,
 			_q.withRevenueEvidences != nil,
 			_q.withCommitments != nil,
+			_q.withCommitmentEvents != nil,
+			_q.withCommitmentDependencies != nil,
+			_q.withConversationIntelligenceArtifacts != nil,
 			_q.withRevenueActions != nil,
 			_q.withRevenueActionRevisions != nil,
 			_q.withPolicyDecisionSnapshots != nil,
@@ -1928,6 +2079,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withMailBodyCaches != nil,
 			_q.withMailSignals != nil,
 			_q.withRelationshipParticipants != nil,
+			_q.withRelationshipIdentities != nil,
 			_q.withRelationshipObservations != nil,
 			_q.withRelationshipAssertions != nil,
 			_q.withRelationshipStateSnapshots != nil,
@@ -2147,6 +2299,31 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withCommitmentEvents; query != nil {
+		if err := _q.loadCommitmentEvents(ctx, query, nodes,
+			func(n *User) { n.Edges.CommitmentEvents = []*CommitmentEvent{} },
+			func(n *User, e *CommitmentEvent) { n.Edges.CommitmentEvents = append(n.Edges.CommitmentEvents, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCommitmentDependencies; query != nil {
+		if err := _q.loadCommitmentDependencies(ctx, query, nodes,
+			func(n *User) { n.Edges.CommitmentDependencies = []*CommitmentDependency{} },
+			func(n *User, e *CommitmentDependency) {
+				n.Edges.CommitmentDependencies = append(n.Edges.CommitmentDependencies, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withConversationIntelligenceArtifacts; query != nil {
+		if err := _q.loadConversationIntelligenceArtifacts(ctx, query, nodes,
+			func(n *User) { n.Edges.ConversationIntelligenceArtifacts = []*ConversationIntelligenceArtifact{} },
+			func(n *User, e *ConversationIntelligenceArtifact) {
+				n.Edges.ConversationIntelligenceArtifacts = append(n.Edges.ConversationIntelligenceArtifacts, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withRevenueActions; query != nil {
 		if err := _q.loadRevenueActions(ctx, query, nodes,
 			func(n *User) { n.Edges.RevenueActions = []*RevenueAction{} },
@@ -2228,6 +2405,15 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			func(n *User) { n.Edges.RelationshipParticipants = []*RelationshipParticipant{} },
 			func(n *User, e *RelationshipParticipant) {
 				n.Edges.RelationshipParticipants = append(n.Edges.RelationshipParticipants, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRelationshipIdentities; query != nil {
+		if err := _q.loadRelationshipIdentities(ctx, query, nodes,
+			func(n *User) { n.Edges.RelationshipIdentities = []*RelationshipIdentity{} },
+			func(n *User, e *RelationshipIdentity) {
+				n.Edges.RelationshipIdentities = append(n.Edges.RelationshipIdentities, e)
 			}); err != nil {
 			return nil, err
 		}
@@ -2450,6 +2636,29 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	for name, query := range _q.withNamedCommitmentEvents {
+		if err := _q.loadCommitmentEvents(ctx, query, nodes,
+			func(n *User) { n.appendNamedCommitmentEvents(name) },
+			func(n *User, e *CommitmentEvent) { n.appendNamedCommitmentEvents(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCommitmentDependencies {
+		if err := _q.loadCommitmentDependencies(ctx, query, nodes,
+			func(n *User) { n.appendNamedCommitmentDependencies(name) },
+			func(n *User, e *CommitmentDependency) { n.appendNamedCommitmentDependencies(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedConversationIntelligenceArtifacts {
+		if err := _q.loadConversationIntelligenceArtifacts(ctx, query, nodes,
+			func(n *User) { n.appendNamedConversationIntelligenceArtifacts(name) },
+			func(n *User, e *ConversationIntelligenceArtifact) {
+				n.appendNamedConversationIntelligenceArtifacts(name, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedRevenueActions {
 		if err := _q.loadRevenueActions(ctx, query, nodes,
 			func(n *User) { n.appendNamedRevenueActions(name) },
@@ -2524,6 +2733,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadRelationshipParticipants(ctx, query, nodes,
 			func(n *User) { n.appendNamedRelationshipParticipants(name) },
 			func(n *User, e *RelationshipParticipant) { n.appendNamedRelationshipParticipants(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRelationshipIdentities {
+		if err := _q.loadRelationshipIdentities(ctx, query, nodes,
+			func(n *User) { n.appendNamedRelationshipIdentities(name) },
+			func(n *User, e *RelationshipIdentity) { n.appendNamedRelationshipIdentities(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -3349,6 +3565,99 @@ func (_q *UserQuery) loadCommitments(ctx context.Context, query *CommitmentQuery
 	}
 	return nil
 }
+func (_q *UserQuery) loadCommitmentEvents(ctx context.Context, query *CommitmentEventQuery, nodes []*User, init func(*User), assign func(*User, *CommitmentEvent)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommitmentEvent(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.CommitmentEventsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_commitment_events
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_commitment_events" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_commitment_events" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadCommitmentDependencies(ctx context.Context, query *CommitmentDependencyQuery, nodes []*User, init func(*User), assign func(*User, *CommitmentDependency)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommitmentDependency(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.CommitmentDependenciesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_commitment_dependencies
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_commitment_dependencies" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_commitment_dependencies" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadConversationIntelligenceArtifacts(ctx context.Context, query *ConversationIntelligenceArtifactQuery, nodes []*User, init func(*User), assign func(*User, *ConversationIntelligenceArtifact)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.ConversationIntelligenceArtifact(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ConversationIntelligenceArtifactsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_conversation_intelligence_artifacts
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_conversation_intelligence_artifacts" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_conversation_intelligence_artifacts" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (_q *UserQuery) loadRevenueActions(ctx context.Context, query *RevenueActionQuery, nodes []*User, init func(*User), assign func(*User, *RevenueAction)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*User)
@@ -3685,6 +3994,37 @@ func (_q *UserQuery) loadRelationshipParticipants(ctx context.Context, query *Re
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_relationship_participants" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadRelationshipIdentities(ctx context.Context, query *RelationshipIdentityQuery, nodes []*User, init func(*User), assign func(*User, *RelationshipIdentity)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RelationshipIdentity(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RelationshipIdentitiesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_relationship_identities
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_relationship_identities" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_relationship_identities" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -4297,6 +4637,48 @@ func (_q *UserQuery) WithNamedCommitments(name string, opts ...func(*CommitmentQ
 	return _q
 }
 
+// WithNamedCommitmentEvents tells the query-builder to eager-load the nodes that are connected to the "commitment_events"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedCommitmentEvents(name string, opts ...func(*CommitmentEventQuery)) *UserQuery {
+	query := (&CommitmentEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCommitmentEvents == nil {
+		_q.withNamedCommitmentEvents = make(map[string]*CommitmentEventQuery)
+	}
+	_q.withNamedCommitmentEvents[name] = query
+	return _q
+}
+
+// WithNamedCommitmentDependencies tells the query-builder to eager-load the nodes that are connected to the "commitment_dependencies"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedCommitmentDependencies(name string, opts ...func(*CommitmentDependencyQuery)) *UserQuery {
+	query := (&CommitmentDependencyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCommitmentDependencies == nil {
+		_q.withNamedCommitmentDependencies = make(map[string]*CommitmentDependencyQuery)
+	}
+	_q.withNamedCommitmentDependencies[name] = query
+	return _q
+}
+
+// WithNamedConversationIntelligenceArtifacts tells the query-builder to eager-load the nodes that are connected to the "conversation_intelligence_artifacts"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedConversationIntelligenceArtifacts(name string, opts ...func(*ConversationIntelligenceArtifactQuery)) *UserQuery {
+	query := (&ConversationIntelligenceArtifactClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedConversationIntelligenceArtifacts == nil {
+		_q.withNamedConversationIntelligenceArtifacts = make(map[string]*ConversationIntelligenceArtifactQuery)
+	}
+	_q.withNamedConversationIntelligenceArtifacts[name] = query
+	return _q
+}
+
 // WithNamedRevenueActions tells the query-builder to eager-load the nodes that are connected to the "revenue_actions"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithNamedRevenueActions(name string, opts ...func(*RevenueActionQuery)) *UserQuery {
@@ -4448,6 +4830,20 @@ func (_q *UserQuery) WithNamedRelationshipParticipants(name string, opts ...func
 		_q.withNamedRelationshipParticipants = make(map[string]*RelationshipParticipantQuery)
 	}
 	_q.withNamedRelationshipParticipants[name] = query
+	return _q
+}
+
+// WithNamedRelationshipIdentities tells the query-builder to eager-load the nodes that are connected to the "relationship_identities"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedRelationshipIdentities(name string, opts ...func(*RelationshipIdentityQuery)) *UserQuery {
+	query := (&RelationshipIdentityClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRelationshipIdentities == nil {
+		_q.withNamedRelationshipIdentities = make(map[string]*RelationshipIdentityQuery)
+	}
+	_q.withNamedRelationshipIdentities[name] = query
 	return _q
 }
 

@@ -148,6 +148,16 @@ jobs:
           .github/scripts/stage-whisper-bin.sh darwin arm64
           .github/scripts/stage-whisper-bin.sh darwin x64
 
+      # Stage the dual-track meeting capture helper. Soft gate: without it meetings
+      # fall back to in-app capture, so a missing binary warns rather than failing
+      # the release.
+      - name: Stage audiocap binaries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          .github/scripts/stage-audiocap-bin.sh darwin arm64
+          .github/scripts/stage-audiocap-bin.sh darwin x64
+
       - name: Build electron distributables
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}

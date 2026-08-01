@@ -72,12 +72,20 @@ func (Relationship) Edges() []ent.Edge {
 		edge.From("user", User.Type).Ref("relationships").Unique().Required(),
 		edge.To("commitments", Commitment.Type).
 			StorageKey(edge.Column("relationship_id")),
+		edge.To("commitment_events", CommitmentEvent.Type).
+			StorageKey(edge.Column("relationship_id")),
+		edge.To("commitment_dependencies", CommitmentDependency.Type).
+			StorageKey(edge.Column("relationship_id")),
+		edge.To("conversation_intelligence_artifacts", ConversationIntelligenceArtifact.Type).
+			StorageKey(edge.Column("relationship_id")),
 		edge.To("actions", RevenueAction.Type).
 			StorageKey(edge.Column("relationship_id")),
 		edge.To("evidences", RevenueEvidence.Type),
 		edge.To("mail_threads", MailThread.Type).
 			StorageKey(edge.Column("relationship_id")),
 		edge.To("participants", RelationshipParticipant.Type).
+			StorageKey(edge.Column("relationship_id")),
+		edge.To("identities", RelationshipIdentity.Type).
 			StorageKey(edge.Column("relationship_id")),
 		edge.To("observations", RelationshipObservation.Type).
 			StorageKey(edge.Column("relationship_id")),

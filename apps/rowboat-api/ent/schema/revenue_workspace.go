@@ -82,6 +82,12 @@ func (RevenueWorkspace) Edges() []ent.Edge {
 			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("commitments", Commitment.Type).
 			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("commitment_events", CommitmentEvent.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("commitment_dependencies", CommitmentDependency.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("conversation_intelligence_artifacts", ConversationIntelligenceArtifact.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("actions", RevenueAction.Type).
 			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("decisions", PolicyDecisionSnapshot.Type).
@@ -93,6 +99,8 @@ func (RevenueWorkspace) Edges() []ent.Edge {
 		edge.To("scans", RevenueLeakScan.Type).
 			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("relationship_participants", RelationshipParticipant.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("relationship_identities", RelationshipIdentity.Type).
 			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("relationship_observations", RelationshipObservation.Type).
 			StorageKey(edge.Column("revenue_workspace_id")),

@@ -17,6 +17,7 @@ const (
 	KeyOpenAI                  = "OPENAI_API_KEY"
 	KeyOpenRouter              = "OPENROUTER_API_KEY"
 	KeyGoogle                  = "GOOGLE_API_KEY"
+	KeyDeepgram                = "DEEPGRAM_API_KEY"
 	KeyElevenLabs              = "ELEVENLABS_API_KEY"
 	KeyExa                     = "EXA_API_KEY"
 	KeyGoogleOAuthClientID     = "GOOGLE_OAUTH_CLIENT_ID"
@@ -40,6 +41,7 @@ func NewFromConfig(cfg appconfig.Config) *Store {
 		KeyOpenAI:                  cfg.OpenAIAPIKey,
 		KeyOpenRouter:              cfg.OpenRouterAPIKey,
 		KeyGoogle:                  cfg.GoogleAPIKey,
+		KeyDeepgram:                cfg.DeepgramAPIKey,
 		KeyElevenLabs:              cfg.ElevenLabsAPIKey,
 		KeyExa:                     cfg.ExaAPIKey,
 		KeyGoogleOAuthClientID:     cfg.GoogleOAuthClientID,
@@ -78,6 +80,9 @@ func (s *Store) OpenRouter() string { return s.Get(KeyOpenRouter) }
 
 // Google returns the Google (Gemini) API key.
 func (s *Store) Google() string { return s.Get(KeyGoogle) }
+
+// Deepgram returns the Deepgram speech-to-text API key.
+func (s *Store) Deepgram() string { return s.Get(KeyDeepgram) }
 
 // ElevenLabs returns the ElevenLabs API key.
 func (s *Store) ElevenLabs() string { return s.Get(KeyElevenLabs) }

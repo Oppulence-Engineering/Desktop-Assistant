@@ -98,6 +98,13 @@ identity correctness, and governed action loop.
 > follow-through in RFC 029 are proof applications. Their useful detectors and
 > actions feed the category-level system defined by RFC 036.
 
+Implementation companion:
+[RFC 037](./037-conversation-intelligence-quality-and-follow-through.md) turns
+RFC 035's conversation evidence and RFC 036's relationship model into a phased
+quality-and-follow-through program covering semantic extraction, bilateral
+commitments, review, contradiction resolution, live coaching, mutual action
+plans, recovery, governed learning, capture reliability, and privacy policy.
+
 ## Cloud workflow RFCs
 
 | #                                                      | Title                           | Layer           | What it adds                                                                                                                    |

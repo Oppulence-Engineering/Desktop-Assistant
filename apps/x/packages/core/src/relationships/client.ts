@@ -5,9 +5,16 @@ import type {
   RelationshipAction,
   RelationshipDetail,
   RelationshipObservation,
+  RelationshipObservationIngestResult,
+  RelationshipObservationInput,
   RelationshipSemanticMatch,
   RelationshipSourceStatus,
   RelationshipStateSnapshot,
+  CommitmentRecoveryEvaluation,
+  RelationshipCommitment,
+  MutualActionPlan,
+  MutualActionPlanItem,
+  ConversationDeletionReceipt,
 } from "@x/shared/dist/relationships.js";
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
@@ -88,6 +95,12 @@ export const getRelationshipEvidence = (relationshipId: string, evidenceId: stri
     `/v1/relationships/${encodeURIComponent(relationshipId)}/evidence/${encodeURIComponent(evidenceId)}`,
   );
 
+export const ingestRelationshipObservations = (observations: RelationshipObservationInput[]) =>
+  call<{ results: RelationshipObservationIngestResult[] }>("/v1/relationship-observations/batch", {
+    method: "POST",
+    body: JSON.stringify({ observations }),
+  });
+
 export const correctRelationship = (
   id: string,
   input: { dimension: string; value: string; reason: string },
@@ -96,6 +109,102 @@ export const correctRelationship = (
     method: "POST",
     body: JSON.stringify(input),
   });
+
+export const correctConversationReview = (
+  id: string,
+  input: {
+    reviewItemId: string;
+    correctedValue: string;
+    reason: string;
+  },
+) =>
+  call<Pick<RelationshipDetail, "relationship" | "intelligence">>(
+    `/v1/relationships/${encodeURIComponent(id)}/conversation-corrections`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+
+export const decideConversationReview = (
+  id: string,
+  input: {
+    reviewItemId: string;
+    kind: "approve" | "correct" | "reject" | "defer";
+    correctedValue?: string;
+    reason?: string;
+    deferUntil?: string;
+  },
+) =>
+  call<Pick<RelationshipDetail, "relationship" | "intelligence">>(
+    `/v1/relationships/${encodeURIComponent(id)}/conversation-decisions`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+
+export const resolveRelationshipContradiction = (
+  id: string,
+  caseId: string,
+  input: { selectedAssertionId: string; reason?: string },
+) =>
+  call<Pick<RelationshipDetail, "relationship" | "intelligence">>(
+    `/v1/relationships/${encodeURIComponent(id)}/contradictions/${encodeURIComponent(caseId)}/resolve`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+
+export const runCommitmentRecovery = (id: string) =>
+  call<{ evaluations: CommitmentRecoveryEvaluation[] }>(
+    `/v1/relationships/${encodeURIComponent(id)}/commitment-recovery/run`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
+
+export const appendCommitmentTransition = (
+  relationshipId: string,
+  commitmentId: string,
+  input: {
+    kind: string;
+    idempotencyKey: string;
+    reason?: string;
+    dueAt?: string;
+    action?: string;
+    blocker?: string;
+    evidenceRefs?: string[];
+  },
+) =>
+  call<RelationshipCommitment>(
+    `/v1/relationships/${encodeURIComponent(relationshipId)}/commitments/${encodeURIComponent(commitmentId)}/transitions`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+
+export const createMutualActionPlan = (relationshipId: string, commitmentIds: string[]) =>
+  call<MutualActionPlan>(
+    `/v1/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans`,
+    { method: "POST", body: JSON.stringify({ commitmentIds }) },
+  );
+
+export const reviseMutualActionPlan = (
+  relationshipId: string,
+  planId: string,
+  items: MutualActionPlanItem[],
+) =>
+  call<MutualActionPlan>(
+    `/v1/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans/${encodeURIComponent(planId)}`,
+    { method: "PUT", body: JSON.stringify({ items }) },
+  );
+
+export const approveMutualActionPlan = (relationshipId: string, planId: string) =>
+  call<MutualActionPlan>(
+    `/v1/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans/${encodeURIComponent(planId)}/approve`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
+
+export const shareMutualActionPlan = (relationshipId: string, planId: string) =>
+  call<{ plan: MutualActionPlan; responseToken: string }>(
+    `/v1/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans/${encodeURIComponent(planId)}/share`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
+
+export const requestConversationDeletion = (relationshipId: string, requestId: string) =>
+  call<ConversationDeletionReceipt>(
+    `/v1/relationships/${encodeURIComponent(relationshipId)}/conversation-deletion`,
+    { method: "POST", body: JSON.stringify({ requestId }) },
+  );
 
 export const approveRelationshipRecommendation = (actionId: string, acceptRisk = false) =>
   call<RelationshipAction>(

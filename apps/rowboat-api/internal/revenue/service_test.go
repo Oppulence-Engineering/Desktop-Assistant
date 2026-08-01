@@ -3,6 +3,7 @@ package revenue
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -62,9 +63,18 @@ func (f *fakeFacade) ReportRevenueActionOutcome(context.Context, OutcomeReport) 
 
 // fakeExecutor returns a scripted result (or error) and counts calls.
 type fakeExecutor struct {
-	result *ExecResult
-	err    error
-	calls  int
+	result          *ExecResult
+	err             error
+	calls           int
+	reconcileResult *ExecResult
+	reconcileFound  bool
+	reconcileErr    error
+	reconcileCalls  int
+}
+
+func (f *fakeExecutor) Reconcile(context.Context, ExecRequest) (*ExecResult, bool, error) {
+	f.reconcileCalls++
+	return f.reconcileResult, f.reconcileFound, f.reconcileErr
 }
 
 func (f *fakeExecutor) Execute(context.Context, ExecRequest) (*ExecResult, error) {
@@ -345,6 +355,165 @@ func TestAmbiguousExecutionNeverAutoResends(t *testing.T) {
 	}
 	if f.exec.calls != 1 {
 		t.Fatalf("provider must not be called again after ambiguous, got %d", f.exec.calls)
+	}
+}
+
+func TestAmbiguousExecutionReconcilesByLookupWithoutResend(t *testing.T) {
+	f := newFixture(t)
+	action := f.action(t, ExecModeDraft)
+	if _, err := f.svc.Approve(f.ctx, f.user, action.ID, false); err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+	f.exec.err = ErrAmbiguous
+	ambiguous, err := f.svc.Execute(f.ctx, f.user, action.ID)
+	if err != nil || ambiguous.ExecutionStatus != ExecAmbiguous {
+		t.Fatalf("ambiguous execute: action=%+v err=%v", ambiguous, err)
+	}
+	if ambiguous.ReconciliationStatus != "pending" || ambiguous.ReconciliationNextAt == nil {
+		t.Fatalf("ambiguous action must be scheduled for lookup: %+v", ambiguous)
+	}
+	f.exec.err = nil
+	f.exec.reconcileFound = true
+	f.exec.reconcileResult = &ExecResult{ProviderMessageID: "recovered-msg", ProviderThreadID: "recovered-thread"}
+	reconciled, err := f.svc.ReconcileAmbiguousAction(f.ctx, f.user, action.ID)
+	if err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+	if reconciled.ExecutionStatus != ExecSent || reconciled.QueueStatus != QueueHandled ||
+		reconciled.ProviderMessageID != "recovered-msg" || reconciled.ReconciliationStatus != "found" {
+		t.Fatalf("reconciled action = %+v", reconciled)
+	}
+	if f.exec.calls != 1 || f.exec.reconcileCalls != 1 {
+		t.Fatalf("want one write and one lookup, writes=%d lookups=%d", f.exec.calls, f.exec.reconcileCalls)
+	}
+}
+
+func TestAmbiguousLookupNotFoundSchedulesAnotherReadOnlyAttempt(t *testing.T) {
+	f := newFixture(t)
+	action := f.action(t, ExecModeDraft)
+	if _, err := f.svc.Approve(f.ctx, f.user, action.ID, false); err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+	f.exec.err = ErrAmbiguous
+	if _, err := f.svc.Execute(f.ctx, f.user, action.ID); err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	f.exec.err = nil
+	got, err := f.svc.ReconcileAmbiguousAction(f.ctx, f.user, action.ID)
+	if err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+	if got.ExecutionStatus != ExecAmbiguous || got.ReconciliationStatus != "not_found" ||
+		got.ReconciliationAttempts != 1 || got.ReconciliationNextAt == nil {
+		t.Fatalf("not-found lookup must remain ambiguous and scheduled: %+v", got)
+	}
+	if f.exec.calls != 1 || f.exec.reconcileCalls != 1 {
+		t.Fatalf("not-found lookup must not resend: writes=%d lookups=%d", f.exec.calls, f.exec.reconcileCalls)
+	}
+}
+
+func TestAmbiguousReconciliationWithoutMarkerFailsClosed(t *testing.T) {
+	f := newFixture(t)
+	action := f.action(t, ExecModeDraft)
+	action = f.client.RevenueAction.UpdateOneID(action.ID).
+		SetExecutionStatus(ExecAmbiguous).
+		SetReconciliationStatus("pending").
+		ClearExecutionIdempotencyKey().
+		SaveX(f.ctx)
+
+	got, err := f.svc.ReconcileAmbiguousAction(f.ctx, f.user, action.ID)
+	if err != nil {
+		t.Fatalf("reconcile missing marker: %v", err)
+	}
+	if got.ExecutionStatus != ExecAmbiguous || got.ReconciliationStatus != "manual_review" ||
+		got.ReconciliationAttempts != maxReconciliationAttempts || got.ReconciliationNextAt != nil {
+		t.Fatalf("missing marker must fail closed permanently: %+v", got)
+	}
+	if f.exec.reconcileCalls != 0 || f.exec.calls != 0 {
+		t.Fatalf("missing marker must make no provider call: lookups=%d writes=%d", f.exec.reconcileCalls, f.exec.calls)
+	}
+}
+
+type executeOnlyExecutor struct{}
+
+func (executeOnlyExecutor) Execute(context.Context, ExecRequest) (*ExecResult, error) {
+	return nil, errors.New("not used")
+}
+
+func TestUnsupportedReconciliationDoesNotRetryForever(t *testing.T) {
+	f := newFixture(t)
+	action := f.action(t, ExecModeDraft)
+	action = f.client.RevenueAction.UpdateOneID(action.ID).
+		SetExecutionStatus(ExecAmbiguous).
+		SetExecutionIdempotencyKey("safe-marker").
+		SetReconciliationStatus("pending").
+		SaveX(f.ctx)
+	svc := NewService(f.client, f.facade, executeOnlyExecutor{}, zap.NewNop())
+
+	got, err := svc.ReconcileAmbiguousAction(f.ctx, f.user, action.ID)
+	if err != nil {
+		t.Fatalf("unsupported reconcile: %v", err)
+	}
+	if got.ReconciliationStatus != "manual_review" || got.ReconciliationAttempts != maxReconciliationAttempts ||
+		got.ReconciliationNextAt != nil {
+		t.Fatalf("unsupported backend must leave one terminal manual-review state: %+v", got)
+	}
+}
+
+type barrierReconciler struct {
+	arrived chan struct{}
+	release chan struct{}
+}
+
+func (b *barrierReconciler) Execute(context.Context, ExecRequest) (*ExecResult, error) {
+	return nil, errors.New("not used")
+}
+
+func (b *barrierReconciler) Reconcile(context.Context, ExecRequest) (*ExecResult, bool, error) {
+	b.arrived <- struct{}{}
+	<-b.release
+	return &ExecResult{ProviderMessageID: "provider-once"}, true, nil
+}
+
+func TestConcurrentReconciliationProducesOneTransitionAndOutboxEvent(t *testing.T) {
+	f := newFixture(t)
+	action := f.action(t, ExecModeDraft)
+	action = f.client.RevenueAction.UpdateOneID(action.ID).
+		SetExecutionStatus(ExecAmbiguous).
+		SetExecutionIdempotencyKey("concurrent-marker").
+		SetReconciliationStatus("pending").
+		SaveX(f.ctx)
+	exec := &barrierReconciler{arrived: make(chan struct{}, 2), release: make(chan struct{})}
+	svc := NewService(f.client, f.facade, exec, zap.NewNop())
+
+	var wg sync.WaitGroup
+	errs := make(chan error, 2)
+	for range 2 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := svc.ReconcileAmbiguousAction(f.ctx, f.user, action.ID)
+			errs <- err
+		}()
+	}
+	<-exec.arrived
+	<-exec.arrived
+	close(exec.release)
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("concurrent reconcile: %v", err)
+		}
+	}
+	got, err := svc.GetAction(f.ctx, action.ID)
+	if err != nil || got.ExecutionStatus != ExecSent || got.ReconciliationAttempts != 1 {
+		t.Fatalf("one optimistic transition must win: action=%+v err=%v", got, err)
+	}
+	events, err := f.client.RevenueOutboxEvent.Query().
+		Where(revenueoutboxevent.IdempotencyKeyEQ("reconciled:concurrent-marker")).Count(f.ctx)
+	if err != nil || events != 1 {
+		t.Fatalf("reconciliation outbox must be emitted once: count=%d err=%v", events, err)
 	}
 }
 

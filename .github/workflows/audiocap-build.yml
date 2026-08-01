@@ -1,0 +1,99 @@
+# Builds the per-arch `oppulence-audiocap` capture helper — the macOS dual-track
+# meeting recorder (Core Audio process tap + microphone). Artifacts are consumed by
+# the release pipeline, which stages the matching arch into
+# apps/x/vendor/audiocap/<plat>-<arch>/ before `electron-forge make`, where the app's
+# osxNotarize notarizes the whole bundle including this signed helper.
+#
+# Mirrors whisper-build.yml, minus the C++ toolchain: the target is a single Swift
+# executable with no package dependencies, so `swiftc` and an SDK are all it needs.
+#
+# Re-runs on any source change, or on demand.
+name: audiocap-build
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "apps/x/vendor/audiocap/**"
+      - ".github/workflows/audiocap-build.yml"
+
+# Publishing the per-arch binaries to the version-keyed GitHub Release.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macos-15+: the FluidAudio dependency declares swift-tools-version 6.0, which
+          # the macos-14 image's default Xcode 15 (Swift 5.10) cannot resolve at all.
+          - { os: macos-15, plat: darwin, arch: arm64, target: arm64 }
+          # Cross-compile the Intel binary on an Apple-Silicon runner: SwiftPM's
+          # --arch targets Intel regardless of host arch, and arm64 runners are
+          # plentiful whereas Intel ones can sit queued for hours. build.sh skips its
+          # smoke test when cross-building.
+          - { os: macos-15, plat: darwin, arch: x64, target: x86_64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: swift --version && xcodebuild -version
+
+      # Unit tests for the pure logic (token→word→segment). Host arch only, since the
+      # cross-built leg cannot run what it produces. XCTest ships with Xcode, which the
+      # runners have and a bare Command Line Tools install does not — so this is the
+      # first place these actually execute.
+      - name: Test
+        if: matrix.arch == 'arm64'
+        shell: bash
+        working-directory: apps/x/vendor/audiocap
+        run: swift test
+
+      - name: Build oppulence-audiocap
+        shell: bash
+        working-directory: apps/x/vendor/audiocap
+        run: ./build.sh "${{ matrix.target }}"
+
+      - name: Sign + verify (hardened runtime)
+        env:
+          DEVELOPER_ID: ${{ secrets.APPLE_DEVELOPER_ID }}
+        run: |
+          if [ -z "$DEVELOPER_ID" ]; then
+            echo "APPLE_DEVELOPER_ID not set — skipping signing (notarized later with the app)"
+            exit 0
+          fi
+          # Same entitlements as the app: audio-input and screen-capture are what
+          # TCC checks for the microphone and the system-audio tap respectively.
+          codesign --force --options runtime --timestamp \
+            --entitlements apps/x/apps/main/entitlements.plist \
+            --sign "$DEVELOPER_ID" apps/x/vendor/audiocap/out/oppulence-audiocap
+          codesign --verify --strict apps/x/vendor/audiocap/out/oppulence-audiocap
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: audiocap-${{ matrix.plat }}-${{ matrix.arch }}
+          path: apps/x/vendor/audiocap/out/
+          if-no-files-found: error
+
+      # Publish to a version-keyed GitHub Release so the release pipeline can stage
+      # the matching arch by tag (see .github/scripts/stage-audiocap-bin.sh). The
+      # version comes from `audiocapVersion` in main.swift; assets are uploaded with
+      # --clobber so rebuilding the same version replaces them.
+      - name: Publish to version-keyed release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="$(tr -d '[:space:]' < apps/x/vendor/audiocap/out/VERSION)"
+          TAG="audiocap-bin-$VERSION"
+          ASSET="audiocap-${{ matrix.plat }}-${{ matrix.arch }}.tar.gz"
+          # Archive the contents of out/ so the binary extracts directly into
+          # vendor/audiocap/<plat>-<arch>/ on the consuming side.
+          tar -czf "$ASSET" -C apps/x/vendor/audiocap/out .
+          # Idempotent + race-tolerant across parallel matrix legs.
+          gh release create "$TAG" --title "$TAG" --notes "oppulence-audiocap $VERSION" \
+            || echo "release $TAG already exists"
+          gh release upload "$TAG" "$ASSET" --clobber

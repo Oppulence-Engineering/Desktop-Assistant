@@ -26,16 +26,19 @@ func (RevenueAction) Fields() []ent.Field {
 		field.String("action_type").
 			Validate(oneOfRevenue("action_type",
 				"warm_follow_up", "proposal_nudge", "referral_reconnect",
-				"customer_risk", "meeting_follow_up")),
+				"customer_risk", "meeting_follow_up", "meeting_recap",
+				"crm_update", "follow_up_task", "calendar_hold", "commitment_rescue")),
 		field.String("channel").
-			Validate(oneOfRevenue("channel", "email", "slack", "call", "crm_task")),
+			Validate(oneOfRevenue("channel", "email", "slack", "call", "crm_task",
+				"crm", "task", "calendar")),
 		// detector records which RFC 030 detector produced the action; the
 		// scan's dedupe_key keeps reruns from duplicating queue items.
 		field.String("detector").
 			Validate(oneOfRevenue("detector",
 				"requested_follow_up_due", "unanswered_proposal", "waiting_on_me",
 				"dormant_warm_opportunity", "neglected_referral",
-				"former_customer_reconnect", "manual")),
+				"former_customer_reconnect", "conversation_action_pack",
+				"commitment_due", "manual")),
 		field.String("dedupe_key").NotEmpty(),
 		field.Int("revision").Default(1).Positive(),
 		field.String("revision_hash").NotEmpty(),
@@ -80,6 +83,14 @@ func (RevenueAction) Fields() []ent.Field {
 		field.String("provider_thread_id").Optional(),
 		field.Time("executed_at").Optional().Nillable(),
 		field.Text("execution_error").Optional(),
+		// Ambiguous provider writes are reconciled by a read-only lookup using
+		// the idempotency marker. They are never blindly submitted again.
+		field.String("reconciliation_status").Optional().
+			Validate(oneOfRevenueOptional("reconciliation_status", "pending", "found", "not_found", "error", "manual_review")),
+		field.Int("reconciliation_attempts").Default(0).NonNegative(),
+		field.Time("reconciliation_checked_at").Optional().Nillable(),
+		field.Time("reconciliation_next_at").Optional().Nillable(),
+		field.Text("reconciliation_error").Optional(),
 		field.String("dismiss_reason").Optional(),
 		field.Time("snoozed_until").Optional().Nillable(),
 		field.Time("due_at").Optional().Nillable(),

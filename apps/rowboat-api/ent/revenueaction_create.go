@@ -409,6 +409,76 @@ func (_c *RevenueActionCreate) SetNillableExecutionError(v *string) *RevenueActi
 	return _c
 }
 
+// SetReconciliationStatus sets the "reconciliation_status" field.
+func (_c *RevenueActionCreate) SetReconciliationStatus(v string) *RevenueActionCreate {
+	_c.mutation.SetReconciliationStatus(v)
+	return _c
+}
+
+// SetNillableReconciliationStatus sets the "reconciliation_status" field if the given value is not nil.
+func (_c *RevenueActionCreate) SetNillableReconciliationStatus(v *string) *RevenueActionCreate {
+	if v != nil {
+		_c.SetReconciliationStatus(*v)
+	}
+	return _c
+}
+
+// SetReconciliationAttempts sets the "reconciliation_attempts" field.
+func (_c *RevenueActionCreate) SetReconciliationAttempts(v int) *RevenueActionCreate {
+	_c.mutation.SetReconciliationAttempts(v)
+	return _c
+}
+
+// SetNillableReconciliationAttempts sets the "reconciliation_attempts" field if the given value is not nil.
+func (_c *RevenueActionCreate) SetNillableReconciliationAttempts(v *int) *RevenueActionCreate {
+	if v != nil {
+		_c.SetReconciliationAttempts(*v)
+	}
+	return _c
+}
+
+// SetReconciliationCheckedAt sets the "reconciliation_checked_at" field.
+func (_c *RevenueActionCreate) SetReconciliationCheckedAt(v time.Time) *RevenueActionCreate {
+	_c.mutation.SetReconciliationCheckedAt(v)
+	return _c
+}
+
+// SetNillableReconciliationCheckedAt sets the "reconciliation_checked_at" field if the given value is not nil.
+func (_c *RevenueActionCreate) SetNillableReconciliationCheckedAt(v *time.Time) *RevenueActionCreate {
+	if v != nil {
+		_c.SetReconciliationCheckedAt(*v)
+	}
+	return _c
+}
+
+// SetReconciliationNextAt sets the "reconciliation_next_at" field.
+func (_c *RevenueActionCreate) SetReconciliationNextAt(v time.Time) *RevenueActionCreate {
+	_c.mutation.SetReconciliationNextAt(v)
+	return _c
+}
+
+// SetNillableReconciliationNextAt sets the "reconciliation_next_at" field if the given value is not nil.
+func (_c *RevenueActionCreate) SetNillableReconciliationNextAt(v *time.Time) *RevenueActionCreate {
+	if v != nil {
+		_c.SetReconciliationNextAt(*v)
+	}
+	return _c
+}
+
+// SetReconciliationError sets the "reconciliation_error" field.
+func (_c *RevenueActionCreate) SetReconciliationError(v string) *RevenueActionCreate {
+	_c.mutation.SetReconciliationError(v)
+	return _c
+}
+
+// SetNillableReconciliationError sets the "reconciliation_error" field if the given value is not nil.
+func (_c *RevenueActionCreate) SetNillableReconciliationError(v *string) *RevenueActionCreate {
+	if v != nil {
+		_c.SetReconciliationError(*v)
+	}
+	return _c
+}
+
 // SetDismissReason sets the "dismiss_reason" field.
 func (_c *RevenueActionCreate) SetDismissReason(v string) *RevenueActionCreate {
 	_c.mutation.SetDismissReason(v)
@@ -643,6 +713,10 @@ func (_c *RevenueActionCreate) defaults() {
 		v := revenueaction.DefaultExecutionMode
 		_c.mutation.SetExecutionMode(v)
 	}
+	if _, ok := _c.mutation.ReconciliationAttempts(); !ok {
+		v := revenueaction.DefaultReconciliationAttempts
+		_c.mutation.SetReconciliationAttempts(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := revenueaction.DefaultID()
 		_c.mutation.SetID(v)
@@ -772,6 +846,19 @@ func (_c *RevenueActionCreate) check() error {
 	if v, ok := _c.mutation.ExecutionMode(); ok {
 		if err := revenueaction.ExecutionModeValidator(v); err != nil {
 			return &ValidationError{Name: "execution_mode", err: fmt.Errorf(`ent: validator failed for field "RevenueAction.execution_mode": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.ReconciliationStatus(); ok {
+		if err := revenueaction.ReconciliationStatusValidator(v); err != nil {
+			return &ValidationError{Name: "reconciliation_status", err: fmt.Errorf(`ent: validator failed for field "RevenueAction.reconciliation_status": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.ReconciliationAttempts(); !ok {
+		return &ValidationError{Name: "reconciliation_attempts", err: errors.New(`ent: missing required field "RevenueAction.reconciliation_attempts"`)}
+	}
+	if v, ok := _c.mutation.ReconciliationAttempts(); ok {
+		if err := revenueaction.ReconciliationAttemptsValidator(v); err != nil {
+			return &ValidationError{Name: "reconciliation_attempts", err: fmt.Errorf(`ent: validator failed for field "RevenueAction.reconciliation_attempts": %w`, err)}
 		}
 	}
 	if len(_c.mutation.WorkspaceIDs()) == 0 {
@@ -942,6 +1029,26 @@ func (_c *RevenueActionCreate) createSpec() (*RevenueAction, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.ExecutionError(); ok {
 		_spec.SetField(revenueaction.FieldExecutionError, field.TypeString, value)
 		_node.ExecutionError = value
+	}
+	if value, ok := _c.mutation.ReconciliationStatus(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationStatus, field.TypeString, value)
+		_node.ReconciliationStatus = value
+	}
+	if value, ok := _c.mutation.ReconciliationAttempts(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationAttempts, field.TypeInt, value)
+		_node.ReconciliationAttempts = value
+	}
+	if value, ok := _c.mutation.ReconciliationCheckedAt(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationCheckedAt, field.TypeTime, value)
+		_node.ReconciliationCheckedAt = &value
+	}
+	if value, ok := _c.mutation.ReconciliationNextAt(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationNextAt, field.TypeTime, value)
+		_node.ReconciliationNextAt = &value
+	}
+	if value, ok := _c.mutation.ReconciliationError(); ok {
+		_spec.SetField(revenueaction.FieldReconciliationError, field.TypeString, value)
+		_node.ReconciliationError = value
 	}
 	if value, ok := _c.mutation.DismissReason(); ok {
 		_spec.SetField(revenueaction.FieldDismissReason, field.TypeString, value)
@@ -1591,6 +1698,96 @@ func (u *RevenueActionUpsert) UpdateExecutionError() *RevenueActionUpsert {
 // ClearExecutionError clears the value of the "execution_error" field.
 func (u *RevenueActionUpsert) ClearExecutionError() *RevenueActionUpsert {
 	u.SetNull(revenueaction.FieldExecutionError)
+	return u
+}
+
+// SetReconciliationStatus sets the "reconciliation_status" field.
+func (u *RevenueActionUpsert) SetReconciliationStatus(v string) *RevenueActionUpsert {
+	u.Set(revenueaction.FieldReconciliationStatus, v)
+	return u
+}
+
+// UpdateReconciliationStatus sets the "reconciliation_status" field to the value that was provided on create.
+func (u *RevenueActionUpsert) UpdateReconciliationStatus() *RevenueActionUpsert {
+	u.SetExcluded(revenueaction.FieldReconciliationStatus)
+	return u
+}
+
+// ClearReconciliationStatus clears the value of the "reconciliation_status" field.
+func (u *RevenueActionUpsert) ClearReconciliationStatus() *RevenueActionUpsert {
+	u.SetNull(revenueaction.FieldReconciliationStatus)
+	return u
+}
+
+// SetReconciliationAttempts sets the "reconciliation_attempts" field.
+func (u *RevenueActionUpsert) SetReconciliationAttempts(v int) *RevenueActionUpsert {
+	u.Set(revenueaction.FieldReconciliationAttempts, v)
+	return u
+}
+
+// UpdateReconciliationAttempts sets the "reconciliation_attempts" field to the value that was provided on create.
+func (u *RevenueActionUpsert) UpdateReconciliationAttempts() *RevenueActionUpsert {
+	u.SetExcluded(revenueaction.FieldReconciliationAttempts)
+	return u
+}
+
+// AddReconciliationAttempts adds v to the "reconciliation_attempts" field.
+func (u *RevenueActionUpsert) AddReconciliationAttempts(v int) *RevenueActionUpsert {
+	u.Add(revenueaction.FieldReconciliationAttempts, v)
+	return u
+}
+
+// SetReconciliationCheckedAt sets the "reconciliation_checked_at" field.
+func (u *RevenueActionUpsert) SetReconciliationCheckedAt(v time.Time) *RevenueActionUpsert {
+	u.Set(revenueaction.FieldReconciliationCheckedAt, v)
+	return u
+}
+
+// UpdateReconciliationCheckedAt sets the "reconciliation_checked_at" field to the value that was provided on create.
+func (u *RevenueActionUpsert) UpdateReconciliationCheckedAt() *RevenueActionUpsert {
+	u.SetExcluded(revenueaction.FieldReconciliationCheckedAt)
+	return u
+}
+
+// ClearReconciliationCheckedAt clears the value of the "reconciliation_checked_at" field.
+func (u *RevenueActionUpsert) ClearReconciliationCheckedAt() *RevenueActionUpsert {
+	u.SetNull(revenueaction.FieldReconciliationCheckedAt)
+	return u
+}
+
+// SetReconciliationNextAt sets the "reconciliation_next_at" field.
+func (u *RevenueActionUpsert) SetReconciliationNextAt(v time.Time) *RevenueActionUpsert {
+	u.Set(revenueaction.FieldReconciliationNextAt, v)
+	return u
+}
+
+// UpdateReconciliationNextAt sets the "reconciliation_next_at" field to the value that was provided on create.
+func (u *RevenueActionUpsert) UpdateReconciliationNextAt() *RevenueActionUpsert {
+	u.SetExcluded(revenueaction.FieldReconciliationNextAt)
+	return u
+}
+
+// ClearReconciliationNextAt clears the value of the "reconciliation_next_at" field.
+func (u *RevenueActionUpsert) ClearReconciliationNextAt() *RevenueActionUpsert {
+	u.SetNull(revenueaction.FieldReconciliationNextAt)
+	return u
+}
+
+// SetReconciliationError sets the "reconciliation_error" field.
+func (u *RevenueActionUpsert) SetReconciliationError(v string) *RevenueActionUpsert {
+	u.Set(revenueaction.FieldReconciliationError, v)
+	return u
+}
+
+// UpdateReconciliationError sets the "reconciliation_error" field to the value that was provided on create.
+func (u *RevenueActionUpsert) UpdateReconciliationError() *RevenueActionUpsert {
+	u.SetExcluded(revenueaction.FieldReconciliationError)
+	return u
+}
+
+// ClearReconciliationError clears the value of the "reconciliation_error" field.
+func (u *RevenueActionUpsert) ClearReconciliationError() *RevenueActionUpsert {
+	u.SetNull(revenueaction.FieldReconciliationError)
 	return u
 }
 
@@ -2260,6 +2457,111 @@ func (u *RevenueActionUpsertOne) UpdateExecutionError() *RevenueActionUpsertOne 
 func (u *RevenueActionUpsertOne) ClearExecutionError() *RevenueActionUpsertOne {
 	return u.Update(func(s *RevenueActionUpsert) {
 		s.ClearExecutionError()
+	})
+}
+
+// SetReconciliationStatus sets the "reconciliation_status" field.
+func (u *RevenueActionUpsertOne) SetReconciliationStatus(v string) *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.SetReconciliationStatus(v)
+	})
+}
+
+// UpdateReconciliationStatus sets the "reconciliation_status" field to the value that was provided on create.
+func (u *RevenueActionUpsertOne) UpdateReconciliationStatus() *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.UpdateReconciliationStatus()
+	})
+}
+
+// ClearReconciliationStatus clears the value of the "reconciliation_status" field.
+func (u *RevenueActionUpsertOne) ClearReconciliationStatus() *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.ClearReconciliationStatus()
+	})
+}
+
+// SetReconciliationAttempts sets the "reconciliation_attempts" field.
+func (u *RevenueActionUpsertOne) SetReconciliationAttempts(v int) *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.SetReconciliationAttempts(v)
+	})
+}
+
+// AddReconciliationAttempts adds v to the "reconciliation_attempts" field.
+func (u *RevenueActionUpsertOne) AddReconciliationAttempts(v int) *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.AddReconciliationAttempts(v)
+	})
+}
+
+// UpdateReconciliationAttempts sets the "reconciliation_attempts" field to the value that was provided on create.
+func (u *RevenueActionUpsertOne) UpdateReconciliationAttempts() *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.UpdateReconciliationAttempts()
+	})
+}
+
+// SetReconciliationCheckedAt sets the "reconciliation_checked_at" field.
+func (u *RevenueActionUpsertOne) SetReconciliationCheckedAt(v time.Time) *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.SetReconciliationCheckedAt(v)
+	})
+}
+
+// UpdateReconciliationCheckedAt sets the "reconciliation_checked_at" field to the value that was provided on create.
+func (u *RevenueActionUpsertOne) UpdateReconciliationCheckedAt() *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.UpdateReconciliationCheckedAt()
+	})
+}
+
+// ClearReconciliationCheckedAt clears the value of the "reconciliation_checked_at" field.
+func (u *RevenueActionUpsertOne) ClearReconciliationCheckedAt() *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.ClearReconciliationCheckedAt()
+	})
+}
+
+// SetReconciliationNextAt sets the "reconciliation_next_at" field.
+func (u *RevenueActionUpsertOne) SetReconciliationNextAt(v time.Time) *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.SetReconciliationNextAt(v)
+	})
+}
+
+// UpdateReconciliationNextAt sets the "reconciliation_next_at" field to the value that was provided on create.
+func (u *RevenueActionUpsertOne) UpdateReconciliationNextAt() *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.UpdateReconciliationNextAt()
+	})
+}
+
+// ClearReconciliationNextAt clears the value of the "reconciliation_next_at" field.
+func (u *RevenueActionUpsertOne) ClearReconciliationNextAt() *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.ClearReconciliationNextAt()
+	})
+}
+
+// SetReconciliationError sets the "reconciliation_error" field.
+func (u *RevenueActionUpsertOne) SetReconciliationError(v string) *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.SetReconciliationError(v)
+	})
+}
+
+// UpdateReconciliationError sets the "reconciliation_error" field to the value that was provided on create.
+func (u *RevenueActionUpsertOne) UpdateReconciliationError() *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.UpdateReconciliationError()
+	})
+}
+
+// ClearReconciliationError clears the value of the "reconciliation_error" field.
+func (u *RevenueActionUpsertOne) ClearReconciliationError() *RevenueActionUpsertOne {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.ClearReconciliationError()
 	})
 }
 
@@ -3108,6 +3410,111 @@ func (u *RevenueActionUpsertBulk) UpdateExecutionError() *RevenueActionUpsertBul
 func (u *RevenueActionUpsertBulk) ClearExecutionError() *RevenueActionUpsertBulk {
 	return u.Update(func(s *RevenueActionUpsert) {
 		s.ClearExecutionError()
+	})
+}
+
+// SetReconciliationStatus sets the "reconciliation_status" field.
+func (u *RevenueActionUpsertBulk) SetReconciliationStatus(v string) *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.SetReconciliationStatus(v)
+	})
+}
+
+// UpdateReconciliationStatus sets the "reconciliation_status" field to the value that was provided on create.
+func (u *RevenueActionUpsertBulk) UpdateReconciliationStatus() *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.UpdateReconciliationStatus()
+	})
+}
+
+// ClearReconciliationStatus clears the value of the "reconciliation_status" field.
+func (u *RevenueActionUpsertBulk) ClearReconciliationStatus() *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.ClearReconciliationStatus()
+	})
+}
+
+// SetReconciliationAttempts sets the "reconciliation_attempts" field.
+func (u *RevenueActionUpsertBulk) SetReconciliationAttempts(v int) *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.SetReconciliationAttempts(v)
+	})
+}
+
+// AddReconciliationAttempts adds v to the "reconciliation_attempts" field.
+func (u *RevenueActionUpsertBulk) AddReconciliationAttempts(v int) *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.AddReconciliationAttempts(v)
+	})
+}
+
+// UpdateReconciliationAttempts sets the "reconciliation_attempts" field to the value that was provided on create.
+func (u *RevenueActionUpsertBulk) UpdateReconciliationAttempts() *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.UpdateReconciliationAttempts()
+	})
+}
+
+// SetReconciliationCheckedAt sets the "reconciliation_checked_at" field.
+func (u *RevenueActionUpsertBulk) SetReconciliationCheckedAt(v time.Time) *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.SetReconciliationCheckedAt(v)
+	})
+}
+
+// UpdateReconciliationCheckedAt sets the "reconciliation_checked_at" field to the value that was provided on create.
+func (u *RevenueActionUpsertBulk) UpdateReconciliationCheckedAt() *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.UpdateReconciliationCheckedAt()
+	})
+}
+
+// ClearReconciliationCheckedAt clears the value of the "reconciliation_checked_at" field.
+func (u *RevenueActionUpsertBulk) ClearReconciliationCheckedAt() *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.ClearReconciliationCheckedAt()
+	})
+}
+
+// SetReconciliationNextAt sets the "reconciliation_next_at" field.
+func (u *RevenueActionUpsertBulk) SetReconciliationNextAt(v time.Time) *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.SetReconciliationNextAt(v)
+	})
+}
+
+// UpdateReconciliationNextAt sets the "reconciliation_next_at" field to the value that was provided on create.
+func (u *RevenueActionUpsertBulk) UpdateReconciliationNextAt() *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.UpdateReconciliationNextAt()
+	})
+}
+
+// ClearReconciliationNextAt clears the value of the "reconciliation_next_at" field.
+func (u *RevenueActionUpsertBulk) ClearReconciliationNextAt() *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.ClearReconciliationNextAt()
+	})
+}
+
+// SetReconciliationError sets the "reconciliation_error" field.
+func (u *RevenueActionUpsertBulk) SetReconciliationError(v string) *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.SetReconciliationError(v)
+	})
+}
+
+// UpdateReconciliationError sets the "reconciliation_error" field to the value that was provided on create.
+func (u *RevenueActionUpsertBulk) UpdateReconciliationError() *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.UpdateReconciliationError()
+	})
+}
+
+// ClearReconciliationError clears the value of the "reconciliation_error" field.
+func (u *RevenueActionUpsertBulk) ClearReconciliationError() *RevenueActionUpsertBulk {
+	return u.Update(func(s *RevenueActionUpsert) {
+		s.ClearReconciliationError()
 	})
 }
 

@@ -11,6 +11,7 @@ import {
 } from "electron";
 import path from "node:path";
 import {
+  initMeetingCapture,
   setupIpcHandlers,
   startRunsWatcher,
   startServicesWatcher,
@@ -22,6 +23,9 @@ import {
   stopServicesWatcher,
   stopWorkspaceWatcher,
 } from "./ipc.js";
+import { destroyMeetingTray, stopCaptureForQuit } from "./tray.js";
+import { destroyMeetingIndicator } from "./meeting-indicator.js";
+import { calendarNotifyHooks } from "./meeting-autostart.js";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
 import { updateElectronApp, UpdateSourceType } from "update-electron-app";
@@ -78,6 +82,9 @@ import {
   extractDeepLinkFromArgv,
   setMainWindowForDeepLinks,
 } from "./deeplink.js";
+import { appWindows, getMainWindow, preloadPath, setMainWindow } from "./main-window.js";
+import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
+import { recordingsRoot } from "@x/core/dist/meetings/meetings.js";
 import {
   startCrashReporter,
   processPendingCrashDumps,
@@ -123,22 +130,31 @@ if (remoteDebuggingPort) {
   app.commandLine.appendSwitch("remote-debugging-port", remoteDebuggingPort);
 }
 
-function disableChromiumFeature(feature: string): void {
+/** Append `feature` to an `enable-features`/`disable-features` switch, preserving any
+ *  value already there — appendSwitch replaces rather than merges. */
+function addChromiumFeature(switchName: "enable-features" | "disable-features", feature: string) {
   const existing = app.commandLine
-    .getSwitchValue("disable-features")
+    .getSwitchValue(switchName)
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
   const features = new Set(existing);
   features.add(feature);
-  app.commandLine.appendSwitch("disable-features", Array.from(features).join(","));
+  app.commandLine.appendSwitch(switchName, Array.from(features).join(","));
 }
 
 if (process.platform === "darwin") {
   // Electron 39/Chromium can crash macOS mic capture in the audio utility process
   // with "Failed to initialize sandbox" before renderer audio reaches Whisper.
   // Keep renderer sandboxing on; only disable the narrower audio-service sandbox.
-  disableChromiumFeature("AudioServiceSandbox");
+  addChromiumFeature("disable-features", "AudioServiceSandbox");
+
+  // Without this, `audio: "loopback"` in setDisplayMediaRequestHandler silently
+  // yields no audio track on macOS 15+ — meeting capture then hears only the mic,
+  // never the other side of the call. Chromium moved system-audio loopback behind
+  // this feature; Electron documents the switch as the supported way back in
+  // (electron/electron#47493). Must be set before app.whenReady().
+  addChromiumFeature("enable-features", "MacSckSystemAudioLoopbackOverride");
 }
 
 // run this as early in the main process as possible
@@ -182,10 +198,6 @@ app.on("second-instance", (_event, argv) => {
   if (url) dispatchUrl(url);
 });
 
-// Path resolution differs between development and production:
-const preloadPath = app.isPackaged
-  ? path.join(__dirname, "../preload/dist/preload.cjs")
-  : path.join(__dirname, "../../../preload/dist/preload.cjs");
 console.log("preloadPath", preloadPath);
 
 const rendererPath = app.isPackaged
@@ -214,6 +226,16 @@ function registerAppProtocol() {
       }
     }
 
+    // Recorded meeting audio: app://recording/<sessionId>/<file>
+    //
+    // Its own host rather than reusing `workspace` because the recordings root is
+    // configurable and may sit outside the workspace entirely — in which case
+    // `app://workspace/recordings/...` silently 403s and click-to-play looks broken
+    // for exactly the users who moved it somewhere deliberate.
+    if (url.host === "recording") {
+      return serveRecording(decodeURIComponent(url.pathname));
+    }
+
     // Renderer SPA — existing logic
     let urlPath = url.pathname;
     if (urlPath === "/" || !path.extname(urlPath)) {
@@ -223,6 +245,34 @@ function registerAppProtocol() {
     const filePath = path.join(rendererPath, urlPath);
     return net.fetch(pathToFileURL(filePath).toString());
   });
+}
+
+/**
+ * Serve one file out of one session directory, and nothing else.
+ *
+ * Two segments exactly, neither of which may traverse: the resolved path has to sit
+ * directly inside the recordings root. This host can reach outside the workspace, so it
+ * is the one place where a `..` would actually buy an attacker something.
+ */
+async function serveRecording(pathname: string): Promise<Response> {
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts.length !== 2) return new Response("Not Found", { status: 404 });
+  const [sessionId, file] = parts;
+  if (!/^[\w.@-]+$/.test(sessionId) || !/^[\w.@-]+$/.test(file)) {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  try {
+    const config = await getTranscriptionConfig();
+    const root = path.resolve(recordingsRoot(config.meetings?.recordingsDir));
+    const absPath = path.resolve(root, sessionId, file);
+    if (path.dirname(path.dirname(absPath)) !== root) {
+      return new Response("Forbidden", { status: 403 });
+    }
+    return net.fetch(pathToFileURL(absPath).toString());
+  } catch {
+    return new Response("Not Found", { status: 404 });
+  }
 }
 
 protocol.registerSchemesAsPrivileged([
@@ -295,8 +345,12 @@ function createWindow() {
   configureSessionPermissions(session.defaultSession);
   configureSessionPermissions(session.fromPartition(BROWSER_PARTITION));
 
+  setMainWindow(win);
   setMainWindowForDeepLinks(win);
-  win.on("closed", () => setMainWindowForDeepLinks(null));
+  win.on("closed", () => {
+    setMainWindow(null);
+    setMainWindowForDeepLinks(null);
+  });
   win.webContents.on("preload-error", (_event, failedPreloadPath, error) => {
     console.error("[Main] preload failed:", failedPreloadPath, error);
   });
@@ -376,6 +430,11 @@ async function startBackgroundServices() {
   // start bg-task scheduler (cron / window)
   initBackgroundTaskScheduler();
 
+  // Meeting capture: put a menu-bar item up so a recording is visible and stoppable
+  // with every window closed, and pick up any session that finished but never got
+  // transcribed (a quit or crash mid-transcription costs a retry, not a meeting).
+  initMeetingCapture();
+
   // RFC 006 offline-return: surface cloud runs that completed while the app
   // was closed (auto-pulls the newest successful artifact per task, gated by
   // the artifact-sync sidecar) and nudge the renderer with a quiet badge.
@@ -452,7 +511,7 @@ async function startBackgroundServices() {
   initAgentNotes();
 
   // start calendar meeting notification service (fires 1-minute warnings)
-  initCalendarNotifications();
+  initCalendarNotifications(calendarNotifyHooks());
 
   // start chrome extension sync server
   initChromeSync();
@@ -505,7 +564,9 @@ app.whenReady().then(async () => {
   }, 750);
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
+    // `appWindows()` rather than `getAllWindows()`: the recording indicator must not
+    // count, or clicking the dock during a meeting would find nothing to re-create.
+    if (appWindows().length === 0) {
       createWindow();
     }
   });
@@ -517,6 +578,16 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
+});
+
+// Electron fires `window-all-closed` only when the *last* window closes, and the
+// indicator is a window. Closing the app's window while it is up would otherwise leave
+// the app running invisibly on Windows/Linux with no way back to it.
+app.on("browser-window-created", (_event, win) => {
+  win.on("closed", () => {
+    if (process.platform === "darwin") return;
+    if (appWindows().length === 0) app.quit();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -580,7 +651,7 @@ async function maybeRemindThenQuit(): Promise<void> {
     if (!cfg.suppressDesktopScheduleQuitReminder) {
       const { items } = await listTasks({ limit: 1000 });
       if (hasPendingDesktopSchedules(items)) {
-        const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed());
+        const win = getMainWindow() ?? appWindows()[0];
         const opts: Electron.MessageBoxOptions = {
           type: "info",
           message: "Desktop schedules pause while the app is closed",
@@ -602,7 +673,7 @@ async function maybeRemindThenQuit(): Promise<void> {
           reminderInFlight = false;
           // Windows/Linux reach here via window-all-closed → quit; keeping
           // the app open with zero windows would strand it headless.
-          if (BrowserWindow.getAllWindows().length === 0) {
+          if (appWindows().length === 0) {
             createWindow();
           }
           return;
@@ -617,6 +688,11 @@ async function maybeRemindThenQuit(): Promise<void> {
 }
 
 function runQuitCleanup(): void {
+  // Finalize a live meeting capture first: the sidecar patches its WAV headers on
+  // SIGTERM, and everything else here can wait a few milliseconds for that.
+  stopCaptureForQuit();
+  destroyMeetingIndicator();
+  destroyMeetingTray();
   // Clean up watcher on app quit
   stopWorkspaceWatcher();
   stopRunsWatcher();

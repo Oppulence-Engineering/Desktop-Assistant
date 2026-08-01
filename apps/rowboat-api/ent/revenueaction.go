@@ -83,6 +83,16 @@ type RevenueAction struct {
 	ExecutedAt *time.Time `json:"executed_at,omitempty"`
 	// ExecutionError holds the value of the "execution_error" field.
 	ExecutionError string `json:"execution_error,omitempty"`
+	// ReconciliationStatus holds the value of the "reconciliation_status" field.
+	ReconciliationStatus string `json:"reconciliation_status,omitempty"`
+	// ReconciliationAttempts holds the value of the "reconciliation_attempts" field.
+	ReconciliationAttempts int `json:"reconciliation_attempts,omitempty"`
+	// ReconciliationCheckedAt holds the value of the "reconciliation_checked_at" field.
+	ReconciliationCheckedAt *time.Time `json:"reconciliation_checked_at,omitempty"`
+	// ReconciliationNextAt holds the value of the "reconciliation_next_at" field.
+	ReconciliationNextAt *time.Time `json:"reconciliation_next_at,omitempty"`
+	// ReconciliationError holds the value of the "reconciliation_error" field.
+	ReconciliationError string `json:"reconciliation_error,omitempty"`
 	// DismissReason holds the value of the "dismiss_reason" field.
 	DismissReason string `json:"dismiss_reason,omitempty"`
 	// SnoozedUntil holds the value of the "snoozed_until" field.
@@ -204,11 +214,11 @@ func (*RevenueAction) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case revenueaction.FieldAssignedUserID, revenueaction.FieldApprovedDecisionID, revenueaction.FieldApprovedBy:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case revenueaction.FieldRevision, revenueaction.FieldPriorityScore, revenueaction.FieldApprovedRevision:
+		case revenueaction.FieldRevision, revenueaction.FieldPriorityScore, revenueaction.FieldApprovedRevision, revenueaction.FieldReconciliationAttempts:
 			values[i] = new(sql.NullInt64)
-		case revenueaction.FieldActionType, revenueaction.FieldChannel, revenueaction.FieldDetector, revenueaction.FieldDedupeKey, revenueaction.FieldRevisionHash, revenueaction.FieldReason, revenueaction.FieldRecipientEmail, revenueaction.FieldProposedSubject, revenueaction.FieldProposedMessage, revenueaction.FieldSenderAccountRef, revenueaction.FieldPriorityComponentsJSON, revenueaction.FieldQueueStatus, revenueaction.FieldPolicyStatus, revenueaction.FieldApprovalStatus, revenueaction.FieldExecutionStatus, revenueaction.FieldExecutionOwner, revenueaction.FieldExecutionIdempotencyKey, revenueaction.FieldExecutionMode, revenueaction.FieldProviderMessageID, revenueaction.FieldProviderThreadID, revenueaction.FieldExecutionError, revenueaction.FieldDismissReason:
+		case revenueaction.FieldActionType, revenueaction.FieldChannel, revenueaction.FieldDetector, revenueaction.FieldDedupeKey, revenueaction.FieldRevisionHash, revenueaction.FieldReason, revenueaction.FieldRecipientEmail, revenueaction.FieldProposedSubject, revenueaction.FieldProposedMessage, revenueaction.FieldSenderAccountRef, revenueaction.FieldPriorityComponentsJSON, revenueaction.FieldQueueStatus, revenueaction.FieldPolicyStatus, revenueaction.FieldApprovalStatus, revenueaction.FieldExecutionStatus, revenueaction.FieldExecutionOwner, revenueaction.FieldExecutionIdempotencyKey, revenueaction.FieldExecutionMode, revenueaction.FieldProviderMessageID, revenueaction.FieldProviderThreadID, revenueaction.FieldExecutionError, revenueaction.FieldReconciliationStatus, revenueaction.FieldReconciliationError, revenueaction.FieldDismissReason:
 			values[i] = new(sql.NullString)
-		case revenueaction.FieldCreatedAt, revenueaction.FieldUpdatedAt, revenueaction.FieldApprovedAt, revenueaction.FieldExecutedAt, revenueaction.FieldSnoozedUntil, revenueaction.FieldDueAt, revenueaction.FieldHandledAt:
+		case revenueaction.FieldCreatedAt, revenueaction.FieldUpdatedAt, revenueaction.FieldApprovedAt, revenueaction.FieldExecutedAt, revenueaction.FieldReconciliationCheckedAt, revenueaction.FieldReconciliationNextAt, revenueaction.FieldSnoozedUntil, revenueaction.FieldDueAt, revenueaction.FieldHandledAt:
 			values[i] = new(sql.NullTime)
 		case revenueaction.FieldID:
 			values[i] = new(uuid.UUID)
@@ -430,6 +440,38 @@ func (_m *RevenueAction) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ExecutionError = value.String
 			}
+		case revenueaction.FieldReconciliationStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field reconciliation_status", values[i])
+			} else if value.Valid {
+				_m.ReconciliationStatus = value.String
+			}
+		case revenueaction.FieldReconciliationAttempts:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field reconciliation_attempts", values[i])
+			} else if value.Valid {
+				_m.ReconciliationAttempts = int(value.Int64)
+			}
+		case revenueaction.FieldReconciliationCheckedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field reconciliation_checked_at", values[i])
+			} else if value.Valid {
+				_m.ReconciliationCheckedAt = new(time.Time)
+				*_m.ReconciliationCheckedAt = value.Time
+			}
+		case revenueaction.FieldReconciliationNextAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field reconciliation_next_at", values[i])
+			} else if value.Valid {
+				_m.ReconciliationNextAt = new(time.Time)
+				*_m.ReconciliationNextAt = value.Time
+			}
+		case revenueaction.FieldReconciliationError:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field reconciliation_error", values[i])
+			} else if value.Valid {
+				_m.ReconciliationError = value.String
+			}
 		case revenueaction.FieldDismissReason:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field dismiss_reason", values[i])
@@ -649,6 +691,25 @@ func (_m *RevenueAction) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("execution_error=")
 	builder.WriteString(_m.ExecutionError)
+	builder.WriteString(", ")
+	builder.WriteString("reconciliation_status=")
+	builder.WriteString(_m.ReconciliationStatus)
+	builder.WriteString(", ")
+	builder.WriteString("reconciliation_attempts=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ReconciliationAttempts))
+	builder.WriteString(", ")
+	if v := _m.ReconciliationCheckedAt; v != nil {
+		builder.WriteString("reconciliation_checked_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.ReconciliationNextAt; v != nil {
+		builder.WriteString("reconciliation_next_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("reconciliation_error=")
+	builder.WriteString(_m.ReconciliationError)
 	builder.WriteString(", ")
 	builder.WriteString("dismiss_reason=")
 	builder.WriteString(_m.DismissReason)

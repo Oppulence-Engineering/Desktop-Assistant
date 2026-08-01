@@ -71,7 +71,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          EXPECTED_BIN="apps/x/apps/main/out/Solomon AI-linux-x64/solomon-ai"
+          # Read the packaged names from the Forge config rather than hardcoding them,
+          # matching what release.yml already does. They were hardcoded to the
+          # pre-Oppulence product name, so this step could not find the binary after
+          # the rename — and no code PR happened to run this workflow in between.
+          APP_NAME="$(node -p "require('./apps/x/apps/main/forge.config.cjs').packagerConfig.name ?? 'Oppulence'")"
+          EXE_NAME="$(node -p "require('./apps/x/apps/main/forge.config.cjs').packagerConfig.executableName ?? 'oppulence'")"
+
+          EXPECTED_BIN="apps/x/apps/main/out/${APP_NAME}-linux-x64/${EXE_NAME}"
           BIN=""
 
           for attempt in $(seq 1 60); do
@@ -80,7 +87,7 @@ jobs:
               break
             fi
 
-            BIN="$(find . -path '*/out/*/solomon-ai' -type f -perm -111 -print -quit)"
+            BIN="$(find . -path "*/out/*/${EXE_NAME}" -type f -perm -111 -print -quit)"
             if [ -n "$BIN" ]; then
               break
             fi

@@ -14,8 +14,10 @@ import (
 // adapters never mutate relationship state directly.
 type RelationshipObservation struct{ ent.Schema }
 
+// Mixin adds the shared base fields to relationship observations.
 func (RelationshipObservation) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
 
+// Fields defines the relationship observation columns.
 func (RelationshipObservation) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("source").
@@ -35,6 +37,7 @@ func (RelationshipObservation) Fields() []ent.Field {
 	}
 }
 
+// Edges defines the relationship observation graph connections.
 func (RelationshipObservation) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
@@ -48,6 +51,7 @@ func (RelationshipObservation) Edges() []ent.Edge {
 	}
 }
 
+// Indexes defines lookup and uniqueness constraints for relationship observations.
 func (RelationshipObservation) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("workspace").

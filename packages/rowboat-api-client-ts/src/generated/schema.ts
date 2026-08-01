@@ -856,6 +856,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/hubspot/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Search HubSpot CRM
+     * @description Searches contacts, companies, deals, or tickets through HubSpot's official server-side SDK. The connected private-app token remains sealed server-side.
+     */
+    post: operations["searchHubSpot"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/internal/connections/invalidate": {
     parameters: {
       query?: never;
@@ -990,6 +1010,46 @@ export interface paths {
     get: operations["getMe"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/public/mutual-action-plan": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Open a scoped mutual action plan
+     * @description Returns only the externally authorized plan revision with internal evidence references removed and policy redactions applied.
+     */
+    get: operations["getPublicMutualActionPlan"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/public/mutual-action-plan/responses": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Respond to a scoped plan
+     * @description Appends an idempotent external response for internal review; it never directly changes canonical commitments.
+     */
+    post: operations["respondPublicMutualActionPlan"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1140,6 +1200,190 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/relationships/{relationshipId}/commitment-dependencies": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create a commitment dependency
+     * @description Creates an evidence-backed dependency after enforcing tenant and relationship scope and rejecting graph cycles.
+     */
+    post: operations["createCommitmentDependency"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/commitment-recovery/run": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Run commitment recovery
+     * @description Reconciles due commitments against bounded fresh evidence, closes only explicit fulfillment, and queues governed recovery proposals otherwise.
+     */
+    post: operations["runCommitmentRecovery"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/commitments/{commitmentId}/events": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get commitment history
+     * @description Returns the append-only transition history for one commitment.
+     */
+    get: operations["getCommitmentEvents"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Append a commitment transition
+     * @description Validates the state machine and appends one idempotent event before atomically updating the materialized projection.
+     */
+    post: operations["appendCommitmentTransition"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Resolve a typed contradiction
+     * @description Records the user's selected evidence side as a top-authority correction without rewriting either source.
+     */
+    post: operations["resolveRelationshipContradiction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/conversation-corrections": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Correct reviewed conversation evidence
+     * @description Resolves a focused word, speaker, entity, or material-claim review item. State-affecting corrections append a top-precedence user assertion and reproject deterministically.
+     */
+    post: operations["correctConversationEvidence"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/conversation-decisions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decide a proposed conversation change
+     * @description Approves, corrects, rejects, or defers one evidence-backed semantic candidate. A stale baseline returns 409 and no state mutation.
+     */
+    post: operations["decideConversationChange"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/conversation-deletion": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Request conversation deletion
+     * @description Evaluates legal hold at execution time, removes server-side content transactionally, and returns an idempotent per-target receipt. Device and provider work remains pending until separately verified.
+     */
+    post: operations["requestConversationDeletion"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/conversation-policy": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Inspect conversation policy
+     * @description Returns all applicable layers and the monotonically resolved effective policy.
+     */
+    get: operations["getConversationPolicy"];
+    /**
+     * Update conversation policy
+     * @description Appends authorized policy-layer versions; lower layers may only make handling stricter.
+     */
+    put: operations["putConversationPolicy"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/relationships/{relationshipId}/corrections": {
     parameters: {
       query?: never;
@@ -1174,6 +1418,86 @@ export interface paths {
     get: operations["getRelationshipEvidence"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/mutual-action-plans": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create a mutual action plan
+     * @description Creates an evidence-backed plan only from accepted or open commitments.
+     */
+    post: operations["createMutualActionPlan"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/mutual-action-plans/{planId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Revise a mutual action plan
+     * @description Appends a validated revision and invalidates any approval bound to the prior hash.
+     */
+    put: operations["reviseMutualActionPlan"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve a plan revision
+     * @description Binds internal approval to the exact current revision hash.
+     */
+    post: operations["approveMutualActionPlan"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Queue an approved plan share
+     * @description Re-evaluates effective policy, creates a scoped expiring token, stores only its hash, and queues the exact approved revision for operator approval.
+     */
+    post: operations["shareMutualActionPlan"];
     delete?: never;
     options?: never;
     head?: never;
@@ -3588,17 +3912,27 @@ export interface components {
       runs: components["schemas"]["CloudEventRun"][];
     };
     Commitment: {
+      acceptance: string;
+      beneficiary_participant_ref?: string;
+      blocker?: string;
+      /** Format: date-time */
+      completed_at?: string;
       /** Format: double */
       confidence: number;
+      counterparty_participant_ref?: string;
       /**
        * Format: date-time
        * @description Row creation timestamp.
        * @example 2026-06-04T20:38:00Z
        */
       created_at: string;
+      current_event_version: number;
       direction: string;
       /** Format: date-time */
       due_at?: string;
+      due_phrase?: string;
+      due_timezone?: string;
+      events?: components["schemas"]["CommitmentEvent"][];
       evidences?: components["schemas"]["RevenueEvidence"][];
       /**
        * Format: uuid
@@ -3606,7 +3940,11 @@ export interface components {
        * @example 123e4567-e89b-12d3-a456-426614174000
        */
       id: string;
+      incoming_dependencies?: components["schemas"]["CommitmentDependency"][];
+      outgoing_dependencies?: components["schemas"]["CommitmentDependency"][];
+      owner_participant_ref?: string;
       relationship: components["schemas"]["Relationship"];
+      source_phrase?: string;
       /**
        * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
        * @example active
@@ -3623,6 +3961,170 @@ export interface components {
       user: components["schemas"]["User"];
       user_confirmed: boolean;
       workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description An evidence-backed directed edge between two commitments. */
+    CommitmentDependency: {
+      /**
+       * Format: date-time
+       * @description Creation time.
+       * @example 2026-08-01T14:00:00Z
+       */
+      createdAt: string;
+      /**
+       * Format: uuid
+       * @description Dependency id.
+       * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      dependencyId: string;
+      /** @description Evidence references. */
+      evidenceRefs: string[];
+      /**
+       * Format: uuid
+       * @description Origin commitment id.
+       * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      fromCommitmentId: string;
+      /**
+       * @description Dependency semantics.
+       * @example blocks
+       * @enum {string}
+       */
+      kind: "blocks" | "requires" | "supersedes";
+      /**
+       * Format: uuid
+       * @description Relationship id.
+       * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      relationshipId: string;
+      /**
+       * Format: uuid
+       * @description Target commitment id.
+       * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      toCommitmentId: string;
+    };
+    /** @description One immutable event in a commitment transition stream. */
+    CommitmentEvent: {
+      /**
+       * @description Promised action at this event.
+       * @example Send the security packet.
+       */
+      action?: string;
+      /**
+       * @description Actor reference.
+       * @example participant:owner
+       */
+      actorRef?: string;
+      /**
+       * @description Transition authority.
+       * @example user
+       * @enum {string}
+       */
+      actorType: "user" | "source_fact" | "deterministic_rule" | "ai_candidate";
+      /**
+       * @description Promise beneficiary.
+       * @example participant:beneficiary
+       */
+      beneficiaryParticipantRef?: string;
+      /**
+       * @description Blocker detail.
+       * @example Waiting on legal.
+       */
+      blocker?: string;
+      /**
+       * Format: uuid
+       * @description Commitment id.
+       * @example 26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51
+       */
+      commitmentId: string;
+      /**
+       * @description Promise counterparty.
+       * @example participant:customer
+       */
+      counterpartyParticipantRef?: string;
+      /**
+       * Format: date-time
+       * @description Resolved due time.
+       * @example 2026-08-07T17:00:00Z
+       */
+      dueAt?: string;
+      /**
+       * @description Original due phrase.
+       * @example by Friday
+       */
+      duePhrase?: string;
+      /**
+       * @description Due-time timezone.
+       * @example America/New_York
+       */
+      dueTimezone?: string;
+      /**
+       * Format: uuid
+       * @description Event id.
+       * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      eventId: string;
+      /** @description Exact evidence references. */
+      evidenceRefs: string[];
+      /**
+       * @description Transition kind.
+       * @example accepted
+       * @enum {string}
+       */
+      kind:
+        | "proposed"
+        | "internally_confirmed"
+        | "offered"
+        | "accepted"
+        | "disputed"
+        | "blocked"
+        | "unblocked"
+        | "due_date_changed"
+        | "renegotiated"
+        | "fulfilled"
+        | "cancelled"
+        | "superseded";
+      /**
+       * Format: date-time
+       * @description Event time.
+       * @example 2026-08-01T14:00:00Z
+       */
+      occurredAt: string;
+      /**
+       * @description Promise owner.
+       * @example participant:owner
+       */
+      ownerParticipantRef?: string;
+      /**
+       * @description Reason code for the ledger entry.
+       * @example llm_settle
+       * @enum {string}
+       */
+      reason?:
+        | "llm_call"
+        | "llm_call_reserve"
+        | "llm_settle"
+        | "voice_tts"
+        | "exa_search"
+        | "grant"
+        | "refund";
+      /**
+       * @description Idempotent source event id.
+       * @example user-accept:commitment-1
+       */
+      sourceEventId: string;
+      /**
+       * @description Source observation id.
+       * @example relationship-observation:ab12
+       */
+      sourceObservationId?: string;
+      /**
+       * Format: uuid
+       * @description Superseded commitment id.
+       * @example a13cf25b-d195-45f3-a665-3a38ba575392
+       */
+      supersedesCommitmentId?: string;
+      version: number;
     };
     /** @description Public bootstrap values consumed by the desktop before sign-in. */
     ConfigResponse: {
@@ -3720,7 +4222,7 @@ export interface components {
       /** @description Allowlisted upstream MCP tools and trust tiers for cloud runtime calls. */
       mcpTools?: components["schemas"]["MCPToolPolicy"][];
       /**
-       * @description MCP endpoint the desktop should call after obtaining an MCP token.
+       * @description MCP endpoint the desktop should call after obtaining an MCP token. Empty for native SDK connectors.
        * @example https://api.canvas.solomon-ai.co/v1/mcp
        */
       mcpUrl: string;
@@ -3729,6 +4231,8 @@ export interface components {
        * @example canvas
        */
       name: string;
+      /** @description Allowlisted server-side native SDK tools and trust tiers. */
+      nativeTools?: components["schemas"]["MCPToolPolicy"][];
       /**
        * @description OAuth scopes granted or requested.
        * @example [
@@ -3739,11 +4243,341 @@ export interface components {
       scopes?: string[];
       /** @description Onboarding capability blocks shown when a user browses or connects this integration. */
       templateBlocks?: components["schemas"]["IntegrationTemplateBlock"][];
+      /**
+       * @description Connector execution transport. MCP is the default; native uses server-side SDK tools.
+       * @example mcp
+       * @enum {string}
+       */
+      transport?: "mcp" | "native";
     };
     /** @description Connector registry plus per-user connection state. */
     ConnectorsResponse: {
       /** @description Available connectors in configured order. */
       connectors: components["schemas"]["Connector"][];
+    };
+    /** @description A material conversation claim anchored to exact words, time, speaker confidence, and capture caveats. */
+    ConversationClaim: {
+      /** @description Capture caveats. */
+      captureCaveats: string[];
+      /**
+       * @description Claim confidence.
+       * @example 0.72
+       */
+      confidence: number;
+      /**
+       * @description End offset in milliseconds.
+       * @example 16000
+       */
+      endMs: number;
+      /**
+       * @description Exact supporting transcript words.
+       * @example We are concerned security could delay the renewal.
+       */
+      exactQuote: string;
+      /**
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Claim kind.
+       * @example risk
+       * @enum {string}
+       */
+      kind:
+        | "risk"
+        | "objection"
+        | "decision"
+        | "milestone"
+        | "sentiment"
+        | "stakeholder"
+        | "lifecycle"
+        | "commitment";
+      /**
+       * @description Whether the claim can affect state or action.
+       * @example true
+       */
+      material: boolean;
+      /**
+       * Format: uuid
+       * @description Supporting immutable observation.
+       * @example 6b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      observationId?: string;
+      /**
+       * @description Speaker attribution confidence.
+       * @example 0.55
+       */
+      speakerConfidence: number;
+      /**
+       * @description Meeting-scoped speaker id; never a persistent voiceprint.
+       * @example anonymous:remote-channel
+       */
+      speakerId: string;
+      /**
+       * @description Current meeting-scoped speaker label.
+       * @example Other
+       */
+      speakerLabel: string;
+      /**
+       * @description Start offset in milliseconds.
+       * @example 12000
+       */
+      startMs: number;
+      /**
+       * @description Projected state dimension when applicable.
+       * @example risk
+       */
+      stateDimension?: string;
+      /**
+       * @description Normalized claim value.
+       * @example Security review may delay renewal.
+       */
+      value: string;
+    };
+    /** @description Immutable deletion request and per-target verification state. Pending device or provider targets keep the receipt partial. */
+    ConversationDeletionReceipt: {
+      /**
+       * Format: date-time
+       * @description Time every required target was verified.
+       * @example 2026-07-31T14:01:00Z
+       */
+      completedAt?: string | null;
+      /**
+       * @description Whether legal hold blocked deletion.
+       * @example false
+       */
+      legalHold: boolean;
+      /**
+       * @description Idempotent request id.
+       * @example delete:ab12
+       */
+      receiptId: string;
+      /**
+       * Format: date-time
+       * @description Request time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      requestedAt: string;
+      /**
+       * @description Relationship scope.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      scopeRef: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       * @enum {string}
+       */
+      status: "pending" | "blocked" | "partial" | "verified";
+      /** @description Per-target outcomes. */
+      targets: {
+        /**
+         * @description Attempts made.
+         * @example 1
+         */
+        attempts: number;
+        /**
+         * @description Bounded failure code.
+         * @example legal_hold
+         */
+        errorCode?: string;
+        /**
+         * @description Target state.
+         * @example deleted
+         * @enum {string}
+         */
+        status: "pending" | "deleted" | "not_found" | "blocked" | "failed";
+        /**
+         * @description Deletion target.
+         * @example api_evidence
+         * @enum {string}
+         */
+        target:
+          | "local_recording"
+          | "local_note"
+          | "outbox"
+          | "api_evidence"
+          | "embedding"
+          | "plan_share"
+          | "provider";
+        /**
+         * @description Content-free verification hash.
+         * @example sha256:ab12
+         */
+        verificationHash?: string;
+      }[];
+    };
+    /** @description Capture, routing, retention, disclosure, legal-hold, deletion, and evidence-clip receipt stored beside a transcript. */
+    ConversationGovernanceReceipt: {
+      /**
+       * @description Capture policy in force.
+       * @example manual_capture
+       */
+      capturePolicy: string;
+      /**
+       * Format: date-time
+       * @description Capture time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      capturedAt: string;
+      /**
+       * @description Observed deletion outcome.
+       * @example scheduled_after_transcription
+       */
+      deletionOutcome: string;
+      /**
+       * @description Material audio evidence status; retained clips may only be encrypted.
+       * @example not_retained
+       * @enum {string}
+       */
+      evidenceClip: "not_retained" | "encrypted";
+      /**
+       * @description Whether deletion is blocked by legal hold.
+       * @example false
+       */
+      legalHold: boolean;
+      /**
+       * @description Recorded participant disclosure status.
+       * @example not_recorded
+       */
+      participantDisclosure: string;
+      /**
+       * @description Receipt id.
+       * @example governance:ab12
+       */
+      receiptId: string;
+      /**
+       * @description Processing region or boundary.
+       * @example local_device
+       */
+      region: string;
+      /**
+       * @description Retention policy.
+       * @example untilTranscribed
+       */
+      retention: string;
+      /**
+       * @description Evidence routing path.
+       * @example local_transcription_to_oppulence
+       */
+      routing: string;
+    };
+    ConversationIntelligenceArtifact: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /** Format: date-time */
+      effective_at: string;
+      evidence_refs: string[];
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      kind: string;
+      payload_hash: string;
+      payload_json: string;
+      relationship?: components["schemas"]["Relationship"];
+      stable_id: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status?: string;
+      subject_ref?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      version: number;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description One evidence-backed proposed change requiring approve, correct, reject, or defer review. */
+    ConversationReviewItem: {
+      /**
+       * @description Pinned relationship-state version.
+       * @example 4
+       */
+      baselineVersion?: number;
+      /**
+       * @description Idempotent review batch id.
+       * @example review:ab12
+       */
+      batchId?: string;
+      /** @description State pinned before conversation processing. */
+      before?: {
+        [key: string]: unknown;
+      };
+      /** @description Extraction and capture caveats. */
+      caveats?: string[];
+      /**
+       * @description Material claim id.
+       * @example claim:ab12
+       */
+      claimId?: string;
+      /**
+       * @description Current confidence.
+       * @example 0.55
+       */
+      confidence: number;
+      /**
+       * @description Current inferred value.
+       * @example Other
+       */
+      currentValue: string;
+      /** @description Actions invalidated by rejection or correction. */
+      dependentActionIds?: string[];
+      /**
+       * @description Exact words under review.
+       * @example We are concerned.
+       */
+      exactQuote?: string;
+      /**
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Review kind.
+       * @example speaker
+       * @enum {string}
+       */
+      kind: "word" | "speaker" | "entity" | "claim" | "capture";
+      /**
+       * @description Review prompt.
+       * @example Resolve the speaker for a material statement.
+       */
+      label: string;
+      /**
+       * Format: uuid
+       * @description Supporting observation.
+       * @example 6b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      observationId: string;
+      /** @description Typed proposed value after this item. */
+      proposedAfter?: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Canonical state dimension affected by correction.
+       * @example risk
+       */
+      stateDimension?: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       * @enum {string}
+       */
+      status?: "pending_review" | "accepted" | "corrected" | "rejected" | "deferred";
     };
     /** @description Append-only credit grant, reservation, settlement, refund, or consumption entry. */
     CreditLedger: {
@@ -4058,6 +4892,68 @@ export interface components {
        */
       status: "ok";
     };
+    /** @description Bounded HubSpot CRM record. */
+    HubSpotSearchObject: {
+      /**
+       * @description Whether HubSpot archived the record.
+       * @example false
+       */
+      archived?: boolean;
+      /**
+       * @description Record creation timestamp.
+       * @example 2026-07-31T12:00:00Z
+       */
+      createdAt?: string | null;
+      /**
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      properties: {
+        [key: string]: string;
+      };
+      /**
+       * @description Record update timestamp.
+       * @example 2026-07-31T12:00:00Z
+       */
+      updatedAt?: string | null;
+    };
+    /** @description Bounded search of the authenticated user's connected HubSpot CRM. */
+    HubSpotSearchRequest: {
+      /**
+       * @description Maximum records returned (1-25).
+       * @example 10
+       */
+      limit?: number;
+      /**
+       * @description CRM object type.
+       * @example contact
+       * @enum {string}
+       */
+      objectType: "contact" | "company" | "deal" | "ticket";
+      /**
+       * @description HubSpot free-text search query.
+       * @example buyer@example.com
+       */
+      query: string;
+    };
+    /** @description Native HubSpot SDK search result. */
+    HubSpotSearchResponse: {
+      /**
+       * @description Canonical CRM object type.
+       * @example contact
+       * @enum {string}
+       */
+      objectType: "contact" | "company" | "deal" | "ticket";
+      /** @description Bounded matching records. */
+      results: components["schemas"]["HubSpotSearchObject"][];
+      /**
+       * Format: int64
+       * @description Total matching HubSpot records.
+       * @example 1
+       */
+      total: number;
+    };
     /** @description User-facing integration onboarding capability block. Blocks describe what an integration unlocks; they are not executable workflow nodes. */
     IntegrationTemplateBlock: {
       /**
@@ -4075,8 +4971,10 @@ export interface components {
        * @example 123e4567-e89b-12d3-a456-426614174000
        */
       id: string;
-      /** @description Connector MCP tools backing this capability. */
+      /** @description MCP tools backing this capability for an MCP transport connector. */
       mcpTools?: string[];
+      /** @description Server-side SDK tools backing this capability for a native transport connector. */
+      nativeTools?: string[];
       /** @description OAuth scopes required by this capability. */
       requiredScopes?: string[];
       /**
@@ -5090,7 +5988,10 @@ export interface components {
       account_domain?: string;
       actions?: components["schemas"]["RevenueAction"][];
       assertions?: components["schemas"]["RelationshipAssertion"][];
+      commitment_dependencies?: components["schemas"]["CommitmentDependency"][];
+      commitment_events?: components["schemas"]["CommitmentEvent"][];
       commitments?: components["schemas"]["Commitment"][];
+      conversation_intelligence_artifacts?: components["schemas"]["ConversationIntelligenceArtifact"][];
       /**
        * Format: date-time
        * @description Row creation timestamp.
@@ -5107,6 +6008,7 @@ export interface components {
        * @example 123e4567-e89b-12d3-a456-426614174000
        */
       id: string;
+      identities?: components["schemas"]["RelationshipIdentity"][];
       kind: string;
       /** Format: date-time */
       last_changed_at?: string;
@@ -5231,6 +6133,86 @@ export interface components {
        * @example false
        */
       userConfirmed: boolean;
+    };
+    RelationshipIdentity: {
+      /** Format: double */
+      confidence: number;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /** Format: date-time */
+      first_seen_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      kind: string;
+      /** Format: date-time */
+      last_seen_at: string;
+      /**
+       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
+       * @example openai
+       */
+      provider?: string;
+      relationship: components["schemas"]["Relationship"];
+      source?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description Derived trust surface for a relationship: conversation claims, focused review, exact delta, governance, contradictions, and live cue cards. */
+    RelationshipIntelligence: {
+      /** @description Material quote-backed claims. */
+      claims: components["schemas"]["ConversationClaim"][];
+      /** @description Typed durable conflicts. */
+      contradictionCases: {
+        [key: string]: unknown;
+      }[];
+      /** @description Deletion status and verification. */
+      deletionReceipts: components["schemas"]["ConversationDeletionReceipt"][];
+      /**
+       * @description Credit delta. Negative values consume/reserve credits; positive values grant or refund credits.
+       * @example -42
+       */
+      delta: {
+        [key: string]: unknown;
+      };
+      effectivePolicy: components["schemas"]["ResolvedConversationPolicy"];
+      /** @description Immutable checkpoint decisions. */
+      governanceDecisions: {
+        [key: string]: unknown;
+      }[];
+      /** @description Transcript governance receipts. */
+      governanceReceipts: components["schemas"]["ConversationGovernanceReceipt"][];
+      /** @description Account-history cue cards for the next/live meeting. */
+      liveCues: {
+        [key: string]: unknown;
+      }[];
+      /** @description Revision-bound bilateral plans. */
+      mutualActionPlans: {
+        [key: string]: unknown;
+      }[];
+      /** @description Immutable contextual ranking factors. */
+      recommendationEvaluations: {
+        [key: string]: unknown;
+      }[];
+      /** @description Bounded commitment recovery evaluations. */
+      recoveryEvaluations: {
+        [key: string]: unknown;
+      }[];
+      /** @description Only low-confidence review items. */
+      reviewItems: components["schemas"]["ConversationReviewItem"][];
     };
     /** @description Immutable, idempotent provider evidence used to project relationship state. */
     RelationshipObservation: {
@@ -5394,6 +6376,56 @@ export interface components {
        */
       version: number;
     };
+    /** @description Monotonically resolved conversation policy with every contributing layer recorded. */
+    ResolvedConversationPolicy: {
+      /**
+       * @description Capture rule.
+       * @example require_consent
+       * @enum {string}
+       */
+      capture: "deny" | "require_consent" | "allow";
+      /**
+       * @description Whether externally scoped plan sharing is allowed.
+       * @example true
+       */
+      externalShare: boolean;
+      /**
+       * @description Whether required deletion is blocked.
+       * @example false
+       */
+      legalHold: boolean;
+      /**
+       * @description Most permissive model route allowed.
+       * @example local_only
+       * @enum {string}
+       */
+      modelRoute: "local_only" | "region_restricted" | "hosted_allowed";
+      /**
+       * @description Hash-bound effective policy version.
+       * @example policy:ab12
+       */
+      policyVersion: string;
+      /**
+       * @description Whether shared evidence publication is allowed.
+       * @example true
+       */
+      publishEvidence: boolean;
+      /** @description Classes removed at outbound boundaries. */
+      redactionClasses: string[];
+      /**
+       * Format: date-time
+       * @description Resolution time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      resolvedAt: string;
+      /**
+       * @description Maximum retention in days.
+       * @example 30
+       */
+      retentionDays: number;
+      /** @description Policy layers that contributed. */
+      sourceLayerIds: string[];
+    };
     /** @description One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval. */
     RevenueAction: {
       /**
@@ -5406,7 +6438,12 @@ export interface components {
         | "proposal_nudge"
         | "referral_reconnect"
         | "customer_risk"
-        | "meeting_follow_up";
+        | "meeting_follow_up"
+        | "meeting_recap"
+        | "crm_update"
+        | "follow_up_task"
+        | "calendar_hold"
+        | "commitment_rescue";
       /**
        * @description Approval state, bound to the exact revision and decision.
        * @example pending
@@ -5429,7 +6466,7 @@ export interface components {
        * @example email
        * @enum {string}
        */
-      channel: "email" | "slack" | "call" | "crm_task";
+      channel: "email" | "slack" | "call" | "crm_task" | "crm" | "task" | "calendar";
       /**
        * Format: date-time
        * @description Creation time.
@@ -5448,6 +6485,8 @@ export interface components {
         | "dormant_warm_opportunity"
         | "neglected_referral"
         | "former_customer_reconnect"
+        | "conversation_action_pack"
+        | "commitment_due"
         | "manual";
       /**
        * @description Dismissal reason label.
@@ -5460,6 +6499,38 @@ export interface components {
        * @example 2026-07-15T00:00:00Z
        */
       dueAt?: string | null;
+      /** @description Exact supporting evidence available in the approval UI. */
+      evidence: {
+        /**
+         * @description Exact supporting words.
+         * @example We are concerned security could delay renewal.
+         */
+        excerpt?: string;
+        /** @description Observation, timestamp, and speaker references. */
+        externalEvidenceRefs: string[];
+        /**
+         * Format: uuid
+         * @description Evidence id.
+         * @example 4b8dfa9b-a7b2-46ea-982c-622a914c00e5
+         */
+        id: string;
+        /**
+         * Format: date-time
+         * @description Evidence time.
+         * @example 2026-07-31T14:00:00Z
+         */
+        occurredAt: string;
+        /**
+         * @description Evidence source.
+         * @example meeting
+         */
+        source: string;
+        /**
+         * @description Source record id.
+         * @example oppulence:session-42:claim:claim-risk
+         */
+        sourceRecordId: string;
+      }[];
       /**
        * Format: date-time
        * @description Execution time.
@@ -5554,6 +6625,34 @@ export interface components {
        * @example buyer@example.com
        */
       recipientEmail?: string;
+      /**
+       * @description Number of bounded provider lookups performed.
+       * @example 1
+       */
+      reconciliationAttempts?: number;
+      /**
+       * Format: date-time
+       * @description Most recent provider lookup time.
+       * @example 2026-07-12T12:07:00Z
+       */
+      reconciliationCheckedAt?: string | null;
+      /**
+       * @description Bounded provider lookup error.
+       * @example
+       */
+      reconciliationError?: string;
+      /**
+       * Format: date-time
+       * @description Next scheduled read-only lookup time.
+       * @example 2026-07-12T12:12:00Z
+       */
+      reconciliationNextAt?: string | null;
+      /**
+       * @description Read-only provider reconciliation state for an ambiguous write.
+       * @example pending
+       * @enum {string}
+       */
+      reconciliationStatus?: "pending" | "found" | "not_found" | "error" | "manual_review";
       /**
        * Format: uuid
        * @description Owning relationship id.
@@ -5952,7 +7051,13 @@ export interface components {
         | "won"
         | "lost"
         | "dismissed"
-        | "bad_recommendation";
+        | "bad_recommendation"
+        | "deal_advanced"
+        | "onboarding_progressed"
+        | "renewed"
+        | "escalated"
+        | "churned"
+        | "corrected";
       /**
        * Format: date-time
        * @description When the outcome occurred.
@@ -5964,7 +7069,7 @@ export interface components {
        * @example gmail
        * @enum {string}
        */
-      source: "gmail" | "calendar" | "crm" | "user" | "outbound";
+      source: "gmail" | "calendar" | "crm" | "user" | "outbound" | "slack" | "meeting" | "task";
       /**
        * @description Source event id used for deduplication.
        * @example msg_01
@@ -6600,7 +7705,10 @@ export interface components {
       /** @description Background task mirrors owned by the user. */
       background_tasks?: components["schemas"]["BackgroundTask"][];
       cloud_events?: components["schemas"]["CloudEvent"][];
+      commitment_dependencies?: components["schemas"]["CommitmentDependency"][];
+      commitment_events?: components["schemas"]["CommitmentEvent"][];
       commitments?: components["schemas"]["Commitment"][];
+      conversation_intelligence_artifacts?: components["schemas"]["ConversationIntelligenceArtifact"][];
       /**
        * Format: date-time
        * @description Row creation timestamp.
@@ -6634,6 +7742,7 @@ export interface components {
       oauth_connections?: components["schemas"]["OAuthConnection"][];
       policy_decision_snapshots?: components["schemas"]["PolicyDecisionSnapshot"][];
       relationship_assertions?: components["schemas"]["RelationshipAssertion"][];
+      relationship_identities?: components["schemas"]["RelationshipIdentity"][];
       relationship_observations?: components["schemas"]["RelationshipObservation"][];
       relationship_participants?: components["schemas"]["RelationshipParticipant"][];
       relationship_source_statuses?: components["schemas"]["RelationshipSourceStatus"][];
@@ -9000,6 +10109,7 @@ export interface operations {
           "application/json": components["schemas"]["MCPTokenResponse"];
         };
       };
+      400: components["responses"]["400"];
       401: components["responses"]["401"];
       404: components["responses"]["404"];
       500: components["responses"]["500"];
@@ -9445,6 +10555,57 @@ export interface operations {
       502: components["responses"]["502"];
     };
   };
+  searchHubSpot: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description HubSpot search. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "limit": 10,
+         *       "objectType": "contact",
+         *       "query": "buyer@example.com"
+         *     }
+         */
+        "application/json": components["schemas"]["HubSpotSearchRequest"];
+      };
+    };
+    responses: {
+      /** @description HubSpot search result. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "objectType": "contact",
+           *       "results": [
+           *         {
+           *           "id": "101",
+           *           "properties": {
+           *             "email": "buyer@example.com"
+           *           }
+           *         }
+           *       ],
+           *       "total": 1
+           *     }
+           */
+          "application/json": components["schemas"]["HubSpotSearchResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      409: components["responses"]["409"];
+      502: components["responses"]["502"];
+      503: components["responses"]["503"];
+    };
+  };
   invalidateConnection: {
     parameters: {
       query?: never;
@@ -9805,6 +10966,97 @@ export interface operations {
       503: components["responses"]["503"];
     };
   };
+  getPublicMutualActionPlan: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description Scoped plan response token. Never put this token in a URL or query parameter. */
+        "X-Oppulence-Plan-Token": string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Scoped public plan. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      404: components["responses"]["404"];
+    };
+  };
+  respondPublicMutualActionPlan: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description Scoped plan response token. Never put this token in a URL or query parameter. */
+        "X-Oppulence-Plan-Token": string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    /** @description External response. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "kind": "confirm",
+         *       "responseId": "response:ab12"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Counterparty comment.
+           * @example Waiting on legal.
+           */
+          comment?: string;
+          /**
+           * @description Plan item id when applicable.
+           * @example item:ab12
+           */
+          itemId?: string;
+          /**
+           * @description Response kind.
+           * @example confirm
+           * @enum {string}
+           */
+          kind: "confirm" | "correct" | "blocked" | "completed" | "comment";
+          /**
+           * @description Proposed correction.
+           * @example Move due date to Friday.
+           */
+          proposedValue?: string;
+          /**
+           * @description Counterparty-generated idempotency key.
+           * @example response:ab12
+           */
+          responseId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Recorded response. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      404: components["responses"]["404"];
+    };
+  };
   ingestRelationshipObservations: {
     parameters: {
       query?: never;
@@ -10139,8 +11391,11 @@ export interface operations {
           "application/json": {
             /** @description Actions for this relationship. */
             actions?: components["schemas"]["RevenueAction"][];
+            /** @description Evidence-backed commitment graph edges. */
+            commitmentDependencies?: components["schemas"]["CommitmentDependency"][];
             /** @description Open and completed commitments. */
             commitments?: components["schemas"]["RelationshipCommitment"][];
+            intelligence?: components["schemas"]["RelationshipIntelligence"];
             /** @description Relationship participants. */
             participants?: components["schemas"]["RelationshipParticipant"][];
             /** @description Governed recommendations. */
@@ -10177,6 +11432,508 @@ export interface operations {
           };
         };
       };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  createCommitmentDependency: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Dependency. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "evidenceRefs": [
+         *         "relationship-observation:ab12"
+         *       ],
+         *       "fromCommitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+         *       "kind": "blocks",
+         *       "toCommitmentId": "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51"
+         *     }
+         */
+        "application/json": {
+          /** @description Evidence references. */
+          evidenceRefs: string[];
+          /**
+           * Format: uuid
+           * @description Origin commitment id.
+           * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+           */
+          fromCommitmentId: string;
+          /**
+           * @description Dependency semantics.
+           * @example blocks
+           * @enum {string}
+           */
+          kind: "blocks" | "requires" | "supersedes";
+          /**
+           * Format: uuid
+           * @description Target commitment id.
+           * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+           */
+          toCommitmentId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Created dependency. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CommitmentDependency"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+    };
+  };
+  runCommitmentRecovery: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Empty request. */
+    requestBody?: {
+      content: {
+        /** @example {} */
+        "application/json": Record<string, never>;
+      };
+    };
+    responses: {
+      /** @description Recovery evaluations. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  getCommitmentEvents: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+        /** @description Commitment id. */
+        commitmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Commitment events. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Ordered immutable events. */
+            events: components["schemas"]["CommitmentEvent"][];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  appendCommitmentTransition: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+        /** @description Commitment id. */
+        commitmentId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Transition. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "evidenceRefs": [
+         *         "counterparty:accepted"
+         *       ],
+         *       "idempotencyKey": "ui:accept:ab12",
+         *       "kind": "accepted"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Replacement action for renegotiation.
+           * @example Send revised packet.
+           */
+          action?: string;
+          /**
+           * @description Blocker detail.
+           * @example Waiting on legal.
+           */
+          blocker?: string;
+          /**
+           * Format: date-time
+           * @description Replacement due date.
+           * @example 2026-08-07T17:00:00Z
+           */
+          dueAt?: string;
+          /** @description Evidence references. */
+          evidenceRefs?: string[];
+          /**
+           * @description Stable source event id.
+           * @example ui:accept:ab12
+           */
+          idempotencyKey: string;
+          /**
+           * @description Event kind.
+           * @example accepted
+           * @enum {string}
+           */
+          kind:
+            | "internally_confirmed"
+            | "offered"
+            | "accepted"
+            | "disputed"
+            | "blocked"
+            | "unblocked"
+            | "due_date_changed"
+            | "renegotiated"
+            | "fulfilled"
+            | "cancelled"
+            | "superseded";
+          /**
+           * @description Optional reason.
+           * @example Counterparty accepted in writing.
+           */
+          reason?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Updated commitment. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RelationshipCommitment"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+    };
+  };
+  resolveRelationshipContradiction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+        /** @description Contradiction case id. */
+        caseId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Resolution. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "selectedAssertionId": "assertion:ab12"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Optional rationale.
+           * @example CRM was updated after the meeting.
+           */
+          reason?: string;
+          /**
+           * @description Selected assertion id.
+           * @example assertion:ab12
+           */
+          selectedAssertionId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Updated relationship and intelligence. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+    };
+  };
+  correctConversationEvidence: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Focused correction. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "correctedValue": "Avery Chen",
+         *       "reason": "Avery was the speaker.",
+         *       "reviewItemId": "review:ab12"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Human-corrected value.
+           * @example Avery Chen
+           */
+          correctedValue: string;
+          /**
+           * @description Correction reason.
+           * @example Avery was the speaker.
+           */
+          reason: string;
+          /**
+           * @description Focused review item id.
+           * @example review:ab12
+           */
+          reviewItemId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Corrected relationship and refreshed intelligence. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            intelligence: components["schemas"]["RelationshipIntelligence"];
+            relationship: components["schemas"]["RevenueRelationship"];
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  decideConversationChange: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Review decision. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "kind": "approve",
+         *       "reason": "Customer stated this directly.",
+         *       "reviewItemId": "review:ab12"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Required replacement for correct.
+           * @example Security review is complete.
+           */
+          correctedValue?: string;
+          /**
+           * Format: date-time
+           * @description Future reminder for defer.
+           * @example 2026-08-01T14:00:00Z
+           */
+          deferUntil?: string;
+          /**
+           * @description Decision kind.
+           * @example approve
+           * @enum {string}
+           */
+          kind: "approve" | "correct" | "reject" | "defer";
+          /**
+           * @description Decision reason.
+           * @example Customer clarified this in the meeting.
+           */
+          reason?: string;
+          /**
+           * @description Review item id.
+           * @example review:ab12
+           */
+          reviewItemId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Updated relationship and refreshed review queue. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            intelligence: components["schemas"]["RelationshipIntelligence"];
+            relationship: components["schemas"]["RevenueRelationship"];
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+    };
+  };
+  requestConversationDeletion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Deletion request. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "requestId": "delete:ab12"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Idempotency key.
+           * @example delete:ab12
+           */
+          requestId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Deletion receipt. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConversationDeletionReceipt"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+    };
+  };
+  getConversationPolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Policy layers and effective policy. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  putConversationPolicy: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Policy layers. */
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @description Versioned policy layers. */
+          layers: {
+            [key: string]: unknown;
+          }[];
+        };
+      };
+    };
+    responses: {
+      /** @description Resolved effective policy. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      400: components["responses"]["400"];
       401: components["responses"]["401"];
       404: components["responses"]["404"];
     };
@@ -10269,6 +12026,163 @@ export interface operations {
       404: components["responses"]["404"];
     };
   };
+  createMutualActionPlan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Accepted commitments. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "commitmentIds": [
+         *         "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+         *       ]
+         *     }
+         */
+        "application/json": {
+          /** @description Commitment ids. */
+          commitmentIds: string[];
+        };
+      };
+    };
+    responses: {
+      /** @description Draft plan. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+    };
+  };
+  reviseMutualActionPlan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+        /** @description Mutual action plan id. */
+        planId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Replacement items. */
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @description Plan items. */
+          items: {
+            [key: string]: unknown;
+          }[];
+        };
+      };
+    };
+    responses: {
+      /** @description Revised plan. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+    };
+  };
+  approveMutualActionPlan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+        /** @description Mutual action plan id. */
+        planId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Empty request. */
+    requestBody?: {
+      content: {
+        /** @example {} */
+        "application/json": Record<string, never>;
+      };
+    };
+    responses: {
+      /** @description Approved plan. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+    };
+  };
+  shareMutualActionPlan: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+        /** @description Mutual action plan id. */
+        planId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Empty request. */
+    requestBody?: {
+      content: {
+        /** @example {} */
+        "application/json": Record<string, never>;
+      };
+    };
+    responses: {
+      /** @description Shared plan metadata and one-time response token. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+    };
+  };
   getRelationshipTimeline: {
     parameters: {
       query?: {
@@ -10350,13 +12264,18 @@ export interface operations {
             | "proposal_nudge"
             | "referral_reconnect"
             | "customer_risk"
-            | "meeting_follow_up";
+            | "meeting_follow_up"
+            | "meeting_recap"
+            | "crm_update"
+            | "follow_up_task"
+            | "calendar_hold"
+            | "commitment_rescue";
           /**
            * @description Delivery channel.
            * @example email
            * @enum {string}
            */
-          channel: "email" | "slack" | "call" | "crm_task";
+          channel: "email" | "slack" | "call" | "crm_task" | "crm" | "task" | "calendar";
           /**
            * Format: date-time
            * @description Due time.

@@ -130,3 +130,16 @@ func TestAutoScannerSkipsUnconnectedUser(t *testing.T) {
 		t.Fatalf("no Google connection should mean no scan, got %d", n)
 	}
 }
+
+func TestAutoScannerRecoversDueCommitmentsWithoutGoogleConnection(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	rel, _ := recoveryCommitment(t, f, now)
+	scanner := NewAutoScanner(f.svc, AutoScanConfig{MaxPerCycle: 50}, zap.NewNop())
+	scanner.sweep(context.Background())
+	evaluations, err := recoveryEvaluationsFor(f.ctx, f.client, rel)
+	if err != nil || len(evaluations) != 1 {
+		t.Fatalf("due commitment was not recovered without Google: %#v err=%v", evaluations, err)
+	}
+}

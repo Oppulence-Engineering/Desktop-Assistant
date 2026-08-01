@@ -22,6 +22,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/hubspotapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slackclient"
@@ -69,6 +70,7 @@ type Activities struct {
 	// the RFC 004 connector tools. nil makes those tools report "unavailable".
 	Secrets *secrets.Store
 	Google  *googleapi.Client
+	HubSpot *hubspotapi.Client
 	// Web backs the web.search tool. nil makes it report "unavailable".
 	Web *websearch.Client
 	// Conduit + Eigen back the portfolio faculty tools (RFC 008). nil makes the
@@ -241,7 +243,7 @@ func (a *Activities) buildToolRegistry(allowed []string, userID string) backgrou
 		}
 		tools = append(tools, capability.Build(agentregistry.ToolDeps{
 			Client: a.Client, Creds: a.Creds, SlackTokens: a.SlackTokens, Slack: a.Slack,
-			Sealer: a.Sealer, Secrets: a.Secrets, Google: a.Google, Web: a.Web,
+			Sealer: a.Sealer, Secrets: a.Secrets, Google: a.Google, HubSpot: a.HubSpot, Web: a.Web,
 			Conduit: a.Conduit, Eigen: a.Eigen, UserID: userID,
 		}))
 	}

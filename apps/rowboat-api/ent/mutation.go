@@ -29,6 +29,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -47,6 +50,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
@@ -75,56 +79,60 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeActionOutcome               = "ActionOutcome"
-	TypeActionProposal              = "ActionProposal"
-	TypeAgentApproval               = "AgentApproval"
-	TypeAgentDefinition             = "AgentDefinition"
-	TypeAgentDefinitionHistory      = "AgentDefinitionHistory"
-	TypeAgentSession                = "AgentSession"
-	TypeAgentSessionEvent           = "AgentSessionEvent"
-	TypeAgentToolCall               = "AgentToolCall"
-	TypeAgentToolResultBlob         = "AgentToolResultBlob"
-	TypeAgentTurn                   = "AgentTurn"
-	TypeApprovalToken               = "ApprovalToken"
-	TypeBackgroundTask              = "BackgroundTask"
-	TypeBackgroundTaskArtifact      = "BackgroundTaskArtifact"
-	TypeBackgroundTaskRun           = "BackgroundTaskRun"
-	TypeBackgroundTaskRunEvent      = "BackgroundTaskRunEvent"
-	TypeBackgroundTaskScheduleState = "BackgroundTaskScheduleState"
-	TypeCloudEvent                  = "CloudEvent"
-	TypeCommitment                  = "Commitment"
-	TypeCreditLedger                = "CreditLedger"
-	TypeGoogleWatch                 = "GoogleWatch"
-	TypeLLMUsage                    = "LLMUsage"
-	TypeLLMUsageHistory             = "LLMUsageHistory"
-	TypeMCPConnection               = "MCPConnection"
-	TypeMCPConnectionHistory        = "MCPConnectionHistory"
-	TypeMailBodyCache               = "MailBodyCache"
-	TypeMailMessageMeta             = "MailMessageMeta"
-	TypeMailSignal                  = "MailSignal"
-	TypeMailThread                  = "MailThread"
-	TypeMeetingMinuteUsage          = "MeetingMinuteUsage"
-	TypeOAuthConnection             = "OAuthConnection"
-	TypeOAuthConnectionHistory      = "OAuthConnectionHistory"
-	TypeOAuthPending                = "OAuthPending"
-	TypePolicyDecisionSnapshot      = "PolicyDecisionSnapshot"
-	TypeRelationship                = "Relationship"
-	TypeRelationshipAssertion       = "RelationshipAssertion"
-	TypeRelationshipObservation     = "RelationshipObservation"
-	TypeRelationshipParticipant     = "RelationshipParticipant"
-	TypeRelationshipSourceStatus    = "RelationshipSourceStatus"
-	TypeRelationshipStateSnapshot   = "RelationshipStateSnapshot"
-	TypeRevenueAction               = "RevenueAction"
-	TypeRevenueActionRevision       = "RevenueActionRevision"
-	TypeRevenueEvidence             = "RevenueEvidence"
-	TypeRevenueLeakScan             = "RevenueLeakScan"
-	TypeRevenueOutboxEvent          = "RevenueOutboxEvent"
-	TypeRevenueWorkspace            = "RevenueWorkspace"
-	TypeRevenueWorkspaceMember      = "RevenueWorkspaceMember"
-	TypeSubscription                = "Subscription"
-	TypeSubscriptionHistory         = "SubscriptionHistory"
-	TypeUser                        = "User"
-	TypeUserHistory                 = "UserHistory"
+	TypeActionOutcome                    = "ActionOutcome"
+	TypeActionProposal                   = "ActionProposal"
+	TypeAgentApproval                    = "AgentApproval"
+	TypeAgentDefinition                  = "AgentDefinition"
+	TypeAgentDefinitionHistory           = "AgentDefinitionHistory"
+	TypeAgentSession                     = "AgentSession"
+	TypeAgentSessionEvent                = "AgentSessionEvent"
+	TypeAgentToolCall                    = "AgentToolCall"
+	TypeAgentToolResultBlob              = "AgentToolResultBlob"
+	TypeAgentTurn                        = "AgentTurn"
+	TypeApprovalToken                    = "ApprovalToken"
+	TypeBackgroundTask                   = "BackgroundTask"
+	TypeBackgroundTaskArtifact           = "BackgroundTaskArtifact"
+	TypeBackgroundTaskRun                = "BackgroundTaskRun"
+	TypeBackgroundTaskRunEvent           = "BackgroundTaskRunEvent"
+	TypeBackgroundTaskScheduleState      = "BackgroundTaskScheduleState"
+	TypeCloudEvent                       = "CloudEvent"
+	TypeCommitment                       = "Commitment"
+	TypeCommitmentDependency             = "CommitmentDependency"
+	TypeCommitmentEvent                  = "CommitmentEvent"
+	TypeConversationIntelligenceArtifact = "ConversationIntelligenceArtifact"
+	TypeCreditLedger                     = "CreditLedger"
+	TypeGoogleWatch                      = "GoogleWatch"
+	TypeLLMUsage                         = "LLMUsage"
+	TypeLLMUsageHistory                  = "LLMUsageHistory"
+	TypeMCPConnection                    = "MCPConnection"
+	TypeMCPConnectionHistory             = "MCPConnectionHistory"
+	TypeMailBodyCache                    = "MailBodyCache"
+	TypeMailMessageMeta                  = "MailMessageMeta"
+	TypeMailSignal                       = "MailSignal"
+	TypeMailThread                       = "MailThread"
+	TypeMeetingMinuteUsage               = "MeetingMinuteUsage"
+	TypeOAuthConnection                  = "OAuthConnection"
+	TypeOAuthConnectionHistory           = "OAuthConnectionHistory"
+	TypeOAuthPending                     = "OAuthPending"
+	TypePolicyDecisionSnapshot           = "PolicyDecisionSnapshot"
+	TypeRelationship                     = "Relationship"
+	TypeRelationshipAssertion            = "RelationshipAssertion"
+	TypeRelationshipIdentity             = "RelationshipIdentity"
+	TypeRelationshipObservation          = "RelationshipObservation"
+	TypeRelationshipParticipant          = "RelationshipParticipant"
+	TypeRelationshipSourceStatus         = "RelationshipSourceStatus"
+	TypeRelationshipStateSnapshot        = "RelationshipStateSnapshot"
+	TypeRevenueAction                    = "RevenueAction"
+	TypeRevenueActionRevision            = "RevenueActionRevision"
+	TypeRevenueEvidence                  = "RevenueEvidence"
+	TypeRevenueLeakScan                  = "RevenueLeakScan"
+	TypeRevenueOutboxEvent               = "RevenueOutboxEvent"
+	TypeRevenueWorkspace                 = "RevenueWorkspace"
+	TypeRevenueWorkspaceMember           = "RevenueWorkspaceMember"
+	TypeSubscription                     = "Subscription"
+	TypeSubscriptionHistory              = "SubscriptionHistory"
+	TypeUser                             = "User"
+	TypeUserHistory                      = "UserHistory"
 )
 
 // ActionOutcomeMutation represents an operation that mutates the ActionOutcome nodes in the graph.
@@ -24501,31 +24509,51 @@ func (m *CloudEventMutation) ResetEdge(name string) error {
 // CommitmentMutation represents an operation that mutates the Commitment nodes in the graph.
 type CommitmentMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *uuid.UUID
-	created_at          *time.Time
-	updated_at          *time.Time
-	direction           *string
-	text                *string
-	status              *string
-	due_at              *time.Time
-	confidence          *float64
-	addconfidence       *float64
-	user_confirmed      *bool
-	clearedFields       map[string]struct{}
-	workspace           *uuid.UUID
-	clearedworkspace    bool
-	relationship        *uuid.UUID
-	clearedrelationship bool
-	user                *uuid.UUID
-	cleareduser         bool
-	evidences           map[uuid.UUID]struct{}
-	removedevidences    map[uuid.UUID]struct{}
-	clearedevidences    bool
-	done                bool
-	oldValue            func(context.Context) (*Commitment, error)
-	predicates          []predicate.Commitment
+	op                           Op
+	typ                          string
+	id                           *uuid.UUID
+	created_at                   *time.Time
+	updated_at                   *time.Time
+	direction                    *string
+	text                         *string
+	status                       *string
+	due_at                       *time.Time
+	confidence                   *float64
+	addconfidence                *float64
+	user_confirmed               *bool
+	owner_participant_ref        *string
+	counterparty_participant_ref *string
+	beneficiary_participant_ref  *string
+	source_phrase                *string
+	due_phrase                   *string
+	due_timezone                 *string
+	acceptance                   *string
+	blocker                      *string
+	completed_at                 *time.Time
+	current_event_version        *int
+	addcurrent_event_version     *int
+	clearedFields                map[string]struct{}
+	workspace                    *uuid.UUID
+	clearedworkspace             bool
+	relationship                 *uuid.UUID
+	clearedrelationship          bool
+	user                         *uuid.UUID
+	cleareduser                  bool
+	evidences                    map[uuid.UUID]struct{}
+	removedevidences             map[uuid.UUID]struct{}
+	clearedevidences             bool
+	events                       map[uuid.UUID]struct{}
+	removedevents                map[uuid.UUID]struct{}
+	clearedevents                bool
+	outgoing_dependencies        map[uuid.UUID]struct{}
+	removedoutgoing_dependencies map[uuid.UUID]struct{}
+	clearedoutgoing_dependencies bool
+	incoming_dependencies        map[uuid.UUID]struct{}
+	removedincoming_dependencies map[uuid.UUID]struct{}
+	clearedincoming_dependencies bool
+	done                         bool
+	oldValue                     func(context.Context) (*Commitment, error)
+	predicates                   []predicate.Commitment
 }
 
 var _ ent.Mutation = (*CommitmentMutation)(nil)
@@ -24953,6 +24981,490 @@ func (m *CommitmentMutation) ResetUserConfirmed() {
 	m.user_confirmed = nil
 }
 
+// SetOwnerParticipantRef sets the "owner_participant_ref" field.
+func (m *CommitmentMutation) SetOwnerParticipantRef(s string) {
+	m.owner_participant_ref = &s
+}
+
+// OwnerParticipantRef returns the value of the "owner_participant_ref" field in the mutation.
+func (m *CommitmentMutation) OwnerParticipantRef() (r string, exists bool) {
+	v := m.owner_participant_ref
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOwnerParticipantRef returns the old "owner_participant_ref" field's value of the Commitment entity.
+// If the Commitment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentMutation) OldOwnerParticipantRef(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOwnerParticipantRef is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOwnerParticipantRef requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOwnerParticipantRef: %w", err)
+	}
+	return oldValue.OwnerParticipantRef, nil
+}
+
+// ClearOwnerParticipantRef clears the value of the "owner_participant_ref" field.
+func (m *CommitmentMutation) ClearOwnerParticipantRef() {
+	m.owner_participant_ref = nil
+	m.clearedFields[commitment.FieldOwnerParticipantRef] = struct{}{}
+}
+
+// OwnerParticipantRefCleared returns if the "owner_participant_ref" field was cleared in this mutation.
+func (m *CommitmentMutation) OwnerParticipantRefCleared() bool {
+	_, ok := m.clearedFields[commitment.FieldOwnerParticipantRef]
+	return ok
+}
+
+// ResetOwnerParticipantRef resets all changes to the "owner_participant_ref" field.
+func (m *CommitmentMutation) ResetOwnerParticipantRef() {
+	m.owner_participant_ref = nil
+	delete(m.clearedFields, commitment.FieldOwnerParticipantRef)
+}
+
+// SetCounterpartyParticipantRef sets the "counterparty_participant_ref" field.
+func (m *CommitmentMutation) SetCounterpartyParticipantRef(s string) {
+	m.counterparty_participant_ref = &s
+}
+
+// CounterpartyParticipantRef returns the value of the "counterparty_participant_ref" field in the mutation.
+func (m *CommitmentMutation) CounterpartyParticipantRef() (r string, exists bool) {
+	v := m.counterparty_participant_ref
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCounterpartyParticipantRef returns the old "counterparty_participant_ref" field's value of the Commitment entity.
+// If the Commitment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentMutation) OldCounterpartyParticipantRef(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCounterpartyParticipantRef is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCounterpartyParticipantRef requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCounterpartyParticipantRef: %w", err)
+	}
+	return oldValue.CounterpartyParticipantRef, nil
+}
+
+// ClearCounterpartyParticipantRef clears the value of the "counterparty_participant_ref" field.
+func (m *CommitmentMutation) ClearCounterpartyParticipantRef() {
+	m.counterparty_participant_ref = nil
+	m.clearedFields[commitment.FieldCounterpartyParticipantRef] = struct{}{}
+}
+
+// CounterpartyParticipantRefCleared returns if the "counterparty_participant_ref" field was cleared in this mutation.
+func (m *CommitmentMutation) CounterpartyParticipantRefCleared() bool {
+	_, ok := m.clearedFields[commitment.FieldCounterpartyParticipantRef]
+	return ok
+}
+
+// ResetCounterpartyParticipantRef resets all changes to the "counterparty_participant_ref" field.
+func (m *CommitmentMutation) ResetCounterpartyParticipantRef() {
+	m.counterparty_participant_ref = nil
+	delete(m.clearedFields, commitment.FieldCounterpartyParticipantRef)
+}
+
+// SetBeneficiaryParticipantRef sets the "beneficiary_participant_ref" field.
+func (m *CommitmentMutation) SetBeneficiaryParticipantRef(s string) {
+	m.beneficiary_participant_ref = &s
+}
+
+// BeneficiaryParticipantRef returns the value of the "beneficiary_participant_ref" field in the mutation.
+func (m *CommitmentMutation) BeneficiaryParticipantRef() (r string, exists bool) {
+	v := m.beneficiary_participant_ref
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBeneficiaryParticipantRef returns the old "beneficiary_participant_ref" field's value of the Commitment entity.
+// If the Commitment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentMutation) OldBeneficiaryParticipantRef(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBeneficiaryParticipantRef is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBeneficiaryParticipantRef requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBeneficiaryParticipantRef: %w", err)
+	}
+	return oldValue.BeneficiaryParticipantRef, nil
+}
+
+// ClearBeneficiaryParticipantRef clears the value of the "beneficiary_participant_ref" field.
+func (m *CommitmentMutation) ClearBeneficiaryParticipantRef() {
+	m.beneficiary_participant_ref = nil
+	m.clearedFields[commitment.FieldBeneficiaryParticipantRef] = struct{}{}
+}
+
+// BeneficiaryParticipantRefCleared returns if the "beneficiary_participant_ref" field was cleared in this mutation.
+func (m *CommitmentMutation) BeneficiaryParticipantRefCleared() bool {
+	_, ok := m.clearedFields[commitment.FieldBeneficiaryParticipantRef]
+	return ok
+}
+
+// ResetBeneficiaryParticipantRef resets all changes to the "beneficiary_participant_ref" field.
+func (m *CommitmentMutation) ResetBeneficiaryParticipantRef() {
+	m.beneficiary_participant_ref = nil
+	delete(m.clearedFields, commitment.FieldBeneficiaryParticipantRef)
+}
+
+// SetSourcePhrase sets the "source_phrase" field.
+func (m *CommitmentMutation) SetSourcePhrase(s string) {
+	m.source_phrase = &s
+}
+
+// SourcePhrase returns the value of the "source_phrase" field in the mutation.
+func (m *CommitmentMutation) SourcePhrase() (r string, exists bool) {
+	v := m.source_phrase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourcePhrase returns the old "source_phrase" field's value of the Commitment entity.
+// If the Commitment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentMutation) OldSourcePhrase(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourcePhrase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourcePhrase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourcePhrase: %w", err)
+	}
+	return oldValue.SourcePhrase, nil
+}
+
+// ClearSourcePhrase clears the value of the "source_phrase" field.
+func (m *CommitmentMutation) ClearSourcePhrase() {
+	m.source_phrase = nil
+	m.clearedFields[commitment.FieldSourcePhrase] = struct{}{}
+}
+
+// SourcePhraseCleared returns if the "source_phrase" field was cleared in this mutation.
+func (m *CommitmentMutation) SourcePhraseCleared() bool {
+	_, ok := m.clearedFields[commitment.FieldSourcePhrase]
+	return ok
+}
+
+// ResetSourcePhrase resets all changes to the "source_phrase" field.
+func (m *CommitmentMutation) ResetSourcePhrase() {
+	m.source_phrase = nil
+	delete(m.clearedFields, commitment.FieldSourcePhrase)
+}
+
+// SetDuePhrase sets the "due_phrase" field.
+func (m *CommitmentMutation) SetDuePhrase(s string) {
+	m.due_phrase = &s
+}
+
+// DuePhrase returns the value of the "due_phrase" field in the mutation.
+func (m *CommitmentMutation) DuePhrase() (r string, exists bool) {
+	v := m.due_phrase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDuePhrase returns the old "due_phrase" field's value of the Commitment entity.
+// If the Commitment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentMutation) OldDuePhrase(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDuePhrase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDuePhrase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDuePhrase: %w", err)
+	}
+	return oldValue.DuePhrase, nil
+}
+
+// ClearDuePhrase clears the value of the "due_phrase" field.
+func (m *CommitmentMutation) ClearDuePhrase() {
+	m.due_phrase = nil
+	m.clearedFields[commitment.FieldDuePhrase] = struct{}{}
+}
+
+// DuePhraseCleared returns if the "due_phrase" field was cleared in this mutation.
+func (m *CommitmentMutation) DuePhraseCleared() bool {
+	_, ok := m.clearedFields[commitment.FieldDuePhrase]
+	return ok
+}
+
+// ResetDuePhrase resets all changes to the "due_phrase" field.
+func (m *CommitmentMutation) ResetDuePhrase() {
+	m.due_phrase = nil
+	delete(m.clearedFields, commitment.FieldDuePhrase)
+}
+
+// SetDueTimezone sets the "due_timezone" field.
+func (m *CommitmentMutation) SetDueTimezone(s string) {
+	m.due_timezone = &s
+}
+
+// DueTimezone returns the value of the "due_timezone" field in the mutation.
+func (m *CommitmentMutation) DueTimezone() (r string, exists bool) {
+	v := m.due_timezone
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDueTimezone returns the old "due_timezone" field's value of the Commitment entity.
+// If the Commitment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentMutation) OldDueTimezone(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDueTimezone is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDueTimezone requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDueTimezone: %w", err)
+	}
+	return oldValue.DueTimezone, nil
+}
+
+// ClearDueTimezone clears the value of the "due_timezone" field.
+func (m *CommitmentMutation) ClearDueTimezone() {
+	m.due_timezone = nil
+	m.clearedFields[commitment.FieldDueTimezone] = struct{}{}
+}
+
+// DueTimezoneCleared returns if the "due_timezone" field was cleared in this mutation.
+func (m *CommitmentMutation) DueTimezoneCleared() bool {
+	_, ok := m.clearedFields[commitment.FieldDueTimezone]
+	return ok
+}
+
+// ResetDueTimezone resets all changes to the "due_timezone" field.
+func (m *CommitmentMutation) ResetDueTimezone() {
+	m.due_timezone = nil
+	delete(m.clearedFields, commitment.FieldDueTimezone)
+}
+
+// SetAcceptance sets the "acceptance" field.
+func (m *CommitmentMutation) SetAcceptance(s string) {
+	m.acceptance = &s
+}
+
+// Acceptance returns the value of the "acceptance" field in the mutation.
+func (m *CommitmentMutation) Acceptance() (r string, exists bool) {
+	v := m.acceptance
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAcceptance returns the old "acceptance" field's value of the Commitment entity.
+// If the Commitment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentMutation) OldAcceptance(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAcceptance is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAcceptance requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAcceptance: %w", err)
+	}
+	return oldValue.Acceptance, nil
+}
+
+// ResetAcceptance resets all changes to the "acceptance" field.
+func (m *CommitmentMutation) ResetAcceptance() {
+	m.acceptance = nil
+}
+
+// SetBlocker sets the "blocker" field.
+func (m *CommitmentMutation) SetBlocker(s string) {
+	m.blocker = &s
+}
+
+// Blocker returns the value of the "blocker" field in the mutation.
+func (m *CommitmentMutation) Blocker() (r string, exists bool) {
+	v := m.blocker
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBlocker returns the old "blocker" field's value of the Commitment entity.
+// If the Commitment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentMutation) OldBlocker(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBlocker is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBlocker requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBlocker: %w", err)
+	}
+	return oldValue.Blocker, nil
+}
+
+// ClearBlocker clears the value of the "blocker" field.
+func (m *CommitmentMutation) ClearBlocker() {
+	m.blocker = nil
+	m.clearedFields[commitment.FieldBlocker] = struct{}{}
+}
+
+// BlockerCleared returns if the "blocker" field was cleared in this mutation.
+func (m *CommitmentMutation) BlockerCleared() bool {
+	_, ok := m.clearedFields[commitment.FieldBlocker]
+	return ok
+}
+
+// ResetBlocker resets all changes to the "blocker" field.
+func (m *CommitmentMutation) ResetBlocker() {
+	m.blocker = nil
+	delete(m.clearedFields, commitment.FieldBlocker)
+}
+
+// SetCompletedAt sets the "completed_at" field.
+func (m *CommitmentMutation) SetCompletedAt(t time.Time) {
+	m.completed_at = &t
+}
+
+// CompletedAt returns the value of the "completed_at" field in the mutation.
+func (m *CommitmentMutation) CompletedAt() (r time.Time, exists bool) {
+	v := m.completed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompletedAt returns the old "completed_at" field's value of the Commitment entity.
+// If the Commitment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentMutation) OldCompletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompletedAt: %w", err)
+	}
+	return oldValue.CompletedAt, nil
+}
+
+// ClearCompletedAt clears the value of the "completed_at" field.
+func (m *CommitmentMutation) ClearCompletedAt() {
+	m.completed_at = nil
+	m.clearedFields[commitment.FieldCompletedAt] = struct{}{}
+}
+
+// CompletedAtCleared returns if the "completed_at" field was cleared in this mutation.
+func (m *CommitmentMutation) CompletedAtCleared() bool {
+	_, ok := m.clearedFields[commitment.FieldCompletedAt]
+	return ok
+}
+
+// ResetCompletedAt resets all changes to the "completed_at" field.
+func (m *CommitmentMutation) ResetCompletedAt() {
+	m.completed_at = nil
+	delete(m.clearedFields, commitment.FieldCompletedAt)
+}
+
+// SetCurrentEventVersion sets the "current_event_version" field.
+func (m *CommitmentMutation) SetCurrentEventVersion(i int) {
+	m.current_event_version = &i
+	m.addcurrent_event_version = nil
+}
+
+// CurrentEventVersion returns the value of the "current_event_version" field in the mutation.
+func (m *CommitmentMutation) CurrentEventVersion() (r int, exists bool) {
+	v := m.current_event_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCurrentEventVersion returns the old "current_event_version" field's value of the Commitment entity.
+// If the Commitment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentMutation) OldCurrentEventVersion(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCurrentEventVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCurrentEventVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCurrentEventVersion: %w", err)
+	}
+	return oldValue.CurrentEventVersion, nil
+}
+
+// AddCurrentEventVersion adds i to the "current_event_version" field.
+func (m *CommitmentMutation) AddCurrentEventVersion(i int) {
+	if m.addcurrent_event_version != nil {
+		*m.addcurrent_event_version += i
+	} else {
+		m.addcurrent_event_version = &i
+	}
+}
+
+// AddedCurrentEventVersion returns the value that was added to the "current_event_version" field in this mutation.
+func (m *CommitmentMutation) AddedCurrentEventVersion() (r int, exists bool) {
+	v := m.addcurrent_event_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCurrentEventVersion resets all changes to the "current_event_version" field.
+func (m *CommitmentMutation) ResetCurrentEventVersion() {
+	m.current_event_version = nil
+	m.addcurrent_event_version = nil
+}
+
 // SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
 func (m *CommitmentMutation) SetWorkspaceID(id uuid.UUID) {
 	m.workspace = &id
@@ -25124,6 +25636,168 @@ func (m *CommitmentMutation) ResetEvidences() {
 	m.removedevidences = nil
 }
 
+// AddEventIDs adds the "events" edge to the CommitmentEvent entity by ids.
+func (m *CommitmentMutation) AddEventIDs(ids ...uuid.UUID) {
+	if m.events == nil {
+		m.events = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.events[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEvents clears the "events" edge to the CommitmentEvent entity.
+func (m *CommitmentMutation) ClearEvents() {
+	m.clearedevents = true
+}
+
+// EventsCleared reports if the "events" edge to the CommitmentEvent entity was cleared.
+func (m *CommitmentMutation) EventsCleared() bool {
+	return m.clearedevents
+}
+
+// RemoveEventIDs removes the "events" edge to the CommitmentEvent entity by IDs.
+func (m *CommitmentMutation) RemoveEventIDs(ids ...uuid.UUID) {
+	if m.removedevents == nil {
+		m.removedevents = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.events, ids[i])
+		m.removedevents[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEvents returns the removed IDs of the "events" edge to the CommitmentEvent entity.
+func (m *CommitmentMutation) RemovedEventsIDs() (ids []uuid.UUID) {
+	for id := range m.removedevents {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EventsIDs returns the "events" edge IDs in the mutation.
+func (m *CommitmentMutation) EventsIDs() (ids []uuid.UUID) {
+	for id := range m.events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEvents resets all changes to the "events" edge.
+func (m *CommitmentMutation) ResetEvents() {
+	m.events = nil
+	m.clearedevents = false
+	m.removedevents = nil
+}
+
+// AddOutgoingDependencyIDs adds the "outgoing_dependencies" edge to the CommitmentDependency entity by ids.
+func (m *CommitmentMutation) AddOutgoingDependencyIDs(ids ...uuid.UUID) {
+	if m.outgoing_dependencies == nil {
+		m.outgoing_dependencies = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.outgoing_dependencies[ids[i]] = struct{}{}
+	}
+}
+
+// ClearOutgoingDependencies clears the "outgoing_dependencies" edge to the CommitmentDependency entity.
+func (m *CommitmentMutation) ClearOutgoingDependencies() {
+	m.clearedoutgoing_dependencies = true
+}
+
+// OutgoingDependenciesCleared reports if the "outgoing_dependencies" edge to the CommitmentDependency entity was cleared.
+func (m *CommitmentMutation) OutgoingDependenciesCleared() bool {
+	return m.clearedoutgoing_dependencies
+}
+
+// RemoveOutgoingDependencyIDs removes the "outgoing_dependencies" edge to the CommitmentDependency entity by IDs.
+func (m *CommitmentMutation) RemoveOutgoingDependencyIDs(ids ...uuid.UUID) {
+	if m.removedoutgoing_dependencies == nil {
+		m.removedoutgoing_dependencies = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.outgoing_dependencies, ids[i])
+		m.removedoutgoing_dependencies[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedOutgoingDependencies returns the removed IDs of the "outgoing_dependencies" edge to the CommitmentDependency entity.
+func (m *CommitmentMutation) RemovedOutgoingDependenciesIDs() (ids []uuid.UUID) {
+	for id := range m.removedoutgoing_dependencies {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// OutgoingDependenciesIDs returns the "outgoing_dependencies" edge IDs in the mutation.
+func (m *CommitmentMutation) OutgoingDependenciesIDs() (ids []uuid.UUID) {
+	for id := range m.outgoing_dependencies {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetOutgoingDependencies resets all changes to the "outgoing_dependencies" edge.
+func (m *CommitmentMutation) ResetOutgoingDependencies() {
+	m.outgoing_dependencies = nil
+	m.clearedoutgoing_dependencies = false
+	m.removedoutgoing_dependencies = nil
+}
+
+// AddIncomingDependencyIDs adds the "incoming_dependencies" edge to the CommitmentDependency entity by ids.
+func (m *CommitmentMutation) AddIncomingDependencyIDs(ids ...uuid.UUID) {
+	if m.incoming_dependencies == nil {
+		m.incoming_dependencies = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.incoming_dependencies[ids[i]] = struct{}{}
+	}
+}
+
+// ClearIncomingDependencies clears the "incoming_dependencies" edge to the CommitmentDependency entity.
+func (m *CommitmentMutation) ClearIncomingDependencies() {
+	m.clearedincoming_dependencies = true
+}
+
+// IncomingDependenciesCleared reports if the "incoming_dependencies" edge to the CommitmentDependency entity was cleared.
+func (m *CommitmentMutation) IncomingDependenciesCleared() bool {
+	return m.clearedincoming_dependencies
+}
+
+// RemoveIncomingDependencyIDs removes the "incoming_dependencies" edge to the CommitmentDependency entity by IDs.
+func (m *CommitmentMutation) RemoveIncomingDependencyIDs(ids ...uuid.UUID) {
+	if m.removedincoming_dependencies == nil {
+		m.removedincoming_dependencies = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.incoming_dependencies, ids[i])
+		m.removedincoming_dependencies[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedIncomingDependencies returns the removed IDs of the "incoming_dependencies" edge to the CommitmentDependency entity.
+func (m *CommitmentMutation) RemovedIncomingDependenciesIDs() (ids []uuid.UUID) {
+	for id := range m.removedincoming_dependencies {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// IncomingDependenciesIDs returns the "incoming_dependencies" edge IDs in the mutation.
+func (m *CommitmentMutation) IncomingDependenciesIDs() (ids []uuid.UUID) {
+	for id := range m.incoming_dependencies {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetIncomingDependencies resets all changes to the "incoming_dependencies" edge.
+func (m *CommitmentMutation) ResetIncomingDependencies() {
+	m.incoming_dependencies = nil
+	m.clearedincoming_dependencies = false
+	m.removedincoming_dependencies = nil
+}
+
 // Where appends a list predicates to the CommitmentMutation builder.
 func (m *CommitmentMutation) Where(ps ...predicate.Commitment) {
 	m.predicates = append(m.predicates, ps...)
@@ -25158,7 +25832,7 @@ func (m *CommitmentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CommitmentMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 18)
 	if m.created_at != nil {
 		fields = append(fields, commitment.FieldCreatedAt)
 	}
@@ -25182,6 +25856,36 @@ func (m *CommitmentMutation) Fields() []string {
 	}
 	if m.user_confirmed != nil {
 		fields = append(fields, commitment.FieldUserConfirmed)
+	}
+	if m.owner_participant_ref != nil {
+		fields = append(fields, commitment.FieldOwnerParticipantRef)
+	}
+	if m.counterparty_participant_ref != nil {
+		fields = append(fields, commitment.FieldCounterpartyParticipantRef)
+	}
+	if m.beneficiary_participant_ref != nil {
+		fields = append(fields, commitment.FieldBeneficiaryParticipantRef)
+	}
+	if m.source_phrase != nil {
+		fields = append(fields, commitment.FieldSourcePhrase)
+	}
+	if m.due_phrase != nil {
+		fields = append(fields, commitment.FieldDuePhrase)
+	}
+	if m.due_timezone != nil {
+		fields = append(fields, commitment.FieldDueTimezone)
+	}
+	if m.acceptance != nil {
+		fields = append(fields, commitment.FieldAcceptance)
+	}
+	if m.blocker != nil {
+		fields = append(fields, commitment.FieldBlocker)
+	}
+	if m.completed_at != nil {
+		fields = append(fields, commitment.FieldCompletedAt)
+	}
+	if m.current_event_version != nil {
+		fields = append(fields, commitment.FieldCurrentEventVersion)
 	}
 	return fields
 }
@@ -25207,6 +25911,26 @@ func (m *CommitmentMutation) Field(name string) (ent.Value, bool) {
 		return m.Confidence()
 	case commitment.FieldUserConfirmed:
 		return m.UserConfirmed()
+	case commitment.FieldOwnerParticipantRef:
+		return m.OwnerParticipantRef()
+	case commitment.FieldCounterpartyParticipantRef:
+		return m.CounterpartyParticipantRef()
+	case commitment.FieldBeneficiaryParticipantRef:
+		return m.BeneficiaryParticipantRef()
+	case commitment.FieldSourcePhrase:
+		return m.SourcePhrase()
+	case commitment.FieldDuePhrase:
+		return m.DuePhrase()
+	case commitment.FieldDueTimezone:
+		return m.DueTimezone()
+	case commitment.FieldAcceptance:
+		return m.Acceptance()
+	case commitment.FieldBlocker:
+		return m.Blocker()
+	case commitment.FieldCompletedAt:
+		return m.CompletedAt()
+	case commitment.FieldCurrentEventVersion:
+		return m.CurrentEventVersion()
 	}
 	return nil, false
 }
@@ -25232,6 +25956,26 @@ func (m *CommitmentMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldConfidence(ctx)
 	case commitment.FieldUserConfirmed:
 		return m.OldUserConfirmed(ctx)
+	case commitment.FieldOwnerParticipantRef:
+		return m.OldOwnerParticipantRef(ctx)
+	case commitment.FieldCounterpartyParticipantRef:
+		return m.OldCounterpartyParticipantRef(ctx)
+	case commitment.FieldBeneficiaryParticipantRef:
+		return m.OldBeneficiaryParticipantRef(ctx)
+	case commitment.FieldSourcePhrase:
+		return m.OldSourcePhrase(ctx)
+	case commitment.FieldDuePhrase:
+		return m.OldDuePhrase(ctx)
+	case commitment.FieldDueTimezone:
+		return m.OldDueTimezone(ctx)
+	case commitment.FieldAcceptance:
+		return m.OldAcceptance(ctx)
+	case commitment.FieldBlocker:
+		return m.OldBlocker(ctx)
+	case commitment.FieldCompletedAt:
+		return m.OldCompletedAt(ctx)
+	case commitment.FieldCurrentEventVersion:
+		return m.OldCurrentEventVersion(ctx)
 	}
 	return nil, fmt.Errorf("unknown Commitment field %s", name)
 }
@@ -25297,6 +26041,76 @@ func (m *CommitmentMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetUserConfirmed(v)
 		return nil
+	case commitment.FieldOwnerParticipantRef:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOwnerParticipantRef(v)
+		return nil
+	case commitment.FieldCounterpartyParticipantRef:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCounterpartyParticipantRef(v)
+		return nil
+	case commitment.FieldBeneficiaryParticipantRef:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBeneficiaryParticipantRef(v)
+		return nil
+	case commitment.FieldSourcePhrase:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourcePhrase(v)
+		return nil
+	case commitment.FieldDuePhrase:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDuePhrase(v)
+		return nil
+	case commitment.FieldDueTimezone:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDueTimezone(v)
+		return nil
+	case commitment.FieldAcceptance:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAcceptance(v)
+		return nil
+	case commitment.FieldBlocker:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBlocker(v)
+		return nil
+	case commitment.FieldCompletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompletedAt(v)
+		return nil
+	case commitment.FieldCurrentEventVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCurrentEventVersion(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Commitment field %s", name)
 }
@@ -25308,6 +26122,9 @@ func (m *CommitmentMutation) AddedFields() []string {
 	if m.addconfidence != nil {
 		fields = append(fields, commitment.FieldConfidence)
 	}
+	if m.addcurrent_event_version != nil {
+		fields = append(fields, commitment.FieldCurrentEventVersion)
+	}
 	return fields
 }
 
@@ -25318,6 +26135,8 @@ func (m *CommitmentMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case commitment.FieldConfidence:
 		return m.AddedConfidence()
+	case commitment.FieldCurrentEventVersion:
+		return m.AddedCurrentEventVersion()
 	}
 	return nil, false
 }
@@ -25334,6 +26153,13 @@ func (m *CommitmentMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddConfidence(v)
 		return nil
+	case commitment.FieldCurrentEventVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCurrentEventVersion(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Commitment numeric field %s", name)
 }
@@ -25344,6 +26170,30 @@ func (m *CommitmentMutation) ClearedFields() []string {
 	var fields []string
 	if m.FieldCleared(commitment.FieldDueAt) {
 		fields = append(fields, commitment.FieldDueAt)
+	}
+	if m.FieldCleared(commitment.FieldOwnerParticipantRef) {
+		fields = append(fields, commitment.FieldOwnerParticipantRef)
+	}
+	if m.FieldCleared(commitment.FieldCounterpartyParticipantRef) {
+		fields = append(fields, commitment.FieldCounterpartyParticipantRef)
+	}
+	if m.FieldCleared(commitment.FieldBeneficiaryParticipantRef) {
+		fields = append(fields, commitment.FieldBeneficiaryParticipantRef)
+	}
+	if m.FieldCleared(commitment.FieldSourcePhrase) {
+		fields = append(fields, commitment.FieldSourcePhrase)
+	}
+	if m.FieldCleared(commitment.FieldDuePhrase) {
+		fields = append(fields, commitment.FieldDuePhrase)
+	}
+	if m.FieldCleared(commitment.FieldDueTimezone) {
+		fields = append(fields, commitment.FieldDueTimezone)
+	}
+	if m.FieldCleared(commitment.FieldBlocker) {
+		fields = append(fields, commitment.FieldBlocker)
+	}
+	if m.FieldCleared(commitment.FieldCompletedAt) {
+		fields = append(fields, commitment.FieldCompletedAt)
 	}
 	return fields
 }
@@ -25361,6 +26211,30 @@ func (m *CommitmentMutation) ClearField(name string) error {
 	switch name {
 	case commitment.FieldDueAt:
 		m.ClearDueAt()
+		return nil
+	case commitment.FieldOwnerParticipantRef:
+		m.ClearOwnerParticipantRef()
+		return nil
+	case commitment.FieldCounterpartyParticipantRef:
+		m.ClearCounterpartyParticipantRef()
+		return nil
+	case commitment.FieldBeneficiaryParticipantRef:
+		m.ClearBeneficiaryParticipantRef()
+		return nil
+	case commitment.FieldSourcePhrase:
+		m.ClearSourcePhrase()
+		return nil
+	case commitment.FieldDuePhrase:
+		m.ClearDuePhrase()
+		return nil
+	case commitment.FieldDueTimezone:
+		m.ClearDueTimezone()
+		return nil
+	case commitment.FieldBlocker:
+		m.ClearBlocker()
+		return nil
+	case commitment.FieldCompletedAt:
+		m.ClearCompletedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Commitment nullable field %s", name)
@@ -25394,13 +26268,43 @@ func (m *CommitmentMutation) ResetField(name string) error {
 	case commitment.FieldUserConfirmed:
 		m.ResetUserConfirmed()
 		return nil
+	case commitment.FieldOwnerParticipantRef:
+		m.ResetOwnerParticipantRef()
+		return nil
+	case commitment.FieldCounterpartyParticipantRef:
+		m.ResetCounterpartyParticipantRef()
+		return nil
+	case commitment.FieldBeneficiaryParticipantRef:
+		m.ResetBeneficiaryParticipantRef()
+		return nil
+	case commitment.FieldSourcePhrase:
+		m.ResetSourcePhrase()
+		return nil
+	case commitment.FieldDuePhrase:
+		m.ResetDuePhrase()
+		return nil
+	case commitment.FieldDueTimezone:
+		m.ResetDueTimezone()
+		return nil
+	case commitment.FieldAcceptance:
+		m.ResetAcceptance()
+		return nil
+	case commitment.FieldBlocker:
+		m.ResetBlocker()
+		return nil
+	case commitment.FieldCompletedAt:
+		m.ResetCompletedAt()
+		return nil
+	case commitment.FieldCurrentEventVersion:
+		m.ResetCurrentEventVersion()
+		return nil
 	}
 	return fmt.Errorf("unknown Commitment field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CommitmentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 7)
 	if m.workspace != nil {
 		edges = append(edges, commitment.EdgeWorkspace)
 	}
@@ -25412,6 +26316,15 @@ func (m *CommitmentMutation) AddedEdges() []string {
 	}
 	if m.evidences != nil {
 		edges = append(edges, commitment.EdgeEvidences)
+	}
+	if m.events != nil {
+		edges = append(edges, commitment.EdgeEvents)
+	}
+	if m.outgoing_dependencies != nil {
+		edges = append(edges, commitment.EdgeOutgoingDependencies)
+	}
+	if m.incoming_dependencies != nil {
+		edges = append(edges, commitment.EdgeIncomingDependencies)
 	}
 	return edges
 }
@@ -25438,15 +26351,42 @@ func (m *CommitmentMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case commitment.EdgeEvents:
+		ids := make([]ent.Value, 0, len(m.events))
+		for id := range m.events {
+			ids = append(ids, id)
+		}
+		return ids
+	case commitment.EdgeOutgoingDependencies:
+		ids := make([]ent.Value, 0, len(m.outgoing_dependencies))
+		for id := range m.outgoing_dependencies {
+			ids = append(ids, id)
+		}
+		return ids
+	case commitment.EdgeIncomingDependencies:
+		ids := make([]ent.Value, 0, len(m.incoming_dependencies))
+		for id := range m.incoming_dependencies {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CommitmentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 7)
 	if m.removedevidences != nil {
 		edges = append(edges, commitment.EdgeEvidences)
+	}
+	if m.removedevents != nil {
+		edges = append(edges, commitment.EdgeEvents)
+	}
+	if m.removedoutgoing_dependencies != nil {
+		edges = append(edges, commitment.EdgeOutgoingDependencies)
+	}
+	if m.removedincoming_dependencies != nil {
+		edges = append(edges, commitment.EdgeIncomingDependencies)
 	}
 	return edges
 }
@@ -25461,13 +26401,31 @@ func (m *CommitmentMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case commitment.EdgeEvents:
+		ids := make([]ent.Value, 0, len(m.removedevents))
+		for id := range m.removedevents {
+			ids = append(ids, id)
+		}
+		return ids
+	case commitment.EdgeOutgoingDependencies:
+		ids := make([]ent.Value, 0, len(m.removedoutgoing_dependencies))
+		for id := range m.removedoutgoing_dependencies {
+			ids = append(ids, id)
+		}
+		return ids
+	case commitment.EdgeIncomingDependencies:
+		ids := make([]ent.Value, 0, len(m.removedincoming_dependencies))
+		for id := range m.removedincoming_dependencies {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CommitmentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 7)
 	if m.clearedworkspace {
 		edges = append(edges, commitment.EdgeWorkspace)
 	}
@@ -25479,6 +26437,15 @@ func (m *CommitmentMutation) ClearedEdges() []string {
 	}
 	if m.clearedevidences {
 		edges = append(edges, commitment.EdgeEvidences)
+	}
+	if m.clearedevents {
+		edges = append(edges, commitment.EdgeEvents)
+	}
+	if m.clearedoutgoing_dependencies {
+		edges = append(edges, commitment.EdgeOutgoingDependencies)
+	}
+	if m.clearedincoming_dependencies {
+		edges = append(edges, commitment.EdgeIncomingDependencies)
 	}
 	return edges
 }
@@ -25495,6 +26462,12 @@ func (m *CommitmentMutation) EdgeCleared(name string) bool {
 		return m.cleareduser
 	case commitment.EdgeEvidences:
 		return m.clearedevidences
+	case commitment.EdgeEvents:
+		return m.clearedevents
+	case commitment.EdgeOutgoingDependencies:
+		return m.clearedoutgoing_dependencies
+	case commitment.EdgeIncomingDependencies:
+		return m.clearedincoming_dependencies
 	}
 	return false
 }
@@ -25532,8 +26505,3189 @@ func (m *CommitmentMutation) ResetEdge(name string) error {
 	case commitment.EdgeEvidences:
 		m.ResetEvidences()
 		return nil
+	case commitment.EdgeEvents:
+		m.ResetEvents()
+		return nil
+	case commitment.EdgeOutgoingDependencies:
+		m.ResetOutgoingDependencies()
+		return nil
+	case commitment.EdgeIncomingDependencies:
+		m.ResetIncomingDependencies()
+		return nil
 	}
 	return fmt.Errorf("unknown Commitment edge %s", name)
+}
+
+// CommitmentDependencyMutation represents an operation that mutates the CommitmentDependency nodes in the graph.
+type CommitmentDependencyMutation struct {
+	config
+	op                     Op
+	typ                    string
+	id                     *uuid.UUID
+	created_at             *time.Time
+	updated_at             *time.Time
+	kind                   *string
+	evidence_refs          *[]string
+	appendevidence_refs    []string
+	clearedFields          map[string]struct{}
+	workspace              *uuid.UUID
+	clearedworkspace       bool
+	relationship           *uuid.UUID
+	clearedrelationship    bool
+	user                   *uuid.UUID
+	cleareduser            bool
+	from_commitment        *uuid.UUID
+	clearedfrom_commitment bool
+	to_commitment          *uuid.UUID
+	clearedto_commitment   bool
+	done                   bool
+	oldValue               func(context.Context) (*CommitmentDependency, error)
+	predicates             []predicate.CommitmentDependency
+}
+
+var _ ent.Mutation = (*CommitmentDependencyMutation)(nil)
+
+// commitmentdependencyOption allows management of the mutation configuration using functional options.
+type commitmentdependencyOption func(*CommitmentDependencyMutation)
+
+// newCommitmentDependencyMutation creates new mutation for the CommitmentDependency entity.
+func newCommitmentDependencyMutation(c config, op Op, opts ...commitmentdependencyOption) *CommitmentDependencyMutation {
+	m := &CommitmentDependencyMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCommitmentDependency,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCommitmentDependencyID sets the ID field of the mutation.
+func withCommitmentDependencyID(id uuid.UUID) commitmentdependencyOption {
+	return func(m *CommitmentDependencyMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CommitmentDependency
+		)
+		m.oldValue = func(ctx context.Context) (*CommitmentDependency, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CommitmentDependency.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCommitmentDependency sets the old CommitmentDependency of the mutation.
+func withCommitmentDependency(node *CommitmentDependency) commitmentdependencyOption {
+	return func(m *CommitmentDependencyMutation) {
+		m.oldValue = func(context.Context) (*CommitmentDependency, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CommitmentDependencyMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CommitmentDependencyMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CommitmentDependency entities.
+func (m *CommitmentDependencyMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CommitmentDependencyMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CommitmentDependencyMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CommitmentDependency.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CommitmentDependencyMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CommitmentDependencyMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CommitmentDependency entity.
+// If the CommitmentDependency object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentDependencyMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CommitmentDependencyMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *CommitmentDependencyMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *CommitmentDependencyMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the CommitmentDependency entity.
+// If the CommitmentDependency object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentDependencyMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *CommitmentDependencyMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetKind sets the "kind" field.
+func (m *CommitmentDependencyMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *CommitmentDependencyMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the CommitmentDependency entity.
+// If the CommitmentDependency object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentDependencyMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *CommitmentDependencyMutation) ResetKind() {
+	m.kind = nil
+}
+
+// SetEvidenceRefs sets the "evidence_refs" field.
+func (m *CommitmentDependencyMutation) SetEvidenceRefs(s []string) {
+	m.evidence_refs = &s
+	m.appendevidence_refs = nil
+}
+
+// EvidenceRefs returns the value of the "evidence_refs" field in the mutation.
+func (m *CommitmentDependencyMutation) EvidenceRefs() (r []string, exists bool) {
+	v := m.evidence_refs
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEvidenceRefs returns the old "evidence_refs" field's value of the CommitmentDependency entity.
+// If the CommitmentDependency object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentDependencyMutation) OldEvidenceRefs(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEvidenceRefs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEvidenceRefs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEvidenceRefs: %w", err)
+	}
+	return oldValue.EvidenceRefs, nil
+}
+
+// AppendEvidenceRefs adds s to the "evidence_refs" field.
+func (m *CommitmentDependencyMutation) AppendEvidenceRefs(s []string) {
+	m.appendevidence_refs = append(m.appendevidence_refs, s...)
+}
+
+// AppendedEvidenceRefs returns the list of values that were appended to the "evidence_refs" field in this mutation.
+func (m *CommitmentDependencyMutation) AppendedEvidenceRefs() ([]string, bool) {
+	if len(m.appendevidence_refs) == 0 {
+		return nil, false
+	}
+	return m.appendevidence_refs, true
+}
+
+// ResetEvidenceRefs resets all changes to the "evidence_refs" field.
+func (m *CommitmentDependencyMutation) ResetEvidenceRefs() {
+	m.evidence_refs = nil
+	m.appendevidence_refs = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *CommitmentDependencyMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *CommitmentDependencyMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *CommitmentDependencyMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *CommitmentDependencyMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *CommitmentDependencyMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *CommitmentDependencyMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetRelationshipID sets the "relationship" edge to the Relationship entity by id.
+func (m *CommitmentDependencyMutation) SetRelationshipID(id uuid.UUID) {
+	m.relationship = &id
+}
+
+// ClearRelationship clears the "relationship" edge to the Relationship entity.
+func (m *CommitmentDependencyMutation) ClearRelationship() {
+	m.clearedrelationship = true
+}
+
+// RelationshipCleared reports if the "relationship" edge to the Relationship entity was cleared.
+func (m *CommitmentDependencyMutation) RelationshipCleared() bool {
+	return m.clearedrelationship
+}
+
+// RelationshipID returns the "relationship" edge ID in the mutation.
+func (m *CommitmentDependencyMutation) RelationshipID() (id uuid.UUID, exists bool) {
+	if m.relationship != nil {
+		return *m.relationship, true
+	}
+	return
+}
+
+// RelationshipIDs returns the "relationship" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RelationshipID instead. It exists only for internal usage by the builders.
+func (m *CommitmentDependencyMutation) RelationshipIDs() (ids []uuid.UUID) {
+	if id := m.relationship; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRelationship resets all changes to the "relationship" edge.
+func (m *CommitmentDependencyMutation) ResetRelationship() {
+	m.relationship = nil
+	m.clearedrelationship = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *CommitmentDependencyMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *CommitmentDependencyMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *CommitmentDependencyMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *CommitmentDependencyMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *CommitmentDependencyMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *CommitmentDependencyMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetFromCommitmentID sets the "from_commitment" edge to the Commitment entity by id.
+func (m *CommitmentDependencyMutation) SetFromCommitmentID(id uuid.UUID) {
+	m.from_commitment = &id
+}
+
+// ClearFromCommitment clears the "from_commitment" edge to the Commitment entity.
+func (m *CommitmentDependencyMutation) ClearFromCommitment() {
+	m.clearedfrom_commitment = true
+}
+
+// FromCommitmentCleared reports if the "from_commitment" edge to the Commitment entity was cleared.
+func (m *CommitmentDependencyMutation) FromCommitmentCleared() bool {
+	return m.clearedfrom_commitment
+}
+
+// FromCommitmentID returns the "from_commitment" edge ID in the mutation.
+func (m *CommitmentDependencyMutation) FromCommitmentID() (id uuid.UUID, exists bool) {
+	if m.from_commitment != nil {
+		return *m.from_commitment, true
+	}
+	return
+}
+
+// FromCommitmentIDs returns the "from_commitment" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// FromCommitmentID instead. It exists only for internal usage by the builders.
+func (m *CommitmentDependencyMutation) FromCommitmentIDs() (ids []uuid.UUID) {
+	if id := m.from_commitment; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetFromCommitment resets all changes to the "from_commitment" edge.
+func (m *CommitmentDependencyMutation) ResetFromCommitment() {
+	m.from_commitment = nil
+	m.clearedfrom_commitment = false
+}
+
+// SetToCommitmentID sets the "to_commitment" edge to the Commitment entity by id.
+func (m *CommitmentDependencyMutation) SetToCommitmentID(id uuid.UUID) {
+	m.to_commitment = &id
+}
+
+// ClearToCommitment clears the "to_commitment" edge to the Commitment entity.
+func (m *CommitmentDependencyMutation) ClearToCommitment() {
+	m.clearedto_commitment = true
+}
+
+// ToCommitmentCleared reports if the "to_commitment" edge to the Commitment entity was cleared.
+func (m *CommitmentDependencyMutation) ToCommitmentCleared() bool {
+	return m.clearedto_commitment
+}
+
+// ToCommitmentID returns the "to_commitment" edge ID in the mutation.
+func (m *CommitmentDependencyMutation) ToCommitmentID() (id uuid.UUID, exists bool) {
+	if m.to_commitment != nil {
+		return *m.to_commitment, true
+	}
+	return
+}
+
+// ToCommitmentIDs returns the "to_commitment" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ToCommitmentID instead. It exists only for internal usage by the builders.
+func (m *CommitmentDependencyMutation) ToCommitmentIDs() (ids []uuid.UUID) {
+	if id := m.to_commitment; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetToCommitment resets all changes to the "to_commitment" edge.
+func (m *CommitmentDependencyMutation) ResetToCommitment() {
+	m.to_commitment = nil
+	m.clearedto_commitment = false
+}
+
+// Where appends a list predicates to the CommitmentDependencyMutation builder.
+func (m *CommitmentDependencyMutation) Where(ps ...predicate.CommitmentDependency) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CommitmentDependencyMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CommitmentDependencyMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CommitmentDependency, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CommitmentDependencyMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CommitmentDependencyMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CommitmentDependency).
+func (m *CommitmentDependencyMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CommitmentDependencyMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.created_at != nil {
+		fields = append(fields, commitmentdependency.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, commitmentdependency.FieldUpdatedAt)
+	}
+	if m.kind != nil {
+		fields = append(fields, commitmentdependency.FieldKind)
+	}
+	if m.evidence_refs != nil {
+		fields = append(fields, commitmentdependency.FieldEvidenceRefs)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CommitmentDependencyMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case commitmentdependency.FieldCreatedAt:
+		return m.CreatedAt()
+	case commitmentdependency.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case commitmentdependency.FieldKind:
+		return m.Kind()
+	case commitmentdependency.FieldEvidenceRefs:
+		return m.EvidenceRefs()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CommitmentDependencyMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case commitmentdependency.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case commitmentdependency.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case commitmentdependency.FieldKind:
+		return m.OldKind(ctx)
+	case commitmentdependency.FieldEvidenceRefs:
+		return m.OldEvidenceRefs(ctx)
+	}
+	return nil, fmt.Errorf("unknown CommitmentDependency field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommitmentDependencyMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case commitmentdependency.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case commitmentdependency.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case commitmentdependency.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
+	case commitmentdependency.FieldEvidenceRefs:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEvidenceRefs(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CommitmentDependency field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CommitmentDependencyMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CommitmentDependencyMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommitmentDependencyMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown CommitmentDependency numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CommitmentDependencyMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CommitmentDependencyMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CommitmentDependencyMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown CommitmentDependency nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CommitmentDependencyMutation) ResetField(name string) error {
+	switch name {
+	case commitmentdependency.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case commitmentdependency.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case commitmentdependency.FieldKind:
+		m.ResetKind()
+		return nil
+	case commitmentdependency.FieldEvidenceRefs:
+		m.ResetEvidenceRefs()
+		return nil
+	}
+	return fmt.Errorf("unknown CommitmentDependency field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CommitmentDependencyMutation) AddedEdges() []string {
+	edges := make([]string, 0, 5)
+	if m.workspace != nil {
+		edges = append(edges, commitmentdependency.EdgeWorkspace)
+	}
+	if m.relationship != nil {
+		edges = append(edges, commitmentdependency.EdgeRelationship)
+	}
+	if m.user != nil {
+		edges = append(edges, commitmentdependency.EdgeUser)
+	}
+	if m.from_commitment != nil {
+		edges = append(edges, commitmentdependency.EdgeFromCommitment)
+	}
+	if m.to_commitment != nil {
+		edges = append(edges, commitmentdependency.EdgeToCommitment)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CommitmentDependencyMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case commitmentdependency.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case commitmentdependency.EdgeRelationship:
+		if id := m.relationship; id != nil {
+			return []ent.Value{*id}
+		}
+	case commitmentdependency.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case commitmentdependency.EdgeFromCommitment:
+		if id := m.from_commitment; id != nil {
+			return []ent.Value{*id}
+		}
+	case commitmentdependency.EdgeToCommitment:
+		if id := m.to_commitment; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CommitmentDependencyMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 5)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CommitmentDependencyMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CommitmentDependencyMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 5)
+	if m.clearedworkspace {
+		edges = append(edges, commitmentdependency.EdgeWorkspace)
+	}
+	if m.clearedrelationship {
+		edges = append(edges, commitmentdependency.EdgeRelationship)
+	}
+	if m.cleareduser {
+		edges = append(edges, commitmentdependency.EdgeUser)
+	}
+	if m.clearedfrom_commitment {
+		edges = append(edges, commitmentdependency.EdgeFromCommitment)
+	}
+	if m.clearedto_commitment {
+		edges = append(edges, commitmentdependency.EdgeToCommitment)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CommitmentDependencyMutation) EdgeCleared(name string) bool {
+	switch name {
+	case commitmentdependency.EdgeWorkspace:
+		return m.clearedworkspace
+	case commitmentdependency.EdgeRelationship:
+		return m.clearedrelationship
+	case commitmentdependency.EdgeUser:
+		return m.cleareduser
+	case commitmentdependency.EdgeFromCommitment:
+		return m.clearedfrom_commitment
+	case commitmentdependency.EdgeToCommitment:
+		return m.clearedto_commitment
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CommitmentDependencyMutation) ClearEdge(name string) error {
+	switch name {
+	case commitmentdependency.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case commitmentdependency.EdgeRelationship:
+		m.ClearRelationship()
+		return nil
+	case commitmentdependency.EdgeUser:
+		m.ClearUser()
+		return nil
+	case commitmentdependency.EdgeFromCommitment:
+		m.ClearFromCommitment()
+		return nil
+	case commitmentdependency.EdgeToCommitment:
+		m.ClearToCommitment()
+		return nil
+	}
+	return fmt.Errorf("unknown CommitmentDependency unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CommitmentDependencyMutation) ResetEdge(name string) error {
+	switch name {
+	case commitmentdependency.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case commitmentdependency.EdgeRelationship:
+		m.ResetRelationship()
+		return nil
+	case commitmentdependency.EdgeUser:
+		m.ResetUser()
+		return nil
+	case commitmentdependency.EdgeFromCommitment:
+		m.ResetFromCommitment()
+		return nil
+	case commitmentdependency.EdgeToCommitment:
+		m.ResetToCommitment()
+		return nil
+	}
+	return fmt.Errorf("unknown CommitmentDependency edge %s", name)
+}
+
+// CommitmentEventMutation represents an operation that mutates the CommitmentEvent nodes in the graph.
+type CommitmentEventMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *uuid.UUID
+	created_at            *time.Time
+	updated_at            *time.Time
+	source_event_id       *string
+	version               *int
+	addversion            *int
+	kind                  *string
+	actor_type            *string
+	actor_ref             *string
+	occurred_at           *time.Time
+	source_observation_id *string
+	evidence_refs         *[]string
+	appendevidence_refs   []string
+	payload_json          *string
+	clearedFields         map[string]struct{}
+	workspace             *uuid.UUID
+	clearedworkspace      bool
+	relationship          *uuid.UUID
+	clearedrelationship   bool
+	user                  *uuid.UUID
+	cleareduser           bool
+	commitment            *uuid.UUID
+	clearedcommitment     bool
+	done                  bool
+	oldValue              func(context.Context) (*CommitmentEvent, error)
+	predicates            []predicate.CommitmentEvent
+}
+
+var _ ent.Mutation = (*CommitmentEventMutation)(nil)
+
+// commitmenteventOption allows management of the mutation configuration using functional options.
+type commitmenteventOption func(*CommitmentEventMutation)
+
+// newCommitmentEventMutation creates new mutation for the CommitmentEvent entity.
+func newCommitmentEventMutation(c config, op Op, opts ...commitmenteventOption) *CommitmentEventMutation {
+	m := &CommitmentEventMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCommitmentEvent,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCommitmentEventID sets the ID field of the mutation.
+func withCommitmentEventID(id uuid.UUID) commitmenteventOption {
+	return func(m *CommitmentEventMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CommitmentEvent
+		)
+		m.oldValue = func(ctx context.Context) (*CommitmentEvent, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CommitmentEvent.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCommitmentEvent sets the old CommitmentEvent of the mutation.
+func withCommitmentEvent(node *CommitmentEvent) commitmenteventOption {
+	return func(m *CommitmentEventMutation) {
+		m.oldValue = func(context.Context) (*CommitmentEvent, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CommitmentEventMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CommitmentEventMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CommitmentEvent entities.
+func (m *CommitmentEventMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CommitmentEventMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CommitmentEventMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CommitmentEvent.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CommitmentEventMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CommitmentEventMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CommitmentEvent entity.
+// If the CommitmentEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentEventMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CommitmentEventMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *CommitmentEventMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *CommitmentEventMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the CommitmentEvent entity.
+// If the CommitmentEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentEventMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *CommitmentEventMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetSourceEventID sets the "source_event_id" field.
+func (m *CommitmentEventMutation) SetSourceEventID(s string) {
+	m.source_event_id = &s
+}
+
+// SourceEventID returns the value of the "source_event_id" field in the mutation.
+func (m *CommitmentEventMutation) SourceEventID() (r string, exists bool) {
+	v := m.source_event_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceEventID returns the old "source_event_id" field's value of the CommitmentEvent entity.
+// If the CommitmentEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentEventMutation) OldSourceEventID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceEventID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceEventID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceEventID: %w", err)
+	}
+	return oldValue.SourceEventID, nil
+}
+
+// ResetSourceEventID resets all changes to the "source_event_id" field.
+func (m *CommitmentEventMutation) ResetSourceEventID() {
+	m.source_event_id = nil
+}
+
+// SetVersion sets the "version" field.
+func (m *CommitmentEventMutation) SetVersion(i int) {
+	m.version = &i
+	m.addversion = nil
+}
+
+// Version returns the value of the "version" field in the mutation.
+func (m *CommitmentEventMutation) Version() (r int, exists bool) {
+	v := m.version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVersion returns the old "version" field's value of the CommitmentEvent entity.
+// If the CommitmentEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentEventMutation) OldVersion(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// AddVersion adds i to the "version" field.
+func (m *CommitmentEventMutation) AddVersion(i int) {
+	if m.addversion != nil {
+		*m.addversion += i
+	} else {
+		m.addversion = &i
+	}
+}
+
+// AddedVersion returns the value that was added to the "version" field in this mutation.
+func (m *CommitmentEventMutation) AddedVersion() (r int, exists bool) {
+	v := m.addversion
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetVersion resets all changes to the "version" field.
+func (m *CommitmentEventMutation) ResetVersion() {
+	m.version = nil
+	m.addversion = nil
+}
+
+// SetKind sets the "kind" field.
+func (m *CommitmentEventMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *CommitmentEventMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the CommitmentEvent entity.
+// If the CommitmentEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentEventMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *CommitmentEventMutation) ResetKind() {
+	m.kind = nil
+}
+
+// SetActorType sets the "actor_type" field.
+func (m *CommitmentEventMutation) SetActorType(s string) {
+	m.actor_type = &s
+}
+
+// ActorType returns the value of the "actor_type" field in the mutation.
+func (m *CommitmentEventMutation) ActorType() (r string, exists bool) {
+	v := m.actor_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActorType returns the old "actor_type" field's value of the CommitmentEvent entity.
+// If the CommitmentEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentEventMutation) OldActorType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActorType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActorType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActorType: %w", err)
+	}
+	return oldValue.ActorType, nil
+}
+
+// ResetActorType resets all changes to the "actor_type" field.
+func (m *CommitmentEventMutation) ResetActorType() {
+	m.actor_type = nil
+}
+
+// SetActorRef sets the "actor_ref" field.
+func (m *CommitmentEventMutation) SetActorRef(s string) {
+	m.actor_ref = &s
+}
+
+// ActorRef returns the value of the "actor_ref" field in the mutation.
+func (m *CommitmentEventMutation) ActorRef() (r string, exists bool) {
+	v := m.actor_ref
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActorRef returns the old "actor_ref" field's value of the CommitmentEvent entity.
+// If the CommitmentEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentEventMutation) OldActorRef(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActorRef is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActorRef requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActorRef: %w", err)
+	}
+	return oldValue.ActorRef, nil
+}
+
+// ClearActorRef clears the value of the "actor_ref" field.
+func (m *CommitmentEventMutation) ClearActorRef() {
+	m.actor_ref = nil
+	m.clearedFields[commitmentevent.FieldActorRef] = struct{}{}
+}
+
+// ActorRefCleared returns if the "actor_ref" field was cleared in this mutation.
+func (m *CommitmentEventMutation) ActorRefCleared() bool {
+	_, ok := m.clearedFields[commitmentevent.FieldActorRef]
+	return ok
+}
+
+// ResetActorRef resets all changes to the "actor_ref" field.
+func (m *CommitmentEventMutation) ResetActorRef() {
+	m.actor_ref = nil
+	delete(m.clearedFields, commitmentevent.FieldActorRef)
+}
+
+// SetOccurredAt sets the "occurred_at" field.
+func (m *CommitmentEventMutation) SetOccurredAt(t time.Time) {
+	m.occurred_at = &t
+}
+
+// OccurredAt returns the value of the "occurred_at" field in the mutation.
+func (m *CommitmentEventMutation) OccurredAt() (r time.Time, exists bool) {
+	v := m.occurred_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOccurredAt returns the old "occurred_at" field's value of the CommitmentEvent entity.
+// If the CommitmentEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentEventMutation) OldOccurredAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOccurredAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOccurredAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOccurredAt: %w", err)
+	}
+	return oldValue.OccurredAt, nil
+}
+
+// ResetOccurredAt resets all changes to the "occurred_at" field.
+func (m *CommitmentEventMutation) ResetOccurredAt() {
+	m.occurred_at = nil
+}
+
+// SetSourceObservationID sets the "source_observation_id" field.
+func (m *CommitmentEventMutation) SetSourceObservationID(s string) {
+	m.source_observation_id = &s
+}
+
+// SourceObservationID returns the value of the "source_observation_id" field in the mutation.
+func (m *CommitmentEventMutation) SourceObservationID() (r string, exists bool) {
+	v := m.source_observation_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceObservationID returns the old "source_observation_id" field's value of the CommitmentEvent entity.
+// If the CommitmentEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentEventMutation) OldSourceObservationID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceObservationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceObservationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceObservationID: %w", err)
+	}
+	return oldValue.SourceObservationID, nil
+}
+
+// ClearSourceObservationID clears the value of the "source_observation_id" field.
+func (m *CommitmentEventMutation) ClearSourceObservationID() {
+	m.source_observation_id = nil
+	m.clearedFields[commitmentevent.FieldSourceObservationID] = struct{}{}
+}
+
+// SourceObservationIDCleared returns if the "source_observation_id" field was cleared in this mutation.
+func (m *CommitmentEventMutation) SourceObservationIDCleared() bool {
+	_, ok := m.clearedFields[commitmentevent.FieldSourceObservationID]
+	return ok
+}
+
+// ResetSourceObservationID resets all changes to the "source_observation_id" field.
+func (m *CommitmentEventMutation) ResetSourceObservationID() {
+	m.source_observation_id = nil
+	delete(m.clearedFields, commitmentevent.FieldSourceObservationID)
+}
+
+// SetEvidenceRefs sets the "evidence_refs" field.
+func (m *CommitmentEventMutation) SetEvidenceRefs(s []string) {
+	m.evidence_refs = &s
+	m.appendevidence_refs = nil
+}
+
+// EvidenceRefs returns the value of the "evidence_refs" field in the mutation.
+func (m *CommitmentEventMutation) EvidenceRefs() (r []string, exists bool) {
+	v := m.evidence_refs
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEvidenceRefs returns the old "evidence_refs" field's value of the CommitmentEvent entity.
+// If the CommitmentEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentEventMutation) OldEvidenceRefs(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEvidenceRefs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEvidenceRefs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEvidenceRefs: %w", err)
+	}
+	return oldValue.EvidenceRefs, nil
+}
+
+// AppendEvidenceRefs adds s to the "evidence_refs" field.
+func (m *CommitmentEventMutation) AppendEvidenceRefs(s []string) {
+	m.appendevidence_refs = append(m.appendevidence_refs, s...)
+}
+
+// AppendedEvidenceRefs returns the list of values that were appended to the "evidence_refs" field in this mutation.
+func (m *CommitmentEventMutation) AppendedEvidenceRefs() ([]string, bool) {
+	if len(m.appendevidence_refs) == 0 {
+		return nil, false
+	}
+	return m.appendevidence_refs, true
+}
+
+// ResetEvidenceRefs resets all changes to the "evidence_refs" field.
+func (m *CommitmentEventMutation) ResetEvidenceRefs() {
+	m.evidence_refs = nil
+	m.appendevidence_refs = nil
+}
+
+// SetPayloadJSON sets the "payload_json" field.
+func (m *CommitmentEventMutation) SetPayloadJSON(s string) {
+	m.payload_json = &s
+}
+
+// PayloadJSON returns the value of the "payload_json" field in the mutation.
+func (m *CommitmentEventMutation) PayloadJSON() (r string, exists bool) {
+	v := m.payload_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPayloadJSON returns the old "payload_json" field's value of the CommitmentEvent entity.
+// If the CommitmentEvent object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommitmentEventMutation) OldPayloadJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPayloadJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPayloadJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayloadJSON: %w", err)
+	}
+	return oldValue.PayloadJSON, nil
+}
+
+// ResetPayloadJSON resets all changes to the "payload_json" field.
+func (m *CommitmentEventMutation) ResetPayloadJSON() {
+	m.payload_json = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *CommitmentEventMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *CommitmentEventMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *CommitmentEventMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *CommitmentEventMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *CommitmentEventMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *CommitmentEventMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetRelationshipID sets the "relationship" edge to the Relationship entity by id.
+func (m *CommitmentEventMutation) SetRelationshipID(id uuid.UUID) {
+	m.relationship = &id
+}
+
+// ClearRelationship clears the "relationship" edge to the Relationship entity.
+func (m *CommitmentEventMutation) ClearRelationship() {
+	m.clearedrelationship = true
+}
+
+// RelationshipCleared reports if the "relationship" edge to the Relationship entity was cleared.
+func (m *CommitmentEventMutation) RelationshipCleared() bool {
+	return m.clearedrelationship
+}
+
+// RelationshipID returns the "relationship" edge ID in the mutation.
+func (m *CommitmentEventMutation) RelationshipID() (id uuid.UUID, exists bool) {
+	if m.relationship != nil {
+		return *m.relationship, true
+	}
+	return
+}
+
+// RelationshipIDs returns the "relationship" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RelationshipID instead. It exists only for internal usage by the builders.
+func (m *CommitmentEventMutation) RelationshipIDs() (ids []uuid.UUID) {
+	if id := m.relationship; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRelationship resets all changes to the "relationship" edge.
+func (m *CommitmentEventMutation) ResetRelationship() {
+	m.relationship = nil
+	m.clearedrelationship = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *CommitmentEventMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *CommitmentEventMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *CommitmentEventMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *CommitmentEventMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *CommitmentEventMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *CommitmentEventMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetCommitmentID sets the "commitment" edge to the Commitment entity by id.
+func (m *CommitmentEventMutation) SetCommitmentID(id uuid.UUID) {
+	m.commitment = &id
+}
+
+// ClearCommitment clears the "commitment" edge to the Commitment entity.
+func (m *CommitmentEventMutation) ClearCommitment() {
+	m.clearedcommitment = true
+}
+
+// CommitmentCleared reports if the "commitment" edge to the Commitment entity was cleared.
+func (m *CommitmentEventMutation) CommitmentCleared() bool {
+	return m.clearedcommitment
+}
+
+// CommitmentID returns the "commitment" edge ID in the mutation.
+func (m *CommitmentEventMutation) CommitmentID() (id uuid.UUID, exists bool) {
+	if m.commitment != nil {
+		return *m.commitment, true
+	}
+	return
+}
+
+// CommitmentIDs returns the "commitment" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// CommitmentID instead. It exists only for internal usage by the builders.
+func (m *CommitmentEventMutation) CommitmentIDs() (ids []uuid.UUID) {
+	if id := m.commitment; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetCommitment resets all changes to the "commitment" edge.
+func (m *CommitmentEventMutation) ResetCommitment() {
+	m.commitment = nil
+	m.clearedcommitment = false
+}
+
+// Where appends a list predicates to the CommitmentEventMutation builder.
+func (m *CommitmentEventMutation) Where(ps ...predicate.CommitmentEvent) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CommitmentEventMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CommitmentEventMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CommitmentEvent, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CommitmentEventMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CommitmentEventMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CommitmentEvent).
+func (m *CommitmentEventMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CommitmentEventMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.created_at != nil {
+		fields = append(fields, commitmentevent.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, commitmentevent.FieldUpdatedAt)
+	}
+	if m.source_event_id != nil {
+		fields = append(fields, commitmentevent.FieldSourceEventID)
+	}
+	if m.version != nil {
+		fields = append(fields, commitmentevent.FieldVersion)
+	}
+	if m.kind != nil {
+		fields = append(fields, commitmentevent.FieldKind)
+	}
+	if m.actor_type != nil {
+		fields = append(fields, commitmentevent.FieldActorType)
+	}
+	if m.actor_ref != nil {
+		fields = append(fields, commitmentevent.FieldActorRef)
+	}
+	if m.occurred_at != nil {
+		fields = append(fields, commitmentevent.FieldOccurredAt)
+	}
+	if m.source_observation_id != nil {
+		fields = append(fields, commitmentevent.FieldSourceObservationID)
+	}
+	if m.evidence_refs != nil {
+		fields = append(fields, commitmentevent.FieldEvidenceRefs)
+	}
+	if m.payload_json != nil {
+		fields = append(fields, commitmentevent.FieldPayloadJSON)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CommitmentEventMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case commitmentevent.FieldCreatedAt:
+		return m.CreatedAt()
+	case commitmentevent.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case commitmentevent.FieldSourceEventID:
+		return m.SourceEventID()
+	case commitmentevent.FieldVersion:
+		return m.Version()
+	case commitmentevent.FieldKind:
+		return m.Kind()
+	case commitmentevent.FieldActorType:
+		return m.ActorType()
+	case commitmentevent.FieldActorRef:
+		return m.ActorRef()
+	case commitmentevent.FieldOccurredAt:
+		return m.OccurredAt()
+	case commitmentevent.FieldSourceObservationID:
+		return m.SourceObservationID()
+	case commitmentevent.FieldEvidenceRefs:
+		return m.EvidenceRefs()
+	case commitmentevent.FieldPayloadJSON:
+		return m.PayloadJSON()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CommitmentEventMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case commitmentevent.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case commitmentevent.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case commitmentevent.FieldSourceEventID:
+		return m.OldSourceEventID(ctx)
+	case commitmentevent.FieldVersion:
+		return m.OldVersion(ctx)
+	case commitmentevent.FieldKind:
+		return m.OldKind(ctx)
+	case commitmentevent.FieldActorType:
+		return m.OldActorType(ctx)
+	case commitmentevent.FieldActorRef:
+		return m.OldActorRef(ctx)
+	case commitmentevent.FieldOccurredAt:
+		return m.OldOccurredAt(ctx)
+	case commitmentevent.FieldSourceObservationID:
+		return m.OldSourceObservationID(ctx)
+	case commitmentevent.FieldEvidenceRefs:
+		return m.OldEvidenceRefs(ctx)
+	case commitmentevent.FieldPayloadJSON:
+		return m.OldPayloadJSON(ctx)
+	}
+	return nil, fmt.Errorf("unknown CommitmentEvent field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommitmentEventMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case commitmentevent.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case commitmentevent.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case commitmentevent.FieldSourceEventID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceEventID(v)
+		return nil
+	case commitmentevent.FieldVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVersion(v)
+		return nil
+	case commitmentevent.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
+	case commitmentevent.FieldActorType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActorType(v)
+		return nil
+	case commitmentevent.FieldActorRef:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActorRef(v)
+		return nil
+	case commitmentevent.FieldOccurredAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOccurredAt(v)
+		return nil
+	case commitmentevent.FieldSourceObservationID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceObservationID(v)
+		return nil
+	case commitmentevent.FieldEvidenceRefs:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEvidenceRefs(v)
+		return nil
+	case commitmentevent.FieldPayloadJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPayloadJSON(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CommitmentEvent field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CommitmentEventMutation) AddedFields() []string {
+	var fields []string
+	if m.addversion != nil {
+		fields = append(fields, commitmentevent.FieldVersion)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CommitmentEventMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case commitmentevent.FieldVersion:
+		return m.AddedVersion()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommitmentEventMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case commitmentevent.FieldVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddVersion(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CommitmentEvent numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CommitmentEventMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(commitmentevent.FieldActorRef) {
+		fields = append(fields, commitmentevent.FieldActorRef)
+	}
+	if m.FieldCleared(commitmentevent.FieldSourceObservationID) {
+		fields = append(fields, commitmentevent.FieldSourceObservationID)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CommitmentEventMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CommitmentEventMutation) ClearField(name string) error {
+	switch name {
+	case commitmentevent.FieldActorRef:
+		m.ClearActorRef()
+		return nil
+	case commitmentevent.FieldSourceObservationID:
+		m.ClearSourceObservationID()
+		return nil
+	}
+	return fmt.Errorf("unknown CommitmentEvent nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CommitmentEventMutation) ResetField(name string) error {
+	switch name {
+	case commitmentevent.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case commitmentevent.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case commitmentevent.FieldSourceEventID:
+		m.ResetSourceEventID()
+		return nil
+	case commitmentevent.FieldVersion:
+		m.ResetVersion()
+		return nil
+	case commitmentevent.FieldKind:
+		m.ResetKind()
+		return nil
+	case commitmentevent.FieldActorType:
+		m.ResetActorType()
+		return nil
+	case commitmentevent.FieldActorRef:
+		m.ResetActorRef()
+		return nil
+	case commitmentevent.FieldOccurredAt:
+		m.ResetOccurredAt()
+		return nil
+	case commitmentevent.FieldSourceObservationID:
+		m.ResetSourceObservationID()
+		return nil
+	case commitmentevent.FieldEvidenceRefs:
+		m.ResetEvidenceRefs()
+		return nil
+	case commitmentevent.FieldPayloadJSON:
+		m.ResetPayloadJSON()
+		return nil
+	}
+	return fmt.Errorf("unknown CommitmentEvent field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CommitmentEventMutation) AddedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.workspace != nil {
+		edges = append(edges, commitmentevent.EdgeWorkspace)
+	}
+	if m.relationship != nil {
+		edges = append(edges, commitmentevent.EdgeRelationship)
+	}
+	if m.user != nil {
+		edges = append(edges, commitmentevent.EdgeUser)
+	}
+	if m.commitment != nil {
+		edges = append(edges, commitmentevent.EdgeCommitment)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CommitmentEventMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case commitmentevent.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case commitmentevent.EdgeRelationship:
+		if id := m.relationship; id != nil {
+			return []ent.Value{*id}
+		}
+	case commitmentevent.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case commitmentevent.EdgeCommitment:
+		if id := m.commitment; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CommitmentEventMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 4)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CommitmentEventMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CommitmentEventMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.clearedworkspace {
+		edges = append(edges, commitmentevent.EdgeWorkspace)
+	}
+	if m.clearedrelationship {
+		edges = append(edges, commitmentevent.EdgeRelationship)
+	}
+	if m.cleareduser {
+		edges = append(edges, commitmentevent.EdgeUser)
+	}
+	if m.clearedcommitment {
+		edges = append(edges, commitmentevent.EdgeCommitment)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CommitmentEventMutation) EdgeCleared(name string) bool {
+	switch name {
+	case commitmentevent.EdgeWorkspace:
+		return m.clearedworkspace
+	case commitmentevent.EdgeRelationship:
+		return m.clearedrelationship
+	case commitmentevent.EdgeUser:
+		return m.cleareduser
+	case commitmentevent.EdgeCommitment:
+		return m.clearedcommitment
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CommitmentEventMutation) ClearEdge(name string) error {
+	switch name {
+	case commitmentevent.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case commitmentevent.EdgeRelationship:
+		m.ClearRelationship()
+		return nil
+	case commitmentevent.EdgeUser:
+		m.ClearUser()
+		return nil
+	case commitmentevent.EdgeCommitment:
+		m.ClearCommitment()
+		return nil
+	}
+	return fmt.Errorf("unknown CommitmentEvent unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CommitmentEventMutation) ResetEdge(name string) error {
+	switch name {
+	case commitmentevent.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case commitmentevent.EdgeRelationship:
+		m.ResetRelationship()
+		return nil
+	case commitmentevent.EdgeUser:
+		m.ResetUser()
+		return nil
+	case commitmentevent.EdgeCommitment:
+		m.ResetCommitment()
+		return nil
+	}
+	return fmt.Errorf("unknown CommitmentEvent edge %s", name)
+}
+
+// ConversationIntelligenceArtifactMutation represents an operation that mutates the ConversationIntelligenceArtifact nodes in the graph.
+type ConversationIntelligenceArtifactMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *uuid.UUID
+	created_at          *time.Time
+	updated_at          *time.Time
+	kind                *string
+	stable_id           *string
+	version             *int
+	addversion          *int
+	status              *string
+	subject_ref         *string
+	effective_at        *time.Time
+	evidence_refs       *[]string
+	appendevidence_refs []string
+	payload_json        *string
+	payload_hash        *string
+	clearedFields       map[string]struct{}
+	workspace           *uuid.UUID
+	clearedworkspace    bool
+	user                *uuid.UUID
+	cleareduser         bool
+	relationship        *uuid.UUID
+	clearedrelationship bool
+	done                bool
+	oldValue            func(context.Context) (*ConversationIntelligenceArtifact, error)
+	predicates          []predicate.ConversationIntelligenceArtifact
+}
+
+var _ ent.Mutation = (*ConversationIntelligenceArtifactMutation)(nil)
+
+// conversationintelligenceartifactOption allows management of the mutation configuration using functional options.
+type conversationintelligenceartifactOption func(*ConversationIntelligenceArtifactMutation)
+
+// newConversationIntelligenceArtifactMutation creates new mutation for the ConversationIntelligenceArtifact entity.
+func newConversationIntelligenceArtifactMutation(c config, op Op, opts ...conversationintelligenceartifactOption) *ConversationIntelligenceArtifactMutation {
+	m := &ConversationIntelligenceArtifactMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeConversationIntelligenceArtifact,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withConversationIntelligenceArtifactID sets the ID field of the mutation.
+func withConversationIntelligenceArtifactID(id uuid.UUID) conversationintelligenceartifactOption {
+	return func(m *ConversationIntelligenceArtifactMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ConversationIntelligenceArtifact
+		)
+		m.oldValue = func(ctx context.Context) (*ConversationIntelligenceArtifact, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ConversationIntelligenceArtifact.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withConversationIntelligenceArtifact sets the old ConversationIntelligenceArtifact of the mutation.
+func withConversationIntelligenceArtifact(node *ConversationIntelligenceArtifact) conversationintelligenceartifactOption {
+	return func(m *ConversationIntelligenceArtifactMutation) {
+		m.oldValue = func(context.Context) (*ConversationIntelligenceArtifact, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ConversationIntelligenceArtifactMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ConversationIntelligenceArtifactMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ConversationIntelligenceArtifact entities.
+func (m *ConversationIntelligenceArtifactMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ConversationIntelligenceArtifactMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ConversationIntelligenceArtifactMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ConversationIntelligenceArtifact.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ConversationIntelligenceArtifactMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ConversationIntelligenceArtifactMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ConversationIntelligenceArtifact entity.
+// If the ConversationIntelligenceArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConversationIntelligenceArtifactMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ConversationIntelligenceArtifactMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ConversationIntelligenceArtifactMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ConversationIntelligenceArtifactMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ConversationIntelligenceArtifact entity.
+// If the ConversationIntelligenceArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConversationIntelligenceArtifactMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ConversationIntelligenceArtifactMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetKind sets the "kind" field.
+func (m *ConversationIntelligenceArtifactMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *ConversationIntelligenceArtifactMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the ConversationIntelligenceArtifact entity.
+// If the ConversationIntelligenceArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConversationIntelligenceArtifactMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *ConversationIntelligenceArtifactMutation) ResetKind() {
+	m.kind = nil
+}
+
+// SetStableID sets the "stable_id" field.
+func (m *ConversationIntelligenceArtifactMutation) SetStableID(s string) {
+	m.stable_id = &s
+}
+
+// StableID returns the value of the "stable_id" field in the mutation.
+func (m *ConversationIntelligenceArtifactMutation) StableID() (r string, exists bool) {
+	v := m.stable_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStableID returns the old "stable_id" field's value of the ConversationIntelligenceArtifact entity.
+// If the ConversationIntelligenceArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConversationIntelligenceArtifactMutation) OldStableID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStableID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStableID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStableID: %w", err)
+	}
+	return oldValue.StableID, nil
+}
+
+// ResetStableID resets all changes to the "stable_id" field.
+func (m *ConversationIntelligenceArtifactMutation) ResetStableID() {
+	m.stable_id = nil
+}
+
+// SetVersion sets the "version" field.
+func (m *ConversationIntelligenceArtifactMutation) SetVersion(i int) {
+	m.version = &i
+	m.addversion = nil
+}
+
+// Version returns the value of the "version" field in the mutation.
+func (m *ConversationIntelligenceArtifactMutation) Version() (r int, exists bool) {
+	v := m.version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVersion returns the old "version" field's value of the ConversationIntelligenceArtifact entity.
+// If the ConversationIntelligenceArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConversationIntelligenceArtifactMutation) OldVersion(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// AddVersion adds i to the "version" field.
+func (m *ConversationIntelligenceArtifactMutation) AddVersion(i int) {
+	if m.addversion != nil {
+		*m.addversion += i
+	} else {
+		m.addversion = &i
+	}
+}
+
+// AddedVersion returns the value that was added to the "version" field in this mutation.
+func (m *ConversationIntelligenceArtifactMutation) AddedVersion() (r int, exists bool) {
+	v := m.addversion
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetVersion resets all changes to the "version" field.
+func (m *ConversationIntelligenceArtifactMutation) ResetVersion() {
+	m.version = nil
+	m.addversion = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *ConversationIntelligenceArtifactMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *ConversationIntelligenceArtifactMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the ConversationIntelligenceArtifact entity.
+// If the ConversationIntelligenceArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConversationIntelligenceArtifactMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ClearStatus clears the value of the "status" field.
+func (m *ConversationIntelligenceArtifactMutation) ClearStatus() {
+	m.status = nil
+	m.clearedFields[conversationintelligenceartifact.FieldStatus] = struct{}{}
+}
+
+// StatusCleared returns if the "status" field was cleared in this mutation.
+func (m *ConversationIntelligenceArtifactMutation) StatusCleared() bool {
+	_, ok := m.clearedFields[conversationintelligenceartifact.FieldStatus]
+	return ok
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *ConversationIntelligenceArtifactMutation) ResetStatus() {
+	m.status = nil
+	delete(m.clearedFields, conversationintelligenceartifact.FieldStatus)
+}
+
+// SetSubjectRef sets the "subject_ref" field.
+func (m *ConversationIntelligenceArtifactMutation) SetSubjectRef(s string) {
+	m.subject_ref = &s
+}
+
+// SubjectRef returns the value of the "subject_ref" field in the mutation.
+func (m *ConversationIntelligenceArtifactMutation) SubjectRef() (r string, exists bool) {
+	v := m.subject_ref
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubjectRef returns the old "subject_ref" field's value of the ConversationIntelligenceArtifact entity.
+// If the ConversationIntelligenceArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConversationIntelligenceArtifactMutation) OldSubjectRef(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubjectRef is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubjectRef requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubjectRef: %w", err)
+	}
+	return oldValue.SubjectRef, nil
+}
+
+// ClearSubjectRef clears the value of the "subject_ref" field.
+func (m *ConversationIntelligenceArtifactMutation) ClearSubjectRef() {
+	m.subject_ref = nil
+	m.clearedFields[conversationintelligenceartifact.FieldSubjectRef] = struct{}{}
+}
+
+// SubjectRefCleared returns if the "subject_ref" field was cleared in this mutation.
+func (m *ConversationIntelligenceArtifactMutation) SubjectRefCleared() bool {
+	_, ok := m.clearedFields[conversationintelligenceartifact.FieldSubjectRef]
+	return ok
+}
+
+// ResetSubjectRef resets all changes to the "subject_ref" field.
+func (m *ConversationIntelligenceArtifactMutation) ResetSubjectRef() {
+	m.subject_ref = nil
+	delete(m.clearedFields, conversationintelligenceartifact.FieldSubjectRef)
+}
+
+// SetEffectiveAt sets the "effective_at" field.
+func (m *ConversationIntelligenceArtifactMutation) SetEffectiveAt(t time.Time) {
+	m.effective_at = &t
+}
+
+// EffectiveAt returns the value of the "effective_at" field in the mutation.
+func (m *ConversationIntelligenceArtifactMutation) EffectiveAt() (r time.Time, exists bool) {
+	v := m.effective_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEffectiveAt returns the old "effective_at" field's value of the ConversationIntelligenceArtifact entity.
+// If the ConversationIntelligenceArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConversationIntelligenceArtifactMutation) OldEffectiveAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEffectiveAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEffectiveAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEffectiveAt: %w", err)
+	}
+	return oldValue.EffectiveAt, nil
+}
+
+// ResetEffectiveAt resets all changes to the "effective_at" field.
+func (m *ConversationIntelligenceArtifactMutation) ResetEffectiveAt() {
+	m.effective_at = nil
+}
+
+// SetEvidenceRefs sets the "evidence_refs" field.
+func (m *ConversationIntelligenceArtifactMutation) SetEvidenceRefs(s []string) {
+	m.evidence_refs = &s
+	m.appendevidence_refs = nil
+}
+
+// EvidenceRefs returns the value of the "evidence_refs" field in the mutation.
+func (m *ConversationIntelligenceArtifactMutation) EvidenceRefs() (r []string, exists bool) {
+	v := m.evidence_refs
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEvidenceRefs returns the old "evidence_refs" field's value of the ConversationIntelligenceArtifact entity.
+// If the ConversationIntelligenceArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConversationIntelligenceArtifactMutation) OldEvidenceRefs(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEvidenceRefs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEvidenceRefs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEvidenceRefs: %w", err)
+	}
+	return oldValue.EvidenceRefs, nil
+}
+
+// AppendEvidenceRefs adds s to the "evidence_refs" field.
+func (m *ConversationIntelligenceArtifactMutation) AppendEvidenceRefs(s []string) {
+	m.appendevidence_refs = append(m.appendevidence_refs, s...)
+}
+
+// AppendedEvidenceRefs returns the list of values that were appended to the "evidence_refs" field in this mutation.
+func (m *ConversationIntelligenceArtifactMutation) AppendedEvidenceRefs() ([]string, bool) {
+	if len(m.appendevidence_refs) == 0 {
+		return nil, false
+	}
+	return m.appendevidence_refs, true
+}
+
+// ResetEvidenceRefs resets all changes to the "evidence_refs" field.
+func (m *ConversationIntelligenceArtifactMutation) ResetEvidenceRefs() {
+	m.evidence_refs = nil
+	m.appendevidence_refs = nil
+}
+
+// SetPayloadJSON sets the "payload_json" field.
+func (m *ConversationIntelligenceArtifactMutation) SetPayloadJSON(s string) {
+	m.payload_json = &s
+}
+
+// PayloadJSON returns the value of the "payload_json" field in the mutation.
+func (m *ConversationIntelligenceArtifactMutation) PayloadJSON() (r string, exists bool) {
+	v := m.payload_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPayloadJSON returns the old "payload_json" field's value of the ConversationIntelligenceArtifact entity.
+// If the ConversationIntelligenceArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConversationIntelligenceArtifactMutation) OldPayloadJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPayloadJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPayloadJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayloadJSON: %w", err)
+	}
+	return oldValue.PayloadJSON, nil
+}
+
+// ResetPayloadJSON resets all changes to the "payload_json" field.
+func (m *ConversationIntelligenceArtifactMutation) ResetPayloadJSON() {
+	m.payload_json = nil
+}
+
+// SetPayloadHash sets the "payload_hash" field.
+func (m *ConversationIntelligenceArtifactMutation) SetPayloadHash(s string) {
+	m.payload_hash = &s
+}
+
+// PayloadHash returns the value of the "payload_hash" field in the mutation.
+func (m *ConversationIntelligenceArtifactMutation) PayloadHash() (r string, exists bool) {
+	v := m.payload_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPayloadHash returns the old "payload_hash" field's value of the ConversationIntelligenceArtifact entity.
+// If the ConversationIntelligenceArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConversationIntelligenceArtifactMutation) OldPayloadHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPayloadHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPayloadHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayloadHash: %w", err)
+	}
+	return oldValue.PayloadHash, nil
+}
+
+// ResetPayloadHash resets all changes to the "payload_hash" field.
+func (m *ConversationIntelligenceArtifactMutation) ResetPayloadHash() {
+	m.payload_hash = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *ConversationIntelligenceArtifactMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *ConversationIntelligenceArtifactMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *ConversationIntelligenceArtifactMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *ConversationIntelligenceArtifactMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *ConversationIntelligenceArtifactMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *ConversationIntelligenceArtifactMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *ConversationIntelligenceArtifactMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *ConversationIntelligenceArtifactMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *ConversationIntelligenceArtifactMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *ConversationIntelligenceArtifactMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *ConversationIntelligenceArtifactMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *ConversationIntelligenceArtifactMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetRelationshipID sets the "relationship" edge to the Relationship entity by id.
+func (m *ConversationIntelligenceArtifactMutation) SetRelationshipID(id uuid.UUID) {
+	m.relationship = &id
+}
+
+// ClearRelationship clears the "relationship" edge to the Relationship entity.
+func (m *ConversationIntelligenceArtifactMutation) ClearRelationship() {
+	m.clearedrelationship = true
+}
+
+// RelationshipCleared reports if the "relationship" edge to the Relationship entity was cleared.
+func (m *ConversationIntelligenceArtifactMutation) RelationshipCleared() bool {
+	return m.clearedrelationship
+}
+
+// RelationshipID returns the "relationship" edge ID in the mutation.
+func (m *ConversationIntelligenceArtifactMutation) RelationshipID() (id uuid.UUID, exists bool) {
+	if m.relationship != nil {
+		return *m.relationship, true
+	}
+	return
+}
+
+// RelationshipIDs returns the "relationship" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RelationshipID instead. It exists only for internal usage by the builders.
+func (m *ConversationIntelligenceArtifactMutation) RelationshipIDs() (ids []uuid.UUID) {
+	if id := m.relationship; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRelationship resets all changes to the "relationship" edge.
+func (m *ConversationIntelligenceArtifactMutation) ResetRelationship() {
+	m.relationship = nil
+	m.clearedrelationship = false
+}
+
+// Where appends a list predicates to the ConversationIntelligenceArtifactMutation builder.
+func (m *ConversationIntelligenceArtifactMutation) Where(ps ...predicate.ConversationIntelligenceArtifact) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ConversationIntelligenceArtifactMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ConversationIntelligenceArtifactMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ConversationIntelligenceArtifact, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ConversationIntelligenceArtifactMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ConversationIntelligenceArtifactMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ConversationIntelligenceArtifact).
+func (m *ConversationIntelligenceArtifactMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ConversationIntelligenceArtifactMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.created_at != nil {
+		fields = append(fields, conversationintelligenceartifact.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, conversationintelligenceartifact.FieldUpdatedAt)
+	}
+	if m.kind != nil {
+		fields = append(fields, conversationintelligenceartifact.FieldKind)
+	}
+	if m.stable_id != nil {
+		fields = append(fields, conversationintelligenceartifact.FieldStableID)
+	}
+	if m.version != nil {
+		fields = append(fields, conversationintelligenceartifact.FieldVersion)
+	}
+	if m.status != nil {
+		fields = append(fields, conversationintelligenceartifact.FieldStatus)
+	}
+	if m.subject_ref != nil {
+		fields = append(fields, conversationintelligenceartifact.FieldSubjectRef)
+	}
+	if m.effective_at != nil {
+		fields = append(fields, conversationintelligenceartifact.FieldEffectiveAt)
+	}
+	if m.evidence_refs != nil {
+		fields = append(fields, conversationintelligenceartifact.FieldEvidenceRefs)
+	}
+	if m.payload_json != nil {
+		fields = append(fields, conversationintelligenceartifact.FieldPayloadJSON)
+	}
+	if m.payload_hash != nil {
+		fields = append(fields, conversationintelligenceartifact.FieldPayloadHash)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ConversationIntelligenceArtifactMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case conversationintelligenceartifact.FieldCreatedAt:
+		return m.CreatedAt()
+	case conversationintelligenceartifact.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case conversationintelligenceartifact.FieldKind:
+		return m.Kind()
+	case conversationintelligenceartifact.FieldStableID:
+		return m.StableID()
+	case conversationintelligenceartifact.FieldVersion:
+		return m.Version()
+	case conversationintelligenceartifact.FieldStatus:
+		return m.Status()
+	case conversationintelligenceartifact.FieldSubjectRef:
+		return m.SubjectRef()
+	case conversationintelligenceartifact.FieldEffectiveAt:
+		return m.EffectiveAt()
+	case conversationintelligenceartifact.FieldEvidenceRefs:
+		return m.EvidenceRefs()
+	case conversationintelligenceartifact.FieldPayloadJSON:
+		return m.PayloadJSON()
+	case conversationintelligenceartifact.FieldPayloadHash:
+		return m.PayloadHash()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ConversationIntelligenceArtifactMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case conversationintelligenceartifact.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case conversationintelligenceartifact.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case conversationintelligenceartifact.FieldKind:
+		return m.OldKind(ctx)
+	case conversationintelligenceartifact.FieldStableID:
+		return m.OldStableID(ctx)
+	case conversationintelligenceartifact.FieldVersion:
+		return m.OldVersion(ctx)
+	case conversationintelligenceartifact.FieldStatus:
+		return m.OldStatus(ctx)
+	case conversationintelligenceartifact.FieldSubjectRef:
+		return m.OldSubjectRef(ctx)
+	case conversationintelligenceartifact.FieldEffectiveAt:
+		return m.OldEffectiveAt(ctx)
+	case conversationintelligenceartifact.FieldEvidenceRefs:
+		return m.OldEvidenceRefs(ctx)
+	case conversationintelligenceartifact.FieldPayloadJSON:
+		return m.OldPayloadJSON(ctx)
+	case conversationintelligenceartifact.FieldPayloadHash:
+		return m.OldPayloadHash(ctx)
+	}
+	return nil, fmt.Errorf("unknown ConversationIntelligenceArtifact field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConversationIntelligenceArtifactMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case conversationintelligenceartifact.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case conversationintelligenceartifact.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case conversationintelligenceartifact.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
+	case conversationintelligenceartifact.FieldStableID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStableID(v)
+		return nil
+	case conversationintelligenceartifact.FieldVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVersion(v)
+		return nil
+	case conversationintelligenceartifact.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case conversationintelligenceartifact.FieldSubjectRef:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubjectRef(v)
+		return nil
+	case conversationintelligenceartifact.FieldEffectiveAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEffectiveAt(v)
+		return nil
+	case conversationintelligenceartifact.FieldEvidenceRefs:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEvidenceRefs(v)
+		return nil
+	case conversationintelligenceartifact.FieldPayloadJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPayloadJSON(v)
+		return nil
+	case conversationintelligenceartifact.FieldPayloadHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPayloadHash(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ConversationIntelligenceArtifact field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ConversationIntelligenceArtifactMutation) AddedFields() []string {
+	var fields []string
+	if m.addversion != nil {
+		fields = append(fields, conversationintelligenceartifact.FieldVersion)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ConversationIntelligenceArtifactMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case conversationintelligenceartifact.FieldVersion:
+		return m.AddedVersion()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConversationIntelligenceArtifactMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case conversationintelligenceartifact.FieldVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddVersion(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ConversationIntelligenceArtifact numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ConversationIntelligenceArtifactMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(conversationintelligenceartifact.FieldStatus) {
+		fields = append(fields, conversationintelligenceartifact.FieldStatus)
+	}
+	if m.FieldCleared(conversationintelligenceartifact.FieldSubjectRef) {
+		fields = append(fields, conversationintelligenceartifact.FieldSubjectRef)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ConversationIntelligenceArtifactMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ConversationIntelligenceArtifactMutation) ClearField(name string) error {
+	switch name {
+	case conversationintelligenceartifact.FieldStatus:
+		m.ClearStatus()
+		return nil
+	case conversationintelligenceartifact.FieldSubjectRef:
+		m.ClearSubjectRef()
+		return nil
+	}
+	return fmt.Errorf("unknown ConversationIntelligenceArtifact nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ConversationIntelligenceArtifactMutation) ResetField(name string) error {
+	switch name {
+	case conversationintelligenceartifact.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case conversationintelligenceartifact.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case conversationintelligenceartifact.FieldKind:
+		m.ResetKind()
+		return nil
+	case conversationintelligenceartifact.FieldStableID:
+		m.ResetStableID()
+		return nil
+	case conversationintelligenceartifact.FieldVersion:
+		m.ResetVersion()
+		return nil
+	case conversationintelligenceartifact.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case conversationintelligenceartifact.FieldSubjectRef:
+		m.ResetSubjectRef()
+		return nil
+	case conversationintelligenceartifact.FieldEffectiveAt:
+		m.ResetEffectiveAt()
+		return nil
+	case conversationintelligenceartifact.FieldEvidenceRefs:
+		m.ResetEvidenceRefs()
+		return nil
+	case conversationintelligenceartifact.FieldPayloadJSON:
+		m.ResetPayloadJSON()
+		return nil
+	case conversationintelligenceartifact.FieldPayloadHash:
+		m.ResetPayloadHash()
+		return nil
+	}
+	return fmt.Errorf("unknown ConversationIntelligenceArtifact field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ConversationIntelligenceArtifactMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.workspace != nil {
+		edges = append(edges, conversationintelligenceartifact.EdgeWorkspace)
+	}
+	if m.user != nil {
+		edges = append(edges, conversationintelligenceartifact.EdgeUser)
+	}
+	if m.relationship != nil {
+		edges = append(edges, conversationintelligenceartifact.EdgeRelationship)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ConversationIntelligenceArtifactMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case conversationintelligenceartifact.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case conversationintelligenceartifact.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case conversationintelligenceartifact.EdgeRelationship:
+		if id := m.relationship; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ConversationIntelligenceArtifactMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ConversationIntelligenceArtifactMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ConversationIntelligenceArtifactMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedworkspace {
+		edges = append(edges, conversationintelligenceartifact.EdgeWorkspace)
+	}
+	if m.cleareduser {
+		edges = append(edges, conversationintelligenceartifact.EdgeUser)
+	}
+	if m.clearedrelationship {
+		edges = append(edges, conversationintelligenceartifact.EdgeRelationship)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ConversationIntelligenceArtifactMutation) EdgeCleared(name string) bool {
+	switch name {
+	case conversationintelligenceartifact.EdgeWorkspace:
+		return m.clearedworkspace
+	case conversationintelligenceartifact.EdgeUser:
+		return m.cleareduser
+	case conversationintelligenceartifact.EdgeRelationship:
+		return m.clearedrelationship
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ConversationIntelligenceArtifactMutation) ClearEdge(name string) error {
+	switch name {
+	case conversationintelligenceartifact.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case conversationintelligenceartifact.EdgeUser:
+		m.ClearUser()
+		return nil
+	case conversationintelligenceartifact.EdgeRelationship:
+		m.ClearRelationship()
+		return nil
+	}
+	return fmt.Errorf("unknown ConversationIntelligenceArtifact unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ConversationIntelligenceArtifactMutation) ResetEdge(name string) error {
+	switch name {
+	case conversationintelligenceartifact.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case conversationintelligenceartifact.EdgeUser:
+		m.ResetUser()
+		return nil
+	case conversationintelligenceartifact.EdgeRelationship:
+		m.ResetRelationship()
+		return nil
+	}
+	return fmt.Errorf("unknown ConversationIntelligenceArtifact edge %s", name)
 }
 
 // CreditLedgerMutation represents an operation that mutates the CreditLedger nodes in the graph.
@@ -39661,68 +43815,80 @@ func (m *PolicyDecisionSnapshotMutation) ResetEdge(name string) error {
 // RelationshipMutation represents an operation that mutates the Relationship nodes in the graph.
 type RelationshipMutation struct {
 	config
-	op                   Op
-	typ                  string
-	id                   *uuid.UUID
-	created_at           *time.Time
-	updated_at           *time.Time
-	kind                 *string
-	display_name         *string
-	primary_email        *string
-	account_domain       *string
-	outbound_lead_id     *string
-	outbound_account_ref *string
-	resource_refs        *[]string
-	appendresource_refs  []string
-	summary              *string
-	last_touch_at        *time.Time
-	next_action_at       *time.Time
-	next_action          *string
-	status               *string
-	lifecycle            *string
-	engagement           *string
-	sentiment            *string
-	health               *string
-	state_reason         *string
-	state_version        *int
-	addstate_version     *int
-	last_changed_at      *time.Time
-	risks                *[]string
-	appendrisks          []string
-	milestones           *[]string
-	appendmilestones     []string
-	clearedFields        map[string]struct{}
-	workspace            *uuid.UUID
-	clearedworkspace     bool
-	user                 *uuid.UUID
-	cleareduser          bool
-	commitments          map[uuid.UUID]struct{}
-	removedcommitments   map[uuid.UUID]struct{}
-	clearedcommitments   bool
-	actions              map[uuid.UUID]struct{}
-	removedactions       map[uuid.UUID]struct{}
-	clearedactions       bool
-	evidences            map[uuid.UUID]struct{}
-	removedevidences     map[uuid.UUID]struct{}
-	clearedevidences     bool
-	mail_threads         map[uuid.UUID]struct{}
-	removedmail_threads  map[uuid.UUID]struct{}
-	clearedmail_threads  bool
-	participants         map[uuid.UUID]struct{}
-	removedparticipants  map[uuid.UUID]struct{}
-	clearedparticipants  bool
-	observations         map[uuid.UUID]struct{}
-	removedobservations  map[uuid.UUID]struct{}
-	clearedobservations  bool
-	assertions           map[uuid.UUID]struct{}
-	removedassertions    map[uuid.UUID]struct{}
-	clearedassertions    bool
-	snapshots            map[uuid.UUID]struct{}
-	removedsnapshots     map[uuid.UUID]struct{}
-	clearedsnapshots     bool
-	done                 bool
-	oldValue             func(context.Context) (*Relationship, error)
-	predicates           []predicate.Relationship
+	op                                         Op
+	typ                                        string
+	id                                         *uuid.UUID
+	created_at                                 *time.Time
+	updated_at                                 *time.Time
+	kind                                       *string
+	display_name                               *string
+	primary_email                              *string
+	account_domain                             *string
+	outbound_lead_id                           *string
+	outbound_account_ref                       *string
+	resource_refs                              *[]string
+	appendresource_refs                        []string
+	summary                                    *string
+	last_touch_at                              *time.Time
+	next_action_at                             *time.Time
+	next_action                                *string
+	status                                     *string
+	lifecycle                                  *string
+	engagement                                 *string
+	sentiment                                  *string
+	health                                     *string
+	state_reason                               *string
+	state_version                              *int
+	addstate_version                           *int
+	last_changed_at                            *time.Time
+	risks                                      *[]string
+	appendrisks                                []string
+	milestones                                 *[]string
+	appendmilestones                           []string
+	clearedFields                              map[string]struct{}
+	workspace                                  *uuid.UUID
+	clearedworkspace                           bool
+	user                                       *uuid.UUID
+	cleareduser                                bool
+	commitments                                map[uuid.UUID]struct{}
+	removedcommitments                         map[uuid.UUID]struct{}
+	clearedcommitments                         bool
+	commitment_events                          map[uuid.UUID]struct{}
+	removedcommitment_events                   map[uuid.UUID]struct{}
+	clearedcommitment_events                   bool
+	commitment_dependencies                    map[uuid.UUID]struct{}
+	removedcommitment_dependencies             map[uuid.UUID]struct{}
+	clearedcommitment_dependencies             bool
+	conversation_intelligence_artifacts        map[uuid.UUID]struct{}
+	removedconversation_intelligence_artifacts map[uuid.UUID]struct{}
+	clearedconversation_intelligence_artifacts bool
+	actions                                    map[uuid.UUID]struct{}
+	removedactions                             map[uuid.UUID]struct{}
+	clearedactions                             bool
+	evidences                                  map[uuid.UUID]struct{}
+	removedevidences                           map[uuid.UUID]struct{}
+	clearedevidences                           bool
+	mail_threads                               map[uuid.UUID]struct{}
+	removedmail_threads                        map[uuid.UUID]struct{}
+	clearedmail_threads                        bool
+	participants                               map[uuid.UUID]struct{}
+	removedparticipants                        map[uuid.UUID]struct{}
+	clearedparticipants                        bool
+	identities                                 map[uuid.UUID]struct{}
+	removedidentities                          map[uuid.UUID]struct{}
+	clearedidentities                          bool
+	observations                               map[uuid.UUID]struct{}
+	removedobservations                        map[uuid.UUID]struct{}
+	clearedobservations                        bool
+	assertions                                 map[uuid.UUID]struct{}
+	removedassertions                          map[uuid.UUID]struct{}
+	clearedassertions                          bool
+	snapshots                                  map[uuid.UUID]struct{}
+	removedsnapshots                           map[uuid.UUID]struct{}
+	clearedsnapshots                           bool
+	done                                       bool
+	oldValue                                   func(context.Context) (*Relationship, error)
+	predicates                                 []predicate.Relationship
 }
 
 var _ ent.Mutation = (*RelationshipMutation)(nil)
@@ -40984,6 +45150,168 @@ func (m *RelationshipMutation) ResetCommitments() {
 	m.removedcommitments = nil
 }
 
+// AddCommitmentEventIDs adds the "commitment_events" edge to the CommitmentEvent entity by ids.
+func (m *RelationshipMutation) AddCommitmentEventIDs(ids ...uuid.UUID) {
+	if m.commitment_events == nil {
+		m.commitment_events = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.commitment_events[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommitmentEvents clears the "commitment_events" edge to the CommitmentEvent entity.
+func (m *RelationshipMutation) ClearCommitmentEvents() {
+	m.clearedcommitment_events = true
+}
+
+// CommitmentEventsCleared reports if the "commitment_events" edge to the CommitmentEvent entity was cleared.
+func (m *RelationshipMutation) CommitmentEventsCleared() bool {
+	return m.clearedcommitment_events
+}
+
+// RemoveCommitmentEventIDs removes the "commitment_events" edge to the CommitmentEvent entity by IDs.
+func (m *RelationshipMutation) RemoveCommitmentEventIDs(ids ...uuid.UUID) {
+	if m.removedcommitment_events == nil {
+		m.removedcommitment_events = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.commitment_events, ids[i])
+		m.removedcommitment_events[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommitmentEvents returns the removed IDs of the "commitment_events" edge to the CommitmentEvent entity.
+func (m *RelationshipMutation) RemovedCommitmentEventsIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommitment_events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommitmentEventsIDs returns the "commitment_events" edge IDs in the mutation.
+func (m *RelationshipMutation) CommitmentEventsIDs() (ids []uuid.UUID) {
+	for id := range m.commitment_events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommitmentEvents resets all changes to the "commitment_events" edge.
+func (m *RelationshipMutation) ResetCommitmentEvents() {
+	m.commitment_events = nil
+	m.clearedcommitment_events = false
+	m.removedcommitment_events = nil
+}
+
+// AddCommitmentDependencyIDs adds the "commitment_dependencies" edge to the CommitmentDependency entity by ids.
+func (m *RelationshipMutation) AddCommitmentDependencyIDs(ids ...uuid.UUID) {
+	if m.commitment_dependencies == nil {
+		m.commitment_dependencies = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.commitment_dependencies[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommitmentDependencies clears the "commitment_dependencies" edge to the CommitmentDependency entity.
+func (m *RelationshipMutation) ClearCommitmentDependencies() {
+	m.clearedcommitment_dependencies = true
+}
+
+// CommitmentDependenciesCleared reports if the "commitment_dependencies" edge to the CommitmentDependency entity was cleared.
+func (m *RelationshipMutation) CommitmentDependenciesCleared() bool {
+	return m.clearedcommitment_dependencies
+}
+
+// RemoveCommitmentDependencyIDs removes the "commitment_dependencies" edge to the CommitmentDependency entity by IDs.
+func (m *RelationshipMutation) RemoveCommitmentDependencyIDs(ids ...uuid.UUID) {
+	if m.removedcommitment_dependencies == nil {
+		m.removedcommitment_dependencies = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.commitment_dependencies, ids[i])
+		m.removedcommitment_dependencies[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommitmentDependencies returns the removed IDs of the "commitment_dependencies" edge to the CommitmentDependency entity.
+func (m *RelationshipMutation) RemovedCommitmentDependenciesIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommitment_dependencies {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommitmentDependenciesIDs returns the "commitment_dependencies" edge IDs in the mutation.
+func (m *RelationshipMutation) CommitmentDependenciesIDs() (ids []uuid.UUID) {
+	for id := range m.commitment_dependencies {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommitmentDependencies resets all changes to the "commitment_dependencies" edge.
+func (m *RelationshipMutation) ResetCommitmentDependencies() {
+	m.commitment_dependencies = nil
+	m.clearedcommitment_dependencies = false
+	m.removedcommitment_dependencies = nil
+}
+
+// AddConversationIntelligenceArtifactIDs adds the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity by ids.
+func (m *RelationshipMutation) AddConversationIntelligenceArtifactIDs(ids ...uuid.UUID) {
+	if m.conversation_intelligence_artifacts == nil {
+		m.conversation_intelligence_artifacts = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.conversation_intelligence_artifacts[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConversationIntelligenceArtifacts clears the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity.
+func (m *RelationshipMutation) ClearConversationIntelligenceArtifacts() {
+	m.clearedconversation_intelligence_artifacts = true
+}
+
+// ConversationIntelligenceArtifactsCleared reports if the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity was cleared.
+func (m *RelationshipMutation) ConversationIntelligenceArtifactsCleared() bool {
+	return m.clearedconversation_intelligence_artifacts
+}
+
+// RemoveConversationIntelligenceArtifactIDs removes the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity by IDs.
+func (m *RelationshipMutation) RemoveConversationIntelligenceArtifactIDs(ids ...uuid.UUID) {
+	if m.removedconversation_intelligence_artifacts == nil {
+		m.removedconversation_intelligence_artifacts = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.conversation_intelligence_artifacts, ids[i])
+		m.removedconversation_intelligence_artifacts[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConversationIntelligenceArtifacts returns the removed IDs of the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity.
+func (m *RelationshipMutation) RemovedConversationIntelligenceArtifactsIDs() (ids []uuid.UUID) {
+	for id := range m.removedconversation_intelligence_artifacts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConversationIntelligenceArtifactsIDs returns the "conversation_intelligence_artifacts" edge IDs in the mutation.
+func (m *RelationshipMutation) ConversationIntelligenceArtifactsIDs() (ids []uuid.UUID) {
+	for id := range m.conversation_intelligence_artifacts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConversationIntelligenceArtifacts resets all changes to the "conversation_intelligence_artifacts" edge.
+func (m *RelationshipMutation) ResetConversationIntelligenceArtifacts() {
+	m.conversation_intelligence_artifacts = nil
+	m.clearedconversation_intelligence_artifacts = false
+	m.removedconversation_intelligence_artifacts = nil
+}
+
 // AddActionIDs adds the "actions" edge to the RevenueAction entity by ids.
 func (m *RelationshipMutation) AddActionIDs(ids ...uuid.UUID) {
 	if m.actions == nil {
@@ -41198,6 +45526,60 @@ func (m *RelationshipMutation) ResetParticipants() {
 	m.participants = nil
 	m.clearedparticipants = false
 	m.removedparticipants = nil
+}
+
+// AddIdentityIDs adds the "identities" edge to the RelationshipIdentity entity by ids.
+func (m *RelationshipMutation) AddIdentityIDs(ids ...uuid.UUID) {
+	if m.identities == nil {
+		m.identities = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.identities[ids[i]] = struct{}{}
+	}
+}
+
+// ClearIdentities clears the "identities" edge to the RelationshipIdentity entity.
+func (m *RelationshipMutation) ClearIdentities() {
+	m.clearedidentities = true
+}
+
+// IdentitiesCleared reports if the "identities" edge to the RelationshipIdentity entity was cleared.
+func (m *RelationshipMutation) IdentitiesCleared() bool {
+	return m.clearedidentities
+}
+
+// RemoveIdentityIDs removes the "identities" edge to the RelationshipIdentity entity by IDs.
+func (m *RelationshipMutation) RemoveIdentityIDs(ids ...uuid.UUID) {
+	if m.removedidentities == nil {
+		m.removedidentities = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.identities, ids[i])
+		m.removedidentities[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedIdentities returns the removed IDs of the "identities" edge to the RelationshipIdentity entity.
+func (m *RelationshipMutation) RemovedIdentitiesIDs() (ids []uuid.UUID) {
+	for id := range m.removedidentities {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// IdentitiesIDs returns the "identities" edge IDs in the mutation.
+func (m *RelationshipMutation) IdentitiesIDs() (ids []uuid.UUID) {
+	for id := range m.identities {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetIdentities resets all changes to the "identities" edge.
+func (m *RelationshipMutation) ResetIdentities() {
+	m.identities = nil
+	m.clearedidentities = false
+	m.removedidentities = nil
 }
 
 // AddObservationIDs adds the "observations" edge to the RelationshipObservation entity by ids.
@@ -41947,7 +46329,7 @@ func (m *RelationshipMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RelationshipMutation) AddedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 14)
 	if m.workspace != nil {
 		edges = append(edges, relationship.EdgeWorkspace)
 	}
@@ -41956,6 +46338,15 @@ func (m *RelationshipMutation) AddedEdges() []string {
 	}
 	if m.commitments != nil {
 		edges = append(edges, relationship.EdgeCommitments)
+	}
+	if m.commitment_events != nil {
+		edges = append(edges, relationship.EdgeCommitmentEvents)
+	}
+	if m.commitment_dependencies != nil {
+		edges = append(edges, relationship.EdgeCommitmentDependencies)
+	}
+	if m.conversation_intelligence_artifacts != nil {
+		edges = append(edges, relationship.EdgeConversationIntelligenceArtifacts)
 	}
 	if m.actions != nil {
 		edges = append(edges, relationship.EdgeActions)
@@ -41968,6 +46359,9 @@ func (m *RelationshipMutation) AddedEdges() []string {
 	}
 	if m.participants != nil {
 		edges = append(edges, relationship.EdgeParticipants)
+	}
+	if m.identities != nil {
+		edges = append(edges, relationship.EdgeIdentities)
 	}
 	if m.observations != nil {
 		edges = append(edges, relationship.EdgeObservations)
@@ -41999,6 +46393,24 @@ func (m *RelationshipMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case relationship.EdgeCommitmentEvents:
+		ids := make([]ent.Value, 0, len(m.commitment_events))
+		for id := range m.commitment_events {
+			ids = append(ids, id)
+		}
+		return ids
+	case relationship.EdgeCommitmentDependencies:
+		ids := make([]ent.Value, 0, len(m.commitment_dependencies))
+		for id := range m.commitment_dependencies {
+			ids = append(ids, id)
+		}
+		return ids
+	case relationship.EdgeConversationIntelligenceArtifacts:
+		ids := make([]ent.Value, 0, len(m.conversation_intelligence_artifacts))
+		for id := range m.conversation_intelligence_artifacts {
+			ids = append(ids, id)
+		}
+		return ids
 	case relationship.EdgeActions:
 		ids := make([]ent.Value, 0, len(m.actions))
 		for id := range m.actions {
@@ -42020,6 +46432,12 @@ func (m *RelationshipMutation) AddedIDs(name string) []ent.Value {
 	case relationship.EdgeParticipants:
 		ids := make([]ent.Value, 0, len(m.participants))
 		for id := range m.participants {
+			ids = append(ids, id)
+		}
+		return ids
+	case relationship.EdgeIdentities:
+		ids := make([]ent.Value, 0, len(m.identities))
+		for id := range m.identities {
 			ids = append(ids, id)
 		}
 		return ids
@@ -42047,9 +46465,18 @@ func (m *RelationshipMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RelationshipMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 14)
 	if m.removedcommitments != nil {
 		edges = append(edges, relationship.EdgeCommitments)
+	}
+	if m.removedcommitment_events != nil {
+		edges = append(edges, relationship.EdgeCommitmentEvents)
+	}
+	if m.removedcommitment_dependencies != nil {
+		edges = append(edges, relationship.EdgeCommitmentDependencies)
+	}
+	if m.removedconversation_intelligence_artifacts != nil {
+		edges = append(edges, relationship.EdgeConversationIntelligenceArtifacts)
 	}
 	if m.removedactions != nil {
 		edges = append(edges, relationship.EdgeActions)
@@ -42062,6 +46489,9 @@ func (m *RelationshipMutation) RemovedEdges() []string {
 	}
 	if m.removedparticipants != nil {
 		edges = append(edges, relationship.EdgeParticipants)
+	}
+	if m.removedidentities != nil {
+		edges = append(edges, relationship.EdgeIdentities)
 	}
 	if m.removedobservations != nil {
 		edges = append(edges, relationship.EdgeObservations)
@@ -42082,6 +46512,24 @@ func (m *RelationshipMutation) RemovedIDs(name string) []ent.Value {
 	case relationship.EdgeCommitments:
 		ids := make([]ent.Value, 0, len(m.removedcommitments))
 		for id := range m.removedcommitments {
+			ids = append(ids, id)
+		}
+		return ids
+	case relationship.EdgeCommitmentEvents:
+		ids := make([]ent.Value, 0, len(m.removedcommitment_events))
+		for id := range m.removedcommitment_events {
+			ids = append(ids, id)
+		}
+		return ids
+	case relationship.EdgeCommitmentDependencies:
+		ids := make([]ent.Value, 0, len(m.removedcommitment_dependencies))
+		for id := range m.removedcommitment_dependencies {
+			ids = append(ids, id)
+		}
+		return ids
+	case relationship.EdgeConversationIntelligenceArtifacts:
+		ids := make([]ent.Value, 0, len(m.removedconversation_intelligence_artifacts))
+		for id := range m.removedconversation_intelligence_artifacts {
 			ids = append(ids, id)
 		}
 		return ids
@@ -42109,6 +46557,12 @@ func (m *RelationshipMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case relationship.EdgeIdentities:
+		ids := make([]ent.Value, 0, len(m.removedidentities))
+		for id := range m.removedidentities {
+			ids = append(ids, id)
+		}
+		return ids
 	case relationship.EdgeObservations:
 		ids := make([]ent.Value, 0, len(m.removedobservations))
 		for id := range m.removedobservations {
@@ -42133,7 +46587,7 @@ func (m *RelationshipMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RelationshipMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 10)
+	edges := make([]string, 0, 14)
 	if m.clearedworkspace {
 		edges = append(edges, relationship.EdgeWorkspace)
 	}
@@ -42142,6 +46596,15 @@ func (m *RelationshipMutation) ClearedEdges() []string {
 	}
 	if m.clearedcommitments {
 		edges = append(edges, relationship.EdgeCommitments)
+	}
+	if m.clearedcommitment_events {
+		edges = append(edges, relationship.EdgeCommitmentEvents)
+	}
+	if m.clearedcommitment_dependencies {
+		edges = append(edges, relationship.EdgeCommitmentDependencies)
+	}
+	if m.clearedconversation_intelligence_artifacts {
+		edges = append(edges, relationship.EdgeConversationIntelligenceArtifacts)
 	}
 	if m.clearedactions {
 		edges = append(edges, relationship.EdgeActions)
@@ -42154,6 +46617,9 @@ func (m *RelationshipMutation) ClearedEdges() []string {
 	}
 	if m.clearedparticipants {
 		edges = append(edges, relationship.EdgeParticipants)
+	}
+	if m.clearedidentities {
+		edges = append(edges, relationship.EdgeIdentities)
 	}
 	if m.clearedobservations {
 		edges = append(edges, relationship.EdgeObservations)
@@ -42177,6 +46643,12 @@ func (m *RelationshipMutation) EdgeCleared(name string) bool {
 		return m.cleareduser
 	case relationship.EdgeCommitments:
 		return m.clearedcommitments
+	case relationship.EdgeCommitmentEvents:
+		return m.clearedcommitment_events
+	case relationship.EdgeCommitmentDependencies:
+		return m.clearedcommitment_dependencies
+	case relationship.EdgeConversationIntelligenceArtifacts:
+		return m.clearedconversation_intelligence_artifacts
 	case relationship.EdgeActions:
 		return m.clearedactions
 	case relationship.EdgeEvidences:
@@ -42185,6 +46657,8 @@ func (m *RelationshipMutation) EdgeCleared(name string) bool {
 		return m.clearedmail_threads
 	case relationship.EdgeParticipants:
 		return m.clearedparticipants
+	case relationship.EdgeIdentities:
+		return m.clearedidentities
 	case relationship.EdgeObservations:
 		return m.clearedobservations
 	case relationship.EdgeAssertions:
@@ -42222,6 +46696,15 @@ func (m *RelationshipMutation) ResetEdge(name string) error {
 	case relationship.EdgeCommitments:
 		m.ResetCommitments()
 		return nil
+	case relationship.EdgeCommitmentEvents:
+		m.ResetCommitmentEvents()
+		return nil
+	case relationship.EdgeCommitmentDependencies:
+		m.ResetCommitmentDependencies()
+		return nil
+	case relationship.EdgeConversationIntelligenceArtifacts:
+		m.ResetConversationIntelligenceArtifacts()
+		return nil
 	case relationship.EdgeActions:
 		m.ResetActions()
 		return nil
@@ -42233,6 +46716,9 @@ func (m *RelationshipMutation) ResetEdge(name string) error {
 		return nil
 	case relationship.EdgeParticipants:
 		m.ResetParticipants()
+		return nil
+	case relationship.EdgeIdentities:
+		m.ResetIdentities()
 		return nil
 	case relationship.EdgeObservations:
 		m.ResetObservations()
@@ -43400,6 +47886,1086 @@ func (m *RelationshipAssertionMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown RelationshipAssertion edge %s", name)
+}
+
+// RelationshipIdentityMutation represents an operation that mutates the RelationshipIdentity nodes in the graph.
+type RelationshipIdentityMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *uuid.UUID
+	created_at          *time.Time
+	updated_at          *time.Time
+	kind                *string
+	provider            *string
+	key_hash            *string
+	normalized_value    *string
+	source              *string
+	confidence          *float64
+	addconfidence       *float64
+	first_seen_at       *time.Time
+	last_seen_at        *time.Time
+	clearedFields       map[string]struct{}
+	workspace           *uuid.UUID
+	clearedworkspace    bool
+	relationship        *uuid.UUID
+	clearedrelationship bool
+	user                *uuid.UUID
+	cleareduser         bool
+	done                bool
+	oldValue            func(context.Context) (*RelationshipIdentity, error)
+	predicates          []predicate.RelationshipIdentity
+}
+
+var _ ent.Mutation = (*RelationshipIdentityMutation)(nil)
+
+// relationshipidentityOption allows management of the mutation configuration using functional options.
+type relationshipidentityOption func(*RelationshipIdentityMutation)
+
+// newRelationshipIdentityMutation creates new mutation for the RelationshipIdentity entity.
+func newRelationshipIdentityMutation(c config, op Op, opts ...relationshipidentityOption) *RelationshipIdentityMutation {
+	m := &RelationshipIdentityMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRelationshipIdentity,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRelationshipIdentityID sets the ID field of the mutation.
+func withRelationshipIdentityID(id uuid.UUID) relationshipidentityOption {
+	return func(m *RelationshipIdentityMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RelationshipIdentity
+		)
+		m.oldValue = func(ctx context.Context) (*RelationshipIdentity, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RelationshipIdentity.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRelationshipIdentity sets the old RelationshipIdentity of the mutation.
+func withRelationshipIdentity(node *RelationshipIdentity) relationshipidentityOption {
+	return func(m *RelationshipIdentityMutation) {
+		m.oldValue = func(context.Context) (*RelationshipIdentity, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RelationshipIdentityMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RelationshipIdentityMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of RelationshipIdentity entities.
+func (m *RelationshipIdentityMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RelationshipIdentityMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RelationshipIdentityMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RelationshipIdentity.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RelationshipIdentityMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RelationshipIdentityMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RelationshipIdentity entity.
+// If the RelationshipIdentity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipIdentityMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RelationshipIdentityMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RelationshipIdentityMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RelationshipIdentityMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RelationshipIdentity entity.
+// If the RelationshipIdentity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipIdentityMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RelationshipIdentityMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetKind sets the "kind" field.
+func (m *RelationshipIdentityMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *RelationshipIdentityMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the RelationshipIdentity entity.
+// If the RelationshipIdentity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipIdentityMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *RelationshipIdentityMutation) ResetKind() {
+	m.kind = nil
+}
+
+// SetProvider sets the "provider" field.
+func (m *RelationshipIdentityMutation) SetProvider(s string) {
+	m.provider = &s
+}
+
+// Provider returns the value of the "provider" field in the mutation.
+func (m *RelationshipIdentityMutation) Provider() (r string, exists bool) {
+	v := m.provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProvider returns the old "provider" field's value of the RelationshipIdentity entity.
+// If the RelationshipIdentity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipIdentityMutation) OldProvider(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
+	}
+	return oldValue.Provider, nil
+}
+
+// ClearProvider clears the value of the "provider" field.
+func (m *RelationshipIdentityMutation) ClearProvider() {
+	m.provider = nil
+	m.clearedFields[relationshipidentity.FieldProvider] = struct{}{}
+}
+
+// ProviderCleared returns if the "provider" field was cleared in this mutation.
+func (m *RelationshipIdentityMutation) ProviderCleared() bool {
+	_, ok := m.clearedFields[relationshipidentity.FieldProvider]
+	return ok
+}
+
+// ResetProvider resets all changes to the "provider" field.
+func (m *RelationshipIdentityMutation) ResetProvider() {
+	m.provider = nil
+	delete(m.clearedFields, relationshipidentity.FieldProvider)
+}
+
+// SetKeyHash sets the "key_hash" field.
+func (m *RelationshipIdentityMutation) SetKeyHash(s string) {
+	m.key_hash = &s
+}
+
+// KeyHash returns the value of the "key_hash" field in the mutation.
+func (m *RelationshipIdentityMutation) KeyHash() (r string, exists bool) {
+	v := m.key_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKeyHash returns the old "key_hash" field's value of the RelationshipIdentity entity.
+// If the RelationshipIdentity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipIdentityMutation) OldKeyHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKeyHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKeyHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKeyHash: %w", err)
+	}
+	return oldValue.KeyHash, nil
+}
+
+// ResetKeyHash resets all changes to the "key_hash" field.
+func (m *RelationshipIdentityMutation) ResetKeyHash() {
+	m.key_hash = nil
+}
+
+// SetNormalizedValue sets the "normalized_value" field.
+func (m *RelationshipIdentityMutation) SetNormalizedValue(s string) {
+	m.normalized_value = &s
+}
+
+// NormalizedValue returns the value of the "normalized_value" field in the mutation.
+func (m *RelationshipIdentityMutation) NormalizedValue() (r string, exists bool) {
+	v := m.normalized_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNormalizedValue returns the old "normalized_value" field's value of the RelationshipIdentity entity.
+// If the RelationshipIdentity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipIdentityMutation) OldNormalizedValue(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNormalizedValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNormalizedValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNormalizedValue: %w", err)
+	}
+	return oldValue.NormalizedValue, nil
+}
+
+// ResetNormalizedValue resets all changes to the "normalized_value" field.
+func (m *RelationshipIdentityMutation) ResetNormalizedValue() {
+	m.normalized_value = nil
+}
+
+// SetSource sets the "source" field.
+func (m *RelationshipIdentityMutation) SetSource(s string) {
+	m.source = &s
+}
+
+// Source returns the value of the "source" field in the mutation.
+func (m *RelationshipIdentityMutation) Source() (r string, exists bool) {
+	v := m.source
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSource returns the old "source" field's value of the RelationshipIdentity entity.
+// If the RelationshipIdentity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipIdentityMutation) OldSource(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSource is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSource requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSource: %w", err)
+	}
+	return oldValue.Source, nil
+}
+
+// ClearSource clears the value of the "source" field.
+func (m *RelationshipIdentityMutation) ClearSource() {
+	m.source = nil
+	m.clearedFields[relationshipidentity.FieldSource] = struct{}{}
+}
+
+// SourceCleared returns if the "source" field was cleared in this mutation.
+func (m *RelationshipIdentityMutation) SourceCleared() bool {
+	_, ok := m.clearedFields[relationshipidentity.FieldSource]
+	return ok
+}
+
+// ResetSource resets all changes to the "source" field.
+func (m *RelationshipIdentityMutation) ResetSource() {
+	m.source = nil
+	delete(m.clearedFields, relationshipidentity.FieldSource)
+}
+
+// SetConfidence sets the "confidence" field.
+func (m *RelationshipIdentityMutation) SetConfidence(f float64) {
+	m.confidence = &f
+	m.addconfidence = nil
+}
+
+// Confidence returns the value of the "confidence" field in the mutation.
+func (m *RelationshipIdentityMutation) Confidence() (r float64, exists bool) {
+	v := m.confidence
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConfidence returns the old "confidence" field's value of the RelationshipIdentity entity.
+// If the RelationshipIdentity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipIdentityMutation) OldConfidence(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConfidence is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConfidence requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConfidence: %w", err)
+	}
+	return oldValue.Confidence, nil
+}
+
+// AddConfidence adds f to the "confidence" field.
+func (m *RelationshipIdentityMutation) AddConfidence(f float64) {
+	if m.addconfidence != nil {
+		*m.addconfidence += f
+	} else {
+		m.addconfidence = &f
+	}
+}
+
+// AddedConfidence returns the value that was added to the "confidence" field in this mutation.
+func (m *RelationshipIdentityMutation) AddedConfidence() (r float64, exists bool) {
+	v := m.addconfidence
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetConfidence resets all changes to the "confidence" field.
+func (m *RelationshipIdentityMutation) ResetConfidence() {
+	m.confidence = nil
+	m.addconfidence = nil
+}
+
+// SetFirstSeenAt sets the "first_seen_at" field.
+func (m *RelationshipIdentityMutation) SetFirstSeenAt(t time.Time) {
+	m.first_seen_at = &t
+}
+
+// FirstSeenAt returns the value of the "first_seen_at" field in the mutation.
+func (m *RelationshipIdentityMutation) FirstSeenAt() (r time.Time, exists bool) {
+	v := m.first_seen_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFirstSeenAt returns the old "first_seen_at" field's value of the RelationshipIdentity entity.
+// If the RelationshipIdentity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipIdentityMutation) OldFirstSeenAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFirstSeenAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFirstSeenAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFirstSeenAt: %w", err)
+	}
+	return oldValue.FirstSeenAt, nil
+}
+
+// ResetFirstSeenAt resets all changes to the "first_seen_at" field.
+func (m *RelationshipIdentityMutation) ResetFirstSeenAt() {
+	m.first_seen_at = nil
+}
+
+// SetLastSeenAt sets the "last_seen_at" field.
+func (m *RelationshipIdentityMutation) SetLastSeenAt(t time.Time) {
+	m.last_seen_at = &t
+}
+
+// LastSeenAt returns the value of the "last_seen_at" field in the mutation.
+func (m *RelationshipIdentityMutation) LastSeenAt() (r time.Time, exists bool) {
+	v := m.last_seen_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastSeenAt returns the old "last_seen_at" field's value of the RelationshipIdentity entity.
+// If the RelationshipIdentity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipIdentityMutation) OldLastSeenAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastSeenAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastSeenAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastSeenAt: %w", err)
+	}
+	return oldValue.LastSeenAt, nil
+}
+
+// ResetLastSeenAt resets all changes to the "last_seen_at" field.
+func (m *RelationshipIdentityMutation) ResetLastSeenAt() {
+	m.last_seen_at = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *RelationshipIdentityMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *RelationshipIdentityMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *RelationshipIdentityMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *RelationshipIdentityMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *RelationshipIdentityMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *RelationshipIdentityMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetRelationshipID sets the "relationship" edge to the Relationship entity by id.
+func (m *RelationshipIdentityMutation) SetRelationshipID(id uuid.UUID) {
+	m.relationship = &id
+}
+
+// ClearRelationship clears the "relationship" edge to the Relationship entity.
+func (m *RelationshipIdentityMutation) ClearRelationship() {
+	m.clearedrelationship = true
+}
+
+// RelationshipCleared reports if the "relationship" edge to the Relationship entity was cleared.
+func (m *RelationshipIdentityMutation) RelationshipCleared() bool {
+	return m.clearedrelationship
+}
+
+// RelationshipID returns the "relationship" edge ID in the mutation.
+func (m *RelationshipIdentityMutation) RelationshipID() (id uuid.UUID, exists bool) {
+	if m.relationship != nil {
+		return *m.relationship, true
+	}
+	return
+}
+
+// RelationshipIDs returns the "relationship" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RelationshipID instead. It exists only for internal usage by the builders.
+func (m *RelationshipIdentityMutation) RelationshipIDs() (ids []uuid.UUID) {
+	if id := m.relationship; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRelationship resets all changes to the "relationship" edge.
+func (m *RelationshipIdentityMutation) ResetRelationship() {
+	m.relationship = nil
+	m.clearedrelationship = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *RelationshipIdentityMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *RelationshipIdentityMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *RelationshipIdentityMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *RelationshipIdentityMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *RelationshipIdentityMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *RelationshipIdentityMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the RelationshipIdentityMutation builder.
+func (m *RelationshipIdentityMutation) Where(ps ...predicate.RelationshipIdentity) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RelationshipIdentityMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RelationshipIdentityMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RelationshipIdentity, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RelationshipIdentityMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RelationshipIdentityMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RelationshipIdentity).
+func (m *RelationshipIdentityMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RelationshipIdentityMutation) Fields() []string {
+	fields := make([]string, 0, 10)
+	if m.created_at != nil {
+		fields = append(fields, relationshipidentity.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, relationshipidentity.FieldUpdatedAt)
+	}
+	if m.kind != nil {
+		fields = append(fields, relationshipidentity.FieldKind)
+	}
+	if m.provider != nil {
+		fields = append(fields, relationshipidentity.FieldProvider)
+	}
+	if m.key_hash != nil {
+		fields = append(fields, relationshipidentity.FieldKeyHash)
+	}
+	if m.normalized_value != nil {
+		fields = append(fields, relationshipidentity.FieldNormalizedValue)
+	}
+	if m.source != nil {
+		fields = append(fields, relationshipidentity.FieldSource)
+	}
+	if m.confidence != nil {
+		fields = append(fields, relationshipidentity.FieldConfidence)
+	}
+	if m.first_seen_at != nil {
+		fields = append(fields, relationshipidentity.FieldFirstSeenAt)
+	}
+	if m.last_seen_at != nil {
+		fields = append(fields, relationshipidentity.FieldLastSeenAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RelationshipIdentityMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case relationshipidentity.FieldCreatedAt:
+		return m.CreatedAt()
+	case relationshipidentity.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case relationshipidentity.FieldKind:
+		return m.Kind()
+	case relationshipidentity.FieldProvider:
+		return m.Provider()
+	case relationshipidentity.FieldKeyHash:
+		return m.KeyHash()
+	case relationshipidentity.FieldNormalizedValue:
+		return m.NormalizedValue()
+	case relationshipidentity.FieldSource:
+		return m.Source()
+	case relationshipidentity.FieldConfidence:
+		return m.Confidence()
+	case relationshipidentity.FieldFirstSeenAt:
+		return m.FirstSeenAt()
+	case relationshipidentity.FieldLastSeenAt:
+		return m.LastSeenAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RelationshipIdentityMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case relationshipidentity.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case relationshipidentity.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case relationshipidentity.FieldKind:
+		return m.OldKind(ctx)
+	case relationshipidentity.FieldProvider:
+		return m.OldProvider(ctx)
+	case relationshipidentity.FieldKeyHash:
+		return m.OldKeyHash(ctx)
+	case relationshipidentity.FieldNormalizedValue:
+		return m.OldNormalizedValue(ctx)
+	case relationshipidentity.FieldSource:
+		return m.OldSource(ctx)
+	case relationshipidentity.FieldConfidence:
+		return m.OldConfidence(ctx)
+	case relationshipidentity.FieldFirstSeenAt:
+		return m.OldFirstSeenAt(ctx)
+	case relationshipidentity.FieldLastSeenAt:
+		return m.OldLastSeenAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown RelationshipIdentity field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RelationshipIdentityMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case relationshipidentity.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case relationshipidentity.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case relationshipidentity.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
+	case relationshipidentity.FieldProvider:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProvider(v)
+		return nil
+	case relationshipidentity.FieldKeyHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKeyHash(v)
+		return nil
+	case relationshipidentity.FieldNormalizedValue:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNormalizedValue(v)
+		return nil
+	case relationshipidentity.FieldSource:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSource(v)
+		return nil
+	case relationshipidentity.FieldConfidence:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConfidence(v)
+		return nil
+	case relationshipidentity.FieldFirstSeenAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFirstSeenAt(v)
+		return nil
+	case relationshipidentity.FieldLastSeenAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastSeenAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipIdentity field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RelationshipIdentityMutation) AddedFields() []string {
+	var fields []string
+	if m.addconfidence != nil {
+		fields = append(fields, relationshipidentity.FieldConfidence)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RelationshipIdentityMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case relationshipidentity.FieldConfidence:
+		return m.AddedConfidence()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RelationshipIdentityMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case relationshipidentity.FieldConfidence:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddConfidence(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipIdentity numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RelationshipIdentityMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(relationshipidentity.FieldProvider) {
+		fields = append(fields, relationshipidentity.FieldProvider)
+	}
+	if m.FieldCleared(relationshipidentity.FieldSource) {
+		fields = append(fields, relationshipidentity.FieldSource)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RelationshipIdentityMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RelationshipIdentityMutation) ClearField(name string) error {
+	switch name {
+	case relationshipidentity.FieldProvider:
+		m.ClearProvider()
+		return nil
+	case relationshipidentity.FieldSource:
+		m.ClearSource()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipIdentity nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RelationshipIdentityMutation) ResetField(name string) error {
+	switch name {
+	case relationshipidentity.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case relationshipidentity.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case relationshipidentity.FieldKind:
+		m.ResetKind()
+		return nil
+	case relationshipidentity.FieldProvider:
+		m.ResetProvider()
+		return nil
+	case relationshipidentity.FieldKeyHash:
+		m.ResetKeyHash()
+		return nil
+	case relationshipidentity.FieldNormalizedValue:
+		m.ResetNormalizedValue()
+		return nil
+	case relationshipidentity.FieldSource:
+		m.ResetSource()
+		return nil
+	case relationshipidentity.FieldConfidence:
+		m.ResetConfidence()
+		return nil
+	case relationshipidentity.FieldFirstSeenAt:
+		m.ResetFirstSeenAt()
+		return nil
+	case relationshipidentity.FieldLastSeenAt:
+		m.ResetLastSeenAt()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipIdentity field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RelationshipIdentityMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.workspace != nil {
+		edges = append(edges, relationshipidentity.EdgeWorkspace)
+	}
+	if m.relationship != nil {
+		edges = append(edges, relationshipidentity.EdgeRelationship)
+	}
+	if m.user != nil {
+		edges = append(edges, relationshipidentity.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RelationshipIdentityMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case relationshipidentity.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case relationshipidentity.EdgeRelationship:
+		if id := m.relationship; id != nil {
+			return []ent.Value{*id}
+		}
+	case relationshipidentity.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RelationshipIdentityMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RelationshipIdentityMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RelationshipIdentityMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedworkspace {
+		edges = append(edges, relationshipidentity.EdgeWorkspace)
+	}
+	if m.clearedrelationship {
+		edges = append(edges, relationshipidentity.EdgeRelationship)
+	}
+	if m.cleareduser {
+		edges = append(edges, relationshipidentity.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RelationshipIdentityMutation) EdgeCleared(name string) bool {
+	switch name {
+	case relationshipidentity.EdgeWorkspace:
+		return m.clearedworkspace
+	case relationshipidentity.EdgeRelationship:
+		return m.clearedrelationship
+	case relationshipidentity.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RelationshipIdentityMutation) ClearEdge(name string) error {
+	switch name {
+	case relationshipidentity.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case relationshipidentity.EdgeRelationship:
+		m.ClearRelationship()
+		return nil
+	case relationshipidentity.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipIdentity unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RelationshipIdentityMutation) ResetEdge(name string) error {
+	switch name {
+	case relationshipidentity.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case relationshipidentity.EdgeRelationship:
+		m.ResetRelationship()
+		return nil
+	case relationshipidentity.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown RelationshipIdentity edge %s", name)
 }
 
 // RelationshipObservationMutation represents an operation that mutates the RelationshipObservation nodes in the graph.
@@ -47491,69 +53057,75 @@ func (m *RelationshipStateSnapshotMutation) ResetEdge(name string) error {
 // RevenueActionMutation represents an operation that mutates the RevenueAction nodes in the graph.
 type RevenueActionMutation struct {
 	config
-	op                        Op
-	typ                       string
-	id                        *uuid.UUID
-	created_at                *time.Time
-	updated_at                *time.Time
-	action_type               *string
-	channel                   *string
-	detector                  *string
-	dedupe_key                *string
-	revision                  *int
-	addrevision               *int
-	revision_hash             *string
-	reason                    *string
-	recipient_email           *string
-	proposed_subject          *string
-	proposed_message          *string
-	sender_account_ref        *string
-	assigned_user_id          *uuid.UUID
-	priority_score            *int
-	addpriority_score         *int
-	priority_components_json  *string
-	queue_status              *string
-	policy_status             *string
-	approval_status           *string
-	execution_status          *string
-	execution_owner           *string
-	approved_revision         *int
-	addapproved_revision      *int
-	approved_decision_id      *uuid.UUID
-	approved_by               *uuid.UUID
-	approved_at               *time.Time
-	execution_idempotency_key *string
-	execution_mode            *string
-	provider_message_id       *string
-	provider_thread_id        *string
-	executed_at               *time.Time
-	execution_error           *string
-	dismiss_reason            *string
-	snoozed_until             *time.Time
-	due_at                    *time.Time
-	handled_at                *time.Time
-	clearedFields             map[string]struct{}
-	workspace                 *uuid.UUID
-	clearedworkspace          bool
-	relationship              *uuid.UUID
-	clearedrelationship       bool
-	user                      *uuid.UUID
-	cleareduser               bool
-	evidences                 map[uuid.UUID]struct{}
-	removedevidences          map[uuid.UUID]struct{}
-	clearedevidences          bool
-	revisions                 map[uuid.UUID]struct{}
-	removedrevisions          map[uuid.UUID]struct{}
-	clearedrevisions          bool
-	decisions                 map[uuid.UUID]struct{}
-	removeddecisions          map[uuid.UUID]struct{}
-	cleareddecisions          bool
-	outcomes                  map[uuid.UUID]struct{}
-	removedoutcomes           map[uuid.UUID]struct{}
-	clearedoutcomes           bool
-	done                      bool
-	oldValue                  func(context.Context) (*RevenueAction, error)
-	predicates                []predicate.RevenueAction
+	op                         Op
+	typ                        string
+	id                         *uuid.UUID
+	created_at                 *time.Time
+	updated_at                 *time.Time
+	action_type                *string
+	channel                    *string
+	detector                   *string
+	dedupe_key                 *string
+	revision                   *int
+	addrevision                *int
+	revision_hash              *string
+	reason                     *string
+	recipient_email            *string
+	proposed_subject           *string
+	proposed_message           *string
+	sender_account_ref         *string
+	assigned_user_id           *uuid.UUID
+	priority_score             *int
+	addpriority_score          *int
+	priority_components_json   *string
+	queue_status               *string
+	policy_status              *string
+	approval_status            *string
+	execution_status           *string
+	execution_owner            *string
+	approved_revision          *int
+	addapproved_revision       *int
+	approved_decision_id       *uuid.UUID
+	approved_by                *uuid.UUID
+	approved_at                *time.Time
+	execution_idempotency_key  *string
+	execution_mode             *string
+	provider_message_id        *string
+	provider_thread_id         *string
+	executed_at                *time.Time
+	execution_error            *string
+	reconciliation_status      *string
+	reconciliation_attempts    *int
+	addreconciliation_attempts *int
+	reconciliation_checked_at  *time.Time
+	reconciliation_next_at     *time.Time
+	reconciliation_error       *string
+	dismiss_reason             *string
+	snoozed_until              *time.Time
+	due_at                     *time.Time
+	handled_at                 *time.Time
+	clearedFields              map[string]struct{}
+	workspace                  *uuid.UUID
+	clearedworkspace           bool
+	relationship               *uuid.UUID
+	clearedrelationship        bool
+	user                       *uuid.UUID
+	cleareduser                bool
+	evidences                  map[uuid.UUID]struct{}
+	removedevidences           map[uuid.UUID]struct{}
+	clearedevidences           bool
+	revisions                  map[uuid.UUID]struct{}
+	removedrevisions           map[uuid.UUID]struct{}
+	clearedrevisions           bool
+	decisions                  map[uuid.UUID]struct{}
+	removeddecisions           map[uuid.UUID]struct{}
+	cleareddecisions           bool
+	outcomes                   map[uuid.UUID]struct{}
+	removedoutcomes            map[uuid.UUID]struct{}
+	clearedoutcomes            bool
+	done                       bool
+	oldValue                   func(context.Context) (*RevenueAction, error)
+	predicates                 []predicate.RevenueAction
 }
 
 var _ ent.Mutation = (*RevenueActionMutation)(nil)
@@ -49032,6 +54604,258 @@ func (m *RevenueActionMutation) ResetExecutionError() {
 	delete(m.clearedFields, revenueaction.FieldExecutionError)
 }
 
+// SetReconciliationStatus sets the "reconciliation_status" field.
+func (m *RevenueActionMutation) SetReconciliationStatus(s string) {
+	m.reconciliation_status = &s
+}
+
+// ReconciliationStatus returns the value of the "reconciliation_status" field in the mutation.
+func (m *RevenueActionMutation) ReconciliationStatus() (r string, exists bool) {
+	v := m.reconciliation_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReconciliationStatus returns the old "reconciliation_status" field's value of the RevenueAction entity.
+// If the RevenueAction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueActionMutation) OldReconciliationStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReconciliationStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReconciliationStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReconciliationStatus: %w", err)
+	}
+	return oldValue.ReconciliationStatus, nil
+}
+
+// ClearReconciliationStatus clears the value of the "reconciliation_status" field.
+func (m *RevenueActionMutation) ClearReconciliationStatus() {
+	m.reconciliation_status = nil
+	m.clearedFields[revenueaction.FieldReconciliationStatus] = struct{}{}
+}
+
+// ReconciliationStatusCleared returns if the "reconciliation_status" field was cleared in this mutation.
+func (m *RevenueActionMutation) ReconciliationStatusCleared() bool {
+	_, ok := m.clearedFields[revenueaction.FieldReconciliationStatus]
+	return ok
+}
+
+// ResetReconciliationStatus resets all changes to the "reconciliation_status" field.
+func (m *RevenueActionMutation) ResetReconciliationStatus() {
+	m.reconciliation_status = nil
+	delete(m.clearedFields, revenueaction.FieldReconciliationStatus)
+}
+
+// SetReconciliationAttempts sets the "reconciliation_attempts" field.
+func (m *RevenueActionMutation) SetReconciliationAttempts(i int) {
+	m.reconciliation_attempts = &i
+	m.addreconciliation_attempts = nil
+}
+
+// ReconciliationAttempts returns the value of the "reconciliation_attempts" field in the mutation.
+func (m *RevenueActionMutation) ReconciliationAttempts() (r int, exists bool) {
+	v := m.reconciliation_attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReconciliationAttempts returns the old "reconciliation_attempts" field's value of the RevenueAction entity.
+// If the RevenueAction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueActionMutation) OldReconciliationAttempts(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReconciliationAttempts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReconciliationAttempts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReconciliationAttempts: %w", err)
+	}
+	return oldValue.ReconciliationAttempts, nil
+}
+
+// AddReconciliationAttempts adds i to the "reconciliation_attempts" field.
+func (m *RevenueActionMutation) AddReconciliationAttempts(i int) {
+	if m.addreconciliation_attempts != nil {
+		*m.addreconciliation_attempts += i
+	} else {
+		m.addreconciliation_attempts = &i
+	}
+}
+
+// AddedReconciliationAttempts returns the value that was added to the "reconciliation_attempts" field in this mutation.
+func (m *RevenueActionMutation) AddedReconciliationAttempts() (r int, exists bool) {
+	v := m.addreconciliation_attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetReconciliationAttempts resets all changes to the "reconciliation_attempts" field.
+func (m *RevenueActionMutation) ResetReconciliationAttempts() {
+	m.reconciliation_attempts = nil
+	m.addreconciliation_attempts = nil
+}
+
+// SetReconciliationCheckedAt sets the "reconciliation_checked_at" field.
+func (m *RevenueActionMutation) SetReconciliationCheckedAt(t time.Time) {
+	m.reconciliation_checked_at = &t
+}
+
+// ReconciliationCheckedAt returns the value of the "reconciliation_checked_at" field in the mutation.
+func (m *RevenueActionMutation) ReconciliationCheckedAt() (r time.Time, exists bool) {
+	v := m.reconciliation_checked_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReconciliationCheckedAt returns the old "reconciliation_checked_at" field's value of the RevenueAction entity.
+// If the RevenueAction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueActionMutation) OldReconciliationCheckedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReconciliationCheckedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReconciliationCheckedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReconciliationCheckedAt: %w", err)
+	}
+	return oldValue.ReconciliationCheckedAt, nil
+}
+
+// ClearReconciliationCheckedAt clears the value of the "reconciliation_checked_at" field.
+func (m *RevenueActionMutation) ClearReconciliationCheckedAt() {
+	m.reconciliation_checked_at = nil
+	m.clearedFields[revenueaction.FieldReconciliationCheckedAt] = struct{}{}
+}
+
+// ReconciliationCheckedAtCleared returns if the "reconciliation_checked_at" field was cleared in this mutation.
+func (m *RevenueActionMutation) ReconciliationCheckedAtCleared() bool {
+	_, ok := m.clearedFields[revenueaction.FieldReconciliationCheckedAt]
+	return ok
+}
+
+// ResetReconciliationCheckedAt resets all changes to the "reconciliation_checked_at" field.
+func (m *RevenueActionMutation) ResetReconciliationCheckedAt() {
+	m.reconciliation_checked_at = nil
+	delete(m.clearedFields, revenueaction.FieldReconciliationCheckedAt)
+}
+
+// SetReconciliationNextAt sets the "reconciliation_next_at" field.
+func (m *RevenueActionMutation) SetReconciliationNextAt(t time.Time) {
+	m.reconciliation_next_at = &t
+}
+
+// ReconciliationNextAt returns the value of the "reconciliation_next_at" field in the mutation.
+func (m *RevenueActionMutation) ReconciliationNextAt() (r time.Time, exists bool) {
+	v := m.reconciliation_next_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReconciliationNextAt returns the old "reconciliation_next_at" field's value of the RevenueAction entity.
+// If the RevenueAction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueActionMutation) OldReconciliationNextAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReconciliationNextAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReconciliationNextAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReconciliationNextAt: %w", err)
+	}
+	return oldValue.ReconciliationNextAt, nil
+}
+
+// ClearReconciliationNextAt clears the value of the "reconciliation_next_at" field.
+func (m *RevenueActionMutation) ClearReconciliationNextAt() {
+	m.reconciliation_next_at = nil
+	m.clearedFields[revenueaction.FieldReconciliationNextAt] = struct{}{}
+}
+
+// ReconciliationNextAtCleared returns if the "reconciliation_next_at" field was cleared in this mutation.
+func (m *RevenueActionMutation) ReconciliationNextAtCleared() bool {
+	_, ok := m.clearedFields[revenueaction.FieldReconciliationNextAt]
+	return ok
+}
+
+// ResetReconciliationNextAt resets all changes to the "reconciliation_next_at" field.
+func (m *RevenueActionMutation) ResetReconciliationNextAt() {
+	m.reconciliation_next_at = nil
+	delete(m.clearedFields, revenueaction.FieldReconciliationNextAt)
+}
+
+// SetReconciliationError sets the "reconciliation_error" field.
+func (m *RevenueActionMutation) SetReconciliationError(s string) {
+	m.reconciliation_error = &s
+}
+
+// ReconciliationError returns the value of the "reconciliation_error" field in the mutation.
+func (m *RevenueActionMutation) ReconciliationError() (r string, exists bool) {
+	v := m.reconciliation_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReconciliationError returns the old "reconciliation_error" field's value of the RevenueAction entity.
+// If the RevenueAction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueActionMutation) OldReconciliationError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReconciliationError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReconciliationError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReconciliationError: %w", err)
+	}
+	return oldValue.ReconciliationError, nil
+}
+
+// ClearReconciliationError clears the value of the "reconciliation_error" field.
+func (m *RevenueActionMutation) ClearReconciliationError() {
+	m.reconciliation_error = nil
+	m.clearedFields[revenueaction.FieldReconciliationError] = struct{}{}
+}
+
+// ReconciliationErrorCleared returns if the "reconciliation_error" field was cleared in this mutation.
+func (m *RevenueActionMutation) ReconciliationErrorCleared() bool {
+	_, ok := m.clearedFields[revenueaction.FieldReconciliationError]
+	return ok
+}
+
+// ResetReconciliationError resets all changes to the "reconciliation_error" field.
+func (m *RevenueActionMutation) ResetReconciliationError() {
+	m.reconciliation_error = nil
+	delete(m.clearedFields, revenueaction.FieldReconciliationError)
+}
+
 // SetDismissReason sets the "dismiss_reason" field.
 func (m *RevenueActionMutation) SetDismissReason(s string) {
 	m.dismiss_reason = &s
@@ -49595,7 +55419,7 @@ func (m *RevenueActionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RevenueActionMutation) Fields() []string {
-	fields := make([]string, 0, 35)
+	fields := make([]string, 0, 40)
 	if m.created_at != nil {
 		fields = append(fields, revenueaction.FieldCreatedAt)
 	}
@@ -49689,6 +55513,21 @@ func (m *RevenueActionMutation) Fields() []string {
 	if m.execution_error != nil {
 		fields = append(fields, revenueaction.FieldExecutionError)
 	}
+	if m.reconciliation_status != nil {
+		fields = append(fields, revenueaction.FieldReconciliationStatus)
+	}
+	if m.reconciliation_attempts != nil {
+		fields = append(fields, revenueaction.FieldReconciliationAttempts)
+	}
+	if m.reconciliation_checked_at != nil {
+		fields = append(fields, revenueaction.FieldReconciliationCheckedAt)
+	}
+	if m.reconciliation_next_at != nil {
+		fields = append(fields, revenueaction.FieldReconciliationNextAt)
+	}
+	if m.reconciliation_error != nil {
+		fields = append(fields, revenueaction.FieldReconciliationError)
+	}
 	if m.dismiss_reason != nil {
 		fields = append(fields, revenueaction.FieldDismissReason)
 	}
@@ -49771,6 +55610,16 @@ func (m *RevenueActionMutation) Field(name string) (ent.Value, bool) {
 		return m.ExecutedAt()
 	case revenueaction.FieldExecutionError:
 		return m.ExecutionError()
+	case revenueaction.FieldReconciliationStatus:
+		return m.ReconciliationStatus()
+	case revenueaction.FieldReconciliationAttempts:
+		return m.ReconciliationAttempts()
+	case revenueaction.FieldReconciliationCheckedAt:
+		return m.ReconciliationCheckedAt()
+	case revenueaction.FieldReconciliationNextAt:
+		return m.ReconciliationNextAt()
+	case revenueaction.FieldReconciliationError:
+		return m.ReconciliationError()
 	case revenueaction.FieldDismissReason:
 		return m.DismissReason()
 	case revenueaction.FieldSnoozedUntil:
@@ -49850,6 +55699,16 @@ func (m *RevenueActionMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldExecutedAt(ctx)
 	case revenueaction.FieldExecutionError:
 		return m.OldExecutionError(ctx)
+	case revenueaction.FieldReconciliationStatus:
+		return m.OldReconciliationStatus(ctx)
+	case revenueaction.FieldReconciliationAttempts:
+		return m.OldReconciliationAttempts(ctx)
+	case revenueaction.FieldReconciliationCheckedAt:
+		return m.OldReconciliationCheckedAt(ctx)
+	case revenueaction.FieldReconciliationNextAt:
+		return m.OldReconciliationNextAt(ctx)
+	case revenueaction.FieldReconciliationError:
+		return m.OldReconciliationError(ctx)
 	case revenueaction.FieldDismissReason:
 		return m.OldDismissReason(ctx)
 	case revenueaction.FieldSnoozedUntil:
@@ -50084,6 +55943,41 @@ func (m *RevenueActionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetExecutionError(v)
 		return nil
+	case revenueaction.FieldReconciliationStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReconciliationStatus(v)
+		return nil
+	case revenueaction.FieldReconciliationAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReconciliationAttempts(v)
+		return nil
+	case revenueaction.FieldReconciliationCheckedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReconciliationCheckedAt(v)
+		return nil
+	case revenueaction.FieldReconciliationNextAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReconciliationNextAt(v)
+		return nil
+	case revenueaction.FieldReconciliationError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReconciliationError(v)
+		return nil
 	case revenueaction.FieldDismissReason:
 		v, ok := value.(string)
 		if !ok {
@@ -50129,6 +56023,9 @@ func (m *RevenueActionMutation) AddedFields() []string {
 	if m.addapproved_revision != nil {
 		fields = append(fields, revenueaction.FieldApprovedRevision)
 	}
+	if m.addreconciliation_attempts != nil {
+		fields = append(fields, revenueaction.FieldReconciliationAttempts)
+	}
 	return fields
 }
 
@@ -50143,6 +56040,8 @@ func (m *RevenueActionMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedPriorityScore()
 	case revenueaction.FieldApprovedRevision:
 		return m.AddedApprovedRevision()
+	case revenueaction.FieldReconciliationAttempts:
+		return m.AddedReconciliationAttempts()
 	}
 	return nil, false
 }
@@ -50172,6 +56071,13 @@ func (m *RevenueActionMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddApprovedRevision(v)
+		return nil
+	case revenueaction.FieldReconciliationAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddReconciliationAttempts(v)
 		return nil
 	}
 	return fmt.Errorf("unknown RevenueAction numeric field %s", name)
@@ -50225,6 +56131,18 @@ func (m *RevenueActionMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(revenueaction.FieldExecutionError) {
 		fields = append(fields, revenueaction.FieldExecutionError)
+	}
+	if m.FieldCleared(revenueaction.FieldReconciliationStatus) {
+		fields = append(fields, revenueaction.FieldReconciliationStatus)
+	}
+	if m.FieldCleared(revenueaction.FieldReconciliationCheckedAt) {
+		fields = append(fields, revenueaction.FieldReconciliationCheckedAt)
+	}
+	if m.FieldCleared(revenueaction.FieldReconciliationNextAt) {
+		fields = append(fields, revenueaction.FieldReconciliationNextAt)
+	}
+	if m.FieldCleared(revenueaction.FieldReconciliationError) {
+		fields = append(fields, revenueaction.FieldReconciliationError)
 	}
 	if m.FieldCleared(revenueaction.FieldDismissReason) {
 		fields = append(fields, revenueaction.FieldDismissReason)
@@ -50296,6 +56214,18 @@ func (m *RevenueActionMutation) ClearField(name string) error {
 		return nil
 	case revenueaction.FieldExecutionError:
 		m.ClearExecutionError()
+		return nil
+	case revenueaction.FieldReconciliationStatus:
+		m.ClearReconciliationStatus()
+		return nil
+	case revenueaction.FieldReconciliationCheckedAt:
+		m.ClearReconciliationCheckedAt()
+		return nil
+	case revenueaction.FieldReconciliationNextAt:
+		m.ClearReconciliationNextAt()
+		return nil
+	case revenueaction.FieldReconciliationError:
+		m.ClearReconciliationError()
 		return nil
 	case revenueaction.FieldDismissReason:
 		m.ClearDismissReason()
@@ -50409,6 +56339,21 @@ func (m *RevenueActionMutation) ResetField(name string) error {
 		return nil
 	case revenueaction.FieldExecutionError:
 		m.ResetExecutionError()
+		return nil
+	case revenueaction.FieldReconciliationStatus:
+		m.ResetReconciliationStatus()
+		return nil
+	case revenueaction.FieldReconciliationAttempts:
+		m.ResetReconciliationAttempts()
+		return nil
+	case revenueaction.FieldReconciliationCheckedAt:
+		m.ResetReconciliationCheckedAt()
+		return nil
+	case revenueaction.FieldReconciliationNextAt:
+		m.ResetReconciliationNextAt()
+		return nil
+	case revenueaction.FieldReconciliationError:
+		m.ResetReconciliationError()
 		return nil
 	case revenueaction.FieldDismissReason:
 		m.ResetDismissReason()
@@ -56180,67 +62125,79 @@ func (m *RevenueOutboxEventMutation) ResetEdge(name string) error {
 // RevenueWorkspaceMutation represents an operation that mutates the RevenueWorkspace nodes in the graph.
 type RevenueWorkspaceMutation struct {
 	config
-	op                                  Op
-	typ                                 string
-	id                                  *uuid.UUID
-	created_at                          *time.Time
-	updated_at                          *time.Time
-	workos_org_id                       *string
-	outbound_organization_id            *string
-	outbound_workspace_id               *string
-	mode                                *string
-	status                              *string
-	last_verified_at                    *time.Time
-	last_digest_at                      *time.Time
-	mail_history_id                     *string
-	clearedFields                       map[string]struct{}
-	user                                *uuid.UUID
-	cleareduser                         bool
-	members                             map[uuid.UUID]struct{}
-	removedmembers                      map[uuid.UUID]struct{}
-	clearedmembers                      bool
-	relationships                       map[uuid.UUID]struct{}
-	removedrelationships                map[uuid.UUID]struct{}
-	clearedrelationships                bool
-	evidences                           map[uuid.UUID]struct{}
-	removedevidences                    map[uuid.UUID]struct{}
-	clearedevidences                    bool
-	commitments                         map[uuid.UUID]struct{}
-	removedcommitments                  map[uuid.UUID]struct{}
-	clearedcommitments                  bool
-	actions                             map[uuid.UUID]struct{}
-	removedactions                      map[uuid.UUID]struct{}
-	clearedactions                      bool
-	decisions                           map[uuid.UUID]struct{}
-	removeddecisions                    map[uuid.UUID]struct{}
-	cleareddecisions                    bool
-	outcomes                            map[uuid.UUID]struct{}
-	removedoutcomes                     map[uuid.UUID]struct{}
-	clearedoutcomes                     bool
-	outbox_events                       map[uuid.UUID]struct{}
-	removedoutbox_events                map[uuid.UUID]struct{}
-	clearedoutbox_events                bool
-	scans                               map[uuid.UUID]struct{}
-	removedscans                        map[uuid.UUID]struct{}
-	clearedscans                        bool
-	relationship_participants           map[uuid.UUID]struct{}
-	removedrelationship_participants    map[uuid.UUID]struct{}
-	clearedrelationship_participants    bool
-	relationship_observations           map[uuid.UUID]struct{}
-	removedrelationship_observations    map[uuid.UUID]struct{}
-	clearedrelationship_observations    bool
-	relationship_assertions             map[uuid.UUID]struct{}
-	removedrelationship_assertions      map[uuid.UUID]struct{}
-	clearedrelationship_assertions      bool
-	relationship_state_snapshots        map[uuid.UUID]struct{}
-	removedrelationship_state_snapshots map[uuid.UUID]struct{}
-	clearedrelationship_state_snapshots bool
-	relationship_source_statuses        map[uuid.UUID]struct{}
-	removedrelationship_source_statuses map[uuid.UUID]struct{}
-	clearedrelationship_source_statuses bool
-	done                                bool
-	oldValue                            func(context.Context) (*RevenueWorkspace, error)
-	predicates                          []predicate.RevenueWorkspace
+	op                                         Op
+	typ                                        string
+	id                                         *uuid.UUID
+	created_at                                 *time.Time
+	updated_at                                 *time.Time
+	workos_org_id                              *string
+	outbound_organization_id                   *string
+	outbound_workspace_id                      *string
+	mode                                       *string
+	status                                     *string
+	last_verified_at                           *time.Time
+	last_digest_at                             *time.Time
+	mail_history_id                            *string
+	clearedFields                              map[string]struct{}
+	user                                       *uuid.UUID
+	cleareduser                                bool
+	members                                    map[uuid.UUID]struct{}
+	removedmembers                             map[uuid.UUID]struct{}
+	clearedmembers                             bool
+	relationships                              map[uuid.UUID]struct{}
+	removedrelationships                       map[uuid.UUID]struct{}
+	clearedrelationships                       bool
+	evidences                                  map[uuid.UUID]struct{}
+	removedevidences                           map[uuid.UUID]struct{}
+	clearedevidences                           bool
+	commitments                                map[uuid.UUID]struct{}
+	removedcommitments                         map[uuid.UUID]struct{}
+	clearedcommitments                         bool
+	commitment_events                          map[uuid.UUID]struct{}
+	removedcommitment_events                   map[uuid.UUID]struct{}
+	clearedcommitment_events                   bool
+	commitment_dependencies                    map[uuid.UUID]struct{}
+	removedcommitment_dependencies             map[uuid.UUID]struct{}
+	clearedcommitment_dependencies             bool
+	conversation_intelligence_artifacts        map[uuid.UUID]struct{}
+	removedconversation_intelligence_artifacts map[uuid.UUID]struct{}
+	clearedconversation_intelligence_artifacts bool
+	actions                                    map[uuid.UUID]struct{}
+	removedactions                             map[uuid.UUID]struct{}
+	clearedactions                             bool
+	decisions                                  map[uuid.UUID]struct{}
+	removeddecisions                           map[uuid.UUID]struct{}
+	cleareddecisions                           bool
+	outcomes                                   map[uuid.UUID]struct{}
+	removedoutcomes                            map[uuid.UUID]struct{}
+	clearedoutcomes                            bool
+	outbox_events                              map[uuid.UUID]struct{}
+	removedoutbox_events                       map[uuid.UUID]struct{}
+	clearedoutbox_events                       bool
+	scans                                      map[uuid.UUID]struct{}
+	removedscans                               map[uuid.UUID]struct{}
+	clearedscans                               bool
+	relationship_participants                  map[uuid.UUID]struct{}
+	removedrelationship_participants           map[uuid.UUID]struct{}
+	clearedrelationship_participants           bool
+	relationship_identities                    map[uuid.UUID]struct{}
+	removedrelationship_identities             map[uuid.UUID]struct{}
+	clearedrelationship_identities             bool
+	relationship_observations                  map[uuid.UUID]struct{}
+	removedrelationship_observations           map[uuid.UUID]struct{}
+	clearedrelationship_observations           bool
+	relationship_assertions                    map[uuid.UUID]struct{}
+	removedrelationship_assertions             map[uuid.UUID]struct{}
+	clearedrelationship_assertions             bool
+	relationship_state_snapshots               map[uuid.UUID]struct{}
+	removedrelationship_state_snapshots        map[uuid.UUID]struct{}
+	clearedrelationship_state_snapshots        bool
+	relationship_source_statuses               map[uuid.UUID]struct{}
+	removedrelationship_source_statuses        map[uuid.UUID]struct{}
+	clearedrelationship_source_statuses        bool
+	done                                       bool
+	oldValue                                   func(context.Context) (*RevenueWorkspace, error)
+	predicates                                 []predicate.RevenueWorkspace
 }
 
 var _ ent.Mutation = (*RevenueWorkspaceMutation)(nil)
@@ -57040,6 +62997,168 @@ func (m *RevenueWorkspaceMutation) ResetCommitments() {
 	m.removedcommitments = nil
 }
 
+// AddCommitmentEventIDs adds the "commitment_events" edge to the CommitmentEvent entity by ids.
+func (m *RevenueWorkspaceMutation) AddCommitmentEventIDs(ids ...uuid.UUID) {
+	if m.commitment_events == nil {
+		m.commitment_events = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.commitment_events[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommitmentEvents clears the "commitment_events" edge to the CommitmentEvent entity.
+func (m *RevenueWorkspaceMutation) ClearCommitmentEvents() {
+	m.clearedcommitment_events = true
+}
+
+// CommitmentEventsCleared reports if the "commitment_events" edge to the CommitmentEvent entity was cleared.
+func (m *RevenueWorkspaceMutation) CommitmentEventsCleared() bool {
+	return m.clearedcommitment_events
+}
+
+// RemoveCommitmentEventIDs removes the "commitment_events" edge to the CommitmentEvent entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveCommitmentEventIDs(ids ...uuid.UUID) {
+	if m.removedcommitment_events == nil {
+		m.removedcommitment_events = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.commitment_events, ids[i])
+		m.removedcommitment_events[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommitmentEvents returns the removed IDs of the "commitment_events" edge to the CommitmentEvent entity.
+func (m *RevenueWorkspaceMutation) RemovedCommitmentEventsIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommitment_events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommitmentEventsIDs returns the "commitment_events" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) CommitmentEventsIDs() (ids []uuid.UUID) {
+	for id := range m.commitment_events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommitmentEvents resets all changes to the "commitment_events" edge.
+func (m *RevenueWorkspaceMutation) ResetCommitmentEvents() {
+	m.commitment_events = nil
+	m.clearedcommitment_events = false
+	m.removedcommitment_events = nil
+}
+
+// AddCommitmentDependencyIDs adds the "commitment_dependencies" edge to the CommitmentDependency entity by ids.
+func (m *RevenueWorkspaceMutation) AddCommitmentDependencyIDs(ids ...uuid.UUID) {
+	if m.commitment_dependencies == nil {
+		m.commitment_dependencies = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.commitment_dependencies[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommitmentDependencies clears the "commitment_dependencies" edge to the CommitmentDependency entity.
+func (m *RevenueWorkspaceMutation) ClearCommitmentDependencies() {
+	m.clearedcommitment_dependencies = true
+}
+
+// CommitmentDependenciesCleared reports if the "commitment_dependencies" edge to the CommitmentDependency entity was cleared.
+func (m *RevenueWorkspaceMutation) CommitmentDependenciesCleared() bool {
+	return m.clearedcommitment_dependencies
+}
+
+// RemoveCommitmentDependencyIDs removes the "commitment_dependencies" edge to the CommitmentDependency entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveCommitmentDependencyIDs(ids ...uuid.UUID) {
+	if m.removedcommitment_dependencies == nil {
+		m.removedcommitment_dependencies = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.commitment_dependencies, ids[i])
+		m.removedcommitment_dependencies[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommitmentDependencies returns the removed IDs of the "commitment_dependencies" edge to the CommitmentDependency entity.
+func (m *RevenueWorkspaceMutation) RemovedCommitmentDependenciesIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommitment_dependencies {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommitmentDependenciesIDs returns the "commitment_dependencies" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) CommitmentDependenciesIDs() (ids []uuid.UUID) {
+	for id := range m.commitment_dependencies {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommitmentDependencies resets all changes to the "commitment_dependencies" edge.
+func (m *RevenueWorkspaceMutation) ResetCommitmentDependencies() {
+	m.commitment_dependencies = nil
+	m.clearedcommitment_dependencies = false
+	m.removedcommitment_dependencies = nil
+}
+
+// AddConversationIntelligenceArtifactIDs adds the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity by ids.
+func (m *RevenueWorkspaceMutation) AddConversationIntelligenceArtifactIDs(ids ...uuid.UUID) {
+	if m.conversation_intelligence_artifacts == nil {
+		m.conversation_intelligence_artifacts = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.conversation_intelligence_artifacts[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConversationIntelligenceArtifacts clears the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity.
+func (m *RevenueWorkspaceMutation) ClearConversationIntelligenceArtifacts() {
+	m.clearedconversation_intelligence_artifacts = true
+}
+
+// ConversationIntelligenceArtifactsCleared reports if the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity was cleared.
+func (m *RevenueWorkspaceMutation) ConversationIntelligenceArtifactsCleared() bool {
+	return m.clearedconversation_intelligence_artifacts
+}
+
+// RemoveConversationIntelligenceArtifactIDs removes the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveConversationIntelligenceArtifactIDs(ids ...uuid.UUID) {
+	if m.removedconversation_intelligence_artifacts == nil {
+		m.removedconversation_intelligence_artifacts = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.conversation_intelligence_artifacts, ids[i])
+		m.removedconversation_intelligence_artifacts[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConversationIntelligenceArtifacts returns the removed IDs of the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity.
+func (m *RevenueWorkspaceMutation) RemovedConversationIntelligenceArtifactsIDs() (ids []uuid.UUID) {
+	for id := range m.removedconversation_intelligence_artifacts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConversationIntelligenceArtifactsIDs returns the "conversation_intelligence_artifacts" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) ConversationIntelligenceArtifactsIDs() (ids []uuid.UUID) {
+	for id := range m.conversation_intelligence_artifacts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConversationIntelligenceArtifacts resets all changes to the "conversation_intelligence_artifacts" edge.
+func (m *RevenueWorkspaceMutation) ResetConversationIntelligenceArtifacts() {
+	m.conversation_intelligence_artifacts = nil
+	m.clearedconversation_intelligence_artifacts = false
+	m.removedconversation_intelligence_artifacts = nil
+}
+
 // AddActionIDs adds the "actions" edge to the RevenueAction entity by ids.
 func (m *RevenueWorkspaceMutation) AddActionIDs(ids ...uuid.UUID) {
 	if m.actions == nil {
@@ -57362,6 +63481,60 @@ func (m *RevenueWorkspaceMutation) ResetRelationshipParticipants() {
 	m.relationship_participants = nil
 	m.clearedrelationship_participants = false
 	m.removedrelationship_participants = nil
+}
+
+// AddRelationshipIdentityIDs adds the "relationship_identities" edge to the RelationshipIdentity entity by ids.
+func (m *RevenueWorkspaceMutation) AddRelationshipIdentityIDs(ids ...uuid.UUID) {
+	if m.relationship_identities == nil {
+		m.relationship_identities = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.relationship_identities[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRelationshipIdentities clears the "relationship_identities" edge to the RelationshipIdentity entity.
+func (m *RevenueWorkspaceMutation) ClearRelationshipIdentities() {
+	m.clearedrelationship_identities = true
+}
+
+// RelationshipIdentitiesCleared reports if the "relationship_identities" edge to the RelationshipIdentity entity was cleared.
+func (m *RevenueWorkspaceMutation) RelationshipIdentitiesCleared() bool {
+	return m.clearedrelationship_identities
+}
+
+// RemoveRelationshipIdentityIDs removes the "relationship_identities" edge to the RelationshipIdentity entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveRelationshipIdentityIDs(ids ...uuid.UUID) {
+	if m.removedrelationship_identities == nil {
+		m.removedrelationship_identities = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.relationship_identities, ids[i])
+		m.removedrelationship_identities[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelationshipIdentities returns the removed IDs of the "relationship_identities" edge to the RelationshipIdentity entity.
+func (m *RevenueWorkspaceMutation) RemovedRelationshipIdentitiesIDs() (ids []uuid.UUID) {
+	for id := range m.removedrelationship_identities {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelationshipIdentitiesIDs returns the "relationship_identities" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) RelationshipIdentitiesIDs() (ids []uuid.UUID) {
+	for id := range m.relationship_identities {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelationshipIdentities resets all changes to the "relationship_identities" edge.
+func (m *RevenueWorkspaceMutation) ResetRelationshipIdentities() {
+	m.relationship_identities = nil
+	m.clearedrelationship_identities = false
+	m.removedrelationship_identities = nil
 }
 
 // AddRelationshipObservationIDs adds the "relationship_observations" edge to the RelationshipObservation entity by ids.
@@ -57905,7 +64078,7 @@ func (m *RevenueWorkspaceMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RevenueWorkspaceMutation) AddedEdges() []string {
-	edges := make([]string, 0, 15)
+	edges := make([]string, 0, 19)
 	if m.user != nil {
 		edges = append(edges, revenueworkspace.EdgeUser)
 	}
@@ -57920,6 +64093,15 @@ func (m *RevenueWorkspaceMutation) AddedEdges() []string {
 	}
 	if m.commitments != nil {
 		edges = append(edges, revenueworkspace.EdgeCommitments)
+	}
+	if m.commitment_events != nil {
+		edges = append(edges, revenueworkspace.EdgeCommitmentEvents)
+	}
+	if m.commitment_dependencies != nil {
+		edges = append(edges, revenueworkspace.EdgeCommitmentDependencies)
+	}
+	if m.conversation_intelligence_artifacts != nil {
+		edges = append(edges, revenueworkspace.EdgeConversationIntelligenceArtifacts)
 	}
 	if m.actions != nil {
 		edges = append(edges, revenueworkspace.EdgeActions)
@@ -57938,6 +64120,9 @@ func (m *RevenueWorkspaceMutation) AddedEdges() []string {
 	}
 	if m.relationship_participants != nil {
 		edges = append(edges, revenueworkspace.EdgeRelationshipParticipants)
+	}
+	if m.relationship_identities != nil {
+		edges = append(edges, revenueworkspace.EdgeRelationshipIdentities)
 	}
 	if m.relationship_observations != nil {
 		edges = append(edges, revenueworkspace.EdgeRelationshipObservations)
@@ -57986,6 +64171,24 @@ func (m *RevenueWorkspaceMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgeCommitmentEvents:
+		ids := make([]ent.Value, 0, len(m.commitment_events))
+		for id := range m.commitment_events {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommitmentDependencies:
+		ids := make([]ent.Value, 0, len(m.commitment_dependencies))
+		for id := range m.commitment_dependencies {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeConversationIntelligenceArtifacts:
+		ids := make([]ent.Value, 0, len(m.conversation_intelligence_artifacts))
+		for id := range m.conversation_intelligence_artifacts {
+			ids = append(ids, id)
+		}
+		return ids
 	case revenueworkspace.EdgeActions:
 		ids := make([]ent.Value, 0, len(m.actions))
 		for id := range m.actions {
@@ -58022,6 +64225,12 @@ func (m *RevenueWorkspaceMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgeRelationshipIdentities:
+		ids := make([]ent.Value, 0, len(m.relationship_identities))
+		for id := range m.relationship_identities {
+			ids = append(ids, id)
+		}
+		return ids
 	case revenueworkspace.EdgeRelationshipObservations:
 		ids := make([]ent.Value, 0, len(m.relationship_observations))
 		for id := range m.relationship_observations {
@@ -58052,7 +64261,7 @@ func (m *RevenueWorkspaceMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 15)
+	edges := make([]string, 0, 19)
 	if m.removedmembers != nil {
 		edges = append(edges, revenueworkspace.EdgeMembers)
 	}
@@ -58064,6 +64273,15 @@ func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
 	}
 	if m.removedcommitments != nil {
 		edges = append(edges, revenueworkspace.EdgeCommitments)
+	}
+	if m.removedcommitment_events != nil {
+		edges = append(edges, revenueworkspace.EdgeCommitmentEvents)
+	}
+	if m.removedcommitment_dependencies != nil {
+		edges = append(edges, revenueworkspace.EdgeCommitmentDependencies)
+	}
+	if m.removedconversation_intelligence_artifacts != nil {
+		edges = append(edges, revenueworkspace.EdgeConversationIntelligenceArtifacts)
 	}
 	if m.removedactions != nil {
 		edges = append(edges, revenueworkspace.EdgeActions)
@@ -58082,6 +64300,9 @@ func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
 	}
 	if m.removedrelationship_participants != nil {
 		edges = append(edges, revenueworkspace.EdgeRelationshipParticipants)
+	}
+	if m.removedrelationship_identities != nil {
+		edges = append(edges, revenueworkspace.EdgeRelationshipIdentities)
 	}
 	if m.removedrelationship_observations != nil {
 		edges = append(edges, revenueworkspace.EdgeRelationshipObservations)
@@ -58126,6 +64347,24 @@ func (m *RevenueWorkspaceMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgeCommitmentEvents:
+		ids := make([]ent.Value, 0, len(m.removedcommitment_events))
+		for id := range m.removedcommitment_events {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommitmentDependencies:
+		ids := make([]ent.Value, 0, len(m.removedcommitment_dependencies))
+		for id := range m.removedcommitment_dependencies {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeConversationIntelligenceArtifacts:
+		ids := make([]ent.Value, 0, len(m.removedconversation_intelligence_artifacts))
+		for id := range m.removedconversation_intelligence_artifacts {
+			ids = append(ids, id)
+		}
+		return ids
 	case revenueworkspace.EdgeActions:
 		ids := make([]ent.Value, 0, len(m.removedactions))
 		for id := range m.removedactions {
@@ -58162,6 +64401,12 @@ func (m *RevenueWorkspaceMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgeRelationshipIdentities:
+		ids := make([]ent.Value, 0, len(m.removedrelationship_identities))
+		for id := range m.removedrelationship_identities {
+			ids = append(ids, id)
+		}
+		return ids
 	case revenueworkspace.EdgeRelationshipObservations:
 		ids := make([]ent.Value, 0, len(m.removedrelationship_observations))
 		for id := range m.removedrelationship_observations {
@@ -58192,7 +64437,7 @@ func (m *RevenueWorkspaceMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 15)
+	edges := make([]string, 0, 19)
 	if m.cleareduser {
 		edges = append(edges, revenueworkspace.EdgeUser)
 	}
@@ -58207,6 +64452,15 @@ func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
 	}
 	if m.clearedcommitments {
 		edges = append(edges, revenueworkspace.EdgeCommitments)
+	}
+	if m.clearedcommitment_events {
+		edges = append(edges, revenueworkspace.EdgeCommitmentEvents)
+	}
+	if m.clearedcommitment_dependencies {
+		edges = append(edges, revenueworkspace.EdgeCommitmentDependencies)
+	}
+	if m.clearedconversation_intelligence_artifacts {
+		edges = append(edges, revenueworkspace.EdgeConversationIntelligenceArtifacts)
 	}
 	if m.clearedactions {
 		edges = append(edges, revenueworkspace.EdgeActions)
@@ -58225,6 +64479,9 @@ func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
 	}
 	if m.clearedrelationship_participants {
 		edges = append(edges, revenueworkspace.EdgeRelationshipParticipants)
+	}
+	if m.clearedrelationship_identities {
+		edges = append(edges, revenueworkspace.EdgeRelationshipIdentities)
 	}
 	if m.clearedrelationship_observations {
 		edges = append(edges, revenueworkspace.EdgeRelationshipObservations)
@@ -58255,6 +64512,12 @@ func (m *RevenueWorkspaceMutation) EdgeCleared(name string) bool {
 		return m.clearedevidences
 	case revenueworkspace.EdgeCommitments:
 		return m.clearedcommitments
+	case revenueworkspace.EdgeCommitmentEvents:
+		return m.clearedcommitment_events
+	case revenueworkspace.EdgeCommitmentDependencies:
+		return m.clearedcommitment_dependencies
+	case revenueworkspace.EdgeConversationIntelligenceArtifacts:
+		return m.clearedconversation_intelligence_artifacts
 	case revenueworkspace.EdgeActions:
 		return m.clearedactions
 	case revenueworkspace.EdgeDecisions:
@@ -58267,6 +64530,8 @@ func (m *RevenueWorkspaceMutation) EdgeCleared(name string) bool {
 		return m.clearedscans
 	case revenueworkspace.EdgeRelationshipParticipants:
 		return m.clearedrelationship_participants
+	case revenueworkspace.EdgeRelationshipIdentities:
+		return m.clearedrelationship_identities
 	case revenueworkspace.EdgeRelationshipObservations:
 		return m.clearedrelationship_observations
 	case revenueworkspace.EdgeRelationshipAssertions:
@@ -58309,6 +64574,15 @@ func (m *RevenueWorkspaceMutation) ResetEdge(name string) error {
 	case revenueworkspace.EdgeCommitments:
 		m.ResetCommitments()
 		return nil
+	case revenueworkspace.EdgeCommitmentEvents:
+		m.ResetCommitmentEvents()
+		return nil
+	case revenueworkspace.EdgeCommitmentDependencies:
+		m.ResetCommitmentDependencies()
+		return nil
+	case revenueworkspace.EdgeConversationIntelligenceArtifacts:
+		m.ResetConversationIntelligenceArtifacts()
+		return nil
 	case revenueworkspace.EdgeActions:
 		m.ResetActions()
 		return nil
@@ -58326,6 +64600,9 @@ func (m *RevenueWorkspaceMutation) ResetEdge(name string) error {
 		return nil
 	case revenueworkspace.EdgeRelationshipParticipants:
 		m.ResetRelationshipParticipants()
+		return nil
+	case revenueworkspace.EdgeRelationshipIdentities:
+		m.ResetRelationshipIdentities()
 		return nil
 	case revenueworkspace.EdgeRelationshipObservations:
 		m.ResetRelationshipObservations()
@@ -60902,143 +67179,155 @@ func (m *SubscriptionHistoryMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                                     Op
-	typ                                    string
-	id                                     *uuid.UUID
-	created_at                             *time.Time
-	updated_at                             *time.Time
-	email                                  *string
-	workos_user_id                         *string
-	workos_org_id                          *string
-	clearedFields                          map[string]struct{}
-	subscription                           *uuid.UUID
-	clearedsubscription                    bool
-	ledger_entries                         map[uuid.UUID]struct{}
-	removedledger_entries                  map[uuid.UUID]struct{}
-	clearedledger_entries                  bool
-	meeting_minute_usages                  map[uuid.UUID]struct{}
-	removedmeeting_minute_usages           map[uuid.UUID]struct{}
-	clearedmeeting_minute_usages           bool
-	llm_usages                             map[uuid.UUID]struct{}
-	removedllm_usages                      map[uuid.UUID]struct{}
-	clearedllm_usages                      bool
-	oauth_connections                      map[uuid.UUID]struct{}
-	removedoauth_connections               map[uuid.UUID]struct{}
-	clearedoauth_connections               bool
-	mcp_connections                        map[uuid.UUID]struct{}
-	removedmcp_connections                 map[uuid.UUID]struct{}
-	clearedmcp_connections                 bool
-	background_tasks                       map[uuid.UUID]struct{}
-	removedbackground_tasks                map[uuid.UUID]struct{}
-	clearedbackground_tasks                bool
-	background_task_artifacts              map[uuid.UUID]struct{}
-	removedbackground_task_artifacts       map[uuid.UUID]struct{}
-	clearedbackground_task_artifacts       bool
-	background_task_runs                   map[uuid.UUID]struct{}
-	removedbackground_task_runs            map[uuid.UUID]struct{}
-	clearedbackground_task_runs            bool
-	background_task_run_events             map[uuid.UUID]struct{}
-	removedbackground_task_run_events      map[uuid.UUID]struct{}
-	clearedbackground_task_run_events      bool
-	background_task_schedule_states        map[uuid.UUID]struct{}
-	removedbackground_task_schedule_states map[uuid.UUID]struct{}
-	clearedbackground_task_schedule_states bool
-	cloud_events                           map[uuid.UUID]struct{}
-	removedcloud_events                    map[uuid.UUID]struct{}
-	clearedcloud_events                    bool
-	google_watches                         map[uuid.UUID]struct{}
-	removedgoogle_watches                  map[uuid.UUID]struct{}
-	clearedgoogle_watches                  bool
-	agent_definitions                      map[uuid.UUID]struct{}
-	removedagent_definitions               map[uuid.UUID]struct{}
-	clearedagent_definitions               bool
-	agent_sessions                         map[uuid.UUID]struct{}
-	removedagent_sessions                  map[uuid.UUID]struct{}
-	clearedagent_sessions                  bool
-	agent_turns                            map[uuid.UUID]struct{}
-	removedagent_turns                     map[uuid.UUID]struct{}
-	clearedagent_turns                     bool
-	agent_session_events                   map[uuid.UUID]struct{}
-	removedagent_session_events            map[uuid.UUID]struct{}
-	clearedagent_session_events            bool
-	agent_tool_calls                       map[uuid.UUID]struct{}
-	removedagent_tool_calls                map[uuid.UUID]struct{}
-	clearedagent_tool_calls                bool
-	agent_approvals                        map[uuid.UUID]struct{}
-	removedagent_approvals                 map[uuid.UUID]struct{}
-	clearedagent_approvals                 bool
-	agent_tool_result_blobs                map[uuid.UUID]struct{}
-	removedagent_tool_result_blobs         map[uuid.UUID]struct{}
-	clearedagent_tool_result_blobs         bool
-	revenue_workspaces                     map[uuid.UUID]struct{}
-	removedrevenue_workspaces              map[uuid.UUID]struct{}
-	clearedrevenue_workspaces              bool
-	revenue_workspace_members              map[uuid.UUID]struct{}
-	removedrevenue_workspace_members       map[uuid.UUID]struct{}
-	clearedrevenue_workspace_members       bool
-	relationships                          map[uuid.UUID]struct{}
-	removedrelationships                   map[uuid.UUID]struct{}
-	clearedrelationships                   bool
-	revenue_evidences                      map[uuid.UUID]struct{}
-	removedrevenue_evidences               map[uuid.UUID]struct{}
-	clearedrevenue_evidences               bool
-	commitments                            map[uuid.UUID]struct{}
-	removedcommitments                     map[uuid.UUID]struct{}
-	clearedcommitments                     bool
-	revenue_actions                        map[uuid.UUID]struct{}
-	removedrevenue_actions                 map[uuid.UUID]struct{}
-	clearedrevenue_actions                 bool
-	revenue_action_revisions               map[uuid.UUID]struct{}
-	removedrevenue_action_revisions        map[uuid.UUID]struct{}
-	clearedrevenue_action_revisions        bool
-	policy_decision_snapshots              map[uuid.UUID]struct{}
-	removedpolicy_decision_snapshots       map[uuid.UUID]struct{}
-	clearedpolicy_decision_snapshots       bool
-	action_outcomes                        map[uuid.UUID]struct{}
-	removedaction_outcomes                 map[uuid.UUID]struct{}
-	clearedaction_outcomes                 bool
-	revenue_outbox_events                  map[uuid.UUID]struct{}
-	removedrevenue_outbox_events           map[uuid.UUID]struct{}
-	clearedrevenue_outbox_events           bool
-	revenue_leak_scans                     map[uuid.UUID]struct{}
-	removedrevenue_leak_scans              map[uuid.UUID]struct{}
-	clearedrevenue_leak_scans              bool
-	mail_threads                           map[uuid.UUID]struct{}
-	removedmail_threads                    map[uuid.UUID]struct{}
-	clearedmail_threads                    bool
-	mail_message_metas                     map[uuid.UUID]struct{}
-	removedmail_message_metas              map[uuid.UUID]struct{}
-	clearedmail_message_metas              bool
-	mail_body_caches                       map[uuid.UUID]struct{}
-	removedmail_body_caches                map[uuid.UUID]struct{}
-	clearedmail_body_caches                bool
-	mail_signals                           map[uuid.UUID]struct{}
-	removedmail_signals                    map[uuid.UUID]struct{}
-	clearedmail_signals                    bool
-	relationship_participants              map[uuid.UUID]struct{}
-	removedrelationship_participants       map[uuid.UUID]struct{}
-	clearedrelationship_participants       bool
-	relationship_observations              map[uuid.UUID]struct{}
-	removedrelationship_observations       map[uuid.UUID]struct{}
-	clearedrelationship_observations       bool
-	relationship_assertions                map[uuid.UUID]struct{}
-	removedrelationship_assertions         map[uuid.UUID]struct{}
-	clearedrelationship_assertions         bool
-	relationship_state_snapshots           map[uuid.UUID]struct{}
-	removedrelationship_state_snapshots    map[uuid.UUID]struct{}
-	clearedrelationship_state_snapshots    bool
-	relationship_source_statuses           map[uuid.UUID]struct{}
-	removedrelationship_source_statuses    map[uuid.UUID]struct{}
-	clearedrelationship_source_statuses    bool
-	action_proposals                       map[uuid.UUID]struct{}
-	removedaction_proposals                map[uuid.UUID]struct{}
-	clearedaction_proposals                bool
-	approval_tokens                        map[uuid.UUID]struct{}
-	removedapproval_tokens                 map[uuid.UUID]struct{}
-	clearedapproval_tokens                 bool
-	done                                   bool
-	oldValue                               func(context.Context) (*User, error)
-	predicates                             []predicate.User
+	op                                         Op
+	typ                                        string
+	id                                         *uuid.UUID
+	created_at                                 *time.Time
+	updated_at                                 *time.Time
+	email                                      *string
+	workos_user_id                             *string
+	workos_org_id                              *string
+	clearedFields                              map[string]struct{}
+	subscription                               *uuid.UUID
+	clearedsubscription                        bool
+	ledger_entries                             map[uuid.UUID]struct{}
+	removedledger_entries                      map[uuid.UUID]struct{}
+	clearedledger_entries                      bool
+	meeting_minute_usages                      map[uuid.UUID]struct{}
+	removedmeeting_minute_usages               map[uuid.UUID]struct{}
+	clearedmeeting_minute_usages               bool
+	llm_usages                                 map[uuid.UUID]struct{}
+	removedllm_usages                          map[uuid.UUID]struct{}
+	clearedllm_usages                          bool
+	oauth_connections                          map[uuid.UUID]struct{}
+	removedoauth_connections                   map[uuid.UUID]struct{}
+	clearedoauth_connections                   bool
+	mcp_connections                            map[uuid.UUID]struct{}
+	removedmcp_connections                     map[uuid.UUID]struct{}
+	clearedmcp_connections                     bool
+	background_tasks                           map[uuid.UUID]struct{}
+	removedbackground_tasks                    map[uuid.UUID]struct{}
+	clearedbackground_tasks                    bool
+	background_task_artifacts                  map[uuid.UUID]struct{}
+	removedbackground_task_artifacts           map[uuid.UUID]struct{}
+	clearedbackground_task_artifacts           bool
+	background_task_runs                       map[uuid.UUID]struct{}
+	removedbackground_task_runs                map[uuid.UUID]struct{}
+	clearedbackground_task_runs                bool
+	background_task_run_events                 map[uuid.UUID]struct{}
+	removedbackground_task_run_events          map[uuid.UUID]struct{}
+	clearedbackground_task_run_events          bool
+	background_task_schedule_states            map[uuid.UUID]struct{}
+	removedbackground_task_schedule_states     map[uuid.UUID]struct{}
+	clearedbackground_task_schedule_states     bool
+	cloud_events                               map[uuid.UUID]struct{}
+	removedcloud_events                        map[uuid.UUID]struct{}
+	clearedcloud_events                        bool
+	google_watches                             map[uuid.UUID]struct{}
+	removedgoogle_watches                      map[uuid.UUID]struct{}
+	clearedgoogle_watches                      bool
+	agent_definitions                          map[uuid.UUID]struct{}
+	removedagent_definitions                   map[uuid.UUID]struct{}
+	clearedagent_definitions                   bool
+	agent_sessions                             map[uuid.UUID]struct{}
+	removedagent_sessions                      map[uuid.UUID]struct{}
+	clearedagent_sessions                      bool
+	agent_turns                                map[uuid.UUID]struct{}
+	removedagent_turns                         map[uuid.UUID]struct{}
+	clearedagent_turns                         bool
+	agent_session_events                       map[uuid.UUID]struct{}
+	removedagent_session_events                map[uuid.UUID]struct{}
+	clearedagent_session_events                bool
+	agent_tool_calls                           map[uuid.UUID]struct{}
+	removedagent_tool_calls                    map[uuid.UUID]struct{}
+	clearedagent_tool_calls                    bool
+	agent_approvals                            map[uuid.UUID]struct{}
+	removedagent_approvals                     map[uuid.UUID]struct{}
+	clearedagent_approvals                     bool
+	agent_tool_result_blobs                    map[uuid.UUID]struct{}
+	removedagent_tool_result_blobs             map[uuid.UUID]struct{}
+	clearedagent_tool_result_blobs             bool
+	revenue_workspaces                         map[uuid.UUID]struct{}
+	removedrevenue_workspaces                  map[uuid.UUID]struct{}
+	clearedrevenue_workspaces                  bool
+	revenue_workspace_members                  map[uuid.UUID]struct{}
+	removedrevenue_workspace_members           map[uuid.UUID]struct{}
+	clearedrevenue_workspace_members           bool
+	relationships                              map[uuid.UUID]struct{}
+	removedrelationships                       map[uuid.UUID]struct{}
+	clearedrelationships                       bool
+	revenue_evidences                          map[uuid.UUID]struct{}
+	removedrevenue_evidences                   map[uuid.UUID]struct{}
+	clearedrevenue_evidences                   bool
+	commitments                                map[uuid.UUID]struct{}
+	removedcommitments                         map[uuid.UUID]struct{}
+	clearedcommitments                         bool
+	commitment_events                          map[uuid.UUID]struct{}
+	removedcommitment_events                   map[uuid.UUID]struct{}
+	clearedcommitment_events                   bool
+	commitment_dependencies                    map[uuid.UUID]struct{}
+	removedcommitment_dependencies             map[uuid.UUID]struct{}
+	clearedcommitment_dependencies             bool
+	conversation_intelligence_artifacts        map[uuid.UUID]struct{}
+	removedconversation_intelligence_artifacts map[uuid.UUID]struct{}
+	clearedconversation_intelligence_artifacts bool
+	revenue_actions                            map[uuid.UUID]struct{}
+	removedrevenue_actions                     map[uuid.UUID]struct{}
+	clearedrevenue_actions                     bool
+	revenue_action_revisions                   map[uuid.UUID]struct{}
+	removedrevenue_action_revisions            map[uuid.UUID]struct{}
+	clearedrevenue_action_revisions            bool
+	policy_decision_snapshots                  map[uuid.UUID]struct{}
+	removedpolicy_decision_snapshots           map[uuid.UUID]struct{}
+	clearedpolicy_decision_snapshots           bool
+	action_outcomes                            map[uuid.UUID]struct{}
+	removedaction_outcomes                     map[uuid.UUID]struct{}
+	clearedaction_outcomes                     bool
+	revenue_outbox_events                      map[uuid.UUID]struct{}
+	removedrevenue_outbox_events               map[uuid.UUID]struct{}
+	clearedrevenue_outbox_events               bool
+	revenue_leak_scans                         map[uuid.UUID]struct{}
+	removedrevenue_leak_scans                  map[uuid.UUID]struct{}
+	clearedrevenue_leak_scans                  bool
+	mail_threads                               map[uuid.UUID]struct{}
+	removedmail_threads                        map[uuid.UUID]struct{}
+	clearedmail_threads                        bool
+	mail_message_metas                         map[uuid.UUID]struct{}
+	removedmail_message_metas                  map[uuid.UUID]struct{}
+	clearedmail_message_metas                  bool
+	mail_body_caches                           map[uuid.UUID]struct{}
+	removedmail_body_caches                    map[uuid.UUID]struct{}
+	clearedmail_body_caches                    bool
+	mail_signals                               map[uuid.UUID]struct{}
+	removedmail_signals                        map[uuid.UUID]struct{}
+	clearedmail_signals                        bool
+	relationship_participants                  map[uuid.UUID]struct{}
+	removedrelationship_participants           map[uuid.UUID]struct{}
+	clearedrelationship_participants           bool
+	relationship_identities                    map[uuid.UUID]struct{}
+	removedrelationship_identities             map[uuid.UUID]struct{}
+	clearedrelationship_identities             bool
+	relationship_observations                  map[uuid.UUID]struct{}
+	removedrelationship_observations           map[uuid.UUID]struct{}
+	clearedrelationship_observations           bool
+	relationship_assertions                    map[uuid.UUID]struct{}
+	removedrelationship_assertions             map[uuid.UUID]struct{}
+	clearedrelationship_assertions             bool
+	relationship_state_snapshots               map[uuid.UUID]struct{}
+	removedrelationship_state_snapshots        map[uuid.UUID]struct{}
+	clearedrelationship_state_snapshots        bool
+	relationship_source_statuses               map[uuid.UUID]struct{}
+	removedrelationship_source_statuses        map[uuid.UUID]struct{}
+	clearedrelationship_source_statuses        bool
+	action_proposals                           map[uuid.UUID]struct{}
+	removedaction_proposals                    map[uuid.UUID]struct{}
+	clearedaction_proposals                    bool
+	approval_tokens                            map[uuid.UUID]struct{}
+	removedapproval_tokens                     map[uuid.UUID]struct{}
+	clearedapproval_tokens                     bool
+	done                                       bool
+	oldValue                                   func(context.Context) (*User, error)
+	predicates                                 []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -62686,6 +68975,168 @@ func (m *UserMutation) ResetCommitments() {
 	m.removedcommitments = nil
 }
 
+// AddCommitmentEventIDs adds the "commitment_events" edge to the CommitmentEvent entity by ids.
+func (m *UserMutation) AddCommitmentEventIDs(ids ...uuid.UUID) {
+	if m.commitment_events == nil {
+		m.commitment_events = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.commitment_events[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommitmentEvents clears the "commitment_events" edge to the CommitmentEvent entity.
+func (m *UserMutation) ClearCommitmentEvents() {
+	m.clearedcommitment_events = true
+}
+
+// CommitmentEventsCleared reports if the "commitment_events" edge to the CommitmentEvent entity was cleared.
+func (m *UserMutation) CommitmentEventsCleared() bool {
+	return m.clearedcommitment_events
+}
+
+// RemoveCommitmentEventIDs removes the "commitment_events" edge to the CommitmentEvent entity by IDs.
+func (m *UserMutation) RemoveCommitmentEventIDs(ids ...uuid.UUID) {
+	if m.removedcommitment_events == nil {
+		m.removedcommitment_events = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.commitment_events, ids[i])
+		m.removedcommitment_events[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommitmentEvents returns the removed IDs of the "commitment_events" edge to the CommitmentEvent entity.
+func (m *UserMutation) RemovedCommitmentEventsIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommitment_events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommitmentEventsIDs returns the "commitment_events" edge IDs in the mutation.
+func (m *UserMutation) CommitmentEventsIDs() (ids []uuid.UUID) {
+	for id := range m.commitment_events {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommitmentEvents resets all changes to the "commitment_events" edge.
+func (m *UserMutation) ResetCommitmentEvents() {
+	m.commitment_events = nil
+	m.clearedcommitment_events = false
+	m.removedcommitment_events = nil
+}
+
+// AddCommitmentDependencyIDs adds the "commitment_dependencies" edge to the CommitmentDependency entity by ids.
+func (m *UserMutation) AddCommitmentDependencyIDs(ids ...uuid.UUID) {
+	if m.commitment_dependencies == nil {
+		m.commitment_dependencies = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.commitment_dependencies[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommitmentDependencies clears the "commitment_dependencies" edge to the CommitmentDependency entity.
+func (m *UserMutation) ClearCommitmentDependencies() {
+	m.clearedcommitment_dependencies = true
+}
+
+// CommitmentDependenciesCleared reports if the "commitment_dependencies" edge to the CommitmentDependency entity was cleared.
+func (m *UserMutation) CommitmentDependenciesCleared() bool {
+	return m.clearedcommitment_dependencies
+}
+
+// RemoveCommitmentDependencyIDs removes the "commitment_dependencies" edge to the CommitmentDependency entity by IDs.
+func (m *UserMutation) RemoveCommitmentDependencyIDs(ids ...uuid.UUID) {
+	if m.removedcommitment_dependencies == nil {
+		m.removedcommitment_dependencies = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.commitment_dependencies, ids[i])
+		m.removedcommitment_dependencies[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommitmentDependencies returns the removed IDs of the "commitment_dependencies" edge to the CommitmentDependency entity.
+func (m *UserMutation) RemovedCommitmentDependenciesIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommitment_dependencies {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommitmentDependenciesIDs returns the "commitment_dependencies" edge IDs in the mutation.
+func (m *UserMutation) CommitmentDependenciesIDs() (ids []uuid.UUID) {
+	for id := range m.commitment_dependencies {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommitmentDependencies resets all changes to the "commitment_dependencies" edge.
+func (m *UserMutation) ResetCommitmentDependencies() {
+	m.commitment_dependencies = nil
+	m.clearedcommitment_dependencies = false
+	m.removedcommitment_dependencies = nil
+}
+
+// AddConversationIntelligenceArtifactIDs adds the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity by ids.
+func (m *UserMutation) AddConversationIntelligenceArtifactIDs(ids ...uuid.UUID) {
+	if m.conversation_intelligence_artifacts == nil {
+		m.conversation_intelligence_artifacts = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.conversation_intelligence_artifacts[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConversationIntelligenceArtifacts clears the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity.
+func (m *UserMutation) ClearConversationIntelligenceArtifacts() {
+	m.clearedconversation_intelligence_artifacts = true
+}
+
+// ConversationIntelligenceArtifactsCleared reports if the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity was cleared.
+func (m *UserMutation) ConversationIntelligenceArtifactsCleared() bool {
+	return m.clearedconversation_intelligence_artifacts
+}
+
+// RemoveConversationIntelligenceArtifactIDs removes the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity by IDs.
+func (m *UserMutation) RemoveConversationIntelligenceArtifactIDs(ids ...uuid.UUID) {
+	if m.removedconversation_intelligence_artifacts == nil {
+		m.removedconversation_intelligence_artifacts = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.conversation_intelligence_artifacts, ids[i])
+		m.removedconversation_intelligence_artifacts[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConversationIntelligenceArtifacts returns the removed IDs of the "conversation_intelligence_artifacts" edge to the ConversationIntelligenceArtifact entity.
+func (m *UserMutation) RemovedConversationIntelligenceArtifactsIDs() (ids []uuid.UUID) {
+	for id := range m.removedconversation_intelligence_artifacts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConversationIntelligenceArtifactsIDs returns the "conversation_intelligence_artifacts" edge IDs in the mutation.
+func (m *UserMutation) ConversationIntelligenceArtifactsIDs() (ids []uuid.UUID) {
+	for id := range m.conversation_intelligence_artifacts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConversationIntelligenceArtifacts resets all changes to the "conversation_intelligence_artifacts" edge.
+func (m *UserMutation) ResetConversationIntelligenceArtifacts() {
+	m.conversation_intelligence_artifacts = nil
+	m.clearedconversation_intelligence_artifacts = false
+	m.removedconversation_intelligence_artifacts = nil
+}
+
 // AddRevenueActionIDs adds the "revenue_actions" edge to the RevenueAction entity by ids.
 func (m *UserMutation) AddRevenueActionIDs(ids ...uuid.UUID) {
 	if m.revenue_actions == nil {
@@ -63280,6 +69731,60 @@ func (m *UserMutation) ResetRelationshipParticipants() {
 	m.removedrelationship_participants = nil
 }
 
+// AddRelationshipIdentityIDs adds the "relationship_identities" edge to the RelationshipIdentity entity by ids.
+func (m *UserMutation) AddRelationshipIdentityIDs(ids ...uuid.UUID) {
+	if m.relationship_identities == nil {
+		m.relationship_identities = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.relationship_identities[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRelationshipIdentities clears the "relationship_identities" edge to the RelationshipIdentity entity.
+func (m *UserMutation) ClearRelationshipIdentities() {
+	m.clearedrelationship_identities = true
+}
+
+// RelationshipIdentitiesCleared reports if the "relationship_identities" edge to the RelationshipIdentity entity was cleared.
+func (m *UserMutation) RelationshipIdentitiesCleared() bool {
+	return m.clearedrelationship_identities
+}
+
+// RemoveRelationshipIdentityIDs removes the "relationship_identities" edge to the RelationshipIdentity entity by IDs.
+func (m *UserMutation) RemoveRelationshipIdentityIDs(ids ...uuid.UUID) {
+	if m.removedrelationship_identities == nil {
+		m.removedrelationship_identities = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.relationship_identities, ids[i])
+		m.removedrelationship_identities[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelationshipIdentities returns the removed IDs of the "relationship_identities" edge to the RelationshipIdentity entity.
+func (m *UserMutation) RemovedRelationshipIdentitiesIDs() (ids []uuid.UUID) {
+	for id := range m.removedrelationship_identities {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelationshipIdentitiesIDs returns the "relationship_identities" edge IDs in the mutation.
+func (m *UserMutation) RelationshipIdentitiesIDs() (ids []uuid.UUID) {
+	for id := range m.relationship_identities {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelationshipIdentities resets all changes to the "relationship_identities" edge.
+func (m *UserMutation) ResetRelationshipIdentities() {
+	m.relationship_identities = nil
+	m.clearedrelationship_identities = false
+	m.removedrelationship_identities = nil
+}
+
 // AddRelationshipObservationIDs adds the "relationship_observations" edge to the RelationshipObservation entity by ids.
 func (m *UserMutation) AddRelationshipObservationIDs(ids ...uuid.UUID) {
 	if m.relationship_observations == nil {
@@ -63820,7 +70325,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 42)
+	edges := make([]string, 0, 46)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -63896,6 +70401,15 @@ func (m *UserMutation) AddedEdges() []string {
 	if m.commitments != nil {
 		edges = append(edges, user.EdgeCommitments)
 	}
+	if m.commitment_events != nil {
+		edges = append(edges, user.EdgeCommitmentEvents)
+	}
+	if m.commitment_dependencies != nil {
+		edges = append(edges, user.EdgeCommitmentDependencies)
+	}
+	if m.conversation_intelligence_artifacts != nil {
+		edges = append(edges, user.EdgeConversationIntelligenceArtifacts)
+	}
 	if m.revenue_actions != nil {
 		edges = append(edges, user.EdgeRevenueActions)
 	}
@@ -63928,6 +70442,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.relationship_participants != nil {
 		edges = append(edges, user.EdgeRelationshipParticipants)
+	}
+	if m.relationship_identities != nil {
+		edges = append(edges, user.EdgeRelationshipIdentities)
 	}
 	if m.relationship_observations != nil {
 		edges = append(edges, user.EdgeRelationshipObservations)
@@ -64102,6 +70619,24 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeCommitmentEvents:
+		ids := make([]ent.Value, 0, len(m.commitment_events))
+		for id := range m.commitment_events {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeCommitmentDependencies:
+		ids := make([]ent.Value, 0, len(m.commitment_dependencies))
+		for id := range m.commitment_dependencies {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeConversationIntelligenceArtifacts:
+		ids := make([]ent.Value, 0, len(m.conversation_intelligence_artifacts))
+		for id := range m.conversation_intelligence_artifacts {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeRevenueActions:
 		ids := make([]ent.Value, 0, len(m.revenue_actions))
 		for id := range m.revenue_actions {
@@ -64168,6 +70703,12 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeRelationshipIdentities:
+		ids := make([]ent.Value, 0, len(m.relationship_identities))
+		for id := range m.relationship_identities {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeRelationshipObservations:
 		ids := make([]ent.Value, 0, len(m.relationship_observations))
 		for id := range m.relationship_observations {
@@ -64210,7 +70751,7 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 42)
+	edges := make([]string, 0, 46)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -64283,6 +70824,15 @@ func (m *UserMutation) RemovedEdges() []string {
 	if m.removedcommitments != nil {
 		edges = append(edges, user.EdgeCommitments)
 	}
+	if m.removedcommitment_events != nil {
+		edges = append(edges, user.EdgeCommitmentEvents)
+	}
+	if m.removedcommitment_dependencies != nil {
+		edges = append(edges, user.EdgeCommitmentDependencies)
+	}
+	if m.removedconversation_intelligence_artifacts != nil {
+		edges = append(edges, user.EdgeConversationIntelligenceArtifacts)
+	}
 	if m.removedrevenue_actions != nil {
 		edges = append(edges, user.EdgeRevenueActions)
 	}
@@ -64315,6 +70865,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedrelationship_participants != nil {
 		edges = append(edges, user.EdgeRelationshipParticipants)
+	}
+	if m.removedrelationship_identities != nil {
+		edges = append(edges, user.EdgeRelationshipIdentities)
 	}
 	if m.removedrelationship_observations != nil {
 		edges = append(edges, user.EdgeRelationshipObservations)
@@ -64485,6 +71038,24 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeCommitmentEvents:
+		ids := make([]ent.Value, 0, len(m.removedcommitment_events))
+		for id := range m.removedcommitment_events {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeCommitmentDependencies:
+		ids := make([]ent.Value, 0, len(m.removedcommitment_dependencies))
+		for id := range m.removedcommitment_dependencies {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeConversationIntelligenceArtifacts:
+		ids := make([]ent.Value, 0, len(m.removedconversation_intelligence_artifacts))
+		for id := range m.removedconversation_intelligence_artifacts {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeRevenueActions:
 		ids := make([]ent.Value, 0, len(m.removedrevenue_actions))
 		for id := range m.removedrevenue_actions {
@@ -64551,6 +71122,12 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeRelationshipIdentities:
+		ids := make([]ent.Value, 0, len(m.removedrelationship_identities))
+		for id := range m.removedrelationship_identities {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeRelationshipObservations:
 		ids := make([]ent.Value, 0, len(m.removedrelationship_observations))
 		for id := range m.removedrelationship_observations {
@@ -64593,7 +71170,7 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 42)
+	edges := make([]string, 0, 46)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -64669,6 +71246,15 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedcommitments {
 		edges = append(edges, user.EdgeCommitments)
 	}
+	if m.clearedcommitment_events {
+		edges = append(edges, user.EdgeCommitmentEvents)
+	}
+	if m.clearedcommitment_dependencies {
+		edges = append(edges, user.EdgeCommitmentDependencies)
+	}
+	if m.clearedconversation_intelligence_artifacts {
+		edges = append(edges, user.EdgeConversationIntelligenceArtifacts)
+	}
 	if m.clearedrevenue_actions {
 		edges = append(edges, user.EdgeRevenueActions)
 	}
@@ -64701,6 +71287,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedrelationship_participants {
 		edges = append(edges, user.EdgeRelationshipParticipants)
+	}
+	if m.clearedrelationship_identities {
+		edges = append(edges, user.EdgeRelationshipIdentities)
 	}
 	if m.clearedrelationship_observations {
 		edges = append(edges, user.EdgeRelationshipObservations)
@@ -64777,6 +71366,12 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedrevenue_evidences
 	case user.EdgeCommitments:
 		return m.clearedcommitments
+	case user.EdgeCommitmentEvents:
+		return m.clearedcommitment_events
+	case user.EdgeCommitmentDependencies:
+		return m.clearedcommitment_dependencies
+	case user.EdgeConversationIntelligenceArtifacts:
+		return m.clearedconversation_intelligence_artifacts
 	case user.EdgeRevenueActions:
 		return m.clearedrevenue_actions
 	case user.EdgeRevenueActionRevisions:
@@ -64799,6 +71394,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedmail_signals
 	case user.EdgeRelationshipParticipants:
 		return m.clearedrelationship_participants
+	case user.EdgeRelationshipIdentities:
+		return m.clearedrelationship_identities
 	case user.EdgeRelationshipObservations:
 		return m.clearedrelationship_observations
 	case user.EdgeRelationshipAssertions:
@@ -64905,6 +71502,15 @@ func (m *UserMutation) ResetEdge(name string) error {
 	case user.EdgeCommitments:
 		m.ResetCommitments()
 		return nil
+	case user.EdgeCommitmentEvents:
+		m.ResetCommitmentEvents()
+		return nil
+	case user.EdgeCommitmentDependencies:
+		m.ResetCommitmentDependencies()
+		return nil
+	case user.EdgeConversationIntelligenceArtifacts:
+		m.ResetConversationIntelligenceArtifacts()
+		return nil
 	case user.EdgeRevenueActions:
 		m.ResetRevenueActions()
 		return nil
@@ -64937,6 +71543,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeRelationshipParticipants:
 		m.ResetRelationshipParticipants()
+		return nil
+	case user.EdgeRelationshipIdentities:
+		m.ResetRelationshipIdentities()
 		return nil
 	case user.EdgeRelationshipObservations:
 		m.ResetRelationshipObservations()

@@ -120,6 +120,13 @@ type Executor interface {
 	Execute(ctx context.Context, req ExecRequest) (*ExecResult, error)
 }
 
+// Reconciler performs a read-only provider lookup for a write whose response
+// was lost. found=false never authorizes a resend; the service schedules a
+// later lookup and eventually leaves the action for manual review.
+type Reconciler interface {
+	Reconcile(ctx context.Context, req ExecRequest) (result *ExecResult, found bool, err error)
+}
+
 // notConfiguredExecutor is the default until the Gmail executor is wired: it
 // fails every execution deterministically (never ambiguous — nothing was
 // submitted).
@@ -239,6 +246,7 @@ type RelationshipInput struct {
 	PrimaryEmail  string
 	AccountDomain string
 	Summary       string
+	ResourceRefs  []string
 }
 
 // CreateRelationship records a relationship in the caller's workspace.
@@ -264,6 +272,13 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 	if in.Summary != "" {
 		create.SetSummary(in.Summary)
 	}
+	refs, err := normalizeResourceRefs(in.ResourceRefs)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+	}
+	if len(refs) > 0 {
+		create.SetResourceRefs(refs)
+	}
 	rel, err := create.Save(ctx)
 	if err != nil && isValidationError(err) {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
@@ -283,6 +298,7 @@ func (s *Service) ListRelationships(ctx context.Context, u *ent.User) ([]*ent.Re
 	return s.ListRelationshipsFiltered(ctx, u, RelationshipListFilter{})
 }
 
+// RelationshipListFilter controls relationship list search, paging, and state filters.
 type RelationshipListFilter struct {
 	Query      string
 	Lifecycle  string
@@ -331,7 +347,7 @@ func (s *Service) GetRelationship(ctx context.Context, id uuid.UUID) (*ent.Relat
 		WithCommitments().
 		WithParticipants().
 		WithActions(func(q *ent.RevenueActionQuery) {
-			q.Order(ent.Desc(revenueaction.FieldPriorityScore))
+			q.WithEvidences().Order(ent.Desc(revenueaction.FieldPriorityScore))
 		}).
 		Only(ctx)
 	if ent.IsNotFound(err) {
@@ -1168,6 +1184,32 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 			return nil, err
 		}
 	}
+	if strings.HasPrefix(action.DedupeKey, "mutual-action-plan:") {
+		rel, err := action.Edges.RelationshipOrErr()
+		if err != nil {
+			return nil, err
+		}
+		policy, err := s.ResolveConversationPolicy(ctx, u, rel)
+		if err != nil {
+			return nil, err
+		}
+		decisionTime := s.now().UTC()
+		decision := evaluateGovernanceDecision(
+			policy, "external_share", "none",
+			action.ID.String()+":"+action.RevisionHash+":"+decisionTime.Format(time.RFC3339Nano), decisionTime,
+		)
+		if _, err := appendConversationArtifact(ctx, s.client, ws, u, rel, conversationArtifactInput{
+			Kind: "governance_decision", StableID: decision.DecisionID,
+			Status:     map[bool]string{true: "allowed", false: "blocked"}[decision.Allowed],
+			SubjectRef: action.ID.String(), EffectiveAt: decisionTime,
+			EvidenceRefs: []string{"revenue-action-revision:" + action.RevisionHash}, Payload: decision,
+		}); err != nil {
+			return nil, err
+		}
+		if !decision.Allowed {
+			return nil, fmt.Errorf("%w: %s", ErrBlocked, decision.Reason)
+		}
+	}
 
 	// Idempotent short-circuit (invariant 7): duplicate execute returns the
 	// existing result, never sends twice.
@@ -1246,6 +1288,11 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 			Where(revenueaction.IDEQ(action.ID)).
 			SetExecutionStatus(ExecAmbiguous).
 			SetExecutionError(execErr.Error()).
+			SetReconciliationStatus("pending").
+			SetReconciliationAttempts(0).
+			SetReconciliationNextAt(s.now().UTC()).
+			ClearReconciliationCheckedAt().
+			ClearReconciliationError().
 			Save(ctx); err != nil {
 			return nil, err
 		}

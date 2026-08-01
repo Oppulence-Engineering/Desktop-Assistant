@@ -91,10 +91,16 @@ func (c *Client) ListMessages(ctx context.Context, token, query string, limit in
 // a token carrying the gmail.compose scope. Header values are sanitized to
 // prevent CRLF header injection.
 func (c *Client) CreateDraft(ctx context.Context, token, to, subject, body string) (string, error) {
+	return c.CreateDraftWithMessageID(ctx, token, to, subject, body, "")
+}
+
+// CreateDraftWithMessageID creates a draft carrying a deterministic RFC 822
+// Message-ID. Gmail can later find that marker if the create response is lost.
+func (c *Client) CreateDraftWithMessageID(ctx context.Context, token, to, subject, body, messageID string) (string, error) {
 	if strings.TrimSpace(to) == "" {
 		return "", fmt.Errorf("draft recipient is required")
 	}
-	msg := buildPlainTextMIME(encodeAddressHeader(sanitizeHeader(to)), encodeWord(sanitizeHeader(subject)), body)
+	msg := buildPlainTextMIMEWithMessageID(encodeAddressHeader(sanitizeHeader(to)), encodeWord(sanitizeHeader(subject)), body, messageID)
 	raw := base64.URLEncoding.EncodeToString([]byte(msg))
 	reqBody := map[string]any{"message": map[string]any{"raw": raw}}
 
@@ -114,10 +120,16 @@ func (c *Client) CreateDraft(ctx context.Context, token, to, subject, body strin
 // caller supplies a token carrying gmail.send or gmail.compose. Header values
 // are sanitized to prevent CRLF header injection.
 func (c *Client) SendMessage(ctx context.Context, token, to, subject, body string) (string, error) {
+	return c.SendMessageWithMessageID(ctx, token, to, subject, body, "")
+}
+
+// SendMessageWithMessageID sends a message carrying a deterministic RFC 822
+// Message-ID so an ambiguous result can be reconciled without resending it.
+func (c *Client) SendMessageWithMessageID(ctx context.Context, token, to, subject, body, messageID string) (string, error) {
 	if strings.TrimSpace(to) == "" {
 		return "", fmt.Errorf("message recipient is required")
 	}
-	msg := buildPlainTextMIME(encodeAddressHeader(sanitizeHeader(to)), encodeWord(sanitizeHeader(subject)), body)
+	msg := buildPlainTextMIMEWithMessageID(encodeAddressHeader(sanitizeHeader(to)), encodeWord(sanitizeHeader(subject)), body, messageID)
 	raw := base64.URLEncoding.EncodeToString([]byte(msg))
 	reqBody := map[string]any{"raw": raw}
 
@@ -131,16 +143,36 @@ func (c *Client) SendMessage(ctx context.Context, token, to, subject, body strin
 	return out.ID, nil
 }
 
-// buildPlainTextMIME assembles a minimal RFC 822 plain-text message.
-func buildPlainTextMIME(to, subject, body string) string {
+func buildPlainTextMIMEWithMessageID(to, subject, body, messageID string) string {
 	var b strings.Builder
 	b.WriteString("To: " + to + "\r\n")
 	b.WriteString("Subject: " + subject + "\r\n")
+	if messageID = sanitizeHeader(strings.TrimSpace(messageID)); messageID != "" {
+		b.WriteString("Message-ID: " + messageID + "\r\n")
+	}
 	b.WriteString("MIME-Version: 1.0\r\n")
 	b.WriteString("Content-Type: text/plain; charset=\"UTF-8\"\r\n")
 	b.WriteString("\r\n")
 	b.WriteString(body)
 	return b.String()
+}
+
+// FindMessageByRFC822MessageID searches every mailbox location, including
+// Drafts and Sent, for the deterministic Message-ID used by an action write.
+func (c *Client) FindMessageByRFC822MessageID(ctx context.Context, token, messageID string) (*GmailMessage, error) {
+	messageID = strings.TrimSpace(messageID)
+	if messageID == "" {
+		return nil, fmt.Errorf("gmail reconciliation message id is required")
+	}
+	// Gmail documents rfc822msgid with the RFC 822 angle brackets intact.
+	messages, err := c.ListMessages(ctx, token, "in:anywhere rfc822msgid:"+messageID, 2)
+	if err != nil {
+		return nil, err
+	}
+	if len(messages) == 0 {
+		return nil, nil
+	}
+	return &messages[0], nil
 }
 
 // encodeWord RFC 2047-encodes a header value when it contains non-ASCII (a no-op

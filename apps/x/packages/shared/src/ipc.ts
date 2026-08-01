@@ -49,7 +49,14 @@ import { BrowserStateSchema } from "./browser-control.js";
 import { BillingInfoSchema } from "./billing.js";
 import {
   RelationshipActionSchema,
+  ConversationReviewDecisionKindSchema,
+  CommitmentRecoveryEvaluationSchema,
+  RelationshipCommitmentSchema,
+  MutualActionPlanSchema,
+  MutualActionPlanItemSchema,
+  ConversationDeletionReceiptSchema,
   RelationshipDetailSchema,
+  RelationshipLiveCueSchema,
   RelationshipObservationSchema,
   RelationshipSchema,
   RelationshipSemanticMatchSchema,
@@ -82,7 +89,9 @@ import {
   WhisperDiagnosticResult,
   VoicePrivacySettings,
   DiarizationSettings,
+  TranscriptionRouting,
 } from "./transcription.js";
+import * as meetings from "./meetings.js";
 
 // ============================================================================
 // Runtime Validation Schemas (Single Source of Truth)
@@ -97,6 +106,7 @@ const ConnectorTemplateBlockSchema = z.object({
   category: z.string(),
   requiredScopes: z.array(z.string()).optional(),
   mcpTools: z.array(z.string()).optional(),
+  nativeTools: z.array(z.string()).optional(),
   trustTier: ConnectorTrustTierSchema,
   samplePrompt: z.string().optional(),
 });
@@ -111,10 +121,12 @@ const ConnectorViewSchema = z.object({
   displayName: z.string(),
   description: z.string(),
   mcpUrl: z.string(),
+  transport: z.enum(["mcp", "native"]).optional(),
   authType: z.enum(["oauth", "api_key"]),
   scopes: z.array(z.string()).optional(),
   iconUrl: z.string().optional(),
   mcpTools: z.array(ConnectorMCPToolPolicySchema).optional(),
+  nativeTools: z.array(ConnectorMCPToolPolicySchema).optional(),
   templateBlocks: z.array(ConnectorTemplateBlockSchema).optional(),
   connected: z.boolean(),
   connectedAt: z.string().optional(),
@@ -1111,6 +1123,14 @@ const ipcSchemas = {
         .optional(),
     }),
   },
+  /**
+   * One effective, reader-facing data-flow receipt. Unlike the config endpoint, this
+   * includes capability fallbacks, native-capture overrides, and transcript enrichment.
+   */
+  "transcription:getRouting": {
+    req: z.null(),
+    res: TranscriptionRouting,
+  },
   // Read/write the user's explicit transcription.json (settings UI).
   "transcription:getConfig": {
     req: z.null(),
@@ -1135,6 +1155,8 @@ const ipcSchemas = {
       privacy: VoicePrivacySettings.partial().optional(),
       // RFC 017: on-device diarization settings (incl. the Local-diarization-beta toggle).
       diarization: DiarizationSettings.partial().optional(),
+      // Native dual-track capture: engine, echo cancellation, audio retention.
+      meetings: meetings.MeetingsSettings.partial().optional(),
     }),
     res: TranscriptionConfig,
   },
@@ -1157,6 +1179,340 @@ const ipcSchemas = {
     res: z.object({
       notes: z.string(),
     }),
+  },
+  // ---- Native dual-track capture (oppulence-audiocap sidecar) ----
+  /** Which engine a start would actually use, so the renderer knows whether to run
+   *  its own pipeline or hand off to the sidecar. */
+  "meeting:captureEngine": {
+    req: z.null(),
+    res: z.object({ engine: meetings.MeetingResolvedEngine }),
+  },
+  "meeting:startCapture": {
+    req: z.object({ calendarEventJson: z.string().optional() }),
+    res: z.object({
+      started: z.boolean(),
+      sessionId: z.string().optional(),
+      notePath: z.string().optional(),
+      tracks: z.array(meetings.MeetingTrackId).default([]),
+      warnings: z.array(z.string()).default([]),
+      error: z.string().optional(),
+    }),
+  },
+  /** Open both sources and hold the last few minutes in memory, writing nothing. */
+  "meeting:startStandby": {
+    req: z.object({ calendarEventJson: z.string().optional() }),
+    res: z.object({
+      started: z.boolean(),
+      sessionId: z.string().optional(),
+      tracks: z.array(meetings.MeetingTrackId).default([]),
+      warnings: z.array(z.string()).default([]),
+      error: z.string().optional(),
+    }),
+  },
+  /** Promote a standby session — everything held becomes the start of the recording. */
+  "meeting:beginRecording": {
+    req: z.null(),
+    res: z.object({ started: z.boolean(), error: z.string().optional() }),
+  },
+  "meeting:stopCapture": {
+    req: z.null(),
+    res: z.object({
+      stopped: z.boolean(),
+      sessionId: z.string().optional(),
+      queued: z.boolean().default(false),
+    }),
+  },
+  /**
+   * Publish the renderer fallback's finished text through the same durable
+   * relationship-evidence outbox as native capture. The handler rechecks the explicit
+   * sync setting and resolves a 1:1 counterparty before anything can leave the device.
+   */
+  "meeting:publishRendererEvidence": {
+    req: z.object({
+      sessionId: z.string(),
+      startedAt: z.string(),
+      calendarEventJson: z.string().optional(),
+      provider: TranscriptionProvider,
+      segments: z.array(z.object({ speaker: z.string(), text: z.string() })),
+    }),
+    res: z.object({ queued: z.boolean(), reason: z.string().optional() }),
+  },
+  "meeting:captureStatus": {
+    req: z.null(),
+    res: meetings.MeetingCaptureStatus,
+  },
+  "meeting:listSessions": {
+    req: z.null(),
+    res: z.object({ sessions: z.array(meetings.MeetingSessionSummary) }),
+  },
+  "meeting:retranscribe": {
+    req: z.object({ sessionId: z.string() }),
+    res: z.object({ queued: z.boolean(), error: z.string().optional() }),
+  },
+  "meeting:deleteSession": {
+    /** `deleteNote` is opt-in: the note is the durable artifact and may have been
+     *  edited since, so removing a recording does not take it by default. Only the
+     *  flag crosses the wire — main derives the note path from the session itself, so
+     *  nothing can ask for an arbitrary file to be deleted. */
+    req: z.object({ sessionId: z.string(), deleteNote: z.boolean().default(false) }),
+    res: z.object({ deleted: z.boolean(), noteDeleted: z.boolean().default(false) }),
+  },
+  /** Delete every recording at once. `deleteNotes` is opt-in for the same reason it is
+   *  per-session: the note is the durable artifact and may have been edited since. */
+  "meeting:deleteAllSessions": {
+    req: z.object({ deleteNotes: z.boolean().default(false) }),
+    res: z.object({ deleted: z.number(), notesDeleted: z.number(), failed: z.number() }),
+  },
+  /** What meeting capture is holding on disk, for the privacy tab. */
+  "meeting:storageUsage": {
+    req: z.null(),
+    res: z.object({ sessions: z.number(), bytes: z.number(), dir: z.string() }),
+  },
+  /** The transcript of a finished session, for the setup check and click-to-play. */
+  "meeting:sessionTranscript": {
+    req: z.object({ sessionId: z.string() }),
+    res: z.object({
+      segments: z
+        .array(
+          z.object({
+            speaker: z.enum(["me", "them"]),
+            start_ms: z.number(),
+            end_ms: z.number(),
+            text: z.string(),
+          }),
+        )
+        .default([]),
+      found: z.boolean(),
+    }),
+  },
+  /**
+   * Playable audio for a finished session, if any survived retention.
+   *
+   * `offsetMs` is load-bearing: transcript timings are on the session clock, but each
+   * file starts at its own offset, so seeking needs `session_ms - offsetMs`. Getting
+   * this wrong lands you seconds away from the line you clicked.
+   */
+  "meeting:audioTracks": {
+    req: z.object({ sessionId: z.string() }),
+    res: z.object({
+      tracks: z.array(
+        z.object({
+          track: meetings.MeetingTrackId,
+          url: z.string(),
+          offsetMs: z.number().default(0),
+          durationMs: z.number().default(0),
+        }),
+      ),
+      /** Why there is nothing to play, when there is nothing to play. */
+      reason: z.string().optional(),
+    }),
+  },
+  /**
+   * Unconfirmed commitment proposals for a session.
+   *
+   * Proposals, never facts: nothing reaches the ledger until a human confirms it, and
+   * each one carries the span it came from so "did she really say that?" is answerable
+   * by playing the audio rather than by trusting the row.
+   */
+  "meeting:commitments": {
+    req: z.object({ sessionId: z.string() }),
+    res: z.object({
+      proposals: z
+        .array(
+          z.object({
+            owner: z.enum(["me", "them"]),
+            text: z.string(),
+            due_phrase: z.string().optional(),
+            confidence: z.number(),
+            evidence: z.string(),
+            start_ms: z.number(),
+            end_ms: z.number(),
+          }),
+        )
+        .default([]),
+      /** Display name for `them`, when the meeting was a named 1:1. */
+      counterparty: z.string().optional(),
+    }),
+  },
+  /**
+   * Every unconfirmed proposal across recent sessions.
+   *
+   * The question a user actually has is "what did I agree to lately", not "what did
+   * that one meeting propose" — so this is the shape the UI reads.
+   */
+  "meeting:pendingCommitments": {
+    req: z.null(),
+    res: z.object({
+      sessions: z
+        .array(
+          z.object({
+            sessionId: z.string(),
+            meetingTitle: z.string().optional(),
+            meetingStarted: z.string().optional(),
+            counterparty: z.string().optional(),
+            notePath: z.string().optional(),
+            proposals: z.array(
+              z.object({
+                owner: z.enum(["me", "them"]),
+                text: z.string(),
+                due_phrase: z.string().optional(),
+                confidence: z.number(),
+                evidence: z.string(),
+                start_ms: z.number(),
+                end_ms: z.number(),
+              }),
+            ),
+          }),
+        )
+        .default([]),
+    }),
+  },
+  /** Confirm one proposal into the ledger. Idempotent on the same span. */
+  "meeting:confirmCommitment": {
+    req: z.object({
+      sessionId: z.string(),
+      startMs: z.number(),
+      endMs: z.number(),
+    }),
+    res: z.object({ confirmed: z.boolean(), id: z.string().optional() }),
+  },
+  /** Dismiss a proposal without confirming it. */
+  "meeting:dismissCommitment": {
+    req: z.object({ sessionId: z.string(), startMs: z.number(), endMs: z.number() }),
+    res: z.object({ dismissed: z.boolean() }),
+  },
+  /** The confirmed ledger, newest first. */
+  "meeting:ledger": {
+    req: z.null(),
+    res: z.object({
+      commitments: z
+        .array(
+          z.object({
+            id: z.string(),
+            owner: z.enum(["me", "them"]),
+            owner_label: z.string().optional(),
+            text: z.string(),
+            due_phrase: z.string().optional(),
+            status: z.enum(["open", "done", "dropped"]),
+            confirmed_at: z.string(),
+            session_id: z.string(),
+            note_path: z.string().optional(),
+            meeting_title: z.string().optional(),
+            meeting_started: z.string().optional(),
+            evidence: z.string(),
+            start_ms: z.number(),
+            end_ms: z.number(),
+          }),
+        )
+        .default([]),
+    }),
+  },
+  "meeting:setCommitmentStatus": {
+    req: z.object({ id: z.string(), status: z.enum(["open", "done", "dropped"]) }),
+    res: z.object({ updated: z.boolean() }),
+  },
+  /** The in-progress transcript of the session recording right now. */
+  "meeting:liveTranscript": {
+    req: z.null(),
+    res: z.object({
+      /** False when live transcription is off or nothing is recording. */
+      active: z.boolean(),
+      sessionId: z.string().optional(),
+      counterparty: z.string().optional(),
+      segments: z.array(meetings.MeetingTranscriptSegment).default([]),
+      cues: z.array(RelationshipLiveCueSchema).default([]),
+    }),
+  },
+  /** Ask a question about the meeting in progress. */
+  "meeting:ask": {
+    req: z.object({ question: z.string() }),
+    res: z.object({ answer: z.string(), error: z.string().optional() }),
+  },
+  /** Dismiss a passive cue for this meeting; telemetry contains ids, never text. */
+  "meeting:dismissLiveCue": {
+    req: z.object({ cueId: z.string().min(1) }),
+    res: z.object({ dismissed: z.boolean() }),
+  },
+  "meeting:liveCueFeedback": {
+    req: z.object({
+      cueId: z.string().min(1),
+      outcome: z.enum(["opened", "question_used", "useful", "not_useful"]),
+    }),
+    res: z.object({ recorded: z.boolean() }),
+  },
+  /** Event (ipc.on): new live segments, main → renderer. */
+  "meeting:liveSegments": {
+    req: z.object({
+      sessionId: z.string(),
+      segments: z.array(meetings.MeetingTranscriptSegment),
+    }),
+    res: z.null(),
+  },
+  /** Event (ipc.on): account-history cues resolved for the current meeting. */
+  "meeting:liveCues": {
+    req: z.object({ cues: z.array(RelationshipLiveCueSchema) }),
+    res: z.null(),
+  },
+  /** One-time UI flags — things shown once that must not be shown again. */
+  "ui:getState": {
+    req: z.null(),
+    res: z.object({ meetingCaptureCheckDone: z.boolean().default(false) }),
+  },
+  "ui:setState": {
+    req: z.object({ meetingCaptureCheckDone: z.boolean().optional() }),
+    res: z.object({ meetingCaptureCheckDone: z.boolean().default(false) }),
+  },
+  "meeting:captureDoctor": {
+    /** Probing system-audio access can raise the OS permission dialog, so it only
+     *  happens behind an explicit user action — never on a view mounting. */
+    req: z.object({ probeSystemAudio: z.boolean().default(false) }),
+    res: meetings.MeetingDoctorReport,
+  },
+  /** Whether the fast (Parakeet) transcription models are downloaded. */
+  "meeting:transcriptionModels": {
+    req: z.null(),
+    res: z.object({
+      ready: z.boolean(),
+      model: z.string(),
+      cacheDir: z.string(),
+      /** False when the sidecar is missing, so the UI can explain why it cannot offer it. */
+      available: z.boolean(),
+    }),
+  },
+  /** Download them (~600 MB). Progress arrives on `meeting:modelProgress`. */
+  "meeting:ensureTranscriptionModels": {
+    req: z.null(),
+    res: z.object({ ready: z.boolean(), error: z.string().optional() }),
+  },
+  /** Event (ipc.on): transcription-model download progress, main → renderer. */
+  "meeting:modelProgress": {
+    req: z.object({ fraction: z.number(), phase: z.string() }),
+    res: z.null(),
+  },
+  /** Event (ipc.on): capture state changed. Broadcast on every transition so a
+   *  tray-started session shows up in the window, and vice versa. */
+  "meeting:captureState": {
+    req: meetings.MeetingCaptureStatus,
+    res: z.null(),
+  },
+  /** Event (ipc.on): per-track peak levels while recording, main → renderer. */
+  "meeting:captureLevel": {
+    req: meetings.MeetingLevels,
+    res: z.null(),
+  },
+  /** Event (ipc.on): transcription queue progress, main → renderer. */
+  "meeting:captureProgress": {
+    req: meetings.MeetingTranscriptionProgress,
+    res: z.null(),
+  },
+  /** Event (ipc.on): capture stopped without being asked (sidecar crash, quit). */
+  "meeting:captureEnded": {
+    req: z.object({
+      sessionId: z.string(),
+      crashed: z.boolean(),
+      queued: z.boolean(),
+    }),
+    res: z.null(),
   },
   // Inline task schedule classification
   "export:note": {
@@ -1735,6 +2091,77 @@ const ipcSchemas = {
       reason: z.string().min(1),
     }),
     res: RelationshipSchema,
+  },
+  "relationships:correctConversation": {
+    req: z.object({
+      id: z.string(),
+      reviewItemId: z.string(),
+      correctedValue: z.string().min(1),
+      reason: z.string().min(1),
+    }),
+    res: RelationshipDetailSchema.pick({ relationship: true, intelligence: true }),
+  },
+  "relationships:decideConversation": {
+    req: z.object({
+      id: z.string(),
+      reviewItemId: z.string(),
+      kind: ConversationReviewDecisionKindSchema,
+      correctedValue: z.string().optional(),
+      reason: z.string().optional(),
+      deferUntil: z.string().optional(),
+    }),
+    res: RelationshipDetailSchema.pick({ relationship: true, intelligence: true }),
+  },
+  "relationships:resolveContradiction": {
+    req: z.object({
+      id: z.string(),
+      caseId: z.string(),
+      selectedAssertionId: z.string(),
+      reason: z.string().optional(),
+    }),
+    res: RelationshipDetailSchema.pick({ relationship: true, intelligence: true }),
+  },
+  "relationships:runCommitmentRecovery": {
+    req: z.object({ id: z.string() }),
+    res: z.object({ evaluations: z.array(CommitmentRecoveryEvaluationSchema) }),
+  },
+  "relationships:appendCommitmentTransition": {
+    req: z.object({
+      relationshipId: z.string(),
+      commitmentId: z.string(),
+      kind: z.string(),
+      idempotencyKey: z.string(),
+      reason: z.string().optional(),
+      dueAt: z.string().optional(),
+      action: z.string().optional(),
+      blocker: z.string().optional(),
+      evidenceRefs: z.array(z.string()).optional(),
+    }),
+    res: RelationshipCommitmentSchema,
+  },
+  "relationships:createMutualActionPlan": {
+    req: z.object({ relationshipId: z.string(), commitmentIds: z.array(z.string()).min(1) }),
+    res: MutualActionPlanSchema,
+  },
+  "relationships:reviseMutualActionPlan": {
+    req: z.object({
+      relationshipId: z.string(),
+      planId: z.string(),
+      items: z.array(MutualActionPlanItemSchema).min(1),
+    }),
+    res: MutualActionPlanSchema,
+  },
+  "relationships:approveMutualActionPlan": {
+    req: z.object({ relationshipId: z.string(), planId: z.string() }),
+    res: MutualActionPlanSchema,
+  },
+  "relationships:shareMutualActionPlan": {
+    req: z.object({ relationshipId: z.string(), planId: z.string() }),
+    res: z.object({ plan: MutualActionPlanSchema, responseToken: z.string() }),
+  },
+  "relationships:requestConversationDeletion": {
+    req: z.object({ relationshipId: z.string(), requestId: z.string().min(1) }),
+    res: ConversationDeletionReceiptSchema,
   },
   "relationships:approve": {
     req: z.object({ actionId: z.string(), acceptRisk: z.boolean().optional() }),

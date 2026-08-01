@@ -14,8 +14,10 @@ import (
 // person, so the same email may legitimately have different roles elsewhere.
 type RelationshipParticipant struct{ ent.Schema }
 
+// Mixin adds the shared base fields to relationship participants.
 func (RelationshipParticipant) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
 
+// Fields defines the relationship participant columns.
 func (RelationshipParticipant) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("display_name").NotEmpty(),
@@ -31,6 +33,7 @@ func (RelationshipParticipant) Fields() []ent.Field {
 	}
 }
 
+// Edges defines the relationship participant graph connections.
 func (RelationshipParticipant) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
@@ -42,6 +45,7 @@ func (RelationshipParticipant) Edges() []ent.Edge {
 	}
 }
 
+// Indexes defines lookup and uniqueness constraints for relationship participants.
 func (RelationshipParticipant) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("relationship").Fields("email"),

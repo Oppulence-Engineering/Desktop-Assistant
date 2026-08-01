@@ -24,6 +24,7 @@ export interface IntegrationTemplateBlock {
   category: string;
   requiredScopes?: string[];
   mcpTools?: string[];
+  nativeTools?: string[];
   trustTier: "read" | "write" | "act" | "money-moving";
   samplePrompt?: string;
 }
@@ -33,10 +34,12 @@ export interface IntegrationConnector {
   displayName: string;
   description: string;
   mcpUrl: string;
+  transport?: "mcp" | "native";
   authType: "oauth" | "api_key";
   scopes?: string[];
   iconUrl?: string;
   templateBlocks?: IntegrationTemplateBlock[];
+  nativeTools?: Array<{ name: string; trustTier?: "read" | "write" | "act" | "money-moving" }>;
   connected: boolean;
   connectedAt?: string;
 }

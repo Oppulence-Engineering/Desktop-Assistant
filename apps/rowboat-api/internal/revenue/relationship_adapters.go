@@ -14,6 +14,7 @@ type AdapterEvent struct {
 	SourceAccountID string
 	AccountName     string
 	AccountDomain   string
+	ResourceRefs    []string
 	PrimaryEmail    string
 	EventType       string
 	Summary         string
@@ -24,18 +25,22 @@ type AdapterEvent struct {
 	Facts           map[string]any
 }
 
+// AdaptGmailEvent converts a Gmail adapter event into a relationship observation.
 func AdaptGmailEvent(event AdapterEvent) (RelationshipObservationInput, error) {
 	return adaptRelationshipEvent("gmail", event)
 }
 
+// AdaptCalendarEvent converts a calendar adapter event into a relationship observation.
 func AdaptCalendarEvent(event AdapterEvent) (RelationshipObservationInput, error) {
 	return adaptRelationshipEvent("calendar", event)
 }
 
+// AdaptSlackEvent converts a Slack adapter event into a relationship observation.
 func AdaptSlackEvent(event AdapterEvent) (RelationshipObservationInput, error) {
 	return adaptRelationshipEvent("slack", event)
 }
 
+// AdaptHubSpotEvent converts a HubSpot adapter event into a relationship observation.
 func AdaptHubSpotEvent(event AdapterEvent) (RelationshipObservationInput, error) {
 	return adaptRelationshipEvent("hubspot", event)
 }
@@ -61,6 +66,7 @@ func adaptRelationshipEvent(source string, event AdapterEvent) (RelationshipObse
 		DisplayName:     strings.TrimSpace(event.AccountName),
 		PrimaryEmail:    email,
 		AccountDomain:   domain,
+		ResourceRefs:    event.ResourceRefs,
 		Source:          source,
 		SourceAccountID: strings.TrimSpace(event.SourceAccountID),
 		ExternalID:      strings.TrimSpace(event.ExternalID),

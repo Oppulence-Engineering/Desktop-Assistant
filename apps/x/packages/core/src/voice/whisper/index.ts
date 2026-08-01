@@ -28,4 +28,5 @@ export type { ModelEntry } from "./catalog.js";
 export { WhisperError, codeOf } from "./errors.js";
 export type { WhisperErrorCode } from "./errors.js";
 export { wer, normalize as normalizeForWer } from "./wer.js";
+export { isNonSpeech } from "./non-speech.js";
 export type { StreamPort } from "./streaming.js";

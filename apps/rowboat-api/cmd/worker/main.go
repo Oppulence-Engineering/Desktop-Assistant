@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -31,6 +32,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/hubspotapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
@@ -93,18 +95,28 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 
 	// Run lifecycle metrics are emitted from activities in this process, so the
 	// worker must expose its own /metrics endpoint to be scrapeable.
-	stopMetrics := startMetricsServer(cfg, log)
+	var ready atomic.Bool
+	stopMetrics := startMetricsServer(cfg, log, &ready)
 	defer stopMetrics()
 
-	return runTemporalWorker(ctx, cfg, log, database.Client)
+	return runTemporalWorker(ctx, cfg, log, database.Client, &ready)
 }
 
 // startMetricsServer serves Prometheus /metrics (and a /healthz) on the worker's
 // metrics port and returns a graceful-shutdown func.
-func startMetricsServer(cfg appconfig.Config, log *zap.Logger) func() {
+func startMetricsServer(cfg appconfig.Config, log *zap.Logger, ready *atomic.Bool) func() {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
+	mux.HandleFunc("/readyz", func(w http.ResponseWriter, _ *http.Request) {
+		if ready == nil || !ready.Load() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte(`{"status":"not_ready"}`))
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
@@ -122,7 +134,7 @@ func startMetricsServer(cfg appconfig.Config, log *zap.Logger) func() {
 	}
 }
 
-func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logger, client *ent.Client) error {
+func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logger, client *ent.Client, ready *atomic.Bool) error {
 	log.Info("starting rowboat-api temporal worker",
 		zap.String("build_info", version.String()),
 		zap.String("temporal_address", cfg.TemporalAddress),
@@ -263,6 +275,11 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 			activities.Sealer = deps.Sealer
 			activities.Secrets = deps.Secrets
 			activities.Google = deps.Google
+			activities.HubSpot = hubspotapi.New(client, deps.Sealer, outbound.Policy{
+				Timeout:          15 * time.Second,
+				MaxConcurrent:    64,
+				MaxResponseBytes: 4 << 20,
+			})
 			activities.Slack = slackclient.New(outbound.Policy{
 				Timeout:          15 * time.Second,
 				MaxConcurrent:    64,
@@ -383,6 +400,11 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 				}),
 				Secrets: deps.Secrets,
 				Google:  deps.Google,
+				HubSpot: hubspotapi.New(client, deps.Sealer, outbound.Policy{
+					Timeout:          15 * time.Second,
+					MaxConcurrent:    64,
+					MaxResponseBytes: 4 << 20,
+				}),
 				Web:     websearch.New(cfg.WebSearchAPIURL, cfg.WebSearchAPIKey, outbound.Policy{Timeout: 20 * time.Second, MaxConcurrent: 32, MaxResponseBytes: 4 << 20}),
 				Conduit: faculties.New("conduit", cfg.ConduitBaseURL, cfg.ServiceTokenIssuer, cfg.AgentSigningSecret(), outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20}),
 				Eigen:   faculties.New("eigen", cfg.EigenBaseURL, cfg.ServiceTokenIssuer, cfg.AgentSigningSecret(), outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20}),
@@ -404,6 +426,7 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		}
 
 		if err := w.Start(); err != nil {
+			ready.Store(false)
 			temporalClient.Close()
 			if waitForRetry(ctx, log, "start temporal worker", err, retryAfter) != nil {
 				return nil
@@ -411,6 +434,7 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 			continue
 		}
 
+		ready.Store(true)
 		log.Info("rowboat-api temporal worker started")
 		<-ctx.Done()
 		log.Info("shutdown signal received, stopping worker")
@@ -500,7 +524,11 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 	}
 	llmH.SetOutboundPolicy(llmPolicy)
 	llmH.SetPolicy(llm.Policy{
-		SpendLimits: quota.SpendLimits{Daily: cfg.DailyCreditLimit, Monthly: cfg.MonthlyCreditLimit},
+		AllowedModels:       cfg.LLMAllowedModels,
+		MaxPromptBytes:      cfg.LLMMaxPromptBytes,
+		MaxToolPayloadBytes: cfg.LLMMaxToolPayloadBytes,
+		MaxMessages:         cfg.LLMMaxMessages,
+		SpendLimits:         quota.SpendLimits{Daily: cfg.DailyCreditLimit, Monthly: cfg.MonthlyCreditLimit},
 	})
 
 	return &workerDeps{
@@ -528,7 +556,9 @@ func connectorNames(registry *connectors.Registry) []string {
 	}
 	out := make([]string, 0, len(registry.List()))
 	for _, c := range registry.List() {
-		if c.Name == "" || c.MCPURL == "" {
+		// HubSpot is an SDK-native connector. Never route it through the legacy
+		// placeholder MCP host advertised to older desktop builds.
+		if c.Name == "" || c.Name == "hubspot" || c.MCPURL == "" {
 			continue
 		}
 		out = append(out, c.Name)
@@ -542,7 +572,7 @@ func mcpPolicies(registry *connectors.Registry) []backgroundtaskruntime.MCPConne
 	}
 	out := make([]backgroundtaskruntime.MCPConnectorPolicy, 0, len(registry.List()))
 	for _, c := range registry.List() {
-		if c.Name == "" || c.MCPURL == "" || len(c.MCPTools) == 0 {
+		if c.Name == "" || c.Name == "hubspot" || c.MCPURL == "" || len(c.MCPTools) == 0 {
 			continue
 		}
 		policy := backgroundtaskruntime.MCPConnectorPolicy{Name: c.Name, Tools: make([]backgroundtaskruntime.MCPToolPolicy, 0, len(c.MCPTools))}

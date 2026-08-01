@@ -9,6 +9,7 @@ import {
   MessageChannelMain,
 } from "electron";
 import { ipc } from "@x/shared";
+import { markSecondaryWindow } from "./main-window.js";
 import path from "node:path";
 import os from "node:os";
 import {
@@ -41,6 +42,11 @@ import { ServiceEvent } from "@x/shared/dist/service-events.js";
 import container from "@x/core/dist/di/container.js";
 import { listOnboardingModels } from "@x/core/dist/models/models-dev.js";
 import { testModelConnection } from "@x/core/dist/models/models.js";
+import {
+  getDefaultModelAndProvider,
+  getMeetingNotesModel,
+  resolveProviderConfig,
+} from "@x/core/dist/models/defaults.js";
 import { isSignedIn } from "@x/core/dist/account/account.js";
 import { listGatewayModels } from "@x/core/dist/models/gateway.js";
 import type { IModelConfigRepo } from "@x/core/dist/models/repo.js";
@@ -82,8 +88,12 @@ import {
   executeVoiceCommand,
   type VoiceEmailActions,
 } from "@x/core/dist/voice/commands/executor.js";
+import { buildTranscriptionRouting, providerDataLocation } from "@x/core/dist/voice/routing.js";
 import { WhisperUtilityRunner } from "./whisper-utility-client.js";
-import type { TranscriptionProvider } from "@x/shared/dist/transcription.js";
+import type {
+  TranscriptionDataLocation,
+  TranscriptionProvider,
+} from "@x/shared/dist/transcription.js";
 import {
   classifySchedule,
   processSolomonInstruction,
@@ -127,6 +137,8 @@ import { getInstallationId } from "@x/core/dist/analytics/installation.js";
 import { API_URL } from "@x/core/dist/config/env.js";
 import {
   approveRelationshipRecommendation,
+  correctConversationReview,
+  decideConversationReview,
   correctRelationship,
   createRelationship,
   getRelationship,
@@ -136,6 +148,14 @@ import {
   getRelationshipTimeline,
   listRelationships,
   rejectRelationshipRecommendation,
+  resolveRelationshipContradiction,
+  runCommitmentRecovery,
+  appendCommitmentTransition,
+  createMutualActionPlan,
+  reviseMutualActionPlan,
+  approveMutualActionPlan,
+  shareMutualActionPlan,
+  requestConversationDeletion,
   searchRelationships,
 } from "@x/core/dist/relationships/client.js";
 import {
@@ -172,6 +192,10 @@ import {
 } from "@x/core/dist/background-tasks/fileops.js";
 import { browserIpcHandlers } from "./browser/ipc.js";
 import { mailboxIpcHandlers } from "./ipc/mailbox.js";
+import { createMeetingIpcHandlers } from "./ipc/meetings.js";
+import { nativeCaptureAvailable, resolveCaptureEngine } from "./meeting-capture.js";
+import { getMeetingController } from "./meeting-controller.js";
+import { initMeetingTray } from "./tray.js";
 import { ensureAgentSlackAvailable } from "./agent-slack.js";
 
 /**
@@ -626,6 +650,33 @@ function getWhisper(): WhisperService {
   return whisperService;
 }
 
+/**
+ * Bring up native meeting capture: a menu-bar item so a recording is visible and
+ * stoppable with no window open, and a rescan for sessions that finished but were
+ * never transcribed.
+ *
+ * Lives here so `getWhisper` stays private — the controller only needs the facade.
+ * Skipped entirely when the sidecar can't run, in which case meetings record through
+ * the renderer pipeline and there is nothing for a tray to control.
+ */
+export function initMeetingCapture(): void {
+  const controller = getMeetingController({ whisper: getWhisper });
+  if (!nativeCaptureAvailable()) {
+    console.log("[meeting] native capture unavailable — using the in-app pipeline");
+    // Renderer-only platforms still own the shared evidence outbox. Refreshing the
+    // controller at launch retries consented items left by an offline prior session.
+    void controller
+      .refreshSettings()
+      .catch((err) => console.error("[meeting] evidence retry failed:", err));
+    return;
+  }
+  initMeetingTray(controller);
+  void controller
+    .refreshSettings()
+    .then(() => controller.resumePending())
+    .catch((err) => console.error("[meeting] resume failed:", err));
+}
+
 /** On-device transcription is viable only when the binary exists AND the device is capable (§13). */
 async function localTranscriptionSupported(): Promise<boolean> {
   configureWhisperBinary(whisperBinaryPath());
@@ -772,6 +823,69 @@ async function resolveMeetingProviderMain(): Promise<{
   });
 }
 
+/**
+ * The effective data-flow receipt used by both Transcription and Privacy settings.
+ *
+ * This is intentionally assembled in main: only main can see all four inputs that
+ * change the answer — account/provider tiering, the packaged native-capture helper,
+ * persisted transcription settings, and the configured language-model endpoint.
+ */
+async function transcriptionRoutingMain() {
+  const cfg = await voice.getTranscriptionConfig();
+  const [effectiveVoiceProvider, effectiveMeeting, modelDefaults, meetingModel] = await Promise.all(
+    [
+      resolveVoiceProviderMain(),
+      resolveMeetingProviderMain(),
+      getDefaultModelAndProvider().catch(() => ({ provider: "unconfigured", model: "" })),
+      getMeetingNotesModel().catch(() => ""),
+    ],
+  );
+
+  let enrichmentLocation: TranscriptionDataLocation = "unknown";
+  if (modelDefaults.provider !== "unconfigured") {
+    try {
+      const provider = await resolveProviderConfig(modelDefaults.provider);
+      enrichmentLocation = providerDataLocation({
+        flavor: provider.flavor,
+        baseURL: provider.baseURL,
+      });
+    } catch {
+      enrichmentLocation = "unknown";
+    }
+  }
+
+  const captureEngine = resolveCaptureEngine(cfg.meetings.captureEngine);
+  const nativeProcessing = captureEngine === "native" && cfg.meetings.transcribeOnStop;
+  return buildTranscriptionRouting({
+    localOnly: cfg.privacy.localOnly,
+    configuredVoiceProvider: cfg.voiceProvider,
+    effectiveVoiceProvider,
+    configuredMeetingProvider: cfg.meetingProvider,
+    effectiveRendererMeetingProvider: effectiveMeeting.provider,
+    meetingProviderReason: effectiveMeeting.reason,
+    captureEngine,
+    nativeTranscriptionEngine: cfg.meetings.transcriptionEngine,
+    enrichment: {
+      provider: modelDefaults.provider,
+      model: meetingModel || modelDefaults.model,
+      location: enrichmentLocation,
+      // Renderer meetings summarize on stop. Native meetings do so as part of the
+      // post-stop queue, which can be disabled explicitly.
+      summariesEnabled: captureEngine === "renderer" || nativeProcessing,
+      commitmentsEnabled: nativeProcessing && cfg.meetings.extractCommitments !== false,
+      liveQuestionsEnabled: captureEngine === "native" && cfg.meetings.liveTranscript === true,
+    },
+    relationshipEvidence: {
+      enabled: cfg.meetings.syncRelationshipEvidence === true,
+      location: providerDataLocation({
+        flavor: "openai-compatible",
+        baseURL: API_URL,
+      }),
+      destination: "Oppulence relationship state",
+    },
+  });
+}
+
 export function setupIpcHandlers() {
   // Forward knowledge commit events to renderer for panel refresh
   versionHistory.onCommit(() => emitKnowledgeCommitEvent());
@@ -806,6 +920,39 @@ export function setupIpcHandlers() {
         value: args.value,
         reason: args.reason,
       }),
+    "relationships:correctConversation": async (_event, args) =>
+      correctConversationReview(args.id, {
+        reviewItemId: args.reviewItemId,
+        correctedValue: args.correctedValue,
+        reason: args.reason,
+      }),
+    "relationships:decideConversation": async (_event, args) =>
+      decideConversationReview(args.id, {
+        reviewItemId: args.reviewItemId,
+        kind: args.kind,
+        correctedValue: args.correctedValue,
+        reason: args.reason,
+        deferUntil: args.deferUntil,
+      }),
+    "relationships:resolveContradiction": async (_event, args) =>
+      resolveRelationshipContradiction(args.id, args.caseId, {
+        selectedAssertionId: args.selectedAssertionId,
+        reason: args.reason,
+      }),
+    "relationships:runCommitmentRecovery": async (_event, args) =>
+      runCommitmentRecovery(args.id),
+    "relationships:appendCommitmentTransition": async (_event, args) =>
+      appendCommitmentTransition(args.relationshipId, args.commitmentId, args),
+    "relationships:createMutualActionPlan": async (_event, args) =>
+      createMutualActionPlan(args.relationshipId, args.commitmentIds),
+    "relationships:reviseMutualActionPlan": async (_event, args) =>
+      reviseMutualActionPlan(args.relationshipId, args.planId, args.items),
+    "relationships:approveMutualActionPlan": async (_event, args) =>
+      approveMutualActionPlan(args.relationshipId, args.planId),
+    "relationships:shareMutualActionPlan": async (_event, args) =>
+      shareMutualActionPlan(args.relationshipId, args.planId),
+    "relationships:requestConversationDeletion": async (_event, args) =>
+      requestConversationDeletion(args.relationshipId, args.requestId),
     "relationships:approve": async (_event, args) =>
       approveRelationshipRecommendation(args.actionId, args.acceptRisk),
     "relationships:reject": async (_event, args) =>
@@ -1329,6 +1476,10 @@ export function setupIpcHandlers() {
             sandbox: true,
           },
         });
+        // Not an app window. Without this it counts in `appWindows()`, so closing it
+        // could quit the app on Windows/Linux and, while a PDF renders, a dock click
+        // would decline to re-create the real window.
+        markSecondaryWindow(hiddenWin);
         await hiddenWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
         // Small delay to ensure CSS/fonts render
         await new Promise((resolve) => setTimeout(resolve, 300));
@@ -1520,18 +1671,27 @@ export function setupIpcHandlers() {
     "transcription:getMeetingProvider": async () => {
       return resolveMeetingProviderMain();
     },
+    "transcription:getRouting": async () => {
+      return transcriptionRoutingMain();
+    },
     "transcription:getConfig": async () => {
       return voice.getTranscriptionConfig();
     },
     "transcription:setConfig": async (_event, patch) => {
-      return voice.setTranscriptionConfig({
+      const next = await voice.setTranscriptionConfig({
         voiceProvider: patch.voiceProvider,
         meetingProvider: patch.meetingProvider,
         ...(patch.model ? { whisper: { model: patch.model } } : {}),
         privacy: patch.privacy,
         // RFC 017: persist the on-device diarization beta toggle + tunables.
         ...(patch.diarization ? { diarization: patch.diarization } : {}),
+        // Native capture: engine choice, echo cancellation, audio retention.
+        ...(patch.meetings ? { meetings: patch.meetings } : {}),
       });
+      if (patch.meetings) {
+        await getMeetingController({ whisper: getWhisper }).refreshSettings();
+      }
+      return next;
     },
     "notifications:getConfig": async () => {
       return getNotificationsConfig();
@@ -1871,5 +2031,7 @@ export function setupIpcHandlers() {
     ...browserIpcHandlers,
     // Provider-neutral mailbox handlers (email-001..004)
     ...mailboxIpcHandlers,
+    // Native dual-track meeting capture (oppulence-audiocap sidecar)
+    ...createMeetingIpcHandlers({ whisper: getWhisper }),
   });
 }

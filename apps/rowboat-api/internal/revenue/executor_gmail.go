@@ -2,6 +2,7 @@ package revenue
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"net"
@@ -17,6 +18,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/hubspotapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 )
 
@@ -73,17 +75,42 @@ func (e *GmailExecutor) Execute(ctx context.Context, req ExecRequest) (*ExecResu
 	}
 
 	if req.Mode == ExecModeSend {
-		id, err := e.google.SendMessage(ctx, token, to, action.ProposedSubject, action.ProposedMessage)
+		id, err := e.google.SendMessageWithMessageID(ctx, token, to, action.ProposedSubject, action.ProposedMessage, gmailActionMessageID(req.IdempotencyKey))
 		if err != nil {
 			return nil, classifySubmitError(err)
 		}
 		return &ExecResult{ProviderMessageID: id}, nil
 	}
-	id, err := e.google.CreateDraft(ctx, token, to, action.ProposedSubject, action.ProposedMessage)
+	id, err := e.google.CreateDraftWithMessageID(ctx, token, to, action.ProposedSubject, action.ProposedMessage, gmailActionMessageID(req.IdempotencyKey))
 	if err != nil {
 		return nil, classifySubmitError(err)
 	}
 	return &ExecResult{ProviderMessageID: id}, nil
+}
+
+// Reconcile searches Gmail by the deterministic RFC 822 Message-ID embedded
+// in the one permitted write. It does not call drafts.create or messages.send.
+func (e *GmailExecutor) Reconcile(ctx context.Context, req ExecRequest) (*ExecResult, bool, error) {
+	if strings.TrimSpace(req.IdempotencyKey) == "" {
+		return nil, false, errors.New("revenue: Gmail reconciliation idempotency key is required")
+	}
+	_, token, err := e.connection(ctx, req.UserID, scopeGmailReadonly)
+	if err != nil {
+		return nil, false, err
+	}
+	message, err := e.google.FindMessageByRFC822MessageID(ctx, token, gmailActionMessageID(req.IdempotencyKey))
+	if err != nil {
+		return nil, false, err
+	}
+	if message == nil {
+		return nil, false, nil
+	}
+	return &ExecResult{ProviderMessageID: message.ID, ProviderThreadID: message.ThreadID}, true, nil
+}
+
+func gmailActionMessageID(idempotencyKey string) string {
+	sum := sha256.Sum256([]byte(idempotencyKey))
+	return fmt.Sprintf("<oppulence-%x@actions.oppulence.ai>", sum[:16])
 }
 
 // SweepThreads implements ThreadSweeper for the revenue leak scan (RFC 030
@@ -208,6 +235,17 @@ func classifySubmitError(err error) error {
 	if errors.As(err, &nerr) && nerr.Timeout() {
 		return fmt.Errorf("%w: %v", ErrAmbiguous, err)
 	}
+	if status, ok := hubspotapi.StatusCode(err); ok && status >= 500 {
+		return fmt.Errorf("%w: %v", ErrAmbiguous, err)
+	}
+	// Official provider SDKs such as slack-go expose transport status through
+	// this small interface. A 5xx means the write reached the provider boundary
+	// but does not prove whether it committed, so a blind retry could duplicate
+	// a message or activity.
+	var statusErr interface{ HTTPStatusCode() int }
+	if errors.As(err, &statusErr) && statusErr.HTTPStatusCode() >= 500 {
+		return fmt.Errorf("%w: %v", ErrAmbiguous, err)
+	}
 	// A 5xx answer proves the request arrived but not whether it was applied;
 	// a 4xx is a definite rejection.
 	if m := googleStatusRe.FindStringSubmatch(err.Error()); m != nil && strings.HasPrefix(m[1], "5") {
@@ -215,3 +253,5 @@ func classifySubmitError(err error) error {
 	}
 	return err
 }
+
+var _ Reconciler = (*GmailExecutor)(nil)
