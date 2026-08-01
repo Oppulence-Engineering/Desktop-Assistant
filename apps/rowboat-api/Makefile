@@ -30,6 +30,14 @@ test:
 vet:
 	go vet ./...
 
+.PHONY: tfa-release-register-validate
+tfa-release-register-validate:
+	go run ./cmd/tfa-release-check --register ../../docs/trustworthy-first-account-beta/release-evidence.json --stage validate
+
+.PHONY: tfa-release-governed-check
+tfa-release-governed-check:
+	go run ./cmd/tfa-release-check --register ../../docs/trustworthy-first-account-beta/release-evidence.json --stage design_partner_governed_action
+
 .PHONY: lint
 lint:
 	golangci-lint run ./...

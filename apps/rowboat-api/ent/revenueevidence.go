@@ -41,6 +41,8 @@ type RevenueEvidence struct {
 	Excerpt string `json:"-"`
 	// PayloadCiphertext holds the value of the "payload_ciphertext" field.
 	PayloadCiphertext []byte `json:"-"`
+	// EncryptionKeyVersion holds the value of the "encryption_key_version" field.
+	EncryptionKeyVersion int `json:"encryption_key_version,omitempty"`
 	// OccurredAt holds the value of the "occurred_at" field.
 	OccurredAt time.Time `json:"occurred_at,omitempty"`
 	// ObservedAt holds the value of the "observed_at" field.
@@ -134,6 +136,8 @@ func (*RevenueEvidence) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case revenueevidence.FieldPayloadCiphertext, revenueevidence.FieldExternalEvidenceRefs:
 			values[i] = new([]byte)
+		case revenueevidence.FieldEncryptionKeyVersion:
+			values[i] = new(sql.NullInt64)
 		case revenueevidence.FieldSource, revenueevidence.FieldSourceAccountID, revenueevidence.FieldSourceRecordID, revenueevidence.FieldSourceMessageID, revenueevidence.FieldSourceURI, revenueevidence.FieldContentHash, revenueevidence.FieldExcerpt:
 			values[i] = new(sql.NullString)
 		case revenueevidence.FieldCreatedAt, revenueevidence.FieldUpdatedAt, revenueevidence.FieldOccurredAt, revenueevidence.FieldObservedAt:
@@ -224,6 +228,12 @@ func (_m *RevenueEvidence) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field payload_ciphertext", values[i])
 			} else if value != nil {
 				_m.PayloadCiphertext = *value
+			}
+		case revenueevidence.FieldEncryptionKeyVersion:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field encryption_key_version", values[i])
+			} else if value.Valid {
+				_m.EncryptionKeyVersion = int(value.Int64)
 			}
 		case revenueevidence.FieldOccurredAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -347,6 +357,9 @@ func (_m *RevenueEvidence) String() string {
 	builder.WriteString("excerpt=<sensitive>")
 	builder.WriteString(", ")
 	builder.WriteString("payload_ciphertext=<sensitive>")
+	builder.WriteString(", ")
+	builder.WriteString("encryption_key_version=")
+	builder.WriteString(fmt.Sprintf("%v", _m.EncryptionKeyVersion))
 	builder.WriteString(", ")
 	builder.WriteString("occurred_at=")
 	builder.WriteString(_m.OccurredAt.Format(time.ANSIC))

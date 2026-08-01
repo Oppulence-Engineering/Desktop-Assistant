@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -28,14 +29,60 @@ type RelationshipSourceStatus struct {
 	Source string `json:"source,omitempty"`
 	// SourceAccountID holds the value of the "source_account_id" field.
 	SourceAccountID string `json:"source_account_id,omitempty"`
+	// ConsentingActorID holds the value of the "consenting_actor_id" field.
+	ConsentingActorID *uuid.UUID `json:"consenting_actor_id,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
+	// BackfillPhase holds the value of the "backfill_phase" field.
+	BackfillPhase string `json:"backfill_phase,omitempty"`
+	// BackfillCompleted holds the value of the "backfill_completed" field.
+	BackfillCompleted int `json:"backfill_completed,omitempty"`
+	// BackfillTotal holds the value of the "backfill_total" field.
+	BackfillTotal int `json:"backfill_total,omitempty"`
+	// Watermark holds the value of the "watermark" field.
+	Watermark string `json:"-"`
+	// SyncStartedAt holds the value of the "sync_started_at" field.
+	SyncStartedAt *time.Time `json:"sync_started_at,omitempty"`
+	// AuthorizationStartedAt holds the value of the "authorization_started_at" field.
+	AuthorizationStartedAt *time.Time `json:"authorization_started_at,omitempty"`
+	// AuthorizedAt holds the value of the "authorized_at" field.
+	AuthorizedAt *time.Time `json:"authorized_at,omitempty"`
+	// BackfillCompletedAt holds the value of the "backfill_completed_at" field.
+	BackfillCompletedAt *time.Time `json:"backfill_completed_at,omitempty"`
+	// LastFailedSyncAt holds the value of the "last_failed_sync_at" field.
+	LastFailedSyncAt *time.Time `json:"last_failed_sync_at,omitempty"`
+	// DisconnectedAt holds the value of the "disconnected_at" field.
+	DisconnectedAt *time.Time `json:"disconnected_at,omitempty"`
+	// RevokedAt holds the value of the "revoked_at" field.
+	RevokedAt *time.Time `json:"revoked_at,omitempty"`
+	// LastSyncAt holds the value of the "last_sync_at" field.
+	LastSyncAt *time.Time `json:"last_sync_at,omitempty"`
+	// ExpectedCadenceSeconds holds the value of the "expected_cadence_seconds" field.
+	ExpectedCadenceSeconds int64 `json:"expected_cadence_seconds,omitempty"`
+	// LagSeconds holds the value of the "lag_seconds" field.
+	LagSeconds int64 `json:"lag_seconds,omitempty"`
+	// RequiredScopes holds the value of the "required_scopes" field.
+	RequiredScopes []string `json:"required_scopes,omitempty"`
+	// GrantedScopes holds the value of the "granted_scopes" field.
+	GrantedScopes []string `json:"granted_scopes,omitempty"`
+	// MissingScopes holds the value of the "missing_scopes" field.
+	MissingScopes []string `json:"missing_scopes,omitempty"`
+	// ErrorCode holds the value of the "error_code" field.
+	ErrorCode string `json:"error_code,omitempty"`
+	// RetryCount holds the value of the "retry_count" field.
+	RetryCount int `json:"retry_count,omitempty"`
+	// NextRetryAt holds the value of the "next_retry_at" field.
+	NextRetryAt *time.Time `json:"next_retry_at,omitempty"`
+	// Completeness holds the value of the "completeness" field.
+	Completeness string `json:"completeness,omitempty"`
 	// Cursor holds the value of the "cursor" field.
 	Cursor string `json:"-"`
 	// LastSuccessAt holds the value of the "last_success_at" field.
 	LastSuccessAt *time.Time `json:"last_success_at,omitempty"`
 	// LastObservationAt holds the value of the "last_observation_at" field.
 	LastObservationAt *time.Time `json:"last_observation_at,omitempty"`
+	// LastProviderEventAt holds the value of the "last_provider_event_at" field.
+	LastProviderEventAt *time.Time `json:"last_provider_event_at,omitempty"`
 	// LastError holds the value of the "last_error" field.
 	LastError string `json:"-"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -86,9 +133,15 @@ func (*RelationshipSourceStatus) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case relationshipsourcestatus.FieldSource, relationshipsourcestatus.FieldSourceAccountID, relationshipsourcestatus.FieldStatus, relationshipsourcestatus.FieldCursor, relationshipsourcestatus.FieldLastError:
+		case relationshipsourcestatus.FieldConsentingActorID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case relationshipsourcestatus.FieldRequiredScopes, relationshipsourcestatus.FieldGrantedScopes, relationshipsourcestatus.FieldMissingScopes:
+			values[i] = new([]byte)
+		case relationshipsourcestatus.FieldBackfillCompleted, relationshipsourcestatus.FieldBackfillTotal, relationshipsourcestatus.FieldExpectedCadenceSeconds, relationshipsourcestatus.FieldLagSeconds, relationshipsourcestatus.FieldRetryCount:
+			values[i] = new(sql.NullInt64)
+		case relationshipsourcestatus.FieldSource, relationshipsourcestatus.FieldSourceAccountID, relationshipsourcestatus.FieldStatus, relationshipsourcestatus.FieldBackfillPhase, relationshipsourcestatus.FieldWatermark, relationshipsourcestatus.FieldErrorCode, relationshipsourcestatus.FieldCompleteness, relationshipsourcestatus.FieldCursor, relationshipsourcestatus.FieldLastError:
 			values[i] = new(sql.NullString)
-		case relationshipsourcestatus.FieldCreatedAt, relationshipsourcestatus.FieldUpdatedAt, relationshipsourcestatus.FieldLastSuccessAt, relationshipsourcestatus.FieldLastObservationAt:
+		case relationshipsourcestatus.FieldCreatedAt, relationshipsourcestatus.FieldUpdatedAt, relationshipsourcestatus.FieldSyncStartedAt, relationshipsourcestatus.FieldAuthorizationStartedAt, relationshipsourcestatus.FieldAuthorizedAt, relationshipsourcestatus.FieldBackfillCompletedAt, relationshipsourcestatus.FieldLastFailedSyncAt, relationshipsourcestatus.FieldDisconnectedAt, relationshipsourcestatus.FieldRevokedAt, relationshipsourcestatus.FieldLastSyncAt, relationshipsourcestatus.FieldNextRetryAt, relationshipsourcestatus.FieldLastSuccessAt, relationshipsourcestatus.FieldLastObservationAt, relationshipsourcestatus.FieldLastProviderEventAt:
 			values[i] = new(sql.NullTime)
 		case relationshipsourcestatus.FieldID:
 			values[i] = new(uuid.UUID)
@@ -141,11 +194,159 @@ func (_m *RelationshipSourceStatus) assignValues(columns []string, values []any)
 			} else if value.Valid {
 				_m.SourceAccountID = value.String
 			}
+		case relationshipsourcestatus.FieldConsentingActorID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field consenting_actor_id", values[i])
+			} else if value.Valid {
+				_m.ConsentingActorID = new(uuid.UUID)
+				*_m.ConsentingActorID = *value.S.(*uuid.UUID)
+			}
 		case relationshipsourcestatus.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				_m.Status = value.String
+			}
+		case relationshipsourcestatus.FieldBackfillPhase:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field backfill_phase", values[i])
+			} else if value.Valid {
+				_m.BackfillPhase = value.String
+			}
+		case relationshipsourcestatus.FieldBackfillCompleted:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field backfill_completed", values[i])
+			} else if value.Valid {
+				_m.BackfillCompleted = int(value.Int64)
+			}
+		case relationshipsourcestatus.FieldBackfillTotal:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field backfill_total", values[i])
+			} else if value.Valid {
+				_m.BackfillTotal = int(value.Int64)
+			}
+		case relationshipsourcestatus.FieldWatermark:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field watermark", values[i])
+			} else if value.Valid {
+				_m.Watermark = value.String
+			}
+		case relationshipsourcestatus.FieldSyncStartedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field sync_started_at", values[i])
+			} else if value.Valid {
+				_m.SyncStartedAt = new(time.Time)
+				*_m.SyncStartedAt = value.Time
+			}
+		case relationshipsourcestatus.FieldAuthorizationStartedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field authorization_started_at", values[i])
+			} else if value.Valid {
+				_m.AuthorizationStartedAt = new(time.Time)
+				*_m.AuthorizationStartedAt = value.Time
+			}
+		case relationshipsourcestatus.FieldAuthorizedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field authorized_at", values[i])
+			} else if value.Valid {
+				_m.AuthorizedAt = new(time.Time)
+				*_m.AuthorizedAt = value.Time
+			}
+		case relationshipsourcestatus.FieldBackfillCompletedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field backfill_completed_at", values[i])
+			} else if value.Valid {
+				_m.BackfillCompletedAt = new(time.Time)
+				*_m.BackfillCompletedAt = value.Time
+			}
+		case relationshipsourcestatus.FieldLastFailedSyncAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field last_failed_sync_at", values[i])
+			} else if value.Valid {
+				_m.LastFailedSyncAt = new(time.Time)
+				*_m.LastFailedSyncAt = value.Time
+			}
+		case relationshipsourcestatus.FieldDisconnectedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field disconnected_at", values[i])
+			} else if value.Valid {
+				_m.DisconnectedAt = new(time.Time)
+				*_m.DisconnectedAt = value.Time
+			}
+		case relationshipsourcestatus.FieldRevokedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field revoked_at", values[i])
+			} else if value.Valid {
+				_m.RevokedAt = new(time.Time)
+				*_m.RevokedAt = value.Time
+			}
+		case relationshipsourcestatus.FieldLastSyncAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field last_sync_at", values[i])
+			} else if value.Valid {
+				_m.LastSyncAt = new(time.Time)
+				*_m.LastSyncAt = value.Time
+			}
+		case relationshipsourcestatus.FieldExpectedCadenceSeconds:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field expected_cadence_seconds", values[i])
+			} else if value.Valid {
+				_m.ExpectedCadenceSeconds = value.Int64
+			}
+		case relationshipsourcestatus.FieldLagSeconds:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field lag_seconds", values[i])
+			} else if value.Valid {
+				_m.LagSeconds = value.Int64
+			}
+		case relationshipsourcestatus.FieldRequiredScopes:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field required_scopes", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.RequiredScopes); err != nil {
+					return fmt.Errorf("unmarshal field required_scopes: %w", err)
+				}
+			}
+		case relationshipsourcestatus.FieldGrantedScopes:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field granted_scopes", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.GrantedScopes); err != nil {
+					return fmt.Errorf("unmarshal field granted_scopes: %w", err)
+				}
+			}
+		case relationshipsourcestatus.FieldMissingScopes:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field missing_scopes", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.MissingScopes); err != nil {
+					return fmt.Errorf("unmarshal field missing_scopes: %w", err)
+				}
+			}
+		case relationshipsourcestatus.FieldErrorCode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field error_code", values[i])
+			} else if value.Valid {
+				_m.ErrorCode = value.String
+			}
+		case relationshipsourcestatus.FieldRetryCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field retry_count", values[i])
+			} else if value.Valid {
+				_m.RetryCount = int(value.Int64)
+			}
+		case relationshipsourcestatus.FieldNextRetryAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field next_retry_at", values[i])
+			} else if value.Valid {
+				_m.NextRetryAt = new(time.Time)
+				*_m.NextRetryAt = value.Time
+			}
+		case relationshipsourcestatus.FieldCompleteness:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field completeness", values[i])
+			} else if value.Valid {
+				_m.Completeness = value.String
 			}
 		case relationshipsourcestatus.FieldCursor:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -166,6 +367,13 @@ func (_m *RelationshipSourceStatus) assignValues(columns []string, values []any)
 			} else if value.Valid {
 				_m.LastObservationAt = new(time.Time)
 				*_m.LastObservationAt = value.Time
+			}
+		case relationshipsourcestatus.FieldLastProviderEventAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field last_provider_event_at", values[i])
+			} else if value.Valid {
+				_m.LastProviderEventAt = new(time.Time)
+				*_m.LastProviderEventAt = value.Time
 			}
 		case relationshipsourcestatus.FieldLastError:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -245,8 +453,93 @@ func (_m *RelationshipSourceStatus) String() string {
 	builder.WriteString("source_account_id=")
 	builder.WriteString(_m.SourceAccountID)
 	builder.WriteString(", ")
+	if v := _m.ConsentingActorID; v != nil {
+		builder.WriteString("consenting_actor_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)
+	builder.WriteString(", ")
+	builder.WriteString("backfill_phase=")
+	builder.WriteString(_m.BackfillPhase)
+	builder.WriteString(", ")
+	builder.WriteString("backfill_completed=")
+	builder.WriteString(fmt.Sprintf("%v", _m.BackfillCompleted))
+	builder.WriteString(", ")
+	builder.WriteString("backfill_total=")
+	builder.WriteString(fmt.Sprintf("%v", _m.BackfillTotal))
+	builder.WriteString(", ")
+	builder.WriteString("watermark=<sensitive>")
+	builder.WriteString(", ")
+	if v := _m.SyncStartedAt; v != nil {
+		builder.WriteString("sync_started_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.AuthorizationStartedAt; v != nil {
+		builder.WriteString("authorization_started_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.AuthorizedAt; v != nil {
+		builder.WriteString("authorized_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.BackfillCompletedAt; v != nil {
+		builder.WriteString("backfill_completed_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.LastFailedSyncAt; v != nil {
+		builder.WriteString("last_failed_sync_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.DisconnectedAt; v != nil {
+		builder.WriteString("disconnected_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.RevokedAt; v != nil {
+		builder.WriteString("revoked_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.LastSyncAt; v != nil {
+		builder.WriteString("last_sync_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("expected_cadence_seconds=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ExpectedCadenceSeconds))
+	builder.WriteString(", ")
+	builder.WriteString("lag_seconds=")
+	builder.WriteString(fmt.Sprintf("%v", _m.LagSeconds))
+	builder.WriteString(", ")
+	builder.WriteString("required_scopes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RequiredScopes))
+	builder.WriteString(", ")
+	builder.WriteString("granted_scopes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.GrantedScopes))
+	builder.WriteString(", ")
+	builder.WriteString("missing_scopes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.MissingScopes))
+	builder.WriteString(", ")
+	builder.WriteString("error_code=")
+	builder.WriteString(_m.ErrorCode)
+	builder.WriteString(", ")
+	builder.WriteString("retry_count=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RetryCount))
+	builder.WriteString(", ")
+	if v := _m.NextRetryAt; v != nil {
+		builder.WriteString("next_retry_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("completeness=")
+	builder.WriteString(_m.Completeness)
 	builder.WriteString(", ")
 	builder.WriteString("cursor=<sensitive>")
 	builder.WriteString(", ")
@@ -257,6 +550,11 @@ func (_m *RelationshipSourceStatus) String() string {
 	builder.WriteString(", ")
 	if v := _m.LastObservationAt; v != nil {
 		builder.WriteString("last_observation_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.LastProviderEventAt; v != nil {
+		builder.WriteString("last_provider_event_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")

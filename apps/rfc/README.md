@@ -105,6 +105,14 @@ quality-and-follow-through program covering semantic extraction, bilateral
 commitments, review, contradiction resolution, live coaching, mutual action
 plans, recovery, governed learning, capture reliability, and privacy policy.
 
+Delivery companion:
+[RFC 038](./038-trustworthy-first-account-beta.md) composes the relationship
+model, production observers, identity review, Account Mission Control,
+portfolio attention, governed actions, conversation evidence, and outcome
+learning into the first production beta. Its activation contract is a fresh
+workspace reaching one trustworthy account and completing the full
+evidence-to-outcome loop without operator-only setup.
+
 ## Cloud workflow RFCs
 
 | #                                                      | Title                           | Layer           | What it adds                                                                                                                    |

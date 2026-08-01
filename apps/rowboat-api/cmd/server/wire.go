@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -315,7 +316,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}, log)
 	connectorsH.SetOutboundPolicy(vendorPolicy)
 	connectorsH.SetRefreshDedup(refreshCache, sealer)
-	hubspotH := hubspotapi.NewHandler(hubspotapi.New(client, sealer, vendorPolicy))
+	hubspotClient := hubspotapi.New(client, sealer, vendorPolicy)
+	hubspotH := hubspotapi.NewHandler(hubspotClient)
 
 	plainLabels, err := feedback.ParseLabelMap(cfg.PlainLabelTypeIDs)
 	if err != nil {
@@ -396,14 +398,36 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		revenue.NewHubSpotExecutor(client, sealer, vendorPolicy),
 	)
 	revenueSvc := revenue.NewService(client, facade, routedExec, log)
+	revenueSvc.SetEvidenceSealer(sealer)
 	// Provider write timeouts are reconciled continuously through read-only
 	// SDK/API lookups. This loop is always on because it is part of exactly-once
 	// execution safety, not an optional recommendation feature.
 	go func() {
 		_ = revenue.NewAmbiguousExecutionReconciler(revenueSvc, time.Minute, 200, log).Run(ctx)
 	}()
+	// Evidence and corrections commit before projection. This leased sweep is
+	// the durable recovery path when the inline projector fails or a temporal
+	// assertion boundary becomes due.
+	go func() {
+		_ = revenue.NewRelationshipProjectionRunner(revenueSvc, 15*time.Second, 200, "", log).Run(ctx)
+	}()
+	// Attention also changes as time passes (for example a commitment becoming
+	// overdue), so event refreshes are backed by an always-on daily sweep.
+	go func() {
+		_ = revenue.NewRelationshipAttentionRunner(revenueSvc, 24*time.Hour, 200, log).Run(ctx)
+	}()
 	// The Gmail backend also feeds the leak scan (read-only sweep).
 	revenueSvc.SetSweeper(gmailExec)
+	// Source status rows are the durable backfill queue. Every replica runs the
+	// compare-and-set worker; provider reads emit bounded idempotent observations,
+	// and lifecycle progress advances only after those observations commit.
+	go func() {
+		_ = revenue.NewSourceBackfillRunner(revenueSvc, map[string]revenue.SourceBackfillProvider{
+			"google":  revenue.NewGoogleSourceBackfiller(gmailExec),
+			"slack":   revenue.NewSlackSourceBackfiller(slackTokens, slackAPI),
+			"hubspot": revenue.NewHubSpotSourceBackfiller(hubspotClient),
+		}, 5*time.Second, 50, log).Run(ctx)
+	}()
 	// Gate execution behind a paid plan: scan/queue/draft/ROI stay free,
 	// approve+execute require an active subscription.
 	revenueSvc.SetEntitlements(revenue.NewSubscriptionEntitlements(client))
@@ -431,8 +455,9 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// RFC 031: disconnecting Google purges the mail index (Layers 1-3);
 	// Layer-4 evidence quotes survive as the user's own action history.
 	googleH.SetOnDisconnect(func(ctx context.Context, u *ent.User) error {
-		_, err := revenueSvc.PurgeMailIndex(ctx, u)
-		return err
+		_, purgeErr := revenueSvc.PurgeMailIndex(ctx, u)
+		_, statusErr := revenueSvc.MarkSourceDisconnected(ctx, u, "google", "default")
+		return errors.Join(purgeErr, statusErr)
 	})
 
 	// Closed-loop action broker (RFC 023). Ships dark behind ACTIONS_ENABLED.

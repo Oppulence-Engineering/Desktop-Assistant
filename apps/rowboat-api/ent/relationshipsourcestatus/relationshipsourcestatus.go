@@ -23,14 +23,60 @@ const (
 	FieldSource = "source"
 	// FieldSourceAccountID holds the string denoting the source_account_id field in the database.
 	FieldSourceAccountID = "source_account_id"
+	// FieldConsentingActorID holds the string denoting the consenting_actor_id field in the database.
+	FieldConsentingActorID = "consenting_actor_id"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldBackfillPhase holds the string denoting the backfill_phase field in the database.
+	FieldBackfillPhase = "backfill_phase"
+	// FieldBackfillCompleted holds the string denoting the backfill_completed field in the database.
+	FieldBackfillCompleted = "backfill_completed"
+	// FieldBackfillTotal holds the string denoting the backfill_total field in the database.
+	FieldBackfillTotal = "backfill_total"
+	// FieldWatermark holds the string denoting the watermark field in the database.
+	FieldWatermark = "watermark"
+	// FieldSyncStartedAt holds the string denoting the sync_started_at field in the database.
+	FieldSyncStartedAt = "sync_started_at"
+	// FieldAuthorizationStartedAt holds the string denoting the authorization_started_at field in the database.
+	FieldAuthorizationStartedAt = "authorization_started_at"
+	// FieldAuthorizedAt holds the string denoting the authorized_at field in the database.
+	FieldAuthorizedAt = "authorized_at"
+	// FieldBackfillCompletedAt holds the string denoting the backfill_completed_at field in the database.
+	FieldBackfillCompletedAt = "backfill_completed_at"
+	// FieldLastFailedSyncAt holds the string denoting the last_failed_sync_at field in the database.
+	FieldLastFailedSyncAt = "last_failed_sync_at"
+	// FieldDisconnectedAt holds the string denoting the disconnected_at field in the database.
+	FieldDisconnectedAt = "disconnected_at"
+	// FieldRevokedAt holds the string denoting the revoked_at field in the database.
+	FieldRevokedAt = "revoked_at"
+	// FieldLastSyncAt holds the string denoting the last_sync_at field in the database.
+	FieldLastSyncAt = "last_sync_at"
+	// FieldExpectedCadenceSeconds holds the string denoting the expected_cadence_seconds field in the database.
+	FieldExpectedCadenceSeconds = "expected_cadence_seconds"
+	// FieldLagSeconds holds the string denoting the lag_seconds field in the database.
+	FieldLagSeconds = "lag_seconds"
+	// FieldRequiredScopes holds the string denoting the required_scopes field in the database.
+	FieldRequiredScopes = "required_scopes"
+	// FieldGrantedScopes holds the string denoting the granted_scopes field in the database.
+	FieldGrantedScopes = "granted_scopes"
+	// FieldMissingScopes holds the string denoting the missing_scopes field in the database.
+	FieldMissingScopes = "missing_scopes"
+	// FieldErrorCode holds the string denoting the error_code field in the database.
+	FieldErrorCode = "error_code"
+	// FieldRetryCount holds the string denoting the retry_count field in the database.
+	FieldRetryCount = "retry_count"
+	// FieldNextRetryAt holds the string denoting the next_retry_at field in the database.
+	FieldNextRetryAt = "next_retry_at"
+	// FieldCompleteness holds the string denoting the completeness field in the database.
+	FieldCompleteness = "completeness"
 	// FieldCursor holds the string denoting the cursor field in the database.
 	FieldCursor = "cursor"
 	// FieldLastSuccessAt holds the string denoting the last_success_at field in the database.
 	FieldLastSuccessAt = "last_success_at"
 	// FieldLastObservationAt holds the string denoting the last_observation_at field in the database.
 	FieldLastObservationAt = "last_observation_at"
+	// FieldLastProviderEventAt holds the string denoting the last_provider_event_at field in the database.
+	FieldLastProviderEventAt = "last_provider_event_at"
 	// FieldLastError holds the string denoting the last_error field in the database.
 	FieldLastError = "last_error"
 	// EdgeWorkspace holds the string denoting the workspace edge name in mutations.
@@ -62,10 +108,33 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldSource,
 	FieldSourceAccountID,
+	FieldConsentingActorID,
 	FieldStatus,
+	FieldBackfillPhase,
+	FieldBackfillCompleted,
+	FieldBackfillTotal,
+	FieldWatermark,
+	FieldSyncStartedAt,
+	FieldAuthorizationStartedAt,
+	FieldAuthorizedAt,
+	FieldBackfillCompletedAt,
+	FieldLastFailedSyncAt,
+	FieldDisconnectedAt,
+	FieldRevokedAt,
+	FieldLastSyncAt,
+	FieldExpectedCadenceSeconds,
+	FieldLagSeconds,
+	FieldRequiredScopes,
+	FieldGrantedScopes,
+	FieldMissingScopes,
+	FieldErrorCode,
+	FieldRetryCount,
+	FieldNextRetryAt,
+	FieldCompleteness,
 	FieldCursor,
 	FieldLastSuccessAt,
 	FieldLastObservationAt,
+	FieldLastProviderEventAt,
 	FieldLastError,
 }
 
@@ -106,6 +175,40 @@ var (
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	StatusValidator func(string) error
+	// DefaultBackfillPhase holds the default value on creation for the "backfill_phase" field.
+	DefaultBackfillPhase string
+	// BackfillPhaseValidator is a validator for the "backfill_phase" field. It is called by the builders before save.
+	BackfillPhaseValidator func(string) error
+	// DefaultBackfillCompleted holds the default value on creation for the "backfill_completed" field.
+	DefaultBackfillCompleted int
+	// BackfillCompletedValidator is a validator for the "backfill_completed" field. It is called by the builders before save.
+	BackfillCompletedValidator func(int) error
+	// DefaultBackfillTotal holds the default value on creation for the "backfill_total" field.
+	DefaultBackfillTotal int
+	// BackfillTotalValidator is a validator for the "backfill_total" field. It is called by the builders before save.
+	BackfillTotalValidator func(int) error
+	// DefaultExpectedCadenceSeconds holds the default value on creation for the "expected_cadence_seconds" field.
+	DefaultExpectedCadenceSeconds int64
+	// ExpectedCadenceSecondsValidator is a validator for the "expected_cadence_seconds" field. It is called by the builders before save.
+	ExpectedCadenceSecondsValidator func(int64) error
+	// DefaultLagSeconds holds the default value on creation for the "lag_seconds" field.
+	DefaultLagSeconds int64
+	// LagSecondsValidator is a validator for the "lag_seconds" field. It is called by the builders before save.
+	LagSecondsValidator func(int64) error
+	// DefaultRequiredScopes holds the default value on creation for the "required_scopes" field.
+	DefaultRequiredScopes []string
+	// DefaultGrantedScopes holds the default value on creation for the "granted_scopes" field.
+	DefaultGrantedScopes []string
+	// DefaultMissingScopes holds the default value on creation for the "missing_scopes" field.
+	DefaultMissingScopes []string
+	// DefaultRetryCount holds the default value on creation for the "retry_count" field.
+	DefaultRetryCount int
+	// RetryCountValidator is a validator for the "retry_count" field. It is called by the builders before save.
+	RetryCountValidator func(int) error
+	// DefaultCompleteness holds the default value on creation for the "completeness" field.
+	DefaultCompleteness string
+	// CompletenessValidator is a validator for the "completeness" field. It is called by the builders before save.
+	CompletenessValidator func(string) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -138,9 +241,104 @@ func BySourceAccountID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSourceAccountID, opts...).ToFunc()
 }
 
+// ByConsentingActorID orders the results by the consenting_actor_id field.
+func ByConsentingActorID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldConsentingActorID, opts...).ToFunc()
+}
+
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByBackfillPhase orders the results by the backfill_phase field.
+func ByBackfillPhase(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBackfillPhase, opts...).ToFunc()
+}
+
+// ByBackfillCompleted orders the results by the backfill_completed field.
+func ByBackfillCompleted(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBackfillCompleted, opts...).ToFunc()
+}
+
+// ByBackfillTotal orders the results by the backfill_total field.
+func ByBackfillTotal(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBackfillTotal, opts...).ToFunc()
+}
+
+// ByWatermark orders the results by the watermark field.
+func ByWatermark(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWatermark, opts...).ToFunc()
+}
+
+// BySyncStartedAt orders the results by the sync_started_at field.
+func BySyncStartedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSyncStartedAt, opts...).ToFunc()
+}
+
+// ByAuthorizationStartedAt orders the results by the authorization_started_at field.
+func ByAuthorizationStartedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAuthorizationStartedAt, opts...).ToFunc()
+}
+
+// ByAuthorizedAt orders the results by the authorized_at field.
+func ByAuthorizedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAuthorizedAt, opts...).ToFunc()
+}
+
+// ByBackfillCompletedAt orders the results by the backfill_completed_at field.
+func ByBackfillCompletedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBackfillCompletedAt, opts...).ToFunc()
+}
+
+// ByLastFailedSyncAt orders the results by the last_failed_sync_at field.
+func ByLastFailedSyncAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastFailedSyncAt, opts...).ToFunc()
+}
+
+// ByDisconnectedAt orders the results by the disconnected_at field.
+func ByDisconnectedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDisconnectedAt, opts...).ToFunc()
+}
+
+// ByRevokedAt orders the results by the revoked_at field.
+func ByRevokedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRevokedAt, opts...).ToFunc()
+}
+
+// ByLastSyncAt orders the results by the last_sync_at field.
+func ByLastSyncAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastSyncAt, opts...).ToFunc()
+}
+
+// ByExpectedCadenceSeconds orders the results by the expected_cadence_seconds field.
+func ByExpectedCadenceSeconds(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExpectedCadenceSeconds, opts...).ToFunc()
+}
+
+// ByLagSeconds orders the results by the lag_seconds field.
+func ByLagSeconds(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLagSeconds, opts...).ToFunc()
+}
+
+// ByErrorCode orders the results by the error_code field.
+func ByErrorCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldErrorCode, opts...).ToFunc()
+}
+
+// ByRetryCount orders the results by the retry_count field.
+func ByRetryCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRetryCount, opts...).ToFunc()
+}
+
+// ByNextRetryAt orders the results by the next_retry_at field.
+func ByNextRetryAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldNextRetryAt, opts...).ToFunc()
+}
+
+// ByCompleteness orders the results by the completeness field.
+func ByCompleteness(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCompleteness, opts...).ToFunc()
 }
 
 // ByCursor orders the results by the cursor field.
@@ -156,6 +354,11 @@ func ByLastSuccessAt(opts ...sql.OrderTermOption) OrderOption {
 // ByLastObservationAt orders the results by the last_observation_at field.
 func ByLastObservationAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLastObservationAt, opts...).ToFunc()
+}
+
+// ByLastProviderEventAt orders the results by the last_provider_event_at field.
+func ByLastProviderEventAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastProviderEventAt, opts...).ToFunc()
 }
 
 // ByLastError orders the results by the last_error field.

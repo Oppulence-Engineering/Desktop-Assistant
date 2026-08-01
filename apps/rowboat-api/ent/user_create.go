@@ -45,9 +45,15 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitydecision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshiplineageevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipprojectionjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
@@ -55,10 +61,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenuetrustevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 	"github.com/google/uuid"
 )
 
@@ -748,6 +757,141 @@ func (_c *UserCreate) AddRelationshipIdentities(v ...*RelationshipIdentity) *Use
 		ids[i] = v[i].ID
 	}
 	return _c.AddRelationshipIdentityIDs(ids...)
+}
+
+// AddRelationshipProjectionJobIDs adds the "relationship_projection_jobs" edge to the RelationshipProjectionJob entity by IDs.
+func (_c *UserCreate) AddRelationshipProjectionJobIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRelationshipProjectionJobIDs(ids...)
+	return _c
+}
+
+// AddRelationshipProjectionJobs adds the "relationship_projection_jobs" edges to the RelationshipProjectionJob entity.
+func (_c *UserCreate) AddRelationshipProjectionJobs(v ...*RelationshipProjectionJob) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRelationshipProjectionJobIDs(ids...)
+}
+
+// AddTenantEvidenceKeyIDs adds the "tenant_evidence_keys" edge to the TenantEvidenceKey entity by IDs.
+func (_c *UserCreate) AddTenantEvidenceKeyIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddTenantEvidenceKeyIDs(ids...)
+	return _c
+}
+
+// AddTenantEvidenceKeys adds the "tenant_evidence_keys" edges to the TenantEvidenceKey entity.
+func (_c *UserCreate) AddTenantEvidenceKeys(v ...*TenantEvidenceKey) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddTenantEvidenceKeyIDs(ids...)
+}
+
+// AddWorkspaceFeatureControlIDs adds the "workspace_feature_controls" edge to the WorkspaceFeatureControl entity by IDs.
+func (_c *UserCreate) AddWorkspaceFeatureControlIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddWorkspaceFeatureControlIDs(ids...)
+	return _c
+}
+
+// AddWorkspaceFeatureControls adds the "workspace_feature_controls" edges to the WorkspaceFeatureControl entity.
+func (_c *UserCreate) AddWorkspaceFeatureControls(v ...*WorkspaceFeatureControl) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddWorkspaceFeatureControlIDs(ids...)
+}
+
+// AddRevenueTrustEventIDs adds the "revenue_trust_events" edge to the RevenueTrustEvent entity by IDs.
+func (_c *UserCreate) AddRevenueTrustEventIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRevenueTrustEventIDs(ids...)
+	return _c
+}
+
+// AddRevenueTrustEvents adds the "revenue_trust_events" edges to the RevenueTrustEvent entity.
+func (_c *UserCreate) AddRevenueTrustEvents(v ...*RevenueTrustEvent) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRevenueTrustEventIDs(ids...)
+}
+
+// AddRelationshipIdentityCandidateIDs adds the "relationship_identity_candidates" edge to the RelationshipIdentityCandidate entity by IDs.
+func (_c *UserCreate) AddRelationshipIdentityCandidateIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRelationshipIdentityCandidateIDs(ids...)
+	return _c
+}
+
+// AddRelationshipIdentityCandidates adds the "relationship_identity_candidates" edges to the RelationshipIdentityCandidate entity.
+func (_c *UserCreate) AddRelationshipIdentityCandidates(v ...*RelationshipIdentityCandidate) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRelationshipIdentityCandidateIDs(ids...)
+}
+
+// AddRelationshipLineageEventIDs adds the "relationship_lineage_events" edge to the RelationshipLineageEvent entity by IDs.
+func (_c *UserCreate) AddRelationshipLineageEventIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRelationshipLineageEventIDs(ids...)
+	return _c
+}
+
+// AddRelationshipLineageEvents adds the "relationship_lineage_events" edges to the RelationshipLineageEvent entity.
+func (_c *UserCreate) AddRelationshipLineageEvents(v ...*RelationshipLineageEvent) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRelationshipLineageEventIDs(ids...)
+}
+
+// AddRelationshipIdentityDecisionIDs adds the "relationship_identity_decisions" edge to the RelationshipIdentityDecision entity by IDs.
+func (_c *UserCreate) AddRelationshipIdentityDecisionIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRelationshipIdentityDecisionIDs(ids...)
+	return _c
+}
+
+// AddRelationshipIdentityDecisions adds the "relationship_identity_decisions" edges to the RelationshipIdentityDecision entity.
+func (_c *UserCreate) AddRelationshipIdentityDecisions(v ...*RelationshipIdentityDecision) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRelationshipIdentityDecisionIDs(ids...)
+}
+
+// AddRelationshipReviewAcknowledgementIDs adds the "relationship_review_acknowledgements" edge to the RelationshipReviewAcknowledgement entity by IDs.
+func (_c *UserCreate) AddRelationshipReviewAcknowledgementIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRelationshipReviewAcknowledgementIDs(ids...)
+	return _c
+}
+
+// AddRelationshipReviewAcknowledgements adds the "relationship_review_acknowledgements" edges to the RelationshipReviewAcknowledgement entity.
+func (_c *UserCreate) AddRelationshipReviewAcknowledgements(v ...*RelationshipReviewAcknowledgement) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRelationshipReviewAcknowledgementIDs(ids...)
+}
+
+// AddRelationshipAttentionItemIDs adds the "relationship_attention_items" edge to the RelationshipAttentionItem entity by IDs.
+func (_c *UserCreate) AddRelationshipAttentionItemIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddRelationshipAttentionItemIDs(ids...)
+	return _c
+}
+
+// AddRelationshipAttentionItems adds the "relationship_attention_items" edges to the RelationshipAttentionItem entity.
+func (_c *UserCreate) AddRelationshipAttentionItems(v ...*RelationshipAttentionItem) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRelationshipAttentionItemIDs(ids...)
 }
 
 // AddRelationshipObservationIDs adds the "relationship_observations" edge to the RelationshipObservation entity by IDs.
@@ -1594,6 +1738,150 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RelationshipProjectionJobsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipProjectionJobsTable,
+			Columns: []string{user.RelationshipProjectionJobsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipprojectionjob.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.TenantEvidenceKeysIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.TenantEvidenceKeysTable,
+			Columns: []string{user.TenantEvidenceKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(tenantevidencekey.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.WorkspaceFeatureControlsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.WorkspaceFeatureControlsTable,
+			Columns: []string{user.WorkspaceFeatureControlsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(workspacefeaturecontrol.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RevenueTrustEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RevenueTrustEventsTable,
+			Columns: []string{user.RevenueTrustEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuetrustevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RelationshipIdentityCandidatesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipIdentityCandidatesTable,
+			Columns: []string{user.RelationshipIdentityCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipidentitycandidate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RelationshipLineageEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipLineageEventsTable,
+			Columns: []string{user.RelationshipLineageEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshiplineageevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RelationshipIdentityDecisionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipIdentityDecisionsTable,
+			Columns: []string{user.RelationshipIdentityDecisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipidentitydecision.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RelationshipReviewAcknowledgementsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipReviewAcknowledgementsTable,
+			Columns: []string{user.RelationshipReviewAcknowledgementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipreviewacknowledgement.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RelationshipAttentionItemsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipAttentionItemsTable,
+			Columns: []string{user.RelationshipAttentionItemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipattentionitem.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

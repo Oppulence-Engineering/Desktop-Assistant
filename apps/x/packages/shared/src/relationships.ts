@@ -18,6 +18,9 @@ export const RelationshipSchema = z.object({
   health: z.string(),
   stateReason: z.string().optional(),
   stateVersion: z.number(),
+  stateHash: z.string().optional(),
+  projectorVersion: z.number(),
+  projectedAt: z.string().optional(),
   lastChangedAt: z.string().optional(),
   risks: z.array(z.string()),
   milestones: z.array(z.string()),
@@ -29,15 +32,37 @@ export const RelationshipActionSchema = z.object({
   actionType: z.string(),
   channel: z.string(),
   detector: z.string(),
+  revision: z.number().int().positive(),
+  revisionHash: z.string(),
   reason: z.string(),
+  recipientEmail: z.string().optional(),
   proposedSubject: z.string().optional(),
   proposedMessage: z.string().optional(),
+  senderAccountRef: z.string().optional(),
   priorityScore: z.number(),
+  priorityComponents: z.record(z.string(), z.number()).optional(),
   queueStatus: z.string(),
   policyStatus: z.string(),
   approvalStatus: z.string(),
   executionStatus: z.string(),
+  executionOwner: z.string(),
   executionMode: z.string(),
+  approvedRevision: z.number().int().positive().optional(),
+  approvedAt: z.string().optional(),
+  providerMessageId: z.string().optional(),
+  providerThreadId: z.string().optional(),
+  executedAt: z.string().optional(),
+  executionError: z.string().optional(),
+  reconciliationStatus: z.string().optional(),
+  reconciliationAttempts: z.number().int().nonnegative().optional(),
+  reconciliationCheckedAt: z.string().optional(),
+  reconciliationNextAt: z.string().optional(),
+  reconciliationError: z.string().optional(),
+  dismissReason: z.string().optional(),
+  snoozedUntil: z.string().optional(),
+  dueAt: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
   evidence: z
     .array(
       z.object({
@@ -836,18 +861,198 @@ export const RelationshipStateSnapshotSchema = z.object({
   id: z.string(),
   version: z.number(),
   state: z.record(z.string(), z.unknown()),
+  stateHash: z.string(),
+  projectorVersion: z.number(),
+  evaluatedAt: z.string(),
   changedDimensions: z.array(z.string()),
   assertionIds: z.array(z.string()),
   createdAt: z.string(),
 });
 
 export const RelationshipSourceStatusSchema = z.object({
+  connectionId: z.string(),
   source: z.string(),
   sourceAccountId: z.string(),
+  consentingActorId: z.string().optional(),
   status: z.string(),
+  backfillPhase: z.string(),
+  backfillCompleted: z.number().int().nonnegative(),
+  backfillTotal: z.number().int().nonnegative(),
+  completeness: z.string(),
+  expectedCadenceSeconds: z.number().int().nonnegative(),
+  lagSeconds: z.number().int().nonnegative(),
+  requiredScopes: z.array(z.string()),
+  grantedScopes: z.array(z.string()),
+  missingScopes: z.array(z.string()),
+  errorCode: z.string().optional(),
+  retryCount: z.number().int().nonnegative(),
+  nextRetryAt: z.string().optional(),
+  syncStartedAt: z.string().optional(),
+  authorizationStartedAt: z.string().optional(),
+  authorizedAt: z.string().optional(),
+  backfillCompletedAt: z.string().optional(),
+  lastFailedSyncAt: z.string().optional(),
+  disconnectedAt: z.string().optional(),
+  revokedAt: z.string().optional(),
+  lastSyncAt: z.string().optional(),
   lastSuccessAt: z.string().optional(),
   lastObservationAt: z.string().optional(),
+  lastProviderEventAt: z.string().optional(),
   lastError: z.string().optional(),
+});
+
+export const RelationshipSourceInventoryItemSchema = z.object({
+  source: z.string(),
+  displayName: z.string(),
+  evidence: z.array(z.string()),
+  actions: z.array(z.string()),
+  readScopes: z.array(z.string()),
+  writeScopes: z.array(z.string()),
+  scopeExplanation: z.string(),
+  connectPath: z.string(),
+  disconnectPath: z.string(),
+  supportsReconnect: z.boolean(),
+  supportsResync: z.boolean(),
+  expectedCadenceSeconds: z.number().int().nonnegative(),
+  accounts: z.array(RelationshipSourceStatusSchema),
+});
+
+export const BetaDiagnosticsSchema = z.object({
+  schemaVersion: z.string(),
+  generatedAt: z.string(),
+  workspaceRef: z.string(),
+  features: z.array(
+    z.object({
+      capability: z.string(),
+      enabled: z.boolean(),
+      rolloutStage: z.string(),
+      reasonCode: z.string().optional(),
+    }),
+  ),
+  sources: z.array(
+    z.object({
+      connectionRef: z.string(),
+      source: z.string(),
+      sourceAccountRef: z.string(),
+      status: z.string(),
+      completeness: z.string(),
+      backfillPhase: z.string(),
+      backfillCompleted: z.number().int().nonnegative(),
+      backfillTotal: z.number().int().nonnegative(),
+      lagSeconds: z.number().int().nonnegative(),
+      missingScopeCount: z.number().int().nonnegative(),
+      errorCode: z.string().optional(),
+      retryCount: z.number().int().nonnegative(),
+      lastSuccessAt: z.string().optional(),
+      lastObservationAt: z.string().optional(),
+      lastFailedSyncAt: z.string().optional(),
+      authorizationAt: z.string().optional(),
+      authorizationStartedAt: z.string().optional(),
+      backfillCompletedAt: z.string().optional(),
+    }),
+  ),
+  counts: z.record(z.string(), z.number().int().nonnegative()),
+  trustFunnel: z.array(
+    z.object({ eventName: z.string(), outcome: z.string(), count: z.number().int().nonnegative() }),
+  ),
+  checks: z.array(
+    z.object({
+      code: z.string(),
+      status: z.enum(["pass", "attention"]),
+      explanation: z.string(),
+      count: z.number().int().nonnegative(),
+    }),
+  ),
+});
+export type BetaDiagnostics = z.infer<typeof BetaDiagnosticsSchema>;
+
+export const RelationshipIdentityCandidateSchema = z.object({
+  id: z.string(),
+  status: z.enum(["pending", "deferred", "resolving", "resolved", "undone"]),
+  candidateType: z.string(),
+  version: z.number().int().positive(),
+  proposedRelationship: RelationshipSchema,
+  existingRelationship: RelationshipSchema,
+  anchorKind: z.string(),
+  anchorProvider: z.string().optional(),
+  anchorPreview: z.string().optional(),
+  matchingAnchors: z.array(z.string()),
+  conflictingAnchors: z.array(z.string()),
+  evidenceRefs: z.array(z.string()),
+  evidenceCount: z.number().int().nonnegative(),
+  evidenceFrom: z.string().optional(),
+  evidenceTo: z.string().optional(),
+  impact: z.record(z.string(), z.number()),
+  recommendedDecision: z.string(),
+  recommendationConfidence: z.number().min(0).max(1),
+  decision: z.string().optional(),
+  decisionReason: z.string().optional(),
+  decisionActorId: z.string().optional(),
+  decidedAt: z.string().optional(),
+  decisions: z.array(
+    z.object({
+      id: z.string(),
+      decision: z.string(),
+      candidateVersion: z.number().int().positive(),
+      actorId: z.string(),
+      reason: z.string().optional(),
+      decidedAt: z.string(),
+      compensatesDecisionId: z.string().optional(),
+    }),
+  ),
+  lineage: z.array(
+    z.object({
+      id: z.string(),
+      kind: z.string(),
+      actorId: z.string(),
+      reason: z.string().optional(),
+      observationIds: z.array(z.string()),
+      identityIds: z.array(z.string()),
+      movedObjectRefs: z.array(z.string()),
+      beforeRelationshipIds: z.array(z.string()),
+      afterRelationshipIds: z.array(z.string()),
+      occurredAt: z.string(),
+    }),
+  ),
+});
+
+export const RelationshipAttentionItemSchema = z.object({
+  id: z.string(),
+  version: z.number().int().positive(),
+  relationshipId: z.string(),
+  relationshipName: z.string(),
+  reasonCode: z.enum([
+    "quiet_account",
+    "overdue_commitment",
+    "unresolved_risk",
+    "missing_next_step",
+    "source_degradation",
+    "action_outcome_review",
+    "recommendation",
+  ]),
+  explanation: z.string(),
+  triggeringObjectRef: z.string(),
+  evidenceRefs: z.array(z.string()),
+  urgencyBand: z.enum(["low", "normal", "high", "critical"]),
+  rankScore: z.number().int().min(0).max(100),
+  rankFactors: z.record(z.string(), z.number()),
+  sourceRequirements: z.array(z.string()),
+  recommendationId: z.string().optional(),
+  recommendationRevision: z.number().int().nonnegative().optional(),
+  ownerId: z.string().optional(),
+  status: z.enum(["open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved"]),
+  stateReason: z.string().optional(),
+  snoozedUntil: z.string().optional(),
+  expiresAt: z.string().optional(),
+  detectorVersion: z.number().int().positive(),
+  projectorVersion: z.number().int().positive(),
+  relationshipStateVersion: z.number().int().nonnegative(),
+  acknowledgedBy: z.string().optional(),
+  acknowledgedAt: z.string().optional(),
+  dismissedBy: z.string().optional(),
+  dismissedAt: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
 
 export const RelationshipSemanticMatchSchema = z.object({
@@ -859,6 +1064,93 @@ export const RelationshipSemanticMatchSchema = z.object({
   score: z.number(),
 });
 
+export const MissionControlReadModelSchema = z.object({
+  contractVersion: z.string(),
+  aggregateHash: z.string(),
+  asOf: z.string(),
+  stateVersion: z.number().int().nonnegative(),
+  stateHash: z.string(),
+  projectorVersion: z.number().int().positive(),
+  detectorVersion: z.number().int().positive(),
+  freshnessBoundary: z.string().optional(),
+  previousReviewedStateVersion: z.number().int().nonnegative(),
+  changedSinceReview: z.boolean(),
+  changes: z.array(
+    z.object({
+      dimension: z.string(),
+      before: z.unknown().optional(),
+      after: z.unknown().optional(),
+      assertionIds: z.array(z.string()),
+    }),
+  ),
+  evidence: z.record(
+    z.string(),
+    z.object({
+      dimension: z.string(),
+      value: z.unknown().optional(),
+      supported: z.boolean(),
+      missingReason: z.string().optional(),
+      assertionId: z.string().optional(),
+      authority: z.string().optional(),
+      confidence: z.number().optional(),
+      reason: z.string().optional(),
+      validFrom: z.string().optional(),
+      validTo: z.string().optional(),
+      fresh: z.boolean(),
+      evidence: z.array(
+        z.object({
+          observationId: z.string(),
+          source: z.string(),
+          observedAt: z.string(),
+          evidencePath: z.string(),
+          contentHash: z.string(),
+        }),
+      ),
+    }),
+  ),
+  completeness: z.object({
+    status: z.enum(["complete", "partial", "stale", "rebuilding", "ambiguous", "disconnected"]),
+    explanation: z.string(),
+    externalActionSafe: z.boolean(),
+    unresolvedIdentityCount: z.number().int().nonnegative(),
+    missingMaterialDimensions: z.array(z.string()),
+    sources: z.array(
+      z.object({
+        source: z.string(),
+        sourceAccountId: z.string(),
+        status: z.string(),
+        completeness: z.string(),
+        lagSeconds: z.number(),
+        expectedCadenceSeconds: z.number(),
+        lastObservationAt: z.string().optional(),
+        missingScopes: z.array(z.string()),
+        repairPath: z.string().optional(),
+      }),
+    ),
+  }),
+  activeRecommendation: z
+    .object({
+      id: z.string(),
+      revision: z.number().int().positive(),
+      actionType: z.string(),
+      channel: z.string(),
+      reason: z.string(),
+      rankFactors: z.record(z.string(), z.number()),
+      policyStatus: z.string(),
+      approvalStatus: z.string(),
+      executionStatus: z.string(),
+    })
+    .optional(),
+  pending: z.object({
+    corrections: z.number().int().nonnegative(),
+    identityReview: z.number().int().nonnegative(),
+    approval: z.number().int().nonnegative(),
+    execution: z.number().int().nonnegative(),
+    reconciliation: z.number().int().nonnegative(),
+  }),
+  capabilities: z.record(z.string(), z.string()),
+});
+
 export const RelationshipDetailSchema = z.object({
   relationship: RelationshipSchema,
   actions: z.array(RelationshipActionSchema),
@@ -867,12 +1159,14 @@ export const RelationshipDetailSchema = z.object({
   commitments: z.array(RelationshipCommitmentSchema),
   commitmentDependencies: z.array(CommitmentDependencySchema).default([]),
   intelligence: RelationshipIntelligenceSchema.optional(),
+  missionControl: MissionControlReadModelSchema,
 });
 
 export type Relationship = z.infer<typeof RelationshipSchema>;
 export type RelationshipAction = z.infer<typeof RelationshipActionSchema>;
 export type RelationshipCommitment = z.infer<typeof RelationshipCommitmentSchema>;
 export type RelationshipDetail = z.infer<typeof RelationshipDetailSchema>;
+export type MissionControlReadModel = z.infer<typeof MissionControlReadModelSchema>;
 export type RelationshipObservation = z.infer<typeof RelationshipObservationSchema>;
 export type RelationshipObservationInput = z.infer<typeof RelationshipObservationInputSchema>;
 export type RelationshipObservationAssertionInput = z.infer<
@@ -886,6 +1180,9 @@ export type RelationshipObservationIngestResult = z.infer<
 >;
 export type RelationshipStateSnapshot = z.infer<typeof RelationshipStateSnapshotSchema>;
 export type RelationshipSourceStatus = z.infer<typeof RelationshipSourceStatusSchema>;
+export type RelationshipSourceInventoryItem = z.infer<typeof RelationshipSourceInventoryItemSchema>;
+export type RelationshipIdentityCandidate = z.infer<typeof RelationshipIdentityCandidateSchema>;
+export type RelationshipAttentionItem = z.infer<typeof RelationshipAttentionItemSchema>;
 export type RelationshipSemanticMatch = z.infer<typeof RelationshipSemanticMatchSchema>;
 export type ConversationSegment = z.infer<typeof ConversationSegmentSchema>;
 export type ConversationGovernanceReceipt = z.infer<typeof ConversationGovernanceReceiptSchema>;

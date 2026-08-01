@@ -61,6 +61,16 @@ type AssociationTarget struct {
 	ObjectID   string
 }
 
+// CompanySnapshot is the bounded read shape consumed by relationship backfill.
+// It intentionally excludes associations and property history; the relationship
+// service receives only stable account identity and the few fields it projects.
+type CompanySnapshot struct {
+	ID         string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Properties map[string]string
+}
+
 // New constructs a HubSpot client with the shared outbound controls.
 func New(client *ent.Client, sealer *crypto.Sealer, policy outbound.Policy) *Client {
 	policy.Name = "hubspot-crm"
@@ -154,6 +164,40 @@ func (c *Client) Search(ctx context.Context, userID uuid.UUID, objectType, query
 		return SearchResult{}, errors.New("hubspot: search returned no response")
 	}
 	return SearchResult{ObjectType: kind, Total: response.Total, Results: response.Results}, nil
+}
+
+// ListCompanies walks a bounded company snapshot through the official SDK. The
+// caller sets the overall cap; each provider request remains at HubSpot's 100-row
+// page limit and SDK read retries stay bounded.
+func (c *Client) ListCompanies(ctx context.Context, userID uuid.UUID, limit int) ([]CompanySnapshot, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	sdk, err := c.sdk(ctx, userID, 2)
+	if err != nil {
+		return nil, err
+	}
+	iterator := sdk.Crm.Objects.Companies.ListAutoPaging(ctx, crm.ObjectCompanyListParams{
+		Limit: hubspotsdk.Int(100),
+		Properties: []string{
+			"name", "domain", "industry", "lifecyclestage", "hs_lastmodifieddate",
+		},
+	})
+	out := make([]CompanySnapshot, 0, min(limit, 100))
+	for len(out) < limit && iterator.Next() {
+		company := iterator.Current()
+		out = append(out, CompanySnapshot{
+			ID: company.ID, CreatedAt: company.CreatedAt, UpdatedAt: company.UpdatedAt,
+			Properties: company.Properties,
+		})
+	}
+	if err := iterator.Err(); err != nil {
+		return nil, fmt.Errorf("hubspot: list companies: %w", err)
+	}
+	return out, nil
 }
 
 // CreateNote creates a CRM note associated with exactly one explicit target.

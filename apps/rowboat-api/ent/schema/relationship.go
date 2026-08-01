@@ -58,6 +58,9 @@ func (Relationship) Fields() []ent.Field {
 				"unknown", "healthy", "needs_attention", "critical")),
 		field.Text("state_reason").Optional(),
 		field.Int("state_version").Default(0).NonNegative(),
+		field.String("state_hash").Optional(),
+		field.Int("projector_version").Default(1).Positive(),
+		field.Time("projected_at").Optional().Nillable(),
 		field.Time("last_changed_at").Optional().Nillable(),
 		field.JSON("risks", []string{}).Default([]string{}),
 		field.JSON("milestones", []string{}).Default([]string{}),
@@ -92,6 +95,18 @@ func (Relationship) Edges() []ent.Edge {
 		edge.To("assertions", RelationshipAssertion.Type).
 			StorageKey(edge.Column("relationship_id")),
 		edge.To("snapshots", RelationshipStateSnapshot.Type).
+			StorageKey(edge.Column("relationship_id")),
+		edge.To("projection_jobs", RelationshipProjectionJob.Type).
+			StorageKey(edge.Column("relationship_id")),
+		edge.To("trust_events", RevenueTrustEvent.Type).
+			StorageKey(edge.Column("relationship_id")),
+		edge.To("proposed_identity_candidates", RelationshipIdentityCandidate.Type).
+			StorageKey(edge.Column("proposed_relationship_id")),
+		edge.To("existing_identity_candidates", RelationshipIdentityCandidate.Type).
+			StorageKey(edge.Column("existing_relationship_id")),
+		edge.To("review_acknowledgements", RelationshipReviewAcknowledgement.Type).
+			StorageKey(edge.Column("relationship_id")),
+		edge.To("attention_items", RelationshipAttentionItem.Type).
 			StorageKey(edge.Column("relationship_id")),
 	}
 }

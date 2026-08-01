@@ -205,7 +205,11 @@ export function RevenuePanel({ onOpenConnectors }: { onOpenConnectors?: () => vo
       ) : tab === "impact" ? (
         <ImpactView onError={setBanner} />
       ) : tab === "relationships" ? (
-        <RelationshipsView onError={setBanner} onNotice={setNoticeMsg} />
+        <RelationshipsView
+          onError={setBanner}
+          onNotice={setNoticeMsg}
+          onOpenConnectors={onOpenConnectors}
+        />
       ) : tab === "scans" ? (
         <ScansView scans={scans} activeScan={activeScan} scanning={scanning} onScan={runScan} />
       ) : (

@@ -25,14 +25,26 @@ const (
 	FieldValue = "value"
 	// FieldSourceType holds the string denoting the source_type field in the database.
 	FieldSourceType = "source_type"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
 	// FieldConfidence holds the string denoting the confidence field in the database.
 	FieldConfidence = "confidence"
 	// FieldReason holds the string denoting the reason field in the database.
 	FieldReason = "reason"
 	// FieldValidFrom holds the string denoting the valid_from field in the database.
 	FieldValidFrom = "valid_from"
+	// FieldValidTo holds the string denoting the valid_to field in the database.
+	FieldValidTo = "valid_to"
+	// FieldRetractedAt holds the string denoting the retracted_at field in the database.
+	FieldRetractedAt = "retracted_at"
+	// FieldRetractionReason holds the string denoting the retraction_reason field in the database.
+	FieldRetractionReason = "retraction_reason"
 	// FieldSupersedesAssertionID holds the string denoting the supersedes_assertion_id field in the database.
 	FieldSupersedesAssertionID = "supersedes_assertion_id"
+	// FieldExtractorVersion holds the string denoting the extractor_version field in the database.
+	FieldExtractorVersion = "extractor_version"
+	// FieldProjectorCompatVersion holds the string denoting the projector_compat_version field in the database.
+	FieldProjectorCompatVersion = "projector_compat_version"
 	// FieldSupportingObservationIds holds the string denoting the supporting_observation_ids field in the database.
 	FieldSupportingObservationIds = "supporting_observation_ids"
 	// EdgeWorkspace holds the string denoting the workspace edge name in mutations.
@@ -83,10 +95,16 @@ var Columns = []string{
 	FieldDimension,
 	FieldValue,
 	FieldSourceType,
+	FieldStatus,
 	FieldConfidence,
 	FieldReason,
 	FieldValidFrom,
+	FieldValidTo,
+	FieldRetractedAt,
+	FieldRetractionReason,
 	FieldSupersedesAssertionID,
+	FieldExtractorVersion,
+	FieldProjectorCompatVersion,
 	FieldSupportingObservationIds,
 }
 
@@ -127,10 +145,20 @@ var (
 	ValueValidator func(string) error
 	// SourceTypeValidator is a validator for the "source_type" field. It is called by the builders before save.
 	SourceTypeValidator func(string) error
+	// DefaultStatus holds the default value on creation for the "status" field.
+	DefaultStatus string
+	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	StatusValidator func(string) error
 	// DefaultConfidence holds the default value on creation for the "confidence" field.
 	DefaultConfidence float64
 	// ConfidenceValidator is a validator for the "confidence" field. It is called by the builders before save.
 	ConfidenceValidator func(float64) error
+	// DefaultExtractorVersion holds the default value on creation for the "extractor_version" field.
+	DefaultExtractorVersion string
+	// DefaultProjectorCompatVersion holds the default value on creation for the "projector_compat_version" field.
+	DefaultProjectorCompatVersion int
+	// ProjectorCompatVersionValidator is a validator for the "projector_compat_version" field. It is called by the builders before save.
+	ProjectorCompatVersionValidator func(int) error
 	// DefaultSupportingObservationIds holds the default value on creation for the "supporting_observation_ids" field.
 	DefaultSupportingObservationIds []string
 	// DefaultID holds the default value on creation for the "id" field.
@@ -170,6 +198,11 @@ func BySourceType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSourceType, opts...).ToFunc()
 }
 
+// ByStatus orders the results by the status field.
+func ByStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
 // ByConfidence orders the results by the confidence field.
 func ByConfidence(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldConfidence, opts...).ToFunc()
@@ -185,9 +218,34 @@ func ByValidFrom(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldValidFrom, opts...).ToFunc()
 }
 
+// ByValidTo orders the results by the valid_to field.
+func ByValidTo(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldValidTo, opts...).ToFunc()
+}
+
+// ByRetractedAt orders the results by the retracted_at field.
+func ByRetractedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRetractedAt, opts...).ToFunc()
+}
+
+// ByRetractionReason orders the results by the retraction_reason field.
+func ByRetractionReason(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRetractionReason, opts...).ToFunc()
+}
+
 // BySupersedesAssertionID orders the results by the supersedes_assertion_id field.
 func BySupersedesAssertionID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSupersedesAssertionID, opts...).ToFunc()
+}
+
+// ByExtractorVersion orders the results by the extractor_version field.
+func ByExtractorVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExtractorVersion, opts...).ToFunc()
+}
+
+// ByProjectorCompatVersion orders the results by the projector_compat_version field.
+func ByProjectorCompatVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProjectorCompatVersion, opts...).ToFunc()
 }
 
 // ByWorkspaceField orders the results by workspace field.

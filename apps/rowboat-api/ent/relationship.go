@@ -61,6 +61,12 @@ type Relationship struct {
 	StateReason string `json:"state_reason,omitempty"`
 	// StateVersion holds the value of the "state_version" field.
 	StateVersion int `json:"state_version,omitempty"`
+	// StateHash holds the value of the "state_hash" field.
+	StateHash string `json:"state_hash,omitempty"`
+	// ProjectorVersion holds the value of the "projector_version" field.
+	ProjectorVersion int `json:"projector_version,omitempty"`
+	// ProjectedAt holds the value of the "projected_at" field.
+	ProjectedAt *time.Time `json:"projected_at,omitempty"`
 	// LastChangedAt holds the value of the "last_changed_at" field.
 	LastChangedAt *time.Time `json:"last_changed_at,omitempty"`
 	// Risks holds the value of the "risks" field.
@@ -105,11 +111,23 @@ type RelationshipEdges struct {
 	Assertions []*RelationshipAssertion `json:"assertions,omitempty"`
 	// Snapshots holds the value of the snapshots edge.
 	Snapshots []*RelationshipStateSnapshot `json:"snapshots,omitempty"`
+	// ProjectionJobs holds the value of the projection_jobs edge.
+	ProjectionJobs []*RelationshipProjectionJob `json:"projection_jobs,omitempty"`
+	// TrustEvents holds the value of the trust_events edge.
+	TrustEvents []*RevenueTrustEvent `json:"trust_events,omitempty"`
+	// ProposedIdentityCandidates holds the value of the proposed_identity_candidates edge.
+	ProposedIdentityCandidates []*RelationshipIdentityCandidate `json:"proposed_identity_candidates,omitempty"`
+	// ExistingIdentityCandidates holds the value of the existing_identity_candidates edge.
+	ExistingIdentityCandidates []*RelationshipIdentityCandidate `json:"existing_identity_candidates,omitempty"`
+	// ReviewAcknowledgements holds the value of the review_acknowledgements edge.
+	ReviewAcknowledgements []*RelationshipReviewAcknowledgement `json:"review_acknowledgements,omitempty"`
+	// AttentionItems holds the value of the attention_items edge.
+	AttentionItems []*RelationshipAttentionItem `json:"attention_items,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [14]bool
+	loadedTypes [20]bool
 	// totalCount holds the count of the edges above.
-	totalCount [14]map[string]int
+	totalCount [20]map[string]int
 
 	namedCommitments                       map[string][]*Commitment
 	namedCommitmentEvents                  map[string][]*CommitmentEvent
@@ -123,6 +141,12 @@ type RelationshipEdges struct {
 	namedObservations                      map[string][]*RelationshipObservation
 	namedAssertions                        map[string][]*RelationshipAssertion
 	namedSnapshots                         map[string][]*RelationshipStateSnapshot
+	namedProjectionJobs                    map[string][]*RelationshipProjectionJob
+	namedTrustEvents                       map[string][]*RevenueTrustEvent
+	namedProposedIdentityCandidates        map[string][]*RelationshipIdentityCandidate
+	namedExistingIdentityCandidates        map[string][]*RelationshipIdentityCandidate
+	namedReviewAcknowledgements            map[string][]*RelationshipReviewAcknowledgement
+	namedAttentionItems                    map[string][]*RelationshipAttentionItem
 }
 
 // WorkspaceOrErr returns the Workspace value or an error if the edge
@@ -255,6 +279,60 @@ func (e RelationshipEdges) SnapshotsOrErr() ([]*RelationshipStateSnapshot, error
 	return nil, &NotLoadedError{edge: "snapshots"}
 }
 
+// ProjectionJobsOrErr returns the ProjectionJobs value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) ProjectionJobsOrErr() ([]*RelationshipProjectionJob, error) {
+	if e.loadedTypes[14] {
+		return e.ProjectionJobs, nil
+	}
+	return nil, &NotLoadedError{edge: "projection_jobs"}
+}
+
+// TrustEventsOrErr returns the TrustEvents value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) TrustEventsOrErr() ([]*RevenueTrustEvent, error) {
+	if e.loadedTypes[15] {
+		return e.TrustEvents, nil
+	}
+	return nil, &NotLoadedError{edge: "trust_events"}
+}
+
+// ProposedIdentityCandidatesOrErr returns the ProposedIdentityCandidates value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) ProposedIdentityCandidatesOrErr() ([]*RelationshipIdentityCandidate, error) {
+	if e.loadedTypes[16] {
+		return e.ProposedIdentityCandidates, nil
+	}
+	return nil, &NotLoadedError{edge: "proposed_identity_candidates"}
+}
+
+// ExistingIdentityCandidatesOrErr returns the ExistingIdentityCandidates value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) ExistingIdentityCandidatesOrErr() ([]*RelationshipIdentityCandidate, error) {
+	if e.loadedTypes[17] {
+		return e.ExistingIdentityCandidates, nil
+	}
+	return nil, &NotLoadedError{edge: "existing_identity_candidates"}
+}
+
+// ReviewAcknowledgementsOrErr returns the ReviewAcknowledgements value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) ReviewAcknowledgementsOrErr() ([]*RelationshipReviewAcknowledgement, error) {
+	if e.loadedTypes[18] {
+		return e.ReviewAcknowledgements, nil
+	}
+	return nil, &NotLoadedError{edge: "review_acknowledgements"}
+}
+
+// AttentionItemsOrErr returns the AttentionItems value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipEdges) AttentionItemsOrErr() ([]*RelationshipAttentionItem, error) {
+	if e.loadedTypes[19] {
+		return e.AttentionItems, nil
+	}
+	return nil, &NotLoadedError{edge: "attention_items"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Relationship) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -262,11 +340,11 @@ func (*Relationship) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case relationship.FieldResourceRefs, relationship.FieldRisks, relationship.FieldMilestones:
 			values[i] = new([]byte)
-		case relationship.FieldStateVersion:
+		case relationship.FieldStateVersion, relationship.FieldProjectorVersion:
 			values[i] = new(sql.NullInt64)
-		case relationship.FieldKind, relationship.FieldDisplayName, relationship.FieldPrimaryEmail, relationship.FieldAccountDomain, relationship.FieldOutboundLeadID, relationship.FieldOutboundAccountRef, relationship.FieldSummary, relationship.FieldNextAction, relationship.FieldStatus, relationship.FieldLifecycle, relationship.FieldEngagement, relationship.FieldSentiment, relationship.FieldHealth, relationship.FieldStateReason:
+		case relationship.FieldKind, relationship.FieldDisplayName, relationship.FieldPrimaryEmail, relationship.FieldAccountDomain, relationship.FieldOutboundLeadID, relationship.FieldOutboundAccountRef, relationship.FieldSummary, relationship.FieldNextAction, relationship.FieldStatus, relationship.FieldLifecycle, relationship.FieldEngagement, relationship.FieldSentiment, relationship.FieldHealth, relationship.FieldStateReason, relationship.FieldStateHash:
 			values[i] = new(sql.NullString)
-		case relationship.FieldCreatedAt, relationship.FieldUpdatedAt, relationship.FieldLastTouchAt, relationship.FieldNextActionAt, relationship.FieldLastChangedAt:
+		case relationship.FieldCreatedAt, relationship.FieldUpdatedAt, relationship.FieldLastTouchAt, relationship.FieldNextActionAt, relationship.FieldProjectedAt, relationship.FieldLastChangedAt:
 			values[i] = new(sql.NullTime)
 		case relationship.FieldID:
 			values[i] = new(uuid.UUID)
@@ -419,6 +497,25 @@ func (_m *Relationship) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.StateVersion = int(value.Int64)
 			}
+		case relationship.FieldStateHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field state_hash", values[i])
+			} else if value.Valid {
+				_m.StateHash = value.String
+			}
+		case relationship.FieldProjectorVersion:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field projector_version", values[i])
+			} else if value.Valid {
+				_m.ProjectorVersion = int(value.Int64)
+			}
+		case relationship.FieldProjectedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field projected_at", values[i])
+			} else if value.Valid {
+				_m.ProjectedAt = new(time.Time)
+				*_m.ProjectedAt = value.Time
+			}
 		case relationship.FieldLastChangedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field last_changed_at", values[i])
@@ -539,6 +636,36 @@ func (_m *Relationship) QuerySnapshots() *RelationshipStateSnapshotQuery {
 	return NewRelationshipClient(_m.config).QuerySnapshots(_m)
 }
 
+// QueryProjectionJobs queries the "projection_jobs" edge of the Relationship entity.
+func (_m *Relationship) QueryProjectionJobs() *RelationshipProjectionJobQuery {
+	return NewRelationshipClient(_m.config).QueryProjectionJobs(_m)
+}
+
+// QueryTrustEvents queries the "trust_events" edge of the Relationship entity.
+func (_m *Relationship) QueryTrustEvents() *RevenueTrustEventQuery {
+	return NewRelationshipClient(_m.config).QueryTrustEvents(_m)
+}
+
+// QueryProposedIdentityCandidates queries the "proposed_identity_candidates" edge of the Relationship entity.
+func (_m *Relationship) QueryProposedIdentityCandidates() *RelationshipIdentityCandidateQuery {
+	return NewRelationshipClient(_m.config).QueryProposedIdentityCandidates(_m)
+}
+
+// QueryExistingIdentityCandidates queries the "existing_identity_candidates" edge of the Relationship entity.
+func (_m *Relationship) QueryExistingIdentityCandidates() *RelationshipIdentityCandidateQuery {
+	return NewRelationshipClient(_m.config).QueryExistingIdentityCandidates(_m)
+}
+
+// QueryReviewAcknowledgements queries the "review_acknowledgements" edge of the Relationship entity.
+func (_m *Relationship) QueryReviewAcknowledgements() *RelationshipReviewAcknowledgementQuery {
+	return NewRelationshipClient(_m.config).QueryReviewAcknowledgements(_m)
+}
+
+// QueryAttentionItems queries the "attention_items" edge of the Relationship entity.
+func (_m *Relationship) QueryAttentionItems() *RelationshipAttentionItemQuery {
+	return NewRelationshipClient(_m.config).QueryAttentionItems(_m)
+}
+
 // Update returns a builder for updating this Relationship.
 // Note that you need to call Relationship.Unwrap() before calling this method if this Relationship
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -624,6 +751,17 @@ func (_m *Relationship) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("state_version=")
 	builder.WriteString(fmt.Sprintf("%v", _m.StateVersion))
+	builder.WriteString(", ")
+	builder.WriteString("state_hash=")
+	builder.WriteString(_m.StateHash)
+	builder.WriteString(", ")
+	builder.WriteString("projector_version=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ProjectorVersion))
+	builder.WriteString(", ")
+	if v := _m.ProjectedAt; v != nil {
+		builder.WriteString("projected_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	if v := _m.LastChangedAt; v != nil {
 		builder.WriteString("last_changed_at=")
@@ -924,6 +1062,150 @@ func (_m *Relationship) appendNamedSnapshots(name string, edges ...*Relationship
 		_m.Edges.namedSnapshots[name] = []*RelationshipStateSnapshot{}
 	} else {
 		_m.Edges.namedSnapshots[name] = append(_m.Edges.namedSnapshots[name], edges...)
+	}
+}
+
+// NamedProjectionJobs returns the ProjectionJobs named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedProjectionJobs(name string) ([]*RelationshipProjectionJob, error) {
+	if _m.Edges.namedProjectionJobs == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedProjectionJobs[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedProjectionJobs(name string, edges ...*RelationshipProjectionJob) {
+	if _m.Edges.namedProjectionJobs == nil {
+		_m.Edges.namedProjectionJobs = make(map[string][]*RelationshipProjectionJob)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedProjectionJobs[name] = []*RelationshipProjectionJob{}
+	} else {
+		_m.Edges.namedProjectionJobs[name] = append(_m.Edges.namedProjectionJobs[name], edges...)
+	}
+}
+
+// NamedTrustEvents returns the TrustEvents named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedTrustEvents(name string) ([]*RevenueTrustEvent, error) {
+	if _m.Edges.namedTrustEvents == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedTrustEvents[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedTrustEvents(name string, edges ...*RevenueTrustEvent) {
+	if _m.Edges.namedTrustEvents == nil {
+		_m.Edges.namedTrustEvents = make(map[string][]*RevenueTrustEvent)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedTrustEvents[name] = []*RevenueTrustEvent{}
+	} else {
+		_m.Edges.namedTrustEvents[name] = append(_m.Edges.namedTrustEvents[name], edges...)
+	}
+}
+
+// NamedProposedIdentityCandidates returns the ProposedIdentityCandidates named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedProposedIdentityCandidates(name string) ([]*RelationshipIdentityCandidate, error) {
+	if _m.Edges.namedProposedIdentityCandidates == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedProposedIdentityCandidates[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedProposedIdentityCandidates(name string, edges ...*RelationshipIdentityCandidate) {
+	if _m.Edges.namedProposedIdentityCandidates == nil {
+		_m.Edges.namedProposedIdentityCandidates = make(map[string][]*RelationshipIdentityCandidate)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedProposedIdentityCandidates[name] = []*RelationshipIdentityCandidate{}
+	} else {
+		_m.Edges.namedProposedIdentityCandidates[name] = append(_m.Edges.namedProposedIdentityCandidates[name], edges...)
+	}
+}
+
+// NamedExistingIdentityCandidates returns the ExistingIdentityCandidates named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedExistingIdentityCandidates(name string) ([]*RelationshipIdentityCandidate, error) {
+	if _m.Edges.namedExistingIdentityCandidates == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedExistingIdentityCandidates[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedExistingIdentityCandidates(name string, edges ...*RelationshipIdentityCandidate) {
+	if _m.Edges.namedExistingIdentityCandidates == nil {
+		_m.Edges.namedExistingIdentityCandidates = make(map[string][]*RelationshipIdentityCandidate)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedExistingIdentityCandidates[name] = []*RelationshipIdentityCandidate{}
+	} else {
+		_m.Edges.namedExistingIdentityCandidates[name] = append(_m.Edges.namedExistingIdentityCandidates[name], edges...)
+	}
+}
+
+// NamedReviewAcknowledgements returns the ReviewAcknowledgements named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedReviewAcknowledgements(name string) ([]*RelationshipReviewAcknowledgement, error) {
+	if _m.Edges.namedReviewAcknowledgements == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedReviewAcknowledgements[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedReviewAcknowledgements(name string, edges ...*RelationshipReviewAcknowledgement) {
+	if _m.Edges.namedReviewAcknowledgements == nil {
+		_m.Edges.namedReviewAcknowledgements = make(map[string][]*RelationshipReviewAcknowledgement)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedReviewAcknowledgements[name] = []*RelationshipReviewAcknowledgement{}
+	} else {
+		_m.Edges.namedReviewAcknowledgements[name] = append(_m.Edges.namedReviewAcknowledgements[name], edges...)
+	}
+}
+
+// NamedAttentionItems returns the AttentionItems named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Relationship) NamedAttentionItems(name string) ([]*RelationshipAttentionItem, error) {
+	if _m.Edges.namedAttentionItems == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedAttentionItems[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Relationship) appendNamedAttentionItems(name string, edges ...*RelationshipAttentionItem) {
+	if _m.Edges.namedAttentionItems == nil {
+		_m.Edges.namedAttentionItems = make(map[string][]*RelationshipAttentionItem)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedAttentionItems[name] = []*RelationshipAttentionItem{}
+	} else {
+		_m.Edges.namedAttentionItems[name] = append(_m.Edges.namedAttentionItems[name], edges...)
 	}
 }
 

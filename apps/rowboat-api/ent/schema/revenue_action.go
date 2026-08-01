@@ -113,6 +113,8 @@ func (RevenueAction) Edges() []ent.Edge {
 			StorageKey(edge.Column("revenue_action_id")),
 		edge.To("outcomes", ActionOutcome.Type).
 			StorageKey(edge.Column("revenue_action_id")),
+		edge.To("trust_events", RevenueTrustEvent.Type).
+			StorageKey(edge.Column("revenue_action_id")),
 	}
 }
 

@@ -43,9 +43,15 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitydecision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshiplineageevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipprojectionjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
@@ -53,10 +59,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenuetrustevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 )
@@ -241,10 +250,30 @@ var relationshipassertionImplementors = []string{"RelationshipAssertion", "Node"
 // IsNode implements the Node interface check for GQLGen.
 func (*RelationshipAssertion) IsNode() {}
 
+var relationshipattentionitemImplementors = []string{"RelationshipAttentionItem", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelationshipAttentionItem) IsNode() {}
+
 var relationshipidentityImplementors = []string{"RelationshipIdentity", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*RelationshipIdentity) IsNode() {}
+
+var relationshipidentitycandidateImplementors = []string{"RelationshipIdentityCandidate", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelationshipIdentityCandidate) IsNode() {}
+
+var relationshipidentitydecisionImplementors = []string{"RelationshipIdentityDecision", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelationshipIdentityDecision) IsNode() {}
+
+var relationshiplineageeventImplementors = []string{"RelationshipLineageEvent", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelationshipLineageEvent) IsNode() {}
 
 var relationshipobservationImplementors = []string{"RelationshipObservation", "Node"}
 
@@ -255,6 +284,16 @@ var relationshipparticipantImplementors = []string{"RelationshipParticipant", "N
 
 // IsNode implements the Node interface check for GQLGen.
 func (*RelationshipParticipant) IsNode() {}
+
+var relationshipprojectionjobImplementors = []string{"RelationshipProjectionJob", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelationshipProjectionJob) IsNode() {}
+
+var relationshipreviewacknowledgementImplementors = []string{"RelationshipReviewAcknowledgement", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelationshipReviewAcknowledgement) IsNode() {}
 
 var relationshipsourcestatusImplementors = []string{"RelationshipSourceStatus", "Node"}
 
@@ -291,6 +330,11 @@ var revenueoutboxeventImplementors = []string{"RevenueOutboxEvent", "Node"}
 // IsNode implements the Node interface check for GQLGen.
 func (*RevenueOutboxEvent) IsNode() {}
 
+var revenuetrusteventImplementors = []string{"RevenueTrustEvent", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RevenueTrustEvent) IsNode() {}
+
 var revenueworkspaceImplementors = []string{"RevenueWorkspace", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
@@ -306,10 +350,20 @@ var subscriptionImplementors = []string{"BillingSubscription", "Node"}
 // IsNode implements the Node interface check for GQLGen.
 func (*Subscription) IsNode() {}
 
+var tenantevidencekeyImplementors = []string{"TenantEvidenceKey", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*TenantEvidenceKey) IsNode() {}
+
 var userImplementors = []string{"User", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*User) IsNode() {}
+
+var workspacefeaturecontrolImplementors = []string{"WorkspaceFeatureControl", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*WorkspaceFeatureControl) IsNode() {}
 
 var errNodeInvalidID = &NotFoundError{"node"}
 
@@ -684,11 +738,47 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			}
 		}
 		return query.Only(ctx)
+	case relationshipattentionitem.Table:
+		query := c.RelationshipAttentionItem.Query().
+			Where(relationshipattentionitem.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipattentionitemImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case relationshipidentity.Table:
 		query := c.RelationshipIdentity.Query().
 			Where(relationshipidentity.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipidentityImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relationshipidentitycandidate.Table:
+		query := c.RelationshipIdentityCandidate.Query().
+			Where(relationshipidentitycandidate.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipidentitycandidateImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relationshipidentitydecision.Table:
+		query := c.RelationshipIdentityDecision.Query().
+			Where(relationshipidentitydecision.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipidentitydecisionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relationshiplineageevent.Table:
+		query := c.RelationshipLineageEvent.Query().
+			Where(relationshiplineageevent.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshiplineageeventImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -707,6 +797,24 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(relationshipparticipant.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipparticipantImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relationshipprojectionjob.Table:
+		query := c.RelationshipProjectionJob.Query().
+			Where(relationshipprojectionjob.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipprojectionjobImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relationshipreviewacknowledgement.Table:
+		query := c.RelationshipReviewAcknowledgement.Query().
+			Where(relationshipreviewacknowledgement.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipreviewacknowledgementImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -774,6 +882,15 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			}
 		}
 		return query.Only(ctx)
+	case revenuetrustevent.Table:
+		query := c.RevenueTrustEvent.Query().
+			Where(revenuetrustevent.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, revenuetrusteventImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case revenueworkspace.Table:
 		query := c.RevenueWorkspace.Query().
 			Where(revenueworkspace.ID(id))
@@ -801,11 +918,29 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			}
 		}
 		return query.Only(ctx)
+	case tenantevidencekey.Table:
+		query := c.TenantEvidenceKey.Query().
+			Where(tenantevidencekey.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, tenantevidencekeyImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case user.Table:
 		query := c.User.Query().
 			Where(user.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, userImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case workspacefeaturecontrol.Table:
+		query := c.WorkspaceFeatureControl.Query().
+			Where(workspacefeaturecontrol.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, workspacefeaturecontrolImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -1443,10 +1578,74 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 				*noder = node
 			}
 		}
+	case relationshipattentionitem.Table:
+		query := c.RelationshipAttentionItem.Query().
+			Where(relationshipattentionitem.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relationshipattentionitemImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case relationshipidentity.Table:
 		query := c.RelationshipIdentity.Query().
 			Where(relationshipidentity.IDIn(ids...))
 		query, err := query.CollectFields(ctx, relationshipidentityImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relationshipidentitycandidate.Table:
+		query := c.RelationshipIdentityCandidate.Query().
+			Where(relationshipidentitycandidate.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relationshipidentitycandidateImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relationshipidentitydecision.Table:
+		query := c.RelationshipIdentityDecision.Query().
+			Where(relationshipidentitydecision.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relationshipidentitydecisionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relationshiplineageevent.Table:
+		query := c.RelationshipLineageEvent.Query().
+			Where(relationshiplineageevent.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relationshiplineageeventImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -1479,6 +1678,38 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.RelationshipParticipant.Query().
 			Where(relationshipparticipant.IDIn(ids...))
 		query, err := query.CollectFields(ctx, relationshipparticipantImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relationshipprojectionjob.Table:
+		query := c.RelationshipProjectionJob.Query().
+			Where(relationshipprojectionjob.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relationshipprojectionjobImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relationshipreviewacknowledgement.Table:
+		query := c.RelationshipReviewAcknowledgement.Query().
+			Where(relationshipreviewacknowledgement.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relationshipreviewacknowledgementImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -1603,6 +1834,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 				*noder = node
 			}
 		}
+	case revenuetrustevent.Table:
+		query := c.RevenueTrustEvent.Query().
+			Where(revenuetrustevent.IDIn(ids...))
+		query, err := query.CollectFields(ctx, revenuetrusteventImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case revenueworkspace.Table:
 		query := c.RevenueWorkspace.Query().
 			Where(revenueworkspace.IDIn(ids...))
@@ -1651,10 +1898,42 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 				*noder = node
 			}
 		}
+	case tenantevidencekey.Table:
+		query := c.TenantEvidenceKey.Query().
+			Where(tenantevidencekey.IDIn(ids...))
+		query, err := query.CollectFields(ctx, tenantevidencekeyImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case user.Table:
 		query := c.User.Query().
 			Where(user.IDIn(ids...))
 		query, err := query.CollectFields(ctx, userImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case workspacefeaturecontrol.Table:
+		query := c.WorkspaceFeatureControl.Query().
+			Where(workspacefeaturecontrol.IDIn(ids...))
+		query, err := query.CollectFields(ctx, workspacefeaturecontrolImplementors...)
 		if err != nil {
 			return nil, err
 		}

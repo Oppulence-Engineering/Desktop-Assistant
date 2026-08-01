@@ -117,6 +117,24 @@ type UserEdges struct {
 	RelationshipParticipants []*RelationshipParticipant `json:"relationship_participants,omitempty"`
 	// RelationshipIdentities holds the value of the relationship_identities edge.
 	RelationshipIdentities []*RelationshipIdentity `json:"relationship_identities,omitempty"`
+	// RelationshipProjectionJobs holds the value of the relationship_projection_jobs edge.
+	RelationshipProjectionJobs []*RelationshipProjectionJob `json:"relationship_projection_jobs,omitempty"`
+	// TenantEvidenceKeys holds the value of the tenant_evidence_keys edge.
+	TenantEvidenceKeys []*TenantEvidenceKey `json:"tenant_evidence_keys,omitempty"`
+	// WorkspaceFeatureControls holds the value of the workspace_feature_controls edge.
+	WorkspaceFeatureControls []*WorkspaceFeatureControl `json:"workspace_feature_controls,omitempty"`
+	// RevenueTrustEvents holds the value of the revenue_trust_events edge.
+	RevenueTrustEvents []*RevenueTrustEvent `json:"revenue_trust_events,omitempty"`
+	// RelationshipIdentityCandidates holds the value of the relationship_identity_candidates edge.
+	RelationshipIdentityCandidates []*RelationshipIdentityCandidate `json:"relationship_identity_candidates,omitempty"`
+	// RelationshipLineageEvents holds the value of the relationship_lineage_events edge.
+	RelationshipLineageEvents []*RelationshipLineageEvent `json:"relationship_lineage_events,omitempty"`
+	// RelationshipIdentityDecisions holds the value of the relationship_identity_decisions edge.
+	RelationshipIdentityDecisions []*RelationshipIdentityDecision `json:"relationship_identity_decisions,omitempty"`
+	// RelationshipReviewAcknowledgements holds the value of the relationship_review_acknowledgements edge.
+	RelationshipReviewAcknowledgements []*RelationshipReviewAcknowledgement `json:"relationship_review_acknowledgements,omitempty"`
+	// RelationshipAttentionItems holds the value of the relationship_attention_items edge.
+	RelationshipAttentionItems []*RelationshipAttentionItem `json:"relationship_attention_items,omitempty"`
 	// RelationshipObservations holds the value of the relationship_observations edge.
 	RelationshipObservations []*RelationshipObservation `json:"relationship_observations,omitempty"`
 	// RelationshipAssertions holds the value of the relationship_assertions edge.
@@ -131,55 +149,64 @@ type UserEdges struct {
 	ApprovalTokens []*ApprovalToken `json:"approval_tokens,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [46]bool
+	loadedTypes [55]bool
 	// totalCount holds the count of the edges above.
-	totalCount [46]map[string]int
+	totalCount [55]map[string]int
 
-	namedLedgerEntries                     map[string][]*CreditLedger
-	namedMeetingMinuteUsages               map[string][]*MeetingMinuteUsage
-	namedLlmUsages                         map[string][]*LLMUsage
-	namedOauthConnections                  map[string][]*OAuthConnection
-	namedMcpConnections                    map[string][]*MCPConnection
-	namedBackgroundTasks                   map[string][]*BackgroundTask
-	namedBackgroundTaskArtifacts           map[string][]*BackgroundTaskArtifact
-	namedBackgroundTaskRuns                map[string][]*BackgroundTaskRun
-	namedBackgroundTaskRunEvents           map[string][]*BackgroundTaskRunEvent
-	namedBackgroundTaskScheduleStates      map[string][]*BackgroundTaskScheduleState
-	namedCloudEvents                       map[string][]*CloudEvent
-	namedGoogleWatches                     map[string][]*GoogleWatch
-	namedAgentDefinitions                  map[string][]*AgentDefinition
-	namedAgentSessions                     map[string][]*AgentSession
-	namedAgentTurns                        map[string][]*AgentTurn
-	namedAgentSessionEvents                map[string][]*AgentSessionEvent
-	namedAgentToolCalls                    map[string][]*AgentToolCall
-	namedAgentApprovals                    map[string][]*AgentApproval
-	namedAgentToolResultBlobs              map[string][]*AgentToolResultBlob
-	namedRevenueWorkspaces                 map[string][]*RevenueWorkspace
-	namedRevenueWorkspaceMembers           map[string][]*RevenueWorkspaceMember
-	namedRelationships                     map[string][]*Relationship
-	namedRevenueEvidences                  map[string][]*RevenueEvidence
-	namedCommitments                       map[string][]*Commitment
-	namedCommitmentEvents                  map[string][]*CommitmentEvent
-	namedCommitmentDependencies            map[string][]*CommitmentDependency
-	namedConversationIntelligenceArtifacts map[string][]*ConversationIntelligenceArtifact
-	namedRevenueActions                    map[string][]*RevenueAction
-	namedRevenueActionRevisions            map[string][]*RevenueActionRevision
-	namedPolicyDecisionSnapshots           map[string][]*PolicyDecisionSnapshot
-	namedActionOutcomes                    map[string][]*ActionOutcome
-	namedRevenueOutboxEvents               map[string][]*RevenueOutboxEvent
-	namedRevenueLeakScans                  map[string][]*RevenueLeakScan
-	namedMailThreads                       map[string][]*MailThread
-	namedMailMessageMetas                  map[string][]*MailMessageMeta
-	namedMailBodyCaches                    map[string][]*MailBodyCache
-	namedMailSignals                       map[string][]*MailSignal
-	namedRelationshipParticipants          map[string][]*RelationshipParticipant
-	namedRelationshipIdentities            map[string][]*RelationshipIdentity
-	namedRelationshipObservations          map[string][]*RelationshipObservation
-	namedRelationshipAssertions            map[string][]*RelationshipAssertion
-	namedRelationshipStateSnapshots        map[string][]*RelationshipStateSnapshot
-	namedRelationshipSourceStatuses        map[string][]*RelationshipSourceStatus
-	namedActionProposals                   map[string][]*ActionProposal
-	namedApprovalTokens                    map[string][]*ApprovalToken
+	namedLedgerEntries                      map[string][]*CreditLedger
+	namedMeetingMinuteUsages                map[string][]*MeetingMinuteUsage
+	namedLlmUsages                          map[string][]*LLMUsage
+	namedOauthConnections                   map[string][]*OAuthConnection
+	namedMcpConnections                     map[string][]*MCPConnection
+	namedBackgroundTasks                    map[string][]*BackgroundTask
+	namedBackgroundTaskArtifacts            map[string][]*BackgroundTaskArtifact
+	namedBackgroundTaskRuns                 map[string][]*BackgroundTaskRun
+	namedBackgroundTaskRunEvents            map[string][]*BackgroundTaskRunEvent
+	namedBackgroundTaskScheduleStates       map[string][]*BackgroundTaskScheduleState
+	namedCloudEvents                        map[string][]*CloudEvent
+	namedGoogleWatches                      map[string][]*GoogleWatch
+	namedAgentDefinitions                   map[string][]*AgentDefinition
+	namedAgentSessions                      map[string][]*AgentSession
+	namedAgentTurns                         map[string][]*AgentTurn
+	namedAgentSessionEvents                 map[string][]*AgentSessionEvent
+	namedAgentToolCalls                     map[string][]*AgentToolCall
+	namedAgentApprovals                     map[string][]*AgentApproval
+	namedAgentToolResultBlobs               map[string][]*AgentToolResultBlob
+	namedRevenueWorkspaces                  map[string][]*RevenueWorkspace
+	namedRevenueWorkspaceMembers            map[string][]*RevenueWorkspaceMember
+	namedRelationships                      map[string][]*Relationship
+	namedRevenueEvidences                   map[string][]*RevenueEvidence
+	namedCommitments                        map[string][]*Commitment
+	namedCommitmentEvents                   map[string][]*CommitmentEvent
+	namedCommitmentDependencies             map[string][]*CommitmentDependency
+	namedConversationIntelligenceArtifacts  map[string][]*ConversationIntelligenceArtifact
+	namedRevenueActions                     map[string][]*RevenueAction
+	namedRevenueActionRevisions             map[string][]*RevenueActionRevision
+	namedPolicyDecisionSnapshots            map[string][]*PolicyDecisionSnapshot
+	namedActionOutcomes                     map[string][]*ActionOutcome
+	namedRevenueOutboxEvents                map[string][]*RevenueOutboxEvent
+	namedRevenueLeakScans                   map[string][]*RevenueLeakScan
+	namedMailThreads                        map[string][]*MailThread
+	namedMailMessageMetas                   map[string][]*MailMessageMeta
+	namedMailBodyCaches                     map[string][]*MailBodyCache
+	namedMailSignals                        map[string][]*MailSignal
+	namedRelationshipParticipants           map[string][]*RelationshipParticipant
+	namedRelationshipIdentities             map[string][]*RelationshipIdentity
+	namedRelationshipProjectionJobs         map[string][]*RelationshipProjectionJob
+	namedTenantEvidenceKeys                 map[string][]*TenantEvidenceKey
+	namedWorkspaceFeatureControls           map[string][]*WorkspaceFeatureControl
+	namedRevenueTrustEvents                 map[string][]*RevenueTrustEvent
+	namedRelationshipIdentityCandidates     map[string][]*RelationshipIdentityCandidate
+	namedRelationshipLineageEvents          map[string][]*RelationshipLineageEvent
+	namedRelationshipIdentityDecisions      map[string][]*RelationshipIdentityDecision
+	namedRelationshipReviewAcknowledgements map[string][]*RelationshipReviewAcknowledgement
+	namedRelationshipAttentionItems         map[string][]*RelationshipAttentionItem
+	namedRelationshipObservations           map[string][]*RelationshipObservation
+	namedRelationshipAssertions             map[string][]*RelationshipAssertion
+	namedRelationshipStateSnapshots         map[string][]*RelationshipStateSnapshot
+	namedRelationshipSourceStatuses         map[string][]*RelationshipSourceStatus
+	namedActionProposals                    map[string][]*ActionProposal
+	namedApprovalTokens                     map[string][]*ApprovalToken
 }
 
 // SubscriptionOrErr returns the Subscription value or an error if the edge
@@ -544,10 +571,91 @@ func (e UserEdges) RelationshipIdentitiesOrErr() ([]*RelationshipIdentity, error
 	return nil, &NotLoadedError{edge: "relationship_identities"}
 }
 
+// RelationshipProjectionJobsOrErr returns the RelationshipProjectionJobs value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RelationshipProjectionJobsOrErr() ([]*RelationshipProjectionJob, error) {
+	if e.loadedTypes[40] {
+		return e.RelationshipProjectionJobs, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_projection_jobs"}
+}
+
+// TenantEvidenceKeysOrErr returns the TenantEvidenceKeys value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) TenantEvidenceKeysOrErr() ([]*TenantEvidenceKey, error) {
+	if e.loadedTypes[41] {
+		return e.TenantEvidenceKeys, nil
+	}
+	return nil, &NotLoadedError{edge: "tenant_evidence_keys"}
+}
+
+// WorkspaceFeatureControlsOrErr returns the WorkspaceFeatureControls value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) WorkspaceFeatureControlsOrErr() ([]*WorkspaceFeatureControl, error) {
+	if e.loadedTypes[42] {
+		return e.WorkspaceFeatureControls, nil
+	}
+	return nil, &NotLoadedError{edge: "workspace_feature_controls"}
+}
+
+// RevenueTrustEventsOrErr returns the RevenueTrustEvents value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RevenueTrustEventsOrErr() ([]*RevenueTrustEvent, error) {
+	if e.loadedTypes[43] {
+		return e.RevenueTrustEvents, nil
+	}
+	return nil, &NotLoadedError{edge: "revenue_trust_events"}
+}
+
+// RelationshipIdentityCandidatesOrErr returns the RelationshipIdentityCandidates value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RelationshipIdentityCandidatesOrErr() ([]*RelationshipIdentityCandidate, error) {
+	if e.loadedTypes[44] {
+		return e.RelationshipIdentityCandidates, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_identity_candidates"}
+}
+
+// RelationshipLineageEventsOrErr returns the RelationshipLineageEvents value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RelationshipLineageEventsOrErr() ([]*RelationshipLineageEvent, error) {
+	if e.loadedTypes[45] {
+		return e.RelationshipLineageEvents, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_lineage_events"}
+}
+
+// RelationshipIdentityDecisionsOrErr returns the RelationshipIdentityDecisions value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RelationshipIdentityDecisionsOrErr() ([]*RelationshipIdentityDecision, error) {
+	if e.loadedTypes[46] {
+		return e.RelationshipIdentityDecisions, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_identity_decisions"}
+}
+
+// RelationshipReviewAcknowledgementsOrErr returns the RelationshipReviewAcknowledgements value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RelationshipReviewAcknowledgementsOrErr() ([]*RelationshipReviewAcknowledgement, error) {
+	if e.loadedTypes[47] {
+		return e.RelationshipReviewAcknowledgements, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_review_acknowledgements"}
+}
+
+// RelationshipAttentionItemsOrErr returns the RelationshipAttentionItems value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RelationshipAttentionItemsOrErr() ([]*RelationshipAttentionItem, error) {
+	if e.loadedTypes[48] {
+		return e.RelationshipAttentionItems, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_attention_items"}
+}
+
 // RelationshipObservationsOrErr returns the RelationshipObservations value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipObservationsOrErr() ([]*RelationshipObservation, error) {
-	if e.loadedTypes[40] {
+	if e.loadedTypes[49] {
 		return e.RelationshipObservations, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_observations"}
@@ -556,7 +664,7 @@ func (e UserEdges) RelationshipObservationsOrErr() ([]*RelationshipObservation, 
 // RelationshipAssertionsOrErr returns the RelationshipAssertions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipAssertionsOrErr() ([]*RelationshipAssertion, error) {
-	if e.loadedTypes[41] {
+	if e.loadedTypes[50] {
 		return e.RelationshipAssertions, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_assertions"}
@@ -565,7 +673,7 @@ func (e UserEdges) RelationshipAssertionsOrErr() ([]*RelationshipAssertion, erro
 // RelationshipStateSnapshotsOrErr returns the RelationshipStateSnapshots value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipStateSnapshotsOrErr() ([]*RelationshipStateSnapshot, error) {
-	if e.loadedTypes[42] {
+	if e.loadedTypes[51] {
 		return e.RelationshipStateSnapshots, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_state_snapshots"}
@@ -574,7 +682,7 @@ func (e UserEdges) RelationshipStateSnapshotsOrErr() ([]*RelationshipStateSnapsh
 // RelationshipSourceStatusesOrErr returns the RelationshipSourceStatuses value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipSourceStatusesOrErr() ([]*RelationshipSourceStatus, error) {
-	if e.loadedTypes[43] {
+	if e.loadedTypes[52] {
 		return e.RelationshipSourceStatuses, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_source_statuses"}
@@ -583,7 +691,7 @@ func (e UserEdges) RelationshipSourceStatusesOrErr() ([]*RelationshipSourceStatu
 // ActionProposalsOrErr returns the ActionProposals value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ActionProposalsOrErr() ([]*ActionProposal, error) {
-	if e.loadedTypes[44] {
+	if e.loadedTypes[53] {
 		return e.ActionProposals, nil
 	}
 	return nil, &NotLoadedError{edge: "action_proposals"}
@@ -592,7 +700,7 @@ func (e UserEdges) ActionProposalsOrErr() ([]*ActionProposal, error) {
 // ApprovalTokensOrErr returns the ApprovalTokens value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ApprovalTokensOrErr() ([]*ApprovalToken, error) {
-	if e.loadedTypes[45] {
+	if e.loadedTypes[54] {
 		return e.ApprovalTokens, nil
 	}
 	return nil, &NotLoadedError{edge: "approval_tokens"}
@@ -871,6 +979,51 @@ func (_m *User) QueryRelationshipParticipants() *RelationshipParticipantQuery {
 // QueryRelationshipIdentities queries the "relationship_identities" edge of the User entity.
 func (_m *User) QueryRelationshipIdentities() *RelationshipIdentityQuery {
 	return NewUserClient(_m.config).QueryRelationshipIdentities(_m)
+}
+
+// QueryRelationshipProjectionJobs queries the "relationship_projection_jobs" edge of the User entity.
+func (_m *User) QueryRelationshipProjectionJobs() *RelationshipProjectionJobQuery {
+	return NewUserClient(_m.config).QueryRelationshipProjectionJobs(_m)
+}
+
+// QueryTenantEvidenceKeys queries the "tenant_evidence_keys" edge of the User entity.
+func (_m *User) QueryTenantEvidenceKeys() *TenantEvidenceKeyQuery {
+	return NewUserClient(_m.config).QueryTenantEvidenceKeys(_m)
+}
+
+// QueryWorkspaceFeatureControls queries the "workspace_feature_controls" edge of the User entity.
+func (_m *User) QueryWorkspaceFeatureControls() *WorkspaceFeatureControlQuery {
+	return NewUserClient(_m.config).QueryWorkspaceFeatureControls(_m)
+}
+
+// QueryRevenueTrustEvents queries the "revenue_trust_events" edge of the User entity.
+func (_m *User) QueryRevenueTrustEvents() *RevenueTrustEventQuery {
+	return NewUserClient(_m.config).QueryRevenueTrustEvents(_m)
+}
+
+// QueryRelationshipIdentityCandidates queries the "relationship_identity_candidates" edge of the User entity.
+func (_m *User) QueryRelationshipIdentityCandidates() *RelationshipIdentityCandidateQuery {
+	return NewUserClient(_m.config).QueryRelationshipIdentityCandidates(_m)
+}
+
+// QueryRelationshipLineageEvents queries the "relationship_lineage_events" edge of the User entity.
+func (_m *User) QueryRelationshipLineageEvents() *RelationshipLineageEventQuery {
+	return NewUserClient(_m.config).QueryRelationshipLineageEvents(_m)
+}
+
+// QueryRelationshipIdentityDecisions queries the "relationship_identity_decisions" edge of the User entity.
+func (_m *User) QueryRelationshipIdentityDecisions() *RelationshipIdentityDecisionQuery {
+	return NewUserClient(_m.config).QueryRelationshipIdentityDecisions(_m)
+}
+
+// QueryRelationshipReviewAcknowledgements queries the "relationship_review_acknowledgements" edge of the User entity.
+func (_m *User) QueryRelationshipReviewAcknowledgements() *RelationshipReviewAcknowledgementQuery {
+	return NewUserClient(_m.config).QueryRelationshipReviewAcknowledgements(_m)
+}
+
+// QueryRelationshipAttentionItems queries the "relationship_attention_items" edge of the User entity.
+func (_m *User) QueryRelationshipAttentionItems() *RelationshipAttentionItemQuery {
+	return NewUserClient(_m.config).QueryRelationshipAttentionItems(_m)
 }
 
 // QueryRelationshipObservations queries the "relationship_observations" edge of the User entity.
@@ -1877,6 +2030,222 @@ func (_m *User) appendNamedRelationshipIdentities(name string, edges ...*Relatio
 		_m.Edges.namedRelationshipIdentities[name] = []*RelationshipIdentity{}
 	} else {
 		_m.Edges.namedRelationshipIdentities[name] = append(_m.Edges.namedRelationshipIdentities[name], edges...)
+	}
+}
+
+// NamedRelationshipProjectionJobs returns the RelationshipProjectionJobs named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedRelationshipProjectionJobs(name string) ([]*RelationshipProjectionJob, error) {
+	if _m.Edges.namedRelationshipProjectionJobs == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipProjectionJobs[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedRelationshipProjectionJobs(name string, edges ...*RelationshipProjectionJob) {
+	if _m.Edges.namedRelationshipProjectionJobs == nil {
+		_m.Edges.namedRelationshipProjectionJobs = make(map[string][]*RelationshipProjectionJob)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipProjectionJobs[name] = []*RelationshipProjectionJob{}
+	} else {
+		_m.Edges.namedRelationshipProjectionJobs[name] = append(_m.Edges.namedRelationshipProjectionJobs[name], edges...)
+	}
+}
+
+// NamedTenantEvidenceKeys returns the TenantEvidenceKeys named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedTenantEvidenceKeys(name string) ([]*TenantEvidenceKey, error) {
+	if _m.Edges.namedTenantEvidenceKeys == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedTenantEvidenceKeys[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedTenantEvidenceKeys(name string, edges ...*TenantEvidenceKey) {
+	if _m.Edges.namedTenantEvidenceKeys == nil {
+		_m.Edges.namedTenantEvidenceKeys = make(map[string][]*TenantEvidenceKey)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedTenantEvidenceKeys[name] = []*TenantEvidenceKey{}
+	} else {
+		_m.Edges.namedTenantEvidenceKeys[name] = append(_m.Edges.namedTenantEvidenceKeys[name], edges...)
+	}
+}
+
+// NamedWorkspaceFeatureControls returns the WorkspaceFeatureControls named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedWorkspaceFeatureControls(name string) ([]*WorkspaceFeatureControl, error) {
+	if _m.Edges.namedWorkspaceFeatureControls == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedWorkspaceFeatureControls[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedWorkspaceFeatureControls(name string, edges ...*WorkspaceFeatureControl) {
+	if _m.Edges.namedWorkspaceFeatureControls == nil {
+		_m.Edges.namedWorkspaceFeatureControls = make(map[string][]*WorkspaceFeatureControl)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedWorkspaceFeatureControls[name] = []*WorkspaceFeatureControl{}
+	} else {
+		_m.Edges.namedWorkspaceFeatureControls[name] = append(_m.Edges.namedWorkspaceFeatureControls[name], edges...)
+	}
+}
+
+// NamedRevenueTrustEvents returns the RevenueTrustEvents named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedRevenueTrustEvents(name string) ([]*RevenueTrustEvent, error) {
+	if _m.Edges.namedRevenueTrustEvents == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRevenueTrustEvents[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedRevenueTrustEvents(name string, edges ...*RevenueTrustEvent) {
+	if _m.Edges.namedRevenueTrustEvents == nil {
+		_m.Edges.namedRevenueTrustEvents = make(map[string][]*RevenueTrustEvent)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRevenueTrustEvents[name] = []*RevenueTrustEvent{}
+	} else {
+		_m.Edges.namedRevenueTrustEvents[name] = append(_m.Edges.namedRevenueTrustEvents[name], edges...)
+	}
+}
+
+// NamedRelationshipIdentityCandidates returns the RelationshipIdentityCandidates named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedRelationshipIdentityCandidates(name string) ([]*RelationshipIdentityCandidate, error) {
+	if _m.Edges.namedRelationshipIdentityCandidates == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipIdentityCandidates[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedRelationshipIdentityCandidates(name string, edges ...*RelationshipIdentityCandidate) {
+	if _m.Edges.namedRelationshipIdentityCandidates == nil {
+		_m.Edges.namedRelationshipIdentityCandidates = make(map[string][]*RelationshipIdentityCandidate)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipIdentityCandidates[name] = []*RelationshipIdentityCandidate{}
+	} else {
+		_m.Edges.namedRelationshipIdentityCandidates[name] = append(_m.Edges.namedRelationshipIdentityCandidates[name], edges...)
+	}
+}
+
+// NamedRelationshipLineageEvents returns the RelationshipLineageEvents named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedRelationshipLineageEvents(name string) ([]*RelationshipLineageEvent, error) {
+	if _m.Edges.namedRelationshipLineageEvents == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipLineageEvents[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedRelationshipLineageEvents(name string, edges ...*RelationshipLineageEvent) {
+	if _m.Edges.namedRelationshipLineageEvents == nil {
+		_m.Edges.namedRelationshipLineageEvents = make(map[string][]*RelationshipLineageEvent)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipLineageEvents[name] = []*RelationshipLineageEvent{}
+	} else {
+		_m.Edges.namedRelationshipLineageEvents[name] = append(_m.Edges.namedRelationshipLineageEvents[name], edges...)
+	}
+}
+
+// NamedRelationshipIdentityDecisions returns the RelationshipIdentityDecisions named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedRelationshipIdentityDecisions(name string) ([]*RelationshipIdentityDecision, error) {
+	if _m.Edges.namedRelationshipIdentityDecisions == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipIdentityDecisions[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedRelationshipIdentityDecisions(name string, edges ...*RelationshipIdentityDecision) {
+	if _m.Edges.namedRelationshipIdentityDecisions == nil {
+		_m.Edges.namedRelationshipIdentityDecisions = make(map[string][]*RelationshipIdentityDecision)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipIdentityDecisions[name] = []*RelationshipIdentityDecision{}
+	} else {
+		_m.Edges.namedRelationshipIdentityDecisions[name] = append(_m.Edges.namedRelationshipIdentityDecisions[name], edges...)
+	}
+}
+
+// NamedRelationshipReviewAcknowledgements returns the RelationshipReviewAcknowledgements named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedRelationshipReviewAcknowledgements(name string) ([]*RelationshipReviewAcknowledgement, error) {
+	if _m.Edges.namedRelationshipReviewAcknowledgements == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipReviewAcknowledgements[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedRelationshipReviewAcknowledgements(name string, edges ...*RelationshipReviewAcknowledgement) {
+	if _m.Edges.namedRelationshipReviewAcknowledgements == nil {
+		_m.Edges.namedRelationshipReviewAcknowledgements = make(map[string][]*RelationshipReviewAcknowledgement)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipReviewAcknowledgements[name] = []*RelationshipReviewAcknowledgement{}
+	} else {
+		_m.Edges.namedRelationshipReviewAcknowledgements[name] = append(_m.Edges.namedRelationshipReviewAcknowledgements[name], edges...)
+	}
+}
+
+// NamedRelationshipAttentionItems returns the RelationshipAttentionItems named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedRelationshipAttentionItems(name string) ([]*RelationshipAttentionItem, error) {
+	if _m.Edges.namedRelationshipAttentionItems == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipAttentionItems[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedRelationshipAttentionItems(name string, edges ...*RelationshipAttentionItem) {
+	if _m.Edges.namedRelationshipAttentionItems == nil {
+		_m.Edges.namedRelationshipAttentionItems = make(map[string][]*RelationshipAttentionItem)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipAttentionItems[name] = []*RelationshipAttentionItem{}
+	} else {
+		_m.Edges.namedRelationshipAttentionItems[name] = append(_m.Edges.namedRelationshipAttentionItems[name], edges...)
 	}
 }
 

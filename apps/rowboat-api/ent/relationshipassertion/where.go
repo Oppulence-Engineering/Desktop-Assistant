@@ -81,6 +81,11 @@ func SourceType(v string) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldEQ(FieldSourceType, v))
 }
 
+// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
+func Status(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldStatus, v))
+}
+
 // Confidence applies equality check predicate on the "confidence" field. It's identical to ConfidenceEQ.
 func Confidence(v float64) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldEQ(FieldConfidence, v))
@@ -96,9 +101,34 @@ func ValidFrom(v time.Time) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldEQ(FieldValidFrom, v))
 }
 
+// ValidTo applies equality check predicate on the "valid_to" field. It's identical to ValidToEQ.
+func ValidTo(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldValidTo, v))
+}
+
+// RetractedAt applies equality check predicate on the "retracted_at" field. It's identical to RetractedAtEQ.
+func RetractedAt(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldRetractedAt, v))
+}
+
+// RetractionReason applies equality check predicate on the "retraction_reason" field. It's identical to RetractionReasonEQ.
+func RetractionReason(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldRetractionReason, v))
+}
+
 // SupersedesAssertionID applies equality check predicate on the "supersedes_assertion_id" field. It's identical to SupersedesAssertionIDEQ.
 func SupersedesAssertionID(v string) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldEQ(FieldSupersedesAssertionID, v))
+}
+
+// ExtractorVersion applies equality check predicate on the "extractor_version" field. It's identical to ExtractorVersionEQ.
+func ExtractorVersion(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldExtractorVersion, v))
+}
+
+// ProjectorCompatVersion applies equality check predicate on the "projector_compat_version" field. It's identical to ProjectorCompatVersionEQ.
+func ProjectorCompatVersion(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldProjectorCompatVersion, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -376,6 +406,71 @@ func SourceTypeContainsFold(v string) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldContainsFold(FieldSourceType, v))
 }
 
+// StatusEQ applies the EQ predicate on the "status" field.
+func StatusEQ(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldStatus, v))
+}
+
+// StatusNEQ applies the NEQ predicate on the "status" field.
+func StatusNEQ(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNEQ(FieldStatus, v))
+}
+
+// StatusIn applies the In predicate on the "status" field.
+func StatusIn(vs ...string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIn(FieldStatus, vs...))
+}
+
+// StatusNotIn applies the NotIn predicate on the "status" field.
+func StatusNotIn(vs ...string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// StatusGT applies the GT predicate on the "status" field.
+func StatusGT(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGT(FieldStatus, v))
+}
+
+// StatusGTE applies the GTE predicate on the "status" field.
+func StatusGTE(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGTE(FieldStatus, v))
+}
+
+// StatusLT applies the LT predicate on the "status" field.
+func StatusLT(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLT(FieldStatus, v))
+}
+
+// StatusLTE applies the LTE predicate on the "status" field.
+func StatusLTE(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLTE(FieldStatus, v))
+}
+
+// StatusContains applies the Contains predicate on the "status" field.
+func StatusContains(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldContains(FieldStatus, v))
+}
+
+// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
+func StatusHasPrefix(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldHasPrefix(FieldStatus, v))
+}
+
+// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
+func StatusHasSuffix(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldHasSuffix(FieldStatus, v))
+}
+
+// StatusEqualFold applies the EqualFold predicate on the "status" field.
+func StatusEqualFold(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEqualFold(FieldStatus, v))
+}
+
+// StatusContainsFold applies the ContainsFold predicate on the "status" field.
+func StatusContainsFold(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldContainsFold(FieldStatus, v))
+}
+
 // ConfidenceEQ applies the EQ predicate on the "confidence" field.
 func ConfidenceEQ(v float64) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldEQ(FieldConfidence, v))
@@ -531,6 +626,181 @@ func ValidFromLTE(v time.Time) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldLTE(FieldValidFrom, v))
 }
 
+// ValidToEQ applies the EQ predicate on the "valid_to" field.
+func ValidToEQ(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldValidTo, v))
+}
+
+// ValidToNEQ applies the NEQ predicate on the "valid_to" field.
+func ValidToNEQ(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNEQ(FieldValidTo, v))
+}
+
+// ValidToIn applies the In predicate on the "valid_to" field.
+func ValidToIn(vs ...time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIn(FieldValidTo, vs...))
+}
+
+// ValidToNotIn applies the NotIn predicate on the "valid_to" field.
+func ValidToNotIn(vs ...time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotIn(FieldValidTo, vs...))
+}
+
+// ValidToGT applies the GT predicate on the "valid_to" field.
+func ValidToGT(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGT(FieldValidTo, v))
+}
+
+// ValidToGTE applies the GTE predicate on the "valid_to" field.
+func ValidToGTE(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGTE(FieldValidTo, v))
+}
+
+// ValidToLT applies the LT predicate on the "valid_to" field.
+func ValidToLT(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLT(FieldValidTo, v))
+}
+
+// ValidToLTE applies the LTE predicate on the "valid_to" field.
+func ValidToLTE(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLTE(FieldValidTo, v))
+}
+
+// ValidToIsNil applies the IsNil predicate on the "valid_to" field.
+func ValidToIsNil() predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIsNull(FieldValidTo))
+}
+
+// ValidToNotNil applies the NotNil predicate on the "valid_to" field.
+func ValidToNotNil() predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotNull(FieldValidTo))
+}
+
+// RetractedAtEQ applies the EQ predicate on the "retracted_at" field.
+func RetractedAtEQ(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldRetractedAt, v))
+}
+
+// RetractedAtNEQ applies the NEQ predicate on the "retracted_at" field.
+func RetractedAtNEQ(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNEQ(FieldRetractedAt, v))
+}
+
+// RetractedAtIn applies the In predicate on the "retracted_at" field.
+func RetractedAtIn(vs ...time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIn(FieldRetractedAt, vs...))
+}
+
+// RetractedAtNotIn applies the NotIn predicate on the "retracted_at" field.
+func RetractedAtNotIn(vs ...time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotIn(FieldRetractedAt, vs...))
+}
+
+// RetractedAtGT applies the GT predicate on the "retracted_at" field.
+func RetractedAtGT(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGT(FieldRetractedAt, v))
+}
+
+// RetractedAtGTE applies the GTE predicate on the "retracted_at" field.
+func RetractedAtGTE(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGTE(FieldRetractedAt, v))
+}
+
+// RetractedAtLT applies the LT predicate on the "retracted_at" field.
+func RetractedAtLT(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLT(FieldRetractedAt, v))
+}
+
+// RetractedAtLTE applies the LTE predicate on the "retracted_at" field.
+func RetractedAtLTE(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLTE(FieldRetractedAt, v))
+}
+
+// RetractedAtIsNil applies the IsNil predicate on the "retracted_at" field.
+func RetractedAtIsNil() predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIsNull(FieldRetractedAt))
+}
+
+// RetractedAtNotNil applies the NotNil predicate on the "retracted_at" field.
+func RetractedAtNotNil() predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotNull(FieldRetractedAt))
+}
+
+// RetractionReasonEQ applies the EQ predicate on the "retraction_reason" field.
+func RetractionReasonEQ(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldRetractionReason, v))
+}
+
+// RetractionReasonNEQ applies the NEQ predicate on the "retraction_reason" field.
+func RetractionReasonNEQ(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNEQ(FieldRetractionReason, v))
+}
+
+// RetractionReasonIn applies the In predicate on the "retraction_reason" field.
+func RetractionReasonIn(vs ...string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIn(FieldRetractionReason, vs...))
+}
+
+// RetractionReasonNotIn applies the NotIn predicate on the "retraction_reason" field.
+func RetractionReasonNotIn(vs ...string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotIn(FieldRetractionReason, vs...))
+}
+
+// RetractionReasonGT applies the GT predicate on the "retraction_reason" field.
+func RetractionReasonGT(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGT(FieldRetractionReason, v))
+}
+
+// RetractionReasonGTE applies the GTE predicate on the "retraction_reason" field.
+func RetractionReasonGTE(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGTE(FieldRetractionReason, v))
+}
+
+// RetractionReasonLT applies the LT predicate on the "retraction_reason" field.
+func RetractionReasonLT(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLT(FieldRetractionReason, v))
+}
+
+// RetractionReasonLTE applies the LTE predicate on the "retraction_reason" field.
+func RetractionReasonLTE(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLTE(FieldRetractionReason, v))
+}
+
+// RetractionReasonContains applies the Contains predicate on the "retraction_reason" field.
+func RetractionReasonContains(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldContains(FieldRetractionReason, v))
+}
+
+// RetractionReasonHasPrefix applies the HasPrefix predicate on the "retraction_reason" field.
+func RetractionReasonHasPrefix(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldHasPrefix(FieldRetractionReason, v))
+}
+
+// RetractionReasonHasSuffix applies the HasSuffix predicate on the "retraction_reason" field.
+func RetractionReasonHasSuffix(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldHasSuffix(FieldRetractionReason, v))
+}
+
+// RetractionReasonIsNil applies the IsNil predicate on the "retraction_reason" field.
+func RetractionReasonIsNil() predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIsNull(FieldRetractionReason))
+}
+
+// RetractionReasonNotNil applies the NotNil predicate on the "retraction_reason" field.
+func RetractionReasonNotNil() predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotNull(FieldRetractionReason))
+}
+
+// RetractionReasonEqualFold applies the EqualFold predicate on the "retraction_reason" field.
+func RetractionReasonEqualFold(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEqualFold(FieldRetractionReason, v))
+}
+
+// RetractionReasonContainsFold applies the ContainsFold predicate on the "retraction_reason" field.
+func RetractionReasonContainsFold(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldContainsFold(FieldRetractionReason, v))
+}
+
 // SupersedesAssertionIDEQ applies the EQ predicate on the "supersedes_assertion_id" field.
 func SupersedesAssertionIDEQ(v string) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldEQ(FieldSupersedesAssertionID, v))
@@ -604,6 +874,111 @@ func SupersedesAssertionIDEqualFold(v string) predicate.RelationshipAssertion {
 // SupersedesAssertionIDContainsFold applies the ContainsFold predicate on the "supersedes_assertion_id" field.
 func SupersedesAssertionIDContainsFold(v string) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldContainsFold(FieldSupersedesAssertionID, v))
+}
+
+// ExtractorVersionEQ applies the EQ predicate on the "extractor_version" field.
+func ExtractorVersionEQ(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldExtractorVersion, v))
+}
+
+// ExtractorVersionNEQ applies the NEQ predicate on the "extractor_version" field.
+func ExtractorVersionNEQ(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNEQ(FieldExtractorVersion, v))
+}
+
+// ExtractorVersionIn applies the In predicate on the "extractor_version" field.
+func ExtractorVersionIn(vs ...string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIn(FieldExtractorVersion, vs...))
+}
+
+// ExtractorVersionNotIn applies the NotIn predicate on the "extractor_version" field.
+func ExtractorVersionNotIn(vs ...string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotIn(FieldExtractorVersion, vs...))
+}
+
+// ExtractorVersionGT applies the GT predicate on the "extractor_version" field.
+func ExtractorVersionGT(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGT(FieldExtractorVersion, v))
+}
+
+// ExtractorVersionGTE applies the GTE predicate on the "extractor_version" field.
+func ExtractorVersionGTE(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGTE(FieldExtractorVersion, v))
+}
+
+// ExtractorVersionLT applies the LT predicate on the "extractor_version" field.
+func ExtractorVersionLT(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLT(FieldExtractorVersion, v))
+}
+
+// ExtractorVersionLTE applies the LTE predicate on the "extractor_version" field.
+func ExtractorVersionLTE(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLTE(FieldExtractorVersion, v))
+}
+
+// ExtractorVersionContains applies the Contains predicate on the "extractor_version" field.
+func ExtractorVersionContains(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldContains(FieldExtractorVersion, v))
+}
+
+// ExtractorVersionHasPrefix applies the HasPrefix predicate on the "extractor_version" field.
+func ExtractorVersionHasPrefix(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldHasPrefix(FieldExtractorVersion, v))
+}
+
+// ExtractorVersionHasSuffix applies the HasSuffix predicate on the "extractor_version" field.
+func ExtractorVersionHasSuffix(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldHasSuffix(FieldExtractorVersion, v))
+}
+
+// ExtractorVersionEqualFold applies the EqualFold predicate on the "extractor_version" field.
+func ExtractorVersionEqualFold(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEqualFold(FieldExtractorVersion, v))
+}
+
+// ExtractorVersionContainsFold applies the ContainsFold predicate on the "extractor_version" field.
+func ExtractorVersionContainsFold(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldContainsFold(FieldExtractorVersion, v))
+}
+
+// ProjectorCompatVersionEQ applies the EQ predicate on the "projector_compat_version" field.
+func ProjectorCompatVersionEQ(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldProjectorCompatVersion, v))
+}
+
+// ProjectorCompatVersionNEQ applies the NEQ predicate on the "projector_compat_version" field.
+func ProjectorCompatVersionNEQ(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNEQ(FieldProjectorCompatVersion, v))
+}
+
+// ProjectorCompatVersionIn applies the In predicate on the "projector_compat_version" field.
+func ProjectorCompatVersionIn(vs ...int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIn(FieldProjectorCompatVersion, vs...))
+}
+
+// ProjectorCompatVersionNotIn applies the NotIn predicate on the "projector_compat_version" field.
+func ProjectorCompatVersionNotIn(vs ...int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotIn(FieldProjectorCompatVersion, vs...))
+}
+
+// ProjectorCompatVersionGT applies the GT predicate on the "projector_compat_version" field.
+func ProjectorCompatVersionGT(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGT(FieldProjectorCompatVersion, v))
+}
+
+// ProjectorCompatVersionGTE applies the GTE predicate on the "projector_compat_version" field.
+func ProjectorCompatVersionGTE(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGTE(FieldProjectorCompatVersion, v))
+}
+
+// ProjectorCompatVersionLT applies the LT predicate on the "projector_compat_version" field.
+func ProjectorCompatVersionLT(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLT(FieldProjectorCompatVersion, v))
+}
+
+// ProjectorCompatVersionLTE applies the LTE predicate on the "projector_compat_version" field.
+func ProjectorCompatVersionLTE(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLTE(FieldProjectorCompatVersion, v))
 }
 
 // HasWorkspace applies the HasEdge predicate on the "workspace" edge.

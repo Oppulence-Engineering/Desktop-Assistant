@@ -37,11 +37,18 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitydecision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshiplineageevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipprojectionjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
@@ -49,10 +56,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenuetrustevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -63,52 +73,95 @@ import (
 // this generated entity/foreign-key map to inject the authenticated user's id
 // into every update/delete predicate.
 var tenantUserColumns = map[string]string{
-	ent.TypeActionOutcome:                    actionoutcome.UserColumn,
-	ent.TypeActionProposal:                   actionproposal.UserColumn,
-	ent.TypeApprovalToken:                    approvaltoken.UserColumn,
-	ent.TypeAgentApproval:                    agentapproval.UserColumn,
-	ent.TypeAgentDefinition:                  agentdefinition.UserColumn,
-	ent.TypeAgentSession:                     agentsession.UserColumn,
-	ent.TypeAgentSessionEvent:                agentsessionevent.UserColumn,
-	ent.TypeAgentToolCall:                    agenttoolcall.UserColumn,
-	ent.TypeAgentToolResultBlob:              agenttoolresultblob.UserColumn,
-	ent.TypeAgentTurn:                        agentturn.UserColumn,
-	ent.TypeBackgroundTask:                   backgroundtask.UserColumn,
-	ent.TypeBackgroundTaskArtifact:           backgroundtaskartifact.UserColumn,
-	ent.TypeBackgroundTaskRun:                backgroundtaskrun.UserColumn,
-	ent.TypeBackgroundTaskRunEvent:           backgroundtaskrunevent.UserColumn,
-	ent.TypeBackgroundTaskScheduleState:      backgroundtaskschedulestate.UserColumn,
-	ent.TypeCloudEvent:                       cloudevent.UserColumn,
-	ent.TypeCreditLedger:                     creditledger.UserColumn,
-	ent.TypeGoogleWatch:                      googlewatch.UserColumn,
-	ent.TypeLLMUsage:                         llmusage.UserColumn,
-	ent.TypeMCPConnection:                    mcpconnection.UserColumn,
-	ent.TypeMeetingMinuteUsage:               meetingminuteusage.UserColumn,
-	ent.TypeOAuthConnection:                  oauthconnection.UserColumn,
-	ent.TypeSubscription:                     subscription.UserColumn,
-	ent.TypeCommitment:                       commitment.UserColumn,
-	ent.TypeCommitmentDependency:             commitmentdependency.UserColumn,
-	ent.TypeCommitmentEvent:                  commitmentevent.UserColumn,
-	ent.TypeConversationIntelligenceArtifact: conversationintelligenceartifact.UserColumn,
-	ent.TypeMailBodyCache:                    mailbodycache.UserColumn,
-	ent.TypeMailSignal:                       mailsignal.UserColumn,
-	ent.TypeMailMessageMeta:                  mailmessagemeta.UserColumn,
-	ent.TypeMailThread:                       mailthread.UserColumn,
-	ent.TypePolicyDecisionSnapshot:           policydecisionsnapshot.UserColumn,
-	ent.TypeRelationship:                     relationship.UserColumn,
-	ent.TypeRelationshipAssertion:            relationshipassertion.UserColumn,
-	ent.TypeRelationshipIdentity:             relationshipidentity.UserColumn,
-	ent.TypeRelationshipObservation:          relationshipobservation.UserColumn,
-	ent.TypeRelationshipParticipant:          relationshipparticipant.UserColumn,
-	ent.TypeRelationshipSourceStatus:         relationshipsourcestatus.UserColumn,
-	ent.TypeRelationshipStateSnapshot:        relationshipstatesnapshot.UserColumn,
-	ent.TypeRevenueAction:                    revenueaction.UserColumn,
-	ent.TypeRevenueActionRevision:            revenueactionrevision.UserColumn,
-	ent.TypeRevenueEvidence:                  revenueevidence.UserColumn,
-	ent.TypeRevenueLeakScan:                  revenueleakscan.UserColumn,
-	ent.TypeRevenueOutboxEvent:               revenueoutboxevent.UserColumn,
-	ent.TypeRevenueWorkspace:                 revenueworkspace.UserColumn,
-	ent.TypeRevenueWorkspaceMember:           revenueworkspacemember.UserColumn,
+	ent.TypeActionOutcome:                     actionoutcome.UserColumn,
+	ent.TypeActionProposal:                    actionproposal.UserColumn,
+	ent.TypeApprovalToken:                     approvaltoken.UserColumn,
+	ent.TypeAgentApproval:                     agentapproval.UserColumn,
+	ent.TypeAgentDefinition:                   agentdefinition.UserColumn,
+	ent.TypeAgentSession:                      agentsession.UserColumn,
+	ent.TypeAgentSessionEvent:                 agentsessionevent.UserColumn,
+	ent.TypeAgentToolCall:                     agenttoolcall.UserColumn,
+	ent.TypeAgentToolResultBlob:               agenttoolresultblob.UserColumn,
+	ent.TypeAgentTurn:                         agentturn.UserColumn,
+	ent.TypeBackgroundTask:                    backgroundtask.UserColumn,
+	ent.TypeBackgroundTaskArtifact:            backgroundtaskartifact.UserColumn,
+	ent.TypeBackgroundTaskRun:                 backgroundtaskrun.UserColumn,
+	ent.TypeBackgroundTaskRunEvent:            backgroundtaskrunevent.UserColumn,
+	ent.TypeBackgroundTaskScheduleState:       backgroundtaskschedulestate.UserColumn,
+	ent.TypeCloudEvent:                        cloudevent.UserColumn,
+	ent.TypeCreditLedger:                      creditledger.UserColumn,
+	ent.TypeGoogleWatch:                       googlewatch.UserColumn,
+	ent.TypeLLMUsage:                          llmusage.UserColumn,
+	ent.TypeMCPConnection:                     mcpconnection.UserColumn,
+	ent.TypeMeetingMinuteUsage:                meetingminuteusage.UserColumn,
+	ent.TypeOAuthConnection:                   oauthconnection.UserColumn,
+	ent.TypeSubscription:                      subscription.UserColumn,
+	ent.TypeCommitment:                        commitment.UserColumn,
+	ent.TypeCommitmentDependency:              commitmentdependency.UserColumn,
+	ent.TypeCommitmentEvent:                   commitmentevent.UserColumn,
+	ent.TypeConversationIntelligenceArtifact:  conversationintelligenceartifact.UserColumn,
+	ent.TypeMailBodyCache:                     mailbodycache.UserColumn,
+	ent.TypeMailSignal:                        mailsignal.UserColumn,
+	ent.TypeMailMessageMeta:                   mailmessagemeta.UserColumn,
+	ent.TypeMailThread:                        mailthread.UserColumn,
+	ent.TypePolicyDecisionSnapshot:            policydecisionsnapshot.UserColumn,
+	ent.TypeRelationship:                      relationship.UserColumn,
+	ent.TypeRelationshipAttentionItem:         relationshipattentionitem.UserColumn,
+	ent.TypeRelationshipAssertion:             relationshipassertion.UserColumn,
+	ent.TypeRelationshipIdentity:              relationshipidentity.UserColumn,
+	ent.TypeRelationshipIdentityCandidate:     relationshipidentitycandidate.UserColumn,
+	ent.TypeRelationshipIdentityDecision:      relationshipidentitydecision.UserColumn,
+	ent.TypeRelationshipLineageEvent:          relationshiplineageevent.UserColumn,
+	ent.TypeRelationshipObservation:           relationshipobservation.UserColumn,
+	ent.TypeRelationshipParticipant:           relationshipparticipant.UserColumn,
+	ent.TypeRelationshipProjectionJob:         relationshipprojectionjob.UserColumn,
+	ent.TypeRelationshipReviewAcknowledgement: relationshipreviewacknowledgement.UserColumn,
+	ent.TypeRelationshipSourceStatus:          relationshipsourcestatus.UserColumn,
+	ent.TypeRelationshipStateSnapshot:         relationshipstatesnapshot.UserColumn,
+	ent.TypeRevenueAction:                     revenueaction.UserColumn,
+	ent.TypeRevenueActionRevision:             revenueactionrevision.UserColumn,
+	ent.TypeRevenueEvidence:                   revenueevidence.UserColumn,
+	ent.TypeRevenueLeakScan:                   revenueleakscan.UserColumn,
+	ent.TypeRevenueOutboxEvent:                revenueoutboxevent.UserColumn,
+	ent.TypeRevenueWorkspace:                  revenueworkspace.UserColumn,
+	ent.TypeRevenueWorkspaceMember:            revenueworkspacemember.UserColumn,
+	ent.TypeTenantEvidenceKey:                 tenantevidencekey.UserColumn,
+	ent.TypeWorkspaceFeatureControl:           workspacefeaturecontrol.UserColumn,
+	ent.TypeRevenueTrustEvent:                 revenuetrustevent.UserColumn,
+}
+
+// workspaceTenantColumns identifies revenue entities whose authorization is
+// inherited from their required workspace edge. The mutation hook uses this
+// map instead of the historical creator/user column so active collaborators
+// can update shared records while viewers remain read-only.
+var workspaceTenantColumns = map[string]string{
+	ent.TypeRevenueWorkspaceMember:            revenueworkspacemember.WorkspaceColumn,
+	ent.TypeRevenueLeakScan:                   revenueleakscan.WorkspaceColumn,
+	ent.TypeRelationship:                      relationship.WorkspaceColumn,
+	ent.TypeRelationshipAttentionItem:         relationshipattentionitem.WorkspaceColumn,
+	ent.TypeRelationshipParticipant:           relationshipparticipant.WorkspaceColumn,
+	ent.TypeRelationshipIdentity:              relationshipidentity.WorkspaceColumn,
+	ent.TypeRelationshipIdentityCandidate:     relationshipidentitycandidate.WorkspaceColumn,
+	ent.TypeRelationshipIdentityDecision:      relationshipidentitydecision.WorkspaceColumn,
+	ent.TypeRelationshipLineageEvent:          relationshiplineageevent.WorkspaceColumn,
+	ent.TypeRelationshipObservation:           relationshipobservation.WorkspaceColumn,
+	ent.TypeRelationshipAssertion:             relationshipassertion.WorkspaceColumn,
+	ent.TypeRelationshipProjectionJob:         relationshipprojectionjob.WorkspaceColumn,
+	ent.TypeRelationshipReviewAcknowledgement: relationshipreviewacknowledgement.WorkspaceColumn,
+	ent.TypeRelationshipStateSnapshot:         relationshipstatesnapshot.WorkspaceColumn,
+	ent.TypeRelationshipSourceStatus:          relationshipsourcestatus.WorkspaceColumn,
+	ent.TypeRevenueEvidence:                   revenueevidence.WorkspaceColumn,
+	ent.TypeCommitment:                        commitment.WorkspaceColumn,
+	ent.TypeCommitmentEvent:                   commitmentevent.WorkspaceColumn,
+	ent.TypeCommitmentDependency:              commitmentdependency.WorkspaceColumn,
+	ent.TypeConversationIntelligenceArtifact:  conversationintelligenceartifact.WorkspaceColumn,
+	ent.TypeRevenueAction:                     revenueaction.WorkspaceColumn,
+	ent.TypePolicyDecisionSnapshot:            policydecisionsnapshot.WorkspaceColumn,
+	ent.TypeActionOutcome:                     actionoutcome.WorkspaceColumn,
+	ent.TypeRevenueOutboxEvent:                revenueoutboxevent.WorkspaceColumn,
+	ent.TypeTenantEvidenceKey:                 tenantevidencekey.WorkspaceColumn,
+	ent.TypeWorkspaceFeatureControl:           workspacefeaturecontrol.WorkspaceColumn,
+	ent.TypeRevenueTrustEvent:                 revenuetrustevent.WorkspaceColumn,
 }
 
 // ErrNoViewer is returned when a per-user entity is queried with neither an
@@ -273,28 +326,27 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 			})
 		}))
 
-	// Revenue memory and outbound governance (RFC 030). MVP tenancy is
-	// founder-mode user scoping; the workspace edges exist for the WP6
-	// member-scoped upgrade, at which point these interceptors move to
-	// RevenueWorkspaceMember-driven predicates.
+	// Revenue memory and outbound governance is workspace-scoped. Founding
+	// ownership remains a compatibility path for rows created before membership
+	// backfill; active member rows are the explicit authorization boundary.
 	client.RevenueWorkspace.Intercept(intercept.TraverseRevenueWorkspace(
 		func(ctx context.Context, q *ent.RevenueWorkspaceQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(revenueworkspace.HasUserWith(user.IDEQ(uid)))
+				q.Where(revenueWorkspaceAccessibleTo(uid))
 			})
 		}))
 
 	client.RevenueWorkspaceMember.Intercept(intercept.TraverseRevenueWorkspaceMember(
 		func(ctx context.Context, q *ent.RevenueWorkspaceMemberQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(revenueworkspacemember.HasUserWith(user.IDEQ(uid)))
+				q.Where(revenueworkspacemember.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.RevenueLeakScan.Intercept(intercept.TraverseRevenueLeakScan(
 		func(ctx context.Context, q *ent.RevenueLeakScanQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(revenueleakscan.HasUserWith(user.IDEQ(uid)))
+				q.Where(revenueleakscan.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
@@ -329,119 +381,184 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 	client.Relationship.Intercept(intercept.TraverseRelationship(
 		func(ctx context.Context, q *ent.RelationshipQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(relationship.HasUserWith(user.IDEQ(uid)))
+				q.Where(relationship.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.RelationshipParticipant.Intercept(intercept.TraverseRelationshipParticipant(
 		func(ctx context.Context, q *ent.RelationshipParticipantQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(relationshipparticipant.HasUserWith(user.IDEQ(uid)))
+				q.Where(relationshipparticipant.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.RelationshipIdentity.Intercept(intercept.TraverseRelationshipIdentity(
 		func(ctx context.Context, q *ent.RelationshipIdentityQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(relationshipidentity.HasUserWith(user.IDEQ(uid)))
+				q.Where(relationshipidentity.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.RelationshipIdentityCandidate.Intercept(intercept.TraverseRelationshipIdentityCandidate(
+		func(ctx context.Context, q *ent.RelationshipIdentityCandidateQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(relationshipidentitycandidate.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.RelationshipIdentityDecision.Intercept(intercept.TraverseRelationshipIdentityDecision(
+		func(ctx context.Context, q *ent.RelationshipIdentityDecisionQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(relationshipidentitydecision.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.RelationshipLineageEvent.Intercept(intercept.TraverseRelationshipLineageEvent(
+		func(ctx context.Context, q *ent.RelationshipLineageEventQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(relationshiplineageevent.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.RelationshipObservation.Intercept(intercept.TraverseRelationshipObservation(
 		func(ctx context.Context, q *ent.RelationshipObservationQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(relationshipobservation.HasUserWith(user.IDEQ(uid)))
+				q.Where(relationshipobservation.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.RelationshipAssertion.Intercept(intercept.TraverseRelationshipAssertion(
 		func(ctx context.Context, q *ent.RelationshipAssertionQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(relationshipassertion.HasUserWith(user.IDEQ(uid)))
+				q.Where(relationshipassertion.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.RelationshipProjectionJob.Intercept(intercept.TraverseRelationshipProjectionJob(
+		func(ctx context.Context, q *ent.RelationshipProjectionJobQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(relationshipprojectionjob.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.RelationshipReviewAcknowledgement.Intercept(intercept.TraverseRelationshipReviewAcknowledgement(
+		func(ctx context.Context, q *ent.RelationshipReviewAcknowledgementQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(relationshipreviewacknowledgement.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.RelationshipAttentionItem.Intercept(intercept.TraverseRelationshipAttentionItem(
+		func(ctx context.Context, q *ent.RelationshipAttentionItemQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(relationshipattentionitem.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.RelationshipStateSnapshot.Intercept(intercept.TraverseRelationshipStateSnapshot(
 		func(ctx context.Context, q *ent.RelationshipStateSnapshotQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(relationshipstatesnapshot.HasUserWith(user.IDEQ(uid)))
+				q.Where(relationshipstatesnapshot.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.RelationshipSourceStatus.Intercept(intercept.TraverseRelationshipSourceStatus(
 		func(ctx context.Context, q *ent.RelationshipSourceStatusQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(relationshipsourcestatus.HasUserWith(user.IDEQ(uid)))
+				q.Where(relationshipsourcestatus.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.RevenueEvidence.Intercept(intercept.TraverseRevenueEvidence(
 		func(ctx context.Context, q *ent.RevenueEvidenceQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(revenueevidence.HasUserWith(user.IDEQ(uid)))
+				q.Where(revenueevidence.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.Commitment.Intercept(intercept.TraverseCommitment(
 		func(ctx context.Context, q *ent.CommitmentQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(commitment.HasUserWith(user.IDEQ(uid)))
+				q.Where(commitment.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.CommitmentEvent.Intercept(intercept.TraverseCommitmentEvent(
 		func(ctx context.Context, q *ent.CommitmentEventQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(commitmentevent.HasUserWith(user.IDEQ(uid)))
+				q.Where(commitmentevent.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.CommitmentDependency.Intercept(intercept.TraverseCommitmentDependency(
 		func(ctx context.Context, q *ent.CommitmentDependencyQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(commitmentdependency.HasUserWith(user.IDEQ(uid)))
+				q.Where(commitmentdependency.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.ConversationIntelligenceArtifact.Intercept(intercept.TraverseConversationIntelligenceArtifact(
 		func(ctx context.Context, q *ent.ConversationIntelligenceArtifactQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(conversationintelligenceartifact.HasUserWith(user.IDEQ(uid)))
+				q.Where(conversationintelligenceartifact.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.RevenueAction.Intercept(intercept.TraverseRevenueAction(
 		func(ctx context.Context, q *ent.RevenueActionQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(revenueaction.HasUserWith(user.IDEQ(uid)))
+				q.Where(revenueaction.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.RevenueActionRevision.Intercept(intercept.TraverseRevenueActionRevision(
 		func(ctx context.Context, q *ent.RevenueActionRevisionQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(revenueactionrevision.HasUserWith(user.IDEQ(uid)))
+				q.Where(revenueactionrevision.HasActionWith(
+					revenueaction.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)),
+				))
 			})
 		}))
 
 	client.PolicyDecisionSnapshot.Intercept(intercept.TraversePolicyDecisionSnapshot(
 		func(ctx context.Context, q *ent.PolicyDecisionSnapshotQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(policydecisionsnapshot.HasUserWith(user.IDEQ(uid)))
+				q.Where(policydecisionsnapshot.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.ActionOutcome.Intercept(intercept.TraverseActionOutcome(
 		func(ctx context.Context, q *ent.ActionOutcomeQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(actionoutcome.HasUserWith(user.IDEQ(uid)))
+				q.Where(actionoutcome.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
 	client.RevenueOutboxEvent.Intercept(intercept.TraverseRevenueOutboxEvent(
 		func(ctx context.Context, q *ent.RevenueOutboxEventQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(revenueoutboxevent.HasUserWith(user.IDEQ(uid)))
+				q.Where(revenueoutboxevent.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.TenantEvidenceKey.Intercept(intercept.TraverseTenantEvidenceKey(
+		func(ctx context.Context, q *ent.TenantEvidenceKeyQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(tenantevidencekey.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.WorkspaceFeatureControl.Intercept(intercept.TraverseWorkspaceFeatureControl(
+		func(ctx context.Context, q *ent.WorkspaceFeatureControlQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(workspacefeaturecontrol.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.RevenueTrustEvent.Intercept(intercept.TraverseRevenueTrustEvent(
+		func(ctx context.Context, q *ent.RevenueTrustEventQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(revenuetrustevent.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
@@ -475,4 +592,14 @@ func scopeToUser(ctx context.Context, apply func(uuid.UUID)) error {
 		return nil
 	}
 	return ErrNoViewer
+}
+
+func revenueWorkspaceAccessibleTo(uid uuid.UUID) predicate.RevenueWorkspace {
+	return revenueworkspace.Or(
+		revenueworkspace.HasUserWith(user.IDEQ(uid)),
+		revenueworkspace.HasMembersWith(
+			revenueworkspacemember.StatusEQ("active"),
+			revenueworkspacemember.HasUserWith(user.IDEQ(uid)),
+		),
+	)
 }

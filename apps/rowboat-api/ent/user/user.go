@@ -105,6 +105,24 @@ const (
 	EdgeRelationshipParticipants = "relationship_participants"
 	// EdgeRelationshipIdentities holds the string denoting the relationship_identities edge name in mutations.
 	EdgeRelationshipIdentities = "relationship_identities"
+	// EdgeRelationshipProjectionJobs holds the string denoting the relationship_projection_jobs edge name in mutations.
+	EdgeRelationshipProjectionJobs = "relationship_projection_jobs"
+	// EdgeTenantEvidenceKeys holds the string denoting the tenant_evidence_keys edge name in mutations.
+	EdgeTenantEvidenceKeys = "tenant_evidence_keys"
+	// EdgeWorkspaceFeatureControls holds the string denoting the workspace_feature_controls edge name in mutations.
+	EdgeWorkspaceFeatureControls = "workspace_feature_controls"
+	// EdgeRevenueTrustEvents holds the string denoting the revenue_trust_events edge name in mutations.
+	EdgeRevenueTrustEvents = "revenue_trust_events"
+	// EdgeRelationshipIdentityCandidates holds the string denoting the relationship_identity_candidates edge name in mutations.
+	EdgeRelationshipIdentityCandidates = "relationship_identity_candidates"
+	// EdgeRelationshipLineageEvents holds the string denoting the relationship_lineage_events edge name in mutations.
+	EdgeRelationshipLineageEvents = "relationship_lineage_events"
+	// EdgeRelationshipIdentityDecisions holds the string denoting the relationship_identity_decisions edge name in mutations.
+	EdgeRelationshipIdentityDecisions = "relationship_identity_decisions"
+	// EdgeRelationshipReviewAcknowledgements holds the string denoting the relationship_review_acknowledgements edge name in mutations.
+	EdgeRelationshipReviewAcknowledgements = "relationship_review_acknowledgements"
+	// EdgeRelationshipAttentionItems holds the string denoting the relationship_attention_items edge name in mutations.
+	EdgeRelationshipAttentionItems = "relationship_attention_items"
 	// EdgeRelationshipObservations holds the string denoting the relationship_observations edge name in mutations.
 	EdgeRelationshipObservations = "relationship_observations"
 	// EdgeRelationshipAssertions holds the string denoting the relationship_assertions edge name in mutations.
@@ -399,6 +417,69 @@ const (
 	RelationshipIdentitiesInverseTable = "relationship_identities"
 	// RelationshipIdentitiesColumn is the table column denoting the relationship_identities relation/edge.
 	RelationshipIdentitiesColumn = "user_relationship_identities"
+	// RelationshipProjectionJobsTable is the table that holds the relationship_projection_jobs relation/edge.
+	RelationshipProjectionJobsTable = "relationship_projection_jobs"
+	// RelationshipProjectionJobsInverseTable is the table name for the RelationshipProjectionJob entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipprojectionjob" package.
+	RelationshipProjectionJobsInverseTable = "relationship_projection_jobs"
+	// RelationshipProjectionJobsColumn is the table column denoting the relationship_projection_jobs relation/edge.
+	RelationshipProjectionJobsColumn = "user_relationship_projection_jobs"
+	// TenantEvidenceKeysTable is the table that holds the tenant_evidence_keys relation/edge.
+	TenantEvidenceKeysTable = "tenant_evidence_keys"
+	// TenantEvidenceKeysInverseTable is the table name for the TenantEvidenceKey entity.
+	// It exists in this package in order to avoid circular dependency with the "tenantevidencekey" package.
+	TenantEvidenceKeysInverseTable = "tenant_evidence_keys"
+	// TenantEvidenceKeysColumn is the table column denoting the tenant_evidence_keys relation/edge.
+	TenantEvidenceKeysColumn = "user_tenant_evidence_keys"
+	// WorkspaceFeatureControlsTable is the table that holds the workspace_feature_controls relation/edge.
+	WorkspaceFeatureControlsTable = "workspace_feature_controls"
+	// WorkspaceFeatureControlsInverseTable is the table name for the WorkspaceFeatureControl entity.
+	// It exists in this package in order to avoid circular dependency with the "workspacefeaturecontrol" package.
+	WorkspaceFeatureControlsInverseTable = "workspace_feature_controls"
+	// WorkspaceFeatureControlsColumn is the table column denoting the workspace_feature_controls relation/edge.
+	WorkspaceFeatureControlsColumn = "user_workspace_feature_controls"
+	// RevenueTrustEventsTable is the table that holds the revenue_trust_events relation/edge.
+	RevenueTrustEventsTable = "revenue_trust_events"
+	// RevenueTrustEventsInverseTable is the table name for the RevenueTrustEvent entity.
+	// It exists in this package in order to avoid circular dependency with the "revenuetrustevent" package.
+	RevenueTrustEventsInverseTable = "revenue_trust_events"
+	// RevenueTrustEventsColumn is the table column denoting the revenue_trust_events relation/edge.
+	RevenueTrustEventsColumn = "user_revenue_trust_events"
+	// RelationshipIdentityCandidatesTable is the table that holds the relationship_identity_candidates relation/edge.
+	RelationshipIdentityCandidatesTable = "relationship_identity_candidates"
+	// RelationshipIdentityCandidatesInverseTable is the table name for the RelationshipIdentityCandidate entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipidentitycandidate" package.
+	RelationshipIdentityCandidatesInverseTable = "relationship_identity_candidates"
+	// RelationshipIdentityCandidatesColumn is the table column denoting the relationship_identity_candidates relation/edge.
+	RelationshipIdentityCandidatesColumn = "user_relationship_identity_candidates"
+	// RelationshipLineageEventsTable is the table that holds the relationship_lineage_events relation/edge.
+	RelationshipLineageEventsTable = "relationship_lineage_events"
+	// RelationshipLineageEventsInverseTable is the table name for the RelationshipLineageEvent entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshiplineageevent" package.
+	RelationshipLineageEventsInverseTable = "relationship_lineage_events"
+	// RelationshipLineageEventsColumn is the table column denoting the relationship_lineage_events relation/edge.
+	RelationshipLineageEventsColumn = "user_relationship_lineage_events"
+	// RelationshipIdentityDecisionsTable is the table that holds the relationship_identity_decisions relation/edge.
+	RelationshipIdentityDecisionsTable = "relationship_identity_decisions"
+	// RelationshipIdentityDecisionsInverseTable is the table name for the RelationshipIdentityDecision entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipidentitydecision" package.
+	RelationshipIdentityDecisionsInverseTable = "relationship_identity_decisions"
+	// RelationshipIdentityDecisionsColumn is the table column denoting the relationship_identity_decisions relation/edge.
+	RelationshipIdentityDecisionsColumn = "user_relationship_identity_decisions"
+	// RelationshipReviewAcknowledgementsTable is the table that holds the relationship_review_acknowledgements relation/edge.
+	RelationshipReviewAcknowledgementsTable = "relationship_review_acknowledgements"
+	// RelationshipReviewAcknowledgementsInverseTable is the table name for the RelationshipReviewAcknowledgement entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipreviewacknowledgement" package.
+	RelationshipReviewAcknowledgementsInverseTable = "relationship_review_acknowledgements"
+	// RelationshipReviewAcknowledgementsColumn is the table column denoting the relationship_review_acknowledgements relation/edge.
+	RelationshipReviewAcknowledgementsColumn = "user_relationship_review_acknowledgements"
+	// RelationshipAttentionItemsTable is the table that holds the relationship_attention_items relation/edge.
+	RelationshipAttentionItemsTable = "relationship_attention_items"
+	// RelationshipAttentionItemsInverseTable is the table name for the RelationshipAttentionItem entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipattentionitem" package.
+	RelationshipAttentionItemsInverseTable = "relationship_attention_items"
+	// RelationshipAttentionItemsColumn is the table column denoting the relationship_attention_items relation/edge.
+	RelationshipAttentionItemsColumn = "user_relationship_attention_items"
 	// RelationshipObservationsTable is the table that holds the relationship_observations relation/edge.
 	RelationshipObservationsTable = "relationship_observations"
 	// RelationshipObservationsInverseTable is the table name for the RelationshipObservation entity.
@@ -1062,6 +1143,132 @@ func ByRelationshipIdentities(term sql.OrderTerm, terms ...sql.OrderTerm) OrderO
 	}
 }
 
+// ByRelationshipProjectionJobsCount orders the results by relationship_projection_jobs count.
+func ByRelationshipProjectionJobsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipProjectionJobsStep(), opts...)
+	}
+}
+
+// ByRelationshipProjectionJobs orders the results by relationship_projection_jobs terms.
+func ByRelationshipProjectionJobs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipProjectionJobsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByTenantEvidenceKeysCount orders the results by tenant_evidence_keys count.
+func ByTenantEvidenceKeysCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newTenantEvidenceKeysStep(), opts...)
+	}
+}
+
+// ByTenantEvidenceKeys orders the results by tenant_evidence_keys terms.
+func ByTenantEvidenceKeys(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTenantEvidenceKeysStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByWorkspaceFeatureControlsCount orders the results by workspace_feature_controls count.
+func ByWorkspaceFeatureControlsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newWorkspaceFeatureControlsStep(), opts...)
+	}
+}
+
+// ByWorkspaceFeatureControls orders the results by workspace_feature_controls terms.
+func ByWorkspaceFeatureControls(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newWorkspaceFeatureControlsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRevenueTrustEventsCount orders the results by revenue_trust_events count.
+func ByRevenueTrustEventsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRevenueTrustEventsStep(), opts...)
+	}
+}
+
+// ByRevenueTrustEvents orders the results by revenue_trust_events terms.
+func ByRevenueTrustEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRevenueTrustEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRelationshipIdentityCandidatesCount orders the results by relationship_identity_candidates count.
+func ByRelationshipIdentityCandidatesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipIdentityCandidatesStep(), opts...)
+	}
+}
+
+// ByRelationshipIdentityCandidates orders the results by relationship_identity_candidates terms.
+func ByRelationshipIdentityCandidates(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipIdentityCandidatesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRelationshipLineageEventsCount orders the results by relationship_lineage_events count.
+func ByRelationshipLineageEventsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipLineageEventsStep(), opts...)
+	}
+}
+
+// ByRelationshipLineageEvents orders the results by relationship_lineage_events terms.
+func ByRelationshipLineageEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipLineageEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRelationshipIdentityDecisionsCount orders the results by relationship_identity_decisions count.
+func ByRelationshipIdentityDecisionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipIdentityDecisionsStep(), opts...)
+	}
+}
+
+// ByRelationshipIdentityDecisions orders the results by relationship_identity_decisions terms.
+func ByRelationshipIdentityDecisions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipIdentityDecisionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRelationshipReviewAcknowledgementsCount orders the results by relationship_review_acknowledgements count.
+func ByRelationshipReviewAcknowledgementsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipReviewAcknowledgementsStep(), opts...)
+	}
+}
+
+// ByRelationshipReviewAcknowledgements orders the results by relationship_review_acknowledgements terms.
+func ByRelationshipReviewAcknowledgements(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipReviewAcknowledgementsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRelationshipAttentionItemsCount orders the results by relationship_attention_items count.
+func ByRelationshipAttentionItemsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipAttentionItemsStep(), opts...)
+	}
+}
+
+// ByRelationshipAttentionItems orders the results by relationship_attention_items terms.
+func ByRelationshipAttentionItems(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipAttentionItemsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByRelationshipObservationsCount orders the results by relationship_observations count.
 func ByRelationshipObservationsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -1423,6 +1630,69 @@ func newRelationshipIdentitiesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RelationshipIdentitiesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipIdentitiesTable, RelationshipIdentitiesColumn),
+	)
+}
+func newRelationshipProjectionJobsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipProjectionJobsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipProjectionJobsTable, RelationshipProjectionJobsColumn),
+	)
+}
+func newTenantEvidenceKeysStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TenantEvidenceKeysInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, TenantEvidenceKeysTable, TenantEvidenceKeysColumn),
+	)
+}
+func newWorkspaceFeatureControlsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(WorkspaceFeatureControlsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, WorkspaceFeatureControlsTable, WorkspaceFeatureControlsColumn),
+	)
+}
+func newRevenueTrustEventsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RevenueTrustEventsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RevenueTrustEventsTable, RevenueTrustEventsColumn),
+	)
+}
+func newRelationshipIdentityCandidatesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipIdentityCandidatesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipIdentityCandidatesTable, RelationshipIdentityCandidatesColumn),
+	)
+}
+func newRelationshipLineageEventsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipLineageEventsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipLineageEventsTable, RelationshipLineageEventsColumn),
+	)
+}
+func newRelationshipIdentityDecisionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipIdentityDecisionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipIdentityDecisionsTable, RelationshipIdentityDecisionsColumn),
+	)
+}
+func newRelationshipReviewAcknowledgementsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipReviewAcknowledgementsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipReviewAcknowledgementsTable, RelationshipReviewAcknowledgementsColumn),
+	)
+}
+func newRelationshipAttentionItemsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipAttentionItemsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipAttentionItemsTable, RelationshipAttentionItemsColumn),
 	)
 }
 func newRelationshipObservationsStep() *sqlgraph.Step {

@@ -14,6 +14,7 @@ import {
 } from "../meeting-engines.js";
 import { getMeetingController, type MeetingControllerDeps } from "../meeting-controller.js";
 import { getUiState, setUiState } from "@x/core/dist/config/ui_state.js";
+import { runMeetingPreflight } from "../meeting-preflight.js";
 
 type IPCChannels = ipc.IPCChannels;
 
@@ -27,6 +28,7 @@ type MeetingCaptureHandlers = {
   "meeting:startCapture": InvokeHandler<"meeting:startCapture">;
   "meeting:stopCapture": InvokeHandler<"meeting:stopCapture">;
   "meeting:publishRendererEvidence": InvokeHandler<"meeting:publishRendererEvidence">;
+  "meeting:publishSessionEvidence": InvokeHandler<"meeting:publishSessionEvidence">;
   "meeting:captureStatus": InvokeHandler<"meeting:captureStatus">;
   "meeting:listSessions": InvokeHandler<"meeting:listSessions">;
   "meeting:retranscribe": InvokeHandler<"meeting:retranscribe">;
@@ -50,6 +52,7 @@ type MeetingCaptureHandlers = {
   "ui:setState": InvokeHandler<"ui:setState">;
   "meeting:storageUsage": InvokeHandler<"meeting:storageUsage">;
   "meeting:captureDoctor": InvokeHandler<"meeting:captureDoctor">;
+  "meeting:preflight": InvokeHandler<"meeting:preflight">;
   "meeting:transcriptionModels": InvokeHandler<"meeting:transcriptionModels">;
   "meeting:ensureTranscriptionModels": InvokeHandler<"meeting:ensureTranscriptionModels">;
 };
@@ -98,7 +101,9 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
         };
       }
       await controller().refreshSettings();
-      return controller().start(parseCalendarEvent(args.calendarEventJson));
+      return controller().start(parseCalendarEvent(args.calendarEventJson), {
+        relationshipTarget: args.relationshipTarget,
+      });
     },
 
     "meeting:stopCapture": async () => {
@@ -106,6 +111,9 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
     },
     "meeting:publishRendererEvidence": async (_event, args) => {
       return controller().publishRendererEvidence(args);
+    },
+    "meeting:publishSessionEvidence": async (_event, args) => {
+      return controller().publishSessionEvidence(args.sessionId, args.relationshipTarget);
     },
 
     "meeting:captureStatus": async () => {
@@ -125,7 +133,10 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
       const calendarEvent = args.calendarEventJson
         ? (JSON.parse(args.calendarEventJson) as MeetingCalendarEvent)
         : undefined;
-      const result = await controller().start(calendarEvent, { standby: true });
+      const result = await controller().start(calendarEvent, {
+        standby: true,
+        relationshipTarget: args.relationshipTarget,
+      });
       return {
         started: result.started,
         sessionId: result.sessionId,
@@ -193,6 +204,9 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
 
     "meeting:captureDoctor": async (_event, args) => {
       return runCaptureDoctor(await controller().root(), args.probeSystemAudio);
+    },
+    "meeting:preflight": async (_event, args) => {
+      return runMeetingPreflight(args.probeSystemAudio);
     },
 
     "meeting:transcriptionModels": async () => {

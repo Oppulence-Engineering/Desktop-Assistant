@@ -158,6 +158,7 @@ import { toast } from "sonner";
 import { useVoiceMode } from "@/hooks/useVoiceMode";
 import { useVoiceTTS } from "@/hooks/useVoiceTTS";
 import { useMeetingTranscription, type CalendarEventMeta } from "@/hooks/useMeetingTranscription";
+import type { MeetingRelationshipTarget } from "@x/shared/dist/meetings.js";
 import { useAnalyticsIdentity } from "@/hooks/useAnalyticsIdentity";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
 import { useBilling } from "@/hooks/useBilling";
@@ -2656,8 +2657,7 @@ function App() {
           // Handle app-navigation tool results — trigger UI side effects
           if (event.toolName === "app-navigation") {
             const result = event.result as
-              | { success?: boolean; action?: string; [key: string]: unknown }
-              | undefined;
+              { success?: boolean; action?: string; [key: string]: unknown } | undefined;
             if (result?.success) {
               pendingAppNavRef.current = result;
             }
@@ -5800,6 +5800,7 @@ function App() {
 
   const meetingNotePathRef = useRef<string | null>(null);
   const pendingCalendarEventRef = useRef<CalendarEventMeta | undefined>(undefined);
+  const pendingRelationshipTargetRef = useRef<MeetingRelationshipTarget | undefined>(undefined);
   const [meetingSummarizing, setMeetingSummarizing] = useState(false);
   const [showMeetingPermissions, setShowMeetingPermissions] = useState(false);
   const [recordingMeetingSource, setRecordingMeetingSource] = useState<string | null>(null);
@@ -5808,9 +5809,11 @@ function App() {
 
   const startMeetingNow = useCallback(async () => {
     const calEvent = pendingCalendarEventRef.current;
+    const relationshipTarget = pendingRelationshipTargetRef.current;
     pendingCalendarEventRef.current = undefined;
-    setRecordingMeetingSource(calEvent?.source ?? null);
-    const notePath = await meetingTranscription.start(calEvent);
+    pendingRelationshipTargetRef.current = undefined;
+    setRecordingMeetingSource(relationshipTarget?.displayName ?? calEvent?.source ?? null);
+    const notePath = await meetingTranscription.start(calEvent, relationshipTarget);
     if (notePath) {
       meetingNotePathRef.current = notePath;
       await handleVoiceNoteCreated(notePath);
@@ -5847,6 +5850,7 @@ function App() {
       setRecordingMeetingSource(null);
       // Clear any stale pending calendar event so it can't attach to a later run. (ERRORS.md E18)
       pendingCalendarEventRef.current = undefined;
+      pendingRelationshipTargetRef.current = undefined;
 
       // Read the final transcript and generate meeting notes via LLM.
       // Native capture transcribes asynchronously after stop, so its note is still the
@@ -5917,6 +5921,41 @@ function App() {
     }
   }, [meetingTranscription, handleVoiceNoteCreated, startMeetingNow]);
   handleToggleMeetingRef.current = handleToggleMeeting;
+
+  const handleStartRelationshipMeeting = useCallback(
+    async (target: MeetingRelationshipTarget) => {
+      if (meetingStateRef.current !== "idle") {
+        toast.error("A meeting is already being recorded. Stop it before starting another.");
+        return;
+      }
+      // This deliberate user gesture may ask macOS to verify the optional system-audio
+      // tap. Failures remain visible, but capture itself may continue honestly with the
+      // available track rather than fabricating a complete recording.
+      try {
+        const report = await window.ipc.invoke("meeting:preflight", {
+          probeSystemAudio: true,
+        });
+        const problems = report.problems;
+        if (problems.length > 0) {
+          const first = problems[0];
+          toast.warning(`Capture preflight: ${first.name}`, {
+            description: `${first.detail}${first.remediation ? ` — ${first.remediation}` : ""}`,
+          });
+        }
+      } catch (cause) {
+        toast.warning("Capture preflight could not finish", {
+          description:
+            cause instanceof Error
+              ? cause.message
+              : "The recorder will report track health after starting.",
+        });
+      }
+      pendingCalendarEventRef.current = undefined;
+      pendingRelationshipTargetRef.current = target;
+      await handleToggleMeeting();
+    },
+    [handleToggleMeeting],
+  );
 
   // Listen for calendar block "join meeting & take notes" events
   useEffect(() => {
@@ -6840,7 +6879,10 @@ function App() {
                   </div>
                 ) : isRelationshipsOpen ? (
                   <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                    <RelationshipsView initialId={relationshipInitialId} />
+                    <RelationshipsView
+                      initialId={relationshipInitialId}
+                      onStartMeeting={handleStartRelationshipMeeting}
+                    />
                   </div>
                 ) : isEmailOpen ? (
                   <div className="flex-1 min-h-0 flex flex-col overflow-hidden">

@@ -34,6 +34,7 @@ func (RevenueEvidence) Fields() []ent.Field {
 		field.String("content_hash").NotEmpty(),
 		field.Text("excerpt").Optional().Sensitive(),
 		field.Bytes("payload_ciphertext").Optional().Sensitive(),
+		field.Int("encryption_key_version").Default(0).NonNegative(),
 		field.Time("occurred_at"),
 		field.Time("observed_at"),
 		field.JSON("external_evidence_refs", []string{}).Default([]string{}),

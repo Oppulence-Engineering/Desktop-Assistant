@@ -96,6 +96,55 @@ func TestNormalizeObjectTypeRejectsArbitraryObjects(t *testing.T) {
 	}
 }
 
+func TestListCompaniesUsesBoundedOfficialSDKPage(t *testing.T) {
+	database, err := db.Open(context.Background(), appconfig.Config{
+		DatabaseURL: "file:" + t.Name() + "?mode=memory&cache=shared&_pragma=foreign_keys(1)",
+		AutoMigrate: true,
+	}, zap.NewNop())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = database.Close() })
+	user := database.Client.User.Create().SetEmail("company@example.com").
+		SetWorkosUserID("user_company_backfill").SaveX(auth.WithInternal(context.Background()))
+	ctx := auth.WithUser(context.Background(), user)
+	sealer, err := crypto.NewSealer("test-encryption-key-for-company-list")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sealed, err := sealer.SealString("pat-na1-companies")
+	if err != nil {
+		t.Fatal(err)
+	}
+	database.Client.MCPConnection.Create().SetUser(user).SetConnector("hubspot").
+		SetAudience("hubspot-api").SetAPIKeyEncrypted(sealed).SaveX(ctx)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/crm/objects/2026-03/companies" {
+			t.Errorf("path = %q", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer pat-na1-companies" {
+			t.Errorf("authorization = %q", r.Header.Get("Authorization"))
+		}
+		if r.URL.Query().Get("limit") != "100" || !strings.Contains(r.URL.Query().Get("properties"), "lifecyclestage") {
+			t.Errorf("query = %q", r.URL.RawQuery)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"results":[{"id":"company-1","archived":false,"createdAt":"2026-07-01T12:00:00Z","updatedAt":"2026-07-31T12:00:00Z","properties":{"name":"Acme","domain":"acme.example","lifecyclestage":"customer"}}]}`)
+	}))
+	defer server.Close()
+
+	client := New(database.Client, sealer, outbound.Policy{})
+	client.SetBaseURL(server.URL)
+	companies, err := client.ListCompanies(ctx, user.ID, 500)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(companies) != 1 || companies[0].ID != "company-1" || companies[0].Properties["domain"] != "acme.example" {
+		t.Fatalf("companies = %+v", companies)
+	}
+}
+
 func TestActionMarkerRequiresAnExactRevisionBoundary(t *testing.T) {
 	body := WithActionMarker("Follow up", "revenue-action:abc:revision:10")
 	if !strings.Contains(body, actionMarker("revenue-action:abc:revision:10")) {

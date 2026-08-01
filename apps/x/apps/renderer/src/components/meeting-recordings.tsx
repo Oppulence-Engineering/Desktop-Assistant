@@ -117,15 +117,22 @@ export function MeetingRecordings({ onOpenNote }: { onOpenNote?: (path: string) 
     setError(null);
     setRow(session.id, { deleting: true });
     try {
-      const { deleted, noteDeleted } = await window.ipc.invoke("meeting:deleteSession", {
-        sessionId: session.id,
-        deleteNote: alsoDeleteNote,
-      });
+      const { deleted, noteDeleted, sharedEvidence } = await window.ipc.invoke(
+        "meeting:deleteSession",
+        {
+          sessionId: session.id,
+          deleteNote: alsoDeleteNote,
+        },
+      );
       if (!deleted) {
         setError("Could not delete this recording — it may still be recording.");
       } else if (alsoDeleteNote && !noteDeleted) {
         // The recording is gone but the note is not; say so rather than implying both.
         setError("The recording was deleted, but its note could not be found.");
+      } else if (sharedEvidence === "retained_by_workspace_policy") {
+        setError(
+          "The local recording was deleted. Published relationship evidence remains under the workspace retention policy; delete conversation data from Account Mission Control if it must also be removed.",
+        );
       }
     } finally {
       setRow(session.id, { deleting: false });
@@ -252,6 +259,9 @@ export function MeetingRecordings({ onOpenNote }: { onOpenNote?: (path: string) 
                   The recording from {startedLabel(pendingDelete.startedAt)} and its transcript will
                   be removed from this device. This cannot be undone.
                   {pendingDelete.notePath ? " The meeting note stays in your workspace." : ""}
+                  {pendingDelete.relationshipTarget
+                    ? ` Published evidence for ${pendingDelete.relationshipTarget.displayName} remains under the workspace retention policy and can be deleted from Account Mission Control.`
+                    : ""}
                 </>
               )}
             </AlertDialogDescription>

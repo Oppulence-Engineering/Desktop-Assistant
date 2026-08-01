@@ -60,7 +60,11 @@ import {
   RelationshipObservationSchema,
   RelationshipSchema,
   RelationshipSemanticMatchSchema,
+  RelationshipIdentityCandidateSchema,
+  RelationshipAttentionItemSchema,
+  RelationshipSourceInventoryItemSchema,
   RelationshipSourceStatusSchema,
+  BetaDiagnosticsSchema,
   RelationshipStateSnapshotSchema,
 } from "./relationships.js";
 import {
@@ -728,6 +732,8 @@ const ipcSchemas = {
       success: z.boolean(),
       error: z.string().optional(),
       userId: z.string().optional(),
+      sourceAccountId: z.string().optional(),
+      grantedScopes: z.array(z.string()).optional(),
     }),
     res: z.null(),
   },
@@ -1188,7 +1194,10 @@ const ipcSchemas = {
     res: z.object({ engine: meetings.MeetingResolvedEngine }),
   },
   "meeting:startCapture": {
-    req: z.object({ calendarEventJson: z.string().optional() }),
+    req: z.object({
+      calendarEventJson: z.string().optional(),
+      relationshipTarget: meetings.MeetingRelationshipTarget.optional(),
+    }),
     res: z.object({
       started: z.boolean(),
       sessionId: z.string().optional(),
@@ -1200,7 +1209,10 @@ const ipcSchemas = {
   },
   /** Open both sources and hold the last few minutes in memory, writing nothing. */
   "meeting:startStandby": {
-    req: z.object({ calendarEventJson: z.string().optional() }),
+    req: z.object({
+      calendarEventJson: z.string().optional(),
+      relationshipTarget: meetings.MeetingRelationshipTarget.optional(),
+    }),
     res: z.object({
       started: z.boolean(),
       sessionId: z.string().optional(),
@@ -1232,10 +1244,27 @@ const ipcSchemas = {
       sessionId: z.string(),
       startedAt: z.string(),
       calendarEventJson: z.string().optional(),
+      relationshipTarget: meetings.MeetingRelationshipTarget.optional(),
       provider: TranscriptionProvider,
       segments: z.array(z.object({ speaker: z.string(), text: z.string() })),
     }),
     res: z.object({ queued: z.boolean(), reason: z.string().optional() }),
+  },
+  /** Attach an already-transcribed native session to an explicitly selected
+   * relationship and publish it through the same durable outbox. */
+  "meeting:publishSessionEvidence": {
+    req: z.object({
+      sessionId: z.string(),
+      relationshipTarget: meetings.MeetingRelationshipTarget,
+    }),
+    res: z.object({
+      queued: z.boolean(),
+      published: z.boolean().optional(),
+      pending: z.number().int().nonnegative().optional(),
+      relationshipStateVersion: z.number().int().nonnegative().optional(),
+      relationshipStateHash: z.string().optional(),
+      reason: z.string().optional(),
+    }),
   },
   "meeting:captureStatus": {
     req: z.null(),
@@ -1255,7 +1284,14 @@ const ipcSchemas = {
      *  flag crosses the wire — main derives the note path from the session itself, so
      *  nothing can ask for an arbitrary file to be deleted. */
     req: z.object({ sessionId: z.string(), deleteNote: z.boolean().default(false) }),
-    res: z.object({ deleted: z.boolean(), noteDeleted: z.boolean().default(false) }),
+    res: z.object({
+      deleted: z.boolean(),
+      noteDeleted: z.boolean().default(false),
+      sharedEvidence: z
+        .enum(["not_attached", "retained_by_workspace_policy"])
+        .default("not_attached"),
+      relationshipId: z.string().optional(),
+    }),
   },
   /** Delete every recording at once. `deleteNotes` is opt-in for the same reason it is
    *  per-session: the note is the durable artifact and may have been edited since. */
@@ -1467,6 +1503,12 @@ const ipcSchemas = {
      *  happens behind an explicit user action — never on a view mounting. */
     req: z.object({ probeSystemAudio: z.boolean().default(false) }),
     res: meetings.MeetingDoctorReport,
+  },
+  "meeting:preflight": {
+    /** A deliberate relationship-capture start may probe the optional system
+     * audio track. Background preflight always leaves this false. */
+    req: z.object({ probeSystemAudio: z.boolean().default(false) }),
+    res: meetings.MeetingPreflightReport,
   },
   /** Whether the fast (Parakeet) transcription models are downloaded. */
   "meeting:transcriptionModels": {
@@ -2067,6 +2109,19 @@ const ipcSchemas = {
     req: z.object({ id: z.string() }),
     res: RelationshipDetailSchema,
   },
+  "relationships:acknowledge": {
+    req: z.object({
+      id: z.string(),
+      stateVersion: z.number().int().nonnegative(),
+      stateHash: z.string(),
+    }),
+    res: z.object({
+      id: z.string(),
+      stateVersion: z.number().int().nonnegative(),
+      stateHash: z.string(),
+      acknowledgedAt: z.string(),
+    }),
+  },
   "relationships:timeline": {
     req: z.object({ id: z.string(), limit: z.number().int().min(1).max(100).optional() }),
     res: z.object({ observations: z.array(RelationshipObservationSchema) }),
@@ -2078,6 +2133,89 @@ const ipcSchemas = {
   "relationships:sources": {
     req: z.null(),
     res: z.object({ sources: z.array(RelationshipSourceStatusSchema) }),
+  },
+  "relationships:sourceInventory": {
+    req: z.null(),
+    res: z.object({ sources: z.array(RelationshipSourceInventoryItemSchema) }),
+  },
+  "relationships:betaDiagnostics": {
+    req: z.null(),
+    res: BetaDiagnosticsSchema,
+  },
+  "relationships:reportSourceAuthorization": {
+    req: z.object({
+      source: z.string().min(1),
+      sourceAccountId: z.string().optional(),
+      state: z.enum(["started", "completed", "canceled", "failed"]),
+      grantedScopes: z.array(z.string()).optional(),
+      errorCode: z.string().optional(),
+    }),
+    res: RelationshipSourceStatusSchema,
+  },
+  "relationships:resyncSource": {
+    req: z.object({ source: z.string().min(1), sourceAccountId: z.string().min(1) }),
+    res: RelationshipSourceStatusSchema,
+  },
+  "relationships:disconnectSource": {
+    req: z.object({ source: z.string().min(1), sourceAccountId: z.string().min(1) }),
+    res: RelationshipSourceStatusSchema,
+  },
+  "relationships:listIdentityCandidates": {
+    req: z.object({ status: z.string().optional(), relationshipId: z.string().optional() }),
+    res: z.object({ candidates: z.array(RelationshipIdentityCandidateSchema) }),
+  },
+  "relationships:decideIdentityCandidate": {
+    req: z.object({
+      candidateId: z.string(),
+      decision: z.enum(["merge", "keep_separate", "move_evidence", "split", "defer", "undo"]),
+      reason: z.string(),
+      expectedVersion: z.number().int().positive(),
+      idempotencyKey: z.string().min(1),
+    }),
+    res: RelationshipIdentityCandidateSchema,
+  },
+  "relationships:listAttention": {
+    req: z.object({ status: z.string().optional() }),
+    res: z.object({
+      contractVersion: z.string(),
+      asOf: z.string(),
+      items: z.array(RelationshipAttentionItemSchema),
+    }),
+  },
+  "relationships:decideAttention": {
+    req: z.object({
+      attentionId: z.string(),
+      decision: z.enum(["acknowledge", "snooze", "dismiss"]),
+      reason: z.string(),
+      expectedVersion: z.number().int().positive(),
+      snoozedUntil: z.string().optional(),
+    }),
+    res: RelationshipAttentionItemSchema,
+  },
+  "relationships:editAction": {
+    req: z.object({
+      actionId: z.string(),
+      proposedSubject: z.string().optional(),
+      proposedMessage: z.string().optional(),
+      reason: z.string().optional(),
+    }),
+    res: RelationshipActionSchema,
+  },
+  "relationships:evaluateAction": {
+    req: z.object({ actionId: z.string() }),
+    res: z.unknown(),
+  },
+  "relationships:executeAction": {
+    req: z.object({ actionId: z.string() }),
+    res: RelationshipActionSchema,
+  },
+  "relationships:snoozeAction": {
+    req: z.object({ actionId: z.string(), until: z.string() }),
+    res: RelationshipActionSchema,
+  },
+  "relationships:dismissAction": {
+    req: z.object({ actionId: z.string(), reason: z.string().min(1) }),
+    res: RelationshipActionSchema,
   },
   "relationships:evidence": {
     req: z.object({ relationshipId: z.string(), evidenceId: z.string() }),

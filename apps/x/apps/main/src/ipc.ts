@@ -137,6 +137,7 @@ import { getInstallationId } from "@x/core/dist/analytics/installation.js";
 import { API_URL } from "@x/core/dist/config/env.js";
 import {
   approveRelationshipRecommendation,
+  acknowledgeMissionControl,
   correctConversationReview,
   decideConversationReview,
   correctRelationship,
@@ -144,9 +145,23 @@ import {
   getRelationship,
   getRelationshipChanges,
   getRelationshipEvidence,
+  getRelationshipSourceInventory,
   getRelationshipSources,
+  getRelationshipBetaDiagnostics,
+  reportRelationshipSourceAuthorization,
   getRelationshipTimeline,
   listRelationships,
+  listIdentityCandidates,
+  listRelationshipAttention,
+  decideRelationshipAttention,
+  editRelationshipAction,
+  evaluateRelationshipAction,
+  executeRelationshipAction,
+  snoozeRelationshipAction,
+  dismissRelationshipAction,
+  decideIdentityCandidate,
+  resyncRelationshipSource,
+  disconnectRelationshipSource,
   rejectRelationshipRecommendation,
   resolveRelationshipContradiction,
   runCommitmentRecovery,
@@ -493,6 +508,8 @@ export function emitOAuthEvent(event: {
   success: boolean;
   error?: string;
   userId?: string;
+  sourceAccountId?: string;
+  grantedScopes?: string[];
 }): void {
   const windows = BrowserWindow.getAllWindows();
   for (const win of windows) {
@@ -909,9 +926,34 @@ export function setupIpcHandlers() {
     "relationships:create": async (_event, args) => createRelationship(args),
     "relationships:search": async (_event, args) => searchRelationships(args.query),
     "relationships:get": async (_event, args) => getRelationship(args.id),
+    "relationships:acknowledge": async (_event, args) =>
+      acknowledgeMissionControl(args.id, args.stateVersion, args.stateHash),
     "relationships:timeline": async (_event, args) => getRelationshipTimeline(args.id, args.limit),
     "relationships:changes": async (_event, args) => getRelationshipChanges(args.id),
     "relationships:sources": async () => getRelationshipSources(),
+    "relationships:sourceInventory": async () => getRelationshipSourceInventory(),
+    "relationships:betaDiagnostics": async () => getRelationshipBetaDiagnostics(),
+    "relationships:reportSourceAuthorization": async (_event, args) =>
+      reportRelationshipSourceAuthorization(args.source, args),
+    "relationships:resyncSource": async (_event, args) =>
+      resyncRelationshipSource(args.source, args.sourceAccountId),
+    "relationships:disconnectSource": async (_event, args) =>
+      disconnectRelationshipSource(args.source, args.sourceAccountId),
+    "relationships:listIdentityCandidates": async (_event, args) =>
+      listIdentityCandidates(args.status, args.relationshipId),
+    "relationships:decideIdentityCandidate": async (_event, args) =>
+      decideIdentityCandidate(args.candidateId, args),
+    "relationships:listAttention": async (_event, args) => listRelationshipAttention(args.status),
+    "relationships:decideAttention": async (_event, args) =>
+      decideRelationshipAttention(args.attentionId, args),
+    "relationships:editAction": async (_event, args) => editRelationshipAction(args.actionId, args),
+    "relationships:evaluateAction": async (_event, args) =>
+      evaluateRelationshipAction(args.actionId),
+    "relationships:executeAction": async (_event, args) => executeRelationshipAction(args.actionId),
+    "relationships:snoozeAction": async (_event, args) =>
+      snoozeRelationshipAction(args.actionId, args.until),
+    "relationships:dismissAction": async (_event, args) =>
+      dismissRelationshipAction(args.actionId, args.reason),
     "relationships:evidence": async (_event, args) =>
       getRelationshipEvidence(args.relationshipId, args.evidenceId),
     "relationships:correct": async (_event, args) =>
@@ -939,8 +981,7 @@ export function setupIpcHandlers() {
         selectedAssertionId: args.selectedAssertionId,
         reason: args.reason,
       }),
-    "relationships:runCommitmentRecovery": async (_event, args) =>
-      runCommitmentRecovery(args.id),
+    "relationships:runCommitmentRecovery": async (_event, args) => runCommitmentRecovery(args.id),
     "relationships:appendCommitmentTransition": async (_event, args) =>
       appendCommitmentTransition(args.relationshipId, args.commitmentId, args),
     "relationships:createMutualActionPlan": async (_event, args) =>

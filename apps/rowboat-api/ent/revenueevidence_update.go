@@ -175,6 +175,27 @@ func (_u *RevenueEvidenceUpdate) ClearPayloadCiphertext() *RevenueEvidenceUpdate
 	return _u
 }
 
+// SetEncryptionKeyVersion sets the "encryption_key_version" field.
+func (_u *RevenueEvidenceUpdate) SetEncryptionKeyVersion(v int) *RevenueEvidenceUpdate {
+	_u.mutation.ResetEncryptionKeyVersion()
+	_u.mutation.SetEncryptionKeyVersion(v)
+	return _u
+}
+
+// SetNillableEncryptionKeyVersion sets the "encryption_key_version" field if the given value is not nil.
+func (_u *RevenueEvidenceUpdate) SetNillableEncryptionKeyVersion(v *int) *RevenueEvidenceUpdate {
+	if v != nil {
+		_u.SetEncryptionKeyVersion(*v)
+	}
+	return _u
+}
+
+// AddEncryptionKeyVersion adds value to the "encryption_key_version" field.
+func (_u *RevenueEvidenceUpdate) AddEncryptionKeyVersion(v int) *RevenueEvidenceUpdate {
+	_u.mutation.AddEncryptionKeyVersion(v)
+	return _u
+}
+
 // SetOccurredAt sets the "occurred_at" field.
 func (_u *RevenueEvidenceUpdate) SetOccurredAt(v time.Time) *RevenueEvidenceUpdate {
 	_u.mutation.SetOccurredAt(v)
@@ -415,6 +436,11 @@ func (_u *RevenueEvidenceUpdate) check() error {
 			return &ValidationError{Name: "content_hash", err: fmt.Errorf(`ent: validator failed for field "RevenueEvidence.content_hash": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.EncryptionKeyVersion(); ok {
+		if err := revenueevidence.EncryptionKeyVersionValidator(v); err != nil {
+			return &ValidationError{Name: "encryption_key_version", err: fmt.Errorf(`ent: validator failed for field "RevenueEvidence.encryption_key_version": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RevenueEvidence.workspace"`)
 	}
@@ -477,6 +503,12 @@ func (_u *RevenueEvidenceUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if _u.mutation.PayloadCiphertextCleared() {
 		_spec.ClearField(revenueevidence.FieldPayloadCiphertext, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.EncryptionKeyVersion(); ok {
+		_spec.SetField(revenueevidence.FieldEncryptionKeyVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedEncryptionKeyVersion(); ok {
+		_spec.AddField(revenueevidence.FieldEncryptionKeyVersion, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.OccurredAt(); ok {
 		_spec.SetField(revenueevidence.FieldOccurredAt, field.TypeTime, value)
@@ -845,6 +877,27 @@ func (_u *RevenueEvidenceUpdateOne) ClearPayloadCiphertext() *RevenueEvidenceUpd
 	return _u
 }
 
+// SetEncryptionKeyVersion sets the "encryption_key_version" field.
+func (_u *RevenueEvidenceUpdateOne) SetEncryptionKeyVersion(v int) *RevenueEvidenceUpdateOne {
+	_u.mutation.ResetEncryptionKeyVersion()
+	_u.mutation.SetEncryptionKeyVersion(v)
+	return _u
+}
+
+// SetNillableEncryptionKeyVersion sets the "encryption_key_version" field if the given value is not nil.
+func (_u *RevenueEvidenceUpdateOne) SetNillableEncryptionKeyVersion(v *int) *RevenueEvidenceUpdateOne {
+	if v != nil {
+		_u.SetEncryptionKeyVersion(*v)
+	}
+	return _u
+}
+
+// AddEncryptionKeyVersion adds value to the "encryption_key_version" field.
+func (_u *RevenueEvidenceUpdateOne) AddEncryptionKeyVersion(v int) *RevenueEvidenceUpdateOne {
+	_u.mutation.AddEncryptionKeyVersion(v)
+	return _u
+}
+
 // SetOccurredAt sets the "occurred_at" field.
 func (_u *RevenueEvidenceUpdateOne) SetOccurredAt(v time.Time) *RevenueEvidenceUpdateOne {
 	_u.mutation.SetOccurredAt(v)
@@ -1098,6 +1151,11 @@ func (_u *RevenueEvidenceUpdateOne) check() error {
 			return &ValidationError{Name: "content_hash", err: fmt.Errorf(`ent: validator failed for field "RevenueEvidence.content_hash": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.EncryptionKeyVersion(); ok {
+		if err := revenueevidence.EncryptionKeyVersionValidator(v); err != nil {
+			return &ValidationError{Name: "encryption_key_version", err: fmt.Errorf(`ent: validator failed for field "RevenueEvidence.encryption_key_version": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RevenueEvidence.workspace"`)
 	}
@@ -1177,6 +1235,12 @@ func (_u *RevenueEvidenceUpdateOne) sqlSave(ctx context.Context) (_node *Revenue
 	}
 	if _u.mutation.PayloadCiphertextCleared() {
 		_spec.ClearField(revenueevidence.FieldPayloadCiphertext, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.EncryptionKeyVersion(); ok {
+		_spec.SetField(revenueevidence.FieldEncryptionKeyVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedEncryptionKeyVersion(); ok {
+		_spec.AddField(revenueevidence.FieldEncryptionKeyVersion, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.OccurredAt(); ok {
 		_spec.SetField(revenueevidence.FieldOccurredAt, field.TypeTime, value)

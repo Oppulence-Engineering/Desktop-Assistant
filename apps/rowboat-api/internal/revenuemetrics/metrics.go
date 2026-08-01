@@ -107,4 +107,24 @@ var (
 		Name: "revenue_mail_sync_gaps_total",
 		Help: "Gmail history cursor gaps requiring a full re-sync.",
 	})
+
+	// TrustEvents is the bounded activation/trust funnel. No tenant, record,
+	// evidence, or free-form labels are permitted.
+	TrustEvents = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "revenue_trust_events_total",
+		Help: "Content-free activation and trust events by category and outcome.",
+	}, []string{"event", "outcome", "reason"})
+
+	// ProjectionJobs counts durable projector work by terminal or retry state.
+	ProjectionJobs = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "relationship_projection_jobs_total",
+		Help: "Relationship projection jobs by terminal or retry status.",
+	}, []string{"status"})
+
+	// ProjectionDuration measures the bounded transactional projection step.
+	ProjectionDuration = promauto.NewHistogram(prometheus.HistogramOpts{
+		Name:    "relationship_projection_duration_seconds",
+		Help:    "Relationship projector transaction duration.",
+		Buckets: prometheus.DefBuckets,
+	})
 )

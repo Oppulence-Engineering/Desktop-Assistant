@@ -1,13 +1,24 @@
 "use client";
 
 import * as React from "react";
+import { toast } from "sonner";
+import {
+  AUTHORITY_LABELS,
+  COMPLETENESS_LABELS,
+  MISSION_CONTROL_QUESTIONS,
+  RELATIONSHIP_DIMENSION_LABELS,
+  completenessTone,
+  relationshipLabel,
+} from "@oppulence/relationship-contract";
 import {
   AddressBook,
   ArrowClockwise,
   Check,
   CircleNotch,
   ClockCounterClockwise,
+  DownloadSimple,
   MagnifyingGlass,
+  Microphone,
   Plus,
   Sparkle,
   Warning,
@@ -15,13 +26,19 @@ import {
 } from "@phosphor-icons/react";
 import type {
   ConversationReviewItem,
+  MissionControlReadModel,
+  RelationshipAttentionItem,
+  RelationshipIdentityCandidate,
   Relationship,
+  RelationshipAction,
   RelationshipDetail,
   RelationshipObservation,
   RelationshipSemanticMatch,
+  RelationshipSourceInventoryItem,
   RelationshipSourceStatus,
   RelationshipStateSnapshot,
 } from "@x/shared/src/relationships.js";
+import type { MeetingRelationshipTarget, MeetingSessionSummary } from "@x/shared/src/meetings.js";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +51,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -111,9 +129,22 @@ function relativeTime(value?: string): string {
   return days < 30 ? `${days}d ago` : new Date(value).toLocaleDateString();
 }
 
-export function RelationshipsView({ initialId }: { initialId?: string | null }) {
+export function RelationshipsView({
+  initialId,
+  onStartMeeting,
+}: {
+  initialId?: string | null;
+  onStartMeeting?: (target: MeetingRelationshipTarget) => Promise<void>;
+}) {
   const [rows, setRows] = React.useState<Relationship[]>([]);
   const [sources, setSources] = React.useState<RelationshipSourceStatus[]>([]);
+  const [sourceInventory, setSourceInventory] = React.useState<RelationshipSourceInventoryItem[]>(
+    [],
+  );
+  const [identityCandidates, setIdentityCandidates] = React.useState<
+    RelationshipIdentityCandidate[]
+  >([]);
+  const [attention, setAttention] = React.useState<RelationshipAttentionItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [detail, setDetail] = React.useState<string | null>(initialId ?? null);
   const [creating, setCreating] = React.useState(false);
@@ -126,16 +157,30 @@ export function RelationshipsView({ initialId }: { initialId?: string | null }) 
     setLoading(true);
     setError(null);
     try {
-      const [relationships, sourceStatuses] = await Promise.all([
+      const [
+        relationships,
+        sourceStatuses,
+        inventory,
+        pendingCandidates,
+        deferredCandidates,
+        attentionItems,
+      ] = await Promise.all([
         window.ipc.invoke("relationships:list", {
           q: query.trim() || undefined,
           health: health === "all" ? undefined : health,
           lifecycle: lifecycle === "all" ? undefined : lifecycle,
         }),
         window.ipc.invoke("relationships:sources", null),
+        window.ipc.invoke("relationships:sourceInventory", null),
+        window.ipc.invoke("relationships:listIdentityCandidates", { status: "pending" }),
+        window.ipc.invoke("relationships:listIdentityCandidates", { status: "deferred" }),
+        window.ipc.invoke("relationships:listAttention", { status: "open" }),
       ]);
       setRows(relationships.relationships);
       setSources(sourceStatuses.sources);
+      setSourceInventory(inventory.sources);
+      setIdentityCandidates([...pendingCandidates.candidates, ...deferredCandidates.candidates]);
+      setAttention(attentionItems.items);
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Could not load relationship intelligence.",
@@ -154,6 +199,23 @@ export function RelationshipsView({ initialId }: { initialId?: string | null }) 
     if (initialId) setDetail(initialId);
   }, [initialId]);
 
+  const exportDiagnostics = React.useCallback(async () => {
+    try {
+      const bundle = await window.ipc.invoke("relationships:betaDiagnostics", null);
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `oppulence-beta-diagnostics-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("Redacted beta diagnostics exported.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not export beta diagnostics.");
+    }
+  }, []);
+
   return (
     <div className="app-shell min-h-0 flex-1 overflow-y-auto bg-background">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-6 py-6">
@@ -171,11 +233,40 @@ export function RelationshipsView({ initialId }: { initialId?: string | null }) 
                 recommendation explains what changed and waits for approval.
               </p>
             </div>
-            <SourceHealth statuses={sources} />
+            <div className="flex flex-col items-end gap-2">
+              <SourceHealth statuses={sources} />
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => void exportDiagnostics()}
+              >
+                <DownloadSimple /> Export diagnostics
+              </Button>
+            </div>
           </div>
         </section>
 
+        <PortfolioAttentionQueue
+          items={attention}
+          onOpenRelationship={setDetail}
+          onError={setError}
+          onChanged={() => void load()}
+        />
+
         <SemanticSearch onError={setError} />
+
+        <SourceConnectionCards
+          inventory={sourceInventory}
+          onError={setError}
+          onChanged={() => void load()}
+        />
+
+        <IdentityReviewInbox
+          candidates={identityCandidates}
+          onError={setError}
+          onChanged={() => void load()}
+        />
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative min-w-0 flex-1">
@@ -307,6 +398,7 @@ export function RelationshipsView({ initialId }: { initialId?: string | null }) 
           onClose={() => setDetail(null)}
           onError={setError}
           onChanged={() => void load()}
+          onStartMeeting={onStartMeeting}
         />
       ) : null}
 
@@ -324,6 +416,149 @@ export function RelationshipsView({ initialId }: { initialId?: string | null }) 
   );
 }
 
+function PortfolioAttentionQueue({
+  items,
+  onOpenRelationship,
+  onChanged,
+  onError,
+}: {
+  items: RelationshipAttentionItem[];
+  onOpenRelationship: (id: string) => void;
+  onChanged: () => void;
+  onError: (message: string | null) => void;
+}) {
+  const [busy, setBusy] = React.useState<string | null>(null);
+  if (items.length === 0) return null;
+
+  const decide = async (
+    item: RelationshipAttentionItem,
+    decision: "acknowledge" | "snooze" | "dismiss",
+  ) => {
+    const reason =
+      decision === "dismiss"
+        ? window.prompt("Why should this attention item be dismissed?", "Not relevant right now")
+        : decision === "acknowledge"
+          ? "Reviewed from the portfolio attention queue."
+          : "Snoozed from the portfolio attention queue.";
+    if (reason === null || (decision === "dismiss" && !reason.trim())) return;
+    setBusy(`${item.id}:${decision}`);
+    try {
+      await window.ipc.invoke("relationships:decideAttention", {
+        attentionId: item.id,
+        decision,
+        reason,
+        expectedVersion: item.version,
+        snoozedUntil:
+          decision === "snooze"
+            ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+            : undefined,
+      });
+      onChanged();
+    } catch (cause) {
+      onError(cause instanceof Error ? cause.message : "Could not update the attention item.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section aria-labelledby="portfolio-attention-heading" className="space-y-2">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
+            Portfolio attention
+          </p>
+          <h2 id="portfolio-attention-heading" className="text-sm font-medium text-primary">
+            {items.length} relationship{items.length === 1 ? "" : "s"} need review
+          </h2>
+        </div>
+        <span className="text-[11px] text-primary/40">Deterministic order · factors visible</span>
+      </div>
+      <ol className="space-y-2">
+        {items.slice(0, 10).map((item) => (
+          <li key={item.id} className="rounded-[2px] border border-border p-3">
+            <div className="flex flex-wrap items-start gap-3">
+              <button
+                type="button"
+                className="min-w-0 flex-1 text-left"
+                onClick={() => onOpenRelationship(item.relationshipId)}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium text-primary">{item.relationshipName}</span>
+                  <Badge
+                    variant="outline"
+                    className={`rounded-[2px] capitalize ${
+                      item.urgencyBand === "critical"
+                        ? "border-red-500/40 text-red-600"
+                        : item.urgencyBand === "high"
+                          ? "border-amber-500/40 text-amber-600"
+                          : ""
+                    }`}
+                  >
+                    {relationshipLabel(item.reasonCode)} · {item.rankScore}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-xs text-primary/60">{item.explanation}</p>
+              </button>
+              <div className="flex flex-wrap gap-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy !== null}
+                  onClick={() => void decide(item, "acknowledge")}
+                >
+                  {busy === `${item.id}:acknowledge` ? (
+                    <CircleNotch className="animate-spin" />
+                  ) : (
+                    <Check />
+                  )}{" "}
+                  Review
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy !== null}
+                  onClick={() => void decide(item, "snooze")}
+                >
+                  Snooze 1d
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy !== null}
+                  onClick={() => void decide(item, "dismiss")}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+            <details className="mt-2 text-[11px] text-primary/50">
+              <summary className="cursor-pointer">Why this rank?</summary>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                {Object.entries(item.rankFactors).map(([factor, contribution]) => (
+                  <span key={factor}>
+                    {relationshipLabel(factor)}: {contribution >= 0 ? "+" : ""}
+                    {contribution}
+                  </span>
+                ))}
+                {item.sourceRequirements.length > 0 ? (
+                  <span>Requires: {item.sourceRequirements.join(", ")}</span>
+                ) : null}
+                <span>
+                  State v{item.relationshipStateVersion} · detector v{item.detectorVersion}
+                </span>
+              </div>
+            </details>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
   if (statuses.length === 0) {
     return (
@@ -332,7 +567,9 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
       </Badge>
     );
   }
-  const stale = statuses.filter((source) => source.status !== "connected").length;
+  const needsRepair = statuses.filter(
+    (source) => !["connected", "backfilling", "live"].includes(source.status),
+  ).length;
   return (
     <div className="flex max-w-sm flex-wrap justify-end gap-1.5">
       {statuses.slice(0, 4).map((source) => (
@@ -341,18 +578,360 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
           variant="outline"
           title={source.lastError || source.lastObservationAt}
           className={`rounded-[2px] font-normal capitalize ${
-            source.status === "connected" ? "border-emerald-500/30" : "border-amber-500/30"
+            source.status === "live"
+              ? "border-emerald-500/30"
+              : ["connected", "backfilling"].includes(source.status)
+                ? "border-sky-500/30"
+                : "border-amber-500/30"
           }`}
         >
           {source.source} · {source.status}
         </Badge>
       ))}
-      {stale > 0 ? (
+      {needsRepair > 0 ? (
         <span className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-          <Warning /> {stale} need attention
+          <Warning /> {needsRepair} need attention
         </span>
       ) : null}
     </div>
+  );
+}
+
+function SourceConnectionCards({
+  inventory,
+  onChanged,
+  onError,
+}: {
+  inventory: RelationshipSourceInventoryItem[];
+  onChanged: () => void;
+  onError: (message: string | null) => void;
+}) {
+  const [busy, setBusy] = React.useState<string | null>(null);
+  const [hubspotKey, setHubspotKey] = React.useState("");
+
+  const needsAttention = inventory.filter(
+    (item) =>
+      item.accounts.length === 0 ||
+      item.accounts.some(
+        (account) => account.status !== "live" || account.missingScopes.length > 0,
+      ),
+  );
+  if (needsAttention.length === 0) return null;
+
+  const run = async (key: string, operation: () => Promise<unknown>) => {
+    setBusy(key);
+    onError(null);
+    try {
+      await operation();
+      onChanged();
+    } catch (cause) {
+      onError(cause instanceof Error ? cause.message : "Could not update the evidence source.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const connect = (source: string) =>
+    run(`${source}:connect`, async () => {
+      const item = inventory.find((candidate) => candidate.source === source);
+      if (source === "hubspot") {
+        await window.ipc.invoke("relationships:reportSourceAuthorization", {
+          source,
+          sourceAccountId: "default",
+          state: "started",
+        });
+      }
+      const fail = async (message: string) => {
+        if (source === "hubspot") {
+          await window.ipc
+            .invoke("relationships:reportSourceAuthorization", {
+              source,
+              sourceAccountId: "default",
+              state: "failed",
+              errorCode: "authorization_failed",
+            })
+            .catch(() => undefined);
+        }
+        throw new Error(message);
+      };
+      if (source === "google") {
+        const result = await window.ipc.invoke("oauth:connect", { provider: "google" });
+        if (!result.success) await fail(result.error || "Could not start Google connection.");
+        return;
+      }
+      if (source === "slack") {
+        const result = await window.ipc.invoke("slack:connectWorkspace", null);
+        if (!result.success) await fail(result.error || "Could not start Slack connection.");
+        return;
+      }
+      const result = await window.ipc.invoke("connectors:saveApiKey", {
+        connector: "hubspot",
+        apiKey: hubspotKey.trim(),
+      });
+      if (!result.success) {
+        await fail(result.error || "Could not save the HubSpot private app token.");
+      }
+      const status = await window.ipc.invoke("relationships:reportSourceAuthorization", {
+        source,
+        sourceAccountId: "default",
+        state: "completed",
+        grantedScopes: item?.readScopes || [],
+      });
+      await window.ipc.invoke("relationships:resyncSource", {
+        source,
+        sourceAccountId: status.sourceAccountId,
+      });
+      setHubspotKey("");
+    });
+
+  const disconnect = (source: string, sourceAccountId: string) =>
+    run(`${source}:disconnect`, async () => {
+      if (source === "google") {
+        await window.ipc.invoke("oauth:disconnect", { provider: "google" });
+      }
+      if (source === "slack") {
+        await window.ipc.invoke("slack:disconnectWorkspace", {
+          teamId: sourceAccountId === "default" ? undefined : sourceAccountId,
+        });
+      }
+      if (source === "hubspot") {
+        await window.ipc.invoke("connectors:disconnect", { connector: "hubspot" });
+      }
+      await window.ipc.invoke("relationships:disconnectSource", { source, sourceAccountId });
+    });
+
+  return (
+    <section aria-labelledby="source-connections-heading" className="space-y-3">
+      <div>
+        <h2 id="source-connections-heading" className="text-sm font-medium text-primary">
+          Evidence sources
+        </h2>
+        <p className="mt-0.5 text-xs text-primary/55">
+          Connect Google plus Slack or HubSpot. Read access builds history; action scopes remain
+          approval-gated.
+        </p>
+      </div>
+      <div className="grid gap-2 md:grid-cols-3">
+        {needsAttention.map((item) => {
+          const account = item.accounts[0];
+          const progress =
+            account && account.backfillTotal > 0
+              ? Math.round((account.backfillCompleted / account.backfillTotal) * 100)
+              : null;
+          return (
+            <article key={item.source} className="space-y-3 rounded-[2px] border border-border p-3">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-sm font-medium text-primary">{item.displayName}</h3>
+                <Badge variant="outline" className="rounded-[2px] capitalize">
+                  {humanize(account?.status || "not_connected")}
+                </Badge>
+              </div>
+              <p className="text-xs text-primary/55">{item.scopeExplanation}</p>
+              <details className="text-[11px] text-primary/55">
+                <summary className="cursor-pointer">Permissions and capabilities</summary>
+                <p className="mt-1">
+                  <span className="font-medium">Read:</span> {item.readScopes.join(", ")}
+                </p>
+                <p className="mt-1">
+                  <span className="font-medium">On approval:</span> {item.writeScopes.join(", ")}
+                </p>
+              </details>
+              {account ? (
+                <div className="space-y-1 text-[11px] text-primary/50">
+                  <p>
+                    {humanize(account.completeness)}
+                    {progress !== null ? ` · backfill ${progress}%` : ""}
+                    {account.lagSeconds ? ` · ${Math.round(account.lagSeconds / 60)}m lag` : ""}
+                  </p>
+                  {account.missingScopes.length > 0 ? (
+                    <p className="text-amber-600">Missing: {account.missingScopes.join(", ")}</p>
+                  ) : null}
+                  {account.lastError ? (
+                    <p className="text-destructive">{account.lastError}</p>
+                  ) : null}
+                </div>
+              ) : null}
+              {!account && item.source === "hubspot" ? (
+                <Input
+                  type="password"
+                  value={hubspotKey}
+                  onChange={(event) => setHubspotKey(event.target.value)}
+                  placeholder="HubSpot private app token"
+                />
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                {!account ||
+                account.status === "disconnected" ||
+                account.status === "reconnect_required" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={busy !== null || (item.source === "hubspot" && !hubspotKey.trim())}
+                    onClick={() => void connect(item.source)}
+                  >
+                    {busy === `${item.source}:connect` ? (
+                      <CircleNotch className="animate-spin" />
+                    ) : null}{" "}
+                    Connect
+                  </Button>
+                ) : null}
+                {account && item.supportsResync ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={busy !== null}
+                    onClick={() =>
+                      void run(`${item.source}:resync`, () =>
+                        window.ipc.invoke("relationships:resyncSource", {
+                          source: item.source,
+                          sourceAccountId: account.sourceAccountId,
+                        }),
+                      )
+                    }
+                  >
+                    {busy === `${item.source}:resync` ? (
+                      <CircleNotch className="animate-spin" />
+                    ) : (
+                      <ArrowClockwise />
+                    )}{" "}
+                    Resync
+                  </Button>
+                ) : null}
+                {account && account.status !== "disconnected" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={busy !== null}
+                    onClick={() => void disconnect(item.source, account.sourceAccountId)}
+                  >
+                    Disconnect
+                  </Button>
+                ) : null}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function IdentityReviewInbox({
+  candidates,
+  onChanged,
+  onError,
+}: {
+  candidates: RelationshipIdentityCandidate[];
+  onChanged: () => void;
+  onError: (message: string | null) => void;
+}) {
+  const [reasons, setReasons] = React.useState<Record<string, string>>({});
+  const [busy, setBusy] = React.useState<string | null>(null);
+  if (candidates.length === 0) return null;
+
+  const decide = async (
+    candidate: RelationshipIdentityCandidate,
+    decision: "merge" | "keep_separate" | "move_evidence" | "defer" | "split" | "undo",
+  ) => {
+    setBusy(`${candidate.id}:${decision}`);
+    try {
+      await window.ipc.invoke("relationships:decideIdentityCandidate", {
+        candidateId: candidate.id,
+        decision,
+        reason: reasons[candidate.id]?.trim() || `Reviewed in the identity inbox: ${decision}.`,
+        expectedVersion: candidate.version,
+        idempotencyKey: crypto.randomUUID(),
+      });
+      onChanged();
+    } catch (cause) {
+      onError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not apply the identity decision. Refresh and try again.",
+      );
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section
+      aria-labelledby="identity-review-heading"
+      className="space-y-2 rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 id="identity-review-heading" className="text-sm font-medium text-primary">
+            Identity review
+          </h2>
+          <p className="mt-0.5 text-xs text-primary/55">
+            {candidates.length} ambiguous relationship{candidates.length === 1 ? "" : "s"} cannot
+            receive actions until reviewed.
+          </p>
+        </div>
+        <Badge variant="outline" className="rounded-[2px] border-amber-500/40">
+          Human decision required
+        </Badge>
+      </div>
+      {candidates.map((candidate) => (
+        <article key={candidate.id} className="space-y-3 border-t border-amber-500/20 pt-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium text-primary">
+                {candidate.proposedRelationship.displayName} may match{" "}
+                {candidate.existingRelationship.displayName}
+              </p>
+              <p className="mt-0.5 text-xs text-primary/55">
+                Exact {humanize(candidate.anchorKind)} anchor
+                {candidate.anchorProvider ? ` from ${candidate.anchorProvider}` : ""}:{" "}
+                {candidate.anchorPreview || "preview withheld"}
+              </p>
+            </div>
+            <span className="text-xs text-primary/45">
+              {candidate.evidenceCount} evidence item{candidate.evidenceCount === 1 ? "" : "s"} ·{" "}
+              {Math.round(candidate.recommendationConfidence * 100)}% recommendation confidence
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 text-[11px] text-primary/55">
+            {Object.entries(candidate.impact).map(([kind, count]) => (
+              <span key={kind} className="border border-border px-2 py-1">
+                {count} {humanize(kind)}
+              </span>
+            ))}
+          </div>
+          <Input
+            aria-label={`Reason for identity decision about ${candidate.proposedRelationship.displayName}`}
+            value={reasons[candidate.id] ?? ""}
+            onChange={(event) =>
+              setReasons((current) => ({ ...current, [candidate.id]: event.target.value }))
+            }
+            placeholder="Optional audit reason"
+          />
+          <div className="flex flex-wrap gap-2">
+            {(candidate.status === "resolved"
+              ? (["split", "undo"] as const)
+              : (["merge", "keep_separate", "move_evidence", "defer"] as const)
+            ).map((decision) => (
+              <Button
+                key={decision}
+                type="button"
+                size="sm"
+                variant={candidate.recommendedDecision === decision ? "default" : "outline"}
+                disabled={busy !== null}
+                onClick={() => void decide(candidate, decision)}
+              >
+                {busy === `${candidate.id}:${decision}` ? (
+                  <CircleNotch className="animate-spin" />
+                ) : null}
+                {relationshipLabel(decision)}
+              </Button>
+            ))}
+          </div>
+        </article>
+      ))}
+    </section>
   );
 }
 
@@ -427,33 +1006,179 @@ function SemanticSearch({ onError }: { onError: (message: string | null) => void
   );
 }
 
+function MissionControlOverview({
+  model,
+  busy,
+  onAcknowledge,
+}: {
+  model: MissionControlReadModel;
+  busy: boolean;
+  onAcknowledge: () => void;
+}) {
+  const tone = completenessTone(model.completeness.status);
+  const supported = Object.values(model.evidence).filter((item) => item.supported).length;
+  const total = Object.keys(model.evidence).length;
+  return (
+    <section aria-labelledby="mission-control-heading" className="space-y-3">
+      <div
+        className={`border p-3 ${tone === "safe" ? "border-emerald-500/30 bg-emerald-500/5" : tone === "caution" ? "border-amber-500/30 bg-amber-500/5" : "border-red-500/30 bg-red-500/5"}`}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 id="mission-control-heading" className="text-sm font-medium text-primary">
+              {COMPLETENESS_LABELS[model.completeness.status] ??
+                relationshipLabel(model.completeness.status)}
+            </h3>
+            <p className="mt-1 text-xs text-primary/60">{model.completeness.explanation}</p>
+          </div>
+          <Badge variant="outline" className="rounded-[2px] font-normal">
+            {supported}/{total} state dimensions sourced
+          </Badge>
+        </div>
+        {model.completeness.unresolvedIdentityCount > 0 ? (
+          <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">
+            {model.completeness.unresolvedIdentityCount} identity review
+            {model.completeness.unresolvedIdentityCount === 1 ? "" : "s"} block acting.
+          </p>
+        ) : null}
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {MISSION_CONTROL_QUESTIONS.map((question) => {
+          let answer = "No supported answer yet.";
+          if (question.key === "state")
+            answer = `${relationshipLabel(String(model.evidence.lifecycle?.value ?? "unknown"))} · ${relationshipLabel(String(model.evidence.health?.value ?? "unknown"))}`;
+          else if (question.key === "change")
+            answer = model.changedSinceReview
+              ? model.changes
+                  .map(
+                    (change) =>
+                      RELATIONSHIP_DIMENSION_LABELS[change.dimension] ??
+                      relationshipLabel(change.dimension),
+                  )
+                  .join(", ") || "State changed"
+              : "Nothing changed since your last review.";
+          else if (question.key === "evidence")
+            answer = `${supported} of ${total} dimensions have an accessible winning assertion.`;
+          else if (question.key === "action")
+            answer = model.activeRecommendation?.reason || "No action is currently recommended.";
+          return (
+            <div key={question.key} className="border border-border p-3">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-primary/45">
+                {question.label}
+              </p>
+              <p className="mt-1 text-xs text-primary/75">{answer}</p>
+            </div>
+          );
+        })}
+      </div>
+      <details className="border border-border p-3 text-xs">
+        <summary className="cursor-pointer font-medium text-primary">
+          Inspect dimension evidence
+        </summary>
+        <ul className="mt-3 space-y-2">
+          {Object.values(model.evidence).map((item) => (
+            <li key={item.dimension} className="border-l border-border pl-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">
+                  {RELATIONSHIP_DIMENSION_LABELS[item.dimension] ??
+                    relationshipLabel(item.dimension)}
+                </span>
+                <Badge variant="outline" className="rounded-[2px] font-normal">
+                  {item.supported
+                    ? (AUTHORITY_LABELS[item.authority ?? ""] ?? relationshipLabel(item.authority))
+                    : "Explicitly incomplete"}
+                </Badge>
+                {!item.fresh ? <span className="text-amber-600">stale</span> : null}
+              </div>
+              <p className="mt-1 text-primary/55">{item.reason || item.missingReason}</p>
+              {item.evidence.length ? (
+                <p className="mt-1 text-primary/40">
+                  {item.evidence
+                    .map(
+                      (ref) => `${relationshipLabel(ref.source)} · ${relativeTime(ref.observedAt)}`,
+                    )
+                    .join("; ")}
+                </p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </details>
+      {model.changedSinceReview ? (
+        <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onAcknowledge}>
+          <Check /> Mark state v{model.stateVersion} reviewed
+        </Button>
+      ) : (
+        <p className="text-[11px] text-primary/40">
+          Reviewed through state v{model.previousReviewedStateVersion} · as of{" "}
+          {new Date(model.asOf).toLocaleString()}
+        </p>
+      )}
+    </section>
+  );
+}
+
 function RelationshipSheet({
   id,
   onClose,
   onError,
   onChanged,
+  onStartMeeting,
 }: {
   id: string;
   onClose: () => void;
   onError: (message: string | null) => void;
   onChanged: () => void;
+  onStartMeeting?: (target: MeetingRelationshipTarget) => Promise<void>;
 }) {
   const [data, setData] = React.useState<RelationshipDetail | null>(null);
   const [timeline, setTimeline] = React.useState<RelationshipObservation[]>([]);
   const [changes, setChanges] = React.useState<RelationshipStateSnapshot[]>([]);
+  const [identityCandidates, setIdentityCandidates] = React.useState<
+    RelationshipIdentityCandidate[]
+  >([]);
   const [busy, setBusy] = React.useState<string | null>(null);
   const [evidence, setEvidence] = React.useState<Record<string, unknown>>({});
+  const [sessions, setSessions] = React.useState<MeetingSessionSummary[]>([]);
+
+  const loadSessions = React.useCallback(async () => {
+    try {
+      const result = await window.ipc.invoke("meeting:listSessions", null);
+      setSessions(result.sessions);
+    } catch {
+      // Renderer-only devices have no native session catalogue. Relationship review
+      // remains usable and the direct capture entry still uses the renderer pipeline.
+      setSessions([]);
+    }
+  }, []);
 
   const load = React.useCallback(async () => {
     try {
-      const [nextData, nextTimeline, nextChanges] = await Promise.all([
+      const [nextData, nextTimeline, nextChanges, pending, deferred, resolved] = await Promise.all([
         window.ipc.invoke("relationships:get", { id }),
         window.ipc.invoke("relationships:timeline", { id, limit: 50 }),
         window.ipc.invoke("relationships:changes", { id }),
+        window.ipc.invoke("relationships:listIdentityCandidates", {
+          status: "pending",
+          relationshipId: id,
+        }),
+        window.ipc.invoke("relationships:listIdentityCandidates", {
+          status: "deferred",
+          relationshipId: id,
+        }),
+        window.ipc.invoke("relationships:listIdentityCandidates", {
+          status: "resolved",
+          relationshipId: id,
+        }),
       ]);
       setData(nextData);
       setTimeline(nextTimeline.observations);
       setChanges(nextChanges.snapshots);
+      setIdentityCandidates([
+        ...pending.candidates,
+        ...deferred.candidates,
+        ...resolved.candidates,
+      ]);
     } catch (cause) {
       onError(cause instanceof Error ? cause.message : "Could not load the relationship.");
     }
@@ -461,7 +1186,8 @@ function RelationshipSheet({
 
   React.useEffect(() => {
     void load();
-  }, [load]);
+    void loadSessions();
+  }, [load, loadSessions]);
 
   const act = async (key: string, operation: () => Promise<unknown>) => {
     setBusy(key);
@@ -495,6 +1221,17 @@ function RelationshipSheet({
       onError(cause instanceof Error ? cause.message : "Could not open source evidence.");
     }
   };
+
+  const target = data
+    ? {
+        relationshipId: data.relationship.id,
+        displayName: data.relationship.displayName,
+        ...(data.relationship.primaryEmail ? { primaryEmail: data.relationship.primaryEmail } : {}),
+        ...(data.relationship.accountDomain
+          ? { accountDomain: data.relationship.accountDomain }
+          : {}),
+      }
+    : null;
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
@@ -539,7 +1276,124 @@ function RelationshipSheet({
                   ? ` · changed ${relativeTime(data.relationship.lastChangedAt)}`
                   : ""}
               </p>
+              {target ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {onStartMeeting ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={Boolean(busy)}
+                      onClick={() =>
+                        act("start-meeting", async () => {
+                          await onStartMeeting(target);
+                        })
+                      }
+                    >
+                      <Microphone /> Record meeting for this account
+                    </Button>
+                  ) : null}
+                  {sessions.some(
+                    (session) =>
+                      session.transcribed &&
+                      (!session.relationshipTarget ||
+                        session.relationshipTarget.relationshipId === target.relationshipId),
+                  ) ? (
+                    <details className="w-full border border-border p-3 text-xs">
+                      <summary className="cursor-pointer font-medium text-primary">
+                        Attach a completed recording
+                      </summary>
+                      <ul className="mt-3 space-y-2">
+                        {sessions
+                          .filter(
+                            (session) =>
+                              session.transcribed &&
+                              (!session.relationshipTarget ||
+                                session.relationshipTarget.relationshipId ===
+                                  target.relationshipId),
+                          )
+                          .slice(0, 10)
+                          .map((session) => {
+                            const attached =
+                              session.relationshipTarget?.relationshipId === target.relationshipId;
+                            return (
+                              <li
+                                key={session.id}
+                                className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2 last:border-0 last:pb-0"
+                              >
+                                <div>
+                                  <p className="font-medium text-primary">
+                                    {new Date(session.startedAt).toLocaleString()}
+                                  </p>
+                                  <p className="text-primary/45">
+                                    {session.segmentCount ?? 0} transcript segments
+                                    {session.warnings.length
+                                      ? ` · ${session.warnings.length} capture warning${session.warnings.length === 1 ? "" : "s"}`
+                                      : ""}
+                                  </p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={attached || Boolean(busy)}
+                                  onClick={() =>
+                                    act(`publish-session:${session.id}`, async () => {
+                                      const result = await window.ipc.invoke(
+                                        "meeting:publishSessionEvidence",
+                                        { sessionId: session.id, relationshipTarget: target },
+                                      );
+                                      if (!result.queued) {
+                                        throw new Error(
+                                          result.reason || "Recording could not be queued.",
+                                        );
+                                      }
+                                      if (result.published) {
+                                        toast.success(
+                                          `Published to shared relationship state v${result.relationshipStateVersion ?? "accepted"}.`,
+                                        );
+                                      } else {
+                                        toast.info(
+                                          `Saved for publication${result.pending ? ` · ${result.pending} pending` : ""}.`,
+                                        );
+                                      }
+                                      await loadSessions();
+                                    })
+                                  }
+                                >
+                                  {attached ? "Attached" : "Attach and publish"}
+                                </Button>
+                              </li>
+                            );
+                          })}
+                      </ul>
+                    </details>
+                  ) : null}
+                </div>
+              ) : null}
             </section>
+
+            <MissionControlOverview
+              model={data.missionControl}
+              busy={Boolean(busy)}
+              onAcknowledge={() =>
+                act("acknowledge", () =>
+                  window.ipc.invoke("relationships:acknowledge", {
+                    id,
+                    stateVersion: data.missionControl.stateVersion,
+                    stateHash: data.missionControl.stateHash,
+                  }),
+                )
+              }
+            />
+
+            <IdentityReviewInbox
+              candidates={identityCandidates}
+              onError={onError}
+              onChanged={() => {
+                void load();
+                onChanged();
+              }}
+            />
 
             <StateCorrection
               key={data.relationship.stateVersion}
@@ -619,14 +1473,23 @@ function RelationshipSheet({
                   <div className="mt-2 grid gap-1 sm:grid-cols-2">
                     <span>Capture: {humanize(data.intelligence.effectivePolicy.capture)}</span>
                     <span>Retention: {data.intelligence.effectivePolicy.retentionDays} days</span>
-                    <span>Evidence: {data.intelligence.effectivePolicy.publishEvidence ? "allowed" : "blocked"}</span>
-                    <span>External share: {data.intelligence.effectivePolicy.externalShare ? "allowed" : "blocked"}</span>
+                    <span>
+                      Evidence:{" "}
+                      {data.intelligence.effectivePolicy.publishEvidence ? "allowed" : "blocked"}
+                    </span>
+                    <span>
+                      External share:{" "}
+                      {data.intelligence.effectivePolicy.externalShare ? "allowed" : "blocked"}
+                    </span>
                   </div>
                   <p className="mt-2 break-all text-[11px]">
-                    {data.intelligence.effectivePolicy.policyVersion} · {data.intelligence.governanceDecisions.length} recorded decisions
+                    {data.intelligence.effectivePolicy.policyVersion} ·{" "}
+                    {data.intelligence.governanceDecisions.length} recorded decisions
                   </p>
                   {data.intelligence.deletionReceipts[0] ? (
-                    <p className="mt-1">Last deletion: {humanize(data.intelligence.deletionReceipts[0].status)}</p>
+                    <p className="mt-1">
+                      Last deletion: {humanize(data.intelligence.deletionReceipts[0].status)}
+                    </p>
                   ) : null}
                 </details>
                 <Button
@@ -636,7 +1499,12 @@ function RelationshipSheet({
                   className="mt-3"
                   disabled={busy === "delete-conversation"}
                   onClick={() => {
-                    if (!window.confirm("Delete shared conversation evidence for this relationship? Device and provider copies will remain pending until separately confirmed.")) return;
+                    if (
+                      !window.confirm(
+                        "Delete shared conversation evidence for this relationship? Device and provider copies will remain pending until separately confirmed.",
+                      )
+                    )
+                      return;
                     void act("delete-conversation", () =>
                       window.ipc.invoke("relationships:requestConversationDeletion", {
                         relationshipId: id,
@@ -708,76 +1576,12 @@ function RelationshipSheet({
               ) : (
                 <ul className="flex flex-col gap-2">
                   {data.recommendations.map((action) => (
-                    <li key={action.id} className="rounded-[2px] border border-border p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-medium text-primary">
-                            {ACTION_TYPE_LABELS[action.actionType] ?? action.actionType}
-                          </p>
-                          <p className="mt-1 text-xs text-primary/60">{action.reason}</p>
-                        </div>
-                        <ModeChip mode={action.executionMode} />
-                      </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-primary/40">
-                        <span>{DETECTOR_LABELS[action.detector] ?? action.detector}</span>
-                        <span>priority {action.priorityScore}</span>
-                        <span>{action.policyStatus}</span>
-                      </div>
-                      {action.evidence.length > 0 ? (
-                        <details className="mt-2 text-xs text-primary/55">
-                          <summary className="cursor-pointer">Inspect supporting words</summary>
-                          <ul className="mt-2 space-y-1 border-l border-border pl-3">
-                            {action.evidence.map((item) => (
-                              <li key={item.id}>
-                                “{item.excerpt || "Evidence excerpt unavailable"}”
-                              </li>
-                            ))}
-                          </ul>
-                        </details>
-                      ) : null}
-                      {action.approvalStatus === "pending" ? (
-                        <div className="mt-3 flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              void act(`approve:${action.id}`, () =>
-                                window.ipc.invoke("relationships:approve", {
-                                  actionId: action.id,
-                                  acceptRisk: false,
-                                }),
-                              )
-                            }
-                            disabled={Boolean(busy)}
-                          >
-                            {busy === `approve:${action.id}` ? (
-                              <CircleNotch className="animate-spin" />
-                            ) : (
-                              <Check />
-                            )}
-                            Approve
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              void act(`reject:${action.id}`, () =>
-                                window.ipc.invoke("relationships:reject", {
-                                  actionId: action.id,
-                                  reason: "Not the right next move",
-                                }),
-                              )
-                            }
-                            disabled={Boolean(busy)}
-                          >
-                            <X /> Reject
-                          </Button>
-                        </div>
-                      ) : (
-                        <Badge variant="secondary" className="mt-3 capitalize">
-                          {action.approvalStatus}
-                        </Badge>
-                      )}
-                    </li>
+                    <RecommendationReviewCard
+                      key={`${action.id}:${action.revision}`}
+                      action={action}
+                      busy={busy}
+                      act={act}
+                    />
                   ))}
                 </ul>
               )}
@@ -830,14 +1634,17 @@ function RelationshipSheet({
                   size="sm"
                   variant="outline"
                   disabled={
-                    Boolean(busy) || !data.commitments.some((item) => item.acceptance === "accepted")
+                    Boolean(busy) ||
+                    !data.commitments.some((item) => item.acceptance === "accepted")
                   }
                   onClick={() =>
                     void act("create-plan", () =>
                       window.ipc.invoke("relationships:createMutualActionPlan", {
                         relationshipId: id,
                         commitmentIds: data.commitments
-                          .filter((item) => item.acceptance === "accepted" && item.status === "open")
+                          .filter(
+                            (item) => item.acceptance === "accepted" && item.status === "open",
+                          )
                           .map((item) => item.id),
                       }),
                     )
@@ -884,7 +1691,9 @@ function RelationshipSheet({
                       </p>
                       <ul className="mt-1 list-disc pl-4 text-primary/60">
                         {plan.currentRevision.items.map((item) => (
-                          <li key={item.itemId}>{item.title} · {item.ownerParticipantRef}</li>
+                          <li key={item.itemId}>
+                            {item.title} · {item.ownerParticipantRef}
+                          </li>
                         ))}
                       </ul>
                       <div className="mt-2 flex gap-1.5">
@@ -1093,6 +1902,247 @@ function RelationshipSheet({
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+function RecommendationReviewCard({
+  action,
+  busy,
+  act,
+}: {
+  action: RelationshipAction;
+  busy: string | null;
+  act: (key: string, operation: () => Promise<unknown>) => Promise<void>;
+}) {
+  const [subject, setSubject] = React.useState(action.proposedSubject ?? "");
+  const [message, setMessage] = React.useState(action.proposedMessage ?? "");
+  const dirty =
+    subject !== (action.proposedSubject ?? "") || message !== (action.proposedMessage ?? "");
+  const uncertain =
+    action.executionStatus === "ambiguous" || action.reconciliationStatus === "manual_review";
+  const canApprove =
+    action.approvalStatus === "pending" &&
+    (action.policyStatus === "passed" || action.policyStatus === "review_required");
+  const canExecute =
+    action.approvalStatus === "approved" &&
+    action.approvedRevision === action.revision &&
+    action.executionStatus === "pending";
+
+  return (
+    <li className="rounded-[2px] border border-border p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium text-primary">
+            {ACTION_TYPE_LABELS[action.actionType] ?? action.actionType}
+          </p>
+          <p className="mt-1 text-xs text-primary/60">{action.reason}</p>
+        </div>
+        <ModeChip mode={action.executionMode} />
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-primary/40">
+        <span>{DETECTOR_LABELS[action.detector] ?? action.detector}</span>
+        <span>{humanize(action.channel)}</span>
+        <span>priority {action.priorityScore}</span>
+        <span>revision {action.revision}</span>
+        <span>{humanize(action.policyStatus)}</span>
+      </div>
+
+      {uncertain ? (
+        <div className="mt-3 border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-300">
+          <p className="font-medium">Provider result uncertain — do not retry</p>
+          <p className="mt-1">
+            Oppulence is checking the provider read-only. Status:{" "}
+            {humanize(action.reconciliationStatus || "pending")}
+            {action.reconciliationAttempts
+              ? ` after ${action.reconciliationAttempts} attempt${action.reconciliationAttempts === 1 ? "" : "s"}`
+              : ""}
+            .
+          </p>
+          {action.reconciliationError ? <p className="mt-1">{action.reconciliationError}</p> : null}
+        </div>
+      ) : null}
+      {action.executionStatus === "failed" ? (
+        <div className="mt-3 border border-red-500/30 bg-red-500/5 p-3 text-xs text-red-600">
+          Provider rejected or failed the action.{" "}
+          {action.executionError || "Review the destination and policy before retrying."}
+        </div>
+      ) : null}
+      {action.executionStatus === "sent" ? (
+        <div className="mt-3 border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-700 dark:text-emerald-300">
+          Provider accepted this exact revision
+          {action.providerMessageId ? ` · receipt ${action.providerMessageId}` : ""}.
+        </div>
+      ) : null}
+
+      {action.evidence.length > 0 ? (
+        <details className="mt-2 text-xs text-primary/55">
+          <summary className="cursor-pointer">Inspect supporting words</summary>
+          <ul className="mt-2 space-y-1 border-l border-border pl-3">
+            {action.evidence.map((item) => (
+              <li key={item.id}>“{item.excerpt || "Evidence excerpt unavailable"}”</li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+
+      {action.proposedSubject ||
+      action.proposedMessage ||
+      action.channel === "email" ||
+      action.channel === "slack" ? (
+        <details className="mt-3" open={action.approvalStatus === "pending"}>
+          <summary className="cursor-pointer text-xs font-medium text-primary">
+            Review exact content and destination
+          </summary>
+          <div className="mt-2 space-y-2">
+            {action.recipientEmail ? (
+              <Input value={action.recipientEmail} readOnly aria-label="Action destination" />
+            ) : null}
+            {action.channel === "email" ? (
+              <Input
+                value={subject}
+                onChange={(event) => setSubject(event.target.value)}
+                aria-label="Action subject"
+                placeholder="Subject"
+              />
+            ) : null}
+            <Textarea
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              aria-label="Action message"
+              placeholder="Message"
+            />
+            {dirty ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={Boolean(busy)}
+                onClick={() =>
+                  void act(`edit:${action.id}`, () =>
+                    window.ipc.invoke("relationships:editAction", {
+                      actionId: action.id,
+                      proposedSubject: subject,
+                      proposedMessage: message,
+                      reason: "User edited the exact proposed content.",
+                    }),
+                  )
+                }
+              >
+                Save as new revision
+              </Button>
+            ) : null}
+          </div>
+        </details>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {action.policyStatus === "pending" || action.policyStatus === "stale" ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={Boolean(busy)}
+            onClick={() =>
+              void act(`evaluate:${action.id}`, () =>
+                window.ipc.invoke("relationships:evaluateAction", { actionId: action.id }),
+              )
+            }
+          >
+            {busy === `evaluate:${action.id}` ? <CircleNotch className="animate-spin" /> : null}{" "}
+            Check policy
+          </Button>
+        ) : null}
+        {canApprove ? (
+          <Button
+            type="button"
+            size="sm"
+            disabled={Boolean(busy)}
+            onClick={() =>
+              void act(`approve:${action.id}`, () =>
+                window.ipc.invoke("relationships:approve", {
+                  actionId: action.id,
+                  acceptRisk: action.policyStatus === "review_required",
+                }),
+              )
+            }
+          >
+            {busy === `approve:${action.id}` ? <CircleNotch className="animate-spin" /> : <Check />}{" "}
+            Approve exact revision
+          </Button>
+        ) : null}
+        {canExecute ? (
+          <Button
+            type="button"
+            size="sm"
+            disabled={Boolean(busy)}
+            onClick={() =>
+              void act(`execute:${action.id}`, () =>
+                window.ipc.invoke("relationships:executeAction", { actionId: action.id }),
+              )
+            }
+          >
+            {busy === `execute:${action.id}` ? <CircleNotch className="animate-spin" /> : null}
+            {action.executionMode === "send"
+              ? `Execute ${humanize(action.channel)} action`
+              : "Create provider draft"}
+          </Button>
+        ) : null}
+        {action.approvalStatus === "pending" ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={Boolean(busy)}
+            onClick={() =>
+              void act(`reject:${action.id}`, () =>
+                window.ipc.invoke("relationships:reject", {
+                  actionId: action.id,
+                  reason: "Not the right next move",
+                }),
+              )
+            }
+          >
+            <X /> Reject
+          </Button>
+        ) : null}
+        {action.queueStatus === "open" ? (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={Boolean(busy)}
+              onClick={() =>
+                void act(`snooze:${action.id}`, () =>
+                  window.ipc.invoke("relationships:snoozeAction", {
+                    actionId: action.id,
+                    until: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                  }),
+                )
+              }
+            >
+              Snooze 1d
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={Boolean(busy)}
+              onClick={() =>
+                void act(`dismiss:${action.id}`, () =>
+                  window.ipc.invoke("relationships:dismissAction", {
+                    actionId: action.id,
+                    reason: "Dismissed from Account Mission Control.",
+                  }),
+                )
+              }
+            >
+              Dismiss
+            </Button>
+          </>
+        ) : null}
+      </div>
+    </li>
   );
 }
 

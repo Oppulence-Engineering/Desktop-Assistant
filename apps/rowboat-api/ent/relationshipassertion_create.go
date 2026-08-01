@@ -74,6 +74,20 @@ func (_c *RelationshipAssertionCreate) SetSourceType(v string) *RelationshipAsse
 	return _c
 }
 
+// SetStatus sets the "status" field.
+func (_c *RelationshipAssertionCreate) SetStatus(v string) *RelationshipAssertionCreate {
+	_c.mutation.SetStatus(v)
+	return _c
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (_c *RelationshipAssertionCreate) SetNillableStatus(v *string) *RelationshipAssertionCreate {
+	if v != nil {
+		_c.SetStatus(*v)
+	}
+	return _c
+}
+
 // SetConfidence sets the "confidence" field.
 func (_c *RelationshipAssertionCreate) SetConfidence(v float64) *RelationshipAssertionCreate {
 	_c.mutation.SetConfidence(v)
@@ -108,6 +122,48 @@ func (_c *RelationshipAssertionCreate) SetValidFrom(v time.Time) *RelationshipAs
 	return _c
 }
 
+// SetValidTo sets the "valid_to" field.
+func (_c *RelationshipAssertionCreate) SetValidTo(v time.Time) *RelationshipAssertionCreate {
+	_c.mutation.SetValidTo(v)
+	return _c
+}
+
+// SetNillableValidTo sets the "valid_to" field if the given value is not nil.
+func (_c *RelationshipAssertionCreate) SetNillableValidTo(v *time.Time) *RelationshipAssertionCreate {
+	if v != nil {
+		_c.SetValidTo(*v)
+	}
+	return _c
+}
+
+// SetRetractedAt sets the "retracted_at" field.
+func (_c *RelationshipAssertionCreate) SetRetractedAt(v time.Time) *RelationshipAssertionCreate {
+	_c.mutation.SetRetractedAt(v)
+	return _c
+}
+
+// SetNillableRetractedAt sets the "retracted_at" field if the given value is not nil.
+func (_c *RelationshipAssertionCreate) SetNillableRetractedAt(v *time.Time) *RelationshipAssertionCreate {
+	if v != nil {
+		_c.SetRetractedAt(*v)
+	}
+	return _c
+}
+
+// SetRetractionReason sets the "retraction_reason" field.
+func (_c *RelationshipAssertionCreate) SetRetractionReason(v string) *RelationshipAssertionCreate {
+	_c.mutation.SetRetractionReason(v)
+	return _c
+}
+
+// SetNillableRetractionReason sets the "retraction_reason" field if the given value is not nil.
+func (_c *RelationshipAssertionCreate) SetNillableRetractionReason(v *string) *RelationshipAssertionCreate {
+	if v != nil {
+		_c.SetRetractionReason(*v)
+	}
+	return _c
+}
+
 // SetSupersedesAssertionID sets the "supersedes_assertion_id" field.
 func (_c *RelationshipAssertionCreate) SetSupersedesAssertionID(v string) *RelationshipAssertionCreate {
 	_c.mutation.SetSupersedesAssertionID(v)
@@ -118,6 +174,34 @@ func (_c *RelationshipAssertionCreate) SetSupersedesAssertionID(v string) *Relat
 func (_c *RelationshipAssertionCreate) SetNillableSupersedesAssertionID(v *string) *RelationshipAssertionCreate {
 	if v != nil {
 		_c.SetSupersedesAssertionID(*v)
+	}
+	return _c
+}
+
+// SetExtractorVersion sets the "extractor_version" field.
+func (_c *RelationshipAssertionCreate) SetExtractorVersion(v string) *RelationshipAssertionCreate {
+	_c.mutation.SetExtractorVersion(v)
+	return _c
+}
+
+// SetNillableExtractorVersion sets the "extractor_version" field if the given value is not nil.
+func (_c *RelationshipAssertionCreate) SetNillableExtractorVersion(v *string) *RelationshipAssertionCreate {
+	if v != nil {
+		_c.SetExtractorVersion(*v)
+	}
+	return _c
+}
+
+// SetProjectorCompatVersion sets the "projector_compat_version" field.
+func (_c *RelationshipAssertionCreate) SetProjectorCompatVersion(v int) *RelationshipAssertionCreate {
+	_c.mutation.SetProjectorCompatVersion(v)
+	return _c
+}
+
+// SetNillableProjectorCompatVersion sets the "projector_compat_version" field if the given value is not nil.
+func (_c *RelationshipAssertionCreate) SetNillableProjectorCompatVersion(v *int) *RelationshipAssertionCreate {
+	if v != nil {
+		_c.SetProjectorCompatVersion(*v)
 	}
 	return _c
 }
@@ -237,9 +321,21 @@ func (_c *RelationshipAssertionCreate) defaults() {
 		v := relationshipassertion.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.Status(); !ok {
+		v := relationshipassertion.DefaultStatus
+		_c.mutation.SetStatus(v)
+	}
 	if _, ok := _c.mutation.Confidence(); !ok {
 		v := relationshipassertion.DefaultConfidence
 		_c.mutation.SetConfidence(v)
+	}
+	if _, ok := _c.mutation.ExtractorVersion(); !ok {
+		v := relationshipassertion.DefaultExtractorVersion
+		_c.mutation.SetExtractorVersion(v)
+	}
+	if _, ok := _c.mutation.ProjectorCompatVersion(); !ok {
+		v := relationshipassertion.DefaultProjectorCompatVersion
+		_c.mutation.SetProjectorCompatVersion(v)
 	}
 	if _, ok := _c.mutation.SupportingObservationIds(); !ok {
 		v := relationshipassertion.DefaultSupportingObservationIds
@@ -283,6 +379,14 @@ func (_c *RelationshipAssertionCreate) check() error {
 			return &ValidationError{Name: "source_type", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.source_type": %w`, err)}
 		}
 	}
+	if _, ok := _c.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "RelationshipAssertion.status"`)}
+	}
+	if v, ok := _c.mutation.Status(); ok {
+		if err := relationshipassertion.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.status": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.Confidence(); !ok {
 		return &ValidationError{Name: "confidence", err: errors.New(`ent: missing required field "RelationshipAssertion.confidence"`)}
 	}
@@ -293,6 +397,17 @@ func (_c *RelationshipAssertionCreate) check() error {
 	}
 	if _, ok := _c.mutation.ValidFrom(); !ok {
 		return &ValidationError{Name: "valid_from", err: errors.New(`ent: missing required field "RelationshipAssertion.valid_from"`)}
+	}
+	if _, ok := _c.mutation.ExtractorVersion(); !ok {
+		return &ValidationError{Name: "extractor_version", err: errors.New(`ent: missing required field "RelationshipAssertion.extractor_version"`)}
+	}
+	if _, ok := _c.mutation.ProjectorCompatVersion(); !ok {
+		return &ValidationError{Name: "projector_compat_version", err: errors.New(`ent: missing required field "RelationshipAssertion.projector_compat_version"`)}
+	}
+	if v, ok := _c.mutation.ProjectorCompatVersion(); ok {
+		if err := relationshipassertion.ProjectorCompatVersionValidator(v); err != nil {
+			return &ValidationError{Name: "projector_compat_version", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.projector_compat_version": %w`, err)}
+		}
 	}
 	if _, ok := _c.mutation.SupportingObservationIds(); !ok {
 		return &ValidationError{Name: "supporting_observation_ids", err: errors.New(`ent: missing required field "RelationshipAssertion.supporting_observation_ids"`)}
@@ -362,6 +477,10 @@ func (_c *RelationshipAssertionCreate) createSpec() (*RelationshipAssertion, *sq
 		_spec.SetField(relationshipassertion.FieldSourceType, field.TypeString, value)
 		_node.SourceType = value
 	}
+	if value, ok := _c.mutation.Status(); ok {
+		_spec.SetField(relationshipassertion.FieldStatus, field.TypeString, value)
+		_node.Status = value
+	}
 	if value, ok := _c.mutation.Confidence(); ok {
 		_spec.SetField(relationshipassertion.FieldConfidence, field.TypeFloat64, value)
 		_node.Confidence = value
@@ -374,9 +493,29 @@ func (_c *RelationshipAssertionCreate) createSpec() (*RelationshipAssertion, *sq
 		_spec.SetField(relationshipassertion.FieldValidFrom, field.TypeTime, value)
 		_node.ValidFrom = value
 	}
+	if value, ok := _c.mutation.ValidTo(); ok {
+		_spec.SetField(relationshipassertion.FieldValidTo, field.TypeTime, value)
+		_node.ValidTo = &value
+	}
+	if value, ok := _c.mutation.RetractedAt(); ok {
+		_spec.SetField(relationshipassertion.FieldRetractedAt, field.TypeTime, value)
+		_node.RetractedAt = &value
+	}
+	if value, ok := _c.mutation.RetractionReason(); ok {
+		_spec.SetField(relationshipassertion.FieldRetractionReason, field.TypeString, value)
+		_node.RetractionReason = value
+	}
 	if value, ok := _c.mutation.SupersedesAssertionID(); ok {
 		_spec.SetField(relationshipassertion.FieldSupersedesAssertionID, field.TypeString, value)
 		_node.SupersedesAssertionID = value
+	}
+	if value, ok := _c.mutation.ExtractorVersion(); ok {
+		_spec.SetField(relationshipassertion.FieldExtractorVersion, field.TypeString, value)
+		_node.ExtractorVersion = value
+	}
+	if value, ok := _c.mutation.ProjectorCompatVersion(); ok {
+		_spec.SetField(relationshipassertion.FieldProjectorCompatVersion, field.TypeInt, value)
+		_node.ProjectorCompatVersion = value
 	}
 	if value, ok := _c.mutation.SupportingObservationIds(); ok {
 		_spec.SetField(relationshipassertion.FieldSupportingObservationIds, field.TypeJSON, value)
@@ -550,6 +689,18 @@ func (u *RelationshipAssertionUpsert) UpdateSourceType() *RelationshipAssertionU
 	return u
 }
 
+// SetStatus sets the "status" field.
+func (u *RelationshipAssertionUpsert) SetStatus(v string) *RelationshipAssertionUpsert {
+	u.Set(relationshipassertion.FieldStatus, v)
+	return u
+}
+
+// UpdateStatus sets the "status" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsert) UpdateStatus() *RelationshipAssertionUpsert {
+	u.SetExcluded(relationshipassertion.FieldStatus)
+	return u
+}
+
 // SetConfidence sets the "confidence" field.
 func (u *RelationshipAssertionUpsert) SetConfidence(v float64) *RelationshipAssertionUpsert {
 	u.Set(relationshipassertion.FieldConfidence, v)
@@ -598,6 +749,60 @@ func (u *RelationshipAssertionUpsert) UpdateValidFrom() *RelationshipAssertionUp
 	return u
 }
 
+// SetValidTo sets the "valid_to" field.
+func (u *RelationshipAssertionUpsert) SetValidTo(v time.Time) *RelationshipAssertionUpsert {
+	u.Set(relationshipassertion.FieldValidTo, v)
+	return u
+}
+
+// UpdateValidTo sets the "valid_to" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsert) UpdateValidTo() *RelationshipAssertionUpsert {
+	u.SetExcluded(relationshipassertion.FieldValidTo)
+	return u
+}
+
+// ClearValidTo clears the value of the "valid_to" field.
+func (u *RelationshipAssertionUpsert) ClearValidTo() *RelationshipAssertionUpsert {
+	u.SetNull(relationshipassertion.FieldValidTo)
+	return u
+}
+
+// SetRetractedAt sets the "retracted_at" field.
+func (u *RelationshipAssertionUpsert) SetRetractedAt(v time.Time) *RelationshipAssertionUpsert {
+	u.Set(relationshipassertion.FieldRetractedAt, v)
+	return u
+}
+
+// UpdateRetractedAt sets the "retracted_at" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsert) UpdateRetractedAt() *RelationshipAssertionUpsert {
+	u.SetExcluded(relationshipassertion.FieldRetractedAt)
+	return u
+}
+
+// ClearRetractedAt clears the value of the "retracted_at" field.
+func (u *RelationshipAssertionUpsert) ClearRetractedAt() *RelationshipAssertionUpsert {
+	u.SetNull(relationshipassertion.FieldRetractedAt)
+	return u
+}
+
+// SetRetractionReason sets the "retraction_reason" field.
+func (u *RelationshipAssertionUpsert) SetRetractionReason(v string) *RelationshipAssertionUpsert {
+	u.Set(relationshipassertion.FieldRetractionReason, v)
+	return u
+}
+
+// UpdateRetractionReason sets the "retraction_reason" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsert) UpdateRetractionReason() *RelationshipAssertionUpsert {
+	u.SetExcluded(relationshipassertion.FieldRetractionReason)
+	return u
+}
+
+// ClearRetractionReason clears the value of the "retraction_reason" field.
+func (u *RelationshipAssertionUpsert) ClearRetractionReason() *RelationshipAssertionUpsert {
+	u.SetNull(relationshipassertion.FieldRetractionReason)
+	return u
+}
+
 // SetSupersedesAssertionID sets the "supersedes_assertion_id" field.
 func (u *RelationshipAssertionUpsert) SetSupersedesAssertionID(v string) *RelationshipAssertionUpsert {
 	u.Set(relationshipassertion.FieldSupersedesAssertionID, v)
@@ -613,6 +818,36 @@ func (u *RelationshipAssertionUpsert) UpdateSupersedesAssertionID() *Relationshi
 // ClearSupersedesAssertionID clears the value of the "supersedes_assertion_id" field.
 func (u *RelationshipAssertionUpsert) ClearSupersedesAssertionID() *RelationshipAssertionUpsert {
 	u.SetNull(relationshipassertion.FieldSupersedesAssertionID)
+	return u
+}
+
+// SetExtractorVersion sets the "extractor_version" field.
+func (u *RelationshipAssertionUpsert) SetExtractorVersion(v string) *RelationshipAssertionUpsert {
+	u.Set(relationshipassertion.FieldExtractorVersion, v)
+	return u
+}
+
+// UpdateExtractorVersion sets the "extractor_version" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsert) UpdateExtractorVersion() *RelationshipAssertionUpsert {
+	u.SetExcluded(relationshipassertion.FieldExtractorVersion)
+	return u
+}
+
+// SetProjectorCompatVersion sets the "projector_compat_version" field.
+func (u *RelationshipAssertionUpsert) SetProjectorCompatVersion(v int) *RelationshipAssertionUpsert {
+	u.Set(relationshipassertion.FieldProjectorCompatVersion, v)
+	return u
+}
+
+// UpdateProjectorCompatVersion sets the "projector_compat_version" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsert) UpdateProjectorCompatVersion() *RelationshipAssertionUpsert {
+	u.SetExcluded(relationshipassertion.FieldProjectorCompatVersion)
+	return u
+}
+
+// AddProjectorCompatVersion adds v to the "projector_compat_version" field.
+func (u *RelationshipAssertionUpsert) AddProjectorCompatVersion(v int) *RelationshipAssertionUpsert {
+	u.Add(relationshipassertion.FieldProjectorCompatVersion, v)
 	return u
 }
 
@@ -735,6 +970,20 @@ func (u *RelationshipAssertionUpsertOne) UpdateSourceType() *RelationshipAsserti
 	})
 }
 
+// SetStatus sets the "status" field.
+func (u *RelationshipAssertionUpsertOne) SetStatus(v string) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetStatus(v)
+	})
+}
+
+// UpdateStatus sets the "status" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertOne) UpdateStatus() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateStatus()
+	})
+}
+
 // SetConfidence sets the "confidence" field.
 func (u *RelationshipAssertionUpsertOne) SetConfidence(v float64) *RelationshipAssertionUpsertOne {
 	return u.Update(func(s *RelationshipAssertionUpsert) {
@@ -791,6 +1040,69 @@ func (u *RelationshipAssertionUpsertOne) UpdateValidFrom() *RelationshipAssertio
 	})
 }
 
+// SetValidTo sets the "valid_to" field.
+func (u *RelationshipAssertionUpsertOne) SetValidTo(v time.Time) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetValidTo(v)
+	})
+}
+
+// UpdateValidTo sets the "valid_to" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertOne) UpdateValidTo() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateValidTo()
+	})
+}
+
+// ClearValidTo clears the value of the "valid_to" field.
+func (u *RelationshipAssertionUpsertOne) ClearValidTo() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.ClearValidTo()
+	})
+}
+
+// SetRetractedAt sets the "retracted_at" field.
+func (u *RelationshipAssertionUpsertOne) SetRetractedAt(v time.Time) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetRetractedAt(v)
+	})
+}
+
+// UpdateRetractedAt sets the "retracted_at" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertOne) UpdateRetractedAt() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateRetractedAt()
+	})
+}
+
+// ClearRetractedAt clears the value of the "retracted_at" field.
+func (u *RelationshipAssertionUpsertOne) ClearRetractedAt() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.ClearRetractedAt()
+	})
+}
+
+// SetRetractionReason sets the "retraction_reason" field.
+func (u *RelationshipAssertionUpsertOne) SetRetractionReason(v string) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetRetractionReason(v)
+	})
+}
+
+// UpdateRetractionReason sets the "retraction_reason" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertOne) UpdateRetractionReason() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateRetractionReason()
+	})
+}
+
+// ClearRetractionReason clears the value of the "retraction_reason" field.
+func (u *RelationshipAssertionUpsertOne) ClearRetractionReason() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.ClearRetractionReason()
+	})
+}
+
 // SetSupersedesAssertionID sets the "supersedes_assertion_id" field.
 func (u *RelationshipAssertionUpsertOne) SetSupersedesAssertionID(v string) *RelationshipAssertionUpsertOne {
 	return u.Update(func(s *RelationshipAssertionUpsert) {
@@ -809,6 +1121,41 @@ func (u *RelationshipAssertionUpsertOne) UpdateSupersedesAssertionID() *Relation
 func (u *RelationshipAssertionUpsertOne) ClearSupersedesAssertionID() *RelationshipAssertionUpsertOne {
 	return u.Update(func(s *RelationshipAssertionUpsert) {
 		s.ClearSupersedesAssertionID()
+	})
+}
+
+// SetExtractorVersion sets the "extractor_version" field.
+func (u *RelationshipAssertionUpsertOne) SetExtractorVersion(v string) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetExtractorVersion(v)
+	})
+}
+
+// UpdateExtractorVersion sets the "extractor_version" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertOne) UpdateExtractorVersion() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateExtractorVersion()
+	})
+}
+
+// SetProjectorCompatVersion sets the "projector_compat_version" field.
+func (u *RelationshipAssertionUpsertOne) SetProjectorCompatVersion(v int) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetProjectorCompatVersion(v)
+	})
+}
+
+// AddProjectorCompatVersion adds v to the "projector_compat_version" field.
+func (u *RelationshipAssertionUpsertOne) AddProjectorCompatVersion(v int) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.AddProjectorCompatVersion(v)
+	})
+}
+
+// UpdateProjectorCompatVersion sets the "projector_compat_version" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertOne) UpdateProjectorCompatVersion() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateProjectorCompatVersion()
 	})
 }
 
@@ -1100,6 +1447,20 @@ func (u *RelationshipAssertionUpsertBulk) UpdateSourceType() *RelationshipAssert
 	})
 }
 
+// SetStatus sets the "status" field.
+func (u *RelationshipAssertionUpsertBulk) SetStatus(v string) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetStatus(v)
+	})
+}
+
+// UpdateStatus sets the "status" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertBulk) UpdateStatus() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateStatus()
+	})
+}
+
 // SetConfidence sets the "confidence" field.
 func (u *RelationshipAssertionUpsertBulk) SetConfidence(v float64) *RelationshipAssertionUpsertBulk {
 	return u.Update(func(s *RelationshipAssertionUpsert) {
@@ -1156,6 +1517,69 @@ func (u *RelationshipAssertionUpsertBulk) UpdateValidFrom() *RelationshipAsserti
 	})
 }
 
+// SetValidTo sets the "valid_to" field.
+func (u *RelationshipAssertionUpsertBulk) SetValidTo(v time.Time) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetValidTo(v)
+	})
+}
+
+// UpdateValidTo sets the "valid_to" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertBulk) UpdateValidTo() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateValidTo()
+	})
+}
+
+// ClearValidTo clears the value of the "valid_to" field.
+func (u *RelationshipAssertionUpsertBulk) ClearValidTo() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.ClearValidTo()
+	})
+}
+
+// SetRetractedAt sets the "retracted_at" field.
+func (u *RelationshipAssertionUpsertBulk) SetRetractedAt(v time.Time) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetRetractedAt(v)
+	})
+}
+
+// UpdateRetractedAt sets the "retracted_at" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertBulk) UpdateRetractedAt() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateRetractedAt()
+	})
+}
+
+// ClearRetractedAt clears the value of the "retracted_at" field.
+func (u *RelationshipAssertionUpsertBulk) ClearRetractedAt() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.ClearRetractedAt()
+	})
+}
+
+// SetRetractionReason sets the "retraction_reason" field.
+func (u *RelationshipAssertionUpsertBulk) SetRetractionReason(v string) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetRetractionReason(v)
+	})
+}
+
+// UpdateRetractionReason sets the "retraction_reason" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertBulk) UpdateRetractionReason() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateRetractionReason()
+	})
+}
+
+// ClearRetractionReason clears the value of the "retraction_reason" field.
+func (u *RelationshipAssertionUpsertBulk) ClearRetractionReason() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.ClearRetractionReason()
+	})
+}
+
 // SetSupersedesAssertionID sets the "supersedes_assertion_id" field.
 func (u *RelationshipAssertionUpsertBulk) SetSupersedesAssertionID(v string) *RelationshipAssertionUpsertBulk {
 	return u.Update(func(s *RelationshipAssertionUpsert) {
@@ -1174,6 +1598,41 @@ func (u *RelationshipAssertionUpsertBulk) UpdateSupersedesAssertionID() *Relatio
 func (u *RelationshipAssertionUpsertBulk) ClearSupersedesAssertionID() *RelationshipAssertionUpsertBulk {
 	return u.Update(func(s *RelationshipAssertionUpsert) {
 		s.ClearSupersedesAssertionID()
+	})
+}
+
+// SetExtractorVersion sets the "extractor_version" field.
+func (u *RelationshipAssertionUpsertBulk) SetExtractorVersion(v string) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetExtractorVersion(v)
+	})
+}
+
+// UpdateExtractorVersion sets the "extractor_version" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertBulk) UpdateExtractorVersion() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateExtractorVersion()
+	})
+}
+
+// SetProjectorCompatVersion sets the "projector_compat_version" field.
+func (u *RelationshipAssertionUpsertBulk) SetProjectorCompatVersion(v int) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetProjectorCompatVersion(v)
+	})
+}
+
+// AddProjectorCompatVersion adds v to the "projector_compat_version" field.
+func (u *RelationshipAssertionUpsertBulk) AddProjectorCompatVersion(v int) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.AddProjectorCompatVersion(v)
+	})
+}
+
+// UpdateProjectorCompatVersion sets the "projector_compat_version" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertBulk) UpdateProjectorCompatVersion() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateProjectorCompatVersion()
 	})
 }
 

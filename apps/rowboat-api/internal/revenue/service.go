@@ -2,6 +2,7 @@ package revenue
 
 import (
 	"context"
+	stdsha256 "crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,7 +17,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/embeddings"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenuemetrics"
@@ -52,6 +55,15 @@ var (
 	ErrConflict = errors.New("revenue: conflicting concurrent transition")
 	// ErrInvalidInput is a bounded validation failure.
 	ErrInvalidInput = errors.New("revenue: invalid input")
+	// ErrForbidden means the authenticated user is in the workspace but their
+	// explicit role does not grant the requested capability.
+	ErrForbidden = errors.New("revenue: workspace role forbids this operation")
+	// ErrIdentityUnresolved prevents any approval or execution whose
+	// destination is attached to an ambiguous canonical relationship.
+	ErrIdentityUnresolved = errors.New("revenue: action destination depends on unresolved identity")
+	// ErrSourceIncomplete prevents beta recommendations and external writes
+	// from treating partial, stale, or rebuilding source state as complete.
+	ErrSourceIncomplete = errors.New("revenue: required source evidence is incomplete")
 )
 
 // ErrAmbiguous is returned by an Executor when the provider may have accepted
@@ -147,6 +159,7 @@ type Service struct {
 	entitlements Entitlements
 	bodyFetcher  MailBodyFetcher
 	sealer       *crypto.Sealer
+	evidenceKeys *TenantEvidenceKeyManager
 	mailBodyTTL  time.Duration
 	embedder     embeddings.Embedder
 	mailSyncer   MailSyncer
@@ -164,6 +177,9 @@ func NewService(client *ent.Client, facade FacadeClient, executor Executor, log 
 	if executor == nil {
 		executor = notConfiguredExecutor{}
 	}
+	if log == nil {
+		log = zap.NewNop()
+	}
 	return &Service{
 		client:   client,
 		facade:   facade,
@@ -175,14 +191,43 @@ func NewService(client *ent.Client, facade FacadeClient, executor Executor, log 
 
 // --- workspace ---------------------------------------------------------------
 
-// CurrentWorkspace returns the caller's revenue workspace, creating the
-// local-mode workspace on first touch (founder-mode tenancy: one workspace
-// per user until WP6 member scoping).
+// CurrentWorkspace returns the caller's active revenue workspace. Explicit
+// membership is authoritative; the founding-owner edge remains a migration
+// fallback and is backfilled into an owner membership on access.
 func (s *Service) CurrentWorkspace(ctx context.Context, u *ent.User) (*ent.RevenueWorkspace, error) {
+	member, err := s.client.RevenueWorkspaceMember.Query().
+		Where(
+			revenueworkspacemember.StatusEQ("active"),
+			revenueworkspacemember.HasUserWith(user.IDEQ(u.ID)),
+		).
+		WithWorkspace().
+		Order(ent.Asc(revenueworkspacemember.FieldCreatedAt)).
+		First(ctx)
+	if err == nil {
+		ws, workspaceErr := member.Edges.WorkspaceOrErr()
+		if workspaceErr != nil {
+			return nil, workspaceErr
+		}
+		auth.GrantRevenueWorkspace(ctx, ws.ID, member.Role)
+		return ws, nil
+	}
+	if !ent.IsNotFound(err) {
+		return nil, err
+	}
+
 	ws, err := s.client.RevenueWorkspace.Query().
 		Where(revenueworkspace.HasUserWith(user.IDEQ(u.ID))).
 		First(ctx)
 	if err == nil {
+		auth.GrantRevenueWorkspace(ctx, ws.ID, "owner")
+		if _, memberErr := s.client.RevenueWorkspaceMember.Create().
+			SetWorkspace(ws).
+			SetUser(u).
+			SetRole("owner").
+			SetStatus("active").
+			Save(ctx); memberErr != nil && !ent.IsConstraintError(memberErr) {
+			return nil, memberErr
+		}
 		return ws, nil
 	}
 	if !ent.IsNotFound(err) {
@@ -196,13 +241,211 @@ func (s *Service) CurrentWorkspace(ctx context.Context, u *ent.User) (*ent.Reven
 	if err != nil {
 		if ent.IsConstraintError(err) {
 			// Concurrent first touch: the peer's row wins.
-			return s.client.RevenueWorkspace.Query().
+			ws, queryErr := s.client.RevenueWorkspace.Query().
 				Where(revenueworkspace.HasUserWith(user.IDEQ(u.ID))).
 				First(ctx)
+			if queryErr == nil {
+				auth.GrantRevenueWorkspace(ctx, ws.ID, "owner")
+			}
+			return ws, queryErr
 		}
 		return nil, err
 	}
+	auth.GrantRevenueWorkspace(ctx, ws.ID, "owner")
+	if _, err := s.client.RevenueWorkspaceMember.Create().
+		SetWorkspace(ws).
+		SetUser(u).
+		SetRole("owner").
+		SetStatus("active").
+		Save(ctx); err != nil {
+		return nil, err
+	}
 	return ws, nil
+}
+
+// WorkspaceCapability names one server-enforced workspace permission.
+type WorkspaceCapability string
+
+// Workspace capability constants define the operations granted by each role.
+const (
+	WorkspaceView          WorkspaceCapability = "view"
+	WorkspaceContribute    WorkspaceCapability = "contribute"
+	WorkspaceExecute       WorkspaceCapability = "execute"
+	WorkspaceManageSources WorkspaceCapability = "manage_sources"
+	WorkspaceManageMembers WorkspaceCapability = "manage_members"
+)
+
+var workspaceRoleCapabilities = map[string]map[WorkspaceCapability]bool{
+	"owner": {
+		WorkspaceView: true, WorkspaceContribute: true, WorkspaceExecute: true,
+		WorkspaceManageSources: true, WorkspaceManageMembers: true,
+	},
+	"admin": {
+		WorkspaceView: true, WorkspaceContribute: true, WorkspaceExecute: true,
+		WorkspaceManageSources: true, WorkspaceManageMembers: true,
+	},
+	"member": {
+		WorkspaceView: true, WorkspaceContribute: true, WorkspaceExecute: true,
+	},
+	"viewer": {WorkspaceView: true},
+}
+
+// WorkspaceRole returns the caller's active explicit role. The founding edge
+// is accepted as owner only for pre-membership migration compatibility.
+func (s *Service) WorkspaceRole(
+	ctx context.Context,
+	u *ent.User,
+	ws *ent.RevenueWorkspace,
+) (string, error) {
+	member, err := s.client.RevenueWorkspaceMember.Query().
+		Where(
+			revenueworkspacemember.StatusEQ("active"),
+			revenueworkspacemember.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+			revenueworkspacemember.HasUserWith(user.IDEQ(u.ID)),
+		).
+		Only(ctx)
+	if err == nil {
+		return member.Role, nil
+	}
+	if !ent.IsNotFound(err) {
+		return "", err
+	}
+	isFounder, err := ws.QueryUser().Where(user.IDEQ(u.ID)).Exist(ctx)
+	if err != nil {
+		return "", err
+	}
+	if isFounder {
+		return "owner", nil
+	}
+	return "", ErrForbidden
+}
+
+// RequireWorkspaceCapability authorizes an operation against an exact tenant
+// and returns the caller's active role.
+func (s *Service) RequireWorkspaceCapability(
+	ctx context.Context,
+	u *ent.User,
+	ws *ent.RevenueWorkspace,
+	capability WorkspaceCapability,
+) (string, error) {
+	role, err := s.WorkspaceRole(ctx, u, ws)
+	if err != nil {
+		return "", err
+	}
+	if !workspaceRoleCapabilities[role][capability] {
+		return role, ErrForbidden
+	}
+	return role, nil
+}
+
+func (s *Service) currentWorkspaceWithCapability(
+	ctx context.Context,
+	u *ent.User,
+	capability WorkspaceCapability,
+) (*ent.RevenueWorkspace, error) {
+	ws, err := s.CurrentWorkspace(ctx, u)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.RequireWorkspaceCapability(ctx, u, ws, capability); err != nil {
+		return nil, err
+	}
+	return ws, nil
+}
+
+// ListWorkspaceMembers returns the active and removed membership audit rows.
+func (s *Service) ListWorkspaceMembers(ctx context.Context, u *ent.User) ([]*ent.RevenueWorkspaceMember, error) {
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
+	if err != nil {
+		return nil, err
+	}
+	return s.client.RevenueWorkspaceMember.Query().
+		Where(revenueworkspacemember.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID))).
+		WithUser().
+		Order(ent.Asc(revenueworkspacemember.FieldCreatedAt)).
+		All(ctx)
+}
+
+// UpsertWorkspaceMember grants a pre-existing authenticated user a role. User
+// provisioning remains the identity provider's responsibility.
+func (s *Service) UpsertWorkspaceMember(
+	ctx context.Context,
+	actor *ent.User,
+	targetUserID uuid.UUID,
+	role string,
+) (*ent.RevenueWorkspaceMember, error) {
+	role = strings.ToLower(strings.TrimSpace(role))
+	if role != "admin" && role != "member" && role != "viewer" {
+		return nil, fmt.Errorf("%w: role must be admin, member, or viewer", ErrInvalidInput)
+	}
+	ws, err := s.CurrentWorkspace(ctx, actor)
+	if err != nil {
+		return nil, err
+	}
+	actorRole, err := s.RequireWorkspaceCapability(ctx, actor, ws, WorkspaceManageMembers)
+	if err != nil {
+		return nil, err
+	}
+	if role == "admin" && actorRole != "owner" {
+		return nil, ErrForbidden
+	}
+	target, err := s.client.User.Get(ctx, targetUserID)
+	if ent.IsNotFound(err) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	existing, err := s.client.RevenueWorkspaceMember.Query().
+		Where(
+			revenueworkspacemember.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+			revenueworkspacemember.HasUserWith(user.IDEQ(targetUserID)),
+		).
+		Only(ctx)
+	if err == nil {
+		if existing.Role == "owner" {
+			return nil, ErrForbidden
+		}
+		return existing.Update().SetRole(role).SetStatus("active").Save(ctx)
+	}
+	if !ent.IsNotFound(err) {
+		return nil, err
+	}
+	return s.client.RevenueWorkspaceMember.Create().
+		SetWorkspace(ws).SetUser(target).SetRole(role).SetStatus("active").Save(ctx)
+}
+
+// RemoveWorkspaceMember deactivates a tenant membership while preventing the
+// protected owner membership from being removed through this path.
+func (s *Service) RemoveWorkspaceMember(
+	ctx context.Context,
+	actor *ent.User,
+	membershipID uuid.UUID,
+) (*ent.RevenueWorkspaceMember, error) {
+	ws, err := s.CurrentWorkspace(ctx, actor)
+	if err != nil {
+		return nil, err
+	}
+	actorRole, err := s.RequireWorkspaceCapability(ctx, actor, ws, WorkspaceManageMembers)
+	if err != nil {
+		return nil, err
+	}
+	member, err := s.client.RevenueWorkspaceMember.Query().
+		Where(
+			revenueworkspacemember.IDEQ(membershipID),
+			revenueworkspacemember.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+		).
+		Only(ctx)
+	if ent.IsNotFound(err) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	if member.Role == "owner" || (member.Role == "admin" && actorRole != "owner") {
+		return nil, ErrForbidden
+	}
+	return member.Update().SetStatus("removed").Save(ctx)
 }
 
 // LinkInput carries the OutboundConsole identifiers for a workspace link.
@@ -224,7 +467,7 @@ func (s *Service) LinkWorkspace(ctx context.Context, u *ent.User, in LinkInput) 
 	if _, ok := s.facade.(disabledFacade); ok {
 		return nil, ErrFacadeUnavailable
 	}
-	ws, err := s.CurrentWorkspace(ctx, u)
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceManageSources)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +497,7 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 	if strings.TrimSpace(in.DisplayName) == "" {
 		return nil, fmt.Errorf("%w: displayName is required", ErrInvalidInput)
 	}
-	ws, err := s.CurrentWorkspace(ctx, u)
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceContribute)
 	if err != nil {
 		return nil, err
 	}
@@ -313,8 +556,12 @@ func (s *Service) ListRelationshipsFiltered(
 	u *ent.User,
 	filter RelationshipListFilter,
 ) ([]*ent.Relationship, error) {
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
+	if err != nil {
+		return nil, err
+	}
 	q := s.client.Relationship.Query().
-		Where(relationship.HasUserWith(user.IDEQ(u.ID)))
+		Where(relationship.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)))
 	if value := strings.TrimSpace(filter.Lifecycle); value != "" {
 		q.Where(relationship.LifecycleEQ(value))
 	}
@@ -347,7 +594,10 @@ func (s *Service) GetRelationship(ctx context.Context, id uuid.UUID) (*ent.Relat
 		WithCommitments().
 		WithParticipants().
 		WithActions(func(q *ent.RevenueActionQuery) {
-			q.WithEvidences().Order(ent.Desc(revenueaction.FieldPriorityScore))
+			q.WithEvidences().Order(
+				ent.Desc(revenueaction.FieldPriorityScore),
+				ent.Asc(revenueaction.FieldID),
+			)
 		}).
 		Only(ctx)
 	if ent.IsNotFound(err) {
@@ -404,7 +654,7 @@ func (s *Service) CreateAction(ctx context.Context, u *ent.User, in ActionInput)
 	if in.ExecutionMode == "" {
 		in.ExecutionMode = ExecModeDraft
 	}
-	ws, err := s.CurrentWorkspace(ctx, u)
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceContribute)
 	if err != nil {
 		return nil, err
 	}
@@ -416,6 +666,16 @@ func (s *Service) CreateAction(ctx context.Context, u *ent.User, in ActionInput)
 			return nil, fmt.Errorf("%w: relationship", ErrNotFound)
 		}
 		return nil, err
+	}
+	if unresolved, checkErr := s.relationshipHasUnresolvedIdentity(ctx, rel.ID); checkErr != nil {
+		return nil, checkErr
+	} else if unresolved {
+		return nil, ErrIdentityUnresolved
+	}
+	if in.Detector != DetectorManual {
+		if err := s.ensureRelationshipActionCompleteness(ctx, u, ws, rel.ID); err != nil {
+			return nil, err
+		}
 	}
 	if in.DedupeKey == "" {
 		in.DedupeKey = fmt.Sprintf("%s:%s:%s:%s", in.Detector, in.ActionType, in.Channel, rel.ID)
@@ -495,7 +755,8 @@ func (s *Service) CreateAction(ctx context.Context, u *ent.User, in ActionInput)
 		return nil, err
 	}
 	revenuemetrics.Actions.WithLabelValues(action.ActionType, action.QueueStatus).Inc()
-	return action, nil
+	_ = s.RefreshRelationshipAttention(ctx, u)
+	return action.Unwrap(), nil
 }
 
 // snapshotRevision writes the immutable revision row for the action's current
@@ -546,8 +807,12 @@ func (s *Service) ListActions(ctx context.Context, u *ent.User, f ListFilter) ([
 	if limit > 100 {
 		limit = 100
 	}
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
+	if err != nil {
+		return nil, err
+	}
 	q := s.client.RevenueAction.Query().
-		Where(revenueaction.HasUserWith(user.IDEQ(u.ID)))
+		Where(revenueaction.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)))
 	status := f.QueueStatus
 	if status == "" {
 		status = QueueOpen
@@ -611,6 +876,9 @@ type EditInput struct {
 // decision and approval (invariant 3). Editing is refused once execution has
 // begun for the current revision.
 func (s *Service) EditAction(ctx context.Context, u *ent.User, id uuid.UUID, in EditInput) (*ent.RevenueAction, error) {
+	if _, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceContribute); err != nil {
+		return nil, err
+	}
 	action, err := s.GetAction(ctx, id)
 	if err != nil {
 		return nil, err
@@ -700,7 +968,8 @@ func (s *Service) EditAction(ctx context.Context, u *ent.User, id uuid.UUID, in 
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	return updated, nil
+	_ = s.RefreshRelationshipAttention(ctx, u)
+	return updated.Unwrap(), nil
 }
 
 // --- preflight (facade) ------------------------------------------------------
@@ -710,6 +979,9 @@ func (s *Service) EditAction(ctx context.Context, u *ent.User, id uuid.UUID, in 
 // snapshot for the same revision is returned as-is (duplicate evaluate is
 // free). Facade unavailability leaves policy_status=pending (fail closed).
 func (s *Service) Evaluate(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.PolicyDecisionSnapshot, error) {
+	if _, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceExecute); err != nil {
+		return nil, err
+	}
 	action, err := s.GetAction(ctx, id)
 	if err != nil {
 		return nil, err
@@ -921,11 +1193,21 @@ func reasonGroup(codes []string) string {
 // action is not blocked — a draft lands in the operator's own mailbox and
 // nothing leaves the boundary.
 func (s *Service) Approve(ctx context.Context, u *ent.User, id uuid.UUID, acceptRisk bool) (*ent.RevenueAction, error) {
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceExecute)
+	if err != nil {
+		return nil, err
+	}
 	if err := s.requireEntitled(ctx, u); err != nil {
 		return nil, err
 	}
 	action, err := s.GetAction(ctx, id)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.ensureActionIdentityResolved(ctx, action); err != nil {
+		return nil, err
+	}
+	if err := s.ensureRelationshipActionCompleteness(ctx, u, ws, actionRelationshipID(action)); err != nil {
 		return nil, err
 	}
 	if action.PolicyStatus == PolicyBlocked {
@@ -987,16 +1269,17 @@ func (s *Service) Approve(ctx context.Context, u *ent.User, id uuid.UUID, accept
 	}
 	revenuemetrics.Decisions.WithLabelValues("approved").Inc()
 
-	ws, err := s.CurrentWorkspace(ctx, u)
-	if err == nil {
-		payload := map[string]any{"revision": action.Revision}
-		if decisionID != nil {
-			payload["decisionId"] = decisionID.String()
-		}
-		_ = s.appendOutbox(ctx, s.client, ws, u, "revenue.action.approved.v1", action.ID,
-			fmt.Sprintf("approved:%s:%d", action.ID, action.Revision), payload, now)
+	payload := map[string]any{"revision": action.Revision}
+	if decisionID != nil {
+		payload["decisionId"] = decisionID.String()
 	}
-	return s.GetAction(ctx, id)
+	_ = s.appendOutbox(ctx, s.client, ws, u, "revenue.action.approved.v1", action.ID,
+		fmt.Sprintf("approved:%s:%d", action.ID, action.Revision), payload, now)
+	_ = appendTrustEvent(ctx, s.client, ws, u, TrustEventInput{
+		Name: "recommendation_decided", Outcome: "accepted", ReasonCode: "approved",
+		CorrelationID: correlationID("action", action.ID), OccurredAt: now, Action: action,
+	})
+	return s.actionResultWithAttention(ctx, u, id)
 }
 
 // currentDecision loads the freshest decision snapshot for the action's exact
@@ -1060,6 +1343,10 @@ func (s *Service) boundDecision(ctx context.Context, action *ent.RevenueAction) 
 
 // Reject records a rejected approval for the current revision.
 func (s *Service) Reject(ctx context.Context, u *ent.User, id uuid.UUID, reason string) (*ent.RevenueAction, error) {
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceExecute)
+	if err != nil {
+		return nil, err
+	}
 	action, err := s.GetAction(ctx, id)
 	if err != nil {
 		return nil, err
@@ -1079,12 +1366,14 @@ func (s *Service) Reject(ctx context.Context, u *ent.User, id uuid.UUID, reason 
 		return nil, ErrConflict
 	}
 	revenuemetrics.Decisions.WithLabelValues("rejected").Inc()
-	if ws, werr := s.CurrentWorkspace(ctx, u); werr == nil {
-		_ = s.appendOutbox(ctx, s.client, ws, u, "revenue.action.rejected.v1", action.ID,
-			fmt.Sprintf("rejected:%s:%d", action.ID, action.Revision),
-			map[string]any{"revision": action.Revision, "reason": reason}, s.now())
-	}
-	return s.GetAction(ctx, id)
+	_ = s.appendOutbox(ctx, s.client, ws, u, "revenue.action.rejected.v1", action.ID,
+		fmt.Sprintf("rejected:%s:%d", action.ID, action.Revision),
+		map[string]any{"revision": action.Revision, "reason": reason}, s.now())
+	_ = appendTrustEvent(ctx, s.client, ws, u, TrustEventInput{
+		Name: "recommendation_decided", Outcome: "rejected", ReasonCode: "rejected",
+		CorrelationID: correlationID("action", action.ID), OccurredAt: s.now(), Action: action,
+	})
+	return s.actionResultWithAttention(ctx, u, id)
 }
 
 // --- triage ------------------------------------------------------------------
@@ -1093,7 +1382,10 @@ func (s *Service) Reject(ctx context.Context, u *ent.User, id uuid.UUID, reason 
 const maxSnooze = 90 * 24 * time.Hour
 
 // Snooze parks the action until a bounded future timestamp.
-func (s *Service) Snooze(ctx context.Context, _ *ent.User, id uuid.UUID, until time.Time) (*ent.RevenueAction, error) {
+func (s *Service) Snooze(ctx context.Context, u *ent.User, id uuid.UUID, until time.Time) (*ent.RevenueAction, error) {
+	if _, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceExecute); err != nil {
+		return nil, err
+	}
 	now := s.now()
 	if !until.After(now) || until.After(now.Add(maxSnooze)) {
 		return nil, fmt.Errorf("%w: snooze must be in the future and within %s", ErrInvalidInput, maxSnooze)
@@ -1110,12 +1402,15 @@ func (s *Service) Snooze(ctx context.Context, _ *ent.User, id uuid.UUID, until t
 		return nil, ErrConflict
 	}
 	revenuemetrics.Decisions.WithLabelValues("snoozed").Inc()
-	return s.GetAction(ctx, id)
+	return s.actionResultWithAttention(ctx, u, id)
 }
 
 // Dismiss removes the action from the queue with a reason label and records
 // the dismissed outcome.
 func (s *Service) Dismiss(ctx context.Context, u *ent.User, id uuid.UUID, reason string) (*ent.RevenueAction, error) {
+	if _, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceExecute); err != nil {
+		return nil, err
+	}
 	action, err := s.GetAction(ctx, id)
 	if err != nil {
 		return nil, err
@@ -1138,7 +1433,7 @@ func (s *Service) Dismiss(ctx context.Context, u *ent.User, id uuid.UUID, reason
 		SourceEventID: fmt.Sprintf("dismiss:%d", action.Revision),
 		OccurredAt:    s.now(),
 	})
-	return s.GetAction(ctx, id)
+	return s.actionResultWithAttention(ctx, u, id)
 }
 
 // --- execute (invariants 6, 7, 8, 11) ----------------------------------------
@@ -1147,6 +1442,10 @@ func (s *Service) Dismiss(ctx context.Context, u *ent.User, id uuid.UUID, reason
 // execution owner. Draft mode works in any workspace mode; send mode requires
 // a linked workspace and a still-unexpired decision.
 func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.RevenueAction, error) {
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceExecute)
+	if err != nil {
+		return nil, err
+	}
 	if err := s.requireEntitled(ctx, u); err != nil {
 		return nil, err
 	}
@@ -1154,8 +1453,18 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 	if err != nil {
 		return nil, err
 	}
-	ws, err := s.CurrentWorkspace(ctx, u)
-	if err != nil {
+	if err := s.ensureActionIdentityResolved(ctx, action); err != nil {
+		return nil, err
+	}
+	if capability := actionCapability(action.Channel); capability != "" {
+		if err := s.requireWorkspaceFeature(ctx, ws, capability); err != nil {
+			return nil, err
+		}
+	}
+	if err := s.requireBetaActionReadiness(ctx, ws, action); err != nil {
+		return nil, err
+	}
+	if err := s.ensureRelationshipActionCompleteness(ctx, u, ws, actionRelationshipID(action)); err != nil {
 		return nil, err
 	}
 	if action.PolicyStatus == PolicyBlocked {
@@ -1281,6 +1590,10 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 		revenuemetrics.Executions.WithLabelValues(action.ExecutionOwner, ExecSent, action.Channel).Inc()
 		_ = s.appendOutbox(ctx, s.client, ws, u, "revenue.action.sent.v1", action.ID,
 			"sent:"+idem, map[string]any{"revision": action.Revision}, s.now())
+		_ = appendTrustEvent(ctx, s.client, ws, u, TrustEventInput{
+			Name: "action_executed", Outcome: "succeeded", ReasonCode: "provider_receipt",
+			CorrelationID: idem, Channel: action.Channel, OccurredAt: s.now(), Action: action,
+		})
 	case errors.Is(execErr, ErrAmbiguous):
 		// Invariant 8: a lost result after submission is ambiguous, never an
 		// automatic resend. Reconciliation checks provider state first.
@@ -1297,6 +1610,10 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 			return nil, err
 		}
 		revenuemetrics.Executions.WithLabelValues(action.ExecutionOwner, ExecAmbiguous, action.Channel).Inc()
+		_ = appendTrustEvent(ctx, s.client, ws, u, TrustEventInput{
+			Name: "action_executed", Outcome: "uncertain", ReasonCode: "provider_timeout",
+			CorrelationID: idem, Channel: action.Channel, OccurredAt: s.now(), Action: action,
+		})
 	default:
 		// A definite failure (nothing reached the provider — 4xx, missing
 		// scope, dead token) returns the action to pending so the operator
@@ -1313,8 +1630,12 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 		revenuemetrics.Executions.WithLabelValues(action.ExecutionOwner, ExecFailed, action.Channel).Inc()
 		_ = s.appendOutbox(ctx, s.client, ws, u, "revenue.action.failed.v1", action.ID,
 			"failed:"+idem+":"+s.now().Format(time.RFC3339Nano), map[string]any{"revision": action.Revision}, s.now())
+		_ = appendTrustEvent(ctx, s.client, ws, u, TrustEventInput{
+			Name: "action_executed", Outcome: "failed", ReasonCode: "provider_rejected",
+			CorrelationID: idem, Channel: action.Channel, OccurredAt: s.now(), Action: action,
+		})
 	}
-	return s.GetAction(ctx, id)
+	return s.actionResultWithAttention(ctx, u, id)
 }
 
 // --- outcomes (invariant 10) -------------------------------------------------
@@ -1342,7 +1663,12 @@ func (s *Service) AppendOutcome(ctx context.Context, u *ent.User, actionID uuid.
 	if in.OccurredAt.IsZero() {
 		in.OccurredAt = s.now()
 	}
-	create := s.client.ActionOutcome.Create().
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	txc := tx.Client()
+	create := txc.ActionOutcome.Create().
 		SetWorkspace(ws).
 		SetAction(action).
 		SetUser(u).
@@ -1359,6 +1685,7 @@ func (s *Service) AppendOutcome(ctx context.Context, u *ent.User, actionID uuid.
 	}
 	outcome, err := create.Save(ctx)
 	if err != nil {
+		_ = tx.Rollback()
 		if ent.IsConstraintError(err) {
 			revenuemetrics.DuplicatesPrevented.WithLabelValues("outcome").Inc()
 			return s.client.ActionOutcome.Query().
@@ -1373,11 +1700,77 @@ func (s *Service) AppendOutcome(ctx context.Context, u *ent.User, actionID uuid.
 		}
 		return nil, err
 	}
+	rel, err := action.Edges.RelationshipOrErr()
+	if err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
+	if err := appendOutcomeObservation(ctx, txc, ws, u, rel, action, in); err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	revenuemetrics.Outcomes.WithLabelValues(in.Kind).Inc()
+	_ = appendTrustEvent(ctx, s.client, ws, u, TrustEventInput{
+		Name: "outcome_observed", Outcome: "succeeded",
+		CorrelationID: correlationID("outcome", outcome.ID), Source: in.Source,
+		OccurredAt: in.OccurredAt, Action: action,
+	})
 	_ = s.appendOutbox(ctx, s.client, ws, u, "revenue.action.outcome.v1", action.ID,
 		fmt.Sprintf("outcome:%s:%s:%s", action.ID, in.Source, in.SourceEventID),
 		map[string]any{"kind": in.Kind, "source": in.Source}, s.now())
-	return outcome, nil
+	_ = s.RefreshRelationshipAttention(ctx, u)
+	return outcome.Unwrap(), nil
+}
+
+func (s *Service) actionResultWithAttention(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.RevenueAction, error) {
+	_ = s.RefreshRelationshipAttention(ctx, u)
+	return s.GetAction(ctx, id)
+}
+
+// appendOutcomeObservation publishes the categorical provider/user result into
+// the same immutable relationship history used by email, meetings, Slack, and
+// CRM evidence. Arbitrary outcome metadata stays out of this client-visible
+// projection.
+func appendOutcomeObservation(
+	ctx context.Context,
+	client *ent.Client,
+	ws *ent.RevenueWorkspace,
+	u *ent.User,
+	rel *ent.Relationship,
+	action *ent.RevenueAction,
+	in OutcomeInput,
+) error {
+	source := strings.ToLower(strings.TrimSpace(in.Source))
+	switch source {
+	case "gmail", "calendar", "slack", "meeting", "crm", "hubspot", "user":
+	case "outbound", "task":
+		source = "user"
+	default:
+		source = "user"
+	}
+	facts := map[string]any{
+		"outcome_kind": in.Kind, "provider_source": in.Source,
+		"action_id": action.ID.String(), "recommendation_revision": action.Revision,
+		"channel": action.Channel,
+	}
+	rawFacts, err := json.Marshal(facts)
+	if err != nil {
+		return err
+	}
+	externalID := fmt.Sprintf("action-outcome:%s:%s:%s", action.ID, in.Source, in.SourceEventID)
+	digest := stdsha256.Sum256([]byte(externalID + "\x00" + in.Kind))
+	_, err = client.RelationshipObservation.Create().
+		SetWorkspace(ws).SetRelationship(rel).SetUser(u).
+		SetSource(source).SetSourceAccountID("outcome").SetExternalID(externalID).
+		SetSourceVersion(fmt.Sprintf("action-revision-%d", action.Revision)).
+		SetEventType("action.outcome." + in.Kind).SetOccurredAt(in.OccurredAt.UTC()).SetReceivedAt(in.OccurredAt.UTC()).
+		SetSummary("Action outcome observed: " + strings.ReplaceAll(in.Kind, "_", " ") + ".").
+		SetNormalizedFactsJSON(string(rawFacts)).SetContentHash(fmt.Sprintf("%x", digest[:])).
+		Save(ctx)
+	return err
 }
 
 // isValidationError reports whether err is an ent field validation error

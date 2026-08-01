@@ -19,6 +19,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenuetrustevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
@@ -27,24 +28,26 @@ import (
 // RevenueActionQuery is the builder for querying RevenueAction entities.
 type RevenueActionQuery struct {
 	config
-	ctx                *QueryContext
-	order              []revenueaction.OrderOption
-	inters             []Interceptor
-	predicates         []predicate.RevenueAction
-	withWorkspace      *RevenueWorkspaceQuery
-	withRelationship   *RelationshipQuery
-	withUser           *UserQuery
-	withEvidences      *RevenueEvidenceQuery
-	withRevisions      *RevenueActionRevisionQuery
-	withDecisions      *PolicyDecisionSnapshotQuery
-	withOutcomes       *ActionOutcomeQuery
-	withFKs            bool
-	modifiers          []func(*sql.Selector)
-	loadTotal          []func(context.Context, []*RevenueAction) error
-	withNamedEvidences map[string]*RevenueEvidenceQuery
-	withNamedRevisions map[string]*RevenueActionRevisionQuery
-	withNamedDecisions map[string]*PolicyDecisionSnapshotQuery
-	withNamedOutcomes  map[string]*ActionOutcomeQuery
+	ctx                  *QueryContext
+	order                []revenueaction.OrderOption
+	inters               []Interceptor
+	predicates           []predicate.RevenueAction
+	withWorkspace        *RevenueWorkspaceQuery
+	withRelationship     *RelationshipQuery
+	withUser             *UserQuery
+	withEvidences        *RevenueEvidenceQuery
+	withRevisions        *RevenueActionRevisionQuery
+	withDecisions        *PolicyDecisionSnapshotQuery
+	withOutcomes         *ActionOutcomeQuery
+	withTrustEvents      *RevenueTrustEventQuery
+	withFKs              bool
+	modifiers            []func(*sql.Selector)
+	loadTotal            []func(context.Context, []*RevenueAction) error
+	withNamedEvidences   map[string]*RevenueEvidenceQuery
+	withNamedRevisions   map[string]*RevenueActionRevisionQuery
+	withNamedDecisions   map[string]*PolicyDecisionSnapshotQuery
+	withNamedOutcomes    map[string]*ActionOutcomeQuery
+	withNamedTrustEvents map[string]*RevenueTrustEventQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -228,6 +231,28 @@ func (_q *RevenueActionQuery) QueryOutcomes() *ActionOutcomeQuery {
 			sqlgraph.From(revenueaction.Table, revenueaction.FieldID, selector),
 			sqlgraph.To(actionoutcome.Table, actionoutcome.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, revenueaction.OutcomesTable, revenueaction.OutcomesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryTrustEvents chains the current query on the "trust_events" edge.
+func (_q *RevenueActionQuery) QueryTrustEvents() *RevenueTrustEventQuery {
+	query := (&RevenueTrustEventClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueaction.Table, revenueaction.FieldID, selector),
+			sqlgraph.To(revenuetrustevent.Table, revenuetrustevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueaction.TrustEventsTable, revenueaction.TrustEventsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -434,6 +459,7 @@ func (_q *RevenueActionQuery) Clone() *RevenueActionQuery {
 		withRevisions:    _q.withRevisions.Clone(),
 		withDecisions:    _q.withDecisions.Clone(),
 		withOutcomes:     _q.withOutcomes.Clone(),
+		withTrustEvents:  _q.withTrustEvents.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -517,6 +543,17 @@ func (_q *RevenueActionQuery) WithOutcomes(opts ...func(*ActionOutcomeQuery)) *R
 	return _q
 }
 
+// WithTrustEvents tells the query-builder to eager-load the nodes that are connected to
+// the "trust_events" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueActionQuery) WithTrustEvents(opts ...func(*RevenueTrustEventQuery)) *RevenueActionQuery {
+	query := (&RevenueTrustEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withTrustEvents = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -596,7 +633,7 @@ func (_q *RevenueActionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 		nodes       = []*RevenueAction{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [7]bool{
+		loadedTypes = [8]bool{
 			_q.withWorkspace != nil,
 			_q.withRelationship != nil,
 			_q.withUser != nil,
@@ -604,6 +641,7 @@ func (_q *RevenueActionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 			_q.withRevisions != nil,
 			_q.withDecisions != nil,
 			_q.withOutcomes != nil,
+			_q.withTrustEvents != nil,
 		}
 	)
 	if _q.withWorkspace != nil || _q.withRelationship != nil || _q.withUser != nil {
@@ -679,6 +717,13 @@ func (_q *RevenueActionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 			return nil, err
 		}
 	}
+	if query := _q.withTrustEvents; query != nil {
+		if err := _q.loadTrustEvents(ctx, query, nodes,
+			func(n *RevenueAction) { n.Edges.TrustEvents = []*RevenueTrustEvent{} },
+			func(n *RevenueAction, e *RevenueTrustEvent) { n.Edges.TrustEvents = append(n.Edges.TrustEvents, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedEvidences {
 		if err := _q.loadEvidences(ctx, query, nodes,
 			func(n *RevenueAction) { n.appendNamedEvidences(name) },
@@ -704,6 +749,13 @@ func (_q *RevenueActionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 		if err := _q.loadOutcomes(ctx, query, nodes,
 			func(n *RevenueAction) { n.appendNamedOutcomes(name) },
 			func(n *RevenueAction, e *ActionOutcome) { n.appendNamedOutcomes(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedTrustEvents {
+		if err := _q.loadTrustEvents(ctx, query, nodes,
+			func(n *RevenueAction) { n.appendNamedTrustEvents(name) },
+			func(n *RevenueAction, e *RevenueTrustEvent) { n.appendNamedTrustEvents(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -965,6 +1017,37 @@ func (_q *RevenueActionQuery) loadOutcomes(ctx context.Context, query *ActionOut
 	}
 	return nil
 }
+func (_q *RevenueActionQuery) loadTrustEvents(ctx context.Context, query *RevenueTrustEventQuery, nodes []*RevenueAction, init func(*RevenueAction), assign func(*RevenueAction, *RevenueTrustEvent)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueAction)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RevenueTrustEvent(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueaction.TrustEventsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_action_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_action_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_action_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *RevenueActionQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -1103,6 +1186,20 @@ func (_q *RevenueActionQuery) WithNamedOutcomes(name string, opts ...func(*Actio
 		_q.withNamedOutcomes = make(map[string]*ActionOutcomeQuery)
 	}
 	_q.withNamedOutcomes[name] = query
+	return _q
+}
+
+// WithNamedTrustEvents tells the query-builder to eager-load the nodes that are connected to the "trust_events"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueActionQuery) WithNamedTrustEvents(name string, opts ...func(*RevenueTrustEventQuery)) *RevenueActionQuery {
+	query := (&RevenueTrustEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedTrustEvents == nil {
+		_q.withNamedTrustEvents = make(map[string]*RevenueTrustEventQuery)
+	}
+	_q.withNamedTrustEvents[name] = query
 	return _q
 }
 

@@ -9,6 +9,7 @@ import type {
   CaptureHealthSnapshot,
   MeetingKeepAudio,
   MeetingLevels,
+  MeetingRelationshipTarget,
   MeetingSessionSummary,
   MeetingTrackId,
   MeetingTranscriptionEngine,
@@ -42,6 +43,7 @@ import {
 import { MeetingLiveTranscriber } from "./meeting-live.js";
 import type {
   CounterpartyResolution,
+  Counterparty,
   KnownPerson,
   LedgerCommitment,
   ProposedCommitment,
@@ -70,6 +72,8 @@ import {
 import {
   enqueueRelationshipEvidence,
   flushRelationshipEvidence,
+  relationshipObservationKey,
+  type RelationshipEvidenceFlushResult,
 } from "@x/core/dist/relationships/evidence-outbox.js";
 import {
   confirmedCommitmentObservation,
@@ -124,6 +128,7 @@ export class MeetingController {
   private sessionStartedAt: Date | null = null;
   private notePath: string | undefined;
   private calendarEvent: MeetingCalendarEvent | undefined;
+  private relationshipTarget: MeetingRelationshipTarget | undefined;
   private lastProgress: MeetingTranscriptionProgress | null = null;
   /** Auto-stop watch: a forgotten recording should not run for hours. */
   private silenceWatch: NodeJS.Timeout | null = null;
@@ -242,7 +247,7 @@ export class MeetingController {
 
   async start(
     calendarEvent?: MeetingCalendarEvent,
-    opts: { standby?: boolean } = {},
+    opts: { standby?: boolean; relationshipTarget?: MeetingRelationshipTarget } = {},
   ): Promise<{
     started: boolean;
     sessionId?: string;
@@ -302,10 +307,7 @@ export class MeetingController {
           for (const track of this.sidecar.tracks) {
             const frameCount = frames[track];
             if (Number.isFinite(frameCount)) this.guardianTrackProgress[track] = frameCount!;
-            this.guardianPeaks[track] = Math.max(
-              this.guardianPeaks[track],
-              peaks[track] ?? 0,
-            );
+            this.guardianPeaks[track] = Math.max(this.guardianPeaks[track], peaks[track] ?? 0);
           }
           // The renderer pipeline auto-stops after two minutes with no transcript; the
           // native path has no transcript stream to watch, so it watches levels. Without
@@ -331,6 +333,7 @@ export class MeetingController {
       this.guardianPeaks = { mic: 0, system: 0 };
       this.startGuardianWatch();
       this.calendarEvent = calendarEvent;
+      this.relationshipTarget = opts.relationshipTarget;
       this.startSilenceWatch();
 
       // Write the note now, empty, so there is something to open while the meeting
@@ -342,7 +345,10 @@ export class MeetingController {
       const sessionId = path.basename(dir);
       if (!this.standbySeconds) await this.writePlaceholderNote(dir);
 
-      const liveIdentity = resolveCounterparty(calendarEvent).counterparty;
+      const liveIdentity = this.resolveMeetingCounterparty(
+        calendarEvent,
+        opts.relationshipTarget,
+      ).counterparty;
       this.liveCounterparty = liveIdentity?.label;
       this.liveCues = [];
       this.liveCueHistory = [];
@@ -369,6 +375,7 @@ export class MeetingController {
       // Nothing was captured, so leave no empty session directory behind to confuse
       // the queue or the sessions list.
       await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
+      this.relationshipTarget = undefined;
       this.setState("idle");
       return { started: false, tracks: [], warnings: [], error: (err as Error).message };
     }
@@ -532,20 +539,27 @@ export class MeetingController {
   async deleteSession(
     sessionId: string,
     deleteNote = false,
-  ): Promise<{ deleted: boolean; noteDeleted: boolean }> {
+  ): Promise<{
+    deleted: boolean;
+    noteDeleted: boolean;
+    sharedEvidence: "not_attached" | "retained_by_workspace_policy";
+    relationshipId?: string;
+  }> {
     const root = await this.root();
     const dir = path.join(root, sessionId);
     // Guard against a traversal in the id turning this into an arbitrary delete.
     if (path.dirname(path.resolve(dir)) !== path.resolve(root)) {
-      return { deleted: false, noteDeleted: false };
+      return { deleted: false, noteDeleted: false, sharedEvidence: "not_attached" };
     }
-    if (this.sessionDir === dir) return { deleted: false, noteDeleted: false };
+    if (this.sessionDir === dir) {
+      return { deleted: false, noteDeleted: false, sharedEvidence: "not_attached" };
+    }
 
     // Read the meta before removing the directory — it is what the note path is
     // derived from, and the caller never supplies one.
-    const meta = deleteNote ? await readMeta(dir) : null;
+    const meta = await readMeta(dir);
     let noteDeleted = false;
-    if (meta) {
+    if (deleteNote && meta) {
       try {
         noteDeleted = await deleteMeetingNote(sessionId, meta);
       } catch (err) {
@@ -557,7 +571,14 @@ export class MeetingController {
 
     await fs.rm(dir, { recursive: true, force: true });
     this.notePaths.delete(sessionId);
-    return { deleted: true, noteDeleted };
+    return {
+      deleted: true,
+      noteDeleted,
+      sharedEvidence: meta?.relationship_target ? "retained_by_workspace_policy" : "not_attached",
+      ...(meta?.relationship_target
+        ? { relationshipId: meta.relationship_target.relationshipId }
+        : {}),
+    };
   }
 
   /**
@@ -677,7 +698,17 @@ export class MeetingController {
    */
   private resolveMeetingCounterparty(
     calendarEvent: MeetingCalendarEvent | undefined,
+    relationshipTarget?: MeetingRelationshipTarget,
   ): CounterpartyResolution {
+    if (relationshipTarget) {
+      const counterparty: Counterparty = {
+        label: relationshipTarget.displayName,
+        relationshipId: relationshipTarget.relationshipId,
+        email: relationshipTarget.primaryEmail,
+        accountDomain: relationshipTarget.accountDomain,
+      };
+      return { counterparty, otherAttendees: 1 };
+    }
     const cheap = resolveCounterparty(calendarEvent);
     // Not a 1:1, or nothing to name: no index can change this answer.
     if (!cheap.counterparty) return cheap;
@@ -774,15 +805,18 @@ export class MeetingController {
       .filter((cue, index, all) => all.findIndex((other) => other.id === cue.id) === index)
       .slice(-limit);
     broadcast("meeting:liveCues", { cues: this.liveCues });
-    await this.recordCueTelemetry("displayed", generated.map((cue) => cue.id));
+    await this.recordCueTelemetry(
+      "displayed",
+      generated.map((cue) => cue.id),
+    );
   }
 
   private async recordCueTelemetry(outcome: string, cueIds: string[]): Promise<void> {
     if (!this.sessionDir || cueIds.length === 0) return;
     const record = JSON.stringify({ at: new Date().toISOString(), outcome, cueIds });
-    await fs.appendFile(path.join(this.sessionDir, "cue-events.jsonl"), `${record}\n`, "utf8").catch(
-      () => undefined,
-    );
+    await fs
+      .appendFile(path.join(this.sessionDir, "cue-events.jsonl"), `${record}\n`, "utf8")
+      .catch(() => undefined);
   }
 
   async dismissLiveCue(cueId: string): Promise<{ dismissed: boolean }> {
@@ -796,7 +830,10 @@ export class MeetingController {
   }
 
   async recordLiveCueFeedback(cueId: string, outcome: string): Promise<{ recorded: boolean }> {
-    if (!this.liveCueHistory.some((item) => item.id === cueId) && !this.liveCues.some((item) => item.id === cueId)) {
+    if (
+      !this.liveCueHistory.some((item) => item.id === cueId) &&
+      !this.liveCues.some((item) => item.id === cueId)
+    ) {
       return { recorded: false };
     }
     await this.recordCueTelemetry(outcome, [cueId]);
@@ -944,7 +981,10 @@ export class MeetingController {
       try {
         const meta = await readMeta(dir);
         if (meta) {
-          const { counterparty } = this.resolveMeetingCounterparty(calendarEventFromMeta(meta));
+          const { counterparty } = this.resolveMeetingCounterparty(
+            calendarEventFromMeta(meta),
+            meta.relationship_target,
+          );
           if (counterparty) {
             await enqueueRelationshipEvidence(
               confirmedCommitmentObservation({ commitment: entry, counterparty }),
@@ -971,6 +1011,7 @@ export class MeetingController {
     sessionId: string;
     startedAt: string;
     calendarEventJson?: string;
+    relationshipTarget?: MeetingRelationshipTarget;
     provider: string;
     segments: { speaker: string; text: string }[];
   }): Promise<{ queued: boolean; reason?: string }> {
@@ -988,7 +1029,10 @@ export class MeetingController {
         return { queued: false, reason: "calendar event is invalid" };
       }
     }
-    const { counterparty, reason } = this.resolveMeetingCounterparty(calendarEvent);
+    const { counterparty, reason } = this.resolveMeetingCounterparty(
+      calendarEvent,
+      args.relationshipTarget,
+    );
     if (!counterparty) return { queued: false, reason: reason ?? "counterparty is unresolved" };
 
     const ended = new Date().toISOString();
@@ -1025,6 +1069,7 @@ export class MeetingController {
       })),
       warnings: ["renderer fallback: timed audio evidence was not retained"],
       ...(args.calendarEventJson ? { calendar_event: args.calendarEventJson } : {}),
+      ...(args.relationshipTarget ? { relationship_target: args.relationshipTarget } : {}),
     };
     const transcript = {
       schema: 1 as const,
@@ -1054,6 +1099,87 @@ export class MeetingController {
     return { queued: true };
   }
 
+  /**
+   * Bind a completed native recording to an exact relationship selected by the
+   * operator. The binding is persisted before publication, so an offline flush or
+   * application restart cannot lose the destination. Rebinding to a different account
+   * is refused; moving already-published evidence belongs to the audited identity
+   * workflow rather than this convenience action.
+   */
+  async publishSessionEvidence(
+    sessionId: string,
+    requested: MeetingRelationshipTarget,
+  ): Promise<{
+    queued: boolean;
+    published?: boolean;
+    pending?: number;
+    relationshipStateVersion?: number;
+    relationshipStateHash?: string;
+    reason?: string;
+  }> {
+    const settings = await getTranscriptionConfig();
+    if (!settings.meetings.syncRelationshipEvidence) {
+      return { queued: false, reason: "relationship evidence sync is off" };
+    }
+    const dir = await this.sessionPath(sessionId);
+    if (!dir) return { queued: false, reason: "recording was not found" };
+    const [meta, transcript, canonical] = await Promise.all([
+      readMeta(dir),
+      readTranscript(dir),
+      getRelationship(requested.relationshipId),
+    ]);
+    if (!meta) return { queued: false, reason: "recording is not finalized" };
+    if (!transcript) return { queued: false, reason: "transcript is not ready" };
+    if (
+      meta.relationship_target &&
+      meta.relationship_target.relationshipId !== requested.relationshipId
+    ) {
+      return {
+        queued: false,
+        reason: `recording is already attached to ${meta.relationship_target.displayName}`,
+      };
+    }
+    const target: MeetingRelationshipTarget = {
+      relationshipId: canonical.relationship.id,
+      displayName: canonical.relationship.displayName,
+      ...(canonical.relationship.primaryEmail
+        ? { primaryEmail: canonical.relationship.primaryEmail }
+        : {}),
+      ...(canonical.relationship.accountDomain
+        ? { accountDomain: canonical.relationship.accountDomain }
+        : {}),
+    };
+    const persisted = await patchMeta(dir, { relationship_target: target });
+    if (!persisted) return { queued: false, reason: "could not persist relationship selection" };
+    const { counterparty } = this.resolveMeetingCounterparty(
+      calendarEventFromMeta(persisted),
+      target,
+    );
+    if (!counterparty) return { queued: false, reason: "relationship is unresolved" };
+    const observation = await meetingTranscriptObservationWithExtraction({
+      sessionId,
+      meta: persisted,
+      transcript,
+      counterparty,
+      settings: settings.meetings,
+    });
+    const evidenceKey = relationshipObservationKey(observation);
+    await enqueueRelationshipEvidence(observation);
+    const flush = await this.flushRelationshipEvidence();
+    const confirmation = flush?.confirmations?.find((item) => item.key === evidenceKey);
+    return {
+      queued: true,
+      published: Boolean(confirmation),
+      pending: flush?.pending ?? 1,
+      ...(confirmation
+        ? {
+            relationshipStateVersion: confirmation.stateVersion,
+            ...(confirmation.stateHash ? { relationshipStateHash: confirmation.stateHash } : {}),
+          }
+        : {}),
+    };
+  }
+
   async dismissCommitment(
     sessionId: string,
     startMs: number,
@@ -1081,6 +1207,7 @@ export class MeetingController {
       const meta = dir ? await readMeta(dir) : null;
       const { counterparty } = this.resolveMeetingCounterparty(
         meta ? calendarEventFromMeta(meta) : undefined,
+        meta?.relationship_target,
       );
       if (!counterparty) return true;
       await enqueueRelationshipEvidence(
@@ -1157,6 +1284,7 @@ export class MeetingController {
     await patchMeta(dir, {
       app_version: app.getVersion(),
       ...(this.calendarEvent ? { calendar_event: JSON.stringify(this.calendarEvent) } : {}),
+      ...(this.relationshipTarget ? { relationship_target: this.relationshipTarget } : {}),
       ...(health && health.timeline.some((event) => event.severity !== "recovered")
         ? {
             warnings: [
@@ -1170,6 +1298,7 @@ export class MeetingController {
           }
         : {}),
     });
+    this.relationshipTarget = undefined;
 
     if (!config.meetings?.transcribeOnStop) return false;
     const meta = await readMeta(dir);
@@ -1213,7 +1342,10 @@ export class MeetingController {
         // bucket, so on a group call this correctly declines and the note stays "Other".
         // No explicit self-address needed: Google marks the local user's own attendee
         // entry with `self: true`, which the resolver already excludes.
-        const { counterparty, reason } = this.resolveMeetingCounterparty(calendarEvent);
+        const { counterparty, reason } = this.resolveMeetingCounterparty(
+          calendarEvent,
+          meta.relationship_target,
+        );
         const notePath = await writeMeetingNote({
           sessionId,
           startedAt: meta.started,
@@ -1237,7 +1369,10 @@ export class MeetingController {
         const settings = await getTranscriptionConfig();
         if (settings.meetings?.extractCommitments === false) return;
         const calendarEvent = calendarEventFromMeta(meta);
-        const { counterparty } = this.resolveMeetingCounterparty(calendarEvent);
+        const { counterparty } = this.resolveMeetingCounterparty(
+          calendarEvent,
+          meta.relationship_target,
+        );
         const proposals = await extractCommitments({
           segments: transcript.segments,
           labels: { me: "You", them: counterparty?.label ?? "Other" },
@@ -1277,7 +1412,10 @@ export class MeetingController {
         }
         const settings = await getTranscriptionConfig();
         if (!settings.meetings.syncRelationshipEvidence) return;
-        const { counterparty } = this.resolveMeetingCounterparty(calendarEventFromMeta(meta));
+        const { counterparty } = this.resolveMeetingCounterparty(
+          calendarEventFromMeta(meta),
+          meta.relationship_target,
+        );
         if (!counterparty) return;
         try {
           await enqueueRelationshipEvidence(
@@ -1323,13 +1461,13 @@ export class MeetingController {
   private parakeetModel: ParakeetModel = "v3";
   private compressRetainedAudio = true;
 
-  private async flushRelationshipEvidence(): Promise<void> {
+  private async flushRelationshipEvidence(): Promise<RelationshipEvidenceFlushResult | undefined> {
     try {
       // Renderer-only platforms do not initialize the native capture controller at
       // launch, so a cached setting can remain false after restart. Re-read the durable
       // consent immediately before every network drain.
       const config = await getTranscriptionConfig();
-      if (!config.meetings.syncRelationshipEvidence) return;
+      if (!config.meetings.syncRelationshipEvidence) return undefined;
       const result = await flushRelationshipEvidence();
       if (result.error) {
         console.warn(
@@ -1338,11 +1476,13 @@ export class MeetingController {
       } else if (result.sent > 0) {
         console.log(`[meeting] synced ${result.sent} relationship evidence item(s)`);
       }
+      return result;
     } catch (err) {
       // Corruption and filesystem errors are intentionally not converted into an empty
       // outbox. Surface them without creating an unhandled rejection on fire-and-forget
       // launch/config refresh calls.
       console.warn("[meeting] relationship evidence outbox could not be read:", err);
+      return undefined;
     }
   }
 

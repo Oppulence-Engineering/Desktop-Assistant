@@ -203,6 +203,27 @@ func (_u *RelationshipObservationUpdate) ClearPayloadCiphertext() *RelationshipO
 	return _u
 }
 
+// SetEncryptionKeyVersion sets the "encryption_key_version" field.
+func (_u *RelationshipObservationUpdate) SetEncryptionKeyVersion(v int) *RelationshipObservationUpdate {
+	_u.mutation.ResetEncryptionKeyVersion()
+	_u.mutation.SetEncryptionKeyVersion(v)
+	return _u
+}
+
+// SetNillableEncryptionKeyVersion sets the "encryption_key_version" field if the given value is not nil.
+func (_u *RelationshipObservationUpdate) SetNillableEncryptionKeyVersion(v *int) *RelationshipObservationUpdate {
+	if v != nil {
+		_u.SetEncryptionKeyVersion(*v)
+	}
+	return _u
+}
+
+// AddEncryptionKeyVersion adds value to the "encryption_key_version" field.
+func (_u *RelationshipObservationUpdate) AddEncryptionKeyVersion(v int) *RelationshipObservationUpdate {
+	_u.mutation.AddEncryptionKeyVersion(v)
+	return _u
+}
+
 // SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
 func (_u *RelationshipObservationUpdate) SetWorkspaceID(id uuid.UUID) *RelationshipObservationUpdate {
 	_u.mutation.SetWorkspaceID(id)
@@ -353,6 +374,11 @@ func (_u *RelationshipObservationUpdate) check() error {
 			return &ValidationError{Name: "content_hash", err: fmt.Errorf(`ent: validator failed for field "RelationshipObservation.content_hash": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.EncryptionKeyVersion(); ok {
+		if err := relationshipobservation.EncryptionKeyVersionValidator(v); err != nil {
+			return &ValidationError{Name: "encryption_key_version", err: fmt.Errorf(`ent: validator failed for field "RelationshipObservation.encryption_key_version": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RelationshipObservation.workspace"`)
 	}
@@ -421,6 +447,12 @@ func (_u *RelationshipObservationUpdate) sqlSave(ctx context.Context) (_node int
 	}
 	if _u.mutation.PayloadCiphertextCleared() {
 		_spec.ClearField(relationshipobservation.FieldPayloadCiphertext, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.EncryptionKeyVersion(); ok {
+		_spec.SetField(relationshipobservation.FieldEncryptionKeyVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedEncryptionKeyVersion(); ok {
+		_spec.AddField(relationshipobservation.FieldEncryptionKeyVersion, field.TypeInt, value)
 	}
 	if _u.mutation.WorkspaceCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -744,6 +776,27 @@ func (_u *RelationshipObservationUpdateOne) ClearPayloadCiphertext() *Relationsh
 	return _u
 }
 
+// SetEncryptionKeyVersion sets the "encryption_key_version" field.
+func (_u *RelationshipObservationUpdateOne) SetEncryptionKeyVersion(v int) *RelationshipObservationUpdateOne {
+	_u.mutation.ResetEncryptionKeyVersion()
+	_u.mutation.SetEncryptionKeyVersion(v)
+	return _u
+}
+
+// SetNillableEncryptionKeyVersion sets the "encryption_key_version" field if the given value is not nil.
+func (_u *RelationshipObservationUpdateOne) SetNillableEncryptionKeyVersion(v *int) *RelationshipObservationUpdateOne {
+	if v != nil {
+		_u.SetEncryptionKeyVersion(*v)
+	}
+	return _u
+}
+
+// AddEncryptionKeyVersion adds value to the "encryption_key_version" field.
+func (_u *RelationshipObservationUpdateOne) AddEncryptionKeyVersion(v int) *RelationshipObservationUpdateOne {
+	_u.mutation.AddEncryptionKeyVersion(v)
+	return _u
+}
+
 // SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
 func (_u *RelationshipObservationUpdateOne) SetWorkspaceID(id uuid.UUID) *RelationshipObservationUpdateOne {
 	_u.mutation.SetWorkspaceID(id)
@@ -907,6 +960,11 @@ func (_u *RelationshipObservationUpdateOne) check() error {
 			return &ValidationError{Name: "content_hash", err: fmt.Errorf(`ent: validator failed for field "RelationshipObservation.content_hash": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.EncryptionKeyVersion(); ok {
+		if err := relationshipobservation.EncryptionKeyVersionValidator(v); err != nil {
+			return &ValidationError{Name: "encryption_key_version", err: fmt.Errorf(`ent: validator failed for field "RelationshipObservation.encryption_key_version": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RelationshipObservation.workspace"`)
 	}
@@ -992,6 +1050,12 @@ func (_u *RelationshipObservationUpdateOne) sqlSave(ctx context.Context) (_node 
 	}
 	if _u.mutation.PayloadCiphertextCleared() {
 		_spec.ClearField(relationshipobservation.FieldPayloadCiphertext, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.EncryptionKeyVersion(); ok {
+		_spec.SetField(relationshipobservation.FieldEncryptionKeyVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedEncryptionKeyVersion(); ok {
+		_spec.AddField(relationshipobservation.FieldEncryptionKeyVersion, field.TypeInt, value)
 	}
 	if _u.mutation.WorkspaceCleared() {
 		edge := &sqlgraph.EdgeSpec{

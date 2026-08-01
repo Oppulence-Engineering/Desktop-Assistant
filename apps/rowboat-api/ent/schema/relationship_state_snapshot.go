@@ -21,6 +21,9 @@ func (RelationshipStateSnapshot) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int("version").Positive(),
 		field.Text("state_json").Default("{}").Sensitive(),
+		field.String("state_hash").NotEmpty(),
+		field.Int("projector_version").Default(1).Positive(),
+		field.Time("evaluated_at"),
 		field.JSON("changed_dimensions", []string{}).Default([]string{}),
 		field.JSON("assertion_ids", []string{}).Default([]string{}),
 	}
