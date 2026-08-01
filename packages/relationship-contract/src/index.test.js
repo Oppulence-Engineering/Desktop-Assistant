@@ -109,3 +109,13 @@ test("an imported transcript retry keeps the same idempotency identity", () => {
     buildImportedTranscriptObservation(input).externalId,
   );
 });
+
+test("speaker parsing stays bounded for adversarial whitespace", () => {
+  const observation = buildImportedTranscriptObservation({
+    relationshipId: "relationship-1",
+    transcript: `9:\t${"\t".repeat(10_000)}reviewed evidence`,
+    occurredAt: "2026-08-01T14:00:00.000Z",
+  });
+  assert.equal(observation.payload.envelope.segments[0].speakerLabel, "9");
+  assert.equal(observation.payload.envelope.segments[0].text, "reviewed evidence");
+});

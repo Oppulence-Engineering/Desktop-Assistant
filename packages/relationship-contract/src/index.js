@@ -87,15 +87,21 @@ function transcriptSegments(transcript) {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line, index) => {
-      const match = line.match(/^([^:]{1,80}):\s+(.+)$/);
-      const speakerLabel = match?.[1]?.trim() || "Unknown speaker";
-      const text = match?.[2]?.trim() || line;
+      const colonIndex = line.indexOf(":");
+      const separator = line[colonIndex + 1];
+      const attributed =
+        colonIndex > 0 &&
+        colonIndex <= 80 &&
+        (separator === " " || separator === "\t") &&
+        line.slice(colonIndex + 1).trim().length > 0;
+      const speakerLabel = attributed ? line.slice(0, colonIndex).trim() : "Unknown speaker";
+      const text = attributed ? line.slice(colonIndex + 1).trim() : line;
       const duration = Math.max(1_000, Math.min(30_000, text.length * 55));
       const segment = {
         id: `segment-${index + 1}`,
         speakerId: `imported-speaker-${stableFingerprint(speakerLabel.toLowerCase())}`,
         speakerLabel,
-        speakerConfidence: match ? 0.9 : 0.5,
+        speakerConfidence: attributed ? 0.9 : 0.5,
         startMs: cursor,
         endMs: cursor + duration,
         text,
