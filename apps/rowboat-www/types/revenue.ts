@@ -181,6 +181,38 @@ export interface RelationshipObservation {
   contentHash: string;
 }
 
+export interface RelationshipObservationInput {
+  relationshipId?: string;
+  displayName?: string;
+  primaryEmail?: string;
+  accountDomain?: string;
+  source: string;
+  sourceAccountId?: string;
+  externalId: string;
+  sourceVersion?: string;
+  eventType: string;
+  occurredAt: string;
+  receivedAt?: string;
+  summary?: string;
+  normalizedFacts: Record<string, unknown>;
+  payload?: unknown;
+  participants?: Array<{
+    displayName: string;
+    email?: string;
+    role?: string;
+    title?: string;
+    externalRefs?: string[];
+  }>;
+  assertions?: Array<{
+    dimension: string;
+    value: string;
+    sourceType: string;
+    confidence: number;
+    reason: string;
+    validFrom: string;
+  }>;
+}
+
 export interface RelationshipStateSnapshot {
   id: string;
   version: number;

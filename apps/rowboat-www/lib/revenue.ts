@@ -17,6 +17,7 @@ import type {
   RevenueRelationship,
   RevenueWorkspace,
   RelationshipObservation,
+  RelationshipObservationInput,
   RelationshipIdentityCandidate,
   RelationshipAttentionItem,
   RelationshipSourceInventoryItem,
@@ -209,6 +210,15 @@ export const getRelationshipEvidence = (relationshipId: string, evidenceId: stri
   call<{ observation: RelationshipObservation; payload: unknown }>(
     `/relationships/${relationshipId}/evidence/${evidenceId}`,
   );
+
+export const ingestRelationshipObservations = (observations: RelationshipObservationInput[]) =>
+  post("/relationship-observations/batch", { observations }) as Promise<{
+    results: Array<{
+      observation: RelationshipObservation;
+      relationship: RevenueRelationship;
+      duplicate: boolean;
+    }>;
+  }>;
 
 export interface RelationshipCorrectionInput {
   dimension: "lifecycle" | "engagement" | "sentiment" | "health" | "next_action";

@@ -3,6 +3,8 @@ import { API_URL } from "../config/env.js";
 import type {
   Relationship,
   RelationshipAction,
+  RelationshipActionAudit,
+  RelationshipOutcome,
   RelationshipDetail,
   RelationshipObservation,
   RelationshipObservationIngestResult,
@@ -199,6 +201,29 @@ export const dismissRelationshipAction = (actionId: string, reason: string) =>
   call<RelationshipAction>(`/v1/revenue-actions/${encodeURIComponent(actionId)}/dismiss`, {
     method: "POST",
     body: JSON.stringify({ reason }),
+  });
+
+export const getRelationshipActionAudit = (actionId: string) =>
+  call<RelationshipActionAudit>(`/v1/revenue-actions/${encodeURIComponent(actionId)}/audit`);
+
+export const getRelationshipActionSourceBody = (actionId: string) =>
+  call<{ body: string }>(`/v1/revenue-actions/${encodeURIComponent(actionId)}/source-body`).then(
+    (result) => result.body,
+  );
+
+export const recordRelationshipActionOutcome = (
+  actionId: string,
+  input: {
+    kind: string;
+    source: "user";
+    sourceEventId: string;
+    occurredAt?: string;
+    metadata?: Record<string, unknown>;
+  },
+) =>
+  call<RelationshipOutcome>(`/v1/revenue-actions/${encodeURIComponent(actionId)}/outcomes`, {
+    method: "POST",
+    body: JSON.stringify(input),
   });
 
 export const getRelationshipEvidence = (relationshipId: string, evidenceId: string) =>

@@ -78,6 +78,43 @@ export const RelationshipActionSchema = z.object({
     .default([]),
 });
 
+export const RelationshipPolicyDecisionSchema = z.object({
+  id: z.string(),
+  revision: z.number().int().positive(),
+  revisionHash: z.string(),
+  status: z.enum(["passed", "review_required", "blocked"]),
+  reasonCodes: z.array(z.string()).optional(),
+  verification: z.record(z.string(), z.unknown()).optional(),
+  suppression: z.record(z.string(), z.unknown()).optional(),
+  research: z.record(z.string(), z.unknown()).optional(),
+  crm: z.record(z.string(), z.unknown()).optional(),
+  evaluatedAt: z.string(),
+  expiresAt: z.string(),
+});
+
+export const RelationshipOutcomeSchema = z.object({
+  id: z.string(),
+  kind: z.string(),
+  source: z.string(),
+  sourceEventId: z.string(),
+  occurredAt: z.string(),
+});
+
+export const RelationshipActionRevisionSchema = z.object({
+  revision: z.number().int().positive(),
+  revisionHash: z.string(),
+  actionType: z.string(),
+  channel: z.string(),
+  createdAt: z.string(),
+});
+
+export const RelationshipActionAuditSchema = z.object({
+  action: RelationshipActionSchema,
+  revisions: z.array(RelationshipActionRevisionSchema),
+  decisions: z.array(RelationshipPolicyDecisionSchema),
+  outcomes: z.array(RelationshipOutcomeSchema),
+});
+
 export const RelationshipParticipantSchema = z.object({
   id: z.string(),
   displayName: z.string(),
@@ -1164,6 +1201,10 @@ export const RelationshipDetailSchema = z.object({
 
 export type Relationship = z.infer<typeof RelationshipSchema>;
 export type RelationshipAction = z.infer<typeof RelationshipActionSchema>;
+export type RelationshipPolicyDecision = z.infer<typeof RelationshipPolicyDecisionSchema>;
+export type RelationshipOutcome = z.infer<typeof RelationshipOutcomeSchema>;
+export type RelationshipActionRevision = z.infer<typeof RelationshipActionRevisionSchema>;
+export type RelationshipActionAudit = z.infer<typeof RelationshipActionAuditSchema>;
 export type RelationshipCommitment = z.infer<typeof RelationshipCommitmentSchema>;
 export type RelationshipDetail = z.infer<typeof RelationshipDetailSchema>;
 export type MissionControlReadModel = z.infer<typeof MissionControlReadModelSchema>;

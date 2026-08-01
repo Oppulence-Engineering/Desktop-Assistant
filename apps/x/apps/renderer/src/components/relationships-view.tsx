@@ -4,6 +4,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import {
   AUTHORITY_LABELS,
+  buildImportedTranscriptObservation,
   COMPLETENESS_LABELS,
   MISSION_CONTROL_QUESTIONS,
   RELATIONSHIP_DIMENSION_LABELS,
@@ -31,6 +32,7 @@ import type {
   RelationshipIdentityCandidate,
   Relationship,
   RelationshipAction,
+  RelationshipActionAudit,
   RelationshipDetail,
   RelationshipObservation,
   RelationshipSemanticMatch,
@@ -112,6 +114,14 @@ const ACTION_TYPE_LABELS: Record<string, string> = {
   calendar_hold: "Calendar hold",
   commitment_rescue: "Commitment rescue",
 };
+
+const MANUAL_OUTCOME_OPTIONS = [
+  { value: "replied", label: "They replied" },
+  { value: "meeting_booked", label: "Meeting booked" },
+  { value: "won", label: "Won" },
+  { value: "lost", label: "Lost" },
+  { value: "bad_recommendation", label: "Bad recommendation" },
+] as const;
 
 const humanize = (value?: string) => (value || "unknown").replaceAll("_", " ");
 const titleize = (value?: string) =>
@@ -239,6 +249,7 @@ export function RelationshipsView({
                 type="button"
                 size="sm"
                 variant="ghost"
+                data-capability="support-diagnostics"
                 onClick={() => void exportDiagnostics()}
               >
                 <DownloadSimple /> Export diagnostics
@@ -462,7 +473,11 @@ function PortfolioAttentionQueue({
   };
 
   return (
-    <section aria-labelledby="portfolio-attention-heading" className="space-y-2">
+    <section
+      aria-labelledby="portfolio-attention-heading"
+      className="space-y-2"
+      data-capability="attention-queue"
+    >
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
@@ -701,7 +716,11 @@ function SourceConnectionCards({
     });
 
   return (
-    <section aria-labelledby="source-connections-heading" className="space-y-3">
+    <section
+      aria-labelledby="source-connections-heading"
+      className="space-y-3"
+      data-capability="source-lifecycle"
+    >
       <div>
         <h2 id="source-connections-heading" className="text-sm font-medium text-primary">
           Evidence sources
@@ -860,6 +879,7 @@ function IdentityReviewInbox({
     <section
       aria-labelledby="identity-review-heading"
       className="space-y-2 rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+      data-capability="identity-review"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -1010,16 +1030,22 @@ function MissionControlOverview({
   model,
   busy,
   onAcknowledge,
+  onRetract,
 }: {
   model: MissionControlReadModel;
   busy: boolean;
   onAcknowledge: () => void;
+  onRetract: (assertionId: string, reason: string) => void;
 }) {
   const tone = completenessTone(model.completeness.status);
   const supported = Object.values(model.evidence).filter((item) => item.supported).length;
   const total = Object.keys(model.evidence).length;
   return (
-    <section aria-labelledby="mission-control-heading" className="space-y-3">
+    <section
+      aria-labelledby="mission-control-heading"
+      className="space-y-3"
+      data-capability="mission-control evidence-inspection assertion-retraction"
+    >
       <div
         className={`border p-3 ${tone === "safe" ? "border-emerald-500/30 bg-emerald-500/5" : tone === "caution" ? "border-amber-500/30 bg-amber-500/5" : "border-red-500/30 bg-red-500/5"}`}
       >
@@ -1100,6 +1126,13 @@ function MissionControlOverview({
                     .join("; ")}
                 </p>
               ) : null}
+              {item.authority === "user_correction" && item.assertionId ? (
+                <CorrectionRetraction
+                  assertionId={item.assertionId}
+                  disabled={busy}
+                  onRetract={onRetract}
+                />
+              ) : null}
             </li>
           ))}
         </ul>
@@ -1114,6 +1147,154 @@ function MissionControlOverview({
           {new Date(model.asOf).toLocaleString()}
         </p>
       )}
+    </section>
+  );
+}
+
+function CorrectionRetraction({
+  assertionId,
+  disabled,
+  onRetract,
+}: {
+  assertionId: string;
+  disabled: boolean;
+  onRetract: (assertionId: string, reason: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [reason, setReason] = React.useState("");
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        className="mt-2"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+      >
+        Retract correction
+      </Button>
+    );
+  }
+  return (
+    <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+      <Input
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+        placeholder="Why is this correction no longer valid?"
+        aria-label="Correction retraction reason"
+      />
+      <Button
+        type="button"
+        size="sm"
+        variant="destructive"
+        disabled={disabled || !reason.trim()}
+        onClick={() => onRetract(assertionId, reason.trim())}
+      >
+        Confirm retraction
+      </Button>
+      <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
+        Cancel
+      </Button>
+    </div>
+  );
+}
+
+function ImportedTranscriptPublisher({
+  relationshipId,
+  disabled,
+  onPublish,
+}: {
+  relationshipId: string;
+  disabled: boolean;
+  onPublish: (
+    observation: ReturnType<typeof buildImportedTranscriptObservation>,
+  ) => Promise<boolean>;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [title, setTitle] = React.useState("");
+  const [transcript, setTranscript] = React.useState("");
+  const [disclosureConfirmed, setDisclosureConfirmed] = React.useState(false);
+  const [occurredAt, setOccurredAt] = React.useState(() => new Date().toISOString().slice(0, 16));
+  const disclosureId = React.useId();
+
+  if (!open) {
+    return (
+      <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)}>
+        Import transcript
+      </Button>
+    );
+  }
+
+  return (
+    <section
+      className="space-y-2 border border-border p-3"
+      data-capability="transcript-publication"
+    >
+      <SectionTitle title="Publish an imported transcript" />
+      <p className="text-xs text-primary/55">
+        Paste reviewed transcript text. Prefix lines with a speaker name and colon when known.
+        Imported text is preserved as evidence and does not become a trusted claim automatically.
+      </p>
+      <Input
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+        placeholder="Conversation title"
+        aria-label="Imported transcript title"
+      />
+      <Input
+        type="datetime-local"
+        value={occurredAt}
+        onChange={(event) => setOccurredAt(event.target.value)}
+        aria-label="Conversation time"
+      />
+      <Textarea
+        value={transcript}
+        onChange={(event) => setTranscript(event.target.value)}
+        placeholder={"Avery: We can renew next week.\nYou: I will send the paperwork."}
+        aria-label="Imported transcript text"
+        className="min-h-40"
+      />
+      <label htmlFor={disclosureId} className="flex items-start gap-2 text-xs text-primary/60">
+        <input
+          id={disclosureId}
+          type="checkbox"
+          className="mt-0.5 size-4 accent-current"
+          checked={disclosureConfirmed}
+          onChange={(event) => setDisclosureConfirmed(event.target.checked)}
+        />
+        <span>
+          I confirm this transcript may be stored under workspace policy and participants were
+          notified where required.
+        </span>
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          disabled={disabled || !transcript.trim() || !occurredAt || !disclosureConfirmed}
+          onClick={async () => {
+            const published = await onPublish(
+              buildImportedTranscriptObservation({
+                relationshipId,
+                title,
+                transcript,
+                occurredAt: new Date(occurredAt).toISOString(),
+              }),
+            );
+            if (!published) return;
+            setOpen(false);
+            setTitle("");
+            setTranscript("");
+            setDisclosureConfirmed(false);
+          }}
+        >
+          Publish reviewed evidence
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
     </section>
   );
 }
@@ -1189,14 +1370,16 @@ function RelationshipSheet({
     void loadSessions();
   }, [load, loadSessions]);
 
-  const act = async (key: string, operation: () => Promise<unknown>) => {
+  const act = async (key: string, operation: () => Promise<unknown>): Promise<boolean> => {
     setBusy(key);
     try {
       await operation();
       await load();
       onChanged();
+      return true;
     } catch (cause) {
       onError(cause instanceof Error ? cause.message : "Could not update this relationship.");
+      return false;
     } finally {
       setBusy(null);
     }
@@ -1232,6 +1415,11 @@ function RelationshipSheet({
           : {}),
       }
     : null;
+  const historicalActions = data
+    ? data.actions.filter(
+        (action) => !data.recommendations.some((recommendation) => recommendation.id === action.id),
+      )
+    : [];
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
@@ -1384,6 +1572,15 @@ function RelationshipSheet({
                   }),
                 )
               }
+              onRetract={(assertionId, reason) =>
+                void act(`retract:${assertionId}`, () =>
+                  window.ipc.invoke("relationships:retractAssertion", {
+                    relationshipId: id,
+                    assertionId,
+                    reason,
+                  }),
+                )
+              }
             />
 
             <IdentityReviewInbox
@@ -1406,6 +1603,18 @@ function RelationshipSheet({
                     dimension,
                     value,
                     reason,
+                  }),
+                )
+              }
+            />
+
+            <ImportedTranscriptPublisher
+              relationshipId={id}
+              disabled={Boolean(busy)}
+              onPublish={(observation) =>
+                act("publish-transcript", () =>
+                  window.ipc.invoke("relationships:ingestObservations", {
+                    observations: [observation],
                   }),
                 )
               }
@@ -1465,7 +1674,10 @@ function RelationshipSheet({
             />
 
             {data.intelligence?.effectivePolicy ? (
-              <div className="border border-border p-3 text-xs text-primary/60">
+              <div
+                className="border border-border p-3 text-xs text-primary/60"
+                data-capability="privacy-deletion"
+              >
                 <details>
                   <summary className="cursor-pointer font-medium text-primary">
                     Privacy policy · {humanize(data.intelligence.effectivePolicy.modelRoute)}
@@ -1518,7 +1730,7 @@ function RelationshipSheet({
               </div>
             ) : null}
 
-            <section>
+            <section data-capability="commitment-management">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <SectionTitle
                   title={`Commitment recovery (${data.intelligence?.recoveryEvaluations.length ?? 0})`}
@@ -1569,7 +1781,7 @@ function RelationshipSheet({
               ) : null}
             </section>
 
-            <section>
+            <section data-capability="governed-actions">
               <SectionTitle title={`Recommendations (${data.recommendations.length})`} />
               {data.recommendations.length === 0 ? (
                 <EmptyText>No action is currently recommended.</EmptyText>
@@ -1586,6 +1798,26 @@ function RelationshipSheet({
                 </ul>
               )}
             </section>
+
+            {historicalActions.length ? (
+              <section>
+                <SectionTitle title={`Action history (${historicalActions.length})`} />
+                <p className="mb-2 text-xs text-primary/50">
+                  Inspect revisions, policy decisions, provider receipts, original evidence, and
+                  observed outcomes after an action leaves the active queue.
+                </p>
+                <ul className="flex flex-col gap-2">
+                  {historicalActions.map((action) => (
+                    <RecommendationReviewCard
+                      key={`${action.id}:${action.revision}`}
+                      action={action}
+                      busy={busy}
+                      act={act}
+                    />
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
             <TwoColumnList
               leftTitle={`People (${data.participants.length})`}
@@ -1624,7 +1856,7 @@ function RelationshipSheet({
               </section>
             ) : null}
 
-            <section>
+            <section data-capability="mutual-action-plans">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <SectionTitle
                   title={`Mutual action plans (${data.intelligence?.mutualActionPlans.length ?? 0})`}
@@ -1738,7 +1970,7 @@ function RelationshipSheet({
               )}
             </section>
 
-            <section>
+            <section data-capability="contradiction-resolution">
               <SectionTitle title={`What changed (${changes.length})`} />
               {data.intelligence?.delta.changes.length ? (
                 <ul className="mb-3 flex flex-col gap-2">
@@ -1912,7 +2144,7 @@ function RecommendationReviewCard({
 }: {
   action: RelationshipAction;
   busy: string | null;
-  act: (key: string, operation: () => Promise<unknown>) => Promise<void>;
+  act: (key: string, operation: () => Promise<unknown>) => Promise<boolean>;
 }) {
   const [subject, setSubject] = React.useState(action.proposedSubject ?? "");
   const [message, setMessage] = React.useState(action.proposedMessage ?? "");
@@ -1927,6 +2159,7 @@ function RecommendationReviewCard({
     action.approvalStatus === "approved" &&
     action.approvedRevision === action.revision &&
     action.executionStatus === "pending";
+  const canEditContent = action.executionStatus === "pending" && action.queueStatus === "open";
 
   return (
     <li className="rounded-[2px] border border-border p-3">
@@ -2001,6 +2234,7 @@ function RecommendationReviewCard({
               <Input
                 value={subject}
                 onChange={(event) => setSubject(event.target.value)}
+                disabled={!canEditContent}
                 aria-label="Action subject"
                 placeholder="Subject"
               />
@@ -2008,10 +2242,11 @@ function RecommendationReviewCard({
             <Textarea
               value={message}
               onChange={(event) => setMessage(event.target.value)}
+              disabled={!canEditContent}
               aria-label="Action message"
               placeholder="Message"
             />
-            {dirty ? (
+            {dirty && canEditContent ? (
               <Button
                 type="button"
                 size="sm"
@@ -2142,7 +2377,183 @@ function RecommendationReviewCard({
           </>
         ) : null}
       </div>
+      <ActionAuditPanel action={action} busy={busy} act={act} />
     </li>
+  );
+}
+
+function ActionAuditPanel({
+  action,
+  busy,
+  act,
+}: {
+  action: RelationshipAction;
+  busy: string | null;
+  act: (key: string, operation: () => Promise<unknown>) => Promise<boolean>;
+}) {
+  const [audit, setAudit] = React.useState<RelationshipActionAudit | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
+  const [sourceBody, setSourceBody] = React.useState<string | null>(null);
+  const [sourceLoading, setSourceLoading] = React.useState(false);
+  const [outcome, setOutcome] =
+    React.useState<(typeof MANUAL_OUTCOME_OPTIONS)[number]["value"]>("replied");
+
+  const loadAudit = React.useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      setAudit(await window.ipc.invoke("relationships:actionAudit", { actionId: action.id }));
+    } catch (cause) {
+      setLoadError(cause instanceof Error ? cause.message : "Could not load action history.");
+    } finally {
+      setLoading(false);
+    }
+  }, [action.id]);
+
+  const loadSourceBody = async () => {
+    setSourceLoading(true);
+    try {
+      setSourceBody(
+        await window.ipc.invoke("relationships:actionSourceBody", { actionId: action.id }),
+      );
+    } catch {
+      setSourceBody("(No original source body is linked to this action.)");
+    } finally {
+      setSourceLoading(false);
+    }
+  };
+
+  return (
+    <details
+      className="mt-3 border-t border-border pt-3 text-xs"
+      data-capability="action-audit outcome-observation"
+      onToggle={(event) => {
+        if (event.currentTarget.open && !audit && !loading) void loadAudit();
+      }}
+    >
+      <summary className="cursor-pointer font-medium text-primary">
+        Audit history and outcomes
+      </summary>
+      {loading && !audit ? <p className="mt-2 text-primary/45">Loading history…</p> : null}
+      {loadError ? <p className="mt-2 text-destructive">{loadError}</p> : null}
+      {audit ? (
+        <div className="mt-3 space-y-4">
+          <div>
+            <p className="font-medium text-primary">Lifecycle</p>
+            <p className="mt-1 text-primary/55">
+              Created {relativeTime(audit.action.createdAt)} · policy{" "}
+              {humanize(audit.action.policyStatus)}
+              {audit.action.approvedAt
+                ? ` · approved ${relativeTime(audit.action.approvedAt)}`
+                : ""}
+              {audit.action.executedAt
+                ? ` · executed ${relativeTime(audit.action.executedAt)}`
+                : ""}
+            </p>
+          </div>
+          <div>
+            <p className="font-medium text-primary">Revisions ({audit.revisions.length})</p>
+            <ul className="mt-1 space-y-1 text-primary/55">
+              {audit.revisions.map((revision) => (
+                <li key={revision.revision} className="border-l border-border pl-2">
+                  Rev {revision.revision} · {humanize(revision.actionType)} ·{" "}
+                  {humanize(revision.channel)} · {revision.revisionHash.slice(0, 14)}…
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="font-medium text-primary">Policy decisions ({audit.decisions.length})</p>
+            {audit.decisions.length ? (
+              <ul className="mt-1 space-y-1 text-primary/55">
+                {audit.decisions.map((decision) => (
+                  <li key={decision.id} className="border-l border-border pl-2">
+                    Rev {decision.revision} · {humanize(decision.status)} ·{" "}
+                    {relativeTime(decision.evaluatedAt)}
+                    {decision.reasonCodes?.length ? ` · ${decision.reasonCodes.join(", ")}` : ""}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-primary/45">No preflight has run yet.</p>
+            )}
+          </div>
+          <div>
+            <p className="font-medium text-primary">Outcomes ({audit.outcomes.length})</p>
+            {audit.outcomes.length ? (
+              <ul className="mt-1 space-y-1 text-primary/55">
+                {audit.outcomes.map((item) => (
+                  <li key={item.id} className="border-l border-border pl-2">
+                    {titleize(item.kind)} · {item.source} · {relativeTime(item.occurredAt)}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-primary/45">No outcomes recorded yet.</p>
+            )}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Select
+                value={outcome}
+                onValueChange={(value) => setOutcome(value as typeof outcome)}
+              >
+                <SelectTrigger size="sm" className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="app-shell rounded-[2px]">
+                  {MANUAL_OUTCOME_OPTIONS.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={Boolean(busy)}
+                onClick={() =>
+                  void act(`outcome:${action.id}`, async () => {
+                    await window.ipc.invoke("relationships:recordOutcome", {
+                      actionId: action.id,
+                      kind: outcome,
+                      sourceEventId: `manual:${crypto.randomUUID()}`,
+                      occurredAt: new Date().toISOString(),
+                    });
+                    await loadAudit();
+                  })
+                }
+              >
+                {busy === `outcome:${action.id}` ? (
+                  <CircleNotch className="animate-spin" />
+                ) : (
+                  <Plus />
+                )}
+                Log outcome
+              </Button>
+            </div>
+          </div>
+          <div>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={sourceLoading}
+              onClick={() => void loadSourceBody()}
+            >
+              {sourceLoading ? <CircleNotch className="animate-spin" /> : null}
+              View original source body
+            </Button>
+            {sourceBody !== null ? (
+              <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap bg-background-100 p-2 text-[11px] text-primary/60 dark:bg-background-200">
+                {sourceBody}
+              </pre>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+    </details>
   );
 }
 
@@ -2165,7 +2576,10 @@ function CorrectionReview({
   const [drafts, setDrafts] = React.useState<Record<string, string>>({});
   if (items.length === 0) return null;
   return (
-    <section className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3">
+    <section
+      className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+      data-capability="conversation-review"
+    >
       <SectionTitle title={`Focused evidence review (${items.length})`} />
       <p className="mb-3 text-xs text-primary/55">
         Approve, correct, reject, or defer each proposed material change before it affects state.
@@ -2277,7 +2691,10 @@ function StateCorrection({
           : HEALTH_OPTIONS;
 
   return (
-    <section className="rounded-[2px] border border-dashed border-border p-3">
+    <section
+      className="rounded-[2px] border border-dashed border-border p-3"
+      data-capability="state-correction"
+    >
       <SectionTitle title="Correct the model" />
       <div className="grid gap-2 sm:grid-cols-[130px_150px_1fr_auto]">
         <Select
