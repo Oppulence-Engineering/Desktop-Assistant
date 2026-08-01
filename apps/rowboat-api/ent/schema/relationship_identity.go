@@ -16,8 +16,10 @@ import (
 // provider record or address; conflicts are held for review rather than merged.
 type RelationshipIdentity struct{ ent.Schema }
 
+// Mixin adds the shared immutable ID and timestamp fields.
 func (RelationshipIdentity) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
 
+// Fields defines the normalized identity anchor fields.
 func (RelationshipIdentity) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("kind").Validate(oneOfRevenue("kind", "email", "domain", "resource_ref")),
@@ -31,6 +33,7 @@ func (RelationshipIdentity) Fields() []ent.Field {
 	}
 }
 
+// Edges defines the identity's workspace, relationship, and user ownership.
 func (RelationshipIdentity) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
@@ -42,6 +45,7 @@ func (RelationshipIdentity) Edges() []ent.Edge {
 	}
 }
 
+// Indexes enforces workspace-wide identity uniqueness and supports kind lookups.
 func (RelationshipIdentity) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("workspace").Fields("key_hash").Unique(),

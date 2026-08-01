@@ -143,11 +143,6 @@ func (c *Client) SendMessageWithMessageID(ctx context.Context, token, to, subjec
 	return out.ID, nil
 }
 
-// buildPlainTextMIME assembles a minimal RFC 822 plain-text message.
-func buildPlainTextMIME(to, subject, body string) string {
-	return buildPlainTextMIMEWithMessageID(to, subject, body, "")
-}
-
 func buildPlainTextMIMEWithMessageID(to, subject, body, messageID string) string {
 	var b strings.Builder
 	b.WriteString("To: " + to + "\r\n")

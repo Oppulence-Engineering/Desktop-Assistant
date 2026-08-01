@@ -883,20 +883,6 @@ func normalizeResourceRefs(refs []string) ([]string, error) {
 	return out, nil
 }
 
-func mergeRelationshipResourceRefs(ctx context.Context, rel *ent.Relationship, refs []string) (*ent.Relationship, error) {
-	if len(refs) == 0 {
-		return rel, nil
-	}
-	merged, err := normalizeResourceRefs(append(append([]string{}, rel.ResourceRefs...), refs...))
-	if err != nil {
-		return nil, err
-	}
-	if slices.Equal(merged, rel.ResourceRefs) {
-		return rel, nil
-	}
-	return rel.Update().SetResourceRefs(merged).Save(ctx)
-}
-
 func upsertRelationshipParticipant(
 	ctx context.Context,
 	client *ent.Client,

@@ -191,6 +191,7 @@ type AmbiguousExecutionReconciler struct {
 	log      *zap.Logger
 }
 
+// NewAmbiguousExecutionReconciler creates the background reconciliation loop.
 func NewAmbiguousExecutionReconciler(svc *Service, interval time.Duration, maxUsers int, log *zap.Logger) *AmbiguousExecutionReconciler {
 	if interval <= 0 {
 		interval = time.Minute
@@ -201,6 +202,7 @@ func NewAmbiguousExecutionReconciler(svc *Service, interval time.Duration, maxUs
 	return &AmbiguousExecutionReconciler{svc: svc, interval: interval, maxUsers: maxUsers, log: log}
 }
 
+// Run reconciles due ambiguous executions until the context is canceled.
 func (r *AmbiguousExecutionReconciler) Run(ctx context.Context) error {
 	r.sweep(ctx)
 	ticker := time.NewTicker(r.interval)
