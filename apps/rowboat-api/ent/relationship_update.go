@@ -20,6 +20,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
@@ -546,6 +547,21 @@ func (_u *RelationshipUpdate) AddParticipants(v ...*RelationshipParticipant) *Re
 	return _u.AddParticipantIDs(ids...)
 }
 
+// AddIdentityIDs adds the "identities" edge to the RelationshipIdentity entity by IDs.
+func (_u *RelationshipUpdate) AddIdentityIDs(ids ...uuid.UUID) *RelationshipUpdate {
+	_u.mutation.AddIdentityIDs(ids...)
+	return _u
+}
+
+// AddIdentities adds the "identities" edges to the RelationshipIdentity entity.
+func (_u *RelationshipUpdate) AddIdentities(v ...*RelationshipIdentity) *RelationshipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddIdentityIDs(ids...)
+}
+
 // AddObservationIDs adds the "observations" edge to the RelationshipObservation entity by IDs.
 func (_u *RelationshipUpdate) AddObservationIDs(ids ...uuid.UUID) *RelationshipUpdate {
 	_u.mutation.AddObservationIDs(ids...)
@@ -774,6 +790,27 @@ func (_u *RelationshipUpdate) RemoveParticipants(v ...*RelationshipParticipant) 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveParticipantIDs(ids...)
+}
+
+// ClearIdentities clears all "identities" edges to the RelationshipIdentity entity.
+func (_u *RelationshipUpdate) ClearIdentities() *RelationshipUpdate {
+	_u.mutation.ClearIdentities()
+	return _u
+}
+
+// RemoveIdentityIDs removes the "identities" edge to RelationshipIdentity entities by IDs.
+func (_u *RelationshipUpdate) RemoveIdentityIDs(ids ...uuid.UUID) *RelationshipUpdate {
+	_u.mutation.RemoveIdentityIDs(ids...)
+	return _u
+}
+
+// RemoveIdentities removes "identities" edges to RelationshipIdentity entities.
+func (_u *RelationshipUpdate) RemoveIdentities(v ...*RelationshipIdentity) *RelationshipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveIdentityIDs(ids...)
 }
 
 // ClearObservations clears all "observations" edges to the RelationshipObservation entity.
@@ -1470,6 +1507,51 @@ func (_u *RelationshipUpdate) sqlSave(ctx context.Context) (_node int, err error
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.IdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.IdentitiesTable,
+			Columns: []string{relationship.IdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipidentity.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedIdentitiesIDs(); len(nodes) > 0 && !_u.mutation.IdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.IdentitiesTable,
+			Columns: []string{relationship.IdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.IdentitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.IdentitiesTable,
+			Columns: []string{relationship.IdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.ObservationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -2128,6 +2210,21 @@ func (_u *RelationshipUpdateOne) AddParticipants(v ...*RelationshipParticipant) 
 	return _u.AddParticipantIDs(ids...)
 }
 
+// AddIdentityIDs adds the "identities" edge to the RelationshipIdentity entity by IDs.
+func (_u *RelationshipUpdateOne) AddIdentityIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
+	_u.mutation.AddIdentityIDs(ids...)
+	return _u
+}
+
+// AddIdentities adds the "identities" edges to the RelationshipIdentity entity.
+func (_u *RelationshipUpdateOne) AddIdentities(v ...*RelationshipIdentity) *RelationshipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddIdentityIDs(ids...)
+}
+
 // AddObservationIDs adds the "observations" edge to the RelationshipObservation entity by IDs.
 func (_u *RelationshipUpdateOne) AddObservationIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
 	_u.mutation.AddObservationIDs(ids...)
@@ -2356,6 +2453,27 @@ func (_u *RelationshipUpdateOne) RemoveParticipants(v ...*RelationshipParticipan
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveParticipantIDs(ids...)
+}
+
+// ClearIdentities clears all "identities" edges to the RelationshipIdentity entity.
+func (_u *RelationshipUpdateOne) ClearIdentities() *RelationshipUpdateOne {
+	_u.mutation.ClearIdentities()
+	return _u
+}
+
+// RemoveIdentityIDs removes the "identities" edge to RelationshipIdentity entities by IDs.
+func (_u *RelationshipUpdateOne) RemoveIdentityIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
+	_u.mutation.RemoveIdentityIDs(ids...)
+	return _u
+}
+
+// RemoveIdentities removes "identities" edges to RelationshipIdentity entities.
+func (_u *RelationshipUpdateOne) RemoveIdentities(v ...*RelationshipIdentity) *RelationshipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveIdentityIDs(ids...)
 }
 
 // ClearObservations clears all "observations" edges to the RelationshipObservation entity.
@@ -3075,6 +3193,51 @@ func (_u *RelationshipUpdateOne) sqlSave(ctx context.Context) (_node *Relationsh
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipparticipant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.IdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.IdentitiesTable,
+			Columns: []string{relationship.IdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipidentity.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedIdentitiesIDs(); len(nodes) > 0 && !_u.mutation.IdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.IdentitiesTable,
+			Columns: []string{relationship.IdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.IdentitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.IdentitiesTable,
+			Columns: []string{relationship.IdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipidentity.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

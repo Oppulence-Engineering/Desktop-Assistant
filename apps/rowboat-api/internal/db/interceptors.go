@@ -39,6 +39,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
@@ -96,6 +97,7 @@ var tenantUserColumns = map[string]string{
 	ent.TypePolicyDecisionSnapshot:           policydecisionsnapshot.UserColumn,
 	ent.TypeRelationship:                     relationship.UserColumn,
 	ent.TypeRelationshipAssertion:            relationshipassertion.UserColumn,
+	ent.TypeRelationshipIdentity:             relationshipidentity.UserColumn,
 	ent.TypeRelationshipObservation:          relationshipobservation.UserColumn,
 	ent.TypeRelationshipParticipant:          relationshipparticipant.UserColumn,
 	ent.TypeRelationshipSourceStatus:         relationshipsourcestatus.UserColumn,
@@ -335,6 +337,13 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.RelationshipParticipantQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(relationshipparticipant.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.RelationshipIdentity.Intercept(intercept.TraverseRelationshipIdentity(
+		func(ctx context.Context, q *ent.RelationshipIdentityQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(relationshipidentity.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

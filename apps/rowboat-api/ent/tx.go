@@ -88,6 +88,8 @@ type Tx struct {
 	Relationship *RelationshipClient
 	// RelationshipAssertion is the client for interacting with the RelationshipAssertion builders.
 	RelationshipAssertion *RelationshipAssertionClient
+	// RelationshipIdentity is the client for interacting with the RelationshipIdentity builders.
+	RelationshipIdentity *RelationshipIdentityClient
 	// RelationshipObservation is the client for interacting with the RelationshipObservation builders.
 	RelationshipObservation *RelationshipObservationClient
 	// RelationshipParticipant is the client for interacting with the RelationshipParticipant builders.
@@ -287,6 +289,7 @@ func (tx *Tx) init() {
 	tx.PolicyDecisionSnapshot = NewPolicyDecisionSnapshotClient(tx.config)
 	tx.Relationship = NewRelationshipClient(tx.config)
 	tx.RelationshipAssertion = NewRelationshipAssertionClient(tx.config)
+	tx.RelationshipIdentity = NewRelationshipIdentityClient(tx.config)
 	tx.RelationshipObservation = NewRelationshipObservationClient(tx.config)
 	tx.RelationshipParticipant = NewRelationshipParticipantClient(tx.config)
 	tx.RelationshipSourceStatus = NewRelationshipSourceStatusClient(tx.config)

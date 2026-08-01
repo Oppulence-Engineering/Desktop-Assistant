@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
+  AudioLines,
   Download,
   CircleCheck,
   Trash2,
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 import * as analytics from "@/lib/analytics";
 import { SettingsSection } from "./settings-ui";
 import { LocalSpeechDogfoodPanel } from "./local-speech-dogfood-panel";
+import { MeetingCaptureCheck } from "../meeting-capture-check";
 import type {
   WhisperModelSummary,
   WhisperCapability,
@@ -27,7 +29,11 @@ import type {
   TranscriptionRouting,
   WhisperBenchmarkProfile,
 } from "@x/shared/dist/transcription.js";
-import type { MeetingResolvedEngine, MeetingsSettings } from "@x/shared/dist/meetings.js";
+import type {
+  MeetingDoctorReport,
+  MeetingResolvedEngine,
+  MeetingsSettings,
+} from "@x/shared/dist/meetings.js";
 
 const TRANSCRIPTION_CONFIG_CHANGED_EVENT = "transcription-config-changed";
 
@@ -100,6 +106,10 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const [benchmarkBusy, setBenchmarkBusy] = useState(false);
   const [benchmarkResult, setBenchmarkResult] = useState<BenchmarkResultState | null>(null);
   const [benchmarkFailure, setBenchmarkFailure] = useState<BenchmarkFailureState | null>(null);
+  const [meetingDoctor, setMeetingDoctor] = useState<MeetingDoctorReport | null>(null);
+  const [meetingDoctorBusy, setMeetingDoctorBusy] = useState(false);
+  const [meetingCaptureCheckOpen, setMeetingCaptureCheckOpen] = useState(false);
+  const meetingDoctorRequest = useRef(0);
 
   const refreshRouting = useCallback(async () => {
     try {
@@ -159,6 +169,17 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       .invoke("meeting:transcriptionModels", null)
       .then((r) => setFastModels({ ready: r.ready, available: r.available }))
       .catch(() => {});
+    // Passive checks never request system-audio permission. The explicit
+    // preflight button below is the only settings action that performs the probe.
+    const doctorRequest = ++meetingDoctorRequest.current;
+    void window.ipc
+      .invoke("meeting:captureDoctor", { probeSystemAudio: false })
+      .then((report) => {
+        if (meetingDoctorRequest.current === doctorRequest) setMeetingDoctor(report);
+      })
+      .catch(() => {
+        if (meetingDoctorRequest.current === doctorRequest) setMeetingDoctor(null);
+      });
 
     const offMeetingModels = window.ipc.on("meeting:modelProgress", (p) => {
       setModelDownload(p.fraction);
@@ -174,10 +195,29 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       });
     });
     return () => {
+      meetingDoctorRequest.current++;
+      setMeetingDoctorBusy(false);
       off?.();
       offMeetingModels?.();
     };
   }, [dialogOpen, refreshRouting]);
+
+  const runMeetingPreflight = useCallback(async () => {
+    const doctorRequest = ++meetingDoctorRequest.current;
+    setMeetingDoctorBusy(true);
+    try {
+      const report = await window.ipc.invoke("meeting:captureDoctor", { probeSystemAudio: true });
+      if (meetingDoctorRequest.current === doctorRequest) setMeetingDoctor(report);
+    } catch (err) {
+      if (meetingDoctorRequest.current === doctorRequest) {
+        toast.error("Meeting preflight failed", {
+          description: err instanceof Error ? err.message : undefined,
+        });
+      }
+    } finally {
+      if (meetingDoctorRequest.current === doctorRequest) setMeetingDoctorBusy(false);
+    }
+  }, []);
 
   const downloadFastModels = useCallback(async () => {
     setModelDownload(0);
@@ -541,6 +581,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
               aria-pressed={activeModel === "auto"}
             >
               <span
+                aria-hidden="true"
                 className={cn(
                   "flex size-3.5 shrink-0 items-center justify-center rounded-full border",
                   activeModel === "auto" ? "border-primary" : "border-muted-foreground/40",
@@ -774,6 +815,12 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
           }
         >
           <div className="space-y-2">
+            <AudioPreflightPanel
+              report={meetingDoctor}
+              busy={meetingDoctorBusy}
+              onRun={() => void runMeetingPreflight()}
+              onTestTracks={() => setMeetingCaptureCheckOpen(true)}
+            />
             <SettingToggle
               title="Two-track capture"
               hint={
@@ -937,7 +984,100 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
               </>
             )}
           </div>
+          <MeetingCaptureCheck
+            open={meetingCaptureCheckOpen}
+            onOpenChange={setMeetingCaptureCheckOpen}
+          />
         </SettingsSection>
+      )}
+    </div>
+  );
+}
+
+function AudioPreflightPanel({
+  report,
+  busy,
+  onRun,
+  onTestTracks,
+}: {
+  report: MeetingDoctorReport | null;
+  busy: boolean;
+  onRun: () => void;
+  onTestTracks: () => void;
+}) {
+  const failures = report?.checks.filter((check) => check.status === "fail") ?? [];
+  const warnings = report?.checks.filter((check) => check.status === "warn") ?? [];
+  const needsAttention = report !== null && (!report.ok || failures.length > 0);
+  const ready = report?.ok === true && failures.length === 0 && warnings.length === 0;
+  const summary = !report
+    ? "Checking microphone, capture helper, and storage…"
+    : needsAttention
+      ? failures.length > 0
+      ? `${failures.length} issue${failures.length === 1 ? "" : "s"} need attention`
+        : "Audio preflight needs attention"
+      : warnings.length > 0
+        ? `Ready with ${warnings.length} warning${warnings.length === 1 ? "" : "s"}`
+        : "Microphone, capture helper, and storage are ready";
+
+  return (
+    <div className="border border-border bg-muted/20 px-3.5 py-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-2.5">
+          <span
+            className={cn(
+              "mt-0.5 flex size-8 shrink-0 items-center justify-center border bg-card",
+              ready && "text-emerald-600 dark:text-emerald-400",
+              needsAttention && "text-destructive",
+            )}
+          >
+            {busy ? <Loader2 className="size-4 animate-spin" /> : <AudioLines className="size-4" />}
+          </span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-medium">Audio preflight</p>
+              {report && (
+                <Badge variant={needsAttention ? "destructive" : "secondary"}>
+                  {needsAttention ? "Needs attention" : warnings.length > 0 ? "Check warnings" : "Ready"}
+                </Badge>
+              )}
+            </div>
+            <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{summary}</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onRun}>
+            {busy ? <Loader2 className="mr-1.5 size-3.5 animate-spin" /> : null}
+            Check permissions
+          </Button>
+          <Button type="button" size="sm" onClick={onTestTracks}>
+            Test both tracks
+          </Button>
+        </div>
+      </div>
+      {report && report.checks.length > 0 && (
+        <div className="mt-3 grid gap-1.5 border-t border-border/60 pt-3 sm:grid-cols-2">
+          {report.checks.map((check) => (
+            <div key={check.name} className="flex min-w-0 items-start gap-2 text-xs">
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "mt-1 size-1.5 shrink-0 rounded-full",
+                  check.status === "ok" && "bg-emerald-500",
+                  check.status === "warn" && "bg-amber-500",
+                  check.status === "fail" && "bg-destructive",
+                )}
+              />
+              <span className="min-w-0">
+                <span className="sr-only">{check.status}: </span>
+                <span className="font-medium text-foreground">{check.name}</span>
+                <span className="block text-muted-foreground">{check.detail}</span>
+                {check.remediation && check.status !== "ok" && (
+                  <span className="block text-muted-foreground">Fix: {check.remediation}</span>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

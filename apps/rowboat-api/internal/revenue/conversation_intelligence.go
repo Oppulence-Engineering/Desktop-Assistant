@@ -14,9 +14,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/google/uuid"
 )
 
@@ -399,6 +397,16 @@ func (s *Service) materializeConversationEvidence(
 		evidenceByClaim[claim.ID] = evidence
 	}
 
+	learning := outcomeLearningProfile{now: s.now().UTC()}
+	if len(proposals) > 0 {
+		var err error
+		// One observation can contain several proposals. Load workspace history
+		// once so ranking does not issue two large queries per proposal.
+		learning, err = loadOutcomeLearningProfile(ctx, client, ws, s.now())
+		if err != nil {
+			return err
+		}
+	}
 	for _, proposal := range proposals {
 		if !conversationActionTypes[proposal.ActionType] || !conversationChannels[proposal.Channel] {
 			return fmt.Errorf("%w: unsupported conversation action", ErrInvalidInput)
@@ -412,51 +420,11 @@ func (s *Service) materializeConversationEvidence(
 		if len(evidences) == 0 {
 			return fmt.Errorf("%w: conversation actions require supporting claim ids", ErrInvalidInput)
 		}
-		if err := s.createConversationAction(ctx, client, ws, u, rel, input, proposal, evidences); err != nil {
+		if err := s.createConversationAction(ctx, client, ws, u, rel, input, proposal, evidences, learning); err != nil {
 			return err
 		}
 	}
 	return s.applyCommitmentUpdates(ctx, client, ws, u, rel, observation, input)
-}
-
-func (s *Service) outcomeLearningLift(
-	ctx context.Context,
-	client *ent.Client,
-	ws *ent.RevenueWorkspace,
-	actionType, channel string,
-) (int, error) {
-	actions, err := client.RevenueAction.Query().
-		Where(
-			revenueaction.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
-			revenueaction.ActionTypeEQ(actionType),
-			revenueaction.ChannelEQ(channel),
-		).
-		WithOutcomes().
-		Limit(200).
-		All(ctx)
-	if err != nil {
-		return 0, err
-	}
-	positive, negative := 0, 0
-	for _, action := range actions {
-		outcomes, _ := action.Edges.OutcomesOrErr()
-		for _, outcome := range outcomes {
-			switch outcome.Kind {
-			case "delivered", "replied", "meeting_booked", "won", "deal_advanced", "onboarding_progressed", "renewed":
-				positive++
-			case "bounced", "lost", "dismissed", "bad_recommendation", "escalated", "churned", "corrected":
-				negative++
-			}
-		}
-	}
-	lift := (positive - negative) * 3
-	if lift > 15 {
-		lift = 15
-	}
-	if lift < -15 {
-		lift = -15
-	}
-	return lift, nil
 }
 
 func (s *Service) createConversationAction(
@@ -468,11 +436,9 @@ func (s *Service) createConversationAction(
 	input RelationshipObservationInput,
 	proposal ConversationActionProposal,
 	evidences []*ent.RevenueEvidence,
+	learning outcomeLearningProfile,
 ) error {
-	lift, err := s.outcomeLearningLift(ctx, client, ws, proposal.ActionType, proposal.Channel)
-	if err != nil {
-		return err
-	}
+	lift := learning.result(proposal.ActionType, proposal.Channel).Lift
 	confidence := int(proposal.Confidence * 20)
 	priority := 55 + confidence + lift
 	if priority < 0 {

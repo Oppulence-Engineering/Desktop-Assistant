@@ -2,8 +2,10 @@ package revenue
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,6 +21,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 )
+
+func hubspotapiMarkerTokenForTest(idempotencyKey string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(idempotencyKey)))
+	return fmt.Sprintf("oppulence-action-%x", sum[:16])
+}
 
 type staticSlackTokens struct {
 	token string
@@ -84,8 +91,7 @@ func TestSlackExecutorUsesSDKAndExplicitTarget(t *testing.T) {
 	exec := NewSlackExecutor(staticSlackTokens{token: "xoxb-test"}, outbound.Policy{})
 	exec.SetAPIURL(server.URL)
 	result, err := exec.Execute(context.Background(), ExecRequest{
-		Mode:   ExecModeSend,
-		UserID: uuid.New(),
+		Mode: ExecModeSend, UserID: uuid.New(), IdempotencyKey: "idem-slack-1",
 		Action: &ent.RevenueAction{
 			Channel:          "slack",
 			SenderAccountRef: "slack:T123:C123:1711111111.000",
@@ -104,6 +110,44 @@ func TestSlackExecutorUsesSDKAndExplicitTarget(t *testing.T) {
 	}
 	if gotForm.Get("text") != "*Next step*\nSend the recap." {
 		t.Fatalf("Slack text = %q", gotForm.Get("text"))
+	}
+	var metadata map[string]any
+	if err := json.Unmarshal([]byte(gotForm.Get("metadata")), &metadata); err != nil {
+		t.Fatalf("Slack metadata: %v (%q)", err, gotForm.Get("metadata"))
+	}
+	payload, _ := metadata["event_payload"].(map[string]any)
+	if metadata["event_type"] != "oppulence_action" || payload["idempotency_key"] != "idem-slack-1" {
+		t.Fatalf("Slack reconciliation metadata = %#v", metadata)
+	}
+}
+
+func TestSlackExecutorReconcilesThroughSDKMetadataLookup(t *testing.T) {
+	var posts int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/conversations.replies" {
+			t.Errorf("path = %q", r.URL.Path)
+		}
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse form: %v", err)
+		}
+		if r.Form.Get("include_all_metadata") != "1" {
+			t.Errorf("metadata lookup form = %#v", r.Form)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"ok":true,"has_more":false,"messages":[{"ts":"1712345678.001","metadata":{"event_type":"oppulence_action","event_payload":{"idempotency_key":"idem-slack-2"}}}]}`)
+	}))
+	t.Cleanup(server.Close)
+	exec := NewSlackExecutor(staticSlackTokens{token: "xoxb-test"}, outbound.Policy{})
+	exec.SetAPIURL(server.URL)
+	result, found, err := exec.Reconcile(context.Background(), ExecRequest{
+		UserID: uuid.New(), IdempotencyKey: "idem-slack-2",
+		Action: &ent.RevenueAction{Channel: "slack", SenderAccountRef: "slack:T123:C123:1711111111.000"},
+	})
+	if err != nil || !found || result == nil || result.ProviderMessageID != "1712345678.001" {
+		t.Fatalf("Slack reconciliation result=%+v found=%v err=%v", result, found, err)
+	}
+	if posts != 0 {
+		t.Fatalf("reconciliation must not post messages: %d", posts)
 	}
 }
 
@@ -137,8 +181,7 @@ func TestCalendarExecutorCreatesReviewedEvent(t *testing.T) {
 	start := time.Date(2026, 8, 4, 15, 0, 0, 0, time.UTC)
 	exec := NewCalendarExecutor(g.exec)
 	result, err := exec.Execute(g.ctx, ExecRequest{
-		Mode:   ExecModeSend,
-		UserID: g.user.ID,
+		Mode: ExecModeSend, UserID: g.user.ID, IdempotencyKey: "idem-calendar-1",
 		Action: &ent.RevenueAction{
 			Channel:         "calendar",
 			DueAt:           &start,
@@ -152,6 +195,26 @@ func TestCalendarExecutorCreatesReviewedEvent(t *testing.T) {
 	}
 	if result.ProviderMessageID != "evt_1" || result.ProviderThreadID != "https://calendar.test/evt_1" || g.calendar != 1 || g.calendarSendUpdates != "all" {
 		t.Fatalf("result=%+v calendar calls=%d sendUpdates=%q", result, g.calendar, g.calendarSendUpdates)
+	}
+	extended, _ := g.calendarBody["extendedProperties"].(map[string]any)
+	private, _ := extended["private"].(map[string]any)
+	if private["oppulence_action"] != "idem-calendar-1" {
+		t.Fatalf("Calendar reconciliation marker = %#v", g.calendarBody["extendedProperties"])
+	}
+}
+
+func TestCalendarExecutorReconcilesByPrivateExtendedProperty(t *testing.T) {
+	g := newGmailFixture(t, []string{scopeCalendarEvents})
+	exec := NewCalendarExecutor(g.exec)
+	result, found, err := exec.Reconcile(g.ctx, ExecRequest{
+		UserID: g.user.ID, IdempotencyKey: "idem-calendar-2",
+		Action: &ent.RevenueAction{Channel: "calendar"},
+	})
+	if err != nil || !found || result == nil || result.ProviderMessageID != "evt_1" {
+		t.Fatalf("Calendar reconciliation result=%+v found=%v err=%v", result, found, err)
+	}
+	if g.calendar != 1 || g.calendarPrivateQuery != "oppulence_action=idem-calendar-2" {
+		t.Fatalf("Calendar reconciliation calls=%d query=%q", g.calendar, g.calendarPrivateQuery)
 	}
 }
 
@@ -221,6 +284,52 @@ func TestHubSpotExecutorUsesSDKWithAssociation(t *testing.T) {
 	types := association["types"].([]any)
 	if types[0].(map[string]any)["associationTypeId"] != float64(202) {
 		t.Fatalf("association type = %#v", types[0])
+	}
+}
+
+func TestHubSpotExecutorReconcilesThroughOfficialSDKSearch(t *testing.T) {
+	f := newFixture(t)
+	sealer, err := crypto.NewSealer("test-encryption-key-for-hubspot-reconcile")
+	if err != nil {
+		t.Fatalf("sealer: %v", err)
+	}
+	sealed, err := sealer.SealString("pat-na1-test")
+	if err != nil {
+		t.Fatalf("seal token: %v", err)
+	}
+	f.client.MCPConnection.Create().SetUser(f.user).SetConnector("hubspot").
+		SetAudience("hubspot-api").SetAPIKeyEncrypted(sealed).SaveX(f.ctx)
+	var searches, creates int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/crm/objects/2026-03/notes/search" {
+			t.Errorf("path = %q", r.URL.Path)
+		}
+		searches++
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %s", r.Method)
+		}
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Errorf("decode search: %v", err)
+		}
+		if body["query"] != hubspotapiMarkerTokenForTest("idem-hubspot-1") {
+			t.Errorf("search query = %#v", body["query"])
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, fmt.Sprintf(`{"total":1,"results":[{"id":"note-99","archived":false,"createdAt":"2026-07-31T12:00:00Z","updatedAt":"2026-07-31T12:00:00Z","properties":{"hs_note_body":"Follow up\n[Oppulence reference: %s]"}}]}`, hubspotapiMarkerTokenForTest("idem-hubspot-1")))
+	}))
+	t.Cleanup(server.Close)
+	exec := NewHubSpotExecutor(f.client, sealer, outbound.Policy{})
+	exec.SetBaseURL(server.URL)
+	result, found, err := exec.Reconcile(f.ctx, ExecRequest{
+		UserID: f.user.ID, IdempotencyKey: "idem-hubspot-1",
+		Action: &ent.RevenueAction{Channel: "crm", SenderAccountRef: "hubspot:contact:12345"},
+	})
+	if err != nil || !found || result == nil || result.ProviderMessageID != "note-99" {
+		t.Fatalf("HubSpot reconciliation result=%+v found=%v err=%v", result, found, err)
+	}
+	if searches != 1 || creates != 0 {
+		t.Fatalf("want one SDK search and zero creates, searches=%d creates=%d", searches, creates)
 	}
 }
 

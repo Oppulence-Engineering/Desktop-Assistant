@@ -47,6 +47,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
@@ -1146,6 +1147,33 @@ func (f TraverseRelationshipAssertion) Traverse(ctx context.Context, q ent.Query
 	return fmt.Errorf("unexpected query type %T. expect *ent.RelationshipAssertionQuery", q)
 }
 
+// The RelationshipIdentityFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RelationshipIdentityFunc func(context.Context, *ent.RelationshipIdentityQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RelationshipIdentityFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RelationshipIdentityQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RelationshipIdentityQuery", q)
+}
+
+// The TraverseRelationshipIdentity type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRelationshipIdentity func(context.Context, *ent.RelationshipIdentityQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRelationshipIdentity) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRelationshipIdentity) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelationshipIdentityQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RelationshipIdentityQuery", q)
+}
+
 // The RelationshipObservationFunc type is an adapter to allow the use of ordinary function as a Querier.
 type RelationshipObservationFunc func(context.Context, *ent.RelationshipObservationQuery) (ent.Value, error)
 
@@ -1630,6 +1658,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.RelationshipQuery, predicate.Relationship, relationship.OrderOption]{typ: ent.TypeRelationship, tq: q}, nil
 	case *ent.RelationshipAssertionQuery:
 		return &query[*ent.RelationshipAssertionQuery, predicate.RelationshipAssertion, relationshipassertion.OrderOption]{typ: ent.TypeRelationshipAssertion, tq: q}, nil
+	case *ent.RelationshipIdentityQuery:
+		return &query[*ent.RelationshipIdentityQuery, predicate.RelationshipIdentity, relationshipidentity.OrderOption]{typ: ent.TypeRelationshipIdentity, tq: q}, nil
 	case *ent.RelationshipObservationQuery:
 		return &query[*ent.RelationshipObservationQuery, predicate.RelationshipObservation, relationshipobservation.OrderOption]{typ: ent.TypeRelationshipObservation, tq: q}, nil
 	case *ent.RelationshipParticipantQuery:

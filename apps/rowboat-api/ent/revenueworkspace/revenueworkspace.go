@@ -63,6 +63,8 @@ const (
 	EdgeScans = "scans"
 	// EdgeRelationshipParticipants holds the string denoting the relationship_participants edge name in mutations.
 	EdgeRelationshipParticipants = "relationship_participants"
+	// EdgeRelationshipIdentities holds the string denoting the relationship_identities edge name in mutations.
+	EdgeRelationshipIdentities = "relationship_identities"
 	// EdgeRelationshipObservations holds the string denoting the relationship_observations edge name in mutations.
 	EdgeRelationshipObservations = "relationship_observations"
 	// EdgeRelationshipAssertions holds the string denoting the relationship_assertions edge name in mutations.
@@ -171,6 +173,13 @@ const (
 	RelationshipParticipantsInverseTable = "relationship_participants"
 	// RelationshipParticipantsColumn is the table column denoting the relationship_participants relation/edge.
 	RelationshipParticipantsColumn = "revenue_workspace_id"
+	// RelationshipIdentitiesTable is the table that holds the relationship_identities relation/edge.
+	RelationshipIdentitiesTable = "relationship_identities"
+	// RelationshipIdentitiesInverseTable is the table name for the RelationshipIdentity entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipidentity" package.
+	RelationshipIdentitiesInverseTable = "relationship_identities"
+	// RelationshipIdentitiesColumn is the table column denoting the relationship_identities relation/edge.
+	RelationshipIdentitiesColumn = "revenue_workspace_id"
 	// RelationshipObservationsTable is the table that holds the relationship_observations relation/edge.
 	RelationshipObservationsTable = "relationship_observations"
 	// RelationshipObservationsInverseTable is the table name for the RelationshipObservation entity.
@@ -503,6 +512,20 @@ func ByRelationshipParticipants(term sql.OrderTerm, terms ...sql.OrderTerm) Orde
 	}
 }
 
+// ByRelationshipIdentitiesCount orders the results by relationship_identities count.
+func ByRelationshipIdentitiesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipIdentitiesStep(), opts...)
+	}
+}
+
+// ByRelationshipIdentities orders the results by relationship_identities terms.
+func ByRelationshipIdentities(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipIdentitiesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByRelationshipObservationsCount orders the results by relationship_observations count.
 func ByRelationshipObservationsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -654,6 +677,13 @@ func newRelationshipParticipantsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RelationshipParticipantsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipParticipantsTable, RelationshipParticipantsColumn),
+	)
+}
+func newRelationshipIdentitiesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipIdentitiesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipIdentitiesTable, RelationshipIdentitiesColumn),
 	)
 }
 func newRelationshipObservationsStep() *sqlgraph.Step {

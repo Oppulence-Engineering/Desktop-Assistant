@@ -220,6 +220,14 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		return stats, err
 	}
 	now := s.now()
+	ws, err := s.CurrentWorkspace(ctx, u)
+	if err != nil {
+		return stats, err
+	}
+	learning, err := loadOutcomeLearningProfile(ctx, s.client, ws, now)
+	if err != nil {
+		return stats, err
+	}
 
 	// Phase 1 — detect. Collect every candidate first so the action cap can
 	// keep the HIGHEST-priority candidates, not merely the first swept.
@@ -250,6 +258,9 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 			continue
 		}
 		stats.candidates++
+		// Learn before the scan-wide sort so past outcomes can change which ten
+		// candidates are materialized, not merely decorate stored actions later.
+		hit.Components["outcome_learning"] = learning.result(hit.ActionType, "email").Lift
 		revenuemetrics.DetectorCandidates.WithLabelValues(hit.Detector, "candidate").Inc()
 		candidates = append(candidates, candidate{sum: sum, hit: hit})
 	}

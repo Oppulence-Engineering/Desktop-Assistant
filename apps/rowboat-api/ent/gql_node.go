@@ -43,6 +43,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
@@ -239,6 +240,11 @@ var relationshipassertionImplementors = []string{"RelationshipAssertion", "Node"
 
 // IsNode implements the Node interface check for GQLGen.
 func (*RelationshipAssertion) IsNode() {}
+
+var relationshipidentityImplementors = []string{"RelationshipIdentity", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*RelationshipIdentity) IsNode() {}
 
 var relationshipobservationImplementors = []string{"RelationshipObservation", "Node"}
 
@@ -674,6 +680,15 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(relationshipassertion.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipassertionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case relationshipidentity.Table:
+		query := c.RelationshipIdentity.Query().
+			Where(relationshipidentity.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, relationshipidentityImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -1416,6 +1431,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.RelationshipAssertion.Query().
 			Where(relationshipassertion.IDIn(ids...))
 		query, err := query.CollectFields(ctx, relationshipassertionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case relationshipidentity.Table:
+		query := c.RelationshipIdentity.Query().
+			Where(relationshipidentity.IDIn(ids...))
+		query, err := query.CollectFields(ctx, relationshipidentityImplementors...)
 		if err != nil {
 			return nil, err
 		}

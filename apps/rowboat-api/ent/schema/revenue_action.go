@@ -83,6 +83,14 @@ func (RevenueAction) Fields() []ent.Field {
 		field.String("provider_thread_id").Optional(),
 		field.Time("executed_at").Optional().Nillable(),
 		field.Text("execution_error").Optional(),
+		// Ambiguous provider writes are reconciled by a read-only lookup using
+		// the idempotency marker. They are never blindly submitted again.
+		field.String("reconciliation_status").Optional().
+			Validate(oneOfRevenueOptional("reconciliation_status", "pending", "found", "not_found", "error", "manual_review")),
+		field.Int("reconciliation_attempts").Default(0).NonNegative(),
+		field.Time("reconciliation_checked_at").Optional().Nillable(),
+		field.Time("reconciliation_next_at").Optional().Nillable(),
+		field.Text("reconciliation_error").Optional(),
 		field.String("dismiss_reason").Optional(),
 		field.Time("snoozed_until").Optional().Nillable(),
 		field.Time("due_at").Optional().Nillable(),

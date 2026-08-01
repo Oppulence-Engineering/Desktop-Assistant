@@ -76,6 +76,8 @@ type RevenueWorkspaceEdges struct {
 	Scans []*RevenueLeakScan `json:"scans,omitempty"`
 	// RelationshipParticipants holds the value of the relationship_participants edge.
 	RelationshipParticipants []*RelationshipParticipant `json:"relationship_participants,omitempty"`
+	// RelationshipIdentities holds the value of the relationship_identities edge.
+	RelationshipIdentities []*RelationshipIdentity `json:"relationship_identities,omitempty"`
 	// RelationshipObservations holds the value of the relationship_observations edge.
 	RelationshipObservations []*RelationshipObservation `json:"relationship_observations,omitempty"`
 	// RelationshipAssertions holds the value of the relationship_assertions edge.
@@ -86,9 +88,9 @@ type RevenueWorkspaceEdges struct {
 	RelationshipSourceStatuses []*RelationshipSourceStatus `json:"relationship_source_statuses,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [18]bool
+	loadedTypes [19]bool
 	// totalCount holds the count of the edges above.
-	totalCount [18]map[string]int
+	totalCount [19]map[string]int
 
 	namedMembers                           map[string][]*RevenueWorkspaceMember
 	namedRelationships                     map[string][]*Relationship
@@ -103,6 +105,7 @@ type RevenueWorkspaceEdges struct {
 	namedOutboxEvents                      map[string][]*RevenueOutboxEvent
 	namedScans                             map[string][]*RevenueLeakScan
 	namedRelationshipParticipants          map[string][]*RelationshipParticipant
+	namedRelationshipIdentities            map[string][]*RelationshipIdentity
 	namedRelationshipObservations          map[string][]*RelationshipObservation
 	namedRelationshipAssertions            map[string][]*RelationshipAssertion
 	namedRelationshipStateSnapshots        map[string][]*RelationshipStateSnapshot
@@ -237,10 +240,19 @@ func (e RevenueWorkspaceEdges) RelationshipParticipantsOrErr() ([]*RelationshipP
 	return nil, &NotLoadedError{edge: "relationship_participants"}
 }
 
+// RelationshipIdentitiesOrErr returns the RelationshipIdentities value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) RelationshipIdentitiesOrErr() ([]*RelationshipIdentity, error) {
+	if e.loadedTypes[14] {
+		return e.RelationshipIdentities, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_identities"}
+}
+
 // RelationshipObservationsOrErr returns the RelationshipObservations value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipObservationsOrErr() ([]*RelationshipObservation, error) {
-	if e.loadedTypes[14] {
+	if e.loadedTypes[15] {
 		return e.RelationshipObservations, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_observations"}
@@ -249,7 +261,7 @@ func (e RevenueWorkspaceEdges) RelationshipObservationsOrErr() ([]*RelationshipO
 // RelationshipAssertionsOrErr returns the RelationshipAssertions value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipAssertionsOrErr() ([]*RelationshipAssertion, error) {
-	if e.loadedTypes[15] {
+	if e.loadedTypes[16] {
 		return e.RelationshipAssertions, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_assertions"}
@@ -258,7 +270,7 @@ func (e RevenueWorkspaceEdges) RelationshipAssertionsOrErr() ([]*RelationshipAss
 // RelationshipStateSnapshotsOrErr returns the RelationshipStateSnapshots value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipStateSnapshotsOrErr() ([]*RelationshipStateSnapshot, error) {
-	if e.loadedTypes[16] {
+	if e.loadedTypes[17] {
 		return e.RelationshipStateSnapshots, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_state_snapshots"}
@@ -267,7 +279,7 @@ func (e RevenueWorkspaceEdges) RelationshipStateSnapshotsOrErr() ([]*Relationshi
 // RelationshipSourceStatusesOrErr returns the RelationshipSourceStatuses value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipSourceStatusesOrErr() ([]*RelationshipSourceStatus, error) {
-	if e.loadedTypes[17] {
+	if e.loadedTypes[18] {
 		return e.RelationshipSourceStatuses, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_source_statuses"}
@@ -458,6 +470,11 @@ func (_m *RevenueWorkspace) QueryScans() *RevenueLeakScanQuery {
 // QueryRelationshipParticipants queries the "relationship_participants" edge of the RevenueWorkspace entity.
 func (_m *RevenueWorkspace) QueryRelationshipParticipants() *RelationshipParticipantQuery {
 	return NewRevenueWorkspaceClient(_m.config).QueryRelationshipParticipants(_m)
+}
+
+// QueryRelationshipIdentities queries the "relationship_identities" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryRelationshipIdentities() *RelationshipIdentityQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryRelationshipIdentities(_m)
 }
 
 // QueryRelationshipObservations queries the "relationship_observations" edge of the RevenueWorkspace entity.
@@ -851,6 +868,30 @@ func (_m *RevenueWorkspace) appendNamedRelationshipParticipants(name string, edg
 		_m.Edges.namedRelationshipParticipants[name] = []*RelationshipParticipant{}
 	} else {
 		_m.Edges.namedRelationshipParticipants[name] = append(_m.Edges.namedRelationshipParticipants[name], edges...)
+	}
+}
+
+// NamedRelationshipIdentities returns the RelationshipIdentities named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedRelationshipIdentities(name string) ([]*RelationshipIdentity, error) {
+	if _m.Edges.namedRelationshipIdentities == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipIdentities[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedRelationshipIdentities(name string, edges ...*RelationshipIdentity) {
+	if _m.Edges.namedRelationshipIdentities == nil {
+		_m.Edges.namedRelationshipIdentities = make(map[string][]*RelationshipIdentity)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipIdentities[name] = []*RelationshipIdentity{}
+	} else {
+		_m.Edges.namedRelationshipIdentities[name] = append(_m.Edges.namedRelationshipIdentities[name], edges...)
 	}
 }
 

@@ -465,6 +465,18 @@ func (f RelationshipAssertionFunc) Mutate(ctx context.Context, m ent.Mutation) (
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipAssertionMutation", m)
 }
 
+// The RelationshipIdentityFunc type is an adapter to allow the use of ordinary
+// function as RelationshipIdentity mutator.
+type RelationshipIdentityFunc func(context.Context, *ent.RelationshipIdentityMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationshipIdentityFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelationshipIdentityMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipIdentityMutation", m)
+}
+
 // The RelationshipObservationFunc type is an adapter to allow the use of ordinary
 // function as RelationshipObservation mutator.
 type RelationshipObservationFunc func(context.Context, *ent.RelationshipObservationMutation) (ent.Value, error)

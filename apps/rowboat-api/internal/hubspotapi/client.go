@@ -5,6 +5,7 @@ package hubspotapi
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"strings"
@@ -25,6 +26,17 @@ import (
 )
 
 const defaultBaseURL = "https://api.hubapi.com"
+
+const actionMarkerPrefix = "oppulence-action-"
+
+func actionMarkerToken(idempotencyKey string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(idempotencyKey)))
+	return fmt.Sprintf("%s%x", actionMarkerPrefix, sum[:16])
+}
+
+func actionMarker(idempotencyKey string) string {
+	return "[Oppulence reference: " + actionMarkerToken(idempotencyKey) + "]"
+}
 
 // Client resolves a user's sealed private-app token immediately before each
 // request and calls HubSpot through the official SDK.
@@ -180,6 +192,62 @@ func (c *Client) CreateTask(ctx context.Context, userID uuid.UUID, target Associ
 		"hs_task_priority": "MEDIUM",
 		"hs_task_type":     "TODO",
 	})
+}
+
+// WithActionMarker adds a short, inert text reference that HubSpot persists and
+// indexes with the note/task body. It is not a retry token: callers still
+// submit the write at most once.
+func WithActionMarker(body, idempotencyKey string) string {
+	body = strings.TrimSpace(body)
+	idempotencyKey = strings.TrimSpace(idempotencyKey)
+	if idempotencyKey == "" {
+		return body
+	}
+	return body + "\n" + actionMarker(idempotencyKey)
+}
+
+// FindEngagementByActionMarker reconciles a note/task through the official SDK
+// search service. A nil result is a definite "not observed yet", not permission
+// to resubmit the write.
+func (c *Client) FindEngagementByActionMarker(ctx context.Context, userID uuid.UUID, engagement, idempotencyKey string) (*crm.SimplePublicObject, error) {
+	idempotencyKey = strings.TrimSpace(idempotencyKey)
+	if idempotencyKey == "" {
+		return nil, errors.New("hubspot: reconciliation idempotency key is required")
+	}
+	queryMarker := actionMarkerToken(idempotencyKey)
+	exactMarker := actionMarker(idempotencyKey)
+	sdk, err := c.sdk(ctx, userID, 2)
+	if err != nil {
+		return nil, err
+	}
+	property := "hs_note_body"
+	request := crm.PublicObjectSearchRequestParam{
+		After: "", FilterGroups: []crm.FilterGroupParam{}, Limit: 10,
+		Properties: []string{property}, Sorts: []string{}, Query: hubspotsdk.String(queryMarker),
+	}
+	var response *crm.CollectionResponseWithTotalSimplePublicObject
+	switch engagement {
+	case "note":
+		response, err = sdk.Crm.Objects.Notes.Search(ctx, crm.ObjectNoteSearchParams{PublicObjectSearchRequest: request})
+	case "task":
+		property = "hs_task_body"
+		request.Properties = []string{property}
+		response, err = sdk.Crm.Objects.Tasks.Search(ctx, crm.ObjectTaskSearchParams{PublicObjectSearchRequest: request})
+	default:
+		return nil, fmt.Errorf("hubspot: unsupported engagement %q", engagement)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("hubspot: reconcile %s: %w", engagement, err)
+	}
+	if response == nil {
+		return nil, nil
+	}
+	for i := range response.Results {
+		if strings.Contains(response.Results[i].Properties[property], exactMarker) {
+			return &response.Results[i], nil
+		}
+	}
+	return nil, nil
 }
 
 func (c *Client) createEngagement(ctx context.Context, userID uuid.UUID, engagement string, target AssociationTarget, properties map[string]string) (*crm.SimplePublicObject, error) {

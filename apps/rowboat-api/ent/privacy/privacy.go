@@ -1022,6 +1022,30 @@ func (f RelationshipAssertionMutationRuleFunc) EvalMutation(ctx context.Context,
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.RelationshipAssertionMutation", m)
 }
 
+// The RelationshipIdentityQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type RelationshipIdentityQueryRuleFunc func(context.Context, *ent.RelationshipIdentityQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f RelationshipIdentityQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RelationshipIdentityQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.RelationshipIdentityQuery", q)
+}
+
+// The RelationshipIdentityMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type RelationshipIdentityMutationRuleFunc func(context.Context, *ent.RelationshipIdentityMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f RelationshipIdentityMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.RelationshipIdentityMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.RelationshipIdentityMutation", m)
+}
+
 // The RelationshipObservationQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type RelationshipObservationQueryRuleFunc func(context.Context, *ent.RelationshipObservationQuery) error
