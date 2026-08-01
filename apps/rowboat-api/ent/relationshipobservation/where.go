@@ -121,6 +121,11 @@ func PayloadCiphertext(v []byte) predicate.RelationshipObservation {
 	return predicate.RelationshipObservation(sql.FieldEQ(FieldPayloadCiphertext, v))
 }
 
+// EncryptionKeyVersion applies equality check predicate on the "encryption_key_version" field. It's identical to EncryptionKeyVersionEQ.
+func EncryptionKeyVersion(v int) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(sql.FieldEQ(FieldEncryptionKeyVersion, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.RelationshipObservation {
 	return predicate.RelationshipObservation(sql.FieldEQ(FieldCreatedAt, v))
@@ -869,6 +874,46 @@ func PayloadCiphertextIsNil() predicate.RelationshipObservation {
 // PayloadCiphertextNotNil applies the NotNil predicate on the "payload_ciphertext" field.
 func PayloadCiphertextNotNil() predicate.RelationshipObservation {
 	return predicate.RelationshipObservation(sql.FieldNotNull(FieldPayloadCiphertext))
+}
+
+// EncryptionKeyVersionEQ applies the EQ predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionEQ(v int) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(sql.FieldEQ(FieldEncryptionKeyVersion, v))
+}
+
+// EncryptionKeyVersionNEQ applies the NEQ predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionNEQ(v int) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(sql.FieldNEQ(FieldEncryptionKeyVersion, v))
+}
+
+// EncryptionKeyVersionIn applies the In predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionIn(vs ...int) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(sql.FieldIn(FieldEncryptionKeyVersion, vs...))
+}
+
+// EncryptionKeyVersionNotIn applies the NotIn predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionNotIn(vs ...int) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(sql.FieldNotIn(FieldEncryptionKeyVersion, vs...))
+}
+
+// EncryptionKeyVersionGT applies the GT predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionGT(v int) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(sql.FieldGT(FieldEncryptionKeyVersion, v))
+}
+
+// EncryptionKeyVersionGTE applies the GTE predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionGTE(v int) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(sql.FieldGTE(FieldEncryptionKeyVersion, v))
+}
+
+// EncryptionKeyVersionLT applies the LT predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionLT(v int) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(sql.FieldLT(FieldEncryptionKeyVersion, v))
+}
+
+// EncryptionKeyVersionLTE applies the LTE predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionLTE(v int) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(sql.FieldLTE(FieldEncryptionKeyVersion, v))
 }
 
 // HasWorkspace applies the HasEdge predicate on the "workspace" edge.

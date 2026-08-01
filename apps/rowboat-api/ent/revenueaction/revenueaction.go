@@ -109,6 +109,8 @@ const (
 	EdgeDecisions = "decisions"
 	// EdgeOutcomes holds the string denoting the outcomes edge name in mutations.
 	EdgeOutcomes = "outcomes"
+	// EdgeTrustEvents holds the string denoting the trust_events edge name in mutations.
+	EdgeTrustEvents = "trust_events"
 	// Table holds the table name of the revenueaction in the database.
 	Table = "revenue_actions"
 	// WorkspaceTable is the table that holds the workspace relation/edge.
@@ -158,6 +160,13 @@ const (
 	OutcomesInverseTable = "action_outcomes"
 	// OutcomesColumn is the table column denoting the outcomes relation/edge.
 	OutcomesColumn = "revenue_action_id"
+	// TrustEventsTable is the table that holds the trust_events relation/edge.
+	TrustEventsTable = "revenue_trust_events"
+	// TrustEventsInverseTable is the table name for the RevenueTrustEvent entity.
+	// It exists in this package in order to avoid circular dependency with the "revenuetrustevent" package.
+	TrustEventsInverseTable = "revenue_trust_events"
+	// TrustEventsColumn is the table column denoting the trust_events relation/edge.
+	TrustEventsColumn = "revenue_action_id"
 )
 
 // Columns holds all SQL columns for revenueaction fields.
@@ -579,6 +588,20 @@ func ByOutcomes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newOutcomesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByTrustEventsCount orders the results by trust_events count.
+func ByTrustEventsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newTrustEventsStep(), opts...)
+	}
+}
+
+// ByTrustEvents orders the results by trust_events terms.
+func ByTrustEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTrustEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newWorkspaceStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -626,5 +649,12 @@ func newOutcomesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OutcomesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, OutcomesTable, OutcomesColumn),
+	)
+}
+func newTrustEventsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TrustEventsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, TrustEventsTable, TrustEventsColumn),
 	)
 }

@@ -102,6 +102,24 @@ func (RevenueWorkspace) Edges() []ent.Edge {
 			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("relationship_identities", RelationshipIdentity.Type).
 			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("relationship_projection_jobs", RelationshipProjectionJob.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("evidence_keys", TenantEvidenceKey.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("feature_controls", WorkspaceFeatureControl.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("trust_events", RevenueTrustEvent.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("identity_candidates", RelationshipIdentityCandidate.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("relationship_lineage_events", RelationshipLineageEvent.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("relationship_identity_decisions", RelationshipIdentityDecision.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("relationship_review_acknowledgements", RelationshipReviewAcknowledgement.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("relationship_attention_items", RelationshipAttentionItem.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("relationship_observations", RelationshipObservation.Type).
 			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("relationship_assertions", RelationshipAssertion.Type).

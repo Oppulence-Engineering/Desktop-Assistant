@@ -8,6 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/hook"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -25,6 +27,12 @@ type userScopedMutation interface {
 	UserID() (uuid.UUID, bool)
 	UserCleared() bool
 	WhereP(...func(*sql.Selector))
+}
+
+type workspaceScopedMutation interface {
+	userScopedMutation
+	WorkspaceID() (uuid.UUID, bool)
+	WorkspaceCleared() bool
 }
 
 // registerHooks installs write-side middleware on the client:
@@ -52,6 +60,17 @@ func registerHooks(client *ent.Client, log *zap.Logger) {
 	client.BackgroundTaskArtifact.Use(auditHook(log, "background_task_artifact"))
 	client.BackgroundTaskRun.Use(auditHook(log, "background_task_run"))
 	client.BackgroundTaskRunEvent.Use(auditHook(log, "background_task_run_event"))
+	// Identity decisions and lineage are append-only audit records. Corrections
+	// are represented by a new compensating decision, never by rewriting history.
+	client.RelationshipIdentityDecision.Use(
+		hook.Reject(ent.OpUpdate | ent.OpUpdateOne | ent.OpDelete | ent.OpDeleteOne),
+	)
+	client.RelationshipLineageEvent.Use(
+		hook.Reject(ent.OpUpdate | ent.OpUpdateOne | ent.OpDelete | ent.OpDeleteOne),
+	)
+	client.RelationshipReviewAcknowledgement.Use(
+		hook.Reject(ent.OpUpdate | ent.OpUpdateOne | ent.OpDelete | ent.OpDeleteOne),
+	)
 }
 
 func tenantMutationHook() ent.Hook {
@@ -68,6 +87,57 @@ func tenantMutationHook() ent.Hook {
 					return next.Mutate(ctx, mutation)
 				}
 				return nil, ErrNoViewer
+			}
+
+			if mutation.Type() == ent.TypeRevenueWorkspace {
+				if m.UserCleared() {
+					return nil, fmt.Errorf("%w: cannot clear workspace owner", ErrTenantMutation)
+				}
+				if requested, exists := m.UserID(); exists && requested != owner.ID {
+					return nil, fmt.Errorf("%w: cannot reassign workspace owner", ErrTenantMutation)
+				}
+				if mutation.Op().Is(ent.OpUpdate | ent.OpUpdateOne | ent.OpDelete | ent.OpDeleteOne) {
+					uid := owner.ID
+					m.WhereP(func(s *sql.Selector) {
+						s.Where(sql.In(s.C(revenueworkspace.FieldID), writableRevenueWorkspaceIDs(uid)))
+					})
+				}
+				return next.Mutate(ctx, mutation)
+			}
+
+			if workspaceColumn, workspaceOwned := workspaceTenantColumns[mutation.Type()]; workspaceOwned {
+				wm, valid := mutation.(workspaceScopedMutation)
+				if !valid {
+					return nil, fmt.Errorf("%w: missing workspace mutation contract for %s", ErrTenantMutation, mutation.Type())
+				}
+				if wm.WorkspaceCleared() {
+					return nil, fmt.Errorf("%w: cannot clear workspace", ErrTenantMutation)
+				}
+				if mutation.Op().Is(ent.OpCreate) {
+					workspaceID, exists := wm.WorkspaceID()
+					if !exists {
+						return nil, fmt.Errorf("%w: workspace is required", ErrTenantMutation)
+					}
+					if !auth.CanWriteRevenueWorkspace(ctx, workspaceID) {
+						return nil, fmt.Errorf("%w: workspace is not writable", ErrTenantMutation)
+					}
+					// The member edge points at the invited subject. Every other
+					// entity records the actor and may not forge another user.
+					if mutation.Type() != ent.TypeRevenueWorkspaceMember {
+						if requested, exists := m.UserID(); !exists || requested != owner.ID {
+							return nil, fmt.Errorf("%w: actor does not match viewer", ErrTenantMutation)
+						}
+					}
+				} else if _, reparenting := wm.WorkspaceID(); reparenting {
+					return nil, fmt.Errorf("%w: workspace re-parenting is forbidden", ErrTenantMutation)
+				}
+				if mutation.Op().Is(ent.OpUpdate | ent.OpUpdateOne | ent.OpDelete | ent.OpDeleteOne) {
+					uid := owner.ID
+					wm.WhereP(func(s *sql.Selector) {
+						s.Where(sql.In(s.C(workspaceColumn), writableRevenueWorkspaceIDs(uid)))
+					})
+				}
+				return next.Mutate(ctx, mutation)
 			}
 
 			if m.UserCleared() {
@@ -97,6 +167,26 @@ func tenantMutationHook() ent.Hook {
 			return next.Mutate(ctx, mutation)
 		})
 	}
+}
+
+// writableRevenueWorkspaceIDs returns owner/admin/member workspaces. Viewer
+// membership is deliberately absent, making the database mutation boundary
+// read-only even if a handler forgets its finer-grained capability check.
+func writableRevenueWorkspaceIDs(uid uuid.UUID) *sql.Selector {
+	workspaces := sql.Table(revenueworkspace.Table)
+	members := sql.Table(revenueworkspacemember.Table)
+	return sql.Select(workspaces.C(revenueworkspace.FieldID)).
+		From(workspaces).
+		LeftJoin(members).
+		On(workspaces.C(revenueworkspace.FieldID), members.C(revenueworkspacemember.WorkspaceColumn)).
+		Where(sql.Or(
+			sql.EQ(workspaces.C(revenueworkspace.UserColumn), uid),
+			sql.And(
+				sql.EQ(members.C(revenueworkspacemember.UserColumn), uid),
+				sql.EQ(members.C(revenueworkspacemember.FieldStatus), "active"),
+				sql.In(members.C(revenueworkspacemember.FieldRole), "owner", "admin", "member"),
+			),
+		))
 }
 
 func hasMutationUser(m userScopedMutation) bool {

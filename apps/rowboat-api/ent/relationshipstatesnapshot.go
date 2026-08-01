@@ -30,6 +30,12 @@ type RelationshipStateSnapshot struct {
 	Version int `json:"version,omitempty"`
 	// StateJSON holds the value of the "state_json" field.
 	StateJSON string `json:"-"`
+	// StateHash holds the value of the "state_hash" field.
+	StateHash string `json:"state_hash,omitempty"`
+	// ProjectorVersion holds the value of the "projector_version" field.
+	ProjectorVersion int `json:"projector_version,omitempty"`
+	// EvaluatedAt holds the value of the "evaluated_at" field.
+	EvaluatedAt time.Time `json:"evaluated_at,omitempty"`
 	// ChangedDimensions holds the value of the "changed_dimensions" field.
 	ChangedDimensions []string `json:"changed_dimensions,omitempty"`
 	// AssertionIds holds the value of the "assertion_ids" field.
@@ -98,11 +104,11 @@ func (*RelationshipStateSnapshot) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case relationshipstatesnapshot.FieldChangedDimensions, relationshipstatesnapshot.FieldAssertionIds:
 			values[i] = new([]byte)
-		case relationshipstatesnapshot.FieldVersion:
+		case relationshipstatesnapshot.FieldVersion, relationshipstatesnapshot.FieldProjectorVersion:
 			values[i] = new(sql.NullInt64)
-		case relationshipstatesnapshot.FieldStateJSON:
+		case relationshipstatesnapshot.FieldStateJSON, relationshipstatesnapshot.FieldStateHash:
 			values[i] = new(sql.NullString)
-		case relationshipstatesnapshot.FieldCreatedAt, relationshipstatesnapshot.FieldUpdatedAt:
+		case relationshipstatesnapshot.FieldCreatedAt, relationshipstatesnapshot.FieldUpdatedAt, relationshipstatesnapshot.FieldEvaluatedAt:
 			values[i] = new(sql.NullTime)
 		case relationshipstatesnapshot.FieldID:
 			values[i] = new(uuid.UUID)
@@ -156,6 +162,24 @@ func (_m *RelationshipStateSnapshot) assignValues(columns []string, values []any
 				return fmt.Errorf("unexpected type %T for field state_json", values[i])
 			} else if value.Valid {
 				_m.StateJSON = value.String
+			}
+		case relationshipstatesnapshot.FieldStateHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field state_hash", values[i])
+			} else if value.Valid {
+				_m.StateHash = value.String
+			}
+		case relationshipstatesnapshot.FieldProjectorVersion:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field projector_version", values[i])
+			} else if value.Valid {
+				_m.ProjectorVersion = int(value.Int64)
+			}
+		case relationshipstatesnapshot.FieldEvaluatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field evaluated_at", values[i])
+			} else if value.Valid {
+				_m.EvaluatedAt = value.Time
 			}
 		case relationshipstatesnapshot.FieldChangedDimensions:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -255,6 +279,15 @@ func (_m *RelationshipStateSnapshot) String() string {
 	builder.WriteString(fmt.Sprintf("%v", _m.Version))
 	builder.WriteString(", ")
 	builder.WriteString("state_json=<sensitive>")
+	builder.WriteString(", ")
+	builder.WriteString("state_hash=")
+	builder.WriteString(_m.StateHash)
+	builder.WriteString(", ")
+	builder.WriteString("projector_version=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ProjectorVersion))
+	builder.WriteString(", ")
+	builder.WriteString("evaluated_at=")
+	builder.WriteString(_m.EvaluatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("changed_dimensions=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ChangedDimensions))

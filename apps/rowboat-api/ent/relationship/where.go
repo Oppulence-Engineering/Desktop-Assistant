@@ -151,6 +151,21 @@ func StateVersion(v int) predicate.Relationship {
 	return predicate.Relationship(sql.FieldEQ(FieldStateVersion, v))
 }
 
+// StateHash applies equality check predicate on the "state_hash" field. It's identical to StateHashEQ.
+func StateHash(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldStateHash, v))
+}
+
+// ProjectorVersion applies equality check predicate on the "projector_version" field. It's identical to ProjectorVersionEQ.
+func ProjectorVersion(v int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldProjectorVersion, v))
+}
+
+// ProjectedAt applies equality check predicate on the "projected_at" field. It's identical to ProjectedAtEQ.
+func ProjectedAt(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldProjectedAt, v))
+}
+
 // LastChangedAt applies equality check predicate on the "last_changed_at" field. It's identical to LastChangedAtEQ.
 func LastChangedAt(v time.Time) predicate.Relationship {
 	return predicate.Relationship(sql.FieldEQ(FieldLastChangedAt, v))
@@ -1356,6 +1371,171 @@ func StateVersionLTE(v int) predicate.Relationship {
 	return predicate.Relationship(sql.FieldLTE(FieldStateVersion, v))
 }
 
+// StateHashEQ applies the EQ predicate on the "state_hash" field.
+func StateHashEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldStateHash, v))
+}
+
+// StateHashNEQ applies the NEQ predicate on the "state_hash" field.
+func StateHashNEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldStateHash, v))
+}
+
+// StateHashIn applies the In predicate on the "state_hash" field.
+func StateHashIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldStateHash, vs...))
+}
+
+// StateHashNotIn applies the NotIn predicate on the "state_hash" field.
+func StateHashNotIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldStateHash, vs...))
+}
+
+// StateHashGT applies the GT predicate on the "state_hash" field.
+func StateHashGT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldStateHash, v))
+}
+
+// StateHashGTE applies the GTE predicate on the "state_hash" field.
+func StateHashGTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldStateHash, v))
+}
+
+// StateHashLT applies the LT predicate on the "state_hash" field.
+func StateHashLT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldStateHash, v))
+}
+
+// StateHashLTE applies the LTE predicate on the "state_hash" field.
+func StateHashLTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldStateHash, v))
+}
+
+// StateHashContains applies the Contains predicate on the "state_hash" field.
+func StateHashContains(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContains(FieldStateHash, v))
+}
+
+// StateHashHasPrefix applies the HasPrefix predicate on the "state_hash" field.
+func StateHashHasPrefix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasPrefix(FieldStateHash, v))
+}
+
+// StateHashHasSuffix applies the HasSuffix predicate on the "state_hash" field.
+func StateHashHasSuffix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasSuffix(FieldStateHash, v))
+}
+
+// StateHashIsNil applies the IsNil predicate on the "state_hash" field.
+func StateHashIsNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldIsNull(FieldStateHash))
+}
+
+// StateHashNotNil applies the NotNil predicate on the "state_hash" field.
+func StateHashNotNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotNull(FieldStateHash))
+}
+
+// StateHashEqualFold applies the EqualFold predicate on the "state_hash" field.
+func StateHashEqualFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEqualFold(FieldStateHash, v))
+}
+
+// StateHashContainsFold applies the ContainsFold predicate on the "state_hash" field.
+func StateHashContainsFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContainsFold(FieldStateHash, v))
+}
+
+// ProjectorVersionEQ applies the EQ predicate on the "projector_version" field.
+func ProjectorVersionEQ(v int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldProjectorVersion, v))
+}
+
+// ProjectorVersionNEQ applies the NEQ predicate on the "projector_version" field.
+func ProjectorVersionNEQ(v int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldProjectorVersion, v))
+}
+
+// ProjectorVersionIn applies the In predicate on the "projector_version" field.
+func ProjectorVersionIn(vs ...int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldProjectorVersion, vs...))
+}
+
+// ProjectorVersionNotIn applies the NotIn predicate on the "projector_version" field.
+func ProjectorVersionNotIn(vs ...int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldProjectorVersion, vs...))
+}
+
+// ProjectorVersionGT applies the GT predicate on the "projector_version" field.
+func ProjectorVersionGT(v int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldProjectorVersion, v))
+}
+
+// ProjectorVersionGTE applies the GTE predicate on the "projector_version" field.
+func ProjectorVersionGTE(v int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldProjectorVersion, v))
+}
+
+// ProjectorVersionLT applies the LT predicate on the "projector_version" field.
+func ProjectorVersionLT(v int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldProjectorVersion, v))
+}
+
+// ProjectorVersionLTE applies the LTE predicate on the "projector_version" field.
+func ProjectorVersionLTE(v int) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldProjectorVersion, v))
+}
+
+// ProjectedAtEQ applies the EQ predicate on the "projected_at" field.
+func ProjectedAtEQ(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldProjectedAt, v))
+}
+
+// ProjectedAtNEQ applies the NEQ predicate on the "projected_at" field.
+func ProjectedAtNEQ(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldProjectedAt, v))
+}
+
+// ProjectedAtIn applies the In predicate on the "projected_at" field.
+func ProjectedAtIn(vs ...time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldProjectedAt, vs...))
+}
+
+// ProjectedAtNotIn applies the NotIn predicate on the "projected_at" field.
+func ProjectedAtNotIn(vs ...time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldProjectedAt, vs...))
+}
+
+// ProjectedAtGT applies the GT predicate on the "projected_at" field.
+func ProjectedAtGT(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldProjectedAt, v))
+}
+
+// ProjectedAtGTE applies the GTE predicate on the "projected_at" field.
+func ProjectedAtGTE(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldProjectedAt, v))
+}
+
+// ProjectedAtLT applies the LT predicate on the "projected_at" field.
+func ProjectedAtLT(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldProjectedAt, v))
+}
+
+// ProjectedAtLTE applies the LTE predicate on the "projected_at" field.
+func ProjectedAtLTE(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldProjectedAt, v))
+}
+
+// ProjectedAtIsNil applies the IsNil predicate on the "projected_at" field.
+func ProjectedAtIsNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldIsNull(FieldProjectedAt))
+}
+
+// ProjectedAtNotNil applies the NotNil predicate on the "projected_at" field.
+func ProjectedAtNotNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotNull(FieldProjectedAt))
+}
+
 // LastChangedAtEQ applies the EQ predicate on the "last_changed_at" field.
 func LastChangedAtEQ(v time.Time) predicate.Relationship {
 	return predicate.Relationship(sql.FieldEQ(FieldLastChangedAt, v))
@@ -1720,6 +1900,144 @@ func HasSnapshots() predicate.Relationship {
 func HasSnapshotsWith(preds ...predicate.RelationshipStateSnapshot) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		step := newSnapshotsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasProjectionJobs applies the HasEdge predicate on the "projection_jobs" edge.
+func HasProjectionJobs() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ProjectionJobsTable, ProjectionJobsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasProjectionJobsWith applies the HasEdge predicate on the "projection_jobs" edge with a given conditions (other predicates).
+func HasProjectionJobsWith(preds ...predicate.RelationshipProjectionJob) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := newProjectionJobsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasTrustEvents applies the HasEdge predicate on the "trust_events" edge.
+func HasTrustEvents() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, TrustEventsTable, TrustEventsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTrustEventsWith applies the HasEdge predicate on the "trust_events" edge with a given conditions (other predicates).
+func HasTrustEventsWith(preds ...predicate.RevenueTrustEvent) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := newTrustEventsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasProposedIdentityCandidates applies the HasEdge predicate on the "proposed_identity_candidates" edge.
+func HasProposedIdentityCandidates() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ProposedIdentityCandidatesTable, ProposedIdentityCandidatesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasProposedIdentityCandidatesWith applies the HasEdge predicate on the "proposed_identity_candidates" edge with a given conditions (other predicates).
+func HasProposedIdentityCandidatesWith(preds ...predicate.RelationshipIdentityCandidate) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := newProposedIdentityCandidatesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasExistingIdentityCandidates applies the HasEdge predicate on the "existing_identity_candidates" edge.
+func HasExistingIdentityCandidates() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ExistingIdentityCandidatesTable, ExistingIdentityCandidatesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasExistingIdentityCandidatesWith applies the HasEdge predicate on the "existing_identity_candidates" edge with a given conditions (other predicates).
+func HasExistingIdentityCandidatesWith(preds ...predicate.RelationshipIdentityCandidate) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := newExistingIdentityCandidatesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasReviewAcknowledgements applies the HasEdge predicate on the "review_acknowledgements" edge.
+func HasReviewAcknowledgements() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ReviewAcknowledgementsTable, ReviewAcknowledgementsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasReviewAcknowledgementsWith applies the HasEdge predicate on the "review_acknowledgements" edge with a given conditions (other predicates).
+func HasReviewAcknowledgementsWith(preds ...predicate.RelationshipReviewAcknowledgement) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := newReviewAcknowledgementsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasAttentionItems applies the HasEdge predicate on the "attention_items" edge.
+func HasAttentionItems() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, AttentionItemsTable, AttentionItemsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAttentionItemsWith applies the HasEdge predicate on the "attention_items" edge with a given conditions (other predicates).
+func HasAttentionItemsWith(preds ...predicate.RelationshipAttentionItem) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := newAttentionItemsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

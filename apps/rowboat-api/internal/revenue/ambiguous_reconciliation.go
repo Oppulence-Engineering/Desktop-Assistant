@@ -219,28 +219,50 @@ func (r *AmbiguousExecutionReconciler) Run(ctx context.Context) error {
 
 func (r *AmbiguousExecutionReconciler) sweep(ctx context.Context) {
 	now := r.svc.now().UTC()
-	users, err := r.svc.client.User.Query().
-		Where(user.HasRevenueActionsWith(
+	actions, err := r.svc.client.RevenueAction.Query().
+		Where(
 			revenueaction.ExecutionStatusEQ(ExecAmbiguous),
 			revenueaction.ReconciliationAttemptsLT(maxReconciliationAttempts),
 			revenueaction.Or(
 				revenueaction.ReconciliationNextAtIsNil(),
 				revenueaction.ReconciliationNextAtLTE(now),
 			),
-		)).
-		Order(ent.Asc(user.FieldCreatedAt)).
+		).
+		WithUser().WithWorkspace().
+		Order(ent.Asc(revenueaction.FieldReconciliationNextAt), ent.Asc(revenueaction.FieldUpdatedAt)).
 		Limit(r.maxUsers).
-		All(auth.WithInternal(ctx))
+		All(auth.WithInternalOnly(ctx))
 	if err != nil {
-		r.log.Warn("ambiguous execution reconciliation: list tenants", zap.Error(err))
+		r.log.Warn("ambiguous execution reconciliation: list actions", zap.Error(err))
 		return
 	}
-	for _, owner := range users {
+	for _, action := range actions {
 		if ctx.Err() != nil {
 			return
 		}
-		if _, err := r.svc.ReconcileAmbiguousExecutions(auth.WithUser(ctx, owner), owner, 25); err != nil {
-			r.log.Warn("ambiguous execution reconciliation", zap.String("user", owner.ID.String()), zap.Error(err))
+		actor, actorErr := action.Edges.UserOrErr()
+		ws, workspaceErr := action.Edges.WorkspaceOrErr()
+		if actorErr == nil && action.AssignedUserID != nil && actor.ID != *action.AssignedUserID {
+			actor, actorErr = r.svc.client.User.Get(auth.WithInternalOnly(ctx), *action.AssignedUserID)
+		}
+		if actorErr != nil || workspaceErr != nil {
+			_, _ = r.svc.markReconciliationManual(
+				auth.WithInternalOnly(context.WithoutCancel(ctx)), action,
+				"assigned provider actor or workspace is unavailable",
+			)
+			continue
+		}
+		if _, capabilityErr := r.svc.RequireWorkspaceCapability(
+			auth.WithInternalOnly(ctx), actor, ws, WorkspaceExecute,
+		); capabilityErr != nil {
+			_, _ = r.svc.markReconciliationManual(
+				auth.WithInternalOnly(context.WithoutCancel(ctx)), action,
+				"assigned provider actor is no longer authorized for this workspace",
+			)
+			continue
+		}
+		if _, err := r.svc.ReconcileAmbiguousAction(auth.WithUser(ctx, actor), actor, action.ID); err != nil {
+			r.log.Warn("ambiguous execution reconciliation", zap.String("action", action.ID.String()), zap.Error(err))
 		}
 	}
 }

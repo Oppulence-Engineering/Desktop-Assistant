@@ -15,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
@@ -427,8 +428,8 @@ func TestAcmeGoldenPathProjectsFourSourcesIntoOneRelationship(t *testing.T) {
 		t.Fatalf("want unified four-source timeline, got %d err=%v", len(timeline), err)
 	}
 	sources, err := f.svc.RelationshipSourceStatuses(f.ctx, f.user)
-	if err != nil || len(sources) != 4 {
-		t.Fatalf("want four source statuses, got %d err=%v", len(sources), err)
+	if err != nil || len(sources) != 3 {
+		t.Fatalf("want canonical Google, Slack, and HubSpot source statuses, got %d err=%v", len(sources), err)
 	}
 }
 
@@ -520,12 +521,23 @@ func TestIdentityAnchorConflictWaitsForReview(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+	action, err := f.svc.CreateAction(f.ctx, f.user, ActionInput{
+		RelationshipID: other.ID, ActionType: "warm_follow_up", Channel: "email",
+		Reason: "exact destination must be reviewed", RecipientEmail: "buyer@other.example",
+		ProposedSubject: "Hello", ProposedMessage: "Hello", ExecutionMode: ExecModeDraft,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	conflicting, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
 		RelationshipID: other.ID, Source: "hubspot", ExternalID: "wrong-link", EventType: "company.updated",
 		ResourceRefs: []string{"hubspot:company:123"}, OccurredAt: now.Add(time.Minute),
 	}})
-	if !errors.Is(err, ErrConflict) {
-		t.Fatalf("identity collision must wait for review, got %v", err)
+	if err != nil {
+		t.Fatalf("conflicting evidence must be durably quarantined, got %v", err)
+	}
+	if conflicting[0].Relationship.ID != other.ID {
+		t.Fatalf("conflicting observation moved to an unreviewed winner: got %s want %s", conflicting[0].Relationship.ID, other.ID)
 	}
 	identities, err := f.client.RelationshipIdentity.Query().WithRelationship().All(f.ctx)
 	if err != nil || len(identities) != 1 {
@@ -534,6 +546,18 @@ func TestIdentityAnchorConflictWaitsForReview(t *testing.T) {
 	owner, _ := identities[0].Edges.RelationshipOrErr()
 	if owner.ID != first[0].Relationship.ID {
 		t.Fatalf("identity owner changed during conflict: got %s", owner.ID)
+	}
+	candidate, err := f.client.RelationshipIdentityCandidate.Query().
+		Where(relationshipidentitycandidate.StatusEQ(identityPending)).
+		WithProposedRelationship().WithExistingRelationship().Only(f.ctx)
+	if err != nil {
+		t.Fatalf("durable candidate: %v", err)
+	}
+	if candidate.EvidenceCount != 1 || len(candidate.EvidenceRefs) != 1 {
+		t.Fatalf("candidate must include accepted evidence: %#v", candidate.EvidenceRefs)
+	}
+	if _, err := f.svc.Approve(f.ctx, f.user, action.ID, false); !errors.Is(err, ErrIdentityUnresolved) {
+		t.Fatalf("unresolved destination must block approval, got %v", err)
 	}
 }
 

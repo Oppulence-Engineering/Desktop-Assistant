@@ -126,16 +126,19 @@ type RevenueActionEdges struct {
 	Decisions []*PolicyDecisionSnapshot `json:"decisions,omitempty"`
 	// Outcomes holds the value of the outcomes edge.
 	Outcomes []*ActionOutcome `json:"outcomes,omitempty"`
+	// TrustEvents holds the value of the trust_events edge.
+	TrustEvents []*RevenueTrustEvent `json:"trust_events,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [7]bool
+	loadedTypes [8]bool
 	// totalCount holds the count of the edges above.
-	totalCount [7]map[string]int
+	totalCount [8]map[string]int
 
-	namedEvidences map[string][]*RevenueEvidence
-	namedRevisions map[string][]*RevenueActionRevision
-	namedDecisions map[string][]*PolicyDecisionSnapshot
-	namedOutcomes  map[string][]*ActionOutcome
+	namedEvidences   map[string][]*RevenueEvidence
+	namedRevisions   map[string][]*RevenueActionRevision
+	namedDecisions   map[string][]*PolicyDecisionSnapshot
+	namedOutcomes    map[string][]*ActionOutcome
+	namedTrustEvents map[string][]*RevenueTrustEvent
 }
 
 // WorkspaceOrErr returns the Workspace value or an error if the edge
@@ -205,6 +208,15 @@ func (e RevenueActionEdges) OutcomesOrErr() ([]*ActionOutcome, error) {
 		return e.Outcomes, nil
 	}
 	return nil, &NotLoadedError{edge: "outcomes"}
+}
+
+// TrustEventsOrErr returns the TrustEvents value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueActionEdges) TrustEventsOrErr() ([]*RevenueTrustEvent, error) {
+	if e.loadedTypes[7] {
+		return e.TrustEvents, nil
+	}
+	return nil, &NotLoadedError{edge: "trust_events"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -568,6 +580,11 @@ func (_m *RevenueAction) QueryOutcomes() *ActionOutcomeQuery {
 	return NewRevenueActionClient(_m.config).QueryOutcomes(_m)
 }
 
+// QueryTrustEvents queries the "trust_events" edge of the RevenueAction entity.
+func (_m *RevenueAction) QueryTrustEvents() *RevenueTrustEventQuery {
+	return NewRevenueActionClient(_m.config).QueryTrustEvents(_m)
+}
+
 // Update returns a builder for updating this RevenueAction.
 // Note that you need to call RevenueAction.Unwrap() before calling this method if this RevenueAction
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -825,6 +842,30 @@ func (_m *RevenueAction) appendNamedOutcomes(name string, edges ...*ActionOutcom
 		_m.Edges.namedOutcomes[name] = []*ActionOutcome{}
 	} else {
 		_m.Edges.namedOutcomes[name] = append(_m.Edges.namedOutcomes[name], edges...)
+	}
+}
+
+// NamedTrustEvents returns the TrustEvents named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueAction) NamedTrustEvents(name string) ([]*RevenueTrustEvent, error) {
+	if _m.Edges.namedTrustEvents == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedTrustEvents[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueAction) appendNamedTrustEvents(name string, edges ...*RevenueTrustEvent) {
+	if _m.Edges.namedTrustEvents == nil {
+		_m.Edges.namedTrustEvents = make(map[string][]*RevenueTrustEvent)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedTrustEvents[name] = []*RevenueTrustEvent{}
+	} else {
+		_m.Edges.namedTrustEvents[name] = append(_m.Edges.namedTrustEvents[name], edges...)
 	}
 }
 

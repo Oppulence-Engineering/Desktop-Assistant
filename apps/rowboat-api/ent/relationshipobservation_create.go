@@ -154,6 +154,20 @@ func (_c *RelationshipObservationCreate) SetPayloadCiphertext(v []byte) *Relatio
 	return _c
 }
 
+// SetEncryptionKeyVersion sets the "encryption_key_version" field.
+func (_c *RelationshipObservationCreate) SetEncryptionKeyVersion(v int) *RelationshipObservationCreate {
+	_c.mutation.SetEncryptionKeyVersion(v)
+	return _c
+}
+
+// SetNillableEncryptionKeyVersion sets the "encryption_key_version" field if the given value is not nil.
+func (_c *RelationshipObservationCreate) SetNillableEncryptionKeyVersion(v *int) *RelationshipObservationCreate {
+	if v != nil {
+		_c.SetEncryptionKeyVersion(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *RelationshipObservationCreate) SetID(v uuid.UUID) *RelationshipObservationCreate {
 	_c.mutation.SetID(v)
@@ -267,6 +281,10 @@ func (_c *RelationshipObservationCreate) defaults() {
 		v := relationshipobservation.DefaultNormalizedFactsJSON
 		_c.mutation.SetNormalizedFactsJSON(v)
 	}
+	if _, ok := _c.mutation.EncryptionKeyVersion(); !ok {
+		v := relationshipobservation.DefaultEncryptionKeyVersion
+		_c.mutation.SetEncryptionKeyVersion(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := relationshipobservation.DefaultID()
 		_c.mutation.SetID(v)
@@ -323,6 +341,14 @@ func (_c *RelationshipObservationCreate) check() error {
 	if v, ok := _c.mutation.ContentHash(); ok {
 		if err := relationshipobservation.ContentHashValidator(v); err != nil {
 			return &ValidationError{Name: "content_hash", err: fmt.Errorf(`ent: validator failed for field "RelationshipObservation.content_hash": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.EncryptionKeyVersion(); !ok {
+		return &ValidationError{Name: "encryption_key_version", err: errors.New(`ent: missing required field "RelationshipObservation.encryption_key_version"`)}
+	}
+	if v, ok := _c.mutation.EncryptionKeyVersion(); ok {
+		if err := relationshipobservation.EncryptionKeyVersionValidator(v); err != nil {
+			return &ValidationError{Name: "encryption_key_version", err: fmt.Errorf(`ent: validator failed for field "RelationshipObservation.encryption_key_version": %w`, err)}
 		}
 	}
 	if len(_c.mutation.WorkspaceIDs()) == 0 {
@@ -421,6 +447,10 @@ func (_c *RelationshipObservationCreate) createSpec() (*RelationshipObservation,
 	if value, ok := _c.mutation.PayloadCiphertext(); ok {
 		_spec.SetField(relationshipobservation.FieldPayloadCiphertext, field.TypeBytes, value)
 		_node.PayloadCiphertext = value
+	}
+	if value, ok := _c.mutation.EncryptionKeyVersion(); ok {
+		_spec.SetField(relationshipobservation.FieldEncryptionKeyVersion, field.TypeInt, value)
+		_node.EncryptionKeyVersion = value
 	}
 	if nodes := _c.mutation.WorkspaceIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -703,6 +733,24 @@ func (u *RelationshipObservationUpsert) ClearPayloadCiphertext() *RelationshipOb
 	return u
 }
 
+// SetEncryptionKeyVersion sets the "encryption_key_version" field.
+func (u *RelationshipObservationUpsert) SetEncryptionKeyVersion(v int) *RelationshipObservationUpsert {
+	u.Set(relationshipobservation.FieldEncryptionKeyVersion, v)
+	return u
+}
+
+// UpdateEncryptionKeyVersion sets the "encryption_key_version" field to the value that was provided on create.
+func (u *RelationshipObservationUpsert) UpdateEncryptionKeyVersion() *RelationshipObservationUpsert {
+	u.SetExcluded(relationshipobservation.FieldEncryptionKeyVersion)
+	return u
+}
+
+// AddEncryptionKeyVersion adds v to the "encryption_key_version" field.
+func (u *RelationshipObservationUpsert) AddEncryptionKeyVersion(v int) *RelationshipObservationUpsert {
+	u.Add(relationshipobservation.FieldEncryptionKeyVersion, v)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -940,6 +988,27 @@ func (u *RelationshipObservationUpsertOne) UpdatePayloadCiphertext() *Relationsh
 func (u *RelationshipObservationUpsertOne) ClearPayloadCiphertext() *RelationshipObservationUpsertOne {
 	return u.Update(func(s *RelationshipObservationUpsert) {
 		s.ClearPayloadCiphertext()
+	})
+}
+
+// SetEncryptionKeyVersion sets the "encryption_key_version" field.
+func (u *RelationshipObservationUpsertOne) SetEncryptionKeyVersion(v int) *RelationshipObservationUpsertOne {
+	return u.Update(func(s *RelationshipObservationUpsert) {
+		s.SetEncryptionKeyVersion(v)
+	})
+}
+
+// AddEncryptionKeyVersion adds v to the "encryption_key_version" field.
+func (u *RelationshipObservationUpsertOne) AddEncryptionKeyVersion(v int) *RelationshipObservationUpsertOne {
+	return u.Update(func(s *RelationshipObservationUpsert) {
+		s.AddEncryptionKeyVersion(v)
+	})
+}
+
+// UpdateEncryptionKeyVersion sets the "encryption_key_version" field to the value that was provided on create.
+func (u *RelationshipObservationUpsertOne) UpdateEncryptionKeyVersion() *RelationshipObservationUpsertOne {
+	return u.Update(func(s *RelationshipObservationUpsert) {
+		s.UpdateEncryptionKeyVersion()
 	})
 }
 
@@ -1347,6 +1416,27 @@ func (u *RelationshipObservationUpsertBulk) UpdatePayloadCiphertext() *Relations
 func (u *RelationshipObservationUpsertBulk) ClearPayloadCiphertext() *RelationshipObservationUpsertBulk {
 	return u.Update(func(s *RelationshipObservationUpsert) {
 		s.ClearPayloadCiphertext()
+	})
+}
+
+// SetEncryptionKeyVersion sets the "encryption_key_version" field.
+func (u *RelationshipObservationUpsertBulk) SetEncryptionKeyVersion(v int) *RelationshipObservationUpsertBulk {
+	return u.Update(func(s *RelationshipObservationUpsert) {
+		s.SetEncryptionKeyVersion(v)
+	})
+}
+
+// AddEncryptionKeyVersion adds v to the "encryption_key_version" field.
+func (u *RelationshipObservationUpsertBulk) AddEncryptionKeyVersion(v int) *RelationshipObservationUpsertBulk {
+	return u.Update(func(s *RelationshipObservationUpsert) {
+		s.AddEncryptionKeyVersion(v)
+	})
+}
+
+// UpdateEncryptionKeyVersion sets the "encryption_key_version" field to the value that was provided on create.
+func (u *RelationshipObservationUpsertBulk) UpdateEncryptionKeyVersion() *RelationshipObservationUpsertBulk {
+	return u.Update(func(s *RelationshipObservationUpsert) {
+		s.UpdateEncryptionKeyVersion()
 	})
 }
 

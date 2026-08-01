@@ -137,6 +137,20 @@ func (_c *RevenueEvidenceCreate) SetPayloadCiphertext(v []byte) *RevenueEvidence
 	return _c
 }
 
+// SetEncryptionKeyVersion sets the "encryption_key_version" field.
+func (_c *RevenueEvidenceCreate) SetEncryptionKeyVersion(v int) *RevenueEvidenceCreate {
+	_c.mutation.SetEncryptionKeyVersion(v)
+	return _c
+}
+
+// SetNillableEncryptionKeyVersion sets the "encryption_key_version" field if the given value is not nil.
+func (_c *RevenueEvidenceCreate) SetNillableEncryptionKeyVersion(v *int) *RevenueEvidenceCreate {
+	if v != nil {
+		_c.SetEncryptionKeyVersion(*v)
+	}
+	return _c
+}
+
 // SetOccurredAt sets the "occurred_at" field.
 func (_c *RevenueEvidenceCreate) SetOccurredAt(v time.Time) *RevenueEvidenceCreate {
 	_c.mutation.SetOccurredAt(v)
@@ -279,6 +293,10 @@ func (_c *RevenueEvidenceCreate) defaults() {
 		v := revenueevidence.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.EncryptionKeyVersion(); !ok {
+		v := revenueevidence.DefaultEncryptionKeyVersion
+		_c.mutation.SetEncryptionKeyVersion(v)
+	}
 	if _, ok := _c.mutation.ExternalEvidenceRefs(); !ok {
 		v := revenueevidence.DefaultExternalEvidenceRefs
 		_c.mutation.SetExternalEvidenceRefs(v)
@@ -319,6 +337,14 @@ func (_c *RevenueEvidenceCreate) check() error {
 	if v, ok := _c.mutation.ContentHash(); ok {
 		if err := revenueevidence.ContentHashValidator(v); err != nil {
 			return &ValidationError{Name: "content_hash", err: fmt.Errorf(`ent: validator failed for field "RevenueEvidence.content_hash": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.EncryptionKeyVersion(); !ok {
+		return &ValidationError{Name: "encryption_key_version", err: errors.New(`ent: missing required field "RevenueEvidence.encryption_key_version"`)}
+	}
+	if v, ok := _c.mutation.EncryptionKeyVersion(); ok {
+		if err := revenueevidence.EncryptionKeyVersionValidator(v); err != nil {
+			return &ValidationError{Name: "encryption_key_version", err: fmt.Errorf(`ent: validator failed for field "RevenueEvidence.encryption_key_version": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.OccurredAt(); !ok {
@@ -411,6 +437,10 @@ func (_c *RevenueEvidenceCreate) createSpec() (*RevenueEvidence, *sqlgraph.Creat
 	if value, ok := _c.mutation.PayloadCiphertext(); ok {
 		_spec.SetField(revenueevidence.FieldPayloadCiphertext, field.TypeBytes, value)
 		_node.PayloadCiphertext = value
+	}
+	if value, ok := _c.mutation.EncryptionKeyVersion(); ok {
+		_spec.SetField(revenueevidence.FieldEncryptionKeyVersion, field.TypeInt, value)
+		_node.EncryptionKeyVersion = value
 	}
 	if value, ok := _c.mutation.OccurredAt(); ok {
 		_spec.SetField(revenueevidence.FieldOccurredAt, field.TypeTime, value)
@@ -696,6 +726,24 @@ func (u *RevenueEvidenceUpsert) ClearPayloadCiphertext() *RevenueEvidenceUpsert 
 	return u
 }
 
+// SetEncryptionKeyVersion sets the "encryption_key_version" field.
+func (u *RevenueEvidenceUpsert) SetEncryptionKeyVersion(v int) *RevenueEvidenceUpsert {
+	u.Set(revenueevidence.FieldEncryptionKeyVersion, v)
+	return u
+}
+
+// UpdateEncryptionKeyVersion sets the "encryption_key_version" field to the value that was provided on create.
+func (u *RevenueEvidenceUpsert) UpdateEncryptionKeyVersion() *RevenueEvidenceUpsert {
+	u.SetExcluded(revenueevidence.FieldEncryptionKeyVersion)
+	return u
+}
+
+// AddEncryptionKeyVersion adds v to the "encryption_key_version" field.
+func (u *RevenueEvidenceUpsert) AddEncryptionKeyVersion(v int) *RevenueEvidenceUpsert {
+	u.Add(revenueevidence.FieldEncryptionKeyVersion, v)
+	return u
+}
+
 // SetOccurredAt sets the "occurred_at" field.
 func (u *RevenueEvidenceUpsert) SetOccurredAt(v time.Time) *RevenueEvidenceUpsert {
 	u.Set(revenueevidence.FieldOccurredAt, v)
@@ -941,6 +989,27 @@ func (u *RevenueEvidenceUpsertOne) UpdatePayloadCiphertext() *RevenueEvidenceUps
 func (u *RevenueEvidenceUpsertOne) ClearPayloadCiphertext() *RevenueEvidenceUpsertOne {
 	return u.Update(func(s *RevenueEvidenceUpsert) {
 		s.ClearPayloadCiphertext()
+	})
+}
+
+// SetEncryptionKeyVersion sets the "encryption_key_version" field.
+func (u *RevenueEvidenceUpsertOne) SetEncryptionKeyVersion(v int) *RevenueEvidenceUpsertOne {
+	return u.Update(func(s *RevenueEvidenceUpsert) {
+		s.SetEncryptionKeyVersion(v)
+	})
+}
+
+// AddEncryptionKeyVersion adds v to the "encryption_key_version" field.
+func (u *RevenueEvidenceUpsertOne) AddEncryptionKeyVersion(v int) *RevenueEvidenceUpsertOne {
+	return u.Update(func(s *RevenueEvidenceUpsert) {
+		s.AddEncryptionKeyVersion(v)
+	})
+}
+
+// UpdateEncryptionKeyVersion sets the "encryption_key_version" field to the value that was provided on create.
+func (u *RevenueEvidenceUpsertOne) UpdateEncryptionKeyVersion() *RevenueEvidenceUpsertOne {
+	return u.Update(func(s *RevenueEvidenceUpsert) {
+		s.UpdateEncryptionKeyVersion()
 	})
 }
 
@@ -1362,6 +1431,27 @@ func (u *RevenueEvidenceUpsertBulk) UpdatePayloadCiphertext() *RevenueEvidenceUp
 func (u *RevenueEvidenceUpsertBulk) ClearPayloadCiphertext() *RevenueEvidenceUpsertBulk {
 	return u.Update(func(s *RevenueEvidenceUpsert) {
 		s.ClearPayloadCiphertext()
+	})
+}
+
+// SetEncryptionKeyVersion sets the "encryption_key_version" field.
+func (u *RevenueEvidenceUpsertBulk) SetEncryptionKeyVersion(v int) *RevenueEvidenceUpsertBulk {
+	return u.Update(func(s *RevenueEvidenceUpsert) {
+		s.SetEncryptionKeyVersion(v)
+	})
+}
+
+// AddEncryptionKeyVersion adds v to the "encryption_key_version" field.
+func (u *RevenueEvidenceUpsertBulk) AddEncryptionKeyVersion(v int) *RevenueEvidenceUpsertBulk {
+	return u.Update(func(s *RevenueEvidenceUpsert) {
+		s.AddEncryptionKeyVersion(v)
+	})
+}
+
+// UpdateEncryptionKeyVersion sets the "encryption_key_version" field to the value that was provided on create.
+func (u *RevenueEvidenceUpsertBulk) UpdateEncryptionKeyVersion() *RevenueEvidenceUpsertBulk {
+	return u.Update(func(s *RevenueEvidenceUpsert) {
+		s.UpdateEncryptionKeyVersion()
 	})
 }
 

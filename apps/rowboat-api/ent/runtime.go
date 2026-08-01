@@ -43,9 +43,15 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitydecision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshiplineageevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipprojectionjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
@@ -53,13 +59,16 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenuetrustevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscriptionhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 	"github.com/google/uuid"
 )
 
@@ -1567,12 +1576,18 @@ func init() {
 	relationship.DefaultStateVersion = relationshipDescStateVersion.Default.(int)
 	// relationship.StateVersionValidator is a validator for the "state_version" field. It is called by the builders before save.
 	relationship.StateVersionValidator = relationshipDescStateVersion.Validators[0].(func(int) error)
+	// relationshipDescProjectorVersion is the schema descriptor for projector_version field.
+	relationshipDescProjectorVersion := relationshipFields[19].Descriptor()
+	// relationship.DefaultProjectorVersion holds the default value on creation for the projector_version field.
+	relationship.DefaultProjectorVersion = relationshipDescProjectorVersion.Default.(int)
+	// relationship.ProjectorVersionValidator is a validator for the "projector_version" field. It is called by the builders before save.
+	relationship.ProjectorVersionValidator = relationshipDescProjectorVersion.Validators[0].(func(int) error)
 	// relationshipDescRisks is the schema descriptor for risks field.
-	relationshipDescRisks := relationshipFields[19].Descriptor()
+	relationshipDescRisks := relationshipFields[22].Descriptor()
 	// relationship.DefaultRisks holds the default value on creation for the risks field.
 	relationship.DefaultRisks = relationshipDescRisks.Default.([]string)
 	// relationshipDescMilestones is the schema descriptor for milestones field.
-	relationshipDescMilestones := relationshipFields[20].Descriptor()
+	relationshipDescMilestones := relationshipFields[23].Descriptor()
 	// relationship.DefaultMilestones holds the default value on creation for the milestones field.
 	relationship.DefaultMilestones = relationshipDescMilestones.Default.([]string)
 	// relationshipDescID is the schema descriptor for id field.
@@ -1606,8 +1621,14 @@ func init() {
 	relationshipassertionDescSourceType := relationshipassertionFields[2].Descriptor()
 	// relationshipassertion.SourceTypeValidator is a validator for the "source_type" field. It is called by the builders before save.
 	relationshipassertion.SourceTypeValidator = relationshipassertionDescSourceType.Validators[0].(func(string) error)
+	// relationshipassertionDescStatus is the schema descriptor for status field.
+	relationshipassertionDescStatus := relationshipassertionFields[3].Descriptor()
+	// relationshipassertion.DefaultStatus holds the default value on creation for the status field.
+	relationshipassertion.DefaultStatus = relationshipassertionDescStatus.Default.(string)
+	// relationshipassertion.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	relationshipassertion.StatusValidator = relationshipassertionDescStatus.Validators[0].(func(string) error)
 	// relationshipassertionDescConfidence is the schema descriptor for confidence field.
-	relationshipassertionDescConfidence := relationshipassertionFields[3].Descriptor()
+	relationshipassertionDescConfidence := relationshipassertionFields[4].Descriptor()
 	// relationshipassertion.DefaultConfidence holds the default value on creation for the confidence field.
 	relationshipassertion.DefaultConfidence = relationshipassertionDescConfidence.Default.(float64)
 	// relationshipassertion.ConfidenceValidator is a validator for the "confidence" field. It is called by the builders before save.
@@ -1626,14 +1647,133 @@ func init() {
 			return nil
 		}
 	}()
+	// relationshipassertionDescExtractorVersion is the schema descriptor for extractor_version field.
+	relationshipassertionDescExtractorVersion := relationshipassertionFields[11].Descriptor()
+	// relationshipassertion.DefaultExtractorVersion holds the default value on creation for the extractor_version field.
+	relationshipassertion.DefaultExtractorVersion = relationshipassertionDescExtractorVersion.Default.(string)
+	// relationshipassertionDescProjectorCompatVersion is the schema descriptor for projector_compat_version field.
+	relationshipassertionDescProjectorCompatVersion := relationshipassertionFields[12].Descriptor()
+	// relationshipassertion.DefaultProjectorCompatVersion holds the default value on creation for the projector_compat_version field.
+	relationshipassertion.DefaultProjectorCompatVersion = relationshipassertionDescProjectorCompatVersion.Default.(int)
+	// relationshipassertion.ProjectorCompatVersionValidator is a validator for the "projector_compat_version" field. It is called by the builders before save.
+	relationshipassertion.ProjectorCompatVersionValidator = relationshipassertionDescProjectorCompatVersion.Validators[0].(func(int) error)
 	// relationshipassertionDescSupportingObservationIds is the schema descriptor for supporting_observation_ids field.
-	relationshipassertionDescSupportingObservationIds := relationshipassertionFields[7].Descriptor()
+	relationshipassertionDescSupportingObservationIds := relationshipassertionFields[13].Descriptor()
 	// relationshipassertion.DefaultSupportingObservationIds holds the default value on creation for the supporting_observation_ids field.
 	relationshipassertion.DefaultSupportingObservationIds = relationshipassertionDescSupportingObservationIds.Default.([]string)
 	// relationshipassertionDescID is the schema descriptor for id field.
 	relationshipassertionDescID := relationshipassertionMixinFields0[0].Descriptor()
 	// relationshipassertion.DefaultID holds the default value on creation for the id field.
 	relationshipassertion.DefaultID = relationshipassertionDescID.Default.(func() uuid.UUID)
+	relationshipattentionitemMixin := schema.RelationshipAttentionItem{}.Mixin()
+	relationshipattentionitemMixinFields0 := relationshipattentionitemMixin[0].Fields()
+	_ = relationshipattentionitemMixinFields0
+	relationshipattentionitemFields := schema.RelationshipAttentionItem{}.Fields()
+	_ = relationshipattentionitemFields
+	// relationshipattentionitemDescCreatedAt is the schema descriptor for created_at field.
+	relationshipattentionitemDescCreatedAt := relationshipattentionitemMixinFields0[1].Descriptor()
+	// relationshipattentionitem.DefaultCreatedAt holds the default value on creation for the created_at field.
+	relationshipattentionitem.DefaultCreatedAt = relationshipattentionitemDescCreatedAt.Default.(func() time.Time)
+	// relationshipattentionitemDescUpdatedAt is the schema descriptor for updated_at field.
+	relationshipattentionitemDescUpdatedAt := relationshipattentionitemMixinFields0[2].Descriptor()
+	// relationshipattentionitem.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	relationshipattentionitem.DefaultUpdatedAt = relationshipattentionitemDescUpdatedAt.Default.(func() time.Time)
+	// relationshipattentionitem.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	relationshipattentionitem.UpdateDefaultUpdatedAt = relationshipattentionitemDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// relationshipattentionitemDescStableKey is the schema descriptor for stable_key field.
+	relationshipattentionitemDescStableKey := relationshipattentionitemFields[0].Descriptor()
+	// relationshipattentionitem.StableKeyValidator is a validator for the "stable_key" field. It is called by the builders before save.
+	relationshipattentionitem.StableKeyValidator = relationshipattentionitemDescStableKey.Validators[0].(func(string) error)
+	// relationshipattentionitemDescVersion is the schema descriptor for version field.
+	relationshipattentionitemDescVersion := relationshipattentionitemFields[1].Descriptor()
+	// relationshipattentionitem.DefaultVersion holds the default value on creation for the version field.
+	relationshipattentionitem.DefaultVersion = relationshipattentionitemDescVersion.Default.(int)
+	// relationshipattentionitem.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	relationshipattentionitem.VersionValidator = relationshipattentionitemDescVersion.Validators[0].(func(int) error)
+	// relationshipattentionitemDescReasonCode is the schema descriptor for reason_code field.
+	relationshipattentionitemDescReasonCode := relationshipattentionitemFields[2].Descriptor()
+	// relationshipattentionitem.ReasonCodeValidator is a validator for the "reason_code" field. It is called by the builders before save.
+	relationshipattentionitem.ReasonCodeValidator = relationshipattentionitemDescReasonCode.Validators[0].(func(string) error)
+	// relationshipattentionitemDescExplanation is the schema descriptor for explanation field.
+	relationshipattentionitemDescExplanation := relationshipattentionitemFields[3].Descriptor()
+	// relationshipattentionitem.ExplanationValidator is a validator for the "explanation" field. It is called by the builders before save.
+	relationshipattentionitem.ExplanationValidator = relationshipattentionitemDescExplanation.Validators[0].(func(string) error)
+	// relationshipattentionitemDescTriggeringObjectRef is the schema descriptor for triggering_object_ref field.
+	relationshipattentionitemDescTriggeringObjectRef := relationshipattentionitemFields[4].Descriptor()
+	// relationshipattentionitem.TriggeringObjectRefValidator is a validator for the "triggering_object_ref" field. It is called by the builders before save.
+	relationshipattentionitem.TriggeringObjectRefValidator = relationshipattentionitemDescTriggeringObjectRef.Validators[0].(func(string) error)
+	// relationshipattentionitemDescEvidenceRefs is the schema descriptor for evidence_refs field.
+	relationshipattentionitemDescEvidenceRefs := relationshipattentionitemFields[5].Descriptor()
+	// relationshipattentionitem.DefaultEvidenceRefs holds the default value on creation for the evidence_refs field.
+	relationshipattentionitem.DefaultEvidenceRefs = relationshipattentionitemDescEvidenceRefs.Default.([]string)
+	// relationshipattentionitemDescUrgencyBand is the schema descriptor for urgency_band field.
+	relationshipattentionitemDescUrgencyBand := relationshipattentionitemFields[6].Descriptor()
+	// relationshipattentionitem.UrgencyBandValidator is a validator for the "urgency_band" field. It is called by the builders before save.
+	relationshipattentionitem.UrgencyBandValidator = relationshipattentionitemDescUrgencyBand.Validators[0].(func(string) error)
+	// relationshipattentionitemDescRankScore is the schema descriptor for rank_score field.
+	relationshipattentionitemDescRankScore := relationshipattentionitemFields[7].Descriptor()
+	// relationshipattentionitem.RankScoreValidator is a validator for the "rank_score" field. It is called by the builders before save.
+	relationshipattentionitem.RankScoreValidator = func() func(int) error {
+		validators := relationshipattentionitemDescRankScore.Validators
+		fns := [...]func(int) error{
+			validators[0].(func(int) error),
+			validators[1].(func(int) error),
+		}
+		return func(rank_score int) error {
+			for _, fn := range fns {
+				if err := fn(rank_score); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// relationshipattentionitemDescRankFactorsJSON is the schema descriptor for rank_factors_json field.
+	relationshipattentionitemDescRankFactorsJSON := relationshipattentionitemFields[8].Descriptor()
+	// relationshipattentionitem.RankFactorsJSONValidator is a validator for the "rank_factors_json" field. It is called by the builders before save.
+	relationshipattentionitem.RankFactorsJSONValidator = relationshipattentionitemDescRankFactorsJSON.Validators[0].(func(string) error)
+	// relationshipattentionitemDescSourceRequirements is the schema descriptor for source_requirements field.
+	relationshipattentionitemDescSourceRequirements := relationshipattentionitemFields[9].Descriptor()
+	// relationshipattentionitem.DefaultSourceRequirements holds the default value on creation for the source_requirements field.
+	relationshipattentionitem.DefaultSourceRequirements = relationshipattentionitemDescSourceRequirements.Default.([]string)
+	// relationshipattentionitemDescRecommendationRevision is the schema descriptor for recommendation_revision field.
+	relationshipattentionitemDescRecommendationRevision := relationshipattentionitemFields[11].Descriptor()
+	// relationshipattentionitem.DefaultRecommendationRevision holds the default value on creation for the recommendation_revision field.
+	relationshipattentionitem.DefaultRecommendationRevision = relationshipattentionitemDescRecommendationRevision.Default.(int)
+	// relationshipattentionitem.RecommendationRevisionValidator is a validator for the "recommendation_revision" field. It is called by the builders before save.
+	relationshipattentionitem.RecommendationRevisionValidator = relationshipattentionitemDescRecommendationRevision.Validators[0].(func(int) error)
+	// relationshipattentionitemDescStatus is the schema descriptor for status field.
+	relationshipattentionitemDescStatus := relationshipattentionitemFields[13].Descriptor()
+	// relationshipattentionitem.DefaultStatus holds the default value on creation for the status field.
+	relationshipattentionitem.DefaultStatus = relationshipattentionitemDescStatus.Default.(string)
+	// relationshipattentionitem.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	relationshipattentionitem.StatusValidator = relationshipattentionitemDescStatus.Validators[0].(func(string) error)
+	// relationshipattentionitemDescDetectorVersion is the schema descriptor for detector_version field.
+	relationshipattentionitemDescDetectorVersion := relationshipattentionitemFields[17].Descriptor()
+	// relationshipattentionitem.DefaultDetectorVersion holds the default value on creation for the detector_version field.
+	relationshipattentionitem.DefaultDetectorVersion = relationshipattentionitemDescDetectorVersion.Default.(int)
+	// relationshipattentionitem.DetectorVersionValidator is a validator for the "detector_version" field. It is called by the builders before save.
+	relationshipattentionitem.DetectorVersionValidator = relationshipattentionitemDescDetectorVersion.Validators[0].(func(int) error)
+	// relationshipattentionitemDescProjectorVersion is the schema descriptor for projector_version field.
+	relationshipattentionitemDescProjectorVersion := relationshipattentionitemFields[18].Descriptor()
+	// relationshipattentionitem.DefaultProjectorVersion holds the default value on creation for the projector_version field.
+	relationshipattentionitem.DefaultProjectorVersion = relationshipattentionitemDescProjectorVersion.Default.(int)
+	// relationshipattentionitem.ProjectorVersionValidator is a validator for the "projector_version" field. It is called by the builders before save.
+	relationshipattentionitem.ProjectorVersionValidator = relationshipattentionitemDescProjectorVersion.Validators[0].(func(int) error)
+	// relationshipattentionitemDescRelationshipStateVersion is the schema descriptor for relationship_state_version field.
+	relationshipattentionitemDescRelationshipStateVersion := relationshipattentionitemFields[19].Descriptor()
+	// relationshipattentionitem.DefaultRelationshipStateVersion holds the default value on creation for the relationship_state_version field.
+	relationshipattentionitem.DefaultRelationshipStateVersion = relationshipattentionitemDescRelationshipStateVersion.Default.(int)
+	// relationshipattentionitem.RelationshipStateVersionValidator is a validator for the "relationship_state_version" field. It is called by the builders before save.
+	relationshipattentionitem.RelationshipStateVersionValidator = relationshipattentionitemDescRelationshipStateVersion.Validators[0].(func(int) error)
+	// relationshipattentionitemDescMaterialHash is the schema descriptor for material_hash field.
+	relationshipattentionitemDescMaterialHash := relationshipattentionitemFields[20].Descriptor()
+	// relationshipattentionitem.MaterialHashValidator is a validator for the "material_hash" field. It is called by the builders before save.
+	relationshipattentionitem.MaterialHashValidator = relationshipattentionitemDescMaterialHash.Validators[0].(func(string) error)
+	// relationshipattentionitemDescID is the schema descriptor for id field.
+	relationshipattentionitemDescID := relationshipattentionitemMixinFields0[0].Descriptor()
+	// relationshipattentionitem.DefaultID holds the default value on creation for the id field.
+	relationshipattentionitem.DefaultID = relationshipattentionitemDescID.Default.(func() uuid.UUID)
 	relationshipidentityMixin := schema.RelationshipIdentity{}.Mixin()
 	relationshipidentityMixinFields0 := relationshipidentityMixin[0].Fields()
 	_ = relationshipidentityMixinFields0
@@ -1685,6 +1825,181 @@ func init() {
 	relationshipidentityDescID := relationshipidentityMixinFields0[0].Descriptor()
 	// relationshipidentity.DefaultID holds the default value on creation for the id field.
 	relationshipidentity.DefaultID = relationshipidentityDescID.Default.(func() uuid.UUID)
+	relationshipidentitycandidateMixin := schema.RelationshipIdentityCandidate{}.Mixin()
+	relationshipidentitycandidateMixinFields0 := relationshipidentitycandidateMixin[0].Fields()
+	_ = relationshipidentitycandidateMixinFields0
+	relationshipidentitycandidateFields := schema.RelationshipIdentityCandidate{}.Fields()
+	_ = relationshipidentitycandidateFields
+	// relationshipidentitycandidateDescCreatedAt is the schema descriptor for created_at field.
+	relationshipidentitycandidateDescCreatedAt := relationshipidentitycandidateMixinFields0[1].Descriptor()
+	// relationshipidentitycandidate.DefaultCreatedAt holds the default value on creation for the created_at field.
+	relationshipidentitycandidate.DefaultCreatedAt = relationshipidentitycandidateDescCreatedAt.Default.(func() time.Time)
+	// relationshipidentitycandidateDescUpdatedAt is the schema descriptor for updated_at field.
+	relationshipidentitycandidateDescUpdatedAt := relationshipidentitycandidateMixinFields0[2].Descriptor()
+	// relationshipidentitycandidate.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	relationshipidentitycandidate.DefaultUpdatedAt = relationshipidentitycandidateDescUpdatedAt.Default.(func() time.Time)
+	// relationshipidentitycandidate.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	relationshipidentitycandidate.UpdateDefaultUpdatedAt = relationshipidentitycandidateDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// relationshipidentitycandidateDescDedupeKey is the schema descriptor for dedupe_key field.
+	relationshipidentitycandidateDescDedupeKey := relationshipidentitycandidateFields[0].Descriptor()
+	// relationshipidentitycandidate.DedupeKeyValidator is a validator for the "dedupe_key" field. It is called by the builders before save.
+	relationshipidentitycandidate.DedupeKeyValidator = relationshipidentitycandidateDescDedupeKey.Validators[0].(func(string) error)
+	// relationshipidentitycandidateDescStatus is the schema descriptor for status field.
+	relationshipidentitycandidateDescStatus := relationshipidentitycandidateFields[1].Descriptor()
+	// relationshipidentitycandidate.DefaultStatus holds the default value on creation for the status field.
+	relationshipidentitycandidate.DefaultStatus = relationshipidentitycandidateDescStatus.Default.(string)
+	// relationshipidentitycandidate.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	relationshipidentitycandidate.StatusValidator = relationshipidentitycandidateDescStatus.Validators[0].(func(string) error)
+	// relationshipidentitycandidateDescCandidateType is the schema descriptor for candidate_type field.
+	relationshipidentitycandidateDescCandidateType := relationshipidentitycandidateFields[2].Descriptor()
+	// relationshipidentitycandidate.DefaultCandidateType holds the default value on creation for the candidate_type field.
+	relationshipidentitycandidate.DefaultCandidateType = relationshipidentitycandidateDescCandidateType.Default.(string)
+	// relationshipidentitycandidate.CandidateTypeValidator is a validator for the "candidate_type" field. It is called by the builders before save.
+	relationshipidentitycandidate.CandidateTypeValidator = relationshipidentitycandidateDescCandidateType.Validators[0].(func(string) error)
+	// relationshipidentitycandidateDescAnchorKind is the schema descriptor for anchor_kind field.
+	relationshipidentitycandidateDescAnchorKind := relationshipidentitycandidateFields[3].Descriptor()
+	// relationshipidentitycandidate.AnchorKindValidator is a validator for the "anchor_kind" field. It is called by the builders before save.
+	relationshipidentitycandidate.AnchorKindValidator = relationshipidentitycandidateDescAnchorKind.Validators[0].(func(string) error)
+	// relationshipidentitycandidateDescAnchorKeyHash is the schema descriptor for anchor_key_hash field.
+	relationshipidentitycandidateDescAnchorKeyHash := relationshipidentitycandidateFields[5].Descriptor()
+	// relationshipidentitycandidate.AnchorKeyHashValidator is a validator for the "anchor_key_hash" field. It is called by the builders before save.
+	relationshipidentitycandidate.AnchorKeyHashValidator = relationshipidentitycandidateDescAnchorKeyHash.Validators[0].(func(string) error)
+	// relationshipidentitycandidateDescMatchingAnchors is the schema descriptor for matching_anchors field.
+	relationshipidentitycandidateDescMatchingAnchors := relationshipidentitycandidateFields[7].Descriptor()
+	// relationshipidentitycandidate.DefaultMatchingAnchors holds the default value on creation for the matching_anchors field.
+	relationshipidentitycandidate.DefaultMatchingAnchors = relationshipidentitycandidateDescMatchingAnchors.Default.([]string)
+	// relationshipidentitycandidateDescConflictingAnchors is the schema descriptor for conflicting_anchors field.
+	relationshipidentitycandidateDescConflictingAnchors := relationshipidentitycandidateFields[8].Descriptor()
+	// relationshipidentitycandidate.DefaultConflictingAnchors holds the default value on creation for the conflicting_anchors field.
+	relationshipidentitycandidate.DefaultConflictingAnchors = relationshipidentitycandidateDescConflictingAnchors.Default.([]string)
+	// relationshipidentitycandidateDescEvidenceRefs is the schema descriptor for evidence_refs field.
+	relationshipidentitycandidateDescEvidenceRefs := relationshipidentitycandidateFields[9].Descriptor()
+	// relationshipidentitycandidate.DefaultEvidenceRefs holds the default value on creation for the evidence_refs field.
+	relationshipidentitycandidate.DefaultEvidenceRefs = relationshipidentitycandidateDescEvidenceRefs.Default.([]string)
+	// relationshipidentitycandidateDescEvidenceCount is the schema descriptor for evidence_count field.
+	relationshipidentitycandidateDescEvidenceCount := relationshipidentitycandidateFields[10].Descriptor()
+	// relationshipidentitycandidate.DefaultEvidenceCount holds the default value on creation for the evidence_count field.
+	relationshipidentitycandidate.DefaultEvidenceCount = relationshipidentitycandidateDescEvidenceCount.Default.(int)
+	// relationshipidentitycandidate.EvidenceCountValidator is a validator for the "evidence_count" field. It is called by the builders before save.
+	relationshipidentitycandidate.EvidenceCountValidator = relationshipidentitycandidateDescEvidenceCount.Validators[0].(func(int) error)
+	// relationshipidentitycandidateDescImpactJSON is the schema descriptor for impact_json field.
+	relationshipidentitycandidateDescImpactJSON := relationshipidentitycandidateFields[13].Descriptor()
+	// relationshipidentitycandidate.DefaultImpactJSON holds the default value on creation for the impact_json field.
+	relationshipidentitycandidate.DefaultImpactJSON = relationshipidentitycandidateDescImpactJSON.Default.(string)
+	// relationshipidentitycandidateDescRecommendedDecision is the schema descriptor for recommended_decision field.
+	relationshipidentitycandidateDescRecommendedDecision := relationshipidentitycandidateFields[14].Descriptor()
+	// relationshipidentitycandidate.DefaultRecommendedDecision holds the default value on creation for the recommended_decision field.
+	relationshipidentitycandidate.DefaultRecommendedDecision = relationshipidentitycandidateDescRecommendedDecision.Default.(string)
+	// relationshipidentitycandidate.RecommendedDecisionValidator is a validator for the "recommended_decision" field. It is called by the builders before save.
+	relationshipidentitycandidate.RecommendedDecisionValidator = relationshipidentitycandidateDescRecommendedDecision.Validators[0].(func(string) error)
+	// relationshipidentitycandidateDescConfidence is the schema descriptor for confidence field.
+	relationshipidentitycandidateDescConfidence := relationshipidentitycandidateFields[15].Descriptor()
+	// relationshipidentitycandidate.DefaultConfidence holds the default value on creation for the confidence field.
+	relationshipidentitycandidate.DefaultConfidence = relationshipidentitycandidateDescConfidence.Default.(float64)
+	// relationshipidentitycandidate.ConfidenceValidator is a validator for the "confidence" field. It is called by the builders before save.
+	relationshipidentitycandidate.ConfidenceValidator = func() func(float64) error {
+		validators := relationshipidentitycandidateDescConfidence.Validators
+		fns := [...]func(float64) error{
+			validators[0].(func(float64) error),
+			validators[1].(func(float64) error),
+		}
+		return func(confidence float64) error {
+			for _, fn := range fns {
+				if err := fn(confidence); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// relationshipidentitycandidateDescVersion is the schema descriptor for version field.
+	relationshipidentitycandidateDescVersion := relationshipidentitycandidateFields[16].Descriptor()
+	// relationshipidentitycandidate.DefaultVersion holds the default value on creation for the version field.
+	relationshipidentitycandidate.DefaultVersion = relationshipidentitycandidateDescVersion.Default.(int)
+	// relationshipidentitycandidate.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	relationshipidentitycandidate.VersionValidator = relationshipidentitycandidateDescVersion.Validators[0].(func(int) error)
+	// relationshipidentitycandidateDescDecision is the schema descriptor for decision field.
+	relationshipidentitycandidateDescDecision := relationshipidentitycandidateFields[17].Descriptor()
+	// relationshipidentitycandidate.DecisionValidator is a validator for the "decision" field. It is called by the builders before save.
+	relationshipidentitycandidate.DecisionValidator = relationshipidentitycandidateDescDecision.Validators[0].(func(string) error)
+	// relationshipidentitycandidateDescID is the schema descriptor for id field.
+	relationshipidentitycandidateDescID := relationshipidentitycandidateMixinFields0[0].Descriptor()
+	// relationshipidentitycandidate.DefaultID holds the default value on creation for the id field.
+	relationshipidentitycandidate.DefaultID = relationshipidentitycandidateDescID.Default.(func() uuid.UUID)
+	relationshipidentitydecisionMixin := schema.RelationshipIdentityDecision{}.Mixin()
+	relationshipidentitydecisionMixinFields0 := relationshipidentitydecisionMixin[0].Fields()
+	_ = relationshipidentitydecisionMixinFields0
+	relationshipidentitydecisionFields := schema.RelationshipIdentityDecision{}.Fields()
+	_ = relationshipidentitydecisionFields
+	// relationshipidentitydecisionDescCreatedAt is the schema descriptor for created_at field.
+	relationshipidentitydecisionDescCreatedAt := relationshipidentitydecisionMixinFields0[1].Descriptor()
+	// relationshipidentitydecision.DefaultCreatedAt holds the default value on creation for the created_at field.
+	relationshipidentitydecision.DefaultCreatedAt = relationshipidentitydecisionDescCreatedAt.Default.(func() time.Time)
+	// relationshipidentitydecisionDescUpdatedAt is the schema descriptor for updated_at field.
+	relationshipidentitydecisionDescUpdatedAt := relationshipidentitydecisionMixinFields0[2].Descriptor()
+	// relationshipidentitydecision.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	relationshipidentitydecision.DefaultUpdatedAt = relationshipidentitydecisionDescUpdatedAt.Default.(func() time.Time)
+	// relationshipidentitydecision.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	relationshipidentitydecision.UpdateDefaultUpdatedAt = relationshipidentitydecisionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// relationshipidentitydecisionDescIdempotencyKey is the schema descriptor for idempotency_key field.
+	relationshipidentitydecisionDescIdempotencyKey := relationshipidentitydecisionFields[0].Descriptor()
+	// relationshipidentitydecision.IdempotencyKeyValidator is a validator for the "idempotency_key" field. It is called by the builders before save.
+	relationshipidentitydecision.IdempotencyKeyValidator = relationshipidentitydecisionDescIdempotencyKey.Validators[0].(func(string) error)
+	// relationshipidentitydecisionDescDecision is the schema descriptor for decision field.
+	relationshipidentitydecisionDescDecision := relationshipidentitydecisionFields[1].Descriptor()
+	// relationshipidentitydecision.DecisionValidator is a validator for the "decision" field. It is called by the builders before save.
+	relationshipidentitydecision.DecisionValidator = relationshipidentitydecisionDescDecision.Validators[0].(func(string) error)
+	// relationshipidentitydecisionDescCandidateVersion is the schema descriptor for candidate_version field.
+	relationshipidentitydecisionDescCandidateVersion := relationshipidentitydecisionFields[2].Descriptor()
+	// relationshipidentitydecision.CandidateVersionValidator is a validator for the "candidate_version" field. It is called by the builders before save.
+	relationshipidentitydecision.CandidateVersionValidator = relationshipidentitydecisionDescCandidateVersion.Validators[0].(func(int) error)
+	// relationshipidentitydecisionDescID is the schema descriptor for id field.
+	relationshipidentitydecisionDescID := relationshipidentitydecisionMixinFields0[0].Descriptor()
+	// relationshipidentitydecision.DefaultID holds the default value on creation for the id field.
+	relationshipidentitydecision.DefaultID = relationshipidentitydecisionDescID.Default.(func() uuid.UUID)
+	relationshiplineageeventMixin := schema.RelationshipLineageEvent{}.Mixin()
+	relationshiplineageeventMixinFields0 := relationshiplineageeventMixin[0].Fields()
+	_ = relationshiplineageeventMixinFields0
+	relationshiplineageeventFields := schema.RelationshipLineageEvent{}.Fields()
+	_ = relationshiplineageeventFields
+	// relationshiplineageeventDescCreatedAt is the schema descriptor for created_at field.
+	relationshiplineageeventDescCreatedAt := relationshiplineageeventMixinFields0[1].Descriptor()
+	// relationshiplineageevent.DefaultCreatedAt holds the default value on creation for the created_at field.
+	relationshiplineageevent.DefaultCreatedAt = relationshiplineageeventDescCreatedAt.Default.(func() time.Time)
+	// relationshiplineageeventDescUpdatedAt is the schema descriptor for updated_at field.
+	relationshiplineageeventDescUpdatedAt := relationshiplineageeventMixinFields0[2].Descriptor()
+	// relationshiplineageevent.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	relationshiplineageevent.DefaultUpdatedAt = relationshiplineageeventDescUpdatedAt.Default.(func() time.Time)
+	// relationshiplineageevent.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	relationshiplineageevent.UpdateDefaultUpdatedAt = relationshiplineageeventDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// relationshiplineageeventDescKind is the schema descriptor for kind field.
+	relationshiplineageeventDescKind := relationshiplineageeventFields[0].Descriptor()
+	// relationshiplineageevent.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	relationshiplineageevent.KindValidator = relationshiplineageeventDescKind.Validators[0].(func(string) error)
+	// relationshiplineageeventDescObservationIds is the schema descriptor for observation_ids field.
+	relationshiplineageeventDescObservationIds := relationshiplineageeventFields[3].Descriptor()
+	// relationshiplineageevent.DefaultObservationIds holds the default value on creation for the observation_ids field.
+	relationshiplineageevent.DefaultObservationIds = relationshiplineageeventDescObservationIds.Default.([]string)
+	// relationshiplineageeventDescIdentityIds is the schema descriptor for identity_ids field.
+	relationshiplineageeventDescIdentityIds := relationshiplineageeventFields[4].Descriptor()
+	// relationshiplineageevent.DefaultIdentityIds holds the default value on creation for the identity_ids field.
+	relationshiplineageevent.DefaultIdentityIds = relationshiplineageeventDescIdentityIds.Default.([]string)
+	// relationshiplineageeventDescMovedObjectRefs is the schema descriptor for moved_object_refs field.
+	relationshiplineageeventDescMovedObjectRefs := relationshiplineageeventFields[5].Descriptor()
+	// relationshiplineageevent.DefaultMovedObjectRefs holds the default value on creation for the moved_object_refs field.
+	relationshiplineageevent.DefaultMovedObjectRefs = relationshiplineageeventDescMovedObjectRefs.Default.([]string)
+	// relationshiplineageeventDescBeforeRelationshipIds is the schema descriptor for before_relationship_ids field.
+	relationshiplineageeventDescBeforeRelationshipIds := relationshiplineageeventFields[6].Descriptor()
+	// relationshiplineageevent.DefaultBeforeRelationshipIds holds the default value on creation for the before_relationship_ids field.
+	relationshiplineageevent.DefaultBeforeRelationshipIds = relationshiplineageeventDescBeforeRelationshipIds.Default.([]string)
+	// relationshiplineageeventDescAfterRelationshipIds is the schema descriptor for after_relationship_ids field.
+	relationshiplineageeventDescAfterRelationshipIds := relationshiplineageeventFields[7].Descriptor()
+	// relationshiplineageevent.DefaultAfterRelationshipIds holds the default value on creation for the after_relationship_ids field.
+	relationshiplineageevent.DefaultAfterRelationshipIds = relationshiplineageeventDescAfterRelationshipIds.Default.([]string)
+	// relationshiplineageeventDescID is the schema descriptor for id field.
+	relationshiplineageeventDescID := relationshiplineageeventMixinFields0[0].Descriptor()
+	// relationshiplineageevent.DefaultID holds the default value on creation for the id field.
+	relationshiplineageevent.DefaultID = relationshiplineageeventDescID.Default.(func() uuid.UUID)
 	relationshipobservationMixin := schema.RelationshipObservation{}.Mixin()
 	relationshipobservationMixinFields0 := relationshipobservationMixin[0].Fields()
 	_ = relationshipobservationMixinFields0
@@ -1724,6 +2039,12 @@ func init() {
 	relationshipobservationDescContentHash := relationshipobservationFields[9].Descriptor()
 	// relationshipobservation.ContentHashValidator is a validator for the "content_hash" field. It is called by the builders before save.
 	relationshipobservation.ContentHashValidator = relationshipobservationDescContentHash.Validators[0].(func(string) error)
+	// relationshipobservationDescEncryptionKeyVersion is the schema descriptor for encryption_key_version field.
+	relationshipobservationDescEncryptionKeyVersion := relationshipobservationFields[11].Descriptor()
+	// relationshipobservation.DefaultEncryptionKeyVersion holds the default value on creation for the encryption_key_version field.
+	relationshipobservation.DefaultEncryptionKeyVersion = relationshipobservationDescEncryptionKeyVersion.Default.(int)
+	// relationshipobservation.EncryptionKeyVersionValidator is a validator for the "encryption_key_version" field. It is called by the builders before save.
+	relationshipobservation.EncryptionKeyVersionValidator = relationshipobservationDescEncryptionKeyVersion.Validators[0].(func(int) error)
 	// relationshipobservationDescID is the schema descriptor for id field.
 	relationshipobservationDescID := relationshipobservationMixinFields0[0].Descriptor()
 	// relationshipobservation.DefaultID holds the default value on creation for the id field.
@@ -1765,6 +2086,74 @@ func init() {
 	relationshipparticipantDescID := relationshipparticipantMixinFields0[0].Descriptor()
 	// relationshipparticipant.DefaultID holds the default value on creation for the id field.
 	relationshipparticipant.DefaultID = relationshipparticipantDescID.Default.(func() uuid.UUID)
+	relationshipprojectionjobMixin := schema.RelationshipProjectionJob{}.Mixin()
+	relationshipprojectionjobMixinFields0 := relationshipprojectionjobMixin[0].Fields()
+	_ = relationshipprojectionjobMixinFields0
+	relationshipprojectionjobFields := schema.RelationshipProjectionJob{}.Fields()
+	_ = relationshipprojectionjobFields
+	// relationshipprojectionjobDescCreatedAt is the schema descriptor for created_at field.
+	relationshipprojectionjobDescCreatedAt := relationshipprojectionjobMixinFields0[1].Descriptor()
+	// relationshipprojectionjob.DefaultCreatedAt holds the default value on creation for the created_at field.
+	relationshipprojectionjob.DefaultCreatedAt = relationshipprojectionjobDescCreatedAt.Default.(func() time.Time)
+	// relationshipprojectionjobDescUpdatedAt is the schema descriptor for updated_at field.
+	relationshipprojectionjobDescUpdatedAt := relationshipprojectionjobMixinFields0[2].Descriptor()
+	// relationshipprojectionjob.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	relationshipprojectionjob.DefaultUpdatedAt = relationshipprojectionjobDescUpdatedAt.Default.(func() time.Time)
+	// relationshipprojectionjob.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	relationshipprojectionjob.UpdateDefaultUpdatedAt = relationshipprojectionjobDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// relationshipprojectionjobDescIdempotencyKey is the schema descriptor for idempotency_key field.
+	relationshipprojectionjobDescIdempotencyKey := relationshipprojectionjobFields[0].Descriptor()
+	// relationshipprojectionjob.IdempotencyKeyValidator is a validator for the "idempotency_key" field. It is called by the builders before save.
+	relationshipprojectionjob.IdempotencyKeyValidator = relationshipprojectionjobDescIdempotencyKey.Validators[0].(func(string) error)
+	// relationshipprojectionjobDescStatus is the schema descriptor for status field.
+	relationshipprojectionjobDescStatus := relationshipprojectionjobFields[1].Descriptor()
+	// relationshipprojectionjob.DefaultStatus holds the default value on creation for the status field.
+	relationshipprojectionjob.DefaultStatus = relationshipprojectionjobDescStatus.Default.(string)
+	// relationshipprojectionjob.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	relationshipprojectionjob.StatusValidator = relationshipprojectionjobDescStatus.Validators[0].(func(string) error)
+	// relationshipprojectionjobDescProjectorVersion is the schema descriptor for projector_version field.
+	relationshipprojectionjobDescProjectorVersion := relationshipprojectionjobFields[2].Descriptor()
+	// relationshipprojectionjob.DefaultProjectorVersion holds the default value on creation for the projector_version field.
+	relationshipprojectionjob.DefaultProjectorVersion = relationshipprojectionjobDescProjectorVersion.Default.(int)
+	// relationshipprojectionjob.ProjectorVersionValidator is a validator for the "projector_version" field. It is called by the builders before save.
+	relationshipprojectionjob.ProjectorVersionValidator = relationshipprojectionjobDescProjectorVersion.Validators[0].(func(int) error)
+	// relationshipprojectionjobDescTriggerRefs is the schema descriptor for trigger_refs field.
+	relationshipprojectionjobDescTriggerRefs := relationshipprojectionjobFields[4].Descriptor()
+	// relationshipprojectionjob.DefaultTriggerRefs holds the default value on creation for the trigger_refs field.
+	relationshipprojectionjob.DefaultTriggerRefs = relationshipprojectionjobDescTriggerRefs.Default.([]string)
+	// relationshipprojectionjobDescAttempts is the schema descriptor for attempts field.
+	relationshipprojectionjobDescAttempts := relationshipprojectionjobFields[5].Descriptor()
+	// relationshipprojectionjob.DefaultAttempts holds the default value on creation for the attempts field.
+	relationshipprojectionjob.DefaultAttempts = relationshipprojectionjobDescAttempts.Default.(int)
+	// relationshipprojectionjob.AttemptsValidator is a validator for the "attempts" field. It is called by the builders before save.
+	relationshipprojectionjob.AttemptsValidator = relationshipprojectionjobDescAttempts.Validators[0].(func(int) error)
+	// relationshipprojectionjobDescID is the schema descriptor for id field.
+	relationshipprojectionjobDescID := relationshipprojectionjobMixinFields0[0].Descriptor()
+	// relationshipprojectionjob.DefaultID holds the default value on creation for the id field.
+	relationshipprojectionjob.DefaultID = relationshipprojectionjobDescID.Default.(func() uuid.UUID)
+	relationshipreviewacknowledgementMixin := schema.RelationshipReviewAcknowledgement{}.Mixin()
+	relationshipreviewacknowledgementMixinFields0 := relationshipreviewacknowledgementMixin[0].Fields()
+	_ = relationshipreviewacknowledgementMixinFields0
+	relationshipreviewacknowledgementFields := schema.RelationshipReviewAcknowledgement{}.Fields()
+	_ = relationshipreviewacknowledgementFields
+	// relationshipreviewacknowledgementDescCreatedAt is the schema descriptor for created_at field.
+	relationshipreviewacknowledgementDescCreatedAt := relationshipreviewacknowledgementMixinFields0[1].Descriptor()
+	// relationshipreviewacknowledgement.DefaultCreatedAt holds the default value on creation for the created_at field.
+	relationshipreviewacknowledgement.DefaultCreatedAt = relationshipreviewacknowledgementDescCreatedAt.Default.(func() time.Time)
+	// relationshipreviewacknowledgementDescUpdatedAt is the schema descriptor for updated_at field.
+	relationshipreviewacknowledgementDescUpdatedAt := relationshipreviewacknowledgementMixinFields0[2].Descriptor()
+	// relationshipreviewacknowledgement.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	relationshipreviewacknowledgement.DefaultUpdatedAt = relationshipreviewacknowledgementDescUpdatedAt.Default.(func() time.Time)
+	// relationshipreviewacknowledgement.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	relationshipreviewacknowledgement.UpdateDefaultUpdatedAt = relationshipreviewacknowledgementDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// relationshipreviewacknowledgementDescStateVersion is the schema descriptor for state_version field.
+	relationshipreviewacknowledgementDescStateVersion := relationshipreviewacknowledgementFields[0].Descriptor()
+	// relationshipreviewacknowledgement.StateVersionValidator is a validator for the "state_version" field. It is called by the builders before save.
+	relationshipreviewacknowledgement.StateVersionValidator = relationshipreviewacknowledgementDescStateVersion.Validators[0].(func(int) error)
+	// relationshipreviewacknowledgementDescID is the schema descriptor for id field.
+	relationshipreviewacknowledgementDescID := relationshipreviewacknowledgementMixinFields0[0].Descriptor()
+	// relationshipreviewacknowledgement.DefaultID holds the default value on creation for the id field.
+	relationshipreviewacknowledgement.DefaultID = relationshipreviewacknowledgementDescID.Default.(func() uuid.UUID)
 	relationshipsourcestatusMixin := schema.RelationshipSourceStatus{}.Mixin()
 	relationshipsourcestatusMixinFields0 := relationshipsourcestatusMixin[0].Fields()
 	_ = relationshipsourcestatusMixinFields0
@@ -1789,11 +2178,65 @@ func init() {
 	// relationshipsourcestatus.DefaultSourceAccountID holds the default value on creation for the source_account_id field.
 	relationshipsourcestatus.DefaultSourceAccountID = relationshipsourcestatusDescSourceAccountID.Default.(string)
 	// relationshipsourcestatusDescStatus is the schema descriptor for status field.
-	relationshipsourcestatusDescStatus := relationshipsourcestatusFields[2].Descriptor()
+	relationshipsourcestatusDescStatus := relationshipsourcestatusFields[3].Descriptor()
 	// relationshipsourcestatus.DefaultStatus holds the default value on creation for the status field.
 	relationshipsourcestatus.DefaultStatus = relationshipsourcestatusDescStatus.Default.(string)
 	// relationshipsourcestatus.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	relationshipsourcestatus.StatusValidator = relationshipsourcestatusDescStatus.Validators[0].(func(string) error)
+	// relationshipsourcestatusDescBackfillPhase is the schema descriptor for backfill_phase field.
+	relationshipsourcestatusDescBackfillPhase := relationshipsourcestatusFields[4].Descriptor()
+	// relationshipsourcestatus.DefaultBackfillPhase holds the default value on creation for the backfill_phase field.
+	relationshipsourcestatus.DefaultBackfillPhase = relationshipsourcestatusDescBackfillPhase.Default.(string)
+	// relationshipsourcestatus.BackfillPhaseValidator is a validator for the "backfill_phase" field. It is called by the builders before save.
+	relationshipsourcestatus.BackfillPhaseValidator = relationshipsourcestatusDescBackfillPhase.Validators[0].(func(string) error)
+	// relationshipsourcestatusDescBackfillCompleted is the schema descriptor for backfill_completed field.
+	relationshipsourcestatusDescBackfillCompleted := relationshipsourcestatusFields[5].Descriptor()
+	// relationshipsourcestatus.DefaultBackfillCompleted holds the default value on creation for the backfill_completed field.
+	relationshipsourcestatus.DefaultBackfillCompleted = relationshipsourcestatusDescBackfillCompleted.Default.(int)
+	// relationshipsourcestatus.BackfillCompletedValidator is a validator for the "backfill_completed" field. It is called by the builders before save.
+	relationshipsourcestatus.BackfillCompletedValidator = relationshipsourcestatusDescBackfillCompleted.Validators[0].(func(int) error)
+	// relationshipsourcestatusDescBackfillTotal is the schema descriptor for backfill_total field.
+	relationshipsourcestatusDescBackfillTotal := relationshipsourcestatusFields[6].Descriptor()
+	// relationshipsourcestatus.DefaultBackfillTotal holds the default value on creation for the backfill_total field.
+	relationshipsourcestatus.DefaultBackfillTotal = relationshipsourcestatusDescBackfillTotal.Default.(int)
+	// relationshipsourcestatus.BackfillTotalValidator is a validator for the "backfill_total" field. It is called by the builders before save.
+	relationshipsourcestatus.BackfillTotalValidator = relationshipsourcestatusDescBackfillTotal.Validators[0].(func(int) error)
+	// relationshipsourcestatusDescExpectedCadenceSeconds is the schema descriptor for expected_cadence_seconds field.
+	relationshipsourcestatusDescExpectedCadenceSeconds := relationshipsourcestatusFields[16].Descriptor()
+	// relationshipsourcestatus.DefaultExpectedCadenceSeconds holds the default value on creation for the expected_cadence_seconds field.
+	relationshipsourcestatus.DefaultExpectedCadenceSeconds = relationshipsourcestatusDescExpectedCadenceSeconds.Default.(int64)
+	// relationshipsourcestatus.ExpectedCadenceSecondsValidator is a validator for the "expected_cadence_seconds" field. It is called by the builders before save.
+	relationshipsourcestatus.ExpectedCadenceSecondsValidator = relationshipsourcestatusDescExpectedCadenceSeconds.Validators[0].(func(int64) error)
+	// relationshipsourcestatusDescLagSeconds is the schema descriptor for lag_seconds field.
+	relationshipsourcestatusDescLagSeconds := relationshipsourcestatusFields[17].Descriptor()
+	// relationshipsourcestatus.DefaultLagSeconds holds the default value on creation for the lag_seconds field.
+	relationshipsourcestatus.DefaultLagSeconds = relationshipsourcestatusDescLagSeconds.Default.(int64)
+	// relationshipsourcestatus.LagSecondsValidator is a validator for the "lag_seconds" field. It is called by the builders before save.
+	relationshipsourcestatus.LagSecondsValidator = relationshipsourcestatusDescLagSeconds.Validators[0].(func(int64) error)
+	// relationshipsourcestatusDescRequiredScopes is the schema descriptor for required_scopes field.
+	relationshipsourcestatusDescRequiredScopes := relationshipsourcestatusFields[18].Descriptor()
+	// relationshipsourcestatus.DefaultRequiredScopes holds the default value on creation for the required_scopes field.
+	relationshipsourcestatus.DefaultRequiredScopes = relationshipsourcestatusDescRequiredScopes.Default.([]string)
+	// relationshipsourcestatusDescGrantedScopes is the schema descriptor for granted_scopes field.
+	relationshipsourcestatusDescGrantedScopes := relationshipsourcestatusFields[19].Descriptor()
+	// relationshipsourcestatus.DefaultGrantedScopes holds the default value on creation for the granted_scopes field.
+	relationshipsourcestatus.DefaultGrantedScopes = relationshipsourcestatusDescGrantedScopes.Default.([]string)
+	// relationshipsourcestatusDescMissingScopes is the schema descriptor for missing_scopes field.
+	relationshipsourcestatusDescMissingScopes := relationshipsourcestatusFields[20].Descriptor()
+	// relationshipsourcestatus.DefaultMissingScopes holds the default value on creation for the missing_scopes field.
+	relationshipsourcestatus.DefaultMissingScopes = relationshipsourcestatusDescMissingScopes.Default.([]string)
+	// relationshipsourcestatusDescRetryCount is the schema descriptor for retry_count field.
+	relationshipsourcestatusDescRetryCount := relationshipsourcestatusFields[22].Descriptor()
+	// relationshipsourcestatus.DefaultRetryCount holds the default value on creation for the retry_count field.
+	relationshipsourcestatus.DefaultRetryCount = relationshipsourcestatusDescRetryCount.Default.(int)
+	// relationshipsourcestatus.RetryCountValidator is a validator for the "retry_count" field. It is called by the builders before save.
+	relationshipsourcestatus.RetryCountValidator = relationshipsourcestatusDescRetryCount.Validators[0].(func(int) error)
+	// relationshipsourcestatusDescCompleteness is the schema descriptor for completeness field.
+	relationshipsourcestatusDescCompleteness := relationshipsourcestatusFields[24].Descriptor()
+	// relationshipsourcestatus.DefaultCompleteness holds the default value on creation for the completeness field.
+	relationshipsourcestatus.DefaultCompleteness = relationshipsourcestatusDescCompleteness.Default.(string)
+	// relationshipsourcestatus.CompletenessValidator is a validator for the "completeness" field. It is called by the builders before save.
+	relationshipsourcestatus.CompletenessValidator = relationshipsourcestatusDescCompleteness.Validators[0].(func(string) error)
 	// relationshipsourcestatusDescID is the schema descriptor for id field.
 	relationshipsourcestatusDescID := relationshipsourcestatusMixinFields0[0].Descriptor()
 	// relationshipsourcestatus.DefaultID holds the default value on creation for the id field.
@@ -1821,12 +2264,22 @@ func init() {
 	relationshipstatesnapshotDescStateJSON := relationshipstatesnapshotFields[1].Descriptor()
 	// relationshipstatesnapshot.DefaultStateJSON holds the default value on creation for the state_json field.
 	relationshipstatesnapshot.DefaultStateJSON = relationshipstatesnapshotDescStateJSON.Default.(string)
+	// relationshipstatesnapshotDescStateHash is the schema descriptor for state_hash field.
+	relationshipstatesnapshotDescStateHash := relationshipstatesnapshotFields[2].Descriptor()
+	// relationshipstatesnapshot.StateHashValidator is a validator for the "state_hash" field. It is called by the builders before save.
+	relationshipstatesnapshot.StateHashValidator = relationshipstatesnapshotDescStateHash.Validators[0].(func(string) error)
+	// relationshipstatesnapshotDescProjectorVersion is the schema descriptor for projector_version field.
+	relationshipstatesnapshotDescProjectorVersion := relationshipstatesnapshotFields[3].Descriptor()
+	// relationshipstatesnapshot.DefaultProjectorVersion holds the default value on creation for the projector_version field.
+	relationshipstatesnapshot.DefaultProjectorVersion = relationshipstatesnapshotDescProjectorVersion.Default.(int)
+	// relationshipstatesnapshot.ProjectorVersionValidator is a validator for the "projector_version" field. It is called by the builders before save.
+	relationshipstatesnapshot.ProjectorVersionValidator = relationshipstatesnapshotDescProjectorVersion.Validators[0].(func(int) error)
 	// relationshipstatesnapshotDescChangedDimensions is the schema descriptor for changed_dimensions field.
-	relationshipstatesnapshotDescChangedDimensions := relationshipstatesnapshotFields[2].Descriptor()
+	relationshipstatesnapshotDescChangedDimensions := relationshipstatesnapshotFields[5].Descriptor()
 	// relationshipstatesnapshot.DefaultChangedDimensions holds the default value on creation for the changed_dimensions field.
 	relationshipstatesnapshot.DefaultChangedDimensions = relationshipstatesnapshotDescChangedDimensions.Default.([]string)
 	// relationshipstatesnapshotDescAssertionIds is the schema descriptor for assertion_ids field.
-	relationshipstatesnapshotDescAssertionIds := relationshipstatesnapshotFields[3].Descriptor()
+	relationshipstatesnapshotDescAssertionIds := relationshipstatesnapshotFields[6].Descriptor()
 	// relationshipstatesnapshot.DefaultAssertionIds holds the default value on creation for the assertion_ids field.
 	relationshipstatesnapshot.DefaultAssertionIds = relationshipstatesnapshotDescAssertionIds.Default.([]string)
 	// relationshipstatesnapshotDescID is the schema descriptor for id field.
@@ -2012,8 +2465,14 @@ func init() {
 	revenueevidenceDescContentHash := revenueevidenceFields[5].Descriptor()
 	// revenueevidence.ContentHashValidator is a validator for the "content_hash" field. It is called by the builders before save.
 	revenueevidence.ContentHashValidator = revenueevidenceDescContentHash.Validators[0].(func(string) error)
+	// revenueevidenceDescEncryptionKeyVersion is the schema descriptor for encryption_key_version field.
+	revenueevidenceDescEncryptionKeyVersion := revenueevidenceFields[8].Descriptor()
+	// revenueevidence.DefaultEncryptionKeyVersion holds the default value on creation for the encryption_key_version field.
+	revenueevidence.DefaultEncryptionKeyVersion = revenueevidenceDescEncryptionKeyVersion.Default.(int)
+	// revenueevidence.EncryptionKeyVersionValidator is a validator for the "encryption_key_version" field. It is called by the builders before save.
+	revenueevidence.EncryptionKeyVersionValidator = revenueevidenceDescEncryptionKeyVersion.Validators[0].(func(int) error)
 	// revenueevidenceDescExternalEvidenceRefs is the schema descriptor for external_evidence_refs field.
-	revenueevidenceDescExternalEvidenceRefs := revenueevidenceFields[10].Descriptor()
+	revenueevidenceDescExternalEvidenceRefs := revenueevidenceFields[11].Descriptor()
 	// revenueevidence.DefaultExternalEvidenceRefs holds the default value on creation for the external_evidence_refs field.
 	revenueevidence.DefaultExternalEvidenceRefs = revenueevidenceDescExternalEvidenceRefs.Default.([]string)
 	// revenueevidenceDescID is the schema descriptor for id field.
@@ -2150,6 +2609,41 @@ func init() {
 	revenueoutboxeventDescID := revenueoutboxeventMixinFields0[0].Descriptor()
 	// revenueoutboxevent.DefaultID holds the default value on creation for the id field.
 	revenueoutboxevent.DefaultID = revenueoutboxeventDescID.Default.(func() uuid.UUID)
+	revenuetrusteventMixin := schema.RevenueTrustEvent{}.Mixin()
+	revenuetrusteventMixinFields0 := revenuetrusteventMixin[0].Fields()
+	_ = revenuetrusteventMixinFields0
+	revenuetrusteventFields := schema.RevenueTrustEvent{}.Fields()
+	_ = revenuetrusteventFields
+	// revenuetrusteventDescCreatedAt is the schema descriptor for created_at field.
+	revenuetrusteventDescCreatedAt := revenuetrusteventMixinFields0[1].Descriptor()
+	// revenuetrustevent.DefaultCreatedAt holds the default value on creation for the created_at field.
+	revenuetrustevent.DefaultCreatedAt = revenuetrusteventDescCreatedAt.Default.(func() time.Time)
+	// revenuetrusteventDescUpdatedAt is the schema descriptor for updated_at field.
+	revenuetrusteventDescUpdatedAt := revenuetrusteventMixinFields0[2].Descriptor()
+	// revenuetrustevent.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	revenuetrustevent.DefaultUpdatedAt = revenuetrusteventDescUpdatedAt.Default.(func() time.Time)
+	// revenuetrustevent.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	revenuetrustevent.UpdateDefaultUpdatedAt = revenuetrusteventDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// revenuetrusteventDescEventName is the schema descriptor for event_name field.
+	revenuetrusteventDescEventName := revenuetrusteventFields[0].Descriptor()
+	// revenuetrustevent.EventNameValidator is a validator for the "event_name" field. It is called by the builders before save.
+	revenuetrustevent.EventNameValidator = revenuetrusteventDescEventName.Validators[0].(func(string) error)
+	// revenuetrusteventDescOutcome is the schema descriptor for outcome field.
+	revenuetrusteventDescOutcome := revenuetrusteventFields[1].Descriptor()
+	// revenuetrustevent.OutcomeValidator is a validator for the "outcome" field. It is called by the builders before save.
+	revenuetrustevent.OutcomeValidator = revenuetrusteventDescOutcome.Validators[0].(func(string) error)
+	// revenuetrusteventDescStateVersion is the schema descriptor for state_version field.
+	revenuetrusteventDescStateVersion := revenuetrusteventFields[6].Descriptor()
+	// revenuetrustevent.StateVersionValidator is a validator for the "state_version" field. It is called by the builders before save.
+	revenuetrustevent.StateVersionValidator = revenuetrusteventDescStateVersion.Validators[0].(func(int) error)
+	// revenuetrusteventDescDurationMs is the schema descriptor for duration_ms field.
+	revenuetrusteventDescDurationMs := revenuetrusteventFields[7].Descriptor()
+	// revenuetrustevent.DurationMsValidator is a validator for the "duration_ms" field. It is called by the builders before save.
+	revenuetrustevent.DurationMsValidator = revenuetrusteventDescDurationMs.Validators[0].(func(int64) error)
+	// revenuetrusteventDescID is the schema descriptor for id field.
+	revenuetrusteventDescID := revenuetrusteventMixinFields0[0].Descriptor()
+	// revenuetrustevent.DefaultID holds the default value on creation for the id field.
+	revenuetrustevent.DefaultID = revenuetrusteventDescID.Default.(func() uuid.UUID)
 	revenueworkspaceMixin := schema.RevenueWorkspace{}.Mixin()
 	revenueworkspaceMixinFields0 := revenueworkspaceMixin[0].Fields()
 	_ = revenueworkspaceMixinFields0
@@ -2284,6 +2778,39 @@ func init() {
 	subscriptionhistoryDescID := subscriptionhistoryFields[0].Descriptor()
 	// subscriptionhistory.DefaultID holds the default value on creation for the id field.
 	subscriptionhistory.DefaultID = subscriptionhistoryDescID.Default.(func() uuid.UUID)
+	tenantevidencekeyMixin := schema.TenantEvidenceKey{}.Mixin()
+	tenantevidencekeyMixinFields0 := tenantevidencekeyMixin[0].Fields()
+	_ = tenantevidencekeyMixinFields0
+	tenantevidencekeyFields := schema.TenantEvidenceKey{}.Fields()
+	_ = tenantevidencekeyFields
+	// tenantevidencekeyDescCreatedAt is the schema descriptor for created_at field.
+	tenantevidencekeyDescCreatedAt := tenantevidencekeyMixinFields0[1].Descriptor()
+	// tenantevidencekey.DefaultCreatedAt holds the default value on creation for the created_at field.
+	tenantevidencekey.DefaultCreatedAt = tenantevidencekeyDescCreatedAt.Default.(func() time.Time)
+	// tenantevidencekeyDescUpdatedAt is the schema descriptor for updated_at field.
+	tenantevidencekeyDescUpdatedAt := tenantevidencekeyMixinFields0[2].Descriptor()
+	// tenantevidencekey.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	tenantevidencekey.DefaultUpdatedAt = tenantevidencekeyDescUpdatedAt.Default.(func() time.Time)
+	// tenantevidencekey.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	tenantevidencekey.UpdateDefaultUpdatedAt = tenantevidencekeyDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// tenantevidencekeyDescVersion is the schema descriptor for version field.
+	tenantevidencekeyDescVersion := tenantevidencekeyFields[0].Descriptor()
+	// tenantevidencekey.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	tenantevidencekey.VersionValidator = tenantevidencekeyDescVersion.Validators[0].(func(int) error)
+	// tenantevidencekeyDescStatus is the schema descriptor for status field.
+	tenantevidencekeyDescStatus := tenantevidencekeyFields[1].Descriptor()
+	// tenantevidencekey.DefaultStatus holds the default value on creation for the status field.
+	tenantevidencekey.DefaultStatus = tenantevidencekeyDescStatus.Default.(string)
+	// tenantevidencekey.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	tenantevidencekey.StatusValidator = tenantevidencekeyDescStatus.Validators[0].(func(string) error)
+	// tenantevidencekeyDescKeyFingerprint is the schema descriptor for key_fingerprint field.
+	tenantevidencekeyDescKeyFingerprint := tenantevidencekeyFields[3].Descriptor()
+	// tenantevidencekey.KeyFingerprintValidator is a validator for the "key_fingerprint" field. It is called by the builders before save.
+	tenantevidencekey.KeyFingerprintValidator = tenantevidencekeyDescKeyFingerprint.Validators[0].(func(string) error)
+	// tenantevidencekeyDescID is the schema descriptor for id field.
+	tenantevidencekeyDescID := tenantevidencekeyMixinFields0[0].Descriptor()
+	// tenantevidencekey.DefaultID holds the default value on creation for the id field.
+	tenantevidencekey.DefaultID = tenantevidencekeyDescID.Default.(func() uuid.UUID)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
 	_ = userMixinFields0
@@ -2330,4 +2857,37 @@ func init() {
 	userhistoryDescID := userhistoryFields[0].Descriptor()
 	// userhistory.DefaultID holds the default value on creation for the id field.
 	userhistory.DefaultID = userhistoryDescID.Default.(func() uuid.UUID)
+	workspacefeaturecontrolMixin := schema.WorkspaceFeatureControl{}.Mixin()
+	workspacefeaturecontrolMixinFields0 := workspacefeaturecontrolMixin[0].Fields()
+	_ = workspacefeaturecontrolMixinFields0
+	workspacefeaturecontrolFields := schema.WorkspaceFeatureControl{}.Fields()
+	_ = workspacefeaturecontrolFields
+	// workspacefeaturecontrolDescCreatedAt is the schema descriptor for created_at field.
+	workspacefeaturecontrolDescCreatedAt := workspacefeaturecontrolMixinFields0[1].Descriptor()
+	// workspacefeaturecontrol.DefaultCreatedAt holds the default value on creation for the created_at field.
+	workspacefeaturecontrol.DefaultCreatedAt = workspacefeaturecontrolDescCreatedAt.Default.(func() time.Time)
+	// workspacefeaturecontrolDescUpdatedAt is the schema descriptor for updated_at field.
+	workspacefeaturecontrolDescUpdatedAt := workspacefeaturecontrolMixinFields0[2].Descriptor()
+	// workspacefeaturecontrol.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	workspacefeaturecontrol.DefaultUpdatedAt = workspacefeaturecontrolDescUpdatedAt.Default.(func() time.Time)
+	// workspacefeaturecontrol.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	workspacefeaturecontrol.UpdateDefaultUpdatedAt = workspacefeaturecontrolDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// workspacefeaturecontrolDescCapability is the schema descriptor for capability field.
+	workspacefeaturecontrolDescCapability := workspacefeaturecontrolFields[0].Descriptor()
+	// workspacefeaturecontrol.CapabilityValidator is a validator for the "capability" field. It is called by the builders before save.
+	workspacefeaturecontrol.CapabilityValidator = workspacefeaturecontrolDescCapability.Validators[0].(func(string) error)
+	// workspacefeaturecontrolDescEnabled is the schema descriptor for enabled field.
+	workspacefeaturecontrolDescEnabled := workspacefeaturecontrolFields[1].Descriptor()
+	// workspacefeaturecontrol.DefaultEnabled holds the default value on creation for the enabled field.
+	workspacefeaturecontrol.DefaultEnabled = workspacefeaturecontrolDescEnabled.Default.(bool)
+	// workspacefeaturecontrolDescRolloutStage is the schema descriptor for rollout_stage field.
+	workspacefeaturecontrolDescRolloutStage := workspacefeaturecontrolFields[2].Descriptor()
+	// workspacefeaturecontrol.DefaultRolloutStage holds the default value on creation for the rollout_stage field.
+	workspacefeaturecontrol.DefaultRolloutStage = workspacefeaturecontrolDescRolloutStage.Default.(string)
+	// workspacefeaturecontrol.RolloutStageValidator is a validator for the "rollout_stage" field. It is called by the builders before save.
+	workspacefeaturecontrol.RolloutStageValidator = workspacefeaturecontrolDescRolloutStage.Validators[0].(func(string) error)
+	// workspacefeaturecontrolDescID is the schema descriptor for id field.
+	workspacefeaturecontrolDescID := workspacefeaturecontrolMixinFields0[0].Descriptor()
+	// workspacefeaturecontrol.DefaultID holds the default value on creation for the id field.
+	workspacefeaturecontrol.DefaultID = workspacefeaturecontrolDescID.Default.(func() uuid.UUID)
 }

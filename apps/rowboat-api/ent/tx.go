@@ -88,12 +88,24 @@ type Tx struct {
 	Relationship *RelationshipClient
 	// RelationshipAssertion is the client for interacting with the RelationshipAssertion builders.
 	RelationshipAssertion *RelationshipAssertionClient
+	// RelationshipAttentionItem is the client for interacting with the RelationshipAttentionItem builders.
+	RelationshipAttentionItem *RelationshipAttentionItemClient
 	// RelationshipIdentity is the client for interacting with the RelationshipIdentity builders.
 	RelationshipIdentity *RelationshipIdentityClient
+	// RelationshipIdentityCandidate is the client for interacting with the RelationshipIdentityCandidate builders.
+	RelationshipIdentityCandidate *RelationshipIdentityCandidateClient
+	// RelationshipIdentityDecision is the client for interacting with the RelationshipIdentityDecision builders.
+	RelationshipIdentityDecision *RelationshipIdentityDecisionClient
+	// RelationshipLineageEvent is the client for interacting with the RelationshipLineageEvent builders.
+	RelationshipLineageEvent *RelationshipLineageEventClient
 	// RelationshipObservation is the client for interacting with the RelationshipObservation builders.
 	RelationshipObservation *RelationshipObservationClient
 	// RelationshipParticipant is the client for interacting with the RelationshipParticipant builders.
 	RelationshipParticipant *RelationshipParticipantClient
+	// RelationshipProjectionJob is the client for interacting with the RelationshipProjectionJob builders.
+	RelationshipProjectionJob *RelationshipProjectionJobClient
+	// RelationshipReviewAcknowledgement is the client for interacting with the RelationshipReviewAcknowledgement builders.
+	RelationshipReviewAcknowledgement *RelationshipReviewAcknowledgementClient
 	// RelationshipSourceStatus is the client for interacting with the RelationshipSourceStatus builders.
 	RelationshipSourceStatus *RelationshipSourceStatusClient
 	// RelationshipStateSnapshot is the client for interacting with the RelationshipStateSnapshot builders.
@@ -108,6 +120,8 @@ type Tx struct {
 	RevenueLeakScan *RevenueLeakScanClient
 	// RevenueOutboxEvent is the client for interacting with the RevenueOutboxEvent builders.
 	RevenueOutboxEvent *RevenueOutboxEventClient
+	// RevenueTrustEvent is the client for interacting with the RevenueTrustEvent builders.
+	RevenueTrustEvent *RevenueTrustEventClient
 	// RevenueWorkspace is the client for interacting with the RevenueWorkspace builders.
 	RevenueWorkspace *RevenueWorkspaceClient
 	// RevenueWorkspaceMember is the client for interacting with the RevenueWorkspaceMember builders.
@@ -116,10 +130,14 @@ type Tx struct {
 	Subscription *SubscriptionClient
 	// SubscriptionHistory is the client for interacting with the SubscriptionHistory builders.
 	SubscriptionHistory *SubscriptionHistoryClient
+	// TenantEvidenceKey is the client for interacting with the TenantEvidenceKey builders.
+	TenantEvidenceKey *TenantEvidenceKeyClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 	// UserHistory is the client for interacting with the UserHistory builders.
 	UserHistory *UserHistoryClient
+	// WorkspaceFeatureControl is the client for interacting with the WorkspaceFeatureControl builders.
+	WorkspaceFeatureControl *WorkspaceFeatureControlClient
 
 	// lazily loaded.
 	client     *Client
@@ -289,9 +307,15 @@ func (tx *Tx) init() {
 	tx.PolicyDecisionSnapshot = NewPolicyDecisionSnapshotClient(tx.config)
 	tx.Relationship = NewRelationshipClient(tx.config)
 	tx.RelationshipAssertion = NewRelationshipAssertionClient(tx.config)
+	tx.RelationshipAttentionItem = NewRelationshipAttentionItemClient(tx.config)
 	tx.RelationshipIdentity = NewRelationshipIdentityClient(tx.config)
+	tx.RelationshipIdentityCandidate = NewRelationshipIdentityCandidateClient(tx.config)
+	tx.RelationshipIdentityDecision = NewRelationshipIdentityDecisionClient(tx.config)
+	tx.RelationshipLineageEvent = NewRelationshipLineageEventClient(tx.config)
 	tx.RelationshipObservation = NewRelationshipObservationClient(tx.config)
 	tx.RelationshipParticipant = NewRelationshipParticipantClient(tx.config)
+	tx.RelationshipProjectionJob = NewRelationshipProjectionJobClient(tx.config)
+	tx.RelationshipReviewAcknowledgement = NewRelationshipReviewAcknowledgementClient(tx.config)
 	tx.RelationshipSourceStatus = NewRelationshipSourceStatusClient(tx.config)
 	tx.RelationshipStateSnapshot = NewRelationshipStateSnapshotClient(tx.config)
 	tx.RevenueAction = NewRevenueActionClient(tx.config)
@@ -299,12 +323,15 @@ func (tx *Tx) init() {
 	tx.RevenueEvidence = NewRevenueEvidenceClient(tx.config)
 	tx.RevenueLeakScan = NewRevenueLeakScanClient(tx.config)
 	tx.RevenueOutboxEvent = NewRevenueOutboxEventClient(tx.config)
+	tx.RevenueTrustEvent = NewRevenueTrustEventClient(tx.config)
 	tx.RevenueWorkspace = NewRevenueWorkspaceClient(tx.config)
 	tx.RevenueWorkspaceMember = NewRevenueWorkspaceMemberClient(tx.config)
 	tx.Subscription = NewSubscriptionClient(tx.config)
 	tx.SubscriptionHistory = NewSubscriptionHistoryClient(tx.config)
+	tx.TenantEvidenceKey = NewTenantEvidenceKeyClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.UserHistory = NewUserHistoryClient(tx.config)
+	tx.WorkspaceFeatureControl = NewWorkspaceFeatureControlClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

@@ -20,12 +20,17 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipprojectionjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenuetrustevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
@@ -52,6 +57,12 @@ type RelationshipQuery struct {
 	withObservations                           *RelationshipObservationQuery
 	withAssertions                             *RelationshipAssertionQuery
 	withSnapshots                              *RelationshipStateSnapshotQuery
+	withProjectionJobs                         *RelationshipProjectionJobQuery
+	withTrustEvents                            *RevenueTrustEventQuery
+	withProposedIdentityCandidates             *RelationshipIdentityCandidateQuery
+	withExistingIdentityCandidates             *RelationshipIdentityCandidateQuery
+	withReviewAcknowledgements                 *RelationshipReviewAcknowledgementQuery
+	withAttentionItems                         *RelationshipAttentionItemQuery
 	withFKs                                    bool
 	modifiers                                  []func(*sql.Selector)
 	loadTotal                                  []func(context.Context, []*Relationship) error
@@ -67,6 +78,12 @@ type RelationshipQuery struct {
 	withNamedObservations                      map[string]*RelationshipObservationQuery
 	withNamedAssertions                        map[string]*RelationshipAssertionQuery
 	withNamedSnapshots                         map[string]*RelationshipStateSnapshotQuery
+	withNamedProjectionJobs                    map[string]*RelationshipProjectionJobQuery
+	withNamedTrustEvents                       map[string]*RevenueTrustEventQuery
+	withNamedProposedIdentityCandidates        map[string]*RelationshipIdentityCandidateQuery
+	withNamedExistingIdentityCandidates        map[string]*RelationshipIdentityCandidateQuery
+	withNamedReviewAcknowledgements            map[string]*RelationshipReviewAcknowledgementQuery
+	withNamedAttentionItems                    map[string]*RelationshipAttentionItemQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -411,6 +428,138 @@ func (_q *RelationshipQuery) QuerySnapshots() *RelationshipStateSnapshotQuery {
 	return query
 }
 
+// QueryProjectionJobs chains the current query on the "projection_jobs" edge.
+func (_q *RelationshipQuery) QueryProjectionJobs() *RelationshipProjectionJobQuery {
+	query := (&RelationshipProjectionJobClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, selector),
+			sqlgraph.To(relationshipprojectionjob.Table, relationshipprojectionjob.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.ProjectionJobsTable, relationship.ProjectionJobsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryTrustEvents chains the current query on the "trust_events" edge.
+func (_q *RelationshipQuery) QueryTrustEvents() *RevenueTrustEventQuery {
+	query := (&RevenueTrustEventClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, selector),
+			sqlgraph.To(revenuetrustevent.Table, revenuetrustevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.TrustEventsTable, relationship.TrustEventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProposedIdentityCandidates chains the current query on the "proposed_identity_candidates" edge.
+func (_q *RelationshipQuery) QueryProposedIdentityCandidates() *RelationshipIdentityCandidateQuery {
+	query := (&RelationshipIdentityCandidateClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, selector),
+			sqlgraph.To(relationshipidentitycandidate.Table, relationshipidentitycandidate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.ProposedIdentityCandidatesTable, relationship.ProposedIdentityCandidatesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryExistingIdentityCandidates chains the current query on the "existing_identity_candidates" edge.
+func (_q *RelationshipQuery) QueryExistingIdentityCandidates() *RelationshipIdentityCandidateQuery {
+	query := (&RelationshipIdentityCandidateClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, selector),
+			sqlgraph.To(relationshipidentitycandidate.Table, relationshipidentitycandidate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.ExistingIdentityCandidatesTable, relationship.ExistingIdentityCandidatesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryReviewAcknowledgements chains the current query on the "review_acknowledgements" edge.
+func (_q *RelationshipQuery) QueryReviewAcknowledgements() *RelationshipReviewAcknowledgementQuery {
+	query := (&RelationshipReviewAcknowledgementClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, selector),
+			sqlgraph.To(relationshipreviewacknowledgement.Table, relationshipreviewacknowledgement.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.ReviewAcknowledgementsTable, relationship.ReviewAcknowledgementsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAttentionItems chains the current query on the "attention_items" edge.
+func (_q *RelationshipQuery) QueryAttentionItems() *RelationshipAttentionItemQuery {
+	query := (&RelationshipAttentionItemClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, selector),
+			sqlgraph.To(relationshipattentionitem.Table, relationshipattentionitem.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.AttentionItemsTable, relationship.AttentionItemsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first Relationship entity from the query.
 // Returns a *NotFoundError when no Relationship was found.
 func (_q *RelationshipQuery) First(ctx context.Context) (*Relationship, error) {
@@ -617,6 +766,12 @@ func (_q *RelationshipQuery) Clone() *RelationshipQuery {
 		withObservations:                      _q.withObservations.Clone(),
 		withAssertions:                        _q.withAssertions.Clone(),
 		withSnapshots:                         _q.withSnapshots.Clone(),
+		withProjectionJobs:                    _q.withProjectionJobs.Clone(),
+		withTrustEvents:                       _q.withTrustEvents.Clone(),
+		withProposedIdentityCandidates:        _q.withProposedIdentityCandidates.Clone(),
+		withExistingIdentityCandidates:        _q.withExistingIdentityCandidates.Clone(),
+		withReviewAcknowledgements:            _q.withReviewAcknowledgements.Clone(),
+		withAttentionItems:                    _q.withAttentionItems.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -777,6 +932,72 @@ func (_q *RelationshipQuery) WithSnapshots(opts ...func(*RelationshipStateSnapsh
 	return _q
 }
 
+// WithProjectionJobs tells the query-builder to eager-load the nodes that are connected to
+// the "projection_jobs" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithProjectionJobs(opts ...func(*RelationshipProjectionJobQuery)) *RelationshipQuery {
+	query := (&RelationshipProjectionJobClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withProjectionJobs = query
+	return _q
+}
+
+// WithTrustEvents tells the query-builder to eager-load the nodes that are connected to
+// the "trust_events" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithTrustEvents(opts ...func(*RevenueTrustEventQuery)) *RelationshipQuery {
+	query := (&RevenueTrustEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withTrustEvents = query
+	return _q
+}
+
+// WithProposedIdentityCandidates tells the query-builder to eager-load the nodes that are connected to
+// the "proposed_identity_candidates" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithProposedIdentityCandidates(opts ...func(*RelationshipIdentityCandidateQuery)) *RelationshipQuery {
+	query := (&RelationshipIdentityCandidateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withProposedIdentityCandidates = query
+	return _q
+}
+
+// WithExistingIdentityCandidates tells the query-builder to eager-load the nodes that are connected to
+// the "existing_identity_candidates" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithExistingIdentityCandidates(opts ...func(*RelationshipIdentityCandidateQuery)) *RelationshipQuery {
+	query := (&RelationshipIdentityCandidateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withExistingIdentityCandidates = query
+	return _q
+}
+
+// WithReviewAcknowledgements tells the query-builder to eager-load the nodes that are connected to
+// the "review_acknowledgements" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithReviewAcknowledgements(opts ...func(*RelationshipReviewAcknowledgementQuery)) *RelationshipQuery {
+	query := (&RelationshipReviewAcknowledgementClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withReviewAcknowledgements = query
+	return _q
+}
+
+// WithAttentionItems tells the query-builder to eager-load the nodes that are connected to
+// the "attention_items" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithAttentionItems(opts ...func(*RelationshipAttentionItemQuery)) *RelationshipQuery {
+	query := (&RelationshipAttentionItemClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAttentionItems = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -856,7 +1077,7 @@ func (_q *RelationshipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		nodes       = []*Relationship{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [14]bool{
+		loadedTypes = [20]bool{
 			_q.withWorkspace != nil,
 			_q.withUser != nil,
 			_q.withCommitments != nil,
@@ -871,6 +1092,12 @@ func (_q *RelationshipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 			_q.withObservations != nil,
 			_q.withAssertions != nil,
 			_q.withSnapshots != nil,
+			_q.withProjectionJobs != nil,
+			_q.withTrustEvents != nil,
+			_q.withProposedIdentityCandidates != nil,
+			_q.withExistingIdentityCandidates != nil,
+			_q.withReviewAcknowledgements != nil,
+			_q.withAttentionItems != nil,
 		}
 	)
 	if _q.withWorkspace != nil || _q.withUser != nil {
@@ -1008,6 +1235,58 @@ func (_q *RelationshipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 			return nil, err
 		}
 	}
+	if query := _q.withProjectionJobs; query != nil {
+		if err := _q.loadProjectionJobs(ctx, query, nodes,
+			func(n *Relationship) { n.Edges.ProjectionJobs = []*RelationshipProjectionJob{} },
+			func(n *Relationship, e *RelationshipProjectionJob) {
+				n.Edges.ProjectionJobs = append(n.Edges.ProjectionJobs, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withTrustEvents; query != nil {
+		if err := _q.loadTrustEvents(ctx, query, nodes,
+			func(n *Relationship) { n.Edges.TrustEvents = []*RevenueTrustEvent{} },
+			func(n *Relationship, e *RevenueTrustEvent) { n.Edges.TrustEvents = append(n.Edges.TrustEvents, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withProposedIdentityCandidates; query != nil {
+		if err := _q.loadProposedIdentityCandidates(ctx, query, nodes,
+			func(n *Relationship) { n.Edges.ProposedIdentityCandidates = []*RelationshipIdentityCandidate{} },
+			func(n *Relationship, e *RelationshipIdentityCandidate) {
+				n.Edges.ProposedIdentityCandidates = append(n.Edges.ProposedIdentityCandidates, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withExistingIdentityCandidates; query != nil {
+		if err := _q.loadExistingIdentityCandidates(ctx, query, nodes,
+			func(n *Relationship) { n.Edges.ExistingIdentityCandidates = []*RelationshipIdentityCandidate{} },
+			func(n *Relationship, e *RelationshipIdentityCandidate) {
+				n.Edges.ExistingIdentityCandidates = append(n.Edges.ExistingIdentityCandidates, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withReviewAcknowledgements; query != nil {
+		if err := _q.loadReviewAcknowledgements(ctx, query, nodes,
+			func(n *Relationship) { n.Edges.ReviewAcknowledgements = []*RelationshipReviewAcknowledgement{} },
+			func(n *Relationship, e *RelationshipReviewAcknowledgement) {
+				n.Edges.ReviewAcknowledgements = append(n.Edges.ReviewAcknowledgements, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAttentionItems; query != nil {
+		if err := _q.loadAttentionItems(ctx, query, nodes,
+			func(n *Relationship) { n.Edges.AttentionItems = []*RelationshipAttentionItem{} },
+			func(n *Relationship, e *RelationshipAttentionItem) {
+				n.Edges.AttentionItems = append(n.Edges.AttentionItems, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedCommitments {
 		if err := _q.loadCommitments(ctx, query, nodes,
 			func(n *Relationship) { n.appendNamedCommitments(name) },
@@ -1091,6 +1370,54 @@ func (_q *RelationshipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		if err := _q.loadSnapshots(ctx, query, nodes,
 			func(n *Relationship) { n.appendNamedSnapshots(name) },
 			func(n *Relationship, e *RelationshipStateSnapshot) { n.appendNamedSnapshots(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedProjectionJobs {
+		if err := _q.loadProjectionJobs(ctx, query, nodes,
+			func(n *Relationship) { n.appendNamedProjectionJobs(name) },
+			func(n *Relationship, e *RelationshipProjectionJob) { n.appendNamedProjectionJobs(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedTrustEvents {
+		if err := _q.loadTrustEvents(ctx, query, nodes,
+			func(n *Relationship) { n.appendNamedTrustEvents(name) },
+			func(n *Relationship, e *RevenueTrustEvent) { n.appendNamedTrustEvents(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedProposedIdentityCandidates {
+		if err := _q.loadProposedIdentityCandidates(ctx, query, nodes,
+			func(n *Relationship) { n.appendNamedProposedIdentityCandidates(name) },
+			func(n *Relationship, e *RelationshipIdentityCandidate) {
+				n.appendNamedProposedIdentityCandidates(name, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedExistingIdentityCandidates {
+		if err := _q.loadExistingIdentityCandidates(ctx, query, nodes,
+			func(n *Relationship) { n.appendNamedExistingIdentityCandidates(name) },
+			func(n *Relationship, e *RelationshipIdentityCandidate) {
+				n.appendNamedExistingIdentityCandidates(name, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedReviewAcknowledgements {
+		if err := _q.loadReviewAcknowledgements(ctx, query, nodes,
+			func(n *Relationship) { n.appendNamedReviewAcknowledgements(name) },
+			func(n *Relationship, e *RelationshipReviewAcknowledgement) {
+				n.appendNamedReviewAcknowledgements(name, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedAttentionItems {
+		if err := _q.loadAttentionItems(ctx, query, nodes,
+			func(n *Relationship) { n.appendNamedAttentionItems(name) },
+			func(n *Relationship, e *RelationshipAttentionItem) { n.appendNamedAttentionItems(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1568,6 +1895,192 @@ func (_q *RelationshipQuery) loadSnapshots(ctx context.Context, query *Relations
 	}
 	return nil
 }
+func (_q *RelationshipQuery) loadProjectionJobs(ctx context.Context, query *RelationshipProjectionJobQuery, nodes []*Relationship, init func(*Relationship), assign func(*Relationship, *RelationshipProjectionJob)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Relationship)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RelationshipProjectionJob(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(relationship.ProjectionJobsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.relationship_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "relationship_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "relationship_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RelationshipQuery) loadTrustEvents(ctx context.Context, query *RevenueTrustEventQuery, nodes []*Relationship, init func(*Relationship), assign func(*Relationship, *RevenueTrustEvent)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Relationship)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RevenueTrustEvent(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(relationship.TrustEventsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.relationship_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "relationship_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "relationship_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RelationshipQuery) loadProposedIdentityCandidates(ctx context.Context, query *RelationshipIdentityCandidateQuery, nodes []*Relationship, init func(*Relationship), assign func(*Relationship, *RelationshipIdentityCandidate)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Relationship)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RelationshipIdentityCandidate(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(relationship.ProposedIdentityCandidatesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.proposed_relationship_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "proposed_relationship_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "proposed_relationship_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RelationshipQuery) loadExistingIdentityCandidates(ctx context.Context, query *RelationshipIdentityCandidateQuery, nodes []*Relationship, init func(*Relationship), assign func(*Relationship, *RelationshipIdentityCandidate)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Relationship)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RelationshipIdentityCandidate(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(relationship.ExistingIdentityCandidatesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.existing_relationship_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "existing_relationship_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "existing_relationship_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RelationshipQuery) loadReviewAcknowledgements(ctx context.Context, query *RelationshipReviewAcknowledgementQuery, nodes []*Relationship, init func(*Relationship), assign func(*Relationship, *RelationshipReviewAcknowledgement)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Relationship)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RelationshipReviewAcknowledgement(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(relationship.ReviewAcknowledgementsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.relationship_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "relationship_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "relationship_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RelationshipQuery) loadAttentionItems(ctx context.Context, query *RelationshipAttentionItemQuery, nodes []*Relationship, init func(*Relationship), assign func(*Relationship, *RelationshipAttentionItem)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Relationship)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.RelationshipAttentionItem(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(relationship.AttentionItemsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.relationship_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "relationship_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "relationship_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *RelationshipQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -1818,6 +2331,90 @@ func (_q *RelationshipQuery) WithNamedSnapshots(name string, opts ...func(*Relat
 		_q.withNamedSnapshots = make(map[string]*RelationshipStateSnapshotQuery)
 	}
 	_q.withNamedSnapshots[name] = query
+	return _q
+}
+
+// WithNamedProjectionJobs tells the query-builder to eager-load the nodes that are connected to the "projection_jobs"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithNamedProjectionJobs(name string, opts ...func(*RelationshipProjectionJobQuery)) *RelationshipQuery {
+	query := (&RelationshipProjectionJobClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedProjectionJobs == nil {
+		_q.withNamedProjectionJobs = make(map[string]*RelationshipProjectionJobQuery)
+	}
+	_q.withNamedProjectionJobs[name] = query
+	return _q
+}
+
+// WithNamedTrustEvents tells the query-builder to eager-load the nodes that are connected to the "trust_events"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithNamedTrustEvents(name string, opts ...func(*RevenueTrustEventQuery)) *RelationshipQuery {
+	query := (&RevenueTrustEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedTrustEvents == nil {
+		_q.withNamedTrustEvents = make(map[string]*RevenueTrustEventQuery)
+	}
+	_q.withNamedTrustEvents[name] = query
+	return _q
+}
+
+// WithNamedProposedIdentityCandidates tells the query-builder to eager-load the nodes that are connected to the "proposed_identity_candidates"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithNamedProposedIdentityCandidates(name string, opts ...func(*RelationshipIdentityCandidateQuery)) *RelationshipQuery {
+	query := (&RelationshipIdentityCandidateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedProposedIdentityCandidates == nil {
+		_q.withNamedProposedIdentityCandidates = make(map[string]*RelationshipIdentityCandidateQuery)
+	}
+	_q.withNamedProposedIdentityCandidates[name] = query
+	return _q
+}
+
+// WithNamedExistingIdentityCandidates tells the query-builder to eager-load the nodes that are connected to the "existing_identity_candidates"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithNamedExistingIdentityCandidates(name string, opts ...func(*RelationshipIdentityCandidateQuery)) *RelationshipQuery {
+	query := (&RelationshipIdentityCandidateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedExistingIdentityCandidates == nil {
+		_q.withNamedExistingIdentityCandidates = make(map[string]*RelationshipIdentityCandidateQuery)
+	}
+	_q.withNamedExistingIdentityCandidates[name] = query
+	return _q
+}
+
+// WithNamedReviewAcknowledgements tells the query-builder to eager-load the nodes that are connected to the "review_acknowledgements"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithNamedReviewAcknowledgements(name string, opts ...func(*RelationshipReviewAcknowledgementQuery)) *RelationshipQuery {
+	query := (&RelationshipReviewAcknowledgementClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedReviewAcknowledgements == nil {
+		_q.withNamedReviewAcknowledgements = make(map[string]*RelationshipReviewAcknowledgementQuery)
+	}
+	_q.withNamedReviewAcknowledgements[name] = query
+	return _q
+}
+
+// WithNamedAttentionItems tells the query-builder to eager-load the nodes that are connected to the "attention_items"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithNamedAttentionItems(name string, opts ...func(*RelationshipAttentionItemQuery)) *RelationshipQuery {
+	query := (&RelationshipAttentionItemClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedAttentionItems == nil {
+		_q.withNamedAttentionItems = make(map[string]*RelationshipAttentionItemQuery)
+	}
+	_q.withNamedAttentionItems[name] = query
 	return _q
 }
 

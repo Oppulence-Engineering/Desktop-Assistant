@@ -13,6 +13,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	appcrypto "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 )
 
@@ -112,9 +113,15 @@ func newFixture(t *testing.T) *fixture {
 	u := newUser(t, client, "owner@x.co", "user_owner")
 	facade := &fakeFacade{decision: passedDecision(time.Now().UTC().Add(24 * time.Hour))}
 	exec := &fakeExecutor{result: &ExecResult{ProviderMessageID: "msg_1", ProviderThreadID: "thr_1"}}
+	svc := NewService(client, facade, exec, zap.NewNop())
+	sealer, err := appcrypto.NewSealer("test-tenant-evidence-kek-32-bytes-minimum")
+	if err != nil {
+		t.Fatalf("test evidence sealer: %v", err)
+	}
+	svc.SetEvidenceSealer(sealer)
 	return &fixture{
 		client: client,
-		svc:    NewService(client, facade, exec, zap.NewNop()),
+		svc:    svc,
 		user:   u,
 		ctx:    auth.WithUser(context.Background(), u),
 		facade: facade,
@@ -460,6 +467,46 @@ func TestUnsupportedReconciliationDoesNotRetryForever(t *testing.T) {
 	}
 }
 
+func TestAmbiguousReconciliationMovesToManualReviewWhenAssignedMemberIsRemoved(t *testing.T) {
+	f := newFixture(t)
+	member := newUser(t, f.client, "removed-action-owner@x.co", "user_removed_action_owner")
+	membership, err := f.svc.UpsertWorkspaceMember(f.ctx, f.user, member.ID, "member")
+	if err != nil {
+		t.Fatal(err)
+	}
+	memberCtx := auth.WithUser(context.Background(), member)
+	action, err := f.svc.CreateAction(memberCtx, member, ActionInput{
+		RelationshipID: f.relationship(t).ID, ActionType: "warm_follow_up", Channel: "email",
+		Reason: "Removed actor reconciliation fixture.", RecipientEmail: "buyer@example.com",
+		ProposedSubject: "Follow up", ProposedMessage: "Hello", ExecutionMode: ExecModeDraft,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	action = action.Update().
+		SetExecutionStatus(ExecAmbiguous).
+		SetExecutionIdempotencyKey("removed-actor-marker").
+		SetReconciliationStatus("pending").
+		SetReconciliationNextAt(time.Now().UTC().Add(-time.Minute)).
+		SaveX(memberCtx)
+	if _, err := f.svc.RemoveWorkspaceMember(f.ctx, f.user, membership.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	NewAmbiguousExecutionReconciler(f.svc, time.Second, 10, zap.NewNop()).sweep(context.Background())
+	got, err := f.svc.GetAction(f.ctx, action.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ExecutionStatus != ExecAmbiguous || got.ReconciliationStatus != "manual_review" ||
+		got.ReconciliationAttempts != maxReconciliationAttempts || got.ReconciliationNextAt != nil {
+		t.Fatalf("removed actor left ambiguous action in an automatic retry loop: %+v", got)
+	}
+	if f.exec.reconcileCalls != 0 || f.exec.calls != 0 {
+		t.Fatalf("removed actor triggered provider access: lookups=%d writes=%d", f.exec.reconcileCalls, f.exec.calls)
+	}
+}
+
 type barrierReconciler struct {
 	arrived chan struct{}
 	release chan struct{}
@@ -609,6 +656,17 @@ func TestOutcomesIdempotent(t *testing.T) {
 	}
 	if first.ID != second.ID {
 		t.Fatal("duplicate outcome must return the stored row")
+	}
+	storedAction, err := f.svc.GetAction(f.ctx, action.ID)
+	if err != nil {
+		t.Fatalf("reload action: %v", err)
+	}
+	timeline, err := f.svc.RelationshipTimeline(f.ctx, actionRelationshipID(storedAction), 50)
+	if err != nil {
+		t.Fatalf("outcome timeline: %v", err)
+	}
+	if len(timeline) != 1 || timeline[0].EventType != "action.outcome.replied" {
+		t.Fatalf("outcome was not published once into relationship history: %#v", timeline)
 	}
 }
 

@@ -1,5 +1,5 @@
 import * as fs from "node:fs/promises";
-import type { MeetingDoctorCheck } from "@x/shared/dist/meetings.js";
+import type { MeetingDoctorCheck, MeetingPreflightReport } from "@x/shared/dist/meetings.js";
 import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
 import { recordingsRoot } from "@x/core/dist/meetings/meetings.js";
 import { runCaptureDoctor, osSupportsNativeCapture } from "./meeting-capture.js";
@@ -26,11 +26,7 @@ import { parakeetModelStatus } from "./meeting-engines.js";
  */
 const MIN_FREE_BYTES = 500 * 1024 * 1024;
 
-export interface MeetingPreflight {
-  ok: boolean;
-  /** Only the checks that are not ok. Empty when ready. */
-  problems: MeetingDoctorCheck[];
-}
+export type MeetingPreflight = MeetingPreflightReport;
 
 async function freeSpaceCheck(dir: string): Promise<MeetingDoctorCheck | null> {
   try {
@@ -72,18 +68,19 @@ async function transcriptionCheck(): Promise<MeetingDoctorCheck | null> {
 /**
  * Run every readiness check that does not require the user's attention.
  *
- * `probeSystemAudio` is deliberately false. Probing means *creating* a process tap,
- * which raises the OS permission dialog — a background timer must never do that. The
- * doctor still reports a previously-denied permission, which is the case that matters.
+ * Callers leave `probeSystemAudio` false for background checks. Probing means
+ * *creating* a process tap and may raise the OS permission dialog, so only an
+ * explicit capture gesture may opt in. The doctor still reports a previously
+ * denied permission without a probe.
  */
-export async function runMeetingPreflight(): Promise<MeetingPreflight> {
+export async function runMeetingPreflight(probeSystemAudio = false): Promise<MeetingPreflight> {
   if (!osSupportsNativeCapture()) return { ok: true, problems: [] };
 
   const config = await getTranscriptionConfig();
   const root = recordingsRoot(config.meetings?.recordingsDir);
 
   const [report, space, transcription] = await Promise.all([
-    runCaptureDoctor(root, false),
+    runCaptureDoctor(root, probeSystemAudio),
     freeSpaceCheck(root),
     transcriptionCheck(),
   ]);

@@ -129,7 +129,7 @@ func recoverySourceFreshness(
 	}
 	fresh, stale := 0, []string{}
 	for _, status := range statuses {
-		if status.Status == "connected" && status.LastSuccessAt != nil && status.LastSuccessAt.After(now.Add(-48*time.Hour)) {
+		if status.Status == "live" && status.LastSuccessAt != nil && status.LastSuccessAt.After(now.Add(-48*time.Hour)) {
 			fresh++
 		} else {
 			stale = append(stale, status.Source)

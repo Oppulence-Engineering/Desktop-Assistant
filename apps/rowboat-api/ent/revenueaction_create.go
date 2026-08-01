@@ -18,6 +18,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenuetrustevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
@@ -642,6 +643,21 @@ func (_c *RevenueActionCreate) AddOutcomes(v ...*ActionOutcome) *RevenueActionCr
 	return _c.AddOutcomeIDs(ids...)
 }
 
+// AddTrustEventIDs adds the "trust_events" edge to the RevenueTrustEvent entity by IDs.
+func (_c *RevenueActionCreate) AddTrustEventIDs(ids ...uuid.UUID) *RevenueActionCreate {
+	_c.mutation.AddTrustEventIDs(ids...)
+	return _c
+}
+
+// AddTrustEvents adds the "trust_events" edges to the RevenueTrustEvent entity.
+func (_c *RevenueActionCreate) AddTrustEvents(v ...*RevenueTrustEvent) *RevenueActionCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddTrustEventIDs(ids...)
+}
+
 // Mutation returns the RevenueActionMutation object of the builder.
 func (_c *RevenueActionCreate) Mutation() *RevenueActionMutation {
 	return _c.mutation
@@ -1174,6 +1190,22 @@ func (_c *RevenueActionCreate) createSpec() (*RevenueAction, *sqlgraph.CreateSpe
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(actionoutcome.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.TrustEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueaction.TrustEventsTable,
+			Columns: []string{revenueaction.TrustEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuetrustevent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

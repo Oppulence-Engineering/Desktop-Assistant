@@ -9,12 +9,16 @@ import type {
   RelationshipObservationInput,
   RelationshipSemanticMatch,
   RelationshipSourceStatus,
+  RelationshipSourceInventoryItem,
+  RelationshipIdentityCandidate,
+  RelationshipAttentionItem,
   RelationshipStateSnapshot,
   CommitmentRecoveryEvaluation,
   RelationshipCommitment,
   MutualActionPlan,
   MutualActionPlanItem,
   ConversationDeletionReceipt,
+  BetaDiagnostics,
 } from "@x/shared/dist/relationships.js";
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
@@ -77,6 +81,12 @@ export async function searchRelationships(query: string) {
 export const getRelationship = (id: string) =>
   call<RelationshipDetail>(`/v1/relationships/${encodeURIComponent(id)}`);
 
+export const acknowledgeMissionControl = (id: string, stateVersion: number, stateHash: string) =>
+  call<{ id: string; stateVersion: number; stateHash: string; acknowledgedAt: string }>(
+    `/v1/relationships/${encodeURIComponent(id)}/acknowledgements`,
+    { method: "POST", body: JSON.stringify({ stateVersion, stateHash }) },
+  );
+
 export const getRelationshipTimeline = (id: string, limit = 50) =>
   call<{ observations: RelationshipObservation[] }>(
     `/v1/relationships/${encodeURIComponent(id)}/timeline?limit=${limit}`,
@@ -89,6 +99,107 @@ export const getRelationshipChanges = (id: string) =>
 
 export const getRelationshipSources = () =>
   call<{ sources: RelationshipSourceStatus[] }>("/v1/relationship-sources/status");
+
+export const getRelationshipSourceInventory = () =>
+  call<{ sources: RelationshipSourceInventoryItem[] }>("/v1/relationship-sources");
+
+export const getRelationshipBetaDiagnostics = () =>
+  call<BetaDiagnostics>("/v1/relationship-beta/diagnostics");
+
+export const reportRelationshipSourceAuthorization = (
+  source: string,
+  input: {
+    sourceAccountId?: string;
+    state: "started" | "completed" | "canceled" | "failed";
+    grantedScopes?: string[];
+    errorCode?: string;
+  },
+) =>
+  call<RelationshipSourceStatus>(
+    `/v1/relationship-sources/${encodeURIComponent(source)}/authorization`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+
+export const resyncRelationshipSource = (source: string, sourceAccountId: string) =>
+  call<RelationshipSourceStatus>(`/v1/relationship-sources/${encodeURIComponent(source)}/resync`, {
+    method: "POST",
+    body: JSON.stringify({ sourceAccountId }),
+  });
+
+export const disconnectRelationshipSource = (source: string, sourceAccountId: string) =>
+  call<RelationshipSourceStatus>(
+    `/v1/relationship-sources/${encodeURIComponent(source)}/${encodeURIComponent(sourceAccountId)}/disconnect`,
+    { method: "POST", body: "{}" },
+  );
+
+export const listIdentityCandidates = (status = "pending", relationshipId?: string) => {
+  const params = new URLSearchParams({ status });
+  if (relationshipId) params.set("relationshipId", relationshipId);
+  return call<{ candidates: RelationshipIdentityCandidate[] }>(
+    `/v1/relationship-identity-candidates?${params.toString()}`,
+  );
+};
+
+export const decideIdentityCandidate = (
+  candidateId: string,
+  input: { decision: string; reason: string; expectedVersion: number; idempotencyKey: string },
+) =>
+  call<RelationshipIdentityCandidate>(
+    `/v1/relationship-identity-candidates/${encodeURIComponent(candidateId)}/decisions`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+
+export const listRelationshipAttention = (status = "open") =>
+  call<{ contractVersion: string; asOf: string; items: RelationshipAttentionItem[] }>(
+    `/v1/relationship-attention?status=${encodeURIComponent(status)}`,
+  );
+
+export const decideRelationshipAttention = (
+  attentionId: string,
+  input: {
+    decision: "acknowledge" | "snooze" | "dismiss";
+    reason: string;
+    expectedVersion: number;
+    snoozedUntil?: string;
+  },
+) =>
+  call<RelationshipAttentionItem>(
+    `/v1/relationship-attention/${encodeURIComponent(attentionId)}/decisions`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+
+export const editRelationshipAction = (
+  actionId: string,
+  input: { proposedSubject?: string; proposedMessage?: string; reason?: string },
+) =>
+  call<RelationshipAction>(`/v1/revenue-actions/${encodeURIComponent(actionId)}/edit`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+export const evaluateRelationshipAction = (actionId: string) =>
+  call<unknown>(`/v1/revenue-actions/${encodeURIComponent(actionId)}/evaluate`, {
+    method: "POST",
+    body: "{}",
+  });
+
+export const executeRelationshipAction = (actionId: string) =>
+  call<RelationshipAction>(`/v1/revenue-actions/${encodeURIComponent(actionId)}/execute`, {
+    method: "POST",
+    body: "{}",
+  });
+
+export const snoozeRelationshipAction = (actionId: string, until: string) =>
+  call<RelationshipAction>(`/v1/revenue-actions/${encodeURIComponent(actionId)}/snooze`, {
+    method: "POST",
+    body: JSON.stringify({ until }),
+  });
+
+export const dismissRelationshipAction = (actionId: string, reason: string) =>
+  call<RelationshipAction>(`/v1/revenue-actions/${encodeURIComponent(actionId)}/dismiss`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
 
 export const getRelationshipEvidence = (relationshipId: string, evidenceId: string) =>
   call<{ observation: RelationshipObservation; payload: unknown }>(
@@ -103,12 +214,28 @@ export const ingestRelationshipObservations = (observations: RelationshipObserva
 
 export const correctRelationship = (
   id: string,
-  input: { dimension: string; value: string; reason: string },
+  input: {
+    dimension: string;
+    value: string;
+    reason: string;
+    supersedesAssertionId?: string;
+    validTo?: string;
+  },
 ) =>
   call<Relationship>(`/v1/relationships/${encodeURIComponent(id)}/corrections`, {
     method: "POST",
     body: JSON.stringify(input),
   });
+
+export const retractRelationshipAssertion = (
+  relationshipId: string,
+  assertionId: string,
+  reason: string,
+) =>
+  call<Relationship>(
+    `/v1/relationships/${encodeURIComponent(relationshipId)}/assertions/${encodeURIComponent(assertionId)}/retract`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  );
 
 export const correctConversationReview = (
   id: string,

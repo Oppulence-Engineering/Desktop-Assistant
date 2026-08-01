@@ -1,0 +1,261 @@
+{
+  "schemaVersion": "tfa-release-evidence-v1",
+  "release": "trustworthy-first-account-beta",
+  "releaseOwner": "pending_assignment",
+  "lastReviewedAt": null,
+  "decision": "not_yet_authorized",
+  "gates": [
+    {
+      "id": 1,
+      "title": "Temporal projection and recovery",
+      "owner": "API",
+      "status": "ready_for_verification",
+      "requiredStages": [
+        "internal_read_only",
+        "internal_governed_action",
+        "design_partner_read_only",
+        "design_partner_governed_action",
+        "beta"
+      ],
+      "evidence": ["apps/rowboat-api/internal/revenue/relationship_projection_test.go"],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 2,
+      "title": "Authorization and tenant-key drills",
+      "owner": "Security",
+      "status": "ready_for_verification",
+      "requiredStages": [
+        "internal_read_only",
+        "internal_governed_action",
+        "design_partner_read_only",
+        "design_partner_governed_action",
+        "beta"
+      ],
+      "evidence": [
+        "apps/rowboat-api/internal/revenue/workspace_authorization_test.go",
+        "apps/rowboat-api/internal/revenue/tenant_evidence_keys_test.go"
+      ],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 3,
+      "title": "Source lifecycle and repair",
+      "owner": "Connector platform",
+      "status": "ready_for_verification",
+      "requiredStages": [
+        "internal_read_only",
+        "internal_governed_action",
+        "design_partner_read_only",
+        "design_partner_governed_action",
+        "beta"
+      ],
+      "evidence": [
+        "apps/rowboat-api/internal/revenue/source_lifecycle_test.go",
+        "apps/rowboat-api/internal/revenue/source_backfill_test.go"
+      ],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 4,
+      "title": "Identity decision and lineage",
+      "owner": "API",
+      "status": "ready_for_verification",
+      "requiredStages": [
+        "internal_read_only",
+        "internal_governed_action",
+        "design_partner_read_only",
+        "design_partner_governed_action",
+        "beta"
+      ],
+      "evidence": ["apps/rowboat-api/internal/revenue/relationship_identity_review_test.go"],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 5,
+      "title": "Four-question client parity",
+      "owner": "Web and desktop",
+      "status": "ready_for_verification",
+      "requiredStages": [
+        "internal_read_only",
+        "internal_governed_action",
+        "design_partner_read_only",
+        "design_partner_governed_action",
+        "beta"
+      ],
+      "evidence": [
+        "apps/rowboat-api/internal/revenue/mission_control_test.go",
+        "packages/relationship-contract"
+      ],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 6,
+      "title": "Material evidence coverage",
+      "owner": "Product intelligence",
+      "status": "ready_for_verification",
+      "requiredStages": [
+        "internal_read_only",
+        "internal_governed_action",
+        "design_partner_read_only",
+        "design_partner_governed_action",
+        "beta"
+      ],
+      "evidence": ["apps/rowboat-api/internal/revenue/trustworthy_first_account_beta_test.go"],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 7,
+      "title": "Correction and retraction precedence",
+      "owner": "API",
+      "status": "ready_for_verification",
+      "requiredStages": [
+        "internal_read_only",
+        "internal_governed_action",
+        "design_partner_read_only",
+        "design_partner_governed_action",
+        "beta"
+      ],
+      "evidence": [
+        "apps/rowboat-api/internal/revenue/relationship_projection_test.go",
+        "apps/rowboat-api/internal/revenue/mission_control_test.go"
+      ],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 8,
+      "title": "Detector precision and freshness",
+      "owner": "Product intelligence",
+      "status": "ready_for_verification",
+      "requiredStages": [
+        "internal_read_only",
+        "internal_governed_action",
+        "design_partner_read_only",
+        "design_partner_governed_action",
+        "beta"
+      ],
+      "evidence": ["apps/rowboat-api/internal/revenue/relationship_attention_corpus_test.go"],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 9,
+      "title": "Policy, revision, idempotency, and reconciliation",
+      "owner": "Actions and connectors",
+      "status": "ready_for_verification",
+      "requiredStages": ["internal_governed_action", "design_partner_governed_action", "beta"],
+      "evidence": [
+        "apps/rowboat-api/internal/revenue/service_test.go",
+        "apps/rowboat-api/internal/revenue/executor_channels_test.go"
+      ],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 10,
+      "title": "Zero duplicate execution under faults",
+      "owner": "Actions",
+      "status": "ready_for_verification",
+      "requiredStages": ["internal_governed_action", "design_partner_governed_action", "beta"],
+      "evidence": ["apps/rowboat-api/internal/revenue/service_test.go"],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 11,
+      "title": "Closed-loop outcome explanation",
+      "owner": "Product intelligence",
+      "status": "ready_for_verification",
+      "requiredStages": ["internal_governed_action", "design_partner_governed_action", "beta"],
+      "evidence": [
+        "apps/rowboat-api/internal/revenue/trustworthy_first_account_beta_test.go",
+        "apps/rowboat-api/internal/revenue/outcome_learning_test.go"
+      ],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 12,
+      "title": "Desktop capture and publication safety",
+      "owner": "Desktop",
+      "status": "ready_for_verification",
+      "requiredStages": [
+        "internal_read_only",
+        "internal_governed_action",
+        "design_partner_read_only",
+        "design_partner_governed_action",
+        "beta"
+      ],
+      "evidence": [
+        "apps/x/packages/core/src/relationships/meeting-evidence.test.ts",
+        "apps/x/packages/core/src/relationships/evidence-outbox.test.ts",
+        "apps/x/packages/core/src/relationships/trustworthy-meeting-journey.test.ts"
+      ],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 13,
+      "title": "Complete CI quality matrix",
+      "owner": "Engineering",
+      "status": "pending",
+      "requiredStages": [
+        "internal_read_only",
+        "internal_governed_action",
+        "design_partner_read_only",
+        "design_partner_governed_action",
+        "beta"
+      ],
+      "evidence": [],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 14,
+      "title": "Live beta dashboards",
+      "owner": "SRE and product",
+      "status": "pending",
+      "requiredStages": ["design_partner_read_only", "design_partner_governed_action", "beta"],
+      "evidence": [],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 15,
+      "title": "Signed support and incident drills",
+      "owner": "SRE, security, and support",
+      "status": "pending",
+      "requiredStages": ["design_partner_governed_action", "beta"],
+      "evidence": [],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 16,
+      "title": "No open golden-journey P0 or P1",
+      "owner": "Release owner",
+      "status": "pending",
+      "requiredStages": ["design_partner_read_only", "design_partner_governed_action", "beta"],
+      "evidence": [],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    },
+    {
+      "id": 17,
+      "title": "Named owner go or no-go decision",
+      "owner": "Release owner",
+      "status": "pending",
+      "requiredStages": ["design_partner_read_only", "design_partner_governed_action", "beta"],
+      "evidence": [],
+      "verifiedBy": "",
+      "verifiedAt": ""
+    }
+  ]
+}

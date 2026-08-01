@@ -33,12 +33,70 @@ import {
 import { getWorkosLoginUrl, exchangeWorkosCode } from "@x/core/dist/auth/workos-backend.js";
 import { PRODUCT_PROVIDER_ID, isProductProvider } from "@x/shared/dist/branding.js";
 import { isManagedAuthMode } from "@x/core/dist/auth/repo.js";
+import {
+  reportRelationshipSourceAuthorization,
+  resyncRelationshipSource,
+} from "@x/core/dist/relationships/client.js";
 
 function buildRedirectUri(port: number): string {
   return `http://localhost:${port}/oauth/callback`;
 }
 
 const REDIRECT_URI = buildRedirectUri(DEFAULT_CALLBACK_PORT);
+
+async function recordRelationshipSourceAuthorization(event: {
+  provider: string;
+  success: boolean;
+  error?: string;
+  sourceAccountId?: string;
+  grantedScopes?: string[];
+}): Promise<void> {
+  const source = ["gmail", "calendar", "google"].includes(event.provider)
+    ? "google"
+    : event.provider;
+  if (!["google", "slack", "hubspot"].includes(source)) return;
+  try {
+    const canceled = /cancel|denied|access_denied/i.test(event.error || "");
+    const defaultReadScopes: Record<string, string[]> = {
+      google: [
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/calendar.events.readonly",
+      ],
+      slack: ["channels:history", "channels:read", "users:read"],
+      hubspot: [
+        "crm.objects.companies.read",
+        "crm.objects.contacts.read",
+        "crm.objects.deals.read",
+      ],
+    };
+    const status = await reportRelationshipSourceAuthorization(source, {
+      sourceAccountId: event.sourceAccountId || "default",
+      state: event.success ? "completed" : canceled ? "canceled" : "failed",
+      grantedScopes: event.success ? event.grantedScopes || defaultReadScopes[source] : undefined,
+      errorCode: event.success ? undefined : "authorization_failed",
+    });
+    if (event.success) {
+      await resyncRelationshipSource(source, status.sourceAccountId);
+    }
+  } catch {
+    // Connector ownership must remain independent from relationship telemetry
+    // availability. The next provider observation reconciles this state.
+    console.warn(`[Relationships] could not record ${source} consent lifecycle`);
+  }
+}
+
+async function beginRelationshipSourceAuthorization(provider: string): Promise<void> {
+  const source = ["gmail", "calendar", "google"].includes(provider) ? "google" : provider;
+  if (!["google", "slack", "hubspot"].includes(source)) return;
+  try {
+    await reportRelationshipSourceAuthorization(source, {
+      sourceAccountId: "default",
+      state: "started",
+    });
+  } catch {
+    console.warn(`[Relationships] could not record ${source} consent start`);
+  }
+}
 
 /** Top-level openid-client messages that often wrap a more specific cause. */
 const OPAQUE_OAUTH_TOP_MESSAGES = new Set(["invalid response encountered"]);
@@ -114,6 +172,11 @@ function cancelActiveFlow(reason: string = "cancelled"): void {
 
   // Only emit event for user-visible cancellations
   if (reason !== "new_flow_started") {
+    void recordRelationshipSourceAuthorization({
+      provider: activeFlow.provider,
+      success: false,
+      error: `OAuth flow ${reason}`,
+    });
     emitOAuthEvent({
       provider: activeFlow.provider,
       success: false,
@@ -380,6 +443,7 @@ export async function connectProvider(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     console.log(`[OAuth] Starting connection flow for ${provider}...`);
+    await beginRelationshipSourceAuthorization(provider);
 
     // Cancel any existing flow before starting a new one
     cancelActiveFlow("new_flow_started");
@@ -450,6 +514,11 @@ export async function connectProvider(
         if (callbackError) {
           const description = callbackUrl.searchParams.get("error_description") || callbackError;
           console.error(`[OAuth] ${provider} authorization error: ${description}`);
+          await recordRelationshipSourceAuthorization({
+            provider,
+            success: false,
+            error: description,
+          });
           emitOAuthEvent({ provider, success: false, error: description });
           activeFlows.delete(state);
           if (activeFlow && activeFlow.state === state) {
@@ -531,6 +600,12 @@ export async function connectProvider(
             }
           }
 
+          await recordRelationshipSourceAuthorization({
+            provider,
+            success: true,
+            grantedScopes: tokens.scopes,
+          });
+
           // Emit success event to renderer
           emitOAuthEvent({
             provider,
@@ -548,6 +623,11 @@ export async function connectProvider(
             }
           }
           const errorMessage = getOAuthErrorMessage(error);
+          await recordRelationshipSourceAuthorization({
+            provider,
+            success: false,
+            error: errorMessage,
+          });
           emitOAuthEvent({ provider, success: false, error: errorMessage });
           throw error;
         } finally {
@@ -630,6 +710,11 @@ export async function connectProvider(
     }
   } catch (error) {
     console.error("OAuth connection failed:", error);
+    await recordRelationshipSourceAuthorization({
+      provider,
+      success: false,
+      error: error instanceof Error ? error.message : "OAuth connection failed",
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -659,10 +744,20 @@ export async function completeSolomonGoogleConnect(state: string): Promise<void>
     });
     triggerGmailSync();
     triggerCalendarSync();
-    emitOAuthEvent({ provider: "google", success: true });
+    await recordRelationshipSourceAuthorization({
+      provider: "google",
+      success: true,
+      grantedScopes: tokens.scopes,
+    });
+    emitOAuthEvent({ provider: "google", success: true, grantedScopes: tokens.scopes });
     console.log("[OAuth] Solomon AI-managed Google connect complete");
   } catch (error) {
     console.error("[OAuth] Failed to complete Solomon AI-managed Google connect:", error);
+    await recordRelationshipSourceAuthorization({
+      provider: "google",
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to claim Google tokens",
+    });
     emitOAuthEvent({
       provider: "google",
       success: false,
@@ -682,11 +777,17 @@ export async function connectConnector(
   connector: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    await beginRelationshipSourceAuthorization(connector);
     const authorizeUrl = await startConnectorViaBackend(connector);
     await shell.openExternal(authorizeUrl);
     return { success: true };
   } catch (error) {
     console.error(`[Connectors] start ${connector} failed:`, error);
+    await recordRelationshipSourceAuthorization({
+      provider: connector,
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to start connector connect",
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to start connector connect",
@@ -707,10 +808,16 @@ export async function completeConnectorConnect(connector: string, state: string)
     console.log(`[Connectors] claiming ${connector} grant...`);
     await claimConnectorViaBackend(connector, state);
     invalidateCopilotInstructionsCache();
+    await recordRelationshipSourceAuthorization({ provider: connector, success: true });
     emitOAuthEvent({ provider: connector, success: true });
     console.log(`[Connectors] ${connector} connect complete`);
   } catch (error) {
     console.error(`[Connectors] failed to claim ${connector}:`, error);
+    await recordRelationshipSourceAuthorization({
+      provider: connector,
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to claim connector grant",
+    });
     emitOAuthEvent({
       provider: connector,
       success: false,
@@ -728,10 +835,16 @@ export async function completeConnectorConnect(connector: string, state: string)
  */
 export async function connectSlackWorkspace(): Promise<{ success: boolean; error?: string }> {
   try {
+    await beginRelationshipSourceAuthorization("slack");
     await shell.openExternal(slackStartURL());
     return { success: true };
   } catch (error) {
     console.error("[Slack] start workspace install failed:", error);
+    await recordRelationshipSourceAuthorization({
+      provider: "slack",
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to start Slack install",
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to start Slack install",
@@ -753,10 +866,27 @@ export async function completeSolomonSlackConnect(state: string): Promise<void> 
     console.log("[Slack] claiming workspace connection...");
     const workspace = await claimSlackWorkspaceViaBackend(state);
     invalidateCopilotInstructionsCache();
-    emitOAuthEvent({ provider: "slack", success: true });
+    const grantedScopes = workspace.scope?.split(/[ ,]+/).filter(Boolean);
+    await recordRelationshipSourceAuthorization({
+      provider: "slack",
+      success: true,
+      sourceAccountId: workspace.teamId,
+      grantedScopes,
+    });
+    emitOAuthEvent({
+      provider: "slack",
+      success: true,
+      sourceAccountId: workspace.teamId,
+      grantedScopes,
+    });
     console.log(`[Slack] workspace connected: ${workspace.teamName ?? workspace.teamId}`);
   } catch (error) {
     console.error("[Slack] failed to claim workspace connection:", error);
+    await recordRelationshipSourceAuthorization({
+      provider: "slack",
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to claim Slack workspace",
+    });
     emitOAuthEvent({
       provider: "slack",
       success: false,

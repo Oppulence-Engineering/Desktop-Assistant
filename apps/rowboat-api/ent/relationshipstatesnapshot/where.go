@@ -76,6 +76,21 @@ func StateJSON(v string) predicate.RelationshipStateSnapshot {
 	return predicate.RelationshipStateSnapshot(sql.FieldEQ(FieldStateJSON, v))
 }
 
+// StateHash applies equality check predicate on the "state_hash" field. It's identical to StateHashEQ.
+func StateHash(v string) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldEQ(FieldStateHash, v))
+}
+
+// ProjectorVersion applies equality check predicate on the "projector_version" field. It's identical to ProjectorVersionEQ.
+func ProjectorVersion(v int) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldEQ(FieldProjectorVersion, v))
+}
+
+// EvaluatedAt applies equality check predicate on the "evaluated_at" field. It's identical to EvaluatedAtEQ.
+func EvaluatedAt(v time.Time) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldEQ(FieldEvaluatedAt, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.RelationshipStateSnapshot {
 	return predicate.RelationshipStateSnapshot(sql.FieldEQ(FieldCreatedAt, v))
@@ -259,6 +274,151 @@ func StateJSONEqualFold(v string) predicate.RelationshipStateSnapshot {
 // StateJSONContainsFold applies the ContainsFold predicate on the "state_json" field.
 func StateJSONContainsFold(v string) predicate.RelationshipStateSnapshot {
 	return predicate.RelationshipStateSnapshot(sql.FieldContainsFold(FieldStateJSON, v))
+}
+
+// StateHashEQ applies the EQ predicate on the "state_hash" field.
+func StateHashEQ(v string) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldEQ(FieldStateHash, v))
+}
+
+// StateHashNEQ applies the NEQ predicate on the "state_hash" field.
+func StateHashNEQ(v string) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldNEQ(FieldStateHash, v))
+}
+
+// StateHashIn applies the In predicate on the "state_hash" field.
+func StateHashIn(vs ...string) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldIn(FieldStateHash, vs...))
+}
+
+// StateHashNotIn applies the NotIn predicate on the "state_hash" field.
+func StateHashNotIn(vs ...string) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldNotIn(FieldStateHash, vs...))
+}
+
+// StateHashGT applies the GT predicate on the "state_hash" field.
+func StateHashGT(v string) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldGT(FieldStateHash, v))
+}
+
+// StateHashGTE applies the GTE predicate on the "state_hash" field.
+func StateHashGTE(v string) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldGTE(FieldStateHash, v))
+}
+
+// StateHashLT applies the LT predicate on the "state_hash" field.
+func StateHashLT(v string) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldLT(FieldStateHash, v))
+}
+
+// StateHashLTE applies the LTE predicate on the "state_hash" field.
+func StateHashLTE(v string) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldLTE(FieldStateHash, v))
+}
+
+// StateHashContains applies the Contains predicate on the "state_hash" field.
+func StateHashContains(v string) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldContains(FieldStateHash, v))
+}
+
+// StateHashHasPrefix applies the HasPrefix predicate on the "state_hash" field.
+func StateHashHasPrefix(v string) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldHasPrefix(FieldStateHash, v))
+}
+
+// StateHashHasSuffix applies the HasSuffix predicate on the "state_hash" field.
+func StateHashHasSuffix(v string) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldHasSuffix(FieldStateHash, v))
+}
+
+// StateHashEqualFold applies the EqualFold predicate on the "state_hash" field.
+func StateHashEqualFold(v string) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldEqualFold(FieldStateHash, v))
+}
+
+// StateHashContainsFold applies the ContainsFold predicate on the "state_hash" field.
+func StateHashContainsFold(v string) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldContainsFold(FieldStateHash, v))
+}
+
+// ProjectorVersionEQ applies the EQ predicate on the "projector_version" field.
+func ProjectorVersionEQ(v int) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldEQ(FieldProjectorVersion, v))
+}
+
+// ProjectorVersionNEQ applies the NEQ predicate on the "projector_version" field.
+func ProjectorVersionNEQ(v int) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldNEQ(FieldProjectorVersion, v))
+}
+
+// ProjectorVersionIn applies the In predicate on the "projector_version" field.
+func ProjectorVersionIn(vs ...int) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldIn(FieldProjectorVersion, vs...))
+}
+
+// ProjectorVersionNotIn applies the NotIn predicate on the "projector_version" field.
+func ProjectorVersionNotIn(vs ...int) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldNotIn(FieldProjectorVersion, vs...))
+}
+
+// ProjectorVersionGT applies the GT predicate on the "projector_version" field.
+func ProjectorVersionGT(v int) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldGT(FieldProjectorVersion, v))
+}
+
+// ProjectorVersionGTE applies the GTE predicate on the "projector_version" field.
+func ProjectorVersionGTE(v int) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldGTE(FieldProjectorVersion, v))
+}
+
+// ProjectorVersionLT applies the LT predicate on the "projector_version" field.
+func ProjectorVersionLT(v int) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldLT(FieldProjectorVersion, v))
+}
+
+// ProjectorVersionLTE applies the LTE predicate on the "projector_version" field.
+func ProjectorVersionLTE(v int) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldLTE(FieldProjectorVersion, v))
+}
+
+// EvaluatedAtEQ applies the EQ predicate on the "evaluated_at" field.
+func EvaluatedAtEQ(v time.Time) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldEQ(FieldEvaluatedAt, v))
+}
+
+// EvaluatedAtNEQ applies the NEQ predicate on the "evaluated_at" field.
+func EvaluatedAtNEQ(v time.Time) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldNEQ(FieldEvaluatedAt, v))
+}
+
+// EvaluatedAtIn applies the In predicate on the "evaluated_at" field.
+func EvaluatedAtIn(vs ...time.Time) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldIn(FieldEvaluatedAt, vs...))
+}
+
+// EvaluatedAtNotIn applies the NotIn predicate on the "evaluated_at" field.
+func EvaluatedAtNotIn(vs ...time.Time) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldNotIn(FieldEvaluatedAt, vs...))
+}
+
+// EvaluatedAtGT applies the GT predicate on the "evaluated_at" field.
+func EvaluatedAtGT(v time.Time) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldGT(FieldEvaluatedAt, v))
+}
+
+// EvaluatedAtGTE applies the GTE predicate on the "evaluated_at" field.
+func EvaluatedAtGTE(v time.Time) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldGTE(FieldEvaluatedAt, v))
+}
+
+// EvaluatedAtLT applies the LT predicate on the "evaluated_at" field.
+func EvaluatedAtLT(v time.Time) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldLT(FieldEvaluatedAt, v))
+}
+
+// EvaluatedAtLTE applies the LTE predicate on the "evaluated_at" field.
+func EvaluatedAtLTE(v time.Time) predicate.RelationshipStateSnapshot {
+	return predicate.RelationshipStateSnapshot(sql.FieldLTE(FieldEvaluatedAt, v))
 }
 
 // HasWorkspace applies the HasEdge predicate on the "workspace" edge.

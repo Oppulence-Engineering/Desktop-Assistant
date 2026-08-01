@@ -18,6 +18,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenuetrustevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
@@ -833,6 +834,21 @@ func (_u *RevenueActionUpdate) AddOutcomes(v ...*ActionOutcome) *RevenueActionUp
 	return _u.AddOutcomeIDs(ids...)
 }
 
+// AddTrustEventIDs adds the "trust_events" edge to the RevenueTrustEvent entity by IDs.
+func (_u *RevenueActionUpdate) AddTrustEventIDs(ids ...uuid.UUID) *RevenueActionUpdate {
+	_u.mutation.AddTrustEventIDs(ids...)
+	return _u
+}
+
+// AddTrustEvents adds the "trust_events" edges to the RevenueTrustEvent entity.
+func (_u *RevenueActionUpdate) AddTrustEvents(v ...*RevenueTrustEvent) *RevenueActionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTrustEventIDs(ids...)
+}
+
 // Mutation returns the RevenueActionMutation object of the builder.
 func (_u *RevenueActionUpdate) Mutation() *RevenueActionMutation {
 	return _u.mutation
@@ -938,6 +954,27 @@ func (_u *RevenueActionUpdate) RemoveOutcomes(v ...*ActionOutcome) *RevenueActio
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveOutcomeIDs(ids...)
+}
+
+// ClearTrustEvents clears all "trust_events" edges to the RevenueTrustEvent entity.
+func (_u *RevenueActionUpdate) ClearTrustEvents() *RevenueActionUpdate {
+	_u.mutation.ClearTrustEvents()
+	return _u
+}
+
+// RemoveTrustEventIDs removes the "trust_events" edge to RevenueTrustEvent entities by IDs.
+func (_u *RevenueActionUpdate) RemoveTrustEventIDs(ids ...uuid.UUID) *RevenueActionUpdate {
+	_u.mutation.RemoveTrustEventIDs(ids...)
+	return _u
+}
+
+// RemoveTrustEvents removes "trust_events" edges to RevenueTrustEvent entities.
+func (_u *RevenueActionUpdate) RemoveTrustEvents(v ...*RevenueTrustEvent) *RevenueActionUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTrustEventIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1545,6 +1582,51 @@ func (_u *RevenueActionUpdate) sqlSave(ctx context.Context) (_node int, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(actionoutcome.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.TrustEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueaction.TrustEventsTable,
+			Columns: []string{revenueaction.TrustEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuetrustevent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTrustEventsIDs(); len(nodes) > 0 && !_u.mutation.TrustEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueaction.TrustEventsTable,
+			Columns: []string{revenueaction.TrustEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuetrustevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TrustEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueaction.TrustEventsTable,
+			Columns: []string{revenueaction.TrustEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuetrustevent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -2369,6 +2451,21 @@ func (_u *RevenueActionUpdateOne) AddOutcomes(v ...*ActionOutcome) *RevenueActio
 	return _u.AddOutcomeIDs(ids...)
 }
 
+// AddTrustEventIDs adds the "trust_events" edge to the RevenueTrustEvent entity by IDs.
+func (_u *RevenueActionUpdateOne) AddTrustEventIDs(ids ...uuid.UUID) *RevenueActionUpdateOne {
+	_u.mutation.AddTrustEventIDs(ids...)
+	return _u
+}
+
+// AddTrustEvents adds the "trust_events" edges to the RevenueTrustEvent entity.
+func (_u *RevenueActionUpdateOne) AddTrustEvents(v ...*RevenueTrustEvent) *RevenueActionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTrustEventIDs(ids...)
+}
+
 // Mutation returns the RevenueActionMutation object of the builder.
 func (_u *RevenueActionUpdateOne) Mutation() *RevenueActionMutation {
 	return _u.mutation
@@ -2474,6 +2571,27 @@ func (_u *RevenueActionUpdateOne) RemoveOutcomes(v ...*ActionOutcome) *RevenueAc
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveOutcomeIDs(ids...)
+}
+
+// ClearTrustEvents clears all "trust_events" edges to the RevenueTrustEvent entity.
+func (_u *RevenueActionUpdateOne) ClearTrustEvents() *RevenueActionUpdateOne {
+	_u.mutation.ClearTrustEvents()
+	return _u
+}
+
+// RemoveTrustEventIDs removes the "trust_events" edge to RevenueTrustEvent entities by IDs.
+func (_u *RevenueActionUpdateOne) RemoveTrustEventIDs(ids ...uuid.UUID) *RevenueActionUpdateOne {
+	_u.mutation.RemoveTrustEventIDs(ids...)
+	return _u
+}
+
+// RemoveTrustEvents removes "trust_events" edges to RevenueTrustEvent entities.
+func (_u *RevenueActionUpdateOne) RemoveTrustEvents(v ...*RevenueTrustEvent) *RevenueActionUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTrustEventIDs(ids...)
 }
 
 // Where appends a list predicates to the RevenueActionUpdate builder.
@@ -3111,6 +3229,51 @@ func (_u *RevenueActionUpdateOne) sqlSave(ctx context.Context) (_node *RevenueAc
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(actionoutcome.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.TrustEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueaction.TrustEventsTable,
+			Columns: []string{revenueaction.TrustEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuetrustevent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTrustEventsIDs(); len(nodes) > 0 && !_u.mutation.TrustEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueaction.TrustEventsTable,
+			Columns: []string{revenueaction.TrustEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuetrustevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TrustEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueaction.TrustEventsTable,
+			Columns: []string{revenueaction.TrustEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuetrustevent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

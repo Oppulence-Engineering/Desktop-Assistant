@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
+  outputFileTracingRoot: path.join(__dirname, "../.."),
   images: {
     unoptimized: true,
   },
@@ -13,8 +14,9 @@ const nextConfig: NextConfig = {
     ];
   },
   turbopack: {
-    // Keep Turbopack scoped to this app instead of inferring a parent workspace root.
-    root: __dirname || path.join(process.cwd()),
+    // Relationship contracts are shared with the desktop from the repository
+    // package boundary, so Turbopack must be allowed to trace that package.
+    root: path.join(__dirname, "../.."),
   },
 };
 

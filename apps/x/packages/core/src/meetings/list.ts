@@ -36,6 +36,7 @@ export async function listSessionSummaries(root: string): Promise<MeetingSession
       segmentCount: transcribed ? await countSegments(transcriptPath) : undefined,
       tracks: meta.tracks,
       warnings: meta.warnings,
+      relationshipTarget: meta.relationship_target,
       bytes: await dirBytes(dir),
       error: transcribed ? undefined : await lastLogError(dir),
     });

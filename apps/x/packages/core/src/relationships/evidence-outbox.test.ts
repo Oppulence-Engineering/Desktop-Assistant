@@ -2,7 +2,10 @@ import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { RelationshipObservationInput } from "@x/shared/dist/relationships.js";
+import type {
+  RelationshipObservationIngestResult,
+  RelationshipObservationInput,
+} from "@x/shared/dist/relationships.js";
 import { RelationshipEvidenceOutbox } from "./evidence-outbox.js";
 
 const dirs: string[] = [];
@@ -57,6 +60,65 @@ describe("RelationshipEvidenceOutbox", () => {
     expect(await outbox.flush()).toMatchObject({ sent: 0, pending: 1, error: "offline" });
     available = true;
     expect(await outbox.flush()).toEqual({ sent: 1, pending: 0 });
+  });
+
+  it("stores queued transcript evidence with owner-only permissions", async () => {
+    const file = await tempFile();
+    const outbox = new RelationshipEvidenceOutbox(file, async () => {});
+    await outbox.enqueue(observation("meeting-private"));
+
+    const stat = await fs.stat(file);
+    expect(stat.mode & 0o777).toBe(0o600);
+  });
+
+  it("returns the accepted shared relationship version to the publishing client", async () => {
+    const outbox = new RelationshipEvidenceOutbox(await tempFile(), async (items) => ({
+      results: items.map((item): RelationshipObservationIngestResult => ({
+        observation: {
+          id: "observation-1",
+          source: item.source,
+          sourceAccountId: item.sourceAccountId,
+          externalId: item.externalId,
+          sourceVersion: item.sourceVersion,
+          eventType: item.eventType,
+          occurredAt: item.occurredAt,
+          receivedAt: item.receivedAt || item.occurredAt,
+          summary: item.summary,
+          normalizedFacts: item.normalizedFacts,
+          contentHash: "sha256:accepted",
+        },
+        relationship: {
+          id: "relationship-1",
+          kind: "company",
+          displayName: "Acme",
+          status: "active",
+          lifecycle: "evaluation",
+          engagement: "unknown",
+          sentiment: "unknown",
+          health: "unknown",
+          stateVersion: 7,
+          stateHash: "sha256:state-v7",
+          projectorVersion: 2,
+          risks: [],
+          milestones: [],
+        },
+        duplicate: false,
+      })),
+    }));
+
+    await outbox.enqueue(observation("meeting-confirmed"));
+    const result = await outbox.flush();
+    expect(result).toMatchObject({
+      sent: 1,
+      pending: 0,
+      confirmations: [
+        {
+          relationshipId: "relationship-1",
+          stateVersion: 7,
+          stateHash: "sha256:state-v7",
+        },
+      ],
+    });
   });
 
   it("drains more than the API batch limit without dropping ordering", async () => {

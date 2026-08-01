@@ -94,6 +94,9 @@ export function ReviewSheet({
   if (!action) return null;
 
   const isSend = action.executionMode === "send";
+  const isEmail = action.channel === "email";
+  const uncertain =
+    action.executionStatus === "ambiguous" || action.reconciliationStatus === "manual_review";
   const linked = workspace?.mode === "linked" && workspace.status === "active";
   const dirty =
     subject !== (action.proposedSubject ?? "") || message !== (action.proposedMessage ?? "");
@@ -102,7 +105,15 @@ export function ReviewSheet({
   const needsRisk = isSend && action.policyStatus === "review_required";
   const blocked = action.policyStatus === "blocked";
   const rejected = action.approvalStatus === "rejected";
-  const executeLabel = isSend ? "Send email" : "Create draft in Gmail";
+  const executeLabel = isSend
+    ? action.channel === "slack"
+      ? "Post approved Slack message"
+      : action.channel === "crm" || action.channel === "crm_task" || action.channel === "task"
+        ? "Apply approved HubSpot update"
+        : action.channel === "calendar"
+          ? "Create approved calendar event"
+          : "Send approved email"
+    : "Create provider draft";
 
   const wrap = async (
     key: string,
@@ -265,23 +276,50 @@ export function ReviewSheet({
             </Alert>
           ) : null}
 
-          <Field label="To">
-            <Input value={action.recipientEmail ?? ""} readOnly className="bg-background-100/50" />
-          </Field>
-          <Field label="Subject">
-            <Input
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Subject line"
-            />
-          </Field>
-          <Field label="Message">
+          {uncertain ? (
+            <Alert>
+              <ClockCounterClockwise weight="fill" />
+              <AlertTitle>Provider result uncertain — do not retry</AlertTitle>
+              <AlertDescription>
+                Oppulence is reconciling this write with read-only provider checks. Status:{" "}
+                {action.reconciliationStatus || "pending"}
+                {action.reconciliationAttempts
+                  ? ` after ${action.reconciliationAttempts} attempt${action.reconciliationAttempts === 1 ? "" : "s"}`
+                  : ""}
+                .{" "}
+                {action.reconciliationError ||
+                  "The item will move to manual review if the provider cannot confirm it."}
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          {action.recipientEmail ? (
+            <Field label={isEmail ? "To" : "Destination"}>
+              <Input value={action.recipientEmail} readOnly className="bg-background-100/50" />
+            </Field>
+          ) : null}
+          {isEmail || action.proposedSubject ? (
+            <Field label={action.channel === "calendar" ? "Event title" : "Subject"}>
+              <Input
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder={action.channel === "calendar" ? "Event title" : "Subject line"}
+              />
+            </Field>
+          ) : null}
+          <Field
+            label={
+              action.channel === "crm" || action.channel === "crm_task"
+                ? "HubSpot note or task"
+                : "Message"
+            }
+          >
             <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={10}
               className="resize-y font-normal"
-              placeholder="Draft body"
+              placeholder="Exact approved content"
             />
             <p className="mt-1 text-xs text-primary/45">
               Editing the draft creates a new revision and clears any prior approval — you&apos;ll
@@ -292,18 +330,20 @@ export function ReviewSheet({
           <PriorityBreakdown action={action} />
 
           {/* The original email, fetched on demand (RFC 031 Layer 3). */}
-          <div className="rounded-[2px] border border-border p-3">
-            {original === null ? (
-              <Button variant="ghost" size="sm" onClick={viewOriginal} disabled={loadingOriginal}>
-                {loadingOriginal ? <CircleNotch className="animate-spin" /> : <EnvelopeSimple />}
-                View original email
-              </Button>
-            ) : (
-              <pre className="max-h-56 overflow-auto whitespace-pre-wrap font-normal text-xs text-primary/70">
-                {original}
-              </pre>
-            )}
-          </div>
+          {isEmail ? (
+            <div className="rounded-[2px] border border-border p-3">
+              {original === null ? (
+                <Button variant="ghost" size="sm" onClick={viewOriginal} disabled={loadingOriginal}>
+                  {loadingOriginal ? <CircleNotch className="animate-spin" /> : <EnvelopeSimple />}
+                  View original email
+                </Button>
+              ) : (
+                <pre className="max-h-56 overflow-auto whitespace-pre-wrap font-normal text-xs text-primary/70">
+                  {original}
+                </pre>
+              )}
+            </div>
+          ) : null}
 
           {isSend ? (
             <div className="flex flex-col gap-2 rounded-[2px] border border-border p-3">
@@ -410,7 +450,7 @@ export function ReviewSheet({
                 <Button
                   size="sm"
                   onClick={execute}
-                  disabled={busy !== null || blocked || (isSend && !linked)}
+                  disabled={busy !== null || blocked || uncertain || (isSend && !linked)}
                 >
                   {busy === "execute" ? (
                     <CircleNotch className="animate-spin" />

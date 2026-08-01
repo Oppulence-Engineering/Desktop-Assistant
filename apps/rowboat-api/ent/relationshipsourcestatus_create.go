@@ -74,6 +74,20 @@ func (_c *RelationshipSourceStatusCreate) SetNillableSourceAccountID(v *string) 
 	return _c
 }
 
+// SetConsentingActorID sets the "consenting_actor_id" field.
+func (_c *RelationshipSourceStatusCreate) SetConsentingActorID(v uuid.UUID) *RelationshipSourceStatusCreate {
+	_c.mutation.SetConsentingActorID(v)
+	return _c
+}
+
+// SetNillableConsentingActorID sets the "consenting_actor_id" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableConsentingActorID(v *uuid.UUID) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetConsentingActorID(*v)
+	}
+	return _c
+}
+
 // SetStatus sets the "status" field.
 func (_c *RelationshipSourceStatusCreate) SetStatus(v string) *RelationshipSourceStatusCreate {
 	_c.mutation.SetStatus(v)
@@ -84,6 +98,276 @@ func (_c *RelationshipSourceStatusCreate) SetStatus(v string) *RelationshipSourc
 func (_c *RelationshipSourceStatusCreate) SetNillableStatus(v *string) *RelationshipSourceStatusCreate {
 	if v != nil {
 		_c.SetStatus(*v)
+	}
+	return _c
+}
+
+// SetBackfillPhase sets the "backfill_phase" field.
+func (_c *RelationshipSourceStatusCreate) SetBackfillPhase(v string) *RelationshipSourceStatusCreate {
+	_c.mutation.SetBackfillPhase(v)
+	return _c
+}
+
+// SetNillableBackfillPhase sets the "backfill_phase" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableBackfillPhase(v *string) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetBackfillPhase(*v)
+	}
+	return _c
+}
+
+// SetBackfillCompleted sets the "backfill_completed" field.
+func (_c *RelationshipSourceStatusCreate) SetBackfillCompleted(v int) *RelationshipSourceStatusCreate {
+	_c.mutation.SetBackfillCompleted(v)
+	return _c
+}
+
+// SetNillableBackfillCompleted sets the "backfill_completed" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableBackfillCompleted(v *int) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetBackfillCompleted(*v)
+	}
+	return _c
+}
+
+// SetBackfillTotal sets the "backfill_total" field.
+func (_c *RelationshipSourceStatusCreate) SetBackfillTotal(v int) *RelationshipSourceStatusCreate {
+	_c.mutation.SetBackfillTotal(v)
+	return _c
+}
+
+// SetNillableBackfillTotal sets the "backfill_total" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableBackfillTotal(v *int) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetBackfillTotal(*v)
+	}
+	return _c
+}
+
+// SetWatermark sets the "watermark" field.
+func (_c *RelationshipSourceStatusCreate) SetWatermark(v string) *RelationshipSourceStatusCreate {
+	_c.mutation.SetWatermark(v)
+	return _c
+}
+
+// SetNillableWatermark sets the "watermark" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableWatermark(v *string) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetWatermark(*v)
+	}
+	return _c
+}
+
+// SetSyncStartedAt sets the "sync_started_at" field.
+func (_c *RelationshipSourceStatusCreate) SetSyncStartedAt(v time.Time) *RelationshipSourceStatusCreate {
+	_c.mutation.SetSyncStartedAt(v)
+	return _c
+}
+
+// SetNillableSyncStartedAt sets the "sync_started_at" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableSyncStartedAt(v *time.Time) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetSyncStartedAt(*v)
+	}
+	return _c
+}
+
+// SetAuthorizationStartedAt sets the "authorization_started_at" field.
+func (_c *RelationshipSourceStatusCreate) SetAuthorizationStartedAt(v time.Time) *RelationshipSourceStatusCreate {
+	_c.mutation.SetAuthorizationStartedAt(v)
+	return _c
+}
+
+// SetNillableAuthorizationStartedAt sets the "authorization_started_at" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableAuthorizationStartedAt(v *time.Time) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetAuthorizationStartedAt(*v)
+	}
+	return _c
+}
+
+// SetAuthorizedAt sets the "authorized_at" field.
+func (_c *RelationshipSourceStatusCreate) SetAuthorizedAt(v time.Time) *RelationshipSourceStatusCreate {
+	_c.mutation.SetAuthorizedAt(v)
+	return _c
+}
+
+// SetNillableAuthorizedAt sets the "authorized_at" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableAuthorizedAt(v *time.Time) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetAuthorizedAt(*v)
+	}
+	return _c
+}
+
+// SetBackfillCompletedAt sets the "backfill_completed_at" field.
+func (_c *RelationshipSourceStatusCreate) SetBackfillCompletedAt(v time.Time) *RelationshipSourceStatusCreate {
+	_c.mutation.SetBackfillCompletedAt(v)
+	return _c
+}
+
+// SetNillableBackfillCompletedAt sets the "backfill_completed_at" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableBackfillCompletedAt(v *time.Time) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetBackfillCompletedAt(*v)
+	}
+	return _c
+}
+
+// SetLastFailedSyncAt sets the "last_failed_sync_at" field.
+func (_c *RelationshipSourceStatusCreate) SetLastFailedSyncAt(v time.Time) *RelationshipSourceStatusCreate {
+	_c.mutation.SetLastFailedSyncAt(v)
+	return _c
+}
+
+// SetNillableLastFailedSyncAt sets the "last_failed_sync_at" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableLastFailedSyncAt(v *time.Time) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetLastFailedSyncAt(*v)
+	}
+	return _c
+}
+
+// SetDisconnectedAt sets the "disconnected_at" field.
+func (_c *RelationshipSourceStatusCreate) SetDisconnectedAt(v time.Time) *RelationshipSourceStatusCreate {
+	_c.mutation.SetDisconnectedAt(v)
+	return _c
+}
+
+// SetNillableDisconnectedAt sets the "disconnected_at" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableDisconnectedAt(v *time.Time) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetDisconnectedAt(*v)
+	}
+	return _c
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (_c *RelationshipSourceStatusCreate) SetRevokedAt(v time.Time) *RelationshipSourceStatusCreate {
+	_c.mutation.SetRevokedAt(v)
+	return _c
+}
+
+// SetNillableRevokedAt sets the "revoked_at" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableRevokedAt(v *time.Time) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetRevokedAt(*v)
+	}
+	return _c
+}
+
+// SetLastSyncAt sets the "last_sync_at" field.
+func (_c *RelationshipSourceStatusCreate) SetLastSyncAt(v time.Time) *RelationshipSourceStatusCreate {
+	_c.mutation.SetLastSyncAt(v)
+	return _c
+}
+
+// SetNillableLastSyncAt sets the "last_sync_at" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableLastSyncAt(v *time.Time) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetLastSyncAt(*v)
+	}
+	return _c
+}
+
+// SetExpectedCadenceSeconds sets the "expected_cadence_seconds" field.
+func (_c *RelationshipSourceStatusCreate) SetExpectedCadenceSeconds(v int64) *RelationshipSourceStatusCreate {
+	_c.mutation.SetExpectedCadenceSeconds(v)
+	return _c
+}
+
+// SetNillableExpectedCadenceSeconds sets the "expected_cadence_seconds" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableExpectedCadenceSeconds(v *int64) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetExpectedCadenceSeconds(*v)
+	}
+	return _c
+}
+
+// SetLagSeconds sets the "lag_seconds" field.
+func (_c *RelationshipSourceStatusCreate) SetLagSeconds(v int64) *RelationshipSourceStatusCreate {
+	_c.mutation.SetLagSeconds(v)
+	return _c
+}
+
+// SetNillableLagSeconds sets the "lag_seconds" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableLagSeconds(v *int64) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetLagSeconds(*v)
+	}
+	return _c
+}
+
+// SetRequiredScopes sets the "required_scopes" field.
+func (_c *RelationshipSourceStatusCreate) SetRequiredScopes(v []string) *RelationshipSourceStatusCreate {
+	_c.mutation.SetRequiredScopes(v)
+	return _c
+}
+
+// SetGrantedScopes sets the "granted_scopes" field.
+func (_c *RelationshipSourceStatusCreate) SetGrantedScopes(v []string) *RelationshipSourceStatusCreate {
+	_c.mutation.SetGrantedScopes(v)
+	return _c
+}
+
+// SetMissingScopes sets the "missing_scopes" field.
+func (_c *RelationshipSourceStatusCreate) SetMissingScopes(v []string) *RelationshipSourceStatusCreate {
+	_c.mutation.SetMissingScopes(v)
+	return _c
+}
+
+// SetErrorCode sets the "error_code" field.
+func (_c *RelationshipSourceStatusCreate) SetErrorCode(v string) *RelationshipSourceStatusCreate {
+	_c.mutation.SetErrorCode(v)
+	return _c
+}
+
+// SetNillableErrorCode sets the "error_code" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableErrorCode(v *string) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetErrorCode(*v)
+	}
+	return _c
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (_c *RelationshipSourceStatusCreate) SetRetryCount(v int) *RelationshipSourceStatusCreate {
+	_c.mutation.SetRetryCount(v)
+	return _c
+}
+
+// SetNillableRetryCount sets the "retry_count" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableRetryCount(v *int) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetRetryCount(*v)
+	}
+	return _c
+}
+
+// SetNextRetryAt sets the "next_retry_at" field.
+func (_c *RelationshipSourceStatusCreate) SetNextRetryAt(v time.Time) *RelationshipSourceStatusCreate {
+	_c.mutation.SetNextRetryAt(v)
+	return _c
+}
+
+// SetNillableNextRetryAt sets the "next_retry_at" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableNextRetryAt(v *time.Time) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetNextRetryAt(*v)
+	}
+	return _c
+}
+
+// SetCompleteness sets the "completeness" field.
+func (_c *RelationshipSourceStatusCreate) SetCompleteness(v string) *RelationshipSourceStatusCreate {
+	_c.mutation.SetCompleteness(v)
+	return _c
+}
+
+// SetNillableCompleteness sets the "completeness" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableCompleteness(v *string) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetCompleteness(*v)
 	}
 	return _c
 }
@@ -126,6 +410,20 @@ func (_c *RelationshipSourceStatusCreate) SetLastObservationAt(v time.Time) *Rel
 func (_c *RelationshipSourceStatusCreate) SetNillableLastObservationAt(v *time.Time) *RelationshipSourceStatusCreate {
 	if v != nil {
 		_c.SetLastObservationAt(*v)
+	}
+	return _c
+}
+
+// SetLastProviderEventAt sets the "last_provider_event_at" field.
+func (_c *RelationshipSourceStatusCreate) SetLastProviderEventAt(v time.Time) *RelationshipSourceStatusCreate {
+	_c.mutation.SetLastProviderEventAt(v)
+	return _c
+}
+
+// SetNillableLastProviderEventAt sets the "last_provider_event_at" field if the given value is not nil.
+func (_c *RelationshipSourceStatusCreate) SetNillableLastProviderEventAt(v *time.Time) *RelationshipSourceStatusCreate {
+	if v != nil {
+		_c.SetLastProviderEventAt(*v)
 	}
 	return _c
 }
@@ -231,6 +529,46 @@ func (_c *RelationshipSourceStatusCreate) defaults() {
 		v := relationshipsourcestatus.DefaultStatus
 		_c.mutation.SetStatus(v)
 	}
+	if _, ok := _c.mutation.BackfillPhase(); !ok {
+		v := relationshipsourcestatus.DefaultBackfillPhase
+		_c.mutation.SetBackfillPhase(v)
+	}
+	if _, ok := _c.mutation.BackfillCompleted(); !ok {
+		v := relationshipsourcestatus.DefaultBackfillCompleted
+		_c.mutation.SetBackfillCompleted(v)
+	}
+	if _, ok := _c.mutation.BackfillTotal(); !ok {
+		v := relationshipsourcestatus.DefaultBackfillTotal
+		_c.mutation.SetBackfillTotal(v)
+	}
+	if _, ok := _c.mutation.ExpectedCadenceSeconds(); !ok {
+		v := relationshipsourcestatus.DefaultExpectedCadenceSeconds
+		_c.mutation.SetExpectedCadenceSeconds(v)
+	}
+	if _, ok := _c.mutation.LagSeconds(); !ok {
+		v := relationshipsourcestatus.DefaultLagSeconds
+		_c.mutation.SetLagSeconds(v)
+	}
+	if _, ok := _c.mutation.RequiredScopes(); !ok {
+		v := relationshipsourcestatus.DefaultRequiredScopes
+		_c.mutation.SetRequiredScopes(v)
+	}
+	if _, ok := _c.mutation.GrantedScopes(); !ok {
+		v := relationshipsourcestatus.DefaultGrantedScopes
+		_c.mutation.SetGrantedScopes(v)
+	}
+	if _, ok := _c.mutation.MissingScopes(); !ok {
+		v := relationshipsourcestatus.DefaultMissingScopes
+		_c.mutation.SetMissingScopes(v)
+	}
+	if _, ok := _c.mutation.RetryCount(); !ok {
+		v := relationshipsourcestatus.DefaultRetryCount
+		_c.mutation.SetRetryCount(v)
+	}
+	if _, ok := _c.mutation.Completeness(); !ok {
+		v := relationshipsourcestatus.DefaultCompleteness
+		_c.mutation.SetCompleteness(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := relationshipsourcestatus.DefaultID()
 		_c.mutation.SetID(v)
@@ -262,6 +600,71 @@ func (_c *RelationshipSourceStatusCreate) check() error {
 	if v, ok := _c.mutation.Status(); ok {
 		if err := relationshipsourcestatus.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.status": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.BackfillPhase(); !ok {
+		return &ValidationError{Name: "backfill_phase", err: errors.New(`ent: missing required field "RelationshipSourceStatus.backfill_phase"`)}
+	}
+	if v, ok := _c.mutation.BackfillPhase(); ok {
+		if err := relationshipsourcestatus.BackfillPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "backfill_phase", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.backfill_phase": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.BackfillCompleted(); !ok {
+		return &ValidationError{Name: "backfill_completed", err: errors.New(`ent: missing required field "RelationshipSourceStatus.backfill_completed"`)}
+	}
+	if v, ok := _c.mutation.BackfillCompleted(); ok {
+		if err := relationshipsourcestatus.BackfillCompletedValidator(v); err != nil {
+			return &ValidationError{Name: "backfill_completed", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.backfill_completed": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.BackfillTotal(); !ok {
+		return &ValidationError{Name: "backfill_total", err: errors.New(`ent: missing required field "RelationshipSourceStatus.backfill_total"`)}
+	}
+	if v, ok := _c.mutation.BackfillTotal(); ok {
+		if err := relationshipsourcestatus.BackfillTotalValidator(v); err != nil {
+			return &ValidationError{Name: "backfill_total", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.backfill_total": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.ExpectedCadenceSeconds(); !ok {
+		return &ValidationError{Name: "expected_cadence_seconds", err: errors.New(`ent: missing required field "RelationshipSourceStatus.expected_cadence_seconds"`)}
+	}
+	if v, ok := _c.mutation.ExpectedCadenceSeconds(); ok {
+		if err := relationshipsourcestatus.ExpectedCadenceSecondsValidator(v); err != nil {
+			return &ValidationError{Name: "expected_cadence_seconds", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.expected_cadence_seconds": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.LagSeconds(); !ok {
+		return &ValidationError{Name: "lag_seconds", err: errors.New(`ent: missing required field "RelationshipSourceStatus.lag_seconds"`)}
+	}
+	if v, ok := _c.mutation.LagSeconds(); ok {
+		if err := relationshipsourcestatus.LagSecondsValidator(v); err != nil {
+			return &ValidationError{Name: "lag_seconds", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.lag_seconds": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.RequiredScopes(); !ok {
+		return &ValidationError{Name: "required_scopes", err: errors.New(`ent: missing required field "RelationshipSourceStatus.required_scopes"`)}
+	}
+	if _, ok := _c.mutation.GrantedScopes(); !ok {
+		return &ValidationError{Name: "granted_scopes", err: errors.New(`ent: missing required field "RelationshipSourceStatus.granted_scopes"`)}
+	}
+	if _, ok := _c.mutation.MissingScopes(); !ok {
+		return &ValidationError{Name: "missing_scopes", err: errors.New(`ent: missing required field "RelationshipSourceStatus.missing_scopes"`)}
+	}
+	if _, ok := _c.mutation.RetryCount(); !ok {
+		return &ValidationError{Name: "retry_count", err: errors.New(`ent: missing required field "RelationshipSourceStatus.retry_count"`)}
+	}
+	if v, ok := _c.mutation.RetryCount(); ok {
+		if err := relationshipsourcestatus.RetryCountValidator(v); err != nil {
+			return &ValidationError{Name: "retry_count", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.retry_count": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Completeness(); !ok {
+		return &ValidationError{Name: "completeness", err: errors.New(`ent: missing required field "RelationshipSourceStatus.completeness"`)}
+	}
+	if v, ok := _c.mutation.Completeness(); ok {
+		if err := relationshipsourcestatus.CompletenessValidator(v); err != nil {
+			return &ValidationError{Name: "completeness", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.completeness": %w`, err)}
 		}
 	}
 	if len(_c.mutation.WorkspaceIDs()) == 0 {
@@ -322,9 +725,97 @@ func (_c *RelationshipSourceStatusCreate) createSpec() (*RelationshipSourceStatu
 		_spec.SetField(relationshipsourcestatus.FieldSourceAccountID, field.TypeString, value)
 		_node.SourceAccountID = value
 	}
+	if value, ok := _c.mutation.ConsentingActorID(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldConsentingActorID, field.TypeUUID, value)
+		_node.ConsentingActorID = &value
+	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(relationshipsourcestatus.FieldStatus, field.TypeString, value)
 		_node.Status = value
+	}
+	if value, ok := _c.mutation.BackfillPhase(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldBackfillPhase, field.TypeString, value)
+		_node.BackfillPhase = value
+	}
+	if value, ok := _c.mutation.BackfillCompleted(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldBackfillCompleted, field.TypeInt, value)
+		_node.BackfillCompleted = value
+	}
+	if value, ok := _c.mutation.BackfillTotal(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldBackfillTotal, field.TypeInt, value)
+		_node.BackfillTotal = value
+	}
+	if value, ok := _c.mutation.Watermark(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldWatermark, field.TypeString, value)
+		_node.Watermark = value
+	}
+	if value, ok := _c.mutation.SyncStartedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldSyncStartedAt, field.TypeTime, value)
+		_node.SyncStartedAt = &value
+	}
+	if value, ok := _c.mutation.AuthorizationStartedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldAuthorizationStartedAt, field.TypeTime, value)
+		_node.AuthorizationStartedAt = &value
+	}
+	if value, ok := _c.mutation.AuthorizedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldAuthorizedAt, field.TypeTime, value)
+		_node.AuthorizedAt = &value
+	}
+	if value, ok := _c.mutation.BackfillCompletedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldBackfillCompletedAt, field.TypeTime, value)
+		_node.BackfillCompletedAt = &value
+	}
+	if value, ok := _c.mutation.LastFailedSyncAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldLastFailedSyncAt, field.TypeTime, value)
+		_node.LastFailedSyncAt = &value
+	}
+	if value, ok := _c.mutation.DisconnectedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldDisconnectedAt, field.TypeTime, value)
+		_node.DisconnectedAt = &value
+	}
+	if value, ok := _c.mutation.RevokedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldRevokedAt, field.TypeTime, value)
+		_node.RevokedAt = &value
+	}
+	if value, ok := _c.mutation.LastSyncAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldLastSyncAt, field.TypeTime, value)
+		_node.LastSyncAt = &value
+	}
+	if value, ok := _c.mutation.ExpectedCadenceSeconds(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldExpectedCadenceSeconds, field.TypeInt64, value)
+		_node.ExpectedCadenceSeconds = value
+	}
+	if value, ok := _c.mutation.LagSeconds(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldLagSeconds, field.TypeInt64, value)
+		_node.LagSeconds = value
+	}
+	if value, ok := _c.mutation.RequiredScopes(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldRequiredScopes, field.TypeJSON, value)
+		_node.RequiredScopes = value
+	}
+	if value, ok := _c.mutation.GrantedScopes(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldGrantedScopes, field.TypeJSON, value)
+		_node.GrantedScopes = value
+	}
+	if value, ok := _c.mutation.MissingScopes(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldMissingScopes, field.TypeJSON, value)
+		_node.MissingScopes = value
+	}
+	if value, ok := _c.mutation.ErrorCode(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldErrorCode, field.TypeString, value)
+		_node.ErrorCode = value
+	}
+	if value, ok := _c.mutation.RetryCount(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldRetryCount, field.TypeInt, value)
+		_node.RetryCount = value
+	}
+	if value, ok := _c.mutation.NextRetryAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldNextRetryAt, field.TypeTime, value)
+		_node.NextRetryAt = &value
+	}
+	if value, ok := _c.mutation.Completeness(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldCompleteness, field.TypeString, value)
+		_node.Completeness = value
 	}
 	if value, ok := _c.mutation.Cursor(); ok {
 		_spec.SetField(relationshipsourcestatus.FieldCursor, field.TypeString, value)
@@ -337,6 +828,10 @@ func (_c *RelationshipSourceStatusCreate) createSpec() (*RelationshipSourceStatu
 	if value, ok := _c.mutation.LastObservationAt(); ok {
 		_spec.SetField(relationshipsourcestatus.FieldLastObservationAt, field.TypeTime, value)
 		_node.LastObservationAt = &value
+	}
+	if value, ok := _c.mutation.LastProviderEventAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldLastProviderEventAt, field.TypeTime, value)
+		_node.LastProviderEventAt = &value
 	}
 	if value, ok := _c.mutation.LastError(); ok {
 		_spec.SetField(relationshipsourcestatus.FieldLastError, field.TypeString, value)
@@ -464,6 +959,24 @@ func (u *RelationshipSourceStatusUpsert) UpdateSourceAccountID() *RelationshipSo
 	return u
 }
 
+// SetConsentingActorID sets the "consenting_actor_id" field.
+func (u *RelationshipSourceStatusUpsert) SetConsentingActorID(v uuid.UUID) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldConsentingActorID, v)
+	return u
+}
+
+// UpdateConsentingActorID sets the "consenting_actor_id" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateConsentingActorID() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldConsentingActorID)
+	return u
+}
+
+// ClearConsentingActorID clears the value of the "consenting_actor_id" field.
+func (u *RelationshipSourceStatusUpsert) ClearConsentingActorID() *RelationshipSourceStatusUpsert {
+	u.SetNull(relationshipsourcestatus.FieldConsentingActorID)
+	return u
+}
+
 // SetStatus sets the "status" field.
 func (u *RelationshipSourceStatusUpsert) SetStatus(v string) *RelationshipSourceStatusUpsert {
 	u.Set(relationshipsourcestatus.FieldStatus, v)
@@ -473,6 +986,354 @@ func (u *RelationshipSourceStatusUpsert) SetStatus(v string) *RelationshipSource
 // UpdateStatus sets the "status" field to the value that was provided on create.
 func (u *RelationshipSourceStatusUpsert) UpdateStatus() *RelationshipSourceStatusUpsert {
 	u.SetExcluded(relationshipsourcestatus.FieldStatus)
+	return u
+}
+
+// SetBackfillPhase sets the "backfill_phase" field.
+func (u *RelationshipSourceStatusUpsert) SetBackfillPhase(v string) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldBackfillPhase, v)
+	return u
+}
+
+// UpdateBackfillPhase sets the "backfill_phase" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateBackfillPhase() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldBackfillPhase)
+	return u
+}
+
+// SetBackfillCompleted sets the "backfill_completed" field.
+func (u *RelationshipSourceStatusUpsert) SetBackfillCompleted(v int) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldBackfillCompleted, v)
+	return u
+}
+
+// UpdateBackfillCompleted sets the "backfill_completed" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateBackfillCompleted() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldBackfillCompleted)
+	return u
+}
+
+// AddBackfillCompleted adds v to the "backfill_completed" field.
+func (u *RelationshipSourceStatusUpsert) AddBackfillCompleted(v int) *RelationshipSourceStatusUpsert {
+	u.Add(relationshipsourcestatus.FieldBackfillCompleted, v)
+	return u
+}
+
+// SetBackfillTotal sets the "backfill_total" field.
+func (u *RelationshipSourceStatusUpsert) SetBackfillTotal(v int) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldBackfillTotal, v)
+	return u
+}
+
+// UpdateBackfillTotal sets the "backfill_total" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateBackfillTotal() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldBackfillTotal)
+	return u
+}
+
+// AddBackfillTotal adds v to the "backfill_total" field.
+func (u *RelationshipSourceStatusUpsert) AddBackfillTotal(v int) *RelationshipSourceStatusUpsert {
+	u.Add(relationshipsourcestatus.FieldBackfillTotal, v)
+	return u
+}
+
+// SetWatermark sets the "watermark" field.
+func (u *RelationshipSourceStatusUpsert) SetWatermark(v string) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldWatermark, v)
+	return u
+}
+
+// UpdateWatermark sets the "watermark" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateWatermark() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldWatermark)
+	return u
+}
+
+// ClearWatermark clears the value of the "watermark" field.
+func (u *RelationshipSourceStatusUpsert) ClearWatermark() *RelationshipSourceStatusUpsert {
+	u.SetNull(relationshipsourcestatus.FieldWatermark)
+	return u
+}
+
+// SetSyncStartedAt sets the "sync_started_at" field.
+func (u *RelationshipSourceStatusUpsert) SetSyncStartedAt(v time.Time) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldSyncStartedAt, v)
+	return u
+}
+
+// UpdateSyncStartedAt sets the "sync_started_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateSyncStartedAt() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldSyncStartedAt)
+	return u
+}
+
+// ClearSyncStartedAt clears the value of the "sync_started_at" field.
+func (u *RelationshipSourceStatusUpsert) ClearSyncStartedAt() *RelationshipSourceStatusUpsert {
+	u.SetNull(relationshipsourcestatus.FieldSyncStartedAt)
+	return u
+}
+
+// SetAuthorizationStartedAt sets the "authorization_started_at" field.
+func (u *RelationshipSourceStatusUpsert) SetAuthorizationStartedAt(v time.Time) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldAuthorizationStartedAt, v)
+	return u
+}
+
+// UpdateAuthorizationStartedAt sets the "authorization_started_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateAuthorizationStartedAt() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldAuthorizationStartedAt)
+	return u
+}
+
+// ClearAuthorizationStartedAt clears the value of the "authorization_started_at" field.
+func (u *RelationshipSourceStatusUpsert) ClearAuthorizationStartedAt() *RelationshipSourceStatusUpsert {
+	u.SetNull(relationshipsourcestatus.FieldAuthorizationStartedAt)
+	return u
+}
+
+// SetAuthorizedAt sets the "authorized_at" field.
+func (u *RelationshipSourceStatusUpsert) SetAuthorizedAt(v time.Time) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldAuthorizedAt, v)
+	return u
+}
+
+// UpdateAuthorizedAt sets the "authorized_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateAuthorizedAt() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldAuthorizedAt)
+	return u
+}
+
+// ClearAuthorizedAt clears the value of the "authorized_at" field.
+func (u *RelationshipSourceStatusUpsert) ClearAuthorizedAt() *RelationshipSourceStatusUpsert {
+	u.SetNull(relationshipsourcestatus.FieldAuthorizedAt)
+	return u
+}
+
+// SetBackfillCompletedAt sets the "backfill_completed_at" field.
+func (u *RelationshipSourceStatusUpsert) SetBackfillCompletedAt(v time.Time) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldBackfillCompletedAt, v)
+	return u
+}
+
+// UpdateBackfillCompletedAt sets the "backfill_completed_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateBackfillCompletedAt() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldBackfillCompletedAt)
+	return u
+}
+
+// ClearBackfillCompletedAt clears the value of the "backfill_completed_at" field.
+func (u *RelationshipSourceStatusUpsert) ClearBackfillCompletedAt() *RelationshipSourceStatusUpsert {
+	u.SetNull(relationshipsourcestatus.FieldBackfillCompletedAt)
+	return u
+}
+
+// SetLastFailedSyncAt sets the "last_failed_sync_at" field.
+func (u *RelationshipSourceStatusUpsert) SetLastFailedSyncAt(v time.Time) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldLastFailedSyncAt, v)
+	return u
+}
+
+// UpdateLastFailedSyncAt sets the "last_failed_sync_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateLastFailedSyncAt() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldLastFailedSyncAt)
+	return u
+}
+
+// ClearLastFailedSyncAt clears the value of the "last_failed_sync_at" field.
+func (u *RelationshipSourceStatusUpsert) ClearLastFailedSyncAt() *RelationshipSourceStatusUpsert {
+	u.SetNull(relationshipsourcestatus.FieldLastFailedSyncAt)
+	return u
+}
+
+// SetDisconnectedAt sets the "disconnected_at" field.
+func (u *RelationshipSourceStatusUpsert) SetDisconnectedAt(v time.Time) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldDisconnectedAt, v)
+	return u
+}
+
+// UpdateDisconnectedAt sets the "disconnected_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateDisconnectedAt() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldDisconnectedAt)
+	return u
+}
+
+// ClearDisconnectedAt clears the value of the "disconnected_at" field.
+func (u *RelationshipSourceStatusUpsert) ClearDisconnectedAt() *RelationshipSourceStatusUpsert {
+	u.SetNull(relationshipsourcestatus.FieldDisconnectedAt)
+	return u
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (u *RelationshipSourceStatusUpsert) SetRevokedAt(v time.Time) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldRevokedAt, v)
+	return u
+}
+
+// UpdateRevokedAt sets the "revoked_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateRevokedAt() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldRevokedAt)
+	return u
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (u *RelationshipSourceStatusUpsert) ClearRevokedAt() *RelationshipSourceStatusUpsert {
+	u.SetNull(relationshipsourcestatus.FieldRevokedAt)
+	return u
+}
+
+// SetLastSyncAt sets the "last_sync_at" field.
+func (u *RelationshipSourceStatusUpsert) SetLastSyncAt(v time.Time) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldLastSyncAt, v)
+	return u
+}
+
+// UpdateLastSyncAt sets the "last_sync_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateLastSyncAt() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldLastSyncAt)
+	return u
+}
+
+// ClearLastSyncAt clears the value of the "last_sync_at" field.
+func (u *RelationshipSourceStatusUpsert) ClearLastSyncAt() *RelationshipSourceStatusUpsert {
+	u.SetNull(relationshipsourcestatus.FieldLastSyncAt)
+	return u
+}
+
+// SetExpectedCadenceSeconds sets the "expected_cadence_seconds" field.
+func (u *RelationshipSourceStatusUpsert) SetExpectedCadenceSeconds(v int64) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldExpectedCadenceSeconds, v)
+	return u
+}
+
+// UpdateExpectedCadenceSeconds sets the "expected_cadence_seconds" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateExpectedCadenceSeconds() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldExpectedCadenceSeconds)
+	return u
+}
+
+// AddExpectedCadenceSeconds adds v to the "expected_cadence_seconds" field.
+func (u *RelationshipSourceStatusUpsert) AddExpectedCadenceSeconds(v int64) *RelationshipSourceStatusUpsert {
+	u.Add(relationshipsourcestatus.FieldExpectedCadenceSeconds, v)
+	return u
+}
+
+// SetLagSeconds sets the "lag_seconds" field.
+func (u *RelationshipSourceStatusUpsert) SetLagSeconds(v int64) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldLagSeconds, v)
+	return u
+}
+
+// UpdateLagSeconds sets the "lag_seconds" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateLagSeconds() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldLagSeconds)
+	return u
+}
+
+// AddLagSeconds adds v to the "lag_seconds" field.
+func (u *RelationshipSourceStatusUpsert) AddLagSeconds(v int64) *RelationshipSourceStatusUpsert {
+	u.Add(relationshipsourcestatus.FieldLagSeconds, v)
+	return u
+}
+
+// SetRequiredScopes sets the "required_scopes" field.
+func (u *RelationshipSourceStatusUpsert) SetRequiredScopes(v []string) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldRequiredScopes, v)
+	return u
+}
+
+// UpdateRequiredScopes sets the "required_scopes" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateRequiredScopes() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldRequiredScopes)
+	return u
+}
+
+// SetGrantedScopes sets the "granted_scopes" field.
+func (u *RelationshipSourceStatusUpsert) SetGrantedScopes(v []string) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldGrantedScopes, v)
+	return u
+}
+
+// UpdateGrantedScopes sets the "granted_scopes" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateGrantedScopes() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldGrantedScopes)
+	return u
+}
+
+// SetMissingScopes sets the "missing_scopes" field.
+func (u *RelationshipSourceStatusUpsert) SetMissingScopes(v []string) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldMissingScopes, v)
+	return u
+}
+
+// UpdateMissingScopes sets the "missing_scopes" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateMissingScopes() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldMissingScopes)
+	return u
+}
+
+// SetErrorCode sets the "error_code" field.
+func (u *RelationshipSourceStatusUpsert) SetErrorCode(v string) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldErrorCode, v)
+	return u
+}
+
+// UpdateErrorCode sets the "error_code" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateErrorCode() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldErrorCode)
+	return u
+}
+
+// ClearErrorCode clears the value of the "error_code" field.
+func (u *RelationshipSourceStatusUpsert) ClearErrorCode() *RelationshipSourceStatusUpsert {
+	u.SetNull(relationshipsourcestatus.FieldErrorCode)
+	return u
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (u *RelationshipSourceStatusUpsert) SetRetryCount(v int) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldRetryCount, v)
+	return u
+}
+
+// UpdateRetryCount sets the "retry_count" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateRetryCount() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldRetryCount)
+	return u
+}
+
+// AddRetryCount adds v to the "retry_count" field.
+func (u *RelationshipSourceStatusUpsert) AddRetryCount(v int) *RelationshipSourceStatusUpsert {
+	u.Add(relationshipsourcestatus.FieldRetryCount, v)
+	return u
+}
+
+// SetNextRetryAt sets the "next_retry_at" field.
+func (u *RelationshipSourceStatusUpsert) SetNextRetryAt(v time.Time) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldNextRetryAt, v)
+	return u
+}
+
+// UpdateNextRetryAt sets the "next_retry_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateNextRetryAt() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldNextRetryAt)
+	return u
+}
+
+// ClearNextRetryAt clears the value of the "next_retry_at" field.
+func (u *RelationshipSourceStatusUpsert) ClearNextRetryAt() *RelationshipSourceStatusUpsert {
+	u.SetNull(relationshipsourcestatus.FieldNextRetryAt)
+	return u
+}
+
+// SetCompleteness sets the "completeness" field.
+func (u *RelationshipSourceStatusUpsert) SetCompleteness(v string) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldCompleteness, v)
+	return u
+}
+
+// UpdateCompleteness sets the "completeness" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateCompleteness() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldCompleteness)
 	return u
 }
 
@@ -527,6 +1388,24 @@ func (u *RelationshipSourceStatusUpsert) UpdateLastObservationAt() *Relationship
 // ClearLastObservationAt clears the value of the "last_observation_at" field.
 func (u *RelationshipSourceStatusUpsert) ClearLastObservationAt() *RelationshipSourceStatusUpsert {
 	u.SetNull(relationshipsourcestatus.FieldLastObservationAt)
+	return u
+}
+
+// SetLastProviderEventAt sets the "last_provider_event_at" field.
+func (u *RelationshipSourceStatusUpsert) SetLastProviderEventAt(v time.Time) *RelationshipSourceStatusUpsert {
+	u.Set(relationshipsourcestatus.FieldLastProviderEventAt, v)
+	return u
+}
+
+// UpdateLastProviderEventAt sets the "last_provider_event_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsert) UpdateLastProviderEventAt() *RelationshipSourceStatusUpsert {
+	u.SetExcluded(relationshipsourcestatus.FieldLastProviderEventAt)
+	return u
+}
+
+// ClearLastProviderEventAt clears the value of the "last_provider_event_at" field.
+func (u *RelationshipSourceStatusUpsert) ClearLastProviderEventAt() *RelationshipSourceStatusUpsert {
+	u.SetNull(relationshipsourcestatus.FieldLastProviderEventAt)
 	return u
 }
 
@@ -641,6 +1520,27 @@ func (u *RelationshipSourceStatusUpsertOne) UpdateSourceAccountID() *Relationshi
 	})
 }
 
+// SetConsentingActorID sets the "consenting_actor_id" field.
+func (u *RelationshipSourceStatusUpsertOne) SetConsentingActorID(v uuid.UUID) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetConsentingActorID(v)
+	})
+}
+
+// UpdateConsentingActorID sets the "consenting_actor_id" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateConsentingActorID() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateConsentingActorID()
+	})
+}
+
+// ClearConsentingActorID clears the value of the "consenting_actor_id" field.
+func (u *RelationshipSourceStatusUpsertOne) ClearConsentingActorID() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearConsentingActorID()
+	})
+}
+
 // SetStatus sets the "status" field.
 func (u *RelationshipSourceStatusUpsertOne) SetStatus(v string) *RelationshipSourceStatusUpsertOne {
 	return u.Update(func(s *RelationshipSourceStatusUpsert) {
@@ -652,6 +1552,412 @@ func (u *RelationshipSourceStatusUpsertOne) SetStatus(v string) *RelationshipSou
 func (u *RelationshipSourceStatusUpsertOne) UpdateStatus() *RelationshipSourceStatusUpsertOne {
 	return u.Update(func(s *RelationshipSourceStatusUpsert) {
 		s.UpdateStatus()
+	})
+}
+
+// SetBackfillPhase sets the "backfill_phase" field.
+func (u *RelationshipSourceStatusUpsertOne) SetBackfillPhase(v string) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetBackfillPhase(v)
+	})
+}
+
+// UpdateBackfillPhase sets the "backfill_phase" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateBackfillPhase() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateBackfillPhase()
+	})
+}
+
+// SetBackfillCompleted sets the "backfill_completed" field.
+func (u *RelationshipSourceStatusUpsertOne) SetBackfillCompleted(v int) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetBackfillCompleted(v)
+	})
+}
+
+// AddBackfillCompleted adds v to the "backfill_completed" field.
+func (u *RelationshipSourceStatusUpsertOne) AddBackfillCompleted(v int) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.AddBackfillCompleted(v)
+	})
+}
+
+// UpdateBackfillCompleted sets the "backfill_completed" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateBackfillCompleted() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateBackfillCompleted()
+	})
+}
+
+// SetBackfillTotal sets the "backfill_total" field.
+func (u *RelationshipSourceStatusUpsertOne) SetBackfillTotal(v int) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetBackfillTotal(v)
+	})
+}
+
+// AddBackfillTotal adds v to the "backfill_total" field.
+func (u *RelationshipSourceStatusUpsertOne) AddBackfillTotal(v int) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.AddBackfillTotal(v)
+	})
+}
+
+// UpdateBackfillTotal sets the "backfill_total" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateBackfillTotal() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateBackfillTotal()
+	})
+}
+
+// SetWatermark sets the "watermark" field.
+func (u *RelationshipSourceStatusUpsertOne) SetWatermark(v string) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetWatermark(v)
+	})
+}
+
+// UpdateWatermark sets the "watermark" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateWatermark() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateWatermark()
+	})
+}
+
+// ClearWatermark clears the value of the "watermark" field.
+func (u *RelationshipSourceStatusUpsertOne) ClearWatermark() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearWatermark()
+	})
+}
+
+// SetSyncStartedAt sets the "sync_started_at" field.
+func (u *RelationshipSourceStatusUpsertOne) SetSyncStartedAt(v time.Time) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetSyncStartedAt(v)
+	})
+}
+
+// UpdateSyncStartedAt sets the "sync_started_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateSyncStartedAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateSyncStartedAt()
+	})
+}
+
+// ClearSyncStartedAt clears the value of the "sync_started_at" field.
+func (u *RelationshipSourceStatusUpsertOne) ClearSyncStartedAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearSyncStartedAt()
+	})
+}
+
+// SetAuthorizationStartedAt sets the "authorization_started_at" field.
+func (u *RelationshipSourceStatusUpsertOne) SetAuthorizationStartedAt(v time.Time) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetAuthorizationStartedAt(v)
+	})
+}
+
+// UpdateAuthorizationStartedAt sets the "authorization_started_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateAuthorizationStartedAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateAuthorizationStartedAt()
+	})
+}
+
+// ClearAuthorizationStartedAt clears the value of the "authorization_started_at" field.
+func (u *RelationshipSourceStatusUpsertOne) ClearAuthorizationStartedAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearAuthorizationStartedAt()
+	})
+}
+
+// SetAuthorizedAt sets the "authorized_at" field.
+func (u *RelationshipSourceStatusUpsertOne) SetAuthorizedAt(v time.Time) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetAuthorizedAt(v)
+	})
+}
+
+// UpdateAuthorizedAt sets the "authorized_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateAuthorizedAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateAuthorizedAt()
+	})
+}
+
+// ClearAuthorizedAt clears the value of the "authorized_at" field.
+func (u *RelationshipSourceStatusUpsertOne) ClearAuthorizedAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearAuthorizedAt()
+	})
+}
+
+// SetBackfillCompletedAt sets the "backfill_completed_at" field.
+func (u *RelationshipSourceStatusUpsertOne) SetBackfillCompletedAt(v time.Time) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetBackfillCompletedAt(v)
+	})
+}
+
+// UpdateBackfillCompletedAt sets the "backfill_completed_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateBackfillCompletedAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateBackfillCompletedAt()
+	})
+}
+
+// ClearBackfillCompletedAt clears the value of the "backfill_completed_at" field.
+func (u *RelationshipSourceStatusUpsertOne) ClearBackfillCompletedAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearBackfillCompletedAt()
+	})
+}
+
+// SetLastFailedSyncAt sets the "last_failed_sync_at" field.
+func (u *RelationshipSourceStatusUpsertOne) SetLastFailedSyncAt(v time.Time) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetLastFailedSyncAt(v)
+	})
+}
+
+// UpdateLastFailedSyncAt sets the "last_failed_sync_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateLastFailedSyncAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateLastFailedSyncAt()
+	})
+}
+
+// ClearLastFailedSyncAt clears the value of the "last_failed_sync_at" field.
+func (u *RelationshipSourceStatusUpsertOne) ClearLastFailedSyncAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearLastFailedSyncAt()
+	})
+}
+
+// SetDisconnectedAt sets the "disconnected_at" field.
+func (u *RelationshipSourceStatusUpsertOne) SetDisconnectedAt(v time.Time) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetDisconnectedAt(v)
+	})
+}
+
+// UpdateDisconnectedAt sets the "disconnected_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateDisconnectedAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateDisconnectedAt()
+	})
+}
+
+// ClearDisconnectedAt clears the value of the "disconnected_at" field.
+func (u *RelationshipSourceStatusUpsertOne) ClearDisconnectedAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearDisconnectedAt()
+	})
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (u *RelationshipSourceStatusUpsertOne) SetRevokedAt(v time.Time) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetRevokedAt(v)
+	})
+}
+
+// UpdateRevokedAt sets the "revoked_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateRevokedAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateRevokedAt()
+	})
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (u *RelationshipSourceStatusUpsertOne) ClearRevokedAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearRevokedAt()
+	})
+}
+
+// SetLastSyncAt sets the "last_sync_at" field.
+func (u *RelationshipSourceStatusUpsertOne) SetLastSyncAt(v time.Time) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetLastSyncAt(v)
+	})
+}
+
+// UpdateLastSyncAt sets the "last_sync_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateLastSyncAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateLastSyncAt()
+	})
+}
+
+// ClearLastSyncAt clears the value of the "last_sync_at" field.
+func (u *RelationshipSourceStatusUpsertOne) ClearLastSyncAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearLastSyncAt()
+	})
+}
+
+// SetExpectedCadenceSeconds sets the "expected_cadence_seconds" field.
+func (u *RelationshipSourceStatusUpsertOne) SetExpectedCadenceSeconds(v int64) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetExpectedCadenceSeconds(v)
+	})
+}
+
+// AddExpectedCadenceSeconds adds v to the "expected_cadence_seconds" field.
+func (u *RelationshipSourceStatusUpsertOne) AddExpectedCadenceSeconds(v int64) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.AddExpectedCadenceSeconds(v)
+	})
+}
+
+// UpdateExpectedCadenceSeconds sets the "expected_cadence_seconds" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateExpectedCadenceSeconds() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateExpectedCadenceSeconds()
+	})
+}
+
+// SetLagSeconds sets the "lag_seconds" field.
+func (u *RelationshipSourceStatusUpsertOne) SetLagSeconds(v int64) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetLagSeconds(v)
+	})
+}
+
+// AddLagSeconds adds v to the "lag_seconds" field.
+func (u *RelationshipSourceStatusUpsertOne) AddLagSeconds(v int64) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.AddLagSeconds(v)
+	})
+}
+
+// UpdateLagSeconds sets the "lag_seconds" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateLagSeconds() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateLagSeconds()
+	})
+}
+
+// SetRequiredScopes sets the "required_scopes" field.
+func (u *RelationshipSourceStatusUpsertOne) SetRequiredScopes(v []string) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetRequiredScopes(v)
+	})
+}
+
+// UpdateRequiredScopes sets the "required_scopes" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateRequiredScopes() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateRequiredScopes()
+	})
+}
+
+// SetGrantedScopes sets the "granted_scopes" field.
+func (u *RelationshipSourceStatusUpsertOne) SetGrantedScopes(v []string) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetGrantedScopes(v)
+	})
+}
+
+// UpdateGrantedScopes sets the "granted_scopes" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateGrantedScopes() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateGrantedScopes()
+	})
+}
+
+// SetMissingScopes sets the "missing_scopes" field.
+func (u *RelationshipSourceStatusUpsertOne) SetMissingScopes(v []string) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetMissingScopes(v)
+	})
+}
+
+// UpdateMissingScopes sets the "missing_scopes" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateMissingScopes() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateMissingScopes()
+	})
+}
+
+// SetErrorCode sets the "error_code" field.
+func (u *RelationshipSourceStatusUpsertOne) SetErrorCode(v string) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetErrorCode(v)
+	})
+}
+
+// UpdateErrorCode sets the "error_code" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateErrorCode() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateErrorCode()
+	})
+}
+
+// ClearErrorCode clears the value of the "error_code" field.
+func (u *RelationshipSourceStatusUpsertOne) ClearErrorCode() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearErrorCode()
+	})
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (u *RelationshipSourceStatusUpsertOne) SetRetryCount(v int) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetRetryCount(v)
+	})
+}
+
+// AddRetryCount adds v to the "retry_count" field.
+func (u *RelationshipSourceStatusUpsertOne) AddRetryCount(v int) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.AddRetryCount(v)
+	})
+}
+
+// UpdateRetryCount sets the "retry_count" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateRetryCount() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateRetryCount()
+	})
+}
+
+// SetNextRetryAt sets the "next_retry_at" field.
+func (u *RelationshipSourceStatusUpsertOne) SetNextRetryAt(v time.Time) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetNextRetryAt(v)
+	})
+}
+
+// UpdateNextRetryAt sets the "next_retry_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateNextRetryAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateNextRetryAt()
+	})
+}
+
+// ClearNextRetryAt clears the value of the "next_retry_at" field.
+func (u *RelationshipSourceStatusUpsertOne) ClearNextRetryAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearNextRetryAt()
+	})
+}
+
+// SetCompleteness sets the "completeness" field.
+func (u *RelationshipSourceStatusUpsertOne) SetCompleteness(v string) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetCompleteness(v)
+	})
+}
+
+// UpdateCompleteness sets the "completeness" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateCompleteness() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateCompleteness()
 	})
 }
 
@@ -715,6 +2021,27 @@ func (u *RelationshipSourceStatusUpsertOne) UpdateLastObservationAt() *Relations
 func (u *RelationshipSourceStatusUpsertOne) ClearLastObservationAt() *RelationshipSourceStatusUpsertOne {
 	return u.Update(func(s *RelationshipSourceStatusUpsert) {
 		s.ClearLastObservationAt()
+	})
+}
+
+// SetLastProviderEventAt sets the "last_provider_event_at" field.
+func (u *RelationshipSourceStatusUpsertOne) SetLastProviderEventAt(v time.Time) *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetLastProviderEventAt(v)
+	})
+}
+
+// UpdateLastProviderEventAt sets the "last_provider_event_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertOne) UpdateLastProviderEventAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateLastProviderEventAt()
+	})
+}
+
+// ClearLastProviderEventAt clears the value of the "last_provider_event_at" field.
+func (u *RelationshipSourceStatusUpsertOne) ClearLastProviderEventAt() *RelationshipSourceStatusUpsertOne {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearLastProviderEventAt()
 	})
 }
 
@@ -999,6 +2326,27 @@ func (u *RelationshipSourceStatusUpsertBulk) UpdateSourceAccountID() *Relationsh
 	})
 }
 
+// SetConsentingActorID sets the "consenting_actor_id" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetConsentingActorID(v uuid.UUID) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetConsentingActorID(v)
+	})
+}
+
+// UpdateConsentingActorID sets the "consenting_actor_id" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateConsentingActorID() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateConsentingActorID()
+	})
+}
+
+// ClearConsentingActorID clears the value of the "consenting_actor_id" field.
+func (u *RelationshipSourceStatusUpsertBulk) ClearConsentingActorID() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearConsentingActorID()
+	})
+}
+
 // SetStatus sets the "status" field.
 func (u *RelationshipSourceStatusUpsertBulk) SetStatus(v string) *RelationshipSourceStatusUpsertBulk {
 	return u.Update(func(s *RelationshipSourceStatusUpsert) {
@@ -1010,6 +2358,412 @@ func (u *RelationshipSourceStatusUpsertBulk) SetStatus(v string) *RelationshipSo
 func (u *RelationshipSourceStatusUpsertBulk) UpdateStatus() *RelationshipSourceStatusUpsertBulk {
 	return u.Update(func(s *RelationshipSourceStatusUpsert) {
 		s.UpdateStatus()
+	})
+}
+
+// SetBackfillPhase sets the "backfill_phase" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetBackfillPhase(v string) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetBackfillPhase(v)
+	})
+}
+
+// UpdateBackfillPhase sets the "backfill_phase" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateBackfillPhase() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateBackfillPhase()
+	})
+}
+
+// SetBackfillCompleted sets the "backfill_completed" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetBackfillCompleted(v int) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetBackfillCompleted(v)
+	})
+}
+
+// AddBackfillCompleted adds v to the "backfill_completed" field.
+func (u *RelationshipSourceStatusUpsertBulk) AddBackfillCompleted(v int) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.AddBackfillCompleted(v)
+	})
+}
+
+// UpdateBackfillCompleted sets the "backfill_completed" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateBackfillCompleted() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateBackfillCompleted()
+	})
+}
+
+// SetBackfillTotal sets the "backfill_total" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetBackfillTotal(v int) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetBackfillTotal(v)
+	})
+}
+
+// AddBackfillTotal adds v to the "backfill_total" field.
+func (u *RelationshipSourceStatusUpsertBulk) AddBackfillTotal(v int) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.AddBackfillTotal(v)
+	})
+}
+
+// UpdateBackfillTotal sets the "backfill_total" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateBackfillTotal() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateBackfillTotal()
+	})
+}
+
+// SetWatermark sets the "watermark" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetWatermark(v string) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetWatermark(v)
+	})
+}
+
+// UpdateWatermark sets the "watermark" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateWatermark() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateWatermark()
+	})
+}
+
+// ClearWatermark clears the value of the "watermark" field.
+func (u *RelationshipSourceStatusUpsertBulk) ClearWatermark() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearWatermark()
+	})
+}
+
+// SetSyncStartedAt sets the "sync_started_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetSyncStartedAt(v time.Time) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetSyncStartedAt(v)
+	})
+}
+
+// UpdateSyncStartedAt sets the "sync_started_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateSyncStartedAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateSyncStartedAt()
+	})
+}
+
+// ClearSyncStartedAt clears the value of the "sync_started_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) ClearSyncStartedAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearSyncStartedAt()
+	})
+}
+
+// SetAuthorizationStartedAt sets the "authorization_started_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetAuthorizationStartedAt(v time.Time) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetAuthorizationStartedAt(v)
+	})
+}
+
+// UpdateAuthorizationStartedAt sets the "authorization_started_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateAuthorizationStartedAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateAuthorizationStartedAt()
+	})
+}
+
+// ClearAuthorizationStartedAt clears the value of the "authorization_started_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) ClearAuthorizationStartedAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearAuthorizationStartedAt()
+	})
+}
+
+// SetAuthorizedAt sets the "authorized_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetAuthorizedAt(v time.Time) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetAuthorizedAt(v)
+	})
+}
+
+// UpdateAuthorizedAt sets the "authorized_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateAuthorizedAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateAuthorizedAt()
+	})
+}
+
+// ClearAuthorizedAt clears the value of the "authorized_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) ClearAuthorizedAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearAuthorizedAt()
+	})
+}
+
+// SetBackfillCompletedAt sets the "backfill_completed_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetBackfillCompletedAt(v time.Time) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetBackfillCompletedAt(v)
+	})
+}
+
+// UpdateBackfillCompletedAt sets the "backfill_completed_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateBackfillCompletedAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateBackfillCompletedAt()
+	})
+}
+
+// ClearBackfillCompletedAt clears the value of the "backfill_completed_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) ClearBackfillCompletedAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearBackfillCompletedAt()
+	})
+}
+
+// SetLastFailedSyncAt sets the "last_failed_sync_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetLastFailedSyncAt(v time.Time) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetLastFailedSyncAt(v)
+	})
+}
+
+// UpdateLastFailedSyncAt sets the "last_failed_sync_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateLastFailedSyncAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateLastFailedSyncAt()
+	})
+}
+
+// ClearLastFailedSyncAt clears the value of the "last_failed_sync_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) ClearLastFailedSyncAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearLastFailedSyncAt()
+	})
+}
+
+// SetDisconnectedAt sets the "disconnected_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetDisconnectedAt(v time.Time) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetDisconnectedAt(v)
+	})
+}
+
+// UpdateDisconnectedAt sets the "disconnected_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateDisconnectedAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateDisconnectedAt()
+	})
+}
+
+// ClearDisconnectedAt clears the value of the "disconnected_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) ClearDisconnectedAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearDisconnectedAt()
+	})
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetRevokedAt(v time.Time) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetRevokedAt(v)
+	})
+}
+
+// UpdateRevokedAt sets the "revoked_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateRevokedAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateRevokedAt()
+	})
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) ClearRevokedAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearRevokedAt()
+	})
+}
+
+// SetLastSyncAt sets the "last_sync_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetLastSyncAt(v time.Time) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetLastSyncAt(v)
+	})
+}
+
+// UpdateLastSyncAt sets the "last_sync_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateLastSyncAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateLastSyncAt()
+	})
+}
+
+// ClearLastSyncAt clears the value of the "last_sync_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) ClearLastSyncAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearLastSyncAt()
+	})
+}
+
+// SetExpectedCadenceSeconds sets the "expected_cadence_seconds" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetExpectedCadenceSeconds(v int64) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetExpectedCadenceSeconds(v)
+	})
+}
+
+// AddExpectedCadenceSeconds adds v to the "expected_cadence_seconds" field.
+func (u *RelationshipSourceStatusUpsertBulk) AddExpectedCadenceSeconds(v int64) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.AddExpectedCadenceSeconds(v)
+	})
+}
+
+// UpdateExpectedCadenceSeconds sets the "expected_cadence_seconds" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateExpectedCadenceSeconds() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateExpectedCadenceSeconds()
+	})
+}
+
+// SetLagSeconds sets the "lag_seconds" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetLagSeconds(v int64) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetLagSeconds(v)
+	})
+}
+
+// AddLagSeconds adds v to the "lag_seconds" field.
+func (u *RelationshipSourceStatusUpsertBulk) AddLagSeconds(v int64) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.AddLagSeconds(v)
+	})
+}
+
+// UpdateLagSeconds sets the "lag_seconds" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateLagSeconds() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateLagSeconds()
+	})
+}
+
+// SetRequiredScopes sets the "required_scopes" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetRequiredScopes(v []string) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetRequiredScopes(v)
+	})
+}
+
+// UpdateRequiredScopes sets the "required_scopes" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateRequiredScopes() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateRequiredScopes()
+	})
+}
+
+// SetGrantedScopes sets the "granted_scopes" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetGrantedScopes(v []string) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetGrantedScopes(v)
+	})
+}
+
+// UpdateGrantedScopes sets the "granted_scopes" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateGrantedScopes() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateGrantedScopes()
+	})
+}
+
+// SetMissingScopes sets the "missing_scopes" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetMissingScopes(v []string) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetMissingScopes(v)
+	})
+}
+
+// UpdateMissingScopes sets the "missing_scopes" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateMissingScopes() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateMissingScopes()
+	})
+}
+
+// SetErrorCode sets the "error_code" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetErrorCode(v string) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetErrorCode(v)
+	})
+}
+
+// UpdateErrorCode sets the "error_code" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateErrorCode() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateErrorCode()
+	})
+}
+
+// ClearErrorCode clears the value of the "error_code" field.
+func (u *RelationshipSourceStatusUpsertBulk) ClearErrorCode() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearErrorCode()
+	})
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetRetryCount(v int) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetRetryCount(v)
+	})
+}
+
+// AddRetryCount adds v to the "retry_count" field.
+func (u *RelationshipSourceStatusUpsertBulk) AddRetryCount(v int) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.AddRetryCount(v)
+	})
+}
+
+// UpdateRetryCount sets the "retry_count" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateRetryCount() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateRetryCount()
+	})
+}
+
+// SetNextRetryAt sets the "next_retry_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetNextRetryAt(v time.Time) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetNextRetryAt(v)
+	})
+}
+
+// UpdateNextRetryAt sets the "next_retry_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateNextRetryAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateNextRetryAt()
+	})
+}
+
+// ClearNextRetryAt clears the value of the "next_retry_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) ClearNextRetryAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearNextRetryAt()
+	})
+}
+
+// SetCompleteness sets the "completeness" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetCompleteness(v string) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetCompleteness(v)
+	})
+}
+
+// UpdateCompleteness sets the "completeness" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateCompleteness() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateCompleteness()
 	})
 }
 
@@ -1073,6 +2827,27 @@ func (u *RelationshipSourceStatusUpsertBulk) UpdateLastObservationAt() *Relation
 func (u *RelationshipSourceStatusUpsertBulk) ClearLastObservationAt() *RelationshipSourceStatusUpsertBulk {
 	return u.Update(func(s *RelationshipSourceStatusUpsert) {
 		s.ClearLastObservationAt()
+	})
+}
+
+// SetLastProviderEventAt sets the "last_provider_event_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) SetLastProviderEventAt(v time.Time) *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.SetLastProviderEventAt(v)
+	})
+}
+
+// UpdateLastProviderEventAt sets the "last_provider_event_at" field to the value that was provided on create.
+func (u *RelationshipSourceStatusUpsertBulk) UpdateLastProviderEventAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.UpdateLastProviderEventAt()
+	})
+}
+
+// ClearLastProviderEventAt clears the value of the "last_provider_event_at" field.
+func (u *RelationshipSourceStatusUpsertBulk) ClearLastProviderEventAt() *RelationshipSourceStatusUpsertBulk {
+	return u.Update(func(s *RelationshipSourceStatusUpsert) {
+		s.ClearLastProviderEventAt()
 	})
 }
 

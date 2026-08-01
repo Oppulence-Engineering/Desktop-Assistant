@@ -23,6 +23,12 @@ const (
 	FieldVersion = "version"
 	// FieldStateJSON holds the string denoting the state_json field in the database.
 	FieldStateJSON = "state_json"
+	// FieldStateHash holds the string denoting the state_hash field in the database.
+	FieldStateHash = "state_hash"
+	// FieldProjectorVersion holds the string denoting the projector_version field in the database.
+	FieldProjectorVersion = "projector_version"
+	// FieldEvaluatedAt holds the string denoting the evaluated_at field in the database.
+	FieldEvaluatedAt = "evaluated_at"
 	// FieldChangedDimensions holds the string denoting the changed_dimensions field in the database.
 	FieldChangedDimensions = "changed_dimensions"
 	// FieldAssertionIds holds the string denoting the assertion_ids field in the database.
@@ -65,6 +71,9 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldVersion,
 	FieldStateJSON,
+	FieldStateHash,
+	FieldProjectorVersion,
+	FieldEvaluatedAt,
 	FieldChangedDimensions,
 	FieldAssertionIds,
 }
@@ -103,6 +112,12 @@ var (
 	VersionValidator func(int) error
 	// DefaultStateJSON holds the default value on creation for the "state_json" field.
 	DefaultStateJSON string
+	// StateHashValidator is a validator for the "state_hash" field. It is called by the builders before save.
+	StateHashValidator func(string) error
+	// DefaultProjectorVersion holds the default value on creation for the "projector_version" field.
+	DefaultProjectorVersion int
+	// ProjectorVersionValidator is a validator for the "projector_version" field. It is called by the builders before save.
+	ProjectorVersionValidator func(int) error
 	// DefaultChangedDimensions holds the default value on creation for the "changed_dimensions" field.
 	DefaultChangedDimensions []string
 	// DefaultAssertionIds holds the default value on creation for the "assertion_ids" field.
@@ -137,6 +152,21 @@ func ByVersion(opts ...sql.OrderTermOption) OrderOption {
 // ByStateJSON orders the results by the state_json field.
 func ByStateJSON(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStateJSON, opts...).ToFunc()
+}
+
+// ByStateHash orders the results by the state_hash field.
+func ByStateHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStateHash, opts...).ToFunc()
+}
+
+// ByProjectorVersion orders the results by the projector_version field.
+func ByProjectorVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProjectorVersion, opts...).ToFunc()
+}
+
+// ByEvaluatedAt orders the results by the evaluated_at field.
+func ByEvaluatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEvaluatedAt, opts...).ToFunc()
 }
 
 // ByWorkspaceField orders the results by workspace field.

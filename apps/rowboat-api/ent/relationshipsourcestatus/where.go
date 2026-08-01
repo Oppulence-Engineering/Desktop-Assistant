@@ -76,9 +76,104 @@ func SourceAccountID(v string) predicate.RelationshipSourceStatus {
 	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldSourceAccountID, v))
 }
 
+// ConsentingActorID applies equality check predicate on the "consenting_actor_id" field. It's identical to ConsentingActorIDEQ.
+func ConsentingActorID(v uuid.UUID) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldConsentingActorID, v))
+}
+
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v string) predicate.RelationshipSourceStatus {
 	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldStatus, v))
+}
+
+// BackfillPhase applies equality check predicate on the "backfill_phase" field. It's identical to BackfillPhaseEQ.
+func BackfillPhase(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldBackfillPhase, v))
+}
+
+// BackfillCompleted applies equality check predicate on the "backfill_completed" field. It's identical to BackfillCompletedEQ.
+func BackfillCompleted(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldBackfillCompleted, v))
+}
+
+// BackfillTotal applies equality check predicate on the "backfill_total" field. It's identical to BackfillTotalEQ.
+func BackfillTotal(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldBackfillTotal, v))
+}
+
+// Watermark applies equality check predicate on the "watermark" field. It's identical to WatermarkEQ.
+func Watermark(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldWatermark, v))
+}
+
+// SyncStartedAt applies equality check predicate on the "sync_started_at" field. It's identical to SyncStartedAtEQ.
+func SyncStartedAt(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldSyncStartedAt, v))
+}
+
+// AuthorizationStartedAt applies equality check predicate on the "authorization_started_at" field. It's identical to AuthorizationStartedAtEQ.
+func AuthorizationStartedAt(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldAuthorizationStartedAt, v))
+}
+
+// AuthorizedAt applies equality check predicate on the "authorized_at" field. It's identical to AuthorizedAtEQ.
+func AuthorizedAt(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldAuthorizedAt, v))
+}
+
+// BackfillCompletedAt applies equality check predicate on the "backfill_completed_at" field. It's identical to BackfillCompletedAtEQ.
+func BackfillCompletedAt(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldBackfillCompletedAt, v))
+}
+
+// LastFailedSyncAt applies equality check predicate on the "last_failed_sync_at" field. It's identical to LastFailedSyncAtEQ.
+func LastFailedSyncAt(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldLastFailedSyncAt, v))
+}
+
+// DisconnectedAt applies equality check predicate on the "disconnected_at" field. It's identical to DisconnectedAtEQ.
+func DisconnectedAt(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldDisconnectedAt, v))
+}
+
+// RevokedAt applies equality check predicate on the "revoked_at" field. It's identical to RevokedAtEQ.
+func RevokedAt(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldRevokedAt, v))
+}
+
+// LastSyncAt applies equality check predicate on the "last_sync_at" field. It's identical to LastSyncAtEQ.
+func LastSyncAt(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldLastSyncAt, v))
+}
+
+// ExpectedCadenceSeconds applies equality check predicate on the "expected_cadence_seconds" field. It's identical to ExpectedCadenceSecondsEQ.
+func ExpectedCadenceSeconds(v int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldExpectedCadenceSeconds, v))
+}
+
+// LagSeconds applies equality check predicate on the "lag_seconds" field. It's identical to LagSecondsEQ.
+func LagSeconds(v int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldLagSeconds, v))
+}
+
+// ErrorCode applies equality check predicate on the "error_code" field. It's identical to ErrorCodeEQ.
+func ErrorCode(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldErrorCode, v))
+}
+
+// RetryCount applies equality check predicate on the "retry_count" field. It's identical to RetryCountEQ.
+func RetryCount(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldRetryCount, v))
+}
+
+// NextRetryAt applies equality check predicate on the "next_retry_at" field. It's identical to NextRetryAtEQ.
+func NextRetryAt(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldNextRetryAt, v))
+}
+
+// Completeness applies equality check predicate on the "completeness" field. It's identical to CompletenessEQ.
+func Completeness(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldCompleteness, v))
 }
 
 // Cursor applies equality check predicate on the "cursor" field. It's identical to CursorEQ.
@@ -94,6 +189,11 @@ func LastSuccessAt(v time.Time) predicate.RelationshipSourceStatus {
 // LastObservationAt applies equality check predicate on the "last_observation_at" field. It's identical to LastObservationAtEQ.
 func LastObservationAt(v time.Time) predicate.RelationshipSourceStatus {
 	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldLastObservationAt, v))
+}
+
+// LastProviderEventAt applies equality check predicate on the "last_provider_event_at" field. It's identical to LastProviderEventAtEQ.
+func LastProviderEventAt(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldLastProviderEventAt, v))
 }
 
 // LastError applies equality check predicate on the "last_error" field. It's identical to LastErrorEQ.
@@ -311,6 +411,56 @@ func SourceAccountIDContainsFold(v string) predicate.RelationshipSourceStatus {
 	return predicate.RelationshipSourceStatus(sql.FieldContainsFold(FieldSourceAccountID, v))
 }
 
+// ConsentingActorIDEQ applies the EQ predicate on the "consenting_actor_id" field.
+func ConsentingActorIDEQ(v uuid.UUID) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldConsentingActorID, v))
+}
+
+// ConsentingActorIDNEQ applies the NEQ predicate on the "consenting_actor_id" field.
+func ConsentingActorIDNEQ(v uuid.UUID) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldConsentingActorID, v))
+}
+
+// ConsentingActorIDIn applies the In predicate on the "consenting_actor_id" field.
+func ConsentingActorIDIn(vs ...uuid.UUID) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldConsentingActorID, vs...))
+}
+
+// ConsentingActorIDNotIn applies the NotIn predicate on the "consenting_actor_id" field.
+func ConsentingActorIDNotIn(vs ...uuid.UUID) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldConsentingActorID, vs...))
+}
+
+// ConsentingActorIDGT applies the GT predicate on the "consenting_actor_id" field.
+func ConsentingActorIDGT(v uuid.UUID) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldConsentingActorID, v))
+}
+
+// ConsentingActorIDGTE applies the GTE predicate on the "consenting_actor_id" field.
+func ConsentingActorIDGTE(v uuid.UUID) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldConsentingActorID, v))
+}
+
+// ConsentingActorIDLT applies the LT predicate on the "consenting_actor_id" field.
+func ConsentingActorIDLT(v uuid.UUID) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldConsentingActorID, v))
+}
+
+// ConsentingActorIDLTE applies the LTE predicate on the "consenting_actor_id" field.
+func ConsentingActorIDLTE(v uuid.UUID) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldConsentingActorID, v))
+}
+
+// ConsentingActorIDIsNil applies the IsNil predicate on the "consenting_actor_id" field.
+func ConsentingActorIDIsNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIsNull(FieldConsentingActorID))
+}
+
+// ConsentingActorIDNotNil applies the NotNil predicate on the "consenting_actor_id" field.
+func ConsentingActorIDNotNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotNull(FieldConsentingActorID))
+}
+
 // StatusEQ applies the EQ predicate on the "status" field.
 func StatusEQ(v string) predicate.RelationshipSourceStatus {
 	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldStatus, v))
@@ -374,6 +524,936 @@ func StatusEqualFold(v string) predicate.RelationshipSourceStatus {
 // StatusContainsFold applies the ContainsFold predicate on the "status" field.
 func StatusContainsFold(v string) predicate.RelationshipSourceStatus {
 	return predicate.RelationshipSourceStatus(sql.FieldContainsFold(FieldStatus, v))
+}
+
+// BackfillPhaseEQ applies the EQ predicate on the "backfill_phase" field.
+func BackfillPhaseEQ(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldBackfillPhase, v))
+}
+
+// BackfillPhaseNEQ applies the NEQ predicate on the "backfill_phase" field.
+func BackfillPhaseNEQ(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldBackfillPhase, v))
+}
+
+// BackfillPhaseIn applies the In predicate on the "backfill_phase" field.
+func BackfillPhaseIn(vs ...string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldBackfillPhase, vs...))
+}
+
+// BackfillPhaseNotIn applies the NotIn predicate on the "backfill_phase" field.
+func BackfillPhaseNotIn(vs ...string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldBackfillPhase, vs...))
+}
+
+// BackfillPhaseGT applies the GT predicate on the "backfill_phase" field.
+func BackfillPhaseGT(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldBackfillPhase, v))
+}
+
+// BackfillPhaseGTE applies the GTE predicate on the "backfill_phase" field.
+func BackfillPhaseGTE(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldBackfillPhase, v))
+}
+
+// BackfillPhaseLT applies the LT predicate on the "backfill_phase" field.
+func BackfillPhaseLT(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldBackfillPhase, v))
+}
+
+// BackfillPhaseLTE applies the LTE predicate on the "backfill_phase" field.
+func BackfillPhaseLTE(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldBackfillPhase, v))
+}
+
+// BackfillPhaseContains applies the Contains predicate on the "backfill_phase" field.
+func BackfillPhaseContains(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldContains(FieldBackfillPhase, v))
+}
+
+// BackfillPhaseHasPrefix applies the HasPrefix predicate on the "backfill_phase" field.
+func BackfillPhaseHasPrefix(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldHasPrefix(FieldBackfillPhase, v))
+}
+
+// BackfillPhaseHasSuffix applies the HasSuffix predicate on the "backfill_phase" field.
+func BackfillPhaseHasSuffix(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldHasSuffix(FieldBackfillPhase, v))
+}
+
+// BackfillPhaseEqualFold applies the EqualFold predicate on the "backfill_phase" field.
+func BackfillPhaseEqualFold(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEqualFold(FieldBackfillPhase, v))
+}
+
+// BackfillPhaseContainsFold applies the ContainsFold predicate on the "backfill_phase" field.
+func BackfillPhaseContainsFold(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldContainsFold(FieldBackfillPhase, v))
+}
+
+// BackfillCompletedEQ applies the EQ predicate on the "backfill_completed" field.
+func BackfillCompletedEQ(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldBackfillCompleted, v))
+}
+
+// BackfillCompletedNEQ applies the NEQ predicate on the "backfill_completed" field.
+func BackfillCompletedNEQ(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldBackfillCompleted, v))
+}
+
+// BackfillCompletedIn applies the In predicate on the "backfill_completed" field.
+func BackfillCompletedIn(vs ...int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldBackfillCompleted, vs...))
+}
+
+// BackfillCompletedNotIn applies the NotIn predicate on the "backfill_completed" field.
+func BackfillCompletedNotIn(vs ...int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldBackfillCompleted, vs...))
+}
+
+// BackfillCompletedGT applies the GT predicate on the "backfill_completed" field.
+func BackfillCompletedGT(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldBackfillCompleted, v))
+}
+
+// BackfillCompletedGTE applies the GTE predicate on the "backfill_completed" field.
+func BackfillCompletedGTE(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldBackfillCompleted, v))
+}
+
+// BackfillCompletedLT applies the LT predicate on the "backfill_completed" field.
+func BackfillCompletedLT(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldBackfillCompleted, v))
+}
+
+// BackfillCompletedLTE applies the LTE predicate on the "backfill_completed" field.
+func BackfillCompletedLTE(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldBackfillCompleted, v))
+}
+
+// BackfillTotalEQ applies the EQ predicate on the "backfill_total" field.
+func BackfillTotalEQ(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldBackfillTotal, v))
+}
+
+// BackfillTotalNEQ applies the NEQ predicate on the "backfill_total" field.
+func BackfillTotalNEQ(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldBackfillTotal, v))
+}
+
+// BackfillTotalIn applies the In predicate on the "backfill_total" field.
+func BackfillTotalIn(vs ...int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldBackfillTotal, vs...))
+}
+
+// BackfillTotalNotIn applies the NotIn predicate on the "backfill_total" field.
+func BackfillTotalNotIn(vs ...int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldBackfillTotal, vs...))
+}
+
+// BackfillTotalGT applies the GT predicate on the "backfill_total" field.
+func BackfillTotalGT(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldBackfillTotal, v))
+}
+
+// BackfillTotalGTE applies the GTE predicate on the "backfill_total" field.
+func BackfillTotalGTE(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldBackfillTotal, v))
+}
+
+// BackfillTotalLT applies the LT predicate on the "backfill_total" field.
+func BackfillTotalLT(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldBackfillTotal, v))
+}
+
+// BackfillTotalLTE applies the LTE predicate on the "backfill_total" field.
+func BackfillTotalLTE(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldBackfillTotal, v))
+}
+
+// WatermarkEQ applies the EQ predicate on the "watermark" field.
+func WatermarkEQ(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldWatermark, v))
+}
+
+// WatermarkNEQ applies the NEQ predicate on the "watermark" field.
+func WatermarkNEQ(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldWatermark, v))
+}
+
+// WatermarkIn applies the In predicate on the "watermark" field.
+func WatermarkIn(vs ...string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldWatermark, vs...))
+}
+
+// WatermarkNotIn applies the NotIn predicate on the "watermark" field.
+func WatermarkNotIn(vs ...string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldWatermark, vs...))
+}
+
+// WatermarkGT applies the GT predicate on the "watermark" field.
+func WatermarkGT(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldWatermark, v))
+}
+
+// WatermarkGTE applies the GTE predicate on the "watermark" field.
+func WatermarkGTE(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldWatermark, v))
+}
+
+// WatermarkLT applies the LT predicate on the "watermark" field.
+func WatermarkLT(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldWatermark, v))
+}
+
+// WatermarkLTE applies the LTE predicate on the "watermark" field.
+func WatermarkLTE(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldWatermark, v))
+}
+
+// WatermarkContains applies the Contains predicate on the "watermark" field.
+func WatermarkContains(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldContains(FieldWatermark, v))
+}
+
+// WatermarkHasPrefix applies the HasPrefix predicate on the "watermark" field.
+func WatermarkHasPrefix(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldHasPrefix(FieldWatermark, v))
+}
+
+// WatermarkHasSuffix applies the HasSuffix predicate on the "watermark" field.
+func WatermarkHasSuffix(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldHasSuffix(FieldWatermark, v))
+}
+
+// WatermarkIsNil applies the IsNil predicate on the "watermark" field.
+func WatermarkIsNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIsNull(FieldWatermark))
+}
+
+// WatermarkNotNil applies the NotNil predicate on the "watermark" field.
+func WatermarkNotNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotNull(FieldWatermark))
+}
+
+// WatermarkEqualFold applies the EqualFold predicate on the "watermark" field.
+func WatermarkEqualFold(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEqualFold(FieldWatermark, v))
+}
+
+// WatermarkContainsFold applies the ContainsFold predicate on the "watermark" field.
+func WatermarkContainsFold(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldContainsFold(FieldWatermark, v))
+}
+
+// SyncStartedAtEQ applies the EQ predicate on the "sync_started_at" field.
+func SyncStartedAtEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldSyncStartedAt, v))
+}
+
+// SyncStartedAtNEQ applies the NEQ predicate on the "sync_started_at" field.
+func SyncStartedAtNEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldSyncStartedAt, v))
+}
+
+// SyncStartedAtIn applies the In predicate on the "sync_started_at" field.
+func SyncStartedAtIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldSyncStartedAt, vs...))
+}
+
+// SyncStartedAtNotIn applies the NotIn predicate on the "sync_started_at" field.
+func SyncStartedAtNotIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldSyncStartedAt, vs...))
+}
+
+// SyncStartedAtGT applies the GT predicate on the "sync_started_at" field.
+func SyncStartedAtGT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldSyncStartedAt, v))
+}
+
+// SyncStartedAtGTE applies the GTE predicate on the "sync_started_at" field.
+func SyncStartedAtGTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldSyncStartedAt, v))
+}
+
+// SyncStartedAtLT applies the LT predicate on the "sync_started_at" field.
+func SyncStartedAtLT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldSyncStartedAt, v))
+}
+
+// SyncStartedAtLTE applies the LTE predicate on the "sync_started_at" field.
+func SyncStartedAtLTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldSyncStartedAt, v))
+}
+
+// SyncStartedAtIsNil applies the IsNil predicate on the "sync_started_at" field.
+func SyncStartedAtIsNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIsNull(FieldSyncStartedAt))
+}
+
+// SyncStartedAtNotNil applies the NotNil predicate on the "sync_started_at" field.
+func SyncStartedAtNotNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotNull(FieldSyncStartedAt))
+}
+
+// AuthorizationStartedAtEQ applies the EQ predicate on the "authorization_started_at" field.
+func AuthorizationStartedAtEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldAuthorizationStartedAt, v))
+}
+
+// AuthorizationStartedAtNEQ applies the NEQ predicate on the "authorization_started_at" field.
+func AuthorizationStartedAtNEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldAuthorizationStartedAt, v))
+}
+
+// AuthorizationStartedAtIn applies the In predicate on the "authorization_started_at" field.
+func AuthorizationStartedAtIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldAuthorizationStartedAt, vs...))
+}
+
+// AuthorizationStartedAtNotIn applies the NotIn predicate on the "authorization_started_at" field.
+func AuthorizationStartedAtNotIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldAuthorizationStartedAt, vs...))
+}
+
+// AuthorizationStartedAtGT applies the GT predicate on the "authorization_started_at" field.
+func AuthorizationStartedAtGT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldAuthorizationStartedAt, v))
+}
+
+// AuthorizationStartedAtGTE applies the GTE predicate on the "authorization_started_at" field.
+func AuthorizationStartedAtGTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldAuthorizationStartedAt, v))
+}
+
+// AuthorizationStartedAtLT applies the LT predicate on the "authorization_started_at" field.
+func AuthorizationStartedAtLT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldAuthorizationStartedAt, v))
+}
+
+// AuthorizationStartedAtLTE applies the LTE predicate on the "authorization_started_at" field.
+func AuthorizationStartedAtLTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldAuthorizationStartedAt, v))
+}
+
+// AuthorizationStartedAtIsNil applies the IsNil predicate on the "authorization_started_at" field.
+func AuthorizationStartedAtIsNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIsNull(FieldAuthorizationStartedAt))
+}
+
+// AuthorizationStartedAtNotNil applies the NotNil predicate on the "authorization_started_at" field.
+func AuthorizationStartedAtNotNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotNull(FieldAuthorizationStartedAt))
+}
+
+// AuthorizedAtEQ applies the EQ predicate on the "authorized_at" field.
+func AuthorizedAtEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldAuthorizedAt, v))
+}
+
+// AuthorizedAtNEQ applies the NEQ predicate on the "authorized_at" field.
+func AuthorizedAtNEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldAuthorizedAt, v))
+}
+
+// AuthorizedAtIn applies the In predicate on the "authorized_at" field.
+func AuthorizedAtIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldAuthorizedAt, vs...))
+}
+
+// AuthorizedAtNotIn applies the NotIn predicate on the "authorized_at" field.
+func AuthorizedAtNotIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldAuthorizedAt, vs...))
+}
+
+// AuthorizedAtGT applies the GT predicate on the "authorized_at" field.
+func AuthorizedAtGT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldAuthorizedAt, v))
+}
+
+// AuthorizedAtGTE applies the GTE predicate on the "authorized_at" field.
+func AuthorizedAtGTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldAuthorizedAt, v))
+}
+
+// AuthorizedAtLT applies the LT predicate on the "authorized_at" field.
+func AuthorizedAtLT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldAuthorizedAt, v))
+}
+
+// AuthorizedAtLTE applies the LTE predicate on the "authorized_at" field.
+func AuthorizedAtLTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldAuthorizedAt, v))
+}
+
+// AuthorizedAtIsNil applies the IsNil predicate on the "authorized_at" field.
+func AuthorizedAtIsNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIsNull(FieldAuthorizedAt))
+}
+
+// AuthorizedAtNotNil applies the NotNil predicate on the "authorized_at" field.
+func AuthorizedAtNotNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotNull(FieldAuthorizedAt))
+}
+
+// BackfillCompletedAtEQ applies the EQ predicate on the "backfill_completed_at" field.
+func BackfillCompletedAtEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldBackfillCompletedAt, v))
+}
+
+// BackfillCompletedAtNEQ applies the NEQ predicate on the "backfill_completed_at" field.
+func BackfillCompletedAtNEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldBackfillCompletedAt, v))
+}
+
+// BackfillCompletedAtIn applies the In predicate on the "backfill_completed_at" field.
+func BackfillCompletedAtIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldBackfillCompletedAt, vs...))
+}
+
+// BackfillCompletedAtNotIn applies the NotIn predicate on the "backfill_completed_at" field.
+func BackfillCompletedAtNotIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldBackfillCompletedAt, vs...))
+}
+
+// BackfillCompletedAtGT applies the GT predicate on the "backfill_completed_at" field.
+func BackfillCompletedAtGT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldBackfillCompletedAt, v))
+}
+
+// BackfillCompletedAtGTE applies the GTE predicate on the "backfill_completed_at" field.
+func BackfillCompletedAtGTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldBackfillCompletedAt, v))
+}
+
+// BackfillCompletedAtLT applies the LT predicate on the "backfill_completed_at" field.
+func BackfillCompletedAtLT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldBackfillCompletedAt, v))
+}
+
+// BackfillCompletedAtLTE applies the LTE predicate on the "backfill_completed_at" field.
+func BackfillCompletedAtLTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldBackfillCompletedAt, v))
+}
+
+// BackfillCompletedAtIsNil applies the IsNil predicate on the "backfill_completed_at" field.
+func BackfillCompletedAtIsNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIsNull(FieldBackfillCompletedAt))
+}
+
+// BackfillCompletedAtNotNil applies the NotNil predicate on the "backfill_completed_at" field.
+func BackfillCompletedAtNotNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotNull(FieldBackfillCompletedAt))
+}
+
+// LastFailedSyncAtEQ applies the EQ predicate on the "last_failed_sync_at" field.
+func LastFailedSyncAtEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldLastFailedSyncAt, v))
+}
+
+// LastFailedSyncAtNEQ applies the NEQ predicate on the "last_failed_sync_at" field.
+func LastFailedSyncAtNEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldLastFailedSyncAt, v))
+}
+
+// LastFailedSyncAtIn applies the In predicate on the "last_failed_sync_at" field.
+func LastFailedSyncAtIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldLastFailedSyncAt, vs...))
+}
+
+// LastFailedSyncAtNotIn applies the NotIn predicate on the "last_failed_sync_at" field.
+func LastFailedSyncAtNotIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldLastFailedSyncAt, vs...))
+}
+
+// LastFailedSyncAtGT applies the GT predicate on the "last_failed_sync_at" field.
+func LastFailedSyncAtGT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldLastFailedSyncAt, v))
+}
+
+// LastFailedSyncAtGTE applies the GTE predicate on the "last_failed_sync_at" field.
+func LastFailedSyncAtGTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldLastFailedSyncAt, v))
+}
+
+// LastFailedSyncAtLT applies the LT predicate on the "last_failed_sync_at" field.
+func LastFailedSyncAtLT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldLastFailedSyncAt, v))
+}
+
+// LastFailedSyncAtLTE applies the LTE predicate on the "last_failed_sync_at" field.
+func LastFailedSyncAtLTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldLastFailedSyncAt, v))
+}
+
+// LastFailedSyncAtIsNil applies the IsNil predicate on the "last_failed_sync_at" field.
+func LastFailedSyncAtIsNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIsNull(FieldLastFailedSyncAt))
+}
+
+// LastFailedSyncAtNotNil applies the NotNil predicate on the "last_failed_sync_at" field.
+func LastFailedSyncAtNotNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotNull(FieldLastFailedSyncAt))
+}
+
+// DisconnectedAtEQ applies the EQ predicate on the "disconnected_at" field.
+func DisconnectedAtEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldDisconnectedAt, v))
+}
+
+// DisconnectedAtNEQ applies the NEQ predicate on the "disconnected_at" field.
+func DisconnectedAtNEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldDisconnectedAt, v))
+}
+
+// DisconnectedAtIn applies the In predicate on the "disconnected_at" field.
+func DisconnectedAtIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldDisconnectedAt, vs...))
+}
+
+// DisconnectedAtNotIn applies the NotIn predicate on the "disconnected_at" field.
+func DisconnectedAtNotIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldDisconnectedAt, vs...))
+}
+
+// DisconnectedAtGT applies the GT predicate on the "disconnected_at" field.
+func DisconnectedAtGT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldDisconnectedAt, v))
+}
+
+// DisconnectedAtGTE applies the GTE predicate on the "disconnected_at" field.
+func DisconnectedAtGTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldDisconnectedAt, v))
+}
+
+// DisconnectedAtLT applies the LT predicate on the "disconnected_at" field.
+func DisconnectedAtLT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldDisconnectedAt, v))
+}
+
+// DisconnectedAtLTE applies the LTE predicate on the "disconnected_at" field.
+func DisconnectedAtLTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldDisconnectedAt, v))
+}
+
+// DisconnectedAtIsNil applies the IsNil predicate on the "disconnected_at" field.
+func DisconnectedAtIsNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIsNull(FieldDisconnectedAt))
+}
+
+// DisconnectedAtNotNil applies the NotNil predicate on the "disconnected_at" field.
+func DisconnectedAtNotNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotNull(FieldDisconnectedAt))
+}
+
+// RevokedAtEQ applies the EQ predicate on the "revoked_at" field.
+func RevokedAtEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldRevokedAt, v))
+}
+
+// RevokedAtNEQ applies the NEQ predicate on the "revoked_at" field.
+func RevokedAtNEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldRevokedAt, v))
+}
+
+// RevokedAtIn applies the In predicate on the "revoked_at" field.
+func RevokedAtIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldRevokedAt, vs...))
+}
+
+// RevokedAtNotIn applies the NotIn predicate on the "revoked_at" field.
+func RevokedAtNotIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldRevokedAt, vs...))
+}
+
+// RevokedAtGT applies the GT predicate on the "revoked_at" field.
+func RevokedAtGT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldRevokedAt, v))
+}
+
+// RevokedAtGTE applies the GTE predicate on the "revoked_at" field.
+func RevokedAtGTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldRevokedAt, v))
+}
+
+// RevokedAtLT applies the LT predicate on the "revoked_at" field.
+func RevokedAtLT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldRevokedAt, v))
+}
+
+// RevokedAtLTE applies the LTE predicate on the "revoked_at" field.
+func RevokedAtLTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldRevokedAt, v))
+}
+
+// RevokedAtIsNil applies the IsNil predicate on the "revoked_at" field.
+func RevokedAtIsNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIsNull(FieldRevokedAt))
+}
+
+// RevokedAtNotNil applies the NotNil predicate on the "revoked_at" field.
+func RevokedAtNotNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotNull(FieldRevokedAt))
+}
+
+// LastSyncAtEQ applies the EQ predicate on the "last_sync_at" field.
+func LastSyncAtEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldLastSyncAt, v))
+}
+
+// LastSyncAtNEQ applies the NEQ predicate on the "last_sync_at" field.
+func LastSyncAtNEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldLastSyncAt, v))
+}
+
+// LastSyncAtIn applies the In predicate on the "last_sync_at" field.
+func LastSyncAtIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldLastSyncAt, vs...))
+}
+
+// LastSyncAtNotIn applies the NotIn predicate on the "last_sync_at" field.
+func LastSyncAtNotIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldLastSyncAt, vs...))
+}
+
+// LastSyncAtGT applies the GT predicate on the "last_sync_at" field.
+func LastSyncAtGT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldLastSyncAt, v))
+}
+
+// LastSyncAtGTE applies the GTE predicate on the "last_sync_at" field.
+func LastSyncAtGTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldLastSyncAt, v))
+}
+
+// LastSyncAtLT applies the LT predicate on the "last_sync_at" field.
+func LastSyncAtLT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldLastSyncAt, v))
+}
+
+// LastSyncAtLTE applies the LTE predicate on the "last_sync_at" field.
+func LastSyncAtLTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldLastSyncAt, v))
+}
+
+// LastSyncAtIsNil applies the IsNil predicate on the "last_sync_at" field.
+func LastSyncAtIsNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIsNull(FieldLastSyncAt))
+}
+
+// LastSyncAtNotNil applies the NotNil predicate on the "last_sync_at" field.
+func LastSyncAtNotNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotNull(FieldLastSyncAt))
+}
+
+// ExpectedCadenceSecondsEQ applies the EQ predicate on the "expected_cadence_seconds" field.
+func ExpectedCadenceSecondsEQ(v int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldExpectedCadenceSeconds, v))
+}
+
+// ExpectedCadenceSecondsNEQ applies the NEQ predicate on the "expected_cadence_seconds" field.
+func ExpectedCadenceSecondsNEQ(v int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldExpectedCadenceSeconds, v))
+}
+
+// ExpectedCadenceSecondsIn applies the In predicate on the "expected_cadence_seconds" field.
+func ExpectedCadenceSecondsIn(vs ...int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldExpectedCadenceSeconds, vs...))
+}
+
+// ExpectedCadenceSecondsNotIn applies the NotIn predicate on the "expected_cadence_seconds" field.
+func ExpectedCadenceSecondsNotIn(vs ...int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldExpectedCadenceSeconds, vs...))
+}
+
+// ExpectedCadenceSecondsGT applies the GT predicate on the "expected_cadence_seconds" field.
+func ExpectedCadenceSecondsGT(v int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldExpectedCadenceSeconds, v))
+}
+
+// ExpectedCadenceSecondsGTE applies the GTE predicate on the "expected_cadence_seconds" field.
+func ExpectedCadenceSecondsGTE(v int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldExpectedCadenceSeconds, v))
+}
+
+// ExpectedCadenceSecondsLT applies the LT predicate on the "expected_cadence_seconds" field.
+func ExpectedCadenceSecondsLT(v int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldExpectedCadenceSeconds, v))
+}
+
+// ExpectedCadenceSecondsLTE applies the LTE predicate on the "expected_cadence_seconds" field.
+func ExpectedCadenceSecondsLTE(v int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldExpectedCadenceSeconds, v))
+}
+
+// LagSecondsEQ applies the EQ predicate on the "lag_seconds" field.
+func LagSecondsEQ(v int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldLagSeconds, v))
+}
+
+// LagSecondsNEQ applies the NEQ predicate on the "lag_seconds" field.
+func LagSecondsNEQ(v int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldLagSeconds, v))
+}
+
+// LagSecondsIn applies the In predicate on the "lag_seconds" field.
+func LagSecondsIn(vs ...int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldLagSeconds, vs...))
+}
+
+// LagSecondsNotIn applies the NotIn predicate on the "lag_seconds" field.
+func LagSecondsNotIn(vs ...int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldLagSeconds, vs...))
+}
+
+// LagSecondsGT applies the GT predicate on the "lag_seconds" field.
+func LagSecondsGT(v int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldLagSeconds, v))
+}
+
+// LagSecondsGTE applies the GTE predicate on the "lag_seconds" field.
+func LagSecondsGTE(v int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldLagSeconds, v))
+}
+
+// LagSecondsLT applies the LT predicate on the "lag_seconds" field.
+func LagSecondsLT(v int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldLagSeconds, v))
+}
+
+// LagSecondsLTE applies the LTE predicate on the "lag_seconds" field.
+func LagSecondsLTE(v int64) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldLagSeconds, v))
+}
+
+// ErrorCodeEQ applies the EQ predicate on the "error_code" field.
+func ErrorCodeEQ(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldErrorCode, v))
+}
+
+// ErrorCodeNEQ applies the NEQ predicate on the "error_code" field.
+func ErrorCodeNEQ(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldErrorCode, v))
+}
+
+// ErrorCodeIn applies the In predicate on the "error_code" field.
+func ErrorCodeIn(vs ...string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldErrorCode, vs...))
+}
+
+// ErrorCodeNotIn applies the NotIn predicate on the "error_code" field.
+func ErrorCodeNotIn(vs ...string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldErrorCode, vs...))
+}
+
+// ErrorCodeGT applies the GT predicate on the "error_code" field.
+func ErrorCodeGT(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldErrorCode, v))
+}
+
+// ErrorCodeGTE applies the GTE predicate on the "error_code" field.
+func ErrorCodeGTE(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldErrorCode, v))
+}
+
+// ErrorCodeLT applies the LT predicate on the "error_code" field.
+func ErrorCodeLT(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldErrorCode, v))
+}
+
+// ErrorCodeLTE applies the LTE predicate on the "error_code" field.
+func ErrorCodeLTE(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldErrorCode, v))
+}
+
+// ErrorCodeContains applies the Contains predicate on the "error_code" field.
+func ErrorCodeContains(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldContains(FieldErrorCode, v))
+}
+
+// ErrorCodeHasPrefix applies the HasPrefix predicate on the "error_code" field.
+func ErrorCodeHasPrefix(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldHasPrefix(FieldErrorCode, v))
+}
+
+// ErrorCodeHasSuffix applies the HasSuffix predicate on the "error_code" field.
+func ErrorCodeHasSuffix(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldHasSuffix(FieldErrorCode, v))
+}
+
+// ErrorCodeIsNil applies the IsNil predicate on the "error_code" field.
+func ErrorCodeIsNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIsNull(FieldErrorCode))
+}
+
+// ErrorCodeNotNil applies the NotNil predicate on the "error_code" field.
+func ErrorCodeNotNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotNull(FieldErrorCode))
+}
+
+// ErrorCodeEqualFold applies the EqualFold predicate on the "error_code" field.
+func ErrorCodeEqualFold(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEqualFold(FieldErrorCode, v))
+}
+
+// ErrorCodeContainsFold applies the ContainsFold predicate on the "error_code" field.
+func ErrorCodeContainsFold(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldContainsFold(FieldErrorCode, v))
+}
+
+// RetryCountEQ applies the EQ predicate on the "retry_count" field.
+func RetryCountEQ(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldRetryCount, v))
+}
+
+// RetryCountNEQ applies the NEQ predicate on the "retry_count" field.
+func RetryCountNEQ(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldRetryCount, v))
+}
+
+// RetryCountIn applies the In predicate on the "retry_count" field.
+func RetryCountIn(vs ...int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldRetryCount, vs...))
+}
+
+// RetryCountNotIn applies the NotIn predicate on the "retry_count" field.
+func RetryCountNotIn(vs ...int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldRetryCount, vs...))
+}
+
+// RetryCountGT applies the GT predicate on the "retry_count" field.
+func RetryCountGT(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldRetryCount, v))
+}
+
+// RetryCountGTE applies the GTE predicate on the "retry_count" field.
+func RetryCountGTE(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldRetryCount, v))
+}
+
+// RetryCountLT applies the LT predicate on the "retry_count" field.
+func RetryCountLT(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldRetryCount, v))
+}
+
+// RetryCountLTE applies the LTE predicate on the "retry_count" field.
+func RetryCountLTE(v int) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldRetryCount, v))
+}
+
+// NextRetryAtEQ applies the EQ predicate on the "next_retry_at" field.
+func NextRetryAtEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldNextRetryAt, v))
+}
+
+// NextRetryAtNEQ applies the NEQ predicate on the "next_retry_at" field.
+func NextRetryAtNEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldNextRetryAt, v))
+}
+
+// NextRetryAtIn applies the In predicate on the "next_retry_at" field.
+func NextRetryAtIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldNextRetryAt, vs...))
+}
+
+// NextRetryAtNotIn applies the NotIn predicate on the "next_retry_at" field.
+func NextRetryAtNotIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldNextRetryAt, vs...))
+}
+
+// NextRetryAtGT applies the GT predicate on the "next_retry_at" field.
+func NextRetryAtGT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldNextRetryAt, v))
+}
+
+// NextRetryAtGTE applies the GTE predicate on the "next_retry_at" field.
+func NextRetryAtGTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldNextRetryAt, v))
+}
+
+// NextRetryAtLT applies the LT predicate on the "next_retry_at" field.
+func NextRetryAtLT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldNextRetryAt, v))
+}
+
+// NextRetryAtLTE applies the LTE predicate on the "next_retry_at" field.
+func NextRetryAtLTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldNextRetryAt, v))
+}
+
+// NextRetryAtIsNil applies the IsNil predicate on the "next_retry_at" field.
+func NextRetryAtIsNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIsNull(FieldNextRetryAt))
+}
+
+// NextRetryAtNotNil applies the NotNil predicate on the "next_retry_at" field.
+func NextRetryAtNotNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotNull(FieldNextRetryAt))
+}
+
+// CompletenessEQ applies the EQ predicate on the "completeness" field.
+func CompletenessEQ(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldCompleteness, v))
+}
+
+// CompletenessNEQ applies the NEQ predicate on the "completeness" field.
+func CompletenessNEQ(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldCompleteness, v))
+}
+
+// CompletenessIn applies the In predicate on the "completeness" field.
+func CompletenessIn(vs ...string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldCompleteness, vs...))
+}
+
+// CompletenessNotIn applies the NotIn predicate on the "completeness" field.
+func CompletenessNotIn(vs ...string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldCompleteness, vs...))
+}
+
+// CompletenessGT applies the GT predicate on the "completeness" field.
+func CompletenessGT(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldCompleteness, v))
+}
+
+// CompletenessGTE applies the GTE predicate on the "completeness" field.
+func CompletenessGTE(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldCompleteness, v))
+}
+
+// CompletenessLT applies the LT predicate on the "completeness" field.
+func CompletenessLT(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldCompleteness, v))
+}
+
+// CompletenessLTE applies the LTE predicate on the "completeness" field.
+func CompletenessLTE(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldCompleteness, v))
+}
+
+// CompletenessContains applies the Contains predicate on the "completeness" field.
+func CompletenessContains(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldContains(FieldCompleteness, v))
+}
+
+// CompletenessHasPrefix applies the HasPrefix predicate on the "completeness" field.
+func CompletenessHasPrefix(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldHasPrefix(FieldCompleteness, v))
+}
+
+// CompletenessHasSuffix applies the HasSuffix predicate on the "completeness" field.
+func CompletenessHasSuffix(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldHasSuffix(FieldCompleteness, v))
+}
+
+// CompletenessEqualFold applies the EqualFold predicate on the "completeness" field.
+func CompletenessEqualFold(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEqualFold(FieldCompleteness, v))
+}
+
+// CompletenessContainsFold applies the ContainsFold predicate on the "completeness" field.
+func CompletenessContainsFold(v string) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldContainsFold(FieldCompleteness, v))
 }
 
 // CursorEQ applies the EQ predicate on the "cursor" field.
@@ -549,6 +1629,56 @@ func LastObservationAtIsNil() predicate.RelationshipSourceStatus {
 // LastObservationAtNotNil applies the NotNil predicate on the "last_observation_at" field.
 func LastObservationAtNotNil() predicate.RelationshipSourceStatus {
 	return predicate.RelationshipSourceStatus(sql.FieldNotNull(FieldLastObservationAt))
+}
+
+// LastProviderEventAtEQ applies the EQ predicate on the "last_provider_event_at" field.
+func LastProviderEventAtEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldEQ(FieldLastProviderEventAt, v))
+}
+
+// LastProviderEventAtNEQ applies the NEQ predicate on the "last_provider_event_at" field.
+func LastProviderEventAtNEQ(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNEQ(FieldLastProviderEventAt, v))
+}
+
+// LastProviderEventAtIn applies the In predicate on the "last_provider_event_at" field.
+func LastProviderEventAtIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIn(FieldLastProviderEventAt, vs...))
+}
+
+// LastProviderEventAtNotIn applies the NotIn predicate on the "last_provider_event_at" field.
+func LastProviderEventAtNotIn(vs ...time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotIn(FieldLastProviderEventAt, vs...))
+}
+
+// LastProviderEventAtGT applies the GT predicate on the "last_provider_event_at" field.
+func LastProviderEventAtGT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGT(FieldLastProviderEventAt, v))
+}
+
+// LastProviderEventAtGTE applies the GTE predicate on the "last_provider_event_at" field.
+func LastProviderEventAtGTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldGTE(FieldLastProviderEventAt, v))
+}
+
+// LastProviderEventAtLT applies the LT predicate on the "last_provider_event_at" field.
+func LastProviderEventAtLT(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLT(FieldLastProviderEventAt, v))
+}
+
+// LastProviderEventAtLTE applies the LTE predicate on the "last_provider_event_at" field.
+func LastProviderEventAtLTE(v time.Time) predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldLTE(FieldLastProviderEventAt, v))
+}
+
+// LastProviderEventAtIsNil applies the IsNil predicate on the "last_provider_event_at" field.
+func LastProviderEventAtIsNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldIsNull(FieldLastProviderEventAt))
+}
+
+// LastProviderEventAtNotNil applies the NotNil predicate on the "last_provider_event_at" field.
+func LastProviderEventAtNotNil() predicate.RelationshipSourceStatus {
+	return predicate.RelationshipSourceStatus(sql.FieldNotNull(FieldLastProviderEventAt))
 }
 
 // LastErrorEQ applies the EQ predicate on the "last_error" field.

@@ -106,6 +106,11 @@ func PayloadCiphertext(v []byte) predicate.RevenueEvidence {
 	return predicate.RevenueEvidence(sql.FieldEQ(FieldPayloadCiphertext, v))
 }
 
+// EncryptionKeyVersion applies equality check predicate on the "encryption_key_version" field. It's identical to EncryptionKeyVersionEQ.
+func EncryptionKeyVersion(v int) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldEQ(FieldEncryptionKeyVersion, v))
+}
+
 // OccurredAt applies equality check predicate on the "occurred_at" field. It's identical to OccurredAtEQ.
 func OccurredAt(v time.Time) predicate.RevenueEvidence {
 	return predicate.RevenueEvidence(sql.FieldEQ(FieldOccurredAt, v))
@@ -739,6 +744,46 @@ func PayloadCiphertextIsNil() predicate.RevenueEvidence {
 // PayloadCiphertextNotNil applies the NotNil predicate on the "payload_ciphertext" field.
 func PayloadCiphertextNotNil() predicate.RevenueEvidence {
 	return predicate.RevenueEvidence(sql.FieldNotNull(FieldPayloadCiphertext))
+}
+
+// EncryptionKeyVersionEQ applies the EQ predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionEQ(v int) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldEQ(FieldEncryptionKeyVersion, v))
+}
+
+// EncryptionKeyVersionNEQ applies the NEQ predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionNEQ(v int) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldNEQ(FieldEncryptionKeyVersion, v))
+}
+
+// EncryptionKeyVersionIn applies the In predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionIn(vs ...int) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldIn(FieldEncryptionKeyVersion, vs...))
+}
+
+// EncryptionKeyVersionNotIn applies the NotIn predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionNotIn(vs ...int) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldNotIn(FieldEncryptionKeyVersion, vs...))
+}
+
+// EncryptionKeyVersionGT applies the GT predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionGT(v int) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldGT(FieldEncryptionKeyVersion, v))
+}
+
+// EncryptionKeyVersionGTE applies the GTE predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionGTE(v int) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldGTE(FieldEncryptionKeyVersion, v))
+}
+
+// EncryptionKeyVersionLT applies the LT predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionLT(v int) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldLT(FieldEncryptionKeyVersion, v))
+}
+
+// EncryptionKeyVersionLTE applies the LTE predicate on the "encryption_key_version" field.
+func EncryptionKeyVersionLTE(v int) predicate.RevenueEvidence {
+	return predicate.RevenueEvidence(sql.FieldLTE(FieldEncryptionKeyVersion, v))
 }
 
 // OccurredAtEQ applies the EQ predicate on the "occurred_at" field.

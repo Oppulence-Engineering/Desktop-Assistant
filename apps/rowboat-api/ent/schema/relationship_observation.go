@@ -34,6 +34,7 @@ func (RelationshipObservation) Fields() []ent.Field {
 		field.Text("normalized_facts_json").Default("{}").Sensitive(),
 		field.String("content_hash").NotEmpty(),
 		field.Bytes("payload_ciphertext").Optional().Sensitive(),
+		field.Int("encryption_key_version").Default(0).NonNegative(),
 	}
 }
 

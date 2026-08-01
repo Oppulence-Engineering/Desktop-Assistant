@@ -9,16 +9,29 @@ package auth
 
 import (
 	"context"
+	"sync"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/google/uuid"
 )
 
 type userKey struct{}
 type internalKey struct{}
+type revenueWorkspaceAccessKey struct{}
+
+type revenueWorkspaceAccess struct {
+	mu    sync.RWMutex
+	roles map[uuid.UUID]string
+}
 
 // WithUser returns a context carrying the authenticated user.
 func WithUser(ctx context.Context, u *ent.User) context.Context {
-	return context.WithValue(ctx, userKey{}, u)
+	ctx = context.WithValue(ctx, userKey{}, u)
+	// Workspace authorization is request/actor-specific. Always replace the
+	// grant set when identity changes so inherited contexts cannot leak grants.
+	return context.WithValue(ctx, revenueWorkspaceAccessKey{}, &revenueWorkspaceAccess{
+		roles: make(map[uuid.UUID]string),
+	})
 }
 
 // UserFromCtx returns the authenticated user, if any.
@@ -47,4 +60,34 @@ func WithInternalOnly(ctx context.Context) context.Context {
 func IsInternalCaller(ctx context.Context) bool {
 	v, _ := ctx.Value(internalKey{}).(bool)
 	return v
+}
+
+// GrantRevenueWorkspace records a role that was resolved from the durable
+// workspace membership boundary for this request. It is intentionally
+// mutable so service methods can establish the grant after lazy workspace
+// resolution without replacing the caller's context value.
+func GrantRevenueWorkspace(ctx context.Context, workspaceID uuid.UUID, role string) {
+	access, _ := ctx.Value(revenueWorkspaceAccessKey{}).(*revenueWorkspaceAccess)
+	if access == nil {
+		return
+	}
+	access.mu.Lock()
+	access.roles[workspaceID] = role
+	access.mu.Unlock()
+}
+
+// CanWriteRevenueWorkspace reports whether a durable role resolution in this
+// request grants shared-record mutation. Viewer and missing grants fail closed.
+func CanWriteRevenueWorkspace(ctx context.Context, workspaceID uuid.UUID) bool {
+	if IsInternalCaller(ctx) {
+		return true
+	}
+	access, _ := ctx.Value(revenueWorkspaceAccessKey{}).(*revenueWorkspaceAccess)
+	if access == nil {
+		return false
+	}
+	access.mu.RLock()
+	role := access.roles[workspaceID]
+	access.mu.RUnlock()
+	return role == "owner" || role == "admin" || role == "member"
 }

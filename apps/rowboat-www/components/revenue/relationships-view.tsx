@@ -2,11 +2,20 @@
 
 import * as React from "react";
 import {
+  AUTHORITY_LABELS,
+  COMPLETENESS_LABELS,
+  MISSION_CONTROL_QUESTIONS,
+  RELATIONSHIP_DIMENSION_LABELS,
+  completenessTone,
+  relationshipLabel,
+} from "@oppulence/relationship-contract";
+import {
   AddressBook,
   ArrowClockwise,
   Check,
   CircleNotch,
   ClockCounterClockwise,
+  DownloadSimple,
   MagnifyingGlass,
   Plus,
   Sparkle,
@@ -42,6 +51,9 @@ import {
 } from "@/components/ui/sheet";
 import {
   ACTION_TYPE_LABELS,
+  acknowledgeMissionControl,
+  decideIdentityCandidate,
+  decideRelationshipAttention,
   approveRecommendation,
   correctConversationReview,
   decideConversationReview,
@@ -49,11 +61,17 @@ import {
   createRelationship,
   DETECTOR_LABELS,
   getRelationship,
+  getRelationshipBetaDiagnostics,
   getRelationshipChanges,
   getRelationshipEvidence,
   getRelationshipTimeline,
   listRelationships,
+  listIdentityCandidates,
+  listRelationshipAttention,
+  listRelationshipSources,
   listRelationshipSourceStatuses,
+  disconnectRelationshipSource,
+  resyncRelationshipSource,
   rejectRecommendation,
   resolveRelationshipContradiction,
   runCommitmentRecovery,
@@ -69,9 +87,13 @@ import {
 } from "@/lib/revenue";
 import type {
   ConversationReviewItem,
+  MissionControlReadModel,
+  RelationshipIdentityCandidate,
+  RelationshipAttentionItem,
   RelationshipDetail,
   RelationshipObservation,
   RelationshipSourceStatus,
+  RelationshipSourceInventoryItem,
   RelationshipStateSnapshot,
   RevenueRelationship,
 } from "@/types/revenue";
@@ -102,12 +124,21 @@ const humanize = (value?: string) => (value || "unknown").replaceAll("_", " ");
 export function RelationshipsView({
   onError,
   onNotice,
+  onOpenConnectors,
 }: {
   onError: (m: string) => void;
   onNotice: (m: string) => void;
+  onOpenConnectors?: () => void;
 }) {
   const [rows, setRows] = React.useState<RevenueRelationship[]>([]);
   const [sources, setSources] = React.useState<RelationshipSourceStatus[]>([]);
+  const [identityCandidates, setIdentityCandidates] = React.useState<
+    RelationshipIdentityCandidate[]
+  >([]);
+  const [attention, setAttention] = React.useState<RelationshipAttentionItem[]>([]);
+  const [sourceInventory, setSourceInventory] = React.useState<RelationshipSourceInventoryItem[]>(
+    [],
+  );
   const [loading, setLoading] = React.useState(true);
   const [detail, setDetail] = React.useState<string | null>(null);
   const [creating, setCreating] = React.useState(false);
@@ -118,16 +149,30 @@ export function RelationshipsView({
   const load = React.useCallback(async () => {
     setLoading(true);
     try {
-      const [relationships, sourceStatuses] = await Promise.all([
+      const [
+        relationships,
+        sourceStatuses,
+        inventory,
+        pendingCandidates,
+        deferredCandidates,
+        attentionItems,
+      ] = await Promise.all([
         listRelationships({
           q: query.trim() || undefined,
           health: health === "all" ? undefined : health,
           lifecycle: lifecycle === "all" ? undefined : lifecycle,
         }),
         listRelationshipSourceStatuses(),
+        listRelationshipSources(),
+        listIdentityCandidates("pending"),
+        listIdentityCandidates("deferred"),
+        listRelationshipAttention("open"),
       ]);
       setRows(relationships);
       setSources(sourceStatuses);
+      setSourceInventory(inventory);
+      setIdentityCandidates([...pendingCandidates, ...deferredCandidates]);
+      setAttention(attentionItems);
     } catch (e) {
       onError(errMessage(e, "Could not load relationship intelligence."));
     } finally {
@@ -139,6 +184,23 @@ export function RelationshipsView({
     const timer = window.setTimeout(() => void load(), 180);
     return () => window.clearTimeout(timer);
   }, [load]);
+
+  const exportDiagnostics = React.useCallback(async () => {
+    try {
+      const bundle = await getRelationshipBetaDiagnostics();
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `oppulence-beta-diagnostics-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      onNotice("Redacted beta diagnostics exported.");
+    } catch (error) {
+      onError(errMessage(error, "Could not export beta diagnostics."));
+    }
+  }, [onError, onNotice]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -156,11 +218,44 @@ export function RelationshipsView({
               recommendation explains what changed and waits for approval.
             </p>
           </div>
-          <SourceHealth statuses={sources} />
+          <div className="flex flex-col items-end gap-2">
+            <SourceHealth statuses={sources} />
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => void exportDiagnostics()}
+            >
+              <DownloadSimple /> Export diagnostics
+            </Button>
+          </div>
         </div>
       </section>
 
+      <PortfolioAttentionQueue
+        items={attention}
+        onOpenRelationship={setDetail}
+        onError={onError}
+        onChanged={() => void load()}
+      />
+
       <SemanticSearch onError={onError} />
+
+      <SourceConnectionCards
+        inventory={sourceInventory}
+        onOpenConnectors={onOpenConnectors}
+        onError={onError}
+        onChanged={() => void load()}
+      />
+
+      <IdentityReviewInbox
+        candidates={identityCandidates}
+        onError={onError}
+        onChanged={() => {
+          onNotice("Identity decision applied.");
+          void load();
+        }}
+      />
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
@@ -305,6 +400,148 @@ export function RelationshipsView({
   );
 }
 
+function PortfolioAttentionQueue({
+  items,
+  onOpenRelationship,
+  onChanged,
+  onError,
+}: {
+  items: RelationshipAttentionItem[];
+  onOpenRelationship: (id: string) => void;
+  onChanged: () => void;
+  onError: (message: string) => void;
+}) {
+  const [busy, setBusy] = React.useState<string | null>(null);
+  if (items.length === 0) return null;
+
+  const decide = async (
+    item: RelationshipAttentionItem,
+    decision: "acknowledge" | "snooze" | "dismiss",
+  ) => {
+    const reason =
+      decision === "dismiss"
+        ? window.prompt("Why should this attention item be dismissed?", "Not relevant right now")
+        : decision === "acknowledge"
+          ? "Reviewed from the portfolio attention queue."
+          : "Snoozed from the portfolio attention queue.";
+    if (reason === null || (decision === "dismiss" && !reason.trim())) return;
+    setBusy(`${item.id}:${decision}`);
+    try {
+      await decideRelationshipAttention(item.id, {
+        decision,
+        reason,
+        expectedVersion: item.version,
+        snoozedUntil:
+          decision === "snooze"
+            ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+            : undefined,
+      });
+      onChanged();
+    } catch (error) {
+      onError(errMessage(error, "Could not update the attention item."));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section aria-labelledby="portfolio-attention-heading" className="space-y-2">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
+            Portfolio attention
+          </p>
+          <h3 id="portfolio-attention-heading" className="text-sm font-medium text-primary">
+            {items.length} relationship{items.length === 1 ? "" : "s"} need review
+          </h3>
+        </div>
+        <span className="text-[11px] text-primary/40">Deterministic order · factors visible</span>
+      </div>
+      <ol className="space-y-2">
+        {items.slice(0, 10).map((item) => (
+          <li key={item.id} className="rounded-[2px] border border-border p-3">
+            <div className="flex flex-wrap items-start gap-3">
+              <button
+                type="button"
+                className="min-w-0 flex-1 text-left"
+                onClick={() => onOpenRelationship(item.relationshipId)}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium text-primary">{item.relationshipName}</span>
+                  <Badge
+                    variant="outline"
+                    className={`rounded-[2px] capitalize ${
+                      item.urgencyBand === "critical"
+                        ? "border-red-500/40 text-red-600"
+                        : item.urgencyBand === "high"
+                          ? "border-amber-500/40 text-amber-600"
+                          : ""
+                    }`}
+                  >
+                    {relationshipLabel(item.reasonCode)} · {item.rankScore}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-xs text-primary/60">{item.explanation}</p>
+              </button>
+              <div className="flex flex-wrap gap-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy !== null}
+                  onClick={() => void decide(item, "acknowledge")}
+                >
+                  {busy === `${item.id}:acknowledge` ? (
+                    <CircleNotch className="animate-spin" />
+                  ) : (
+                    <Check />
+                  )}{" "}
+                  Review
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy !== null}
+                  onClick={() => void decide(item, "snooze")}
+                >
+                  Snooze 1d
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy !== null}
+                  onClick={() => void decide(item, "dismiss")}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+            <details className="mt-2 text-[11px] text-primary/50">
+              <summary className="cursor-pointer">Why this rank?</summary>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                {Object.entries(item.rankFactors).map(([factor, contribution]) => (
+                  <span key={factor}>
+                    {relationshipLabel(factor)}: {contribution >= 0 ? "+" : ""}
+                    {contribution}
+                  </span>
+                ))}
+                {item.sourceRequirements.length > 0 ? (
+                  <span>Requires: {item.sourceRequirements.join(", ")}</span>
+                ) : null}
+                <span>
+                  State v{item.relationshipStateVersion} · detector v{item.detectorVersion}
+                </span>
+              </div>
+            </details>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
   if (statuses.length === 0) {
     return (
@@ -313,7 +550,9 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
       </Badge>
     );
   }
-  const stale = statuses.filter((source) => source.status !== "connected").length;
+  const needsRepair = statuses.filter(
+    (source) => !["connected", "backfilling", "live"].includes(source.status),
+  ).length;
   return (
     <div className="flex max-w-sm flex-wrap justify-end gap-1.5">
       {statuses.slice(0, 4).map((source) => (
@@ -322,18 +561,267 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
           variant="outline"
           title={source.lastError || source.lastObservationAt}
           className={`rounded-[2px] font-normal capitalize ${
-            source.status === "connected" ? "border-emerald-500/30" : "border-amber-500/30"
+            source.status === "live"
+              ? "border-emerald-500/30"
+              : ["connected", "backfilling"].includes(source.status)
+                ? "border-sky-500/30"
+                : "border-amber-500/30"
           }`}
         >
           {source.source} · {source.status}
         </Badge>
       ))}
-      {stale > 0 ? (
+      {needsRepair > 0 ? (
         <span className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-          <Warning /> {stale} need attention
+          <Warning /> {needsRepair} need attention
         </span>
       ) : null}
     </div>
+  );
+}
+
+function SourceConnectionCards({
+  inventory,
+  onOpenConnectors,
+  onChanged,
+  onError,
+}: {
+  inventory: RelationshipSourceInventoryItem[];
+  onOpenConnectors?: () => void;
+  onChanged: () => void;
+  onError: (message: string) => void;
+}) {
+  const [busy, setBusy] = React.useState<string | null>(null);
+  const needsAttention = inventory.filter(
+    (item) =>
+      item.accounts.length === 0 ||
+      item.accounts.some(
+        (account) => account.status !== "live" || account.missingScopes.length > 0,
+      ),
+  );
+  if (needsAttention.length === 0) return null;
+
+  const mutate = async (key: string, operation: () => Promise<unknown>) => {
+    setBusy(key);
+    try {
+      await operation();
+      onChanged();
+    } catch (error) {
+      onError(errMessage(error, "Could not update the evidence source."));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section aria-labelledby="source-connections-heading" className="space-y-3">
+      <div>
+        <h3 id="source-connections-heading" className="text-sm font-medium text-primary">
+          Evidence sources
+        </h3>
+        <p className="mt-0.5 text-xs text-primary/55">
+          Connect Google plus Slack or HubSpot. Read access builds history; action scopes remain
+          approval-gated.
+        </p>
+      </div>
+      <div className="grid gap-2 md:grid-cols-3">
+        {needsAttention.map((item) => {
+          const account = item.accounts[0];
+          const progress =
+            account && account.backfillTotal > 0
+              ? Math.round((account.backfillCompleted / account.backfillTotal) * 100)
+              : null;
+          return (
+            <article key={item.source} className="space-y-3 rounded-[2px] border border-border p-3">
+              <div className="flex items-start justify-between gap-2">
+                <h4 className="text-sm font-medium text-primary">{item.displayName}</h4>
+                <Badge variant="outline" className="rounded-[2px] capitalize">
+                  {humanize(account?.status || "not_connected")}
+                </Badge>
+              </div>
+              <p className="text-xs text-primary/55">{item.scopeExplanation}</p>
+              <details className="text-[11px] text-primary/55">
+                <summary className="cursor-pointer">Permissions and capabilities</summary>
+                <p className="mt-1">
+                  <span className="font-medium">Read:</span> {item.readScopes.join(", ")}
+                </p>
+                <p className="mt-1">
+                  <span className="font-medium">On approval:</span> {item.writeScopes.join(", ")}
+                </p>
+              </details>
+              {account ? (
+                <div className="space-y-1 text-[11px] text-primary/50">
+                  <p>
+                    {humanize(account.completeness)}
+                    {progress !== null ? ` · backfill ${progress}%` : ""}
+                    {account.lagSeconds ? ` · ${Math.round(account.lagSeconds / 60)}m lag` : ""}
+                  </p>
+                  {account.missingScopes.length > 0 ? (
+                    <p className="text-amber-600">Missing: {account.missingScopes.join(", ")}</p>
+                  ) : null}
+                  {account.lastError ? (
+                    <p className="text-destructive">{account.lastError}</p>
+                  ) : null}
+                </div>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                {!account ||
+                account.status === "disconnected" ||
+                account.status === "reconnect_required" ? (
+                  <Button type="button" size="sm" onClick={onOpenConnectors}>
+                    Connect
+                  </Button>
+                ) : null}
+                {account && item.supportsResync ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={busy !== null}
+                    onClick={() =>
+                      void mutate(`${item.source}:resync`, () =>
+                        resyncRelationshipSource(item.source, account.sourceAccountId),
+                      )
+                    }
+                  >
+                    {busy === `${item.source}:resync` ? (
+                      <CircleNotch className="animate-spin" />
+                    ) : (
+                      <ArrowClockwise />
+                    )}{" "}
+                    Resync
+                  </Button>
+                ) : null}
+                {account && account.status !== "disconnected" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={busy !== null}
+                    onClick={() =>
+                      void mutate(`${item.source}:disconnect`, () =>
+                        disconnectRelationshipSource(item.source, account.sourceAccountId),
+                      )
+                    }
+                  >
+                    Disconnect
+                  </Button>
+                ) : null}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function IdentityReviewInbox({
+  candidates,
+  onChanged,
+  onError,
+}: {
+  candidates: RelationshipIdentityCandidate[];
+  onChanged: () => void;
+  onError: (message: string) => void;
+}) {
+  const [reasons, setReasons] = React.useState<Record<string, string>>({});
+  const [busy, setBusy] = React.useState<string | null>(null);
+  if (candidates.length === 0) return null;
+
+  const decide = async (candidate: RelationshipIdentityCandidate, decision: string) => {
+    setBusy(`${candidate.id}:${decision}`);
+    try {
+      await decideIdentityCandidate(candidate.id, {
+        decision,
+        reason: reasons[candidate.id]?.trim() || `Reviewed in the identity inbox: ${decision}.`,
+        expectedVersion: candidate.version,
+        idempotencyKey: crypto.randomUUID(),
+      });
+      onChanged();
+    } catch (error) {
+      onError(errMessage(error, "Could not apply the identity decision. Refresh and try again."));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section
+      aria-labelledby="identity-review-heading"
+      className="space-y-2 rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 id="identity-review-heading" className="text-sm font-medium text-primary">
+            Identity review
+          </h3>
+          <p className="mt-0.5 text-xs text-primary/55">
+            {candidates.length} ambiguous relationship{candidates.length === 1 ? "" : "s"} cannot
+            receive actions until reviewed.
+          </p>
+        </div>
+        <Badge variant="outline" className="rounded-[2px] border-amber-500/40">
+          Human decision required
+        </Badge>
+      </div>
+      {candidates.map((candidate) => (
+        <article key={candidate.id} className="space-y-3 border-t border-amber-500/20 pt-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium text-primary">
+                {candidate.proposedRelationship.displayName} may match{" "}
+                {candidate.existingRelationship.displayName}
+              </p>
+              <p className="mt-0.5 text-xs text-primary/55">
+                Exact {humanize(candidate.anchorKind)} anchor
+                {candidate.anchorProvider ? ` from ${candidate.anchorProvider}` : ""}:{" "}
+                {candidate.anchorPreview || "preview withheld"}
+              </p>
+            </div>
+            <span className="text-xs text-primary/45">
+              {candidate.evidenceCount} evidence item{candidate.evidenceCount === 1 ? "" : "s"} ·{" "}
+              {Math.round(candidate.recommendationConfidence * 100)}% recommendation confidence
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 text-[11px] text-primary/55">
+            {Object.entries(candidate.impact).map(([kind, count]) => (
+              <span key={kind} className="border border-border px-2 py-1">
+                {count} {humanize(kind)}
+              </span>
+            ))}
+          </div>
+          <Input
+            aria-label={`Reason for identity decision about ${candidate.proposedRelationship.displayName}`}
+            value={reasons[candidate.id] ?? ""}
+            onChange={(event) =>
+              setReasons((current) => ({ ...current, [candidate.id]: event.target.value }))
+            }
+            placeholder="Optional audit reason"
+          />
+          <div className="flex flex-wrap gap-2">
+            {(candidate.status === "resolved"
+              ? (["split", "undo"] as const)
+              : (["merge", "keep_separate", "move_evidence", "defer"] as const)
+            ).map((decision) => (
+              <Button
+                key={decision}
+                type="button"
+                size="sm"
+                variant={candidate.recommendedDecision === decision ? "default" : "outline"}
+                disabled={busy !== null}
+                onClick={() => void decide(candidate, decision)}
+              >
+                {busy === `${candidate.id}:${decision}` ? (
+                  <CircleNotch className="animate-spin" />
+                ) : null}
+                {relationshipLabel(decision)}
+              </Button>
+            ))}
+          </div>
+        </article>
+      ))}
+    </section>
   );
 }
 
@@ -408,6 +896,128 @@ function SemanticSearch({ onError }: { onError: (m: string) => void }) {
   );
 }
 
+function MissionControlOverview({
+  model,
+  busy,
+  onAcknowledge,
+}: {
+  model: MissionControlReadModel;
+  busy: boolean;
+  onAcknowledge: () => void;
+}) {
+  const tone = completenessTone(model.completeness.status);
+  const supported = Object.values(model.evidence).filter((item) => item.supported).length;
+  const total = Object.keys(model.evidence).length;
+  return (
+    <section aria-labelledby="mission-control-heading" className="space-y-3">
+      <div
+        className={`border p-3 ${
+          tone === "safe"
+            ? "border-emerald-500/30 bg-emerald-500/5"
+            : tone === "caution"
+              ? "border-amber-500/30 bg-amber-500/5"
+              : "border-red-500/30 bg-red-500/5"
+        }`}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 id="mission-control-heading" className="text-sm font-medium text-primary">
+              {COMPLETENESS_LABELS[model.completeness.status] ??
+                relationshipLabel(model.completeness.status)}
+            </h3>
+            <p className="mt-1 text-xs text-primary/60">{model.completeness.explanation}</p>
+          </div>
+          <Badge variant="outline" className="rounded-[2px] font-normal">
+            {supported}/{total} state dimensions sourced
+          </Badge>
+        </div>
+        {model.completeness.unresolvedIdentityCount > 0 ? (
+          <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">
+            {model.completeness.unresolvedIdentityCount} identity review
+            {model.completeness.unresolvedIdentityCount === 1 ? "" : "s"} block acting.
+          </p>
+        ) : null}
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        {MISSION_CONTROL_QUESTIONS.map((question) => {
+          let answer = "No supported answer yet.";
+          if (question.key === "state") {
+            answer = `${relationshipLabel(String(model.evidence.lifecycle?.value ?? "unknown"))} · ${relationshipLabel(String(model.evidence.health?.value ?? "unknown"))}`;
+          } else if (question.key === "change") {
+            answer = model.changedSinceReview
+              ? model.changes
+                  .map(
+                    (change) =>
+                      RELATIONSHIP_DIMENSION_LABELS[change.dimension] ??
+                      relationshipLabel(change.dimension),
+                  )
+                  .join(", ") || "State changed"
+              : "Nothing changed since your last review.";
+          } else if (question.key === "evidence") {
+            answer = `${supported} of ${total} dimensions have an accessible winning assertion.`;
+          } else if (question.key === "action") {
+            answer = model.activeRecommendation?.reason || "No action is currently recommended.";
+          }
+          return (
+            <div key={question.key} className="border border-border p-3">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-primary/45">
+                {question.label}
+              </p>
+              <p className="mt-1 text-xs text-primary/75">{answer}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      <details className="border border-border p-3 text-xs">
+        <summary className="cursor-pointer font-medium text-primary">
+          Inspect dimension evidence
+        </summary>
+        <ul className="mt-3 space-y-2">
+          {Object.values(model.evidence).map((item) => (
+            <li key={item.dimension} className="border-l border-border pl-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">
+                  {RELATIONSHIP_DIMENSION_LABELS[item.dimension] ??
+                    relationshipLabel(item.dimension)}
+                </span>
+                <Badge variant="outline" className="rounded-[2px] font-normal">
+                  {item.supported
+                    ? (AUTHORITY_LABELS[item.authority ?? ""] ?? relationshipLabel(item.authority))
+                    : "Explicitly incomplete"}
+                </Badge>
+                {!item.fresh ? <span className="text-amber-600">stale</span> : null}
+              </div>
+              <p className="mt-1 text-primary/55">{item.reason || item.missingReason}</p>
+              {item.evidence.length ? (
+                <p className="mt-1 text-primary/40">
+                  {item.evidence
+                    .map(
+                      (ref) => `${relationshipLabel(ref.source)} · ${relativeTime(ref.observedAt)}`,
+                    )
+                    .join("; ")}
+                </p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </details>
+
+      {model.changedSinceReview ? (
+        <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onAcknowledge}>
+          <Check /> Mark state v{model.stateVersion} reviewed
+        </Button>
+      ) : (
+        <p className="text-[11px] text-primary/40">
+          Reviewed through state v{model.previousReviewedStateVersion} · as of{" "}
+          {new Date(model.asOf).toLocaleString()}
+        </p>
+      )}
+    </section>
+  );
+}
+
 function RelationshipSheet({
   id,
   onClose,
@@ -422,19 +1032,26 @@ function RelationshipSheet({
   const [data, setData] = React.useState<RelationshipDetail | null>(null);
   const [timeline, setTimeline] = React.useState<RelationshipObservation[]>([]);
   const [changes, setChanges] = React.useState<RelationshipStateSnapshot[]>([]);
+  const [identityCandidates, setIdentityCandidates] = React.useState<
+    RelationshipIdentityCandidate[]
+  >([]);
   const [busy, setBusy] = React.useState<string | null>(null);
   const [evidence, setEvidence] = React.useState<Record<string, unknown>>({});
 
   const load = React.useCallback(async () => {
     try {
-      const [nextData, nextTimeline, nextChanges] = await Promise.all([
+      const [nextData, nextTimeline, nextChanges, pending, deferred, resolved] = await Promise.all([
         getRelationship(id),
         getRelationshipTimeline(id),
         getRelationshipChanges(id),
+        listIdentityCandidates("pending", id),
+        listIdentityCandidates("deferred", id),
+        listIdentityCandidates("resolved", id),
       ]);
       setData(nextData);
       setTimeline(nextTimeline);
       setChanges(nextChanges);
+      setIdentityCandidates([...pending, ...deferred, ...resolved]);
     } catch (error) {
       onError(errMessage(error, "Could not load the relationship."));
     }
@@ -519,6 +1136,29 @@ function RelationshipSheet({
               </p>
             </section>
 
+            <MissionControlOverview
+              model={data.missionControl}
+              busy={Boolean(busy)}
+              onAcknowledge={() =>
+                act("acknowledge", () =>
+                  acknowledgeMissionControl(
+                    id,
+                    data.missionControl.stateVersion,
+                    data.missionControl.stateHash,
+                  ),
+                )
+              }
+            />
+
+            <IdentityReviewInbox
+              candidates={identityCandidates}
+              onError={onError}
+              onChanged={() => {
+                void load();
+                onChanged();
+              }}
+            />
+
             <StateCorrection
               key={data.relationship.stateVersion}
               relationship={data.relationship}
@@ -590,14 +1230,23 @@ function RelationshipSheet({
                   <div className="mt-2 grid gap-1 sm:grid-cols-2">
                     <span>Capture: {humanize(data.intelligence.effectivePolicy.capture)}</span>
                     <span>Retention: {data.intelligence.effectivePolicy.retentionDays} days</span>
-                    <span>Evidence: {data.intelligence.effectivePolicy.publishEvidence ? "allowed" : "blocked"}</span>
-                    <span>External share: {data.intelligence.effectivePolicy.externalShare ? "allowed" : "blocked"}</span>
+                    <span>
+                      Evidence:{" "}
+                      {data.intelligence.effectivePolicy.publishEvidence ? "allowed" : "blocked"}
+                    </span>
+                    <span>
+                      External share:{" "}
+                      {data.intelligence.effectivePolicy.externalShare ? "allowed" : "blocked"}
+                    </span>
                   </div>
                   <p className="mt-2 break-all text-[11px]">
-                    {data.intelligence.effectivePolicy.policyVersion} · {data.intelligence.governanceDecisions.length} recorded decisions
+                    {data.intelligence.effectivePolicy.policyVersion} ·{" "}
+                    {data.intelligence.governanceDecisions.length} recorded decisions
                   </p>
                   {data.intelligence.deletionReceipts[0] ? (
-                    <p className="mt-1">Last deletion: {humanize(data.intelligence.deletionReceipts[0].status)}</p>
+                    <p className="mt-1">
+                      Last deletion: {humanize(data.intelligence.deletionReceipts[0].status)}
+                    </p>
                   ) : null}
                 </details>
                 <Button
@@ -607,7 +1256,12 @@ function RelationshipSheet({
                   className="mt-3"
                   disabled={busy === "delete-conversation"}
                   onClick={() => {
-                    if (!window.confirm("Delete shared conversation evidence for this relationship? Device and provider copies will remain pending until separately confirmed.")) return;
+                    if (
+                      !window.confirm(
+                        "Delete shared conversation evidence for this relationship? Device and provider copies will remain pending until separately confirmed.",
+                      )
+                    )
+                      return;
                     void act("delete-conversation", () =>
                       requestConversationDeletion(id, crypto.randomUUID()),
                     );
@@ -788,14 +1442,17 @@ function RelationshipSheet({
                   size="sm"
                   variant="outline"
                   disabled={
-                    Boolean(busy) || !data.commitments.some((item) => item.acceptance === "accepted")
+                    Boolean(busy) ||
+                    !data.commitments.some((item) => item.acceptance === "accepted")
                   }
                   onClick={() =>
                     void act("create-plan", () =>
                       createMutualActionPlan(
                         id,
                         data.commitments
-                          .filter((item) => item.acceptance === "accepted" && item.status === "open")
+                          .filter(
+                            (item) => item.acceptance === "accepted" && item.status === "open",
+                          )
                           .map((item) => item.id),
                       ),
                     )
@@ -840,7 +1497,9 @@ function RelationshipSheet({
                       </p>
                       <ul className="mt-1 list-disc pl-4 text-primary/60">
                         {plan.currentRevision.items.map((item) => (
-                          <li key={item.itemId}>{item.title} · {item.ownerParticipantRef}</li>
+                          <li key={item.itemId}>
+                            {item.title} · {item.ownerParticipantRef}
+                          </li>
                         ))}
                       </ul>
                       <div className="mt-2 flex gap-1.5">

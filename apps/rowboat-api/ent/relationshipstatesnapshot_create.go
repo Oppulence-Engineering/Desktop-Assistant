@@ -75,6 +75,32 @@ func (_c *RelationshipStateSnapshotCreate) SetNillableStateJSON(v *string) *Rela
 	return _c
 }
 
+// SetStateHash sets the "state_hash" field.
+func (_c *RelationshipStateSnapshotCreate) SetStateHash(v string) *RelationshipStateSnapshotCreate {
+	_c.mutation.SetStateHash(v)
+	return _c
+}
+
+// SetProjectorVersion sets the "projector_version" field.
+func (_c *RelationshipStateSnapshotCreate) SetProjectorVersion(v int) *RelationshipStateSnapshotCreate {
+	_c.mutation.SetProjectorVersion(v)
+	return _c
+}
+
+// SetNillableProjectorVersion sets the "projector_version" field if the given value is not nil.
+func (_c *RelationshipStateSnapshotCreate) SetNillableProjectorVersion(v *int) *RelationshipStateSnapshotCreate {
+	if v != nil {
+		_c.SetProjectorVersion(*v)
+	}
+	return _c
+}
+
+// SetEvaluatedAt sets the "evaluated_at" field.
+func (_c *RelationshipStateSnapshotCreate) SetEvaluatedAt(v time.Time) *RelationshipStateSnapshotCreate {
+	_c.mutation.SetEvaluatedAt(v)
+	return _c
+}
+
 // SetChangedDimensions sets the "changed_dimensions" field.
 func (_c *RelationshipStateSnapshotCreate) SetChangedDimensions(v []string) *RelationshipStateSnapshotCreate {
 	_c.mutation.SetChangedDimensions(v)
@@ -181,6 +207,10 @@ func (_c *RelationshipStateSnapshotCreate) defaults() {
 		v := relationshipstatesnapshot.DefaultStateJSON
 		_c.mutation.SetStateJSON(v)
 	}
+	if _, ok := _c.mutation.ProjectorVersion(); !ok {
+		v := relationshipstatesnapshot.DefaultProjectorVersion
+		_c.mutation.SetProjectorVersion(v)
+	}
 	if _, ok := _c.mutation.ChangedDimensions(); !ok {
 		v := relationshipstatesnapshot.DefaultChangedDimensions
 		_c.mutation.SetChangedDimensions(v)
@@ -213,6 +243,25 @@ func (_c *RelationshipStateSnapshotCreate) check() error {
 	}
 	if _, ok := _c.mutation.StateJSON(); !ok {
 		return &ValidationError{Name: "state_json", err: errors.New(`ent: missing required field "RelationshipStateSnapshot.state_json"`)}
+	}
+	if _, ok := _c.mutation.StateHash(); !ok {
+		return &ValidationError{Name: "state_hash", err: errors.New(`ent: missing required field "RelationshipStateSnapshot.state_hash"`)}
+	}
+	if v, ok := _c.mutation.StateHash(); ok {
+		if err := relationshipstatesnapshot.StateHashValidator(v); err != nil {
+			return &ValidationError{Name: "state_hash", err: fmt.Errorf(`ent: validator failed for field "RelationshipStateSnapshot.state_hash": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.ProjectorVersion(); !ok {
+		return &ValidationError{Name: "projector_version", err: errors.New(`ent: missing required field "RelationshipStateSnapshot.projector_version"`)}
+	}
+	if v, ok := _c.mutation.ProjectorVersion(); ok {
+		if err := relationshipstatesnapshot.ProjectorVersionValidator(v); err != nil {
+			return &ValidationError{Name: "projector_version", err: fmt.Errorf(`ent: validator failed for field "RelationshipStateSnapshot.projector_version": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.EvaluatedAt(); !ok {
+		return &ValidationError{Name: "evaluated_at", err: errors.New(`ent: missing required field "RelationshipStateSnapshot.evaluated_at"`)}
 	}
 	if _, ok := _c.mutation.ChangedDimensions(); !ok {
 		return &ValidationError{Name: "changed_dimensions", err: errors.New(`ent: missing required field "RelationshipStateSnapshot.changed_dimensions"`)}
@@ -280,6 +329,18 @@ func (_c *RelationshipStateSnapshotCreate) createSpec() (*RelationshipStateSnaps
 	if value, ok := _c.mutation.StateJSON(); ok {
 		_spec.SetField(relationshipstatesnapshot.FieldStateJSON, field.TypeString, value)
 		_node.StateJSON = value
+	}
+	if value, ok := _c.mutation.StateHash(); ok {
+		_spec.SetField(relationshipstatesnapshot.FieldStateHash, field.TypeString, value)
+		_node.StateHash = value
+	}
+	if value, ok := _c.mutation.ProjectorVersion(); ok {
+		_spec.SetField(relationshipstatesnapshot.FieldProjectorVersion, field.TypeInt, value)
+		_node.ProjectorVersion = value
+	}
+	if value, ok := _c.mutation.EvaluatedAt(); ok {
+		_spec.SetField(relationshipstatesnapshot.FieldEvaluatedAt, field.TypeTime, value)
+		_node.EvaluatedAt = value
 	}
 	if value, ok := _c.mutation.ChangedDimensions(); ok {
 		_spec.SetField(relationshipstatesnapshot.FieldChangedDimensions, field.TypeJSON, value)
@@ -434,6 +495,48 @@ func (u *RelationshipStateSnapshotUpsert) UpdateStateJSON() *RelationshipStateSn
 	return u
 }
 
+// SetStateHash sets the "state_hash" field.
+func (u *RelationshipStateSnapshotUpsert) SetStateHash(v string) *RelationshipStateSnapshotUpsert {
+	u.Set(relationshipstatesnapshot.FieldStateHash, v)
+	return u
+}
+
+// UpdateStateHash sets the "state_hash" field to the value that was provided on create.
+func (u *RelationshipStateSnapshotUpsert) UpdateStateHash() *RelationshipStateSnapshotUpsert {
+	u.SetExcluded(relationshipstatesnapshot.FieldStateHash)
+	return u
+}
+
+// SetProjectorVersion sets the "projector_version" field.
+func (u *RelationshipStateSnapshotUpsert) SetProjectorVersion(v int) *RelationshipStateSnapshotUpsert {
+	u.Set(relationshipstatesnapshot.FieldProjectorVersion, v)
+	return u
+}
+
+// UpdateProjectorVersion sets the "projector_version" field to the value that was provided on create.
+func (u *RelationshipStateSnapshotUpsert) UpdateProjectorVersion() *RelationshipStateSnapshotUpsert {
+	u.SetExcluded(relationshipstatesnapshot.FieldProjectorVersion)
+	return u
+}
+
+// AddProjectorVersion adds v to the "projector_version" field.
+func (u *RelationshipStateSnapshotUpsert) AddProjectorVersion(v int) *RelationshipStateSnapshotUpsert {
+	u.Add(relationshipstatesnapshot.FieldProjectorVersion, v)
+	return u
+}
+
+// SetEvaluatedAt sets the "evaluated_at" field.
+func (u *RelationshipStateSnapshotUpsert) SetEvaluatedAt(v time.Time) *RelationshipStateSnapshotUpsert {
+	u.Set(relationshipstatesnapshot.FieldEvaluatedAt, v)
+	return u
+}
+
+// UpdateEvaluatedAt sets the "evaluated_at" field to the value that was provided on create.
+func (u *RelationshipStateSnapshotUpsert) UpdateEvaluatedAt() *RelationshipStateSnapshotUpsert {
+	u.SetExcluded(relationshipstatesnapshot.FieldEvaluatedAt)
+	return u
+}
+
 // SetChangedDimensions sets the "changed_dimensions" field.
 func (u *RelationshipStateSnapshotUpsert) SetChangedDimensions(v []string) *RelationshipStateSnapshotUpsert {
 	u.Set(relationshipstatesnapshot.FieldChangedDimensions, v)
@@ -555,6 +658,55 @@ func (u *RelationshipStateSnapshotUpsertOne) SetStateJSON(v string) *Relationshi
 func (u *RelationshipStateSnapshotUpsertOne) UpdateStateJSON() *RelationshipStateSnapshotUpsertOne {
 	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
 		s.UpdateStateJSON()
+	})
+}
+
+// SetStateHash sets the "state_hash" field.
+func (u *RelationshipStateSnapshotUpsertOne) SetStateHash(v string) *RelationshipStateSnapshotUpsertOne {
+	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
+		s.SetStateHash(v)
+	})
+}
+
+// UpdateStateHash sets the "state_hash" field to the value that was provided on create.
+func (u *RelationshipStateSnapshotUpsertOne) UpdateStateHash() *RelationshipStateSnapshotUpsertOne {
+	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
+		s.UpdateStateHash()
+	})
+}
+
+// SetProjectorVersion sets the "projector_version" field.
+func (u *RelationshipStateSnapshotUpsertOne) SetProjectorVersion(v int) *RelationshipStateSnapshotUpsertOne {
+	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
+		s.SetProjectorVersion(v)
+	})
+}
+
+// AddProjectorVersion adds v to the "projector_version" field.
+func (u *RelationshipStateSnapshotUpsertOne) AddProjectorVersion(v int) *RelationshipStateSnapshotUpsertOne {
+	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
+		s.AddProjectorVersion(v)
+	})
+}
+
+// UpdateProjectorVersion sets the "projector_version" field to the value that was provided on create.
+func (u *RelationshipStateSnapshotUpsertOne) UpdateProjectorVersion() *RelationshipStateSnapshotUpsertOne {
+	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
+		s.UpdateProjectorVersion()
+	})
+}
+
+// SetEvaluatedAt sets the "evaluated_at" field.
+func (u *RelationshipStateSnapshotUpsertOne) SetEvaluatedAt(v time.Time) *RelationshipStateSnapshotUpsertOne {
+	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
+		s.SetEvaluatedAt(v)
+	})
+}
+
+// UpdateEvaluatedAt sets the "evaluated_at" field to the value that was provided on create.
+func (u *RelationshipStateSnapshotUpsertOne) UpdateEvaluatedAt() *RelationshipStateSnapshotUpsertOne {
+	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
+		s.UpdateEvaluatedAt()
 	})
 }
 
@@ -850,6 +1002,55 @@ func (u *RelationshipStateSnapshotUpsertBulk) SetStateJSON(v string) *Relationsh
 func (u *RelationshipStateSnapshotUpsertBulk) UpdateStateJSON() *RelationshipStateSnapshotUpsertBulk {
 	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
 		s.UpdateStateJSON()
+	})
+}
+
+// SetStateHash sets the "state_hash" field.
+func (u *RelationshipStateSnapshotUpsertBulk) SetStateHash(v string) *RelationshipStateSnapshotUpsertBulk {
+	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
+		s.SetStateHash(v)
+	})
+}
+
+// UpdateStateHash sets the "state_hash" field to the value that was provided on create.
+func (u *RelationshipStateSnapshotUpsertBulk) UpdateStateHash() *RelationshipStateSnapshotUpsertBulk {
+	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
+		s.UpdateStateHash()
+	})
+}
+
+// SetProjectorVersion sets the "projector_version" field.
+func (u *RelationshipStateSnapshotUpsertBulk) SetProjectorVersion(v int) *RelationshipStateSnapshotUpsertBulk {
+	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
+		s.SetProjectorVersion(v)
+	})
+}
+
+// AddProjectorVersion adds v to the "projector_version" field.
+func (u *RelationshipStateSnapshotUpsertBulk) AddProjectorVersion(v int) *RelationshipStateSnapshotUpsertBulk {
+	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
+		s.AddProjectorVersion(v)
+	})
+}
+
+// UpdateProjectorVersion sets the "projector_version" field to the value that was provided on create.
+func (u *RelationshipStateSnapshotUpsertBulk) UpdateProjectorVersion() *RelationshipStateSnapshotUpsertBulk {
+	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
+		s.UpdateProjectorVersion()
+	})
+}
+
+// SetEvaluatedAt sets the "evaluated_at" field.
+func (u *RelationshipStateSnapshotUpsertBulk) SetEvaluatedAt(v time.Time) *RelationshipStateSnapshotUpsertBulk {
+	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
+		s.SetEvaluatedAt(v)
+	})
+}
+
+// UpdateEvaluatedAt sets the "evaluated_at" field to the value that was provided on create.
+func (u *RelationshipStateSnapshotUpsertBulk) UpdateEvaluatedAt() *RelationshipStateSnapshotUpsertBulk {
+	return u.Update(func(s *RelationshipStateSnapshotUpsert) {
+		s.UpdateEvaluatedAt()
 	})
 }
 

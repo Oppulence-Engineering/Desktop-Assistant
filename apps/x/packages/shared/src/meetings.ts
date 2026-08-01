@@ -188,6 +188,20 @@ export const MeetingTrackMeta = z.object({
 });
 export type MeetingTrackMeta = z.infer<typeof MeetingTrackMeta>;
 
+/**
+ * An explicit user-selected destination in the shared relationship model.
+ * The stable id is authoritative; the other fields are a display snapshot for
+ * offline notes and review surfaces. Keeping this in session metadata means a
+ * crash/restart cannot make the publication fall back to identity guessing.
+ */
+export const MeetingRelationshipTarget = z.object({
+  relationshipId: z.string().uuid(),
+  displayName: z.string().min(1),
+  primaryEmail: z.string().optional(),
+  accountDomain: z.string().optional(),
+});
+export type MeetingRelationshipTarget = z.infer<typeof MeetingRelationshipTarget>;
+
 export const MeetingAudioFormat = z.object({
   sample_rate: z.number(),
   channels: z.number(),
@@ -212,6 +226,7 @@ export const MeetingSessionMeta = z.object({
   warnings: z.array(z.string()).default([]),
   /** Added by the host, not the sidecar. */
   calendar_event: z.string().optional(),
+  relationship_target: MeetingRelationshipTarget.optional(),
   app_version: z.string().optional(),
   audio_deleted_at: z.string().optional(),
 });
@@ -327,6 +342,7 @@ export const MeetingSessionSummary = z.object({
   segmentCount: z.number().optional(),
   tracks: z.array(MeetingTrackMeta).default([]),
   warnings: z.array(z.string()).default([]),
+  relationshipTarget: MeetingRelationshipTarget.optional(),
   /** Bytes this session occupies on disk, audio included. Summed rather than stored so
    *  it stays right after retention compresses or deletes the audio underneath it. */
   bytes: z.number().default(0),
@@ -352,6 +368,14 @@ export const MeetingDoctorReport = z.object({
   checks: z.array(MeetingDoctorCheck).default([]),
 });
 export type MeetingDoctorReport = z.infer<typeof MeetingDoctorReport>;
+
+export const MeetingPreflightReport = z.object({
+  ok: z.boolean(),
+  /** Only readiness problems are returned; an empty list means capture,
+   * storage, and the configured transcription route are ready. */
+  problems: z.array(MeetingDoctorCheck).default([]),
+});
+export type MeetingPreflightReport = z.infer<typeof MeetingPreflightReport>;
 
 /** Progress pushed while a session transcribes. */
 export const MeetingTranscriptionProgress = z.object({

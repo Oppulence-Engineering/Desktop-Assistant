@@ -1,7 +1,10 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
-import type { RelationshipObservationInput } from "@x/shared/dist/relationships.js";
+import type {
+  RelationshipObservationIngestResult,
+  RelationshipObservationInput,
+} from "@x/shared/dist/relationships.js";
 import { RelationshipObservationInputSchema } from "@x/shared/dist/relationships.js";
 import { WorkDir } from "../config/config.js";
 import { ingestRelationshipObservations } from "./client.js";
@@ -34,11 +37,19 @@ export interface RelationshipEvidenceFlushResult {
   sent: number;
   pending: number;
   error?: string;
+  confirmations?: Array<{
+    key: string;
+    relationshipId: string;
+    stateVersion: number;
+    stateHash?: string;
+  }>;
 }
 
-type SendBatch = (observations: RelationshipObservationInput[]) => Promise<unknown>;
+type SendBatch = (
+  observations: RelationshipObservationInput[],
+) => Promise<{ results: RelationshipObservationIngestResult[] } | void>;
 
-function observationKey(observation: RelationshipObservationInput): string {
+export function relationshipObservationKey(observation: RelationshipObservationInput): string {
   return `${observation.source}:${observation.externalId}:${observation.sourceVersion}`;
 }
 
@@ -88,7 +99,7 @@ export class RelationshipEvidenceOutbox {
     return this.serialized(async () => {
       const valid = RelationshipObservationInputSchema.parse(observation);
       const entries = await this.read();
-      const key = observationKey(valid);
+      const key = relationshipObservationKey(valid);
       if (entries.some((entry) => entry.key === key)) return;
       entries.push({
         key,
@@ -106,12 +117,23 @@ export class RelationshipEvidenceOutbox {
       if (entries.length === 0) return { sent: 0, pending: 0 };
 
       let sent = 0;
+      const confirmations: NonNullable<RelationshipEvidenceFlushResult["confirmations"]> = [];
       while (entries.length > 0) {
         // The API accepts at most 100 atomically. Persist after every accepted batch:
         // a process exit midway may replay the current batch, but never loses it.
         const batch = entries.slice(0, 100);
         try {
-          await this.send(batch.map((entry) => entry.observation));
+          const response = await this.send(batch.map((entry) => entry.observation));
+          for (const accepted of response?.results ?? []) {
+            confirmations.push({
+              key: relationshipObservationKey(accepted.observation),
+              relationshipId: accepted.relationship.id,
+              stateVersion: accepted.relationship.stateVersion,
+              ...(accepted.relationship.stateHash
+                ? { stateHash: accepted.relationship.stateHash }
+                : {}),
+            });
+          }
           const sentKeys = new Set(batch.map((entry) => entry.key));
           entries = entries.filter((entry) => !sentKeys.has(entry.key));
           sent += batch.length;
@@ -131,10 +153,19 @@ export class RelationshipEvidenceOutbox {
               : entry,
           );
           await this.write(entries);
-          return { sent, pending: entries.length, error };
+          return {
+            sent,
+            pending: entries.length,
+            error,
+            ...(confirmations.length > 0 ? { confirmations } : {}),
+          };
         }
       }
-      return { sent, pending: 0 };
+      return {
+        sent,
+        pending: 0,
+        ...(confirmations.length > 0 ? { confirmations } : {}),
+      };
     });
   }
 }

@@ -1061,6 +1061,213 @@ func HasRelationshipIdentitiesWith(preds ...predicate.RelationshipIdentity) pred
 	})
 }
 
+// HasRelationshipProjectionJobs applies the HasEdge predicate on the "relationship_projection_jobs" edge.
+func HasRelationshipProjectionJobs() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RelationshipProjectionJobsTable, RelationshipProjectionJobsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelationshipProjectionJobsWith applies the HasEdge predicate on the "relationship_projection_jobs" edge with a given conditions (other predicates).
+func HasRelationshipProjectionJobsWith(preds ...predicate.RelationshipProjectionJob) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newRelationshipProjectionJobsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEvidenceKeys applies the HasEdge predicate on the "evidence_keys" edge.
+func HasEvidenceKeys() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EvidenceKeysTable, EvidenceKeysColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEvidenceKeysWith applies the HasEdge predicate on the "evidence_keys" edge with a given conditions (other predicates).
+func HasEvidenceKeysWith(preds ...predicate.TenantEvidenceKey) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newEvidenceKeysStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasFeatureControls applies the HasEdge predicate on the "feature_controls" edge.
+func HasFeatureControls() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, FeatureControlsTable, FeatureControlsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasFeatureControlsWith applies the HasEdge predicate on the "feature_controls" edge with a given conditions (other predicates).
+func HasFeatureControlsWith(preds ...predicate.WorkspaceFeatureControl) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newFeatureControlsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasTrustEvents applies the HasEdge predicate on the "trust_events" edge.
+func HasTrustEvents() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, TrustEventsTable, TrustEventsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTrustEventsWith applies the HasEdge predicate on the "trust_events" edge with a given conditions (other predicates).
+func HasTrustEventsWith(preds ...predicate.RevenueTrustEvent) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newTrustEventsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasIdentityCandidates applies the HasEdge predicate on the "identity_candidates" edge.
+func HasIdentityCandidates() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, IdentityCandidatesTable, IdentityCandidatesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasIdentityCandidatesWith applies the HasEdge predicate on the "identity_candidates" edge with a given conditions (other predicates).
+func HasIdentityCandidatesWith(preds ...predicate.RelationshipIdentityCandidate) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newIdentityCandidatesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRelationshipLineageEvents applies the HasEdge predicate on the "relationship_lineage_events" edge.
+func HasRelationshipLineageEvents() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RelationshipLineageEventsTable, RelationshipLineageEventsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelationshipLineageEventsWith applies the HasEdge predicate on the "relationship_lineage_events" edge with a given conditions (other predicates).
+func HasRelationshipLineageEventsWith(preds ...predicate.RelationshipLineageEvent) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newRelationshipLineageEventsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRelationshipIdentityDecisions applies the HasEdge predicate on the "relationship_identity_decisions" edge.
+func HasRelationshipIdentityDecisions() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RelationshipIdentityDecisionsTable, RelationshipIdentityDecisionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelationshipIdentityDecisionsWith applies the HasEdge predicate on the "relationship_identity_decisions" edge with a given conditions (other predicates).
+func HasRelationshipIdentityDecisionsWith(preds ...predicate.RelationshipIdentityDecision) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newRelationshipIdentityDecisionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRelationshipReviewAcknowledgements applies the HasEdge predicate on the "relationship_review_acknowledgements" edge.
+func HasRelationshipReviewAcknowledgements() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RelationshipReviewAcknowledgementsTable, RelationshipReviewAcknowledgementsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelationshipReviewAcknowledgementsWith applies the HasEdge predicate on the "relationship_review_acknowledgements" edge with a given conditions (other predicates).
+func HasRelationshipReviewAcknowledgementsWith(preds ...predicate.RelationshipReviewAcknowledgement) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newRelationshipReviewAcknowledgementsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRelationshipAttentionItems applies the HasEdge predicate on the "relationship_attention_items" edge.
+func HasRelationshipAttentionItems() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RelationshipAttentionItemsTable, RelationshipAttentionItemsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelationshipAttentionItemsWith applies the HasEdge predicate on the "relationship_attention_items" edge with a given conditions (other predicates).
+func HasRelationshipAttentionItemsWith(preds ...predicate.RelationshipAttentionItem) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newRelationshipAttentionItemsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasRelationshipObservations applies the HasEdge predicate on the "relationship_observations" edge.
 func HasRelationshipObservations() predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(func(s *sql.Selector) {

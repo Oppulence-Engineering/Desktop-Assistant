@@ -54,6 +54,28 @@ const counterparty = {
 };
 
 describe("meeting relationship evidence", () => {
+  it("uses an explicit relationship selection as the authoritative destination", async () => {
+    const result = await meetingTranscriptObservationWithExtraction({
+      sessionId: "session-explicit-account",
+      meta,
+      transcript,
+      counterparty: {
+        label: "Acme",
+        relationshipId: "2875f11c-76cb-49b7-8e9d-8d865da1aa83",
+        accountDomain: "acme.example",
+      },
+      extractor: new DeterministicConversationExtractor(() => new Date("2026-07-31T12:31:00.000Z")),
+    });
+
+    expect(result).toMatchObject({
+      relationshipId: "2875f11c-76cb-49b7-8e9d-8d865da1aa83",
+      displayName: "Acme",
+      accountDomain: "acme.example",
+    });
+    expect(result.assertions).toEqual([]);
+    expect(result.normalizedFacts.action_pack).toEqual([]);
+  });
+
   it("attaches validated hybrid candidates without publishing unreviewed assertions", async () => {
     const result = await meetingTranscriptObservationWithExtraction({
       sessionId: "session-shadow",
