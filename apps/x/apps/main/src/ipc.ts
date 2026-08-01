@@ -150,6 +150,10 @@ import {
   getRelationshipBetaDiagnostics,
   reportRelationshipSourceAuthorization,
   getRelationshipTimeline,
+  getRelationshipActionAudit,
+  getRelationshipActionSourceBody,
+  recordRelationshipActionOutcome,
+  ingestRelationshipObservations,
   listRelationships,
   listIdentityCandidates,
   listRelationshipAttention,
@@ -171,6 +175,7 @@ import {
   approveMutualActionPlan,
   shareMutualActionPlan,
   requestConversationDeletion,
+  retractRelationshipAssertion,
   searchRelationships,
 } from "@x/core/dist/relationships/client.js";
 import {
@@ -954,6 +959,18 @@ export function setupIpcHandlers() {
       snoozeRelationshipAction(args.actionId, args.until),
     "relationships:dismissAction": async (_event, args) =>
       dismissRelationshipAction(args.actionId, args.reason),
+    "relationships:actionAudit": async (_event, args) => getRelationshipActionAudit(args.actionId),
+    "relationships:actionSourceBody": async (_event, args) =>
+      getRelationshipActionSourceBody(args.actionId),
+    "relationships:recordOutcome": async (_event, args) =>
+      recordRelationshipActionOutcome(args.actionId, {
+        kind: args.kind,
+        source: "user",
+        sourceEventId: args.sourceEventId,
+        occurredAt: args.occurredAt,
+      }),
+    "relationships:ingestObservations": async (_event, args) =>
+      ingestRelationshipObservations(args.observations),
     "relationships:evidence": async (_event, args) =>
       getRelationshipEvidence(args.relationshipId, args.evidenceId),
     "relationships:correct": async (_event, args) =>
@@ -962,6 +979,8 @@ export function setupIpcHandlers() {
         value: args.value,
         reason: args.reason,
       }),
+    "relationships:retractAssertion": async (_event, args) =>
+      retractRelationshipAssertion(args.relationshipId, args.assertionId, args.reason),
     "relationships:correctConversation": async (_event, args) =>
       correctConversationReview(args.id, {
         reviewItemId: args.reviewItemId,

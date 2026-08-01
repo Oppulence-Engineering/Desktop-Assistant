@@ -3,6 +3,7 @@
 import * as React from "react";
 import {
   AUTHORITY_LABELS,
+  buildImportedTranscriptObservation,
   COMPLETENESS_LABELS,
   MISSION_CONTROL_QUESTIONS,
   RELATIONSHIP_DIMENSION_LABELS,
@@ -35,6 +36,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -65,6 +67,7 @@ import {
   getRelationshipChanges,
   getRelationshipEvidence,
   getRelationshipTimeline,
+  ingestRelationshipObservations,
   listRelationships,
   listIdentityCandidates,
   listRelationshipAttention,
@@ -80,6 +83,7 @@ import {
   approveMutualActionPlan,
   shareMutualActionPlan,
   requestConversationDeletion,
+  retractRelationshipAssertion,
   RELATIONSHIP_KIND_LABELS,
   relativeTime,
   semanticSearch,
@@ -224,6 +228,7 @@ export function RelationshipsView({
               type="button"
               size="sm"
               variant="ghost"
+              data-capability="support-diagnostics"
               onClick={() => void exportDiagnostics()}
             >
               <DownloadSimple /> Export diagnostics
@@ -445,7 +450,11 @@ function PortfolioAttentionQueue({
   };
 
   return (
-    <section aria-labelledby="portfolio-attention-heading" className="space-y-2">
+    <section
+      aria-labelledby="portfolio-attention-heading"
+      className="space-y-2"
+      data-capability="attention-queue"
+    >
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
@@ -614,7 +623,11 @@ function SourceConnectionCards({
   };
 
   return (
-    <section aria-labelledby="source-connections-heading" className="space-y-3">
+    <section
+      aria-labelledby="source-connections-heading"
+      className="space-y-3"
+      data-capability="source-lifecycle"
+    >
       <div>
         <h3 id="source-connections-heading" className="text-sm font-medium text-primary">
           Evidence sources
@@ -750,6 +763,7 @@ function IdentityReviewInbox({
     <section
       aria-labelledby="identity-review-heading"
       className="space-y-2 rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+      data-capability="identity-review"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -900,16 +914,22 @@ function MissionControlOverview({
   model,
   busy,
   onAcknowledge,
+  onRetract,
 }: {
   model: MissionControlReadModel;
   busy: boolean;
   onAcknowledge: () => void;
+  onRetract: (assertionId: string, reason: string) => void;
 }) {
   const tone = completenessTone(model.completeness.status);
   const supported = Object.values(model.evidence).filter((item) => item.supported).length;
   const total = Object.keys(model.evidence).length;
   return (
-    <section aria-labelledby="mission-control-heading" className="space-y-3">
+    <section
+      aria-labelledby="mission-control-heading"
+      className="space-y-3"
+      data-capability="mission-control evidence-inspection assertion-retraction"
+    >
       <div
         className={`border p-3 ${
           tone === "safe"
@@ -999,6 +1019,13 @@ function MissionControlOverview({
                     .join("; ")}
                 </p>
               ) : null}
+              {item.authority === "user_correction" && item.assertionId ? (
+                <CorrectionRetraction
+                  assertionId={item.assertionId}
+                  disabled={busy}
+                  onRetract={onRetract}
+                />
+              ) : null}
             </li>
           ))}
         </ul>
@@ -1014,6 +1041,154 @@ function MissionControlOverview({
           {new Date(model.asOf).toLocaleString()}
         </p>
       )}
+    </section>
+  );
+}
+
+function CorrectionRetraction({
+  assertionId,
+  disabled,
+  onRetract,
+}: {
+  assertionId: string;
+  disabled: boolean;
+  onRetract: (assertionId: string, reason: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [reason, setReason] = React.useState("");
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        className="mt-2"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+      >
+        Retract correction
+      </Button>
+    );
+  }
+  return (
+    <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+      <Input
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+        placeholder="Why is this correction no longer valid?"
+        aria-label="Correction retraction reason"
+      />
+      <Button
+        type="button"
+        size="sm"
+        variant="destructive"
+        disabled={disabled || !reason.trim()}
+        onClick={() => onRetract(assertionId, reason.trim())}
+      >
+        Confirm retraction
+      </Button>
+      <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
+        Cancel
+      </Button>
+    </div>
+  );
+}
+
+function ImportedTranscriptPublisher({
+  relationshipId,
+  disabled,
+  onPublish,
+}: {
+  relationshipId: string;
+  disabled: boolean;
+  onPublish: (
+    observation: ReturnType<typeof buildImportedTranscriptObservation>,
+  ) => Promise<boolean>;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [title, setTitle] = React.useState("");
+  const [transcript, setTranscript] = React.useState("");
+  const [disclosureConfirmed, setDisclosureConfirmed] = React.useState(false);
+  const [occurredAt, setOccurredAt] = React.useState(() => new Date().toISOString().slice(0, 16));
+  const disclosureId = React.useId();
+
+  if (!open) {
+    return (
+      <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)}>
+        Import transcript
+      </Button>
+    );
+  }
+
+  return (
+    <section
+      className="space-y-2 border border-border p-3"
+      data-capability="transcript-publication"
+    >
+      <SectionTitle title="Publish an imported transcript" />
+      <p className="text-xs text-primary/55">
+        Paste reviewed transcript text. Prefix lines with a speaker name and colon when known.
+        Imported text is preserved as evidence and does not become a trusted claim automatically.
+      </p>
+      <Input
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+        placeholder="Conversation title"
+        aria-label="Imported transcript title"
+      />
+      <Input
+        type="datetime-local"
+        value={occurredAt}
+        onChange={(event) => setOccurredAt(event.target.value)}
+        aria-label="Conversation time"
+      />
+      <Textarea
+        value={transcript}
+        onChange={(event) => setTranscript(event.target.value)}
+        placeholder={"Avery: We can renew next week.\nYou: I will send the paperwork."}
+        aria-label="Imported transcript text"
+        className="min-h-40"
+      />
+      <label htmlFor={disclosureId} className="flex items-start gap-2 text-xs text-primary/60">
+        <input
+          id={disclosureId}
+          type="checkbox"
+          className="mt-0.5 size-4 accent-current"
+          checked={disclosureConfirmed}
+          onChange={(event) => setDisclosureConfirmed(event.target.checked)}
+        />
+        <span>
+          I confirm this transcript may be stored under workspace policy and participants were
+          notified where required.
+        </span>
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          disabled={disabled || !transcript.trim() || !occurredAt || !disclosureConfirmed}
+          onClick={async () => {
+            const published = await onPublish(
+              buildImportedTranscriptObservation({
+                relationshipId,
+                title,
+                transcript,
+                occurredAt: new Date(occurredAt).toISOString(),
+              }),
+            );
+            if (!published) return;
+            setOpen(false);
+            setTitle("");
+            setTranscript("");
+            setDisclosureConfirmed(false);
+          }}
+        >
+          Publish reviewed evidence
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
     </section>
   );
 }
@@ -1061,14 +1236,16 @@ function RelationshipSheet({
     void load();
   }, [load]);
 
-  const act = async (key: string, operation: () => Promise<unknown>) => {
+  const act = async (key: string, operation: () => Promise<unknown>): Promise<boolean> => {
     setBusy(key);
     try {
       await operation();
       await load();
       onChanged();
+      return true;
     } catch (error) {
       onError(errMessage(error, "Could not update this relationship."));
+      return false;
     } finally {
       setBusy(null);
     }
@@ -1148,6 +1325,11 @@ function RelationshipSheet({
                   ),
                 )
               }
+              onRetract={(assertionId, reason) =>
+                void act(`retract:${assertionId}`, () =>
+                  retractRelationshipAssertion(id, assertionId, reason),
+                )
+              }
             />
 
             <IdentityReviewInbox
@@ -1167,6 +1349,14 @@ function RelationshipSheet({
                 act(`correct:${dimension}`, () =>
                   correctRelationship(id, { dimension, value, reason }),
                 )
+              }
+            />
+
+            <ImportedTranscriptPublisher
+              relationshipId={id}
+              disabled={Boolean(busy)}
+              onPublish={(observation) =>
+                act("publish-transcript", () => ingestRelationshipObservations([observation]))
               }
             />
 
@@ -1222,7 +1412,10 @@ function RelationshipSheet({
             />
 
             {data.intelligence?.effectivePolicy ? (
-              <div className="border border-border p-3 text-xs text-primary/60">
+              <div
+                className="border border-border p-3 text-xs text-primary/60"
+                data-capability="privacy-deletion"
+              >
                 <details>
                   <summary className="cursor-pointer font-medium text-primary">
                     Privacy policy · {humanize(data.intelligence.effectivePolicy.modelRoute)}
@@ -1272,7 +1465,7 @@ function RelationshipSheet({
               </div>
             ) : null}
 
-            <section>
+            <section data-capability="commitment-management">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <SectionTitle
                   title={`Commitment recovery (${data.intelligence?.recoveryEvaluations.length ?? 0})`}
@@ -1319,7 +1512,7 @@ function RelationshipSheet({
               ) : null}
             </section>
 
-            <section>
+            <section data-capability="governed-actions">
               <SectionTitle title={`Recommendations (${data.recommendations.length})`} />
               {data.recommendations.length === 0 ? (
                 <EmptyText>No action is currently recommended.</EmptyText>
@@ -1432,7 +1625,7 @@ function RelationshipSheet({
               </section>
             ) : null}
 
-            <section>
+            <section data-capability="mutual-action-plans">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <SectionTitle
                   title={`Mutual action plans (${data.intelligence?.mutualActionPlans.length ?? 0})`}
@@ -1538,7 +1731,7 @@ function RelationshipSheet({
               )}
             </section>
 
-            <section>
+            <section data-capability="contradiction-resolution">
               <SectionTitle title={`What changed (${changes.length})`} />
               {data.intelligence?.delta.changes.length ? (
                 <ul className="mb-3 flex flex-col gap-2">
@@ -1722,7 +1915,10 @@ function CorrectionReview({
   const [drafts, setDrafts] = React.useState<Record<string, string>>({});
   if (items.length === 0) return null;
   return (
-    <section className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3">
+    <section
+      className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+      data-capability="conversation-review"
+    >
       <SectionTitle title={`Focused evidence review (${items.length})`} />
       <p className="mb-3 text-xs text-primary/55">
         Approve, correct, reject, or defer each proposed material change before it affects state.
@@ -1834,7 +2030,10 @@ function StateCorrection({
           : HEALTH_OPTIONS;
 
   return (
-    <section className="rounded-[2px] border border-dashed border-border p-3">
+    <section
+      className="rounded-[2px] border border-dashed border-border p-3"
+      data-capability="state-correction"
+    >
       <SectionTitle title="Correct the model" />
       <div className="grid gap-2 sm:grid-cols-[130px_150px_1fr_auto]">
         <Select

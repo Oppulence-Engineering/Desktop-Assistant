@@ -49,6 +49,8 @@ import { BrowserStateSchema } from "./browser-control.js";
 import { BillingInfoSchema } from "./billing.js";
 import {
   RelationshipActionSchema,
+  RelationshipActionAuditSchema,
+  RelationshipOutcomeSchema,
   ConversationReviewDecisionKindSchema,
   CommitmentRecoveryEvaluationSchema,
   RelationshipCommitmentSchema,
@@ -58,6 +60,7 @@ import {
   RelationshipDetailSchema,
   RelationshipLiveCueSchema,
   RelationshipObservationSchema,
+  RelationshipObservationInputSchema,
   RelationshipSchema,
   RelationshipSemanticMatchSchema,
   RelationshipIdentityCandidateSchema,
@@ -2217,6 +2220,35 @@ const ipcSchemas = {
     req: z.object({ actionId: z.string(), reason: z.string().min(1) }),
     res: RelationshipActionSchema,
   },
+  "relationships:actionAudit": {
+    req: z.object({ actionId: z.string() }),
+    res: RelationshipActionAuditSchema,
+  },
+  "relationships:actionSourceBody": {
+    req: z.object({ actionId: z.string() }),
+    res: z.string(),
+  },
+  "relationships:recordOutcome": {
+    req: z.object({
+      actionId: z.string(),
+      kind: z.string().min(1),
+      sourceEventId: z.string().min(1),
+      occurredAt: z.string().optional(),
+    }),
+    res: RelationshipOutcomeSchema,
+  },
+  "relationships:ingestObservations": {
+    req: z.object({ observations: z.array(RelationshipObservationInputSchema).min(1).max(100) }),
+    res: z.object({
+      results: z.array(
+        z.object({
+          observation: RelationshipObservationSchema,
+          relationship: RelationshipSchema,
+          duplicate: z.boolean(),
+        }),
+      ),
+    }),
+  },
   "relationships:evidence": {
     req: z.object({ relationshipId: z.string(), evidenceId: z.string() }),
     res: z.object({ observation: RelationshipObservationSchema, payload: z.unknown() }),
@@ -2226,6 +2258,14 @@ const ipcSchemas = {
       id: z.string(),
       dimension: z.enum(["lifecycle", "engagement", "sentiment", "health", "next_action"]),
       value: z.string().min(1),
+      reason: z.string().min(1),
+    }),
+    res: RelationshipSchema,
+  },
+  "relationships:retractAssertion": {
+    req: z.object({
+      relationshipId: z.string(),
+      assertionId: z.string(),
       reason: z.string().min(1),
     }),
     res: RelationshipSchema,
