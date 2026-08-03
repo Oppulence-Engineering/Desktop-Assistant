@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { CircleNotch, SignIn } from "@phosphor-icons/react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 import { loadBrowserSession, loginURL } from "@/lib/auth/client";
 import type { BrowserSessionResponse } from "@/lib/auth/schemas";
 

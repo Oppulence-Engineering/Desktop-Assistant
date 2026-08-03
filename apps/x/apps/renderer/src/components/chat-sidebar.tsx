@@ -2,17 +2,17 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, ArrowRight, Bug, MoreHorizontal } from "@/lib/icons";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@oppulence/ui/components/tooltip";
 import { ChatHeader } from "@/components/chat-header";
-import { ChatEmptyState } from "@/components/chat-empty-state";
+import { ChatEmptyState, type ChatWorkContext } from "@/components/chat-empty-state";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@oppulence/ui/components/dropdown-menu";
 import {
   Conversation,
   ConversationContent,
@@ -204,6 +204,7 @@ interface ChatSidebarProps {
   onToggleTts?: () => void;
   onTtsModeChange?: (mode: "summary" | "full") => void;
   onIntegrationConnected?: (connectorName: string, displayName: string) => void;
+  workContext?: ChatWorkContext;
 }
 
 export function ChatSidebar({
@@ -264,6 +265,7 @@ export function ChatSidebar({
   onToggleTts,
   onTtsModeChange,
   onIntegrationConnected,
+  workContext,
 }: ChatSidebarProps) {
   const [width, setWidth] = useState(() => getInitialPaneWidth(defaultWidth));
   const [maxAllowedWidth, setMaxAllowedWidth] = useState(MAX_WIDTH);
@@ -677,6 +679,20 @@ export function ChatSidebar({
             )}
           </header>
 
+          {workContext ? (
+            <div className="flex shrink-0 items-center gap-2 border-b border-border bg-primary/[0.025] px-3 py-2 text-xs">
+              <span className="font-mono text-[10px] uppercase tracking-wide text-primary/40">
+                Working with
+              </span>
+              <span className="min-w-0 truncate font-medium text-primary">{workContext.label}</span>
+              {workContext.detail ? (
+                <span className="hidden min-w-0 truncate text-primary/45 lg:inline">
+                  {workContext.detail}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+
           <FileCardProvider onOpenKnowledgeFile={onOpenKnowledgeFile ?? (() => {})}>
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="relative min-h-0 flex-1">
@@ -716,6 +732,7 @@ export function ChatSidebar({
                               onSelectRun={onSelectRun}
                               onOpenChatHistory={onOpenChatHistory}
                               onPickPrompt={setLocalPresetMessage}
+                              context={workContext}
                             />
                           ) : (
                             <>

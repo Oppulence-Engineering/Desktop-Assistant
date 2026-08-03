@@ -646,14 +646,24 @@ func init() {
 	backgroundtask.DefaultExecutionTarget = backgroundtaskDescExecutionTarget.Default.(string)
 	// backgroundtask.ExecutionTargetValidator is a validator for the "execution_target" field. It is called by the builders before save.
 	backgroundtask.ExecutionTargetValidator = backgroundtaskDescExecutionTarget.Validators[0].(func(string) error)
+	// backgroundtaskDescTemplateVersion is the schema descriptor for template_version field.
+	backgroundtaskDescTemplateVersion := backgroundtaskFields[9].Descriptor()
+	// backgroundtask.DefaultTemplateVersion holds the default value on creation for the template_version field.
+	backgroundtask.DefaultTemplateVersion = backgroundtaskDescTemplateVersion.Default.(int)
+	// backgroundtask.TemplateVersionValidator is a validator for the "template_version" field. It is called by the builders before save.
+	backgroundtask.TemplateVersionValidator = backgroundtaskDescTemplateVersion.Validators[0].(func(int) error)
+	// backgroundtaskDescSystemManaged is the schema descriptor for system_managed field.
+	backgroundtaskDescSystemManaged := backgroundtaskFields[10].Descriptor()
+	// backgroundtask.DefaultSystemManaged holds the default value on creation for the system_managed field.
+	backgroundtask.DefaultSystemManaged = backgroundtaskDescSystemManaged.Default.(bool)
 	// backgroundtaskDescScheduleSyncState is the schema descriptor for schedule_sync_state field.
-	backgroundtaskDescScheduleSyncState := backgroundtaskFields[14].Descriptor()
+	backgroundtaskDescScheduleSyncState := backgroundtaskFields[17].Descriptor()
 	// backgroundtask.DefaultScheduleSyncState holds the default value on creation for the schedule_sync_state field.
 	backgroundtask.DefaultScheduleSyncState = backgroundtaskDescScheduleSyncState.Default.(string)
 	// backgroundtask.ScheduleSyncStateValidator is a validator for the "schedule_sync_state" field. It is called by the builders before save.
 	backgroundtask.ScheduleSyncStateValidator = backgroundtaskDescScheduleSyncState.Validators[0].(func(string) error)
 	// backgroundtaskDescRevision is the schema descriptor for revision field.
-	backgroundtaskDescRevision := backgroundtaskFields[17].Descriptor()
+	backgroundtaskDescRevision := backgroundtaskFields[20].Descriptor()
 	// backgroundtask.DefaultRevision holds the default value on creation for the revision field.
 	backgroundtask.DefaultRevision = backgroundtaskDescRevision.Default.(int)
 	// backgroundtask.RevisionValidator is a validator for the "revision" field. It is called by the builders before save.
@@ -2501,13 +2511,13 @@ func init() {
 	// revenueleakscan.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	revenueleakscan.StatusValidator = revenueleakscanDescStatus.Validators[0].(func(string) error)
 	// revenueleakscanDescMode is the schema descriptor for mode field.
-	revenueleakscanDescMode := revenueleakscanFields[1].Descriptor()
+	revenueleakscanDescMode := revenueleakscanFields[2].Descriptor()
 	// revenueleakscan.DefaultMode holds the default value on creation for the mode field.
 	revenueleakscan.DefaultMode = revenueleakscanDescMode.Default.(string)
 	// revenueleakscan.ModeValidator is a validator for the "mode" field. It is called by the builders before save.
 	revenueleakscan.ModeValidator = revenueleakscanDescMode.Validators[0].(func(string) error)
 	// revenueleakscanDescLookbackDays is the schema descriptor for lookback_days field.
-	revenueleakscanDescLookbackDays := revenueleakscanFields[2].Descriptor()
+	revenueleakscanDescLookbackDays := revenueleakscanFields[3].Descriptor()
 	// revenueleakscan.DefaultLookbackDays holds the default value on creation for the lookback_days field.
 	revenueleakscan.DefaultLookbackDays = revenueleakscanDescLookbackDays.Default.(int)
 	// revenueleakscan.LookbackDaysValidator is a validator for the "lookback_days" field. It is called by the builders before save.
@@ -2527,31 +2537,31 @@ func init() {
 		}
 	}()
 	// revenueleakscanDescThreadsSeen is the schema descriptor for threads_seen field.
-	revenueleakscanDescThreadsSeen := revenueleakscanFields[3].Descriptor()
+	revenueleakscanDescThreadsSeen := revenueleakscanFields[4].Descriptor()
 	// revenueleakscan.DefaultThreadsSeen holds the default value on creation for the threads_seen field.
 	revenueleakscan.DefaultThreadsSeen = revenueleakscanDescThreadsSeen.Default.(int)
 	// revenueleakscan.ThreadsSeenValidator is a validator for the "threads_seen" field. It is called by the builders before save.
 	revenueleakscan.ThreadsSeenValidator = revenueleakscanDescThreadsSeen.Validators[0].(func(int) error)
 	// revenueleakscanDescCandidatesSeen is the schema descriptor for candidates_seen field.
-	revenueleakscanDescCandidatesSeen := revenueleakscanFields[4].Descriptor()
+	revenueleakscanDescCandidatesSeen := revenueleakscanFields[5].Descriptor()
 	// revenueleakscan.DefaultCandidatesSeen holds the default value on creation for the candidates_seen field.
 	revenueleakscan.DefaultCandidatesSeen = revenueleakscanDescCandidatesSeen.Default.(int)
 	// revenueleakscan.CandidatesSeenValidator is a validator for the "candidates_seen" field. It is called by the builders before save.
 	revenueleakscan.CandidatesSeenValidator = revenueleakscanDescCandidatesSeen.Validators[0].(func(int) error)
 	// revenueleakscanDescRelationshipsCreated is the schema descriptor for relationships_created field.
-	revenueleakscanDescRelationshipsCreated := revenueleakscanFields[5].Descriptor()
+	revenueleakscanDescRelationshipsCreated := revenueleakscanFields[6].Descriptor()
 	// revenueleakscan.DefaultRelationshipsCreated holds the default value on creation for the relationships_created field.
 	revenueleakscan.DefaultRelationshipsCreated = revenueleakscanDescRelationshipsCreated.Default.(int)
 	// revenueleakscan.RelationshipsCreatedValidator is a validator for the "relationships_created" field. It is called by the builders before save.
 	revenueleakscan.RelationshipsCreatedValidator = revenueleakscanDescRelationshipsCreated.Validators[0].(func(int) error)
 	// revenueleakscanDescEvidencesCreated is the schema descriptor for evidences_created field.
-	revenueleakscanDescEvidencesCreated := revenueleakscanFields[6].Descriptor()
+	revenueleakscanDescEvidencesCreated := revenueleakscanFields[7].Descriptor()
 	// revenueleakscan.DefaultEvidencesCreated holds the default value on creation for the evidences_created field.
 	revenueleakscan.DefaultEvidencesCreated = revenueleakscanDescEvidencesCreated.Default.(int)
 	// revenueleakscan.EvidencesCreatedValidator is a validator for the "evidences_created" field. It is called by the builders before save.
 	revenueleakscan.EvidencesCreatedValidator = revenueleakscanDescEvidencesCreated.Validators[0].(func(int) error)
 	// revenueleakscanDescActionsCreated is the schema descriptor for actions_created field.
-	revenueleakscanDescActionsCreated := revenueleakscanFields[7].Descriptor()
+	revenueleakscanDescActionsCreated := revenueleakscanFields[8].Descriptor()
 	// revenueleakscan.DefaultActionsCreated holds the default value on creation for the actions_created field.
 	revenueleakscan.DefaultActionsCreated = revenueleakscanDescActionsCreated.Default.(int)
 	// revenueleakscan.ActionsCreatedValidator is a validator for the "actions_created" field. It is called by the builders before save.

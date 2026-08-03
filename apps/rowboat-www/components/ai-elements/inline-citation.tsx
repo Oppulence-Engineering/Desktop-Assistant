@@ -1,13 +1,13 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@oppulence/ui/components/badge";
 import {
   Carousel,
   type CarouselApi,
   CarouselContent,
   CarouselItem,
-} from "@/components/ui/carousel";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+} from "@oppulence/ui/components/carousel";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@oppulence/ui/components/hover-card";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, ArrowRight } from "@phosphor-icons/react";
 import {

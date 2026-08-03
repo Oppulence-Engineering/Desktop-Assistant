@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Radio, Loader2, Square, AlertCircle } from "@/lib/icons";
 
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { Button } from "@oppulence/ui/components/button";
+import { Switch } from "@oppulence/ui/components/switch";
 import { stripKnowledgePrefix, wikiLabel } from "@/lib/wiki-links";
 import { toast } from "@/lib/toast";
 import { formatRelativeTime } from "@/lib/relative-time";

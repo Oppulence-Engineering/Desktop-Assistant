@@ -308,6 +308,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/background-tasks/first-party/ensure": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Ensure first-party workflows
+     * @description Idempotently provisions or upgrades the six Oppulence-managed relationship workflows for the authenticated user. User pause choices are preserved during definition upgrades. Replica races converge on the same per-user task slugs.
+     */
+    post: operations["ensureFirstPartyBackgroundTasks"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/background-tasks/{slug}": {
     parameters: {
       query?: never;
@@ -1354,6 +1374,26 @@ export interface paths {
      * @description Records a canonical relationship in the caller's workspace.
      */
     post: operations["createRelationship"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/graph": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the relationship graph
+     * @description Returns the shared versioned graph read model for an account or the authorized portfolio. Historical asOf reads exclude later evidence and proposed actions.
+     */
+    get: operations["getRelationshipGraph"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -2938,10 +2978,42 @@ export interface components {
        */
       revision: number;
       /**
+       * @description Latest schedule reconciliation error, empty when healthy.
+       * @example
+       */
+      scheduleSyncError?: string | null;
+      /**
+       * @description Server-owned Temporal schedule reconciliation state.
+       * @example current
+       * @enum {string}
+       */
+      scheduleSyncState: "current" | "syncing" | "failed" | "paused";
+      /**
+       * Format: date-time
+       * @description Last successful schedule reconciliation timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      scheduleSyncedAt?: string | null;
+      /**
        * @description Stable per-user background task slug matching bg-tasks/<slug> locally.
        * @example daily-summary
        */
       slug: string;
+      /**
+       * @description Whether Oppulence owns and upgrades this definition. Managed tasks can be paused but not deleted or edited.
+       * @example false
+       */
+      systemManaged: boolean;
+      /**
+       * @description First-party template that owns this definition. Empty for user-authored tasks.
+       * @example relationship-refresh
+       */
+      templateSlug?: string | null;
+      /**
+       * @description Installed version of the owning first-party template. Zero for user-authored tasks.
+       * @example 1
+       */
+      templateVersion?: number;
       /**
        * @description Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.
        * @example {
@@ -3782,6 +3854,11 @@ export interface components {
        */
       executionTarget: "api" | "desktop";
       /**
+       * @description Whether the template is installed and maintained automatically by Oppulence.
+       * @example false
+       */
+      firstParty: boolean;
+      /**
        * @description Default task instructions.
        * @example Review recent important Gmail messages and produce a markdown digest.
        */
@@ -3823,6 +3900,11 @@ export interface components {
        *     }
        */
       triggers?: unknown;
+      /**
+       * @description Monotonic product definition version used for safe upgrades.
+       * @example 1
+       */
+      version: number;
     };
     /** @description Overrides applied while creating a task from a built-in template. Omitted fields use template defaults. */
     BackgroundTaskTemplateInstantiateRequest: {
@@ -6775,6 +6857,265 @@ export interface components {
        * @example false
        */
       userConfirmed: boolean;
+    };
+    /** @description Shared read model for Account Graph and Portfolio Graph in web and desktop. Historical reads are bounded by asOf and every governed action remains permission-gated. */
+    RelationshipGraph: {
+      /**
+       * Format: date-time
+       * @description Historical evidence boundary.
+       * @example 2026-08-01T14:00:00Z
+       */
+      asOf: string;
+      /**
+       * @description Wire contract version.
+       * @example 2026-08-01
+       */
+      contractVersion: string;
+      /** @example 2 */
+      depth: number;
+      /** @description Typed directed edges. */
+      edges: components["schemas"]["RelationshipGraphEdge"][];
+      /**
+       * Format: date-time
+       * @description Projection generation time.
+       * @example 2026-08-01T14:00:00Z
+       */
+      generatedAt: string;
+      /**
+       * @description Whether the response is an historical projection.
+       * @example false
+       */
+      historical: boolean;
+      /** @description Typed nodes. */
+      nodes: components["schemas"]["RelationshipGraphNode"][];
+      /** @description Viewer capabilities for this projection. */
+      permissions: {
+        /**
+         * @description May approve current action revisions.
+         * @example false
+         */
+        canApprove: boolean;
+        /**
+         * @description May propose state or actions.
+         * @example true
+         */
+        canContribute: boolean;
+        /**
+         * @description May explicitly execute approved actions.
+         * @example false
+         */
+        canExecute: boolean;
+        /**
+         * @description May save graph views.
+         * @example true
+         */
+        canSaveViews: boolean;
+        /**
+         * @description May view.
+         * @example true
+         */
+        canView: boolean;
+      };
+      /**
+       * Format: uuid
+       * @description Relationship id for account scope.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      relationshipId?: string;
+      /**
+       * @description Graph scope.
+       * @example portfolio
+       * @enum {string}
+       */
+      scope: "portfolio" | "relationship";
+    };
+    /** @description A typed graph edge whose source-to-target direction is semantically meaningful. */
+    RelationshipGraphEdge: {
+      /** @example 0.88 */
+      confidence?: number;
+      /**
+       * @description Whether the source-to-target direction is meaningful.
+       * @example true
+       */
+      directed: boolean;
+      /** @description Evidence supporting the connection. */
+      evidenceRefs: string[];
+      /**
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Edge kind.
+       * @example requires
+       * @enum {string}
+       */
+      kind:
+        | "participant_of"
+        | "owns"
+        | "has_commitment"
+        | "blocks"
+        | "requires"
+        | "supersedes"
+        | "has_risk"
+        | "has_milestone"
+        | "recommended_for"
+        | "supports"
+        | "contradicts"
+        | "observed_from"
+        | "linked_note";
+      /**
+       * @description Human-readable edge label.
+       * @example requires
+       */
+      label: string;
+      /**
+       * @description Source node id.
+       * @example commitment:1
+       */
+      source: string;
+      /**
+       * @description Target node id.
+       * @example commitment:2
+       */
+      target: string;
+    };
+    /** @description A versioned, typed relationship graph node. Meaning is explicit so clients can render status without relying on color alone. */
+    RelationshipGraphNode: {
+      /**
+       * @description Action approval state.
+       * @example pending
+       */
+      approvalStatus?: string;
+      /** @description Changed state dimensions. */
+      changedDimensions: string[];
+      /**
+       * @description Whether this state is newer than the viewer's acknowledgement.
+       * @example true
+       */
+      changedSinceReview: boolean;
+      /** @example 0.88 */
+      confidence?: number;
+      /**
+       * Format: date-time
+       * @description Due time.
+       * @example 2026-08-12T14:00:00Z
+       */
+      dueAt?: string | null;
+      /**
+       * @description Engagement state.
+       * @example declining
+       */
+      engagement?: string;
+      /** @description Inspectable evidence ids. */
+      evidenceRefs: string[];
+      /**
+       * @description Action execution state.
+       * @example pending
+       */
+      executionStatus?: string;
+      /**
+       * @description Evidence freshness.
+       * @example current
+       * @enum {string}
+       */
+      freshness?: "current" | "aging" | "stale" | "unknown";
+      /**
+       * @description Health state.
+       * @example needs_attention
+       */
+      health?: string;
+      /**
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Node kind.
+       * @example relationship
+       * @enum {string}
+       */
+      kind:
+        | "relationship"
+        | "person"
+        | "commitment"
+        | "risk"
+        | "milestone"
+        | "action"
+        | "evidence"
+        | "source"
+        | "note";
+      /**
+       * @description Human-readable label.
+       * @example Northstar Labs
+       */
+      label: string;
+      /**
+       * @description Commercial lifecycle.
+       * @example renewal
+       */
+      lifecycle?: string;
+      /** @description Kind-specific bounded metadata. */
+      metadata: {
+        [key: string]: unknown;
+      };
+      /**
+       * Format: date-time
+       * @description Evidence occurrence time.
+       * @example 2026-08-01T14:00:00Z
+       */
+      occurredAt?: string | null;
+      /**
+       * @description Action policy state.
+       * @example passed
+       */
+      policyStatus?: string;
+      /** @example 82 */
+      priority?: number;
+      /**
+       * Format: uuid
+       * @description Primary relationship id when applicable.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      relationshipId?: string;
+      /** @description All associated relationships, including shared participants. */
+      relationshipIds: string[];
+      /**
+       * @description Underlying record id used by explicit Open actions.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      resourceRef?: string;
+      /**
+       * @description Participant role.
+       * @example champion
+       */
+      role?: string;
+      /**
+       * @description Sentiment state.
+       * @example mixed
+       */
+      sentiment?: string;
+      /**
+       * @description Evidence source.
+       * @example meeting
+       */
+      source?: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status?: string;
+      /**
+       * @description Evidence-backed summary.
+       * @example Security review is overdue.
+       */
+      summary?: string;
+      /**
+       * Format: date-time
+       * @description Last material update.
+       * @example 2026-08-01T14:00:00Z
+       */
+      updatedAt?: string | null;
     };
     RelationshipIdentity: {
       /** Format: double */
@@ -9877,6 +10218,7 @@ export interface operations {
            *           "active": true,
            *           "description": "Summarize new priority email and produce a short follow-up plan.",
            *           "executionTarget": "api",
+           *           "firstParty": false,
            *           "instructions": "Review recent important Gmail messages and produce a markdown digest.",
            *           "model": "anthropic/claude-sonnet-4-5",
            *           "name": "Inbox Digest",
@@ -9894,7 +10236,8 @@ export interface operations {
            *           "triggers": {
            *             "cronExpr": "0 8 * * 1-5",
            *             "timezone": "America/New_York"
-           *           }
+           *           },
+           *           "version": 1
            *         }
            *       ]
            *     }
@@ -9929,6 +10272,7 @@ export interface operations {
            *       "active": true,
            *       "description": "Summarize new priority email and produce a short follow-up plan.",
            *       "executionTarget": "api",
+           *       "firstParty": false,
            *       "instructions": "Review recent important Gmail messages and produce a markdown digest.",
            *       "model": "anthropic/claude-sonnet-4-5",
            *       "name": "Inbox Digest",
@@ -9946,7 +10290,8 @@ export interface operations {
            *       "triggers": {
            *         "cronExpr": "0 8 * * 1-5",
            *         "timezone": "America/New_York"
-           *       }
+           *       },
+           *       "version": 1
            *     }
            */
           "application/json": components["schemas"]["BackgroundTaskTemplate"];
@@ -10002,7 +10347,13 @@ export interface operations {
            *       "name": "Daily Account Summary",
            *       "provider": "openai",
            *       "revision": 2,
+           *       "scheduleSyncError": "",
+           *       "scheduleSyncState": "current",
+           *       "scheduleSyncedAt": "2026-06-04T20:39:00Z",
            *       "slug": "daily-summary",
+           *       "systemManaged": false,
+           *       "templateSlug": "",
+           *       "templateVersion": 0,
            *       "triggers": {
            *         "cronExpr": "0 9 * * *",
            *         "timezone": "America/New_York"
@@ -10071,7 +10422,13 @@ export interface operations {
            *           "name": "Daily Account Summary",
            *           "provider": "openai",
            *           "revision": 2,
+           *           "scheduleSyncError": "",
+           *           "scheduleSyncState": "current",
+           *           "scheduleSyncedAt": "2026-06-04T20:39:00Z",
            *           "slug": "daily-summary",
+           *           "systemManaged": false,
+           *           "templateSlug": "",
+           *           "templateVersion": 0,
            *           "triggers": {
            *             "cronExpr": "0 9 * * *",
            *             "timezone": "America/New_York"
@@ -10139,7 +10496,13 @@ export interface operations {
            *       "name": "Daily Account Summary",
            *       "provider": "openai",
            *       "revision": 2,
+           *       "scheduleSyncError": "",
+           *       "scheduleSyncState": "current",
+           *       "scheduleSyncedAt": "2026-06-04T20:39:00Z",
            *       "slug": "daily-summary",
+           *       "systemManaged": false,
+           *       "templateSlug": "",
+           *       "templateVersion": 0,
            *       "triggers": {
            *         "cronExpr": "0 9 * * *",
            *         "timezone": "America/New_York"
@@ -10171,6 +10534,62 @@ export interface operations {
           "application/problem+json": components["schemas"]["ErrorEnvelope"];
         };
       };
+      500: components["responses"]["500"];
+    };
+  };
+  ensureFirstPartyBackgroundTasks: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Current managed workflow definitions. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "tasks": [
+           *         {
+           *           "active": true,
+           *           "createdAt": "2026-06-04T20:38:00Z",
+           *           "executionTarget": "desktop",
+           *           "id": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+           *           "instructions": "Summarize important account changes and draft follow-up notes.",
+           *           "lastAttemptAt": "2026-06-04T21:00:00Z",
+           *           "lastRunAt": "2026-06-04T21:02:00Z",
+           *           "lastRunError": "",
+           *           "lastRunId": "run-20260604-210000",
+           *           "lastRunSummary": "No high-priority account changes.",
+           *           "model": "openai/gpt-4.1-mini",
+           *           "name": "Daily Account Summary",
+           *           "provider": "openai",
+           *           "revision": 2,
+           *           "scheduleSyncError": "",
+           *           "scheduleSyncState": "current",
+           *           "scheduleSyncedAt": "2026-06-04T20:39:00Z",
+           *           "slug": "daily-summary",
+           *           "systemManaged": false,
+           *           "templateSlug": "",
+           *           "templateVersion": 0,
+           *           "triggers": {
+           *             "cronExpr": "0 9 * * *",
+           *             "timezone": "America/New_York"
+           *           },
+           *           "updatedAt": "2026-06-04T20:39:00Z"
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": components["schemas"]["BackgroundTaskListResponse"];
+        };
+      };
+      401: components["responses"]["401"];
       500: components["responses"]["500"];
     };
   };
@@ -10208,7 +10627,13 @@ export interface operations {
            *       "name": "Daily Account Summary",
            *       "provider": "openai",
            *       "revision": 2,
+           *       "scheduleSyncError": "",
+           *       "scheduleSyncState": "current",
+           *       "scheduleSyncedAt": "2026-06-04T20:39:00Z",
            *       "slug": "daily-summary",
+           *       "systemManaged": false,
+           *       "templateSlug": "",
+           *       "templateVersion": 0,
            *       "triggers": {
            *         "cronExpr": "0 9 * * *",
            *         "timezone": "America/New_York"
@@ -10320,7 +10745,13 @@ export interface operations {
            *       "name": "Daily Account Summary",
            *       "provider": "openai",
            *       "revision": 2,
+           *       "scheduleSyncError": "",
+           *       "scheduleSyncState": "current",
+           *       "scheduleSyncedAt": "2026-06-04T20:39:00Z",
            *       "slug": "daily-summary",
+           *       "systemManaged": false,
+           *       "templateSlug": "",
+           *       "templateVersion": 0,
            *       "triggers": {
            *         "cronExpr": "0 9 * * *",
            *         "timezone": "America/New_York"
@@ -13059,6 +13490,38 @@ export interface operations {
       };
       400: components["responses"]["400"];
       401: components["responses"]["401"];
+    };
+  };
+  getRelationshipGraph: {
+    parameters: {
+      query?: {
+        /** @description Portfolio or one relationship. */
+        scope?: "portfolio" | "relationship";
+        /** @description Required when scope=relationship. */
+        relationshipId?: string;
+        /** @description Bounded graph expansion depth. */
+        depth?: number;
+        /** @description Historical evidence boundary; must not be in the future. */
+        asOf?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Authorized relationship graph. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RelationshipGraph"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
     };
   };
   getRelationship: {

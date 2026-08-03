@@ -12,6 +12,12 @@ autoscaling:
 serviceMonitor:
   enabled: true
 
+observability:
+  prometheusRule:
+    enabled: true
+  grafanaDashboard:
+    enabled: true
+
 config:
   ENVIRONMENT: staging
   LOG_LEVEL: debug
@@ -32,21 +38,27 @@ config:
   # values.yaml (no override needed).
   PLAIN_TITLE_PREFIX: "[staging] "
   # --- Temporal Cloud (API-native background task worker) -------------------
-  # Staging/production execute API-target runs on Temporal Cloud (API-key auth
-  # over TLS). To enable: set TEMPORAL_ENABLED to "true", point ADDRESS/NAMESPACE
-  # at your Temporal Cloud namespace, add TEMPORAL_API_KEY to the
-  # rowboat-api-secrets Secret (Infisical — never inline it here), and set
-  # worker.enabled: true below.
-  TEMPORAL_ENABLED: "false"
-  TEMPORAL_ADDRESS: <namespace>.<account>.tmprl.cloud:7233
-  TEMPORAL_NAMESPACE: <namespace>.<account>
+  # Staging deliberately mirrors the production workflow topology. Promotion
+  # is only safe after this environment has run the exact candidate image with
+  # its API, worker, scheduler, event router, watches, and revenue loops active.
+  # TEMPORAL_API_KEY remains in rowboat-api-secrets / Infisical.
+  TEMPORAL_ENABLED: "true"
+  TEMPORAL_ADDRESS: rowboat-staging.kpisa.tmprl.cloud:7233
+  TEMPORAL_NAMESPACE: rowboat-staging.kpisa
   TEMPORAL_TASK_QUEUE: rowboat-api-background-tasks
   TEMPORAL_TLS_ENABLED: "true"
-  TEMPORAL_WORKER_ENABLED: "false"
+  TEMPORAL_WORKER_ENABLED: "true"
+  CLOUD_EVENTS_ROUTING_ENABLED: "true"
+  GOOGLE_WATCH_ENABLED: "true"
+  REVENUE_AUTO_SCAN_ENABLED: "true"
+  REVENUE_MAIL_PUSH_SYNC_ENABLED: "true"
 
-# Flip to true alongside TEMPORAL_ENABLED to run the durable worker.
 worker:
-  enabled: false
-  replicaCount: 1
+  enabled: true
+  replicaCount: 2
+
+scheduler:
+  enabled: true
+  replicaCount: 2
 
 existingSecret: rowboat-api-secrets

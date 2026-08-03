@@ -286,7 +286,10 @@ type ComplexityRoot struct {
 		ScheduleSyncState func(childComplexity int) int
 		ScheduleSyncedAt  func(childComplexity int) int
 		Slug              func(childComplexity int) int
+		SystemManaged     func(childComplexity int) int
 		TaskCreatedAt     func(childComplexity int) int
+		TemplateSlug      func(childComplexity int) int
+		TemplateVersion   func(childComplexity int) int
 		TriggersJSON      func(childComplexity int) int
 		UpdatedAt         func(childComplexity int) int
 		User              func(childComplexity int) int
@@ -1160,6 +1163,7 @@ type ComplexityRoot struct {
 
 	RevenueLeakScan struct {
 		ActionsCreated       func(childComplexity int) int
+		ActiveClaim          func(childComplexity int) int
 		CandidatesSeen       func(childComplexity int) int
 		CompletedAt          func(childComplexity int) int
 		CreatedAt            func(childComplexity int) int
@@ -2679,12 +2683,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.BackgroundTask.Slug(childComplexity), true
+	case "BackgroundTask.systemManaged":
+		if e.ComplexityRoot.BackgroundTask.SystemManaged == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTask.SystemManaged(childComplexity), true
 	case "BackgroundTask.taskCreatedAt":
 		if e.ComplexityRoot.BackgroundTask.TaskCreatedAt == nil {
 			break
 		}
 
 		return e.ComplexityRoot.BackgroundTask.TaskCreatedAt(childComplexity), true
+	case "BackgroundTask.templateSlug":
+		if e.ComplexityRoot.BackgroundTask.TemplateSlug == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTask.TemplateSlug(childComplexity), true
+	case "BackgroundTask.templateVersion":
+		if e.ComplexityRoot.BackgroundTask.TemplateVersion == nil {
+			break
+		}
+
+		return e.ComplexityRoot.BackgroundTask.TemplateVersion(childComplexity), true
 	case "BackgroundTask.triggersJSON":
 		if e.ComplexityRoot.BackgroundTask.TriggersJSON == nil {
 			break
@@ -6952,6 +6974,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RevenueLeakScan.ActionsCreated(childComplexity), true
+	case "RevenueLeakScan.activeClaim":
+		if e.ComplexityRoot.RevenueLeakScan.ActiveClaim == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RevenueLeakScan.ActiveClaim(childComplexity), true
 	case "RevenueLeakScan.candidatesSeen":
 		if e.ComplexityRoot.RevenueLeakScan.CandidatesSeen == nil {
 			break
@@ -8610,6 +8638,12 @@ func (ec *executionContext) childFields_BackgroundTask(ctx context.Context, fiel
 		return ec.fieldContext_BackgroundTask_provider(ctx, field)
 	case "executionTarget":
 		return ec.fieldContext_BackgroundTask_executionTarget(ctx, field)
+	case "templateSlug":
+		return ec.fieldContext_BackgroundTask_templateSlug(ctx, field)
+	case "templateVersion":
+		return ec.fieldContext_BackgroundTask_templateVersion(ctx, field)
+	case "systemManaged":
+		return ec.fieldContext_BackgroundTask_systemManaged(ctx, field)
 	case "taskCreatedAt":
 		return ec.fieldContext_BackgroundTask_taskCreatedAt(ctx, field)
 	case "lastAttemptAt":
@@ -10336,6 +10370,8 @@ func (ec *executionContext) childFields_RevenueLeakScan(ctx context.Context, fie
 		return ec.fieldContext_RevenueLeakScan_updatedAt(ctx, field)
 	case "status":
 		return ec.fieldContext_RevenueLeakScan_status(ctx, field)
+	case "activeClaim":
+		return ec.fieldContext_RevenueLeakScan_activeClaim(ctx, field)
 	case "mode":
 		return ec.fieldContext_RevenueLeakScan_mode(ctx, field)
 	case "lookbackDays":
@@ -16276,6 +16312,75 @@ func (ec *executionContext) _BackgroundTask_executionTarget(ctx context.Context,
 }
 func (ec *executionContext) fieldContext_BackgroundTask_executionTarget(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("BackgroundTask", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTask_templateSlug(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTask) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTask_templateSlug(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TemplateSlug, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTask_templateSlug(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTask", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTask_templateVersion(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTask) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTask_templateVersion(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TemplateVersion, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTask_templateVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTask", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _BackgroundTask_systemManaged(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTask) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_BackgroundTask_systemManaged(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.SystemManaged, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_BackgroundTask_systemManaged(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("BackgroundTask", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
 func (ec *executionContext) _BackgroundTask_taskCreatedAt(ctx context.Context, field graphql.CollectedField, obj *ent.BackgroundTask) (ret graphql.Marshaler) {
@@ -34288,6 +34393,29 @@ func (ec *executionContext) _RevenueLeakScan_status(ctx context.Context, field g
 	)
 }
 func (ec *executionContext) fieldContext_RevenueLeakScan_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RevenueLeakScan", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _RevenueLeakScan_activeClaim(ctx context.Context, field graphql.CollectedField, obj *ent.RevenueLeakScan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RevenueLeakScan_activeClaim(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ActiveClaim, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_RevenueLeakScan_activeClaim(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("RevenueLeakScan", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -58874,7 +59002,7 @@ func (ec *executionContext) unmarshalInputBackgroundTaskWhereInput(ctx context.C
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "slug", "slugNEQ", "slugIn", "slugNotIn", "slugGT", "slugGTE", "slugLT", "slugLTE", "slugContains", "slugHasPrefix", "slugHasSuffix", "slugEqualFold", "slugContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "instructions", "instructionsNEQ", "instructionsIn", "instructionsNotIn", "instructionsGT", "instructionsGTE", "instructionsLT", "instructionsLTE", "instructionsContains", "instructionsHasPrefix", "instructionsHasSuffix", "instructionsEqualFold", "instructionsContainsFold", "active", "activeNEQ", "triggersJSON", "triggersJSONNEQ", "triggersJSONIn", "triggersJSONNotIn", "triggersJSONGT", "triggersJSONGTE", "triggersJSONLT", "triggersJSONLTE", "triggersJSONContains", "triggersJSONHasPrefix", "triggersJSONHasSuffix", "triggersJSONIsNil", "triggersJSONNotNil", "triggersJSONEqualFold", "triggersJSONContainsFold", "model", "modelNEQ", "modelIn", "modelNotIn", "modelGT", "modelGTE", "modelLT", "modelLTE", "modelContains", "modelHasPrefix", "modelHasSuffix", "modelIsNil", "modelNotNil", "modelEqualFold", "modelContainsFold", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerIsNil", "providerNotNil", "providerEqualFold", "providerContainsFold", "executionTarget", "executionTargetNEQ", "executionTargetIn", "executionTargetNotIn", "executionTargetGT", "executionTargetGTE", "executionTargetLT", "executionTargetLTE", "executionTargetContains", "executionTargetHasPrefix", "executionTargetHasSuffix", "executionTargetEqualFold", "executionTargetContainsFold", "taskCreatedAt", "taskCreatedAtNEQ", "taskCreatedAtIn", "taskCreatedAtNotIn", "taskCreatedAtGT", "taskCreatedAtGTE", "taskCreatedAtLT", "taskCreatedAtLTE", "taskCreatedAtIsNil", "taskCreatedAtNotNil", "lastAttemptAt", "lastAttemptAtNEQ", "lastAttemptAtIn", "lastAttemptAtNotIn", "lastAttemptAtGT", "lastAttemptAtGTE", "lastAttemptAtLT", "lastAttemptAtLTE", "lastAttemptAtIsNil", "lastAttemptAtNotNil", "lastRunID", "lastRunIDNEQ", "lastRunIDIn", "lastRunIDNotIn", "lastRunIDGT", "lastRunIDGTE", "lastRunIDLT", "lastRunIDLTE", "lastRunIDContains", "lastRunIDHasPrefix", "lastRunIDHasSuffix", "lastRunIDIsNil", "lastRunIDNotNil", "lastRunIDEqualFold", "lastRunIDContainsFold", "lastRunAt", "lastRunAtNEQ", "lastRunAtIn", "lastRunAtNotIn", "lastRunAtGT", "lastRunAtGTE", "lastRunAtLT", "lastRunAtLTE", "lastRunAtIsNil", "lastRunAtNotNil", "lastRunSummary", "lastRunSummaryNEQ", "lastRunSummaryIn", "lastRunSummaryNotIn", "lastRunSummaryGT", "lastRunSummaryGTE", "lastRunSummaryLT", "lastRunSummaryLTE", "lastRunSummaryContains", "lastRunSummaryHasPrefix", "lastRunSummaryHasSuffix", "lastRunSummaryIsNil", "lastRunSummaryNotNil", "lastRunSummaryEqualFold", "lastRunSummaryContainsFold", "lastRunError", "lastRunErrorNEQ", "lastRunErrorIn", "lastRunErrorNotIn", "lastRunErrorGT", "lastRunErrorGTE", "lastRunErrorLT", "lastRunErrorLTE", "lastRunErrorContains", "lastRunErrorHasPrefix", "lastRunErrorHasSuffix", "lastRunErrorIsNil", "lastRunErrorNotNil", "lastRunErrorEqualFold", "lastRunErrorContainsFold", "scheduleSyncState", "scheduleSyncStateNEQ", "scheduleSyncStateIn", "scheduleSyncStateNotIn", "scheduleSyncStateGT", "scheduleSyncStateGTE", "scheduleSyncStateLT", "scheduleSyncStateLTE", "scheduleSyncStateContains", "scheduleSyncStateHasPrefix", "scheduleSyncStateHasSuffix", "scheduleSyncStateEqualFold", "scheduleSyncStateContainsFold", "scheduleSyncError", "scheduleSyncErrorNEQ", "scheduleSyncErrorIn", "scheduleSyncErrorNotIn", "scheduleSyncErrorGT", "scheduleSyncErrorGTE", "scheduleSyncErrorLT", "scheduleSyncErrorLTE", "scheduleSyncErrorContains", "scheduleSyncErrorHasPrefix", "scheduleSyncErrorHasSuffix", "scheduleSyncErrorIsNil", "scheduleSyncErrorNotNil", "scheduleSyncErrorEqualFold", "scheduleSyncErrorContainsFold", "scheduleSyncedAt", "scheduleSyncedAtNEQ", "scheduleSyncedAtIn", "scheduleSyncedAtNotIn", "scheduleSyncedAtGT", "scheduleSyncedAtGTE", "scheduleSyncedAtLT", "scheduleSyncedAtLTE", "scheduleSyncedAtIsNil", "scheduleSyncedAtNotNil", "revision", "revisionNEQ", "revisionIn", "revisionNotIn", "revisionGT", "revisionGTE", "revisionLT", "revisionLTE", "hasUser", "hasUserWith", "hasArtifact", "hasArtifactWith", "hasRuns", "hasRunsWith", "hasRunEvents", "hasRunEventsWith", "hasScheduleStates", "hasScheduleStatesWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "slug", "slugNEQ", "slugIn", "slugNotIn", "slugGT", "slugGTE", "slugLT", "slugLTE", "slugContains", "slugHasPrefix", "slugHasSuffix", "slugEqualFold", "slugContainsFold", "name", "nameNEQ", "nameIn", "nameNotIn", "nameGT", "nameGTE", "nameLT", "nameLTE", "nameContains", "nameHasPrefix", "nameHasSuffix", "nameEqualFold", "nameContainsFold", "instructions", "instructionsNEQ", "instructionsIn", "instructionsNotIn", "instructionsGT", "instructionsGTE", "instructionsLT", "instructionsLTE", "instructionsContains", "instructionsHasPrefix", "instructionsHasSuffix", "instructionsEqualFold", "instructionsContainsFold", "active", "activeNEQ", "triggersJSON", "triggersJSONNEQ", "triggersJSONIn", "triggersJSONNotIn", "triggersJSONGT", "triggersJSONGTE", "triggersJSONLT", "triggersJSONLTE", "triggersJSONContains", "triggersJSONHasPrefix", "triggersJSONHasSuffix", "triggersJSONIsNil", "triggersJSONNotNil", "triggersJSONEqualFold", "triggersJSONContainsFold", "model", "modelNEQ", "modelIn", "modelNotIn", "modelGT", "modelGTE", "modelLT", "modelLTE", "modelContains", "modelHasPrefix", "modelHasSuffix", "modelIsNil", "modelNotNil", "modelEqualFold", "modelContainsFold", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerIsNil", "providerNotNil", "providerEqualFold", "providerContainsFold", "executionTarget", "executionTargetNEQ", "executionTargetIn", "executionTargetNotIn", "executionTargetGT", "executionTargetGTE", "executionTargetLT", "executionTargetLTE", "executionTargetContains", "executionTargetHasPrefix", "executionTargetHasSuffix", "executionTargetEqualFold", "executionTargetContainsFold", "templateSlug", "templateSlugNEQ", "templateSlugIn", "templateSlugNotIn", "templateSlugGT", "templateSlugGTE", "templateSlugLT", "templateSlugLTE", "templateSlugContains", "templateSlugHasPrefix", "templateSlugHasSuffix", "templateSlugIsNil", "templateSlugNotNil", "templateSlugEqualFold", "templateSlugContainsFold", "templateVersion", "templateVersionNEQ", "templateVersionIn", "templateVersionNotIn", "templateVersionGT", "templateVersionGTE", "templateVersionLT", "templateVersionLTE", "systemManaged", "systemManagedNEQ", "taskCreatedAt", "taskCreatedAtNEQ", "taskCreatedAtIn", "taskCreatedAtNotIn", "taskCreatedAtGT", "taskCreatedAtGTE", "taskCreatedAtLT", "taskCreatedAtLTE", "taskCreatedAtIsNil", "taskCreatedAtNotNil", "lastAttemptAt", "lastAttemptAtNEQ", "lastAttemptAtIn", "lastAttemptAtNotIn", "lastAttemptAtGT", "lastAttemptAtGTE", "lastAttemptAtLT", "lastAttemptAtLTE", "lastAttemptAtIsNil", "lastAttemptAtNotNil", "lastRunID", "lastRunIDNEQ", "lastRunIDIn", "lastRunIDNotIn", "lastRunIDGT", "lastRunIDGTE", "lastRunIDLT", "lastRunIDLTE", "lastRunIDContains", "lastRunIDHasPrefix", "lastRunIDHasSuffix", "lastRunIDIsNil", "lastRunIDNotNil", "lastRunIDEqualFold", "lastRunIDContainsFold", "lastRunAt", "lastRunAtNEQ", "lastRunAtIn", "lastRunAtNotIn", "lastRunAtGT", "lastRunAtGTE", "lastRunAtLT", "lastRunAtLTE", "lastRunAtIsNil", "lastRunAtNotNil", "lastRunSummary", "lastRunSummaryNEQ", "lastRunSummaryIn", "lastRunSummaryNotIn", "lastRunSummaryGT", "lastRunSummaryGTE", "lastRunSummaryLT", "lastRunSummaryLTE", "lastRunSummaryContains", "lastRunSummaryHasPrefix", "lastRunSummaryHasSuffix", "lastRunSummaryIsNil", "lastRunSummaryNotNil", "lastRunSummaryEqualFold", "lastRunSummaryContainsFold", "lastRunError", "lastRunErrorNEQ", "lastRunErrorIn", "lastRunErrorNotIn", "lastRunErrorGT", "lastRunErrorGTE", "lastRunErrorLT", "lastRunErrorLTE", "lastRunErrorContains", "lastRunErrorHasPrefix", "lastRunErrorHasSuffix", "lastRunErrorIsNil", "lastRunErrorNotNil", "lastRunErrorEqualFold", "lastRunErrorContainsFold", "scheduleSyncState", "scheduleSyncStateNEQ", "scheduleSyncStateIn", "scheduleSyncStateNotIn", "scheduleSyncStateGT", "scheduleSyncStateGTE", "scheduleSyncStateLT", "scheduleSyncStateLTE", "scheduleSyncStateContains", "scheduleSyncStateHasPrefix", "scheduleSyncStateHasSuffix", "scheduleSyncStateEqualFold", "scheduleSyncStateContainsFold", "scheduleSyncError", "scheduleSyncErrorNEQ", "scheduleSyncErrorIn", "scheduleSyncErrorNotIn", "scheduleSyncErrorGT", "scheduleSyncErrorGTE", "scheduleSyncErrorLT", "scheduleSyncErrorLTE", "scheduleSyncErrorContains", "scheduleSyncErrorHasPrefix", "scheduleSyncErrorHasSuffix", "scheduleSyncErrorIsNil", "scheduleSyncErrorNotNil", "scheduleSyncErrorEqualFold", "scheduleSyncErrorContainsFold", "scheduleSyncedAt", "scheduleSyncedAtNEQ", "scheduleSyncedAtIn", "scheduleSyncedAtNotIn", "scheduleSyncedAtGT", "scheduleSyncedAtGTE", "scheduleSyncedAtLT", "scheduleSyncedAtLTE", "scheduleSyncedAtIsNil", "scheduleSyncedAtNotNil", "revision", "revisionNEQ", "revisionIn", "revisionNotIn", "revisionGT", "revisionGTE", "revisionLT", "revisionLTE", "hasUser", "hasUserWith", "hasArtifact", "hasArtifactWith", "hasRuns", "hasRunsWith", "hasRunEvents", "hasRunEventsWith", "hasScheduleStates", "hasScheduleStatesWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -59763,6 +59891,181 @@ func (ec *executionContext) unmarshalInputBackgroundTaskWhereInput(ctx context.C
 				return it, err
 			}
 			it.ExecutionTargetContainsFold = data
+		case "templateSlug":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlug"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlug = data
+		case "templateSlugNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlugNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlugNEQ = data
+		case "templateSlugIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlugIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlugIn = data
+		case "templateSlugNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlugNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlugNotIn = data
+		case "templateSlugGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlugGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlugGT = data
+		case "templateSlugGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlugGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlugGTE = data
+		case "templateSlugLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlugLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlugLT = data
+		case "templateSlugLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlugLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlugLTE = data
+		case "templateSlugContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlugContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlugContains = data
+		case "templateSlugHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlugHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlugHasPrefix = data
+		case "templateSlugHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlugHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlugHasSuffix = data
+		case "templateSlugIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlugIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlugIsNil = data
+		case "templateSlugNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlugNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlugNotNil = data
+		case "templateSlugEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlugEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlugEqualFold = data
+		case "templateSlugContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateSlugContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateSlugContainsFold = data
+		case "templateVersion":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateVersion"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateVersion = data
+		case "templateVersionNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateVersionNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateVersionNEQ = data
+		case "templateVersionIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateVersionIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateVersionIn = data
+		case "templateVersionNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateVersionNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateVersionNotIn = data
+		case "templateVersionGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateVersionGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateVersionGT = data
+		case "templateVersionGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateVersionGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateVersionGTE = data
+		case "templateVersionLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateVersionLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateVersionLT = data
+		case "templateVersionLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("templateVersionLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TemplateVersionLTE = data
+		case "systemManaged":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("systemManaged"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SystemManaged = data
+		case "systemManagedNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("systemManagedNEQ"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SystemManagedNEQ = data
 		case "taskCreatedAt":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("taskCreatedAt"))
 			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
@@ -93986,7 +94289,7 @@ func (ec *executionContext) unmarshalInputRevenueLeakScanWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "mode", "modeNEQ", "modeIn", "modeNotIn", "modeGT", "modeGTE", "modeLT", "modeLTE", "modeContains", "modeHasPrefix", "modeHasSuffix", "modeEqualFold", "modeContainsFold", "lookbackDays", "lookbackDaysNEQ", "lookbackDaysIn", "lookbackDaysNotIn", "lookbackDaysGT", "lookbackDaysGTE", "lookbackDaysLT", "lookbackDaysLTE", "threadsSeen", "threadsSeenNEQ", "threadsSeenIn", "threadsSeenNotIn", "threadsSeenGT", "threadsSeenGTE", "threadsSeenLT", "threadsSeenLTE", "candidatesSeen", "candidatesSeenNEQ", "candidatesSeenIn", "candidatesSeenNotIn", "candidatesSeenGT", "candidatesSeenGTE", "candidatesSeenLT", "candidatesSeenLTE", "relationshipsCreated", "relationshipsCreatedNEQ", "relationshipsCreatedIn", "relationshipsCreatedNotIn", "relationshipsCreatedGT", "relationshipsCreatedGTE", "relationshipsCreatedLT", "relationshipsCreatedLTE", "evidencesCreated", "evidencesCreatedNEQ", "evidencesCreatedIn", "evidencesCreatedNotIn", "evidencesCreatedGT", "evidencesCreatedGTE", "evidencesCreatedLT", "evidencesCreatedLTE", "actionsCreated", "actionsCreatedNEQ", "actionsCreatedIn", "actionsCreatedNotIn", "actionsCreatedGT", "actionsCreatedGTE", "actionsCreatedLT", "actionsCreatedLTE", "startedAt", "startedAtNEQ", "startedAtIn", "startedAtNotIn", "startedAtGT", "startedAtGTE", "startedAtLT", "startedAtLTE", "startedAtIsNil", "startedAtNotNil", "completedAt", "completedAtNEQ", "completedAtIn", "completedAtNotIn", "completedAtGT", "completedAtGTE", "completedAtLT", "completedAtLTE", "completedAtIsNil", "completedAtNotNil", "error", "errorNEQ", "errorIn", "errorNotIn", "errorGT", "errorGTE", "errorLT", "errorLTE", "errorContains", "errorHasPrefix", "errorHasSuffix", "errorIsNil", "errorNotNil", "errorEqualFold", "errorContainsFold", "sourceFreshnessAt", "sourceFreshnessAtNEQ", "sourceFreshnessAtIn", "sourceFreshnessAtNotIn", "sourceFreshnessAtGT", "sourceFreshnessAtGTE", "sourceFreshnessAtLT", "sourceFreshnessAtLTE", "sourceFreshnessAtIsNil", "sourceFreshnessAtNotNil", "hasWorkspace", "hasWorkspaceWith", "hasUser", "hasUserWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "activeClaim", "activeClaimNEQ", "activeClaimIn", "activeClaimNotIn", "activeClaimGT", "activeClaimGTE", "activeClaimLT", "activeClaimLTE", "activeClaimContains", "activeClaimHasPrefix", "activeClaimHasSuffix", "activeClaimIsNil", "activeClaimNotNil", "activeClaimEqualFold", "activeClaimContainsFold", "mode", "modeNEQ", "modeIn", "modeNotIn", "modeGT", "modeGTE", "modeLT", "modeLTE", "modeContains", "modeHasPrefix", "modeHasSuffix", "modeEqualFold", "modeContainsFold", "lookbackDays", "lookbackDaysNEQ", "lookbackDaysIn", "lookbackDaysNotIn", "lookbackDaysGT", "lookbackDaysGTE", "lookbackDaysLT", "lookbackDaysLTE", "threadsSeen", "threadsSeenNEQ", "threadsSeenIn", "threadsSeenNotIn", "threadsSeenGT", "threadsSeenGTE", "threadsSeenLT", "threadsSeenLTE", "candidatesSeen", "candidatesSeenNEQ", "candidatesSeenIn", "candidatesSeenNotIn", "candidatesSeenGT", "candidatesSeenGTE", "candidatesSeenLT", "candidatesSeenLTE", "relationshipsCreated", "relationshipsCreatedNEQ", "relationshipsCreatedIn", "relationshipsCreatedNotIn", "relationshipsCreatedGT", "relationshipsCreatedGTE", "relationshipsCreatedLT", "relationshipsCreatedLTE", "evidencesCreated", "evidencesCreatedNEQ", "evidencesCreatedIn", "evidencesCreatedNotIn", "evidencesCreatedGT", "evidencesCreatedGTE", "evidencesCreatedLT", "evidencesCreatedLTE", "actionsCreated", "actionsCreatedNEQ", "actionsCreatedIn", "actionsCreatedNotIn", "actionsCreatedGT", "actionsCreatedGTE", "actionsCreatedLT", "actionsCreatedLTE", "startedAt", "startedAtNEQ", "startedAtIn", "startedAtNotIn", "startedAtGT", "startedAtGTE", "startedAtLT", "startedAtLTE", "startedAtIsNil", "startedAtNotNil", "completedAt", "completedAtNEQ", "completedAtIn", "completedAtNotIn", "completedAtGT", "completedAtGTE", "completedAtLT", "completedAtLTE", "completedAtIsNil", "completedAtNotNil", "error", "errorNEQ", "errorIn", "errorNotIn", "errorGT", "errorGTE", "errorLT", "errorLTE", "errorContains", "errorHasPrefix", "errorHasSuffix", "errorIsNil", "errorNotNil", "errorEqualFold", "errorContainsFold", "sourceFreshnessAt", "sourceFreshnessAtNEQ", "sourceFreshnessAtIn", "sourceFreshnessAtNotIn", "sourceFreshnessAtGT", "sourceFreshnessAtGTE", "sourceFreshnessAtLT", "sourceFreshnessAtLTE", "sourceFreshnessAtIsNil", "sourceFreshnessAtNotNil", "hasWorkspace", "hasWorkspaceWith", "hasUser", "hasUserWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -94273,6 +94576,111 @@ func (ec *executionContext) unmarshalInputRevenueLeakScanWhereInput(ctx context.
 				return it, err
 			}
 			it.StatusContainsFold = data
+		case "activeClaim":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaim"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaim = data
+		case "activeClaimNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaimNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaimNEQ = data
+		case "activeClaimIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaimIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaimIn = data
+		case "activeClaimNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaimNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaimNotIn = data
+		case "activeClaimGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaimGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaimGT = data
+		case "activeClaimGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaimGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaimGTE = data
+		case "activeClaimLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaimLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaimLT = data
+		case "activeClaimLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaimLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaimLTE = data
+		case "activeClaimContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaimContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaimContains = data
+		case "activeClaimHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaimHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaimHasPrefix = data
+		case "activeClaimHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaimHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaimHasSuffix = data
+		case "activeClaimIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaimIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaimIsNil = data
+		case "activeClaimNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaimNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaimNotNil = data
+		case "activeClaimEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaimEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaimEqualFold = data
+		case "activeClaimContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("activeClaimContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ActiveClaimContainsFold = data
 		case "mode":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mode"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -103916,6 +104324,18 @@ func (ec *executionContext) _BackgroundTask(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "templateSlug":
+			out.Values[i] = ec._BackgroundTask_templateSlug(ctx, field, obj)
+		case "templateVersion":
+			out.Values[i] = ec._BackgroundTask_templateVersion(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "systemManaged":
+			out.Values[i] = ec._BackgroundTask_systemManaged(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "taskCreatedAt":
 			out.Values[i] = ec._BackgroundTask_taskCreatedAt(ctx, field, obj)
 		case "lastAttemptAt":
@@ -113099,6 +113519,8 @@ func (ec *executionContext) _RevenueLeakScan(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "activeClaim":
+			out.Values[i] = ec._RevenueLeakScan_activeClaim(ctx, field, obj)
 		case "mode":
 			out.Values[i] = ec._RevenueLeakScan_mode(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

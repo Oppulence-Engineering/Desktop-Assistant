@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { CheckCircle2, Key, Loader2, Plus, X } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@oppulence/ui/components/button";
+import { Input } from "@oppulence/ui/components/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@oppulence/ui/components/select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { PRODUCT_NAME, PRODUCT_PROVIDER_ID } from "@x/shared/dist/branding.js";

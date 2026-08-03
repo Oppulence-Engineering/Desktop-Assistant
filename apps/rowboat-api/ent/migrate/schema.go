@@ -555,6 +555,9 @@ var (
 		{Name: "model", Type: field.TypeString, Nullable: true},
 		{Name: "provider", Type: field.TypeString, Nullable: true},
 		{Name: "execution_target", Type: field.TypeString, Default: "desktop"},
+		{Name: "template_slug", Type: field.TypeString, Nullable: true},
+		{Name: "template_version", Type: field.TypeInt, Default: 0},
+		{Name: "system_managed", Type: field.TypeBool, Default: false},
 		{Name: "task_created_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_attempt_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_run_id", Type: field.TypeString, Nullable: true},
@@ -575,7 +578,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "background_tasks_users_background_tasks",
-				Columns:    []*schema.Column{BackgroundTasksColumns[21]},
+				Columns:    []*schema.Column{BackgroundTasksColumns[24]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -584,7 +587,7 @@ var (
 			{
 				Name:    "backgroundtask_slug_user_background_tasks",
 				Unique:  true,
-				Columns: []*schema.Column{BackgroundTasksColumns[3], BackgroundTasksColumns[21]},
+				Columns: []*schema.Column{BackgroundTasksColumns[3], BackgroundTasksColumns[24]},
 			},
 		},
 	}
@@ -2631,6 +2634,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "status", Type: field.TypeString, Default: "pending"},
+		{Name: "active_claim", Type: field.TypeString, Unique: true, Nullable: true},
 		{Name: "mode", Type: field.TypeString, Default: "local"},
 		{Name: "lookback_days", Type: field.TypeInt, Default: 90},
 		{Name: "threads_seen", Type: field.TypeInt, Default: 0},
@@ -2653,13 +2657,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "revenue_leak_scans_revenue_workspaces_scans",
-				Columns:    []*schema.Column{RevenueLeakScansColumns[15]},
+				Columns:    []*schema.Column{RevenueLeakScansColumns[16]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "revenue_leak_scans_users_revenue_leak_scans",
-				Columns:    []*schema.Column{RevenueLeakScansColumns[16]},
+				Columns:    []*schema.Column{RevenueLeakScansColumns[17]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -2668,7 +2672,7 @@ var (
 			{
 				Name:    "revenueleakscan_status_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RevenueLeakScansColumns[3], RevenueLeakScansColumns[15]},
+				Columns: []*schema.Column{RevenueLeakScansColumns[3], RevenueLeakScansColumns[16]},
 			},
 		},
 	}

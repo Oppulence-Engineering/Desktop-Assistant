@@ -200,6 +200,20 @@ export function runMemoryIndex(): Promise<IndexStats | { disabled: true }> {
     return inFlight;
 }
 
+/**
+ * Rebuild the derived semantic index from the knowledge vault. The index contains
+ * no source-of-truth content, so deleting it is recoverable; notes and settings are
+ * never touched. An active incremental pass is allowed to finish before cleanup.
+ */
+export async function rebuildMemoryIndex(): Promise<IndexStats | { disabled: true }> {
+    if (inFlight) await inFlight;
+    if (!loadMemoryConfig().enabled) return { disabled: true };
+    fs.rmSync(indexDir(), { recursive: true, force: true });
+    cached = null;
+    queryEmbedCache.clear();
+    return runMemoryIndex();
+}
+
 async function runMemoryIndexOnce(): Promise<IndexStats | { disabled: true }> {
     const cfg = loadMemoryConfig();
     if (!cfg.enabled) return { disabled: true };

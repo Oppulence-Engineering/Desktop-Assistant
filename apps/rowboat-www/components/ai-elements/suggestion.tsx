@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 import {
   ScrollArea,
   ScrollBar,
-} from "@/components/ui/scroll-area";
+} from "@oppulence/ui/components/scroll-area";
 import { cn } from "@/lib/utils";
 import type { ComponentProps } from "react";
 

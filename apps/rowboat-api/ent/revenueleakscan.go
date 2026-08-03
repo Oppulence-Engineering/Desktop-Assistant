@@ -26,6 +26,8 @@ type RevenueLeakScan struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
+	// ActiveClaim holds the value of the "active_claim" field.
+	ActiveClaim *string `json:"active_claim,omitempty"`
 	// Mode holds the value of the "mode" field.
 	Mode string `json:"mode,omitempty"`
 	// LookbackDays holds the value of the "lookback_days" field.
@@ -98,7 +100,7 @@ func (*RevenueLeakScan) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case revenueleakscan.FieldLookbackDays, revenueleakscan.FieldThreadsSeen, revenueleakscan.FieldCandidatesSeen, revenueleakscan.FieldRelationshipsCreated, revenueleakscan.FieldEvidencesCreated, revenueleakscan.FieldActionsCreated:
 			values[i] = new(sql.NullInt64)
-		case revenueleakscan.FieldStatus, revenueleakscan.FieldMode, revenueleakscan.FieldError:
+		case revenueleakscan.FieldStatus, revenueleakscan.FieldActiveClaim, revenueleakscan.FieldMode, revenueleakscan.FieldError:
 			values[i] = new(sql.NullString)
 		case revenueleakscan.FieldCreatedAt, revenueleakscan.FieldUpdatedAt, revenueleakscan.FieldStartedAt, revenueleakscan.FieldCompletedAt, revenueleakscan.FieldSourceFreshnessAt:
 			values[i] = new(sql.NullTime)
@@ -146,6 +148,13 @@ func (_m *RevenueLeakScan) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				_m.Status = value.String
+			}
+		case revenueleakscan.FieldActiveClaim:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field active_claim", values[i])
+			} else if value.Valid {
+				_m.ActiveClaim = new(string)
+				*_m.ActiveClaim = value.String
 			}
 		case revenueleakscan.FieldMode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -284,6 +293,11 @@ func (_m *RevenueLeakScan) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)
+	builder.WriteString(", ")
+	if v := _m.ActiveClaim; v != nil {
+		builder.WriteString("active_claim=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("mode=")
 	builder.WriteString(_m.Mode)

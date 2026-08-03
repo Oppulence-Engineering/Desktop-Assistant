@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Loader2, Play, X } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 
 /**
  * What you agreed to, before it becomes something you forgot.

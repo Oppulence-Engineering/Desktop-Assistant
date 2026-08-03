@@ -3,6 +3,7 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../.."),
+  transpilePackages: ["@oppulence/ui"],
   images: {
     unoptimized: true,
   },

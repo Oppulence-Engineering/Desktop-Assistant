@@ -106,6 +106,21 @@ func ExecutionTarget(v string) predicate.BackgroundTask {
 	return predicate.BackgroundTask(sql.FieldEQ(FieldExecutionTarget, v))
 }
 
+// TemplateSlug applies equality check predicate on the "template_slug" field. It's identical to TemplateSlugEQ.
+func TemplateSlug(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEQ(FieldTemplateSlug, v))
+}
+
+// TemplateVersion applies equality check predicate on the "template_version" field. It's identical to TemplateVersionEQ.
+func TemplateVersion(v int) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEQ(FieldTemplateVersion, v))
+}
+
+// SystemManaged applies equality check predicate on the "system_managed" field. It's identical to SystemManagedEQ.
+func SystemManaged(v bool) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEQ(FieldSystemManaged, v))
+}
+
 // TaskCreatedAt applies equality check predicate on the "task_created_at" field. It's identical to TaskCreatedAtEQ.
 func TaskCreatedAt(v time.Time) predicate.BackgroundTask {
 	return predicate.BackgroundTask(sql.FieldEQ(FieldTaskCreatedAt, v))
@@ -729,6 +744,131 @@ func ExecutionTargetEqualFold(v string) predicate.BackgroundTask {
 // ExecutionTargetContainsFold applies the ContainsFold predicate on the "execution_target" field.
 func ExecutionTargetContainsFold(v string) predicate.BackgroundTask {
 	return predicate.BackgroundTask(sql.FieldContainsFold(FieldExecutionTarget, v))
+}
+
+// TemplateSlugEQ applies the EQ predicate on the "template_slug" field.
+func TemplateSlugEQ(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEQ(FieldTemplateSlug, v))
+}
+
+// TemplateSlugNEQ applies the NEQ predicate on the "template_slug" field.
+func TemplateSlugNEQ(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldNEQ(FieldTemplateSlug, v))
+}
+
+// TemplateSlugIn applies the In predicate on the "template_slug" field.
+func TemplateSlugIn(vs ...string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldIn(FieldTemplateSlug, vs...))
+}
+
+// TemplateSlugNotIn applies the NotIn predicate on the "template_slug" field.
+func TemplateSlugNotIn(vs ...string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldNotIn(FieldTemplateSlug, vs...))
+}
+
+// TemplateSlugGT applies the GT predicate on the "template_slug" field.
+func TemplateSlugGT(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldGT(FieldTemplateSlug, v))
+}
+
+// TemplateSlugGTE applies the GTE predicate on the "template_slug" field.
+func TemplateSlugGTE(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldGTE(FieldTemplateSlug, v))
+}
+
+// TemplateSlugLT applies the LT predicate on the "template_slug" field.
+func TemplateSlugLT(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldLT(FieldTemplateSlug, v))
+}
+
+// TemplateSlugLTE applies the LTE predicate on the "template_slug" field.
+func TemplateSlugLTE(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldLTE(FieldTemplateSlug, v))
+}
+
+// TemplateSlugContains applies the Contains predicate on the "template_slug" field.
+func TemplateSlugContains(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldContains(FieldTemplateSlug, v))
+}
+
+// TemplateSlugHasPrefix applies the HasPrefix predicate on the "template_slug" field.
+func TemplateSlugHasPrefix(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldHasPrefix(FieldTemplateSlug, v))
+}
+
+// TemplateSlugHasSuffix applies the HasSuffix predicate on the "template_slug" field.
+func TemplateSlugHasSuffix(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldHasSuffix(FieldTemplateSlug, v))
+}
+
+// TemplateSlugIsNil applies the IsNil predicate on the "template_slug" field.
+func TemplateSlugIsNil() predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldIsNull(FieldTemplateSlug))
+}
+
+// TemplateSlugNotNil applies the NotNil predicate on the "template_slug" field.
+func TemplateSlugNotNil() predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldNotNull(FieldTemplateSlug))
+}
+
+// TemplateSlugEqualFold applies the EqualFold predicate on the "template_slug" field.
+func TemplateSlugEqualFold(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEqualFold(FieldTemplateSlug, v))
+}
+
+// TemplateSlugContainsFold applies the ContainsFold predicate on the "template_slug" field.
+func TemplateSlugContainsFold(v string) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldContainsFold(FieldTemplateSlug, v))
+}
+
+// TemplateVersionEQ applies the EQ predicate on the "template_version" field.
+func TemplateVersionEQ(v int) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEQ(FieldTemplateVersion, v))
+}
+
+// TemplateVersionNEQ applies the NEQ predicate on the "template_version" field.
+func TemplateVersionNEQ(v int) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldNEQ(FieldTemplateVersion, v))
+}
+
+// TemplateVersionIn applies the In predicate on the "template_version" field.
+func TemplateVersionIn(vs ...int) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldIn(FieldTemplateVersion, vs...))
+}
+
+// TemplateVersionNotIn applies the NotIn predicate on the "template_version" field.
+func TemplateVersionNotIn(vs ...int) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldNotIn(FieldTemplateVersion, vs...))
+}
+
+// TemplateVersionGT applies the GT predicate on the "template_version" field.
+func TemplateVersionGT(v int) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldGT(FieldTemplateVersion, v))
+}
+
+// TemplateVersionGTE applies the GTE predicate on the "template_version" field.
+func TemplateVersionGTE(v int) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldGTE(FieldTemplateVersion, v))
+}
+
+// TemplateVersionLT applies the LT predicate on the "template_version" field.
+func TemplateVersionLT(v int) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldLT(FieldTemplateVersion, v))
+}
+
+// TemplateVersionLTE applies the LTE predicate on the "template_version" field.
+func TemplateVersionLTE(v int) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldLTE(FieldTemplateVersion, v))
+}
+
+// SystemManagedEQ applies the EQ predicate on the "system_managed" field.
+func SystemManagedEQ(v bool) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldEQ(FieldSystemManaged, v))
+}
+
+// SystemManagedNEQ applies the NEQ predicate on the "system_managed" field.
+func SystemManagedNEQ(v bool) predicate.BackgroundTask {
+	return predicate.BackgroundTask(sql.FieldNEQ(FieldSystemManaged, v))
 }
 
 // TaskCreatedAtEQ applies the EQ predicate on the "task_created_at" field.

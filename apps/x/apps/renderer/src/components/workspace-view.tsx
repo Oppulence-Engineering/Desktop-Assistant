@@ -15,20 +15,20 @@ import {
   UploadCloud,
 } from "@/lib/icons";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from "@/components/ui/context-menu";
+} from "@oppulence/ui/components/context-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@oppulence/ui/components/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -36,8 +36,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+} from "@oppulence/ui/components/dialog";
+import { Input } from "@oppulence/ui/components/input";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -346,7 +346,7 @@ export function WorkspaceView({
             )}
           >
             <Home className="size-4" />
-            <span className="font-medium">Workspace</span>
+            <span className="font-medium">Workspaces</span>
           </button>
           {breadcrumbs.map((crumb, idx) => {
             const isLast = idx === breadcrumbs.length - 1;
@@ -375,17 +375,18 @@ export function WorkspaceView({
             size="sm"
             variant="outline"
             className="w-full"
+            disabled={isRoot && items.length === 0}
             onClick={() => actions.revealInFileManager(currentPath, true)}
           >
             <FolderOpen className="size-4" />
             Open in {fileManagerName}
           </Button>
-          {isRoot ? (
+          {isRoot && items.length > 0 ? (
             <Button size="sm" className="w-full" onClick={() => setAddOpen(true)}>
               <Plus className="size-4" />
               Add workspace
             </Button>
-          ) : (
+          ) : !isRoot ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" className="w-full">
@@ -404,7 +405,7 @@ export function WorkspaceView({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
+          ) : <span />}
         </div>
       </div>
       <input
@@ -443,7 +444,7 @@ export function WorkspaceView({
             <FolderIcon className="size-10 opacity-50" />
             <div className="text-sm">
               {isRoot
-                ? "No workspaces yet. Create one to get started."
+                ? "Create a workspace to organize a customer investigation, project, or recurring workflow."
                 : "This folder is empty. Drag files in or use New note / New folder."}
             </div>
             {isRoot && (
@@ -586,7 +587,7 @@ export function WorkspaceView({
           <DialogHeader>
             <DialogTitle>New workspace</DialogTitle>
             <DialogDescription>
-              Workspaces are top-level folders inside knowledge/Workspace.
+              Give related notes, files, and AI work a shared home.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">

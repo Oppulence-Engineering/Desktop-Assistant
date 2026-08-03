@@ -2,6 +2,12 @@ import { app, Menu, nativeImage, shell, Tray } from "electron";
 import type { NativeImage } from "electron";
 import { peekMeetingController, type MeetingController } from "./meeting-controller.js";
 import { appWindows, getMainWindow } from "./main-window.js";
+import { DICTATION_LANGUAGE_OPTIONS } from "@x/shared/dist/transcription.js";
+import {
+  getDesktopDictationLanguage,
+  setDesktopDictationLanguage,
+  setDesktopDictationLanguageChangedListener,
+} from "./desktop-dictation.js";
 
 /**
  * Menu-bar presence for meeting capture.
@@ -80,6 +86,7 @@ async function rebuild(controller: MeetingController): Promise<void> {
   // when they are unsure the meeting is being recorded properly.
   const micOnly = recording && !status.tracks.includes("system");
   const standingBy = controller.standingBy;
+  const dictationLanguage = getDesktopDictationLanguage();
 
   tray.setContextMenu(
     Menu.buildFromTemplate([
@@ -117,6 +124,20 @@ async function rebuild(controller: MeetingController): Promise<void> {
       ...(queueLabel ? [{ label: queueLabel, enabled: false } as const] : []),
       { type: "separator" as const },
       {
+        label: `Dictation language: ${DICTATION_LANGUAGE_OPTIONS.find((option) => option.value === dictationLanguage)?.label ?? "Auto-detect"}`,
+        submenu: DICTATION_LANGUAGE_OPTIONS.map((option) => ({
+          label: option.label,
+          type: "radio" as const,
+          checked: option.value === dictationLanguage,
+          click: () => {
+            void setDesktopDictationLanguage(option.value).catch((error) =>
+              console.warn("[dictation] could not change language", error),
+            );
+          },
+        })),
+      },
+      { type: "separator" as const },
+      {
         label: "Open recordings folder",
         click: () => {
           void controller.root().then((root) => shell.openPath(root));
@@ -149,6 +170,7 @@ export function initMeetingTray(controller: MeetingController): void {
   };
 
   controller.setStateListener(refresh);
+  setDesktopDictationLanguageChangedListener(refresh);
   refresh();
 }
 
@@ -159,6 +181,7 @@ export function destroyMeetingTray(): void {
   }
   tray?.destroy();
   tray = null;
+  setDesktopDictationLanguageChangedListener(null);
 }
 
 /** Stop a live capture cleanly on quit, so the last write is not a truncated file. */

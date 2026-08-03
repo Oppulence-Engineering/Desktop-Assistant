@@ -25,6 +25,7 @@ import {
 } from "./ipc.js";
 import { destroyMeetingTray, stopCaptureForQuit } from "./tray.js";
 import { destroyMeetingIndicator } from "./meeting-indicator.js";
+import { destroyDesktopDictation, initDesktopDictation } from "./desktop-dictation.js";
 import { calendarNotifyHooks } from "./meeting-autostart.js";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
@@ -323,8 +324,10 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
-    minWidth: 600,
-    minHeight: 480,
+    // The three-pane workspace and its tab strip need a real desktop canvas.
+    // Below this size controls truncate into ambiguous icon-only clusters.
+    minWidth: 1024,
+    minHeight: 640,
     show: false, // Don't show until ready
     backgroundColor: "#252525", // Prevent white flash (matches dark mode)
     titleBarStyle: "hiddenInset",
@@ -552,6 +555,7 @@ app.whenReady().then(async () => {
   registerLiveCrashListeners();
 
   createWindow();
+  initDesktopDictation();
 
   initializeExecutionEnvironment().catch((error) => {
     console.error("Failed to initialize execution environment:", error);
@@ -693,6 +697,7 @@ function runQuitCleanup(): void {
   stopCaptureForQuit();
   destroyMeetingIndicator();
   destroyMeetingTray();
+  destroyDesktopDictation();
   // Clean up watcher on app quit
   stopWorkspaceWatcher();
   stopRunsWatcher();

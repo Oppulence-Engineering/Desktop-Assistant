@@ -4,7 +4,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from "@oppulence/ui/components/collapsible";
 import { cn } from "@/lib/utils";
 import { ChevronDownIcon, GlobeIcon, LoaderIcon } from "@/lib/icons";
 import { useEffect, useMemo, useState } from "react";

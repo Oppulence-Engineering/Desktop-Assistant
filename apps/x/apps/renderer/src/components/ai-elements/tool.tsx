@@ -4,12 +4,12 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from "@oppulence/ui/components/collapsible";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
 import type { ToolUIPart } from "ai";
 import {

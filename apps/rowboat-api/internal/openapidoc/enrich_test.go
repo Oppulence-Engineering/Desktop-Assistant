@@ -37,6 +37,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/background-task-templates/{templateSlug}",
 		"/v1/background-task-templates/{templateSlug}/instantiate",
 		"/v1/background-tasks",
+		"/v1/background-tasks/first-party/ensure",
 		"/v1/background-tasks/{slug}",
 		"/v1/background-tasks/{slug}/artifact",
 		"/v1/background-tasks/{slug}/runs",
@@ -123,6 +124,12 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 			t.Fatalf("missing runtime schema %s", name)
 		}
 	}
+	taskProperties := asObj(asObj(schemas["BackgroundTask"])["properties"])
+	for _, field := range []string{"templateSlug", "templateVersion", "systemManaged", "scheduleSyncState"} {
+		if taskProperties[field] == nil {
+			t.Fatalf("BackgroundTask is missing %s", field)
+		}
+	}
 	creditLedger := asObj(schemas["CreditLedger"])
 	delta := asObj(asObj(creditLedger["properties"])["delta"])
 	if delta["description"] == nil || delta["example"] == nil {
@@ -140,7 +147,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("parse checked-in openapi json: %v", err)
 	}
 	paths := asObj(spec["paths"])
-	if paths["/v1/me"] == nil || paths["/v1/background-task-templates"] == nil || paths["/v1/background-tasks"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events/stream"] == nil || paths["/v1/llm/chat/completions"] == nil || paths["/v1/connectors"] == nil || paths["/v1/connections/{name}/api-key"] == nil || paths["/v1/slack-oauth/workspaces"] == nil || paths["/v1/slack-oauth/thread/read"] == nil {
+	if paths["/v1/me"] == nil || paths["/v1/background-task-templates"] == nil || paths["/v1/background-tasks"] == nil || paths["/v1/background-tasks/first-party/ensure"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events/stream"] == nil || paths["/v1/llm/chat/completions"] == nil || paths["/v1/connectors"] == nil || paths["/v1/connections/{name}/api-key"] == nil || paths["/v1/slack-oauth/workspaces"] == nil || paths["/v1/slack-oauth/thread/read"] == nil {
 		t.Fatal("checked-in openapi json is missing mounted runtime API paths")
 	}
 	if paths["/credit-ledgers"] != nil {

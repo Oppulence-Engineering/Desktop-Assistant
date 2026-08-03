@@ -9316,6 +9316,37 @@ type BackgroundTaskWhereInput struct {
 	ExecutionTargetEqualFold    *string  `json:"executionTargetEqualFold,omitempty"`
 	ExecutionTargetContainsFold *string  `json:"executionTargetContainsFold,omitempty"`
 
+	// "template_slug" field predicates.
+	TemplateSlug             *string  `json:"templateSlug,omitempty"`
+	TemplateSlugNEQ          *string  `json:"templateSlugNEQ,omitempty"`
+	TemplateSlugIn           []string `json:"templateSlugIn,omitempty"`
+	TemplateSlugNotIn        []string `json:"templateSlugNotIn,omitempty"`
+	TemplateSlugGT           *string  `json:"templateSlugGT,omitempty"`
+	TemplateSlugGTE          *string  `json:"templateSlugGTE,omitempty"`
+	TemplateSlugLT           *string  `json:"templateSlugLT,omitempty"`
+	TemplateSlugLTE          *string  `json:"templateSlugLTE,omitempty"`
+	TemplateSlugContains     *string  `json:"templateSlugContains,omitempty"`
+	TemplateSlugHasPrefix    *string  `json:"templateSlugHasPrefix,omitempty"`
+	TemplateSlugHasSuffix    *string  `json:"templateSlugHasSuffix,omitempty"`
+	TemplateSlugIsNil        bool     `json:"templateSlugIsNil,omitempty"`
+	TemplateSlugNotNil       bool     `json:"templateSlugNotNil,omitempty"`
+	TemplateSlugEqualFold    *string  `json:"templateSlugEqualFold,omitempty"`
+	TemplateSlugContainsFold *string  `json:"templateSlugContainsFold,omitempty"`
+
+	// "template_version" field predicates.
+	TemplateVersion      *int  `json:"templateVersion,omitempty"`
+	TemplateVersionNEQ   *int  `json:"templateVersionNEQ,omitempty"`
+	TemplateVersionIn    []int `json:"templateVersionIn,omitempty"`
+	TemplateVersionNotIn []int `json:"templateVersionNotIn,omitempty"`
+	TemplateVersionGT    *int  `json:"templateVersionGT,omitempty"`
+	TemplateVersionGTE   *int  `json:"templateVersionGTE,omitempty"`
+	TemplateVersionLT    *int  `json:"templateVersionLT,omitempty"`
+	TemplateVersionLTE   *int  `json:"templateVersionLTE,omitempty"`
+
+	// "system_managed" field predicates.
+	SystemManaged    *bool `json:"systemManaged,omitempty"`
+	SystemManagedNEQ *bool `json:"systemManagedNEQ,omitempty"`
+
 	// "task_created_at" field predicates.
 	TaskCreatedAt       *time.Time  `json:"taskCreatedAt,omitempty"`
 	TaskCreatedAtNEQ    *time.Time  `json:"taskCreatedAtNEQ,omitempty"`
@@ -9917,6 +9948,81 @@ func (i *BackgroundTaskWhereInput) P() (predicate.BackgroundTask, error) {
 	}
 	if i.ExecutionTargetContainsFold != nil {
 		predicates = append(predicates, backgroundtask.ExecutionTargetContainsFold(*i.ExecutionTargetContainsFold))
+	}
+	if i.TemplateSlug != nil {
+		predicates = append(predicates, backgroundtask.TemplateSlugEQ(*i.TemplateSlug))
+	}
+	if i.TemplateSlugNEQ != nil {
+		predicates = append(predicates, backgroundtask.TemplateSlugNEQ(*i.TemplateSlugNEQ))
+	}
+	if len(i.TemplateSlugIn) > 0 {
+		predicates = append(predicates, backgroundtask.TemplateSlugIn(i.TemplateSlugIn...))
+	}
+	if len(i.TemplateSlugNotIn) > 0 {
+		predicates = append(predicates, backgroundtask.TemplateSlugNotIn(i.TemplateSlugNotIn...))
+	}
+	if i.TemplateSlugGT != nil {
+		predicates = append(predicates, backgroundtask.TemplateSlugGT(*i.TemplateSlugGT))
+	}
+	if i.TemplateSlugGTE != nil {
+		predicates = append(predicates, backgroundtask.TemplateSlugGTE(*i.TemplateSlugGTE))
+	}
+	if i.TemplateSlugLT != nil {
+		predicates = append(predicates, backgroundtask.TemplateSlugLT(*i.TemplateSlugLT))
+	}
+	if i.TemplateSlugLTE != nil {
+		predicates = append(predicates, backgroundtask.TemplateSlugLTE(*i.TemplateSlugLTE))
+	}
+	if i.TemplateSlugContains != nil {
+		predicates = append(predicates, backgroundtask.TemplateSlugContains(*i.TemplateSlugContains))
+	}
+	if i.TemplateSlugHasPrefix != nil {
+		predicates = append(predicates, backgroundtask.TemplateSlugHasPrefix(*i.TemplateSlugHasPrefix))
+	}
+	if i.TemplateSlugHasSuffix != nil {
+		predicates = append(predicates, backgroundtask.TemplateSlugHasSuffix(*i.TemplateSlugHasSuffix))
+	}
+	if i.TemplateSlugIsNil {
+		predicates = append(predicates, backgroundtask.TemplateSlugIsNil())
+	}
+	if i.TemplateSlugNotNil {
+		predicates = append(predicates, backgroundtask.TemplateSlugNotNil())
+	}
+	if i.TemplateSlugEqualFold != nil {
+		predicates = append(predicates, backgroundtask.TemplateSlugEqualFold(*i.TemplateSlugEqualFold))
+	}
+	if i.TemplateSlugContainsFold != nil {
+		predicates = append(predicates, backgroundtask.TemplateSlugContainsFold(*i.TemplateSlugContainsFold))
+	}
+	if i.TemplateVersion != nil {
+		predicates = append(predicates, backgroundtask.TemplateVersionEQ(*i.TemplateVersion))
+	}
+	if i.TemplateVersionNEQ != nil {
+		predicates = append(predicates, backgroundtask.TemplateVersionNEQ(*i.TemplateVersionNEQ))
+	}
+	if len(i.TemplateVersionIn) > 0 {
+		predicates = append(predicates, backgroundtask.TemplateVersionIn(i.TemplateVersionIn...))
+	}
+	if len(i.TemplateVersionNotIn) > 0 {
+		predicates = append(predicates, backgroundtask.TemplateVersionNotIn(i.TemplateVersionNotIn...))
+	}
+	if i.TemplateVersionGT != nil {
+		predicates = append(predicates, backgroundtask.TemplateVersionGT(*i.TemplateVersionGT))
+	}
+	if i.TemplateVersionGTE != nil {
+		predicates = append(predicates, backgroundtask.TemplateVersionGTE(*i.TemplateVersionGTE))
+	}
+	if i.TemplateVersionLT != nil {
+		predicates = append(predicates, backgroundtask.TemplateVersionLT(*i.TemplateVersionLT))
+	}
+	if i.TemplateVersionLTE != nil {
+		predicates = append(predicates, backgroundtask.TemplateVersionLTE(*i.TemplateVersionLTE))
+	}
+	if i.SystemManaged != nil {
+		predicates = append(predicates, backgroundtask.SystemManagedEQ(*i.SystemManaged))
+	}
+	if i.SystemManagedNEQ != nil {
+		predicates = append(predicates, backgroundtask.SystemManagedNEQ(*i.SystemManagedNEQ))
 	}
 	if i.TaskCreatedAt != nil {
 		predicates = append(predicates, backgroundtask.TaskCreatedAtEQ(*i.TaskCreatedAt))
@@ -38996,6 +39102,23 @@ type RevenueLeakScanWhereInput struct {
 	StatusEqualFold    *string  `json:"statusEqualFold,omitempty"`
 	StatusContainsFold *string  `json:"statusContainsFold,omitempty"`
 
+	// "active_claim" field predicates.
+	ActiveClaim             *string  `json:"activeClaim,omitempty"`
+	ActiveClaimNEQ          *string  `json:"activeClaimNEQ,omitempty"`
+	ActiveClaimIn           []string `json:"activeClaimIn,omitempty"`
+	ActiveClaimNotIn        []string `json:"activeClaimNotIn,omitempty"`
+	ActiveClaimGT           *string  `json:"activeClaimGT,omitempty"`
+	ActiveClaimGTE          *string  `json:"activeClaimGTE,omitempty"`
+	ActiveClaimLT           *string  `json:"activeClaimLT,omitempty"`
+	ActiveClaimLTE          *string  `json:"activeClaimLTE,omitempty"`
+	ActiveClaimContains     *string  `json:"activeClaimContains,omitempty"`
+	ActiveClaimHasPrefix    *string  `json:"activeClaimHasPrefix,omitempty"`
+	ActiveClaimHasSuffix    *string  `json:"activeClaimHasSuffix,omitempty"`
+	ActiveClaimIsNil        bool     `json:"activeClaimIsNil,omitempty"`
+	ActiveClaimNotNil       bool     `json:"activeClaimNotNil,omitempty"`
+	ActiveClaimEqualFold    *string  `json:"activeClaimEqualFold,omitempty"`
+	ActiveClaimContainsFold *string  `json:"activeClaimContainsFold,omitempty"`
+
 	// "mode" field predicates.
 	Mode             *string  `json:"mode,omitempty"`
 	ModeNEQ          *string  `json:"modeNEQ,omitempty"`
@@ -39314,6 +39437,51 @@ func (i *RevenueLeakScanWhereInput) P() (predicate.RevenueLeakScan, error) {
 	}
 	if i.StatusContainsFold != nil {
 		predicates = append(predicates, revenueleakscan.StatusContainsFold(*i.StatusContainsFold))
+	}
+	if i.ActiveClaim != nil {
+		predicates = append(predicates, revenueleakscan.ActiveClaimEQ(*i.ActiveClaim))
+	}
+	if i.ActiveClaimNEQ != nil {
+		predicates = append(predicates, revenueleakscan.ActiveClaimNEQ(*i.ActiveClaimNEQ))
+	}
+	if len(i.ActiveClaimIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ActiveClaimIn(i.ActiveClaimIn...))
+	}
+	if len(i.ActiveClaimNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ActiveClaimNotIn(i.ActiveClaimNotIn...))
+	}
+	if i.ActiveClaimGT != nil {
+		predicates = append(predicates, revenueleakscan.ActiveClaimGT(*i.ActiveClaimGT))
+	}
+	if i.ActiveClaimGTE != nil {
+		predicates = append(predicates, revenueleakscan.ActiveClaimGTE(*i.ActiveClaimGTE))
+	}
+	if i.ActiveClaimLT != nil {
+		predicates = append(predicates, revenueleakscan.ActiveClaimLT(*i.ActiveClaimLT))
+	}
+	if i.ActiveClaimLTE != nil {
+		predicates = append(predicates, revenueleakscan.ActiveClaimLTE(*i.ActiveClaimLTE))
+	}
+	if i.ActiveClaimContains != nil {
+		predicates = append(predicates, revenueleakscan.ActiveClaimContains(*i.ActiveClaimContains))
+	}
+	if i.ActiveClaimHasPrefix != nil {
+		predicates = append(predicates, revenueleakscan.ActiveClaimHasPrefix(*i.ActiveClaimHasPrefix))
+	}
+	if i.ActiveClaimHasSuffix != nil {
+		predicates = append(predicates, revenueleakscan.ActiveClaimHasSuffix(*i.ActiveClaimHasSuffix))
+	}
+	if i.ActiveClaimIsNil {
+		predicates = append(predicates, revenueleakscan.ActiveClaimIsNil())
+	}
+	if i.ActiveClaimNotNil {
+		predicates = append(predicates, revenueleakscan.ActiveClaimNotNil())
+	}
+	if i.ActiveClaimEqualFold != nil {
+		predicates = append(predicates, revenueleakscan.ActiveClaimEqualFold(*i.ActiveClaimEqualFold))
+	}
+	if i.ActiveClaimContainsFold != nil {
+		predicates = append(predicates, revenueleakscan.ActiveClaimContainsFold(*i.ActiveClaimContainsFold))
 	}
 	if i.Mode != nil {
 		predicates = append(predicates, revenueleakscan.ModeEQ(*i.Mode))

@@ -1912,6 +1912,21 @@ func (_q *BackgroundTaskQuery) collectField(ctx context.Context, oneNode bool, o
 				selectedFields = append(selectedFields, backgroundtask.FieldExecutionTarget)
 				fieldSeen[backgroundtask.FieldExecutionTarget] = struct{}{}
 			}
+		case "templateSlug":
+			if _, ok := fieldSeen[backgroundtask.FieldTemplateSlug]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldTemplateSlug)
+				fieldSeen[backgroundtask.FieldTemplateSlug] = struct{}{}
+			}
+		case "templateVersion":
+			if _, ok := fieldSeen[backgroundtask.FieldTemplateVersion]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldTemplateVersion)
+				fieldSeen[backgroundtask.FieldTemplateVersion] = struct{}{}
+			}
+		case "systemManaged":
+			if _, ok := fieldSeen[backgroundtask.FieldSystemManaged]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldSystemManaged)
+				fieldSeen[backgroundtask.FieldSystemManaged] = struct{}{}
+			}
 		case "taskCreatedAt":
 			if _, ok := fieldSeen[backgroundtask.FieldTaskCreatedAt]; !ok {
 				selectedFields = append(selectedFields, backgroundtask.FieldTaskCreatedAt)
@@ -8040,6 +8055,11 @@ func (_q *RevenueLeakScanQuery) collectField(ctx context.Context, oneNode bool, 
 			if _, ok := fieldSeen[revenueleakscan.FieldStatus]; !ok {
 				selectedFields = append(selectedFields, revenueleakscan.FieldStatus)
 				fieldSeen[revenueleakscan.FieldStatus] = struct{}{}
+			}
+		case "activeClaim":
+			if _, ok := fieldSeen[revenueleakscan.FieldActiveClaim]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldActiveClaim)
+				fieldSeen[revenueleakscan.FieldActiveClaim] = struct{}{}
 			}
 		case "mode":
 			if _, ok := fieldSeen[revenueleakscan.FieldMode]; !ok {

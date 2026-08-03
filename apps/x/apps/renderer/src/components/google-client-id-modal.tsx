@@ -7,9 +7,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from "@oppulence/ui/components/dialog";
+import { Button } from "@oppulence/ui/components/button";
+import { Input } from "@oppulence/ui/components/input";
 
 const GOOGLE_CLIENT_ID_SETUP_GUIDE_URL =
   "https://github.com/Oppulence-Engineering/Desktop-Assistant/blob/main/google-setup.md";

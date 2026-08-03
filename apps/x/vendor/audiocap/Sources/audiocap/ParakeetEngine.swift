@@ -9,7 +9,7 @@ import Foundation
 /// Engine. The trade is a one-time ~600 MB model download, which is why the host treats
 /// this as opt-in and keeps whisper as the default and the fallback.
 ///
-/// v3 is the default and is multilingual (25 European languages); v2 is English-only
+/// v3 is the default and is multilingual (28 European languages); v2 is English-only
 /// with slightly higher recall on English. The host picks.
 enum ParakeetEngine {
     static let engineName = "parakeet"
@@ -83,6 +83,20 @@ enum ParakeetEngine {
         language: String?,
         emitProgress: Bool
     ) async throws -> [TranscriptSegment] {
+        let models = try await prepare(version: version, emitProgress: emitProgress)
+        let manager = AsrManager()
+        try await manager.loadModels(models)
+        defer { Task { await manager.cleanup() } }
+        return try await transcribeLoaded(audio, manager: manager, language: language)
+    }
+
+    /// Transcribe with models that are already resident. Used by the persistent
+    /// desktop-dictation worker so only actual inference is on the release-to-paste path.
+    static func transcribeLoaded(
+        _ audio: URL,
+        manager: AsrManager,
+        language: String?
+    ) async throws -> [TranscriptSegment] {
         // An empty or truncated file makes AVFoundation raise an Objective-C exception
         // deep inside the resampler, which Swift cannot catch — it would take the whole
         // process down. Check readability up front instead.
@@ -101,11 +115,6 @@ enum ParakeetEngine {
         } catch {
             throw EngineError.unreadableAudio(audio, "\(error)")
         }
-
-        let models = try await prepare(version: version, emitProgress: emitProgress)
-        let manager = AsrManager()
-        try await manager.loadModels(models)
-        defer { Task { await manager.cleanup() } }
 
         var state = try TdtDecoderState()
         let result = try await manager.transcribe(

@@ -22,16 +22,16 @@ import {
   type SettingsSection,
   type ThemePreference,
 } from "@/components/app-shell";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
+import { Input } from "@oppulence/ui/components/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@oppulence/ui/components/select";
 import { dashboardFetch } from "@/lib/auth/client";
 import { getPref, setPref } from "@/lib/console-prefs";
 import { cn } from "@/lib/utils";

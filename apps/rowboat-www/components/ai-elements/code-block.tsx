@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 import { cn } from "@/lib/utils";
 import { Check, Copy } from "@phosphor-icons/react";
 import {

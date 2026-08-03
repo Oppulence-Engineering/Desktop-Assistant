@@ -202,6 +202,14 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			<-ctx.Done()
 			temporalClient.Close()
 		}()
+		// Reconcile the six README product workflows for every tenant. The
+		// definitions are versioned, user pausing is preserved, and unique task
+		// slugs make this safe across all API replicas.
+		go func() {
+			if err := backgroundTasksH.RunFirstPartyProvisioner(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				log.Error("first-party workflow provisioner stopped", zap.Error(err))
+			}
+		}()
 	}
 	llmH := llm.New(prices, gate, sec, client, log)
 	llmH.SetUpstreams(cfg.OpenAIBaseURL, cfg.OpenRouterBaseURL) // empty → provider defaults
@@ -622,6 +630,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Use(rl.PerUserWindow(ratelimit.GroupTaskBurst, 120, 10*time.Second))
 			r.Get("/", backgroundTasksH.List)
 			r.Post("/", backgroundTasksH.Create)
+			r.Post("/first-party/ensure", backgroundTasksH.EnsureFirstParty)
 			r.Get("/{slug}", backgroundTasksH.Get)
 			r.Patch("/{slug}", backgroundTasksH.Patch)
 			r.Delete("/{slug}", backgroundTasksH.Delete)

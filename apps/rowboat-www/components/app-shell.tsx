@@ -12,6 +12,7 @@ import {
   CaretUpDown,
   ChatsCircle,
   Clock,
+  CloudArrowUp,
   Cpu,
   DotsThree,
   Folder,
@@ -36,8 +37,12 @@ import {
 } from "@phosphor-icons/react";
 
 import { AppIcon } from "@/components/ui/app-icon";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Avatar, AvatarFallback, AvatarImage } from "@oppulence/ui/components/avatar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@oppulence/ui/components/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,8 +51,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
+} from "@oppulence/ui/components/dropdown-menu";
+import { Separator } from "@oppulence/ui/components/separator";
 import { dashboardFetch } from "@/lib/auth/client";
 import { usePref } from "@/lib/console-prefs";
 import { cn } from "@/lib/utils";
@@ -430,6 +435,7 @@ export function AppShellSidebar({
   onSelectResource,
   onNavigateChat,
   onNavigateRevenue,
+  onNavigateWorkflows,
   view = "chat",
   settingsSection = "overview",
   onOpenSettings,
@@ -446,7 +452,8 @@ export function AppShellSidebar({
   onSelectResource?: SidebarSelect;
   onNavigateChat?: () => void;
   onNavigateRevenue?: () => void;
-  view?: "chat" | "settings" | "revenue";
+  onNavigateWorkflows?: () => void;
+  view?: "chat" | "settings" | "revenue" | "workflows";
   settingsSection?: SettingsSection;
   onOpenSettings?: (section: SettingsSection) => void;
   onCloseSettings?: () => void;
@@ -651,6 +658,12 @@ export function AppShellSidebar({
               icon={AddressBook}
               label="Relationships"
               onClick={onNavigateRevenue}
+            />
+            <SidebarNavItem
+              active={view === "workflows"}
+              icon={CloudArrowUp}
+              label="Cloud workflows"
+              onClick={onNavigateWorkflows}
             />
             {groups.map((group) => (
               <Collapsible

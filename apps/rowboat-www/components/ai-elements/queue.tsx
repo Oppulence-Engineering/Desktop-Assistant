@@ -1,9 +1,9 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@oppulence/ui/components/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@oppulence/ui/components/collapsible";
+import { ScrollArea } from "@oppulence/ui/components/scroll-area";
 import { cn } from "@/lib/utils";
 import { CaretDown, Paperclip } from "@phosphor-icons/react";
 import type { ComponentProps } from "react";

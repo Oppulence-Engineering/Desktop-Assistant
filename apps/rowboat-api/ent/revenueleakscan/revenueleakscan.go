@@ -21,6 +21,8 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldActiveClaim holds the string denoting the active_claim field in the database.
+	FieldActiveClaim = "active_claim"
 	// FieldMode holds the string denoting the mode field in the database.
 	FieldMode = "mode"
 	// FieldLookbackDays holds the string denoting the lookback_days field in the database.
@@ -71,6 +73,7 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldStatus,
+	FieldActiveClaim,
 	FieldMode,
 	FieldLookbackDays,
 	FieldThreadsSeen,
@@ -170,6 +173,11 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByActiveClaim orders the results by the active_claim field.
+func ByActiveClaim(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldActiveClaim, opts...).ToFunc()
 }
 
 // ByMode orders the results by the mode field.

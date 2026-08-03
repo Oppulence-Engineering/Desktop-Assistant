@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Loader2, Mic, TriangleAlertIcon } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@oppulence/ui/components/dialog";
 import { cn } from "@/lib/utils";
 import type { MeetingLevels, MeetingTrackId } from "@x/shared/dist/meetings.js";
 

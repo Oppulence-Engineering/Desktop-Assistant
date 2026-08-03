@@ -2732,6 +2732,9 @@ type BackgroundTask implements Node {
   model: String
   provider: String
   executionTarget: String!
+  templateSlug: String
+  templateVersion: Int!
+  systemManaged: Boolean!
   taskCreatedAt: Time
   lastAttemptAt: Time
   lastRunID: String
@@ -4081,6 +4084,40 @@ input BackgroundTaskWhereInput {
   executionTargetHasSuffix: String
   executionTargetEqualFold: String
   executionTargetContainsFold: String
+  """
+  template_slug field predicates
+  """
+  templateSlug: String
+  templateSlugNEQ: String
+  templateSlugIn: [String!]
+  templateSlugNotIn: [String!]
+  templateSlugGT: String
+  templateSlugGTE: String
+  templateSlugLT: String
+  templateSlugLTE: String
+  templateSlugContains: String
+  templateSlugHasPrefix: String
+  templateSlugHasSuffix: String
+  templateSlugIsNil: Boolean
+  templateSlugNotNil: Boolean
+  templateSlugEqualFold: String
+  templateSlugContainsFold: String
+  """
+  template_version field predicates
+  """
+  templateVersion: Int
+  templateVersionNEQ: Int
+  templateVersionIn: [Int!]
+  templateVersionNotIn: [Int!]
+  templateVersionGT: Int
+  templateVersionGTE: Int
+  templateVersionLT: Int
+  templateVersionLTE: Int
+  """
+  system_managed field predicates
+  """
+  systemManaged: Boolean
+  systemManagedNEQ: Boolean
   """
   task_created_at field predicates
   """
@@ -11788,6 +11825,7 @@ type RevenueLeakScan implements Node {
   createdAt: Time!
   updatedAt: Time!
   status: String!
+  activeClaim: String
   mode: String!
   lookbackDays: Int!
   threadsSeen: Int!
@@ -11859,6 +11897,24 @@ input RevenueLeakScanWhereInput {
   statusHasSuffix: String
   statusEqualFold: String
   statusContainsFold: String
+  """
+  active_claim field predicates
+  """
+  activeClaim: String
+  activeClaimNEQ: String
+  activeClaimIn: [String!]
+  activeClaimNotIn: [String!]
+  activeClaimGT: String
+  activeClaimGTE: String
+  activeClaimLT: String
+  activeClaimLTE: String
+  activeClaimContains: String
+  activeClaimHasPrefix: String
+  activeClaimHasSuffix: String
+  activeClaimIsNil: Boolean
+  activeClaimNotNil: Boolean
+  activeClaimEqualFold: String
+  activeClaimContainsFold: String
   """
   mode field predicates
   """

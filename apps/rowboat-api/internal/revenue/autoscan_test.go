@@ -2,6 +2,7 @@ package revenue
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -117,6 +118,48 @@ func TestAutoScannerStartsAndRespectsInterval(t *testing.T) {
 	countAfterSecond := f.client.RevenueLeakScan.Query().CountX(f.ctx)
 	if countAfterSecond != 1 {
 		t.Fatalf("min-interval must suppress a second scan, got %d", countAfterSecond)
+	}
+}
+
+func TestAutoScannerFiltersDueUsersBeforeCycleLimit(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 2, 10, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	f.svc.SetSweeper(&fakeSweeper{email: selfAddr})
+
+	users := []*ent.User{f.user}
+	for i := 1; i < 3; i++ {
+		users = append(users, newUser(t, f.client, fmt.Sprintf("due-%d@example.com", i), fmt.Sprintf("due_%d", i)))
+	}
+	for i, u := range users {
+		uctx := auth.WithUser(context.Background(), u)
+		f.client.OAuthConnection.Create().
+			SetUser(u).
+			SetProvider("google").
+			SetRefreshTokenEncrypted([]byte("x")).
+			SetScopes([]string{scopeGmailReadonly}).
+			SetExternalAccountID(fmt.Sprintf("due-%d@gmail.com", i)).
+			SaveX(uctx)
+		if i < 2 {
+			workspace, err := f.svc.CurrentWorkspace(uctx, u)
+			if err != nil {
+				t.Fatal(err)
+			}
+			f.client.RevenueLeakScan.Create().
+				SetWorkspace(workspace).
+				SetUser(u).
+				SetStatus("completed").
+				SetStartedAt(now.Add(-time.Hour)).
+				SetCompletedAt(now.Add(-59 * time.Minute)).
+				SaveX(uctx)
+		}
+	}
+
+	scanner := NewAutoScanner(f.svc, AutoScanConfig{MinPerUser: 24 * time.Hour, MaxPerCycle: 2}, zap.NewNop())
+	scanner.sweep(context.Background())
+
+	if count := users[2].QueryRevenueLeakScans().CountX(auth.WithUser(context.Background(), users[2])); count != 1 {
+		t.Fatalf("later due account was starved behind two recent accounts: scans=%d", count)
 	}
 }
 

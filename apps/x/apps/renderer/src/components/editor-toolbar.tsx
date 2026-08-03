@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef } from "react";
 import type { Editor } from "@tiptap/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@oppulence/ui/components/button";
+import { Input } from "@oppulence/ui/components/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@oppulence/ui/components/popover";
 import {
   BoldIcon,
   ItalicIcon,
@@ -33,7 +33,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@oppulence/ui/components/dropdown-menu";
 
 interface EditorToolbarProps {
   editor: Editor | null;

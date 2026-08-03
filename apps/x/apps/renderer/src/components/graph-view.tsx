@@ -1,7 +1,8 @@
 import type * as React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Search, X } from "@/lib/icons";
-import { Input } from "@/components/ui/input";
+import { Button } from "@oppulence/ui/components/button";
+import { Input } from "@oppulence/ui/components/input";
 
 export type GraphNode = {
   id: string;
@@ -11,11 +12,20 @@ export type GraphNode = {
   group: string;
   color: string;
   stroke: string;
+  shape?: "circle" | "square" | "diamond" | "pill";
+  icon?: React.ReactNode;
+  ariaLabel?: string;
+  badge?: string;
+  priorityLabel?: boolean;
 };
 
 export type GraphEdge = {
+  id?: string;
   source: string;
   target: string;
+  label?: string;
+  kind?: string;
+  directed?: boolean;
 };
 
 type GraphViewProps = {
@@ -24,6 +34,10 @@ type GraphViewProps = {
   isLoading?: boolean;
   error?: string | null;
   onSelectNode?: (id: string) => void;
+  selectedNodeId?: string;
+  showMiniMap?: boolean;
+  layout?: "force" | "radial" | "timeline";
+  emptyState?: React.ReactNode;
 };
 
 type NodePosition = {
@@ -49,14 +63,37 @@ const FLOAT_SPEED_BASE = 0.0006;
 const FLOAT_SPEED_VARIANCE = 0.00025;
 const MAX_FORCE_SIMULATION_NODES = 180;
 const MAX_AMBIENT_ANIMATION_NODES = 140;
+const MAX_LAYOUT_CACHE_ENTRIES = 4;
+const topologyLayoutCache = new Map<string, Map<string, NodePosition>>();
+const latestNodePositions = new Map<string, NodePosition>();
 
-export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: GraphViewProps) {
+const clonePositions = (positions: Map<string, NodePosition>) =>
+  new Map(Array.from(positions, ([id, position]) => [id, { ...position }]));
+
+const rememberLayout = (key: string, positions: Map<string, NodePosition>) => {
+  topologyLayoutCache.delete(key);
+  topologyLayoutCache.set(key, clonePositions(positions));
+  for (const [id, position] of positions) latestNodePositions.set(id, { ...position });
+  while (topologyLayoutCache.size > MAX_LAYOUT_CACHE_ENTRIES) {
+    const oldest = topologyLayoutCache.keys().next().value;
+    if (oldest) topologyLayoutCache.delete(oldest);
+    else break;
+  }
+};
+
+export function GraphView({
+  nodes,
+  edges,
+  isLoading,
+  error,
+  onSelectNode,
+  selectedNodeId,
+  showMiniMap = false,
+  layout = "force",
+  emptyState,
+}: GraphViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const positionsRef = useRef<Map<string, NodePosition>>(new Map());
-  const motionSeedsRef = useRef<Map<string, { phase: number; amplitude: number; speed: number }>>(
-    new Map(),
-  );
-  const motionTimeRef = useRef(0);
   const draggingRef = useRef<{
     id: string;
     offsetX: number;
@@ -70,15 +107,40 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
     originY: number;
   } | null>(null);
   const hasCenteredRef = useRef(false);
+  const autoFittedTopologyRef = useRef<string | undefined>(undefined);
   const [viewport, setViewport] = useState({ width: 1, height: 1 });
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(0.6);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const [, forceRender] = useState(0);
+  const [layoutVersion, setLayoutVersion] = useState(0);
+  const [motionTime, setMotionTime] = useState(0);
+  const [positionSnapshot, setPositionSnapshot] = useState<Map<string, NodePosition>>(new Map());
+  const [reducedMotion, setReducedMotion] = useState(
+    () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
+  );
   const nodeIds = useMemo(() => nodes.map((node) => node.id), [nodes]);
-  const useStaticLayout = nodes.length > MAX_FORCE_SIMULATION_NODES;
+  const topologyKey = useMemo(
+    () =>
+      `${layout}|${nodes
+        .map((node) => `${node.id}:${node.group}`)
+        .sort()
+        .join(";")}|${edges
+        .map((edge) => `${edge.source}>${edge.target}`)
+        .sort()
+        .join(";")}`,
+    [edges, layout, nodes],
+  );
+  const useStaticLayout = nodes.length > MAX_FORCE_SIMULATION_NODES || layout !== "force";
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(media.matches);
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   const edgeList = useMemo(() => edges.filter((edge) => edge.source !== edge.target), [edges]);
   const nodeGroupMap = useMemo(() => {
@@ -122,8 +184,6 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
   }, [nodes]);
 
   const getMotionSeed = useCallback((id: string) => {
-    const existing = motionSeedsRef.current.get(id);
-    if (existing) return existing;
     let hash = 0;
     for (let i = 0; i < id.length; i += 1) {
       hash = (hash << 5) - hash + id.charCodeAt(i);
@@ -133,9 +193,7 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
     const phase = ((normalized % 360) * Math.PI) / 180;
     const amplitude = FLOAT_BASE + (normalized % 7) * (FLOAT_VARIANCE / 6);
     const speed = FLOAT_SPEED_BASE + (normalized % 5) * FLOAT_SPEED_VARIANCE;
-    const seed = { phase, amplitude, speed };
-    motionSeedsRef.current.set(id, seed);
-    return seed;
+    return { phase, amplitude, speed };
   }, []);
 
   const getDisplayPosition = useCallback(
@@ -144,14 +202,18 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
         return { x: base.x, y: base.y };
       }
       const seed = getMotionSeed(id);
-      const phase = seed.phase + motionTimeRef.current * seed.speed;
+      const phase = seed.phase + motionTime * seed.speed;
       return {
         x: base.x + Math.sin(phase) * seed.amplitude,
         y: base.y + Math.cos(phase * 0.9) * seed.amplitude,
       };
     },
-    [getMotionSeed],
+    [getMotionSeed, motionTime],
   );
+
+  const commitPositions = useCallback(() => {
+    setPositionSnapshot(clonePositions(positionsRef.current));
+  }, []);
 
   const getGraphPoint = useCallback(
     (event: React.PointerEvent) => {
@@ -189,9 +251,17 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
       return;
     }
 
+    const cachedLayout = topologyLayoutCache.get(topologyKey);
+    if (cachedLayout && cachedLayout.size === nodes.length) {
+      positionsRef.current = clonePositions(cachedLayout);
+      const frame = requestAnimationFrame(commitPositions);
+      return () => cancelAnimationFrame(frame);
+    }
+
     const nextPositions = new Map<string, NodePosition>();
     const count = nodes.length;
     const radius = Math.max(110, Math.min(220, count * 9));
+    let reusedPositions = 0;
 
     const groupCounts = new Map<string, number>();
     const groupIndexes = new Map<string, number>();
@@ -201,9 +271,20 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
     });
 
     nodes.forEach((node, index) => {
-      const existing = positionsRef.current.get(node.id);
+      const existing = positionsRef.current.get(node.id) ?? latestNodePositions.get(node.id);
       if (existing) {
         nextPositions.set(node.id, { ...existing });
+        reusedPositions += 1;
+        return;
+      }
+      if (layout === "timeline") {
+        const columns = Math.max(1, Math.ceil(Math.sqrt(count)));
+        nextPositions.set(node.id, {
+          x: (index % columns) * 120 - ((columns - 1) * 120) / 2,
+          y: Math.floor(index / columns) * 90 - 120,
+          vx: 0,
+          vy: 0,
+        });
         return;
       }
       if (useStaticLayout) {
@@ -234,11 +315,13 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
     positionsRef.current = nextPositions;
 
     if (useStaticLayout) {
-      forceRender((prev) => prev + 1);
-      return;
+      rememberLayout(topologyKey, positionsRef.current);
+      const frame = requestAnimationFrame(commitPositions);
+      return () => cancelAnimationFrame(frame);
     }
 
     let step = 0;
+    const simulationSteps = reusedPositions / count >= 0.8 ? 72 : SIMULATION_STEPS;
     let rafId = 0;
     let active = true;
 
@@ -330,10 +413,12 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
         pos.y += pos.vy;
       });
 
-      forceRender((prev) => prev + 1);
+      commitPositions();
 
-      if (step < SIMULATION_STEPS) {
+      if (step < simulationSteps) {
         rafId = requestAnimationFrame(simulate);
+      } else {
+        rememberLayout(topologyKey, positionsRef.current);
       }
     };
 
@@ -341,20 +426,31 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
     return () => {
       active = false;
       if (rafId) cancelAnimationFrame(rafId);
+      rememberLayout(topologyKey, positionsRef.current);
     };
-  }, [nodes, nodeIds, edgeList, groupCenters, nodeGroupMap, useStaticLayout]);
+  }, [
+    nodes,
+    nodeIds,
+    edgeList,
+    commitPositions,
+    groupCenters,
+    layout,
+    layoutVersion,
+    nodeGroupMap,
+    topologyKey,
+    useStaticLayout,
+  ]);
 
   useEffect(() => {
-    if (nodes.length === 0 || nodes.length > MAX_AMBIENT_ANIMATION_NODES) return;
+    if (reducedMotion || nodes.length === 0 || nodes.length > MAX_AMBIENT_ANIMATION_NODES) return;
     let rafId = 0;
     let lastTime = performance.now();
 
     const animate = (time: number) => {
       const delta = time - lastTime;
       if (delta >= 32) {
-        motionTimeRef.current += delta;
+        setMotionTime((value) => value + delta);
         lastTime = time;
-        forceRender((prev) => prev + 1);
       }
       rafId = requestAnimationFrame(animate);
     };
@@ -363,7 +459,7 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [nodes.length]);
+  }, [nodes.length, reducedMotion]);
 
   const handlePointerDown = (event: React.PointerEvent) => {
     if (event.button !== 0) return;
@@ -386,7 +482,7 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
         pos.x = point.x - dragging.offsetX;
         pos.y = point.y - dragging.offsetY;
         dragging.moved = true;
-        forceRender((prev) => prev + 1);
+        commitPositions();
       }
       return;
     }
@@ -407,6 +503,7 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
         onSelectNode?.(dragging.id);
       }
       draggingRef.current = null;
+      setDraggingNodeId(null);
     }
     panningRef.current = null;
   };
@@ -457,16 +554,19 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
       offsetY: point.y - displayPos.y,
       moved: false,
     };
+    setDraggingNodeId(nodeId);
   };
 
-  const displayPositions = new Map<string, { x: number; y: number }>();
-  nodes.forEach((node) => {
-    const pos = positionsRef.current.get(node.id);
-    if (!pos) return;
-    const isDragging = draggingRef.current?.id === node.id;
-    displayPositions.set(node.id, getDisplayPosition(node.id, pos, isDragging));
-  });
-  const activeNodeId = hoveredNodeId ?? draggingRef.current?.id ?? null;
+  const displayPositions = useMemo(() => {
+    const positions = new Map<string, { x: number; y: number }>();
+    nodes.forEach((node) => {
+      const position = positionSnapshot.get(node.id);
+      if (!position) return;
+      positions.set(node.id, getDisplayPosition(node.id, position, draggingNodeId === node.id));
+    });
+    return positions;
+  }, [draggingNodeId, getDisplayPosition, nodes, positionSnapshot]);
+  const activeNodeId = hoveredNodeId ?? draggingNodeId ?? selectedNodeId ?? null;
   const connectedNodes = useMemo(() => {
     if (!activeNodeId) return null;
     const set = new Set([activeNodeId]);
@@ -495,8 +595,55 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
     return { matches: withConnections, directMatches };
   }, [searchQuery, nodes, edgeList]);
 
+  const fitGraph = useCallback(() => {
+    const positions = Array.from(displayPositions.values());
+    if (!positions.length) return;
+    const xs = positions.map((position) => position.x);
+    const ys = positions.map((position) => position.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const width = Math.max(120, maxX - minX + 100);
+    const height = Math.max(120, maxY - minY + 100);
+    const nextZoom = Math.min(
+      2.5,
+      Math.max(0.4, Math.min(viewport.width / width, viewport.height / height)),
+    );
+    setZoom(nextZoom);
+    setPan({
+      x: viewport.width / 2 - ((minX + maxX) / 2) * nextZoom,
+      y: viewport.height / 2 - ((minY + maxY) / 2) * nextZoom,
+    });
+  }, [displayPositions, viewport.height, viewport.width]);
+
+  useEffect(() => {
+    if (
+      displayPositions.size !== nodes.length ||
+      nodes.length === 0 ||
+      autoFittedTopologyRef.current === topologyKey
+    ) {
+      return;
+    }
+    autoFittedTopologyRef.current = topologyKey;
+    const frame = requestAnimationFrame(fitGraph);
+    return () => cancelAnimationFrame(frame);
+  }, [displayPositions, fitGraph, nodes.length, topologyKey]);
+
+  const resetGraph = useCallback(() => {
+    topologyLayoutCache.delete(topologyKey);
+    positionsRef.current.clear();
+    setZoom(0.6);
+    setPan({ x: viewport.width / 2, y: viewport.height / 2 });
+    setLayoutVersion((version) => version + 1);
+  }, [topologyKey, viewport.height, viewport.width]);
+
   return (
-    <div ref={containerRef} className="graph-view relative h-full w-full">
+    <div
+      ref={containerRef}
+      className="graph-view relative h-full w-full"
+      data-reduced-motion={reducedMotion ? "true" : "false"}
+    >
       {error ? (
         <div className="absolute inset-0 z-10 flex items-center justify-center text-sm text-destructive">
           {error}
@@ -506,7 +653,7 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
       {!error && nodes.length === 0 ? (
         <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
           {/* ... (ERRORS.md E09) Distinguish "still building" from a truly empty graph. */}
-          {isLoading ? "Building graph…" : "No notes found."}
+          {isLoading ? "Building graph…" : (emptyState ?? "No notes found.")}
         </div>
       ) : null}
 
@@ -516,7 +663,7 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
           onPointerDown={(event) => event.stopPropagation()}
         >
           <div className="mb-2 text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
-            Folders
+            Groups
           </div>
           <div className="grid gap-1">
             {legendItems.map((item) => {
@@ -547,8 +694,66 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
         </div>
       ) : null}
 
+      <div
+        className="absolute left-3 top-3 z-20 flex border border-border/80 bg-background/90 shadow-sm backdrop-blur"
+        onPointerDown={(event) => event.stopPropagation()}
+        aria-label="Graph viewport controls"
+      >
+        <Button
+          onClick={() => setZoom((value) => Math.min(2.5, value + 0.15))}
+          size="icon-sm"
+          variant="ghost"
+          className="rounded-none border-r border-border"
+          aria-label="Zoom in"
+        >
+          +
+        </Button>
+        <Button
+          onClick={() => setZoom((value) => Math.max(0.4, value - 0.15))}
+          size="icon-sm"
+          variant="ghost"
+          className="rounded-none border-r border-border"
+          aria-label="Zoom out"
+        >
+          −
+        </Button>
+        <Button
+          onClick={fitGraph}
+          size="sm"
+          variant="ghost"
+          className="rounded-none border-r border-border"
+        >
+          Fit
+        </Button>
+        <Button
+          onClick={resetGraph}
+          size="sm"
+          variant="ghost"
+          className="rounded-none"
+        >
+          Reset
+        </Button>
+      </div>
+
+      <div className="absolute left-3 top-14 z-20" aria-label="Keyboard graph navigation">
+        {nodes.map((node) => (
+          <button
+            key={node.id}
+            type="button"
+            className="sr-only focus:not-sr-only focus:block focus:min-w-64 focus:border focus:border-oppulence-orange focus:bg-background focus:px-3 focus:py-2 focus:text-left focus:text-xs focus:text-primary focus:shadow-lg"
+            onFocus={() => setHoveredNodeId(node.id)}
+            onBlur={() => setHoveredNodeId(null)}
+            onClick={() => onSelectNode?.(node.id)}
+          >
+            Inspect {node.ariaLabel ?? `${node.label}, ${node.group}`}
+          </button>
+        ))}
+      </div>
+
       <svg
         className="h-full w-full touch-none"
+        aria-hidden="true"
+        focusable="false"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -558,8 +763,21 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
         }}
         onWheel={handleWheel}
       >
+        <title>Relationship graph</title>
+        <desc>Directional, evidence-bearing connections. Nodes are keyboard operable.</desc>
         <rect width={viewport.width} height={viewport.height} fill="transparent" />
         <defs>
+          <marker
+            id="graph-arrow"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="6"
+            markerHeight="6"
+            orient="auto-start-reverse"
+          >
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" opacity="0.55" />
+          </marker>
           {Array.from(new Set(nodes.map((n) => n.color))).map((color) => (
             <filter
               key={color}
@@ -613,17 +831,32 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
             const dr = Math.sqrt(dx * dx + dy * dy) * 1.5;
             const pathD = `M${source.x},${source.y}A${dr},${dr} 0 0,1 ${target.x},${target.y}`;
             return (
-              <path
-                key={`${edge.source}-${edge.target}-${index}`}
-                d={pathD}
-                fill="none"
-                stroke={stroke}
-                strokeOpacity={strokeOpacity}
-                strokeWidth={strokeWidth}
-                style={{
-                  transition: "stroke 0.2s, stroke-opacity 0.2s, stroke-width 0.2s",
-                }}
-              />
+              <g key={edge.id ?? `${edge.source}-${edge.target}-${index}`}>
+                <path
+                  d={pathD}
+                  fill="none"
+                  stroke={stroke}
+                  strokeOpacity={strokeOpacity}
+                  strokeWidth={strokeWidth}
+                  markerEnd={edge.directed ? "url(#graph-arrow)" : undefined}
+                  style={{
+                    transition: reducedMotion
+                      ? undefined
+                      : "stroke 0.2s, stroke-opacity 0.2s, stroke-width 0.2s",
+                  }}
+                />
+                {isActiveEdge && edge.label ? (
+                  <text
+                    x={(source.x + target.x) / 2}
+                    y={(source.y + target.y) / 2 - 5}
+                    textAnchor="middle"
+                    className="pointer-events-none text-[9px]"
+                    style={{ fill: "currentColor" }}
+                  >
+                    {edge.label}
+                  </text>
+                ) : null}
+              </g>
             );
           })}
 
@@ -664,44 +897,118 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
                 onPointerEnter={() => setHoveredNodeId(node.id)}
                 onPointerLeave={() => setHoveredNodeId(null)}
                 onPointerDown={(event) => startDragNode(event, node.id)}
-                style={{ transition: "opacity 0.2s" }}
+                style={{ transition: reducedMotion ? undefined : "opacity 0.2s", outline: "none" }}
                 opacity={nodeOpacity}
               >
                 <circle
                   r={30}
                   fill={node.color}
                   opacity={isPrimary ? 0.4 : 0}
-                  style={{ transition: "opacity 0.2s" }}
+                  style={{ transition: reducedMotion ? undefined : "opacity 0.2s" }}
                 />
-                <circle
-                  r={node.radius}
-                  fill={node.color}
-                  stroke={isDirectMatch ? "#fff" : "#0a0a0a"}
-                  strokeWidth={isDirectMatch ? 3 : 2}
-                  filter={isPrimary ? `url(#${glowFilterId})` : undefined}
-                  style={{
-                    transition: "filter 0.2s, stroke 0.2s, stroke-width 0.2s",
-                  }}
-                />
-                <text
-                  y={node.radius + 16}
-                  textAnchor="middle"
-                  className="text-[10px]"
-                  style={{
-                    fill: "#9ca3af",
-                    fontWeight: 500,
-                  }}
-                >
-                  {node.label}
-                </text>
+                {node.shape === "diamond" ? (
+                  <polygon
+                    points={`0,-${node.radius} ${node.radius},0 0,${node.radius} -${node.radius},0`}
+                    fill={node.color}
+                    stroke={isPrimary ? node.stroke : "#0a0a0a"}
+                    strokeWidth={isPrimary ? 3 : 2}
+                    filter={isPrimary ? `url(#${glowFilterId})` : undefined}
+                  />
+                ) : node.shape === "square" || node.shape === "pill" ? (
+                  <rect
+                    x={node.shape === "pill" ? -node.radius * 1.4 : -node.radius}
+                    y={-node.radius}
+                    width={node.shape === "pill" ? node.radius * 2.8 : node.radius * 2}
+                    height={node.radius * 2}
+                    rx={node.shape === "pill" ? node.radius : 3}
+                    fill={node.color}
+                    stroke={isPrimary ? node.stroke : "#0a0a0a"}
+                    strokeWidth={isPrimary ? 3 : 2}
+                    filter={isPrimary ? `url(#${glowFilterId})` : undefined}
+                  />
+                ) : (
+                  <circle
+                    r={node.radius}
+                    fill={node.color}
+                    stroke={isPrimary ? node.stroke : "#0a0a0a"}
+                    strokeWidth={isPrimary ? 3 : 2}
+                    filter={isPrimary ? `url(#${glowFilterId})` : undefined}
+                  />
+                )}
+                {node.icon ? (
+                  <foreignObject
+                    x={-10}
+                    y={-10}
+                    width={20}
+                    height={20}
+                    className="pointer-events-none overflow-visible"
+                  >
+                    <div className="flex size-5 items-center justify-center text-white">
+                      {node.icon}
+                    </div>
+                  </foreignObject>
+                ) : null}
+                {isPrimary || node.priorityLabel || (nodes.length <= 18 && zoom >= 0.8) || zoom >= 1.75 ? (
+                  <text
+                    y={node.radius + 16}
+                    textAnchor="middle"
+                    className="text-[10px]"
+                    style={{ fill: "#9ca3af", fontWeight: 500 }}
+                  >
+                    {node.label}
+                  </text>
+                ) : null}
+                {node.badge && (isPrimary || zoom >= 1.35) ? (
+                  <text y={node.radius + 28} textAnchor="middle" className="text-[8px]" style={{ fill: node.stroke }}>
+                    {node.badge}
+                  </text>
+                ) : null}
               </g>
             );
           })}
         </g>
       </svg>
 
+      {showMiniMap && nodes.length ? (
+        <svg
+          viewBox="-320 -240 640 480"
+          className="pointer-events-none absolute bottom-3 right-3 z-20 h-24 w-36 border border-border/80 bg-background/90 shadow-sm backdrop-blur"
+          aria-label="Graph minimap"
+        >
+          {edgeList.map((edge, index) => {
+            const source = displayPositions.get(edge.source);
+            const target = displayPositions.get(edge.target);
+            if (!source || !target) return null;
+            return (
+              <line
+                key={edge.id ?? index}
+                x1={source.x}
+                y1={source.y}
+                x2={target.x}
+                y2={target.y}
+                stroke="currentColor"
+                strokeOpacity="0.15"
+                strokeWidth="2"
+              />
+            );
+          })}
+          {nodes.map((node) => {
+            const position = displayPositions.get(node.id);
+            return position ? (
+              <circle
+                key={node.id}
+                cx={position.x}
+                cy={position.y}
+                r={node.id === selectedNodeId ? 8 : 5}
+                fill={node.color}
+              />
+            ) : null;
+          })}
+        </svg>
+      ) : null}
+
       <div
-        className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2"
+        className="absolute left-3 top-14 z-10"
         onPointerDown={(event) => event.stopPropagation()}
       >
         <div className="relative flex items-center">
@@ -711,7 +1018,7 @@ export function GraphView({ nodes, edges, isLoading, error, onSelectNode }: Grap
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search nodes..."
-            className="w-64 pl-9 pr-20 shadow-lg backdrop-blur"
+            className="w-64 bg-background/90 pl-9 pr-20 shadow-sm backdrop-blur"
           />
           <div className="absolute right-3 flex items-center gap-2">
             {searchMatchingNodes && (

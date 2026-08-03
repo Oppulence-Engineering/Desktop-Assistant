@@ -5,7 +5,7 @@ import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import { Sparkles } from "@/lib/icons";
 import { parse as parseYaml } from "yaml";
 import { PromptBlockSchema } from "@x/shared/dist/prompt-block.js";
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 
 function truncate(text: string, maxLen: number): string {
   const clean = text.replace(/\s+/g, " ").trim();

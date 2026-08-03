@@ -69,6 +69,7 @@ import {
   RelationshipSourceStatusSchema,
   BetaDiagnosticsSchema,
   RelationshipStateSnapshotSchema,
+  RelationshipGraphSchema,
 } from "./relationships.js";
 import {
   GmailThreadSchema,
@@ -95,6 +96,13 @@ import {
   VoiceCommandIntent,
   WhisperDiagnosticResult,
   VoicePrivacySettings,
+  DictationSettings,
+  DictationFlowBarDock,
+  DictationLanguage,
+  DictationHistoryEntry,
+  DictationHistoryRetention,
+  DictationHistoryStats,
+  DictationHistoryEngine,
   DiarizationSettings,
   TranscriptionRouting,
 } from "./transcription.js";
@@ -719,6 +727,7 @@ const ipcSchemas = {
       signedIn: z.boolean(),
       accessToken: z.string().nullable(),
       config: SolomonApiConfig.nullable(),
+      authReason: z.enum(["not_signed_in", "reconnect_required", "refresh_backoff"]).nullable(),
     }),
   },
   "account:getRowboat": {
@@ -727,6 +736,7 @@ const ipcSchemas = {
       signedIn: z.boolean(),
       accessToken: z.string().nullable(),
       config: SolomonApiConfig.nullable(),
+      authReason: z.enum(["not_signed_in", "reconnect_required", "refresh_backoff"]).nullable(),
     }),
   },
   "oauth:didConnect": {
@@ -999,6 +1009,15 @@ const ipcSchemas = {
       lastBuiltMs: z.number().nullable(),
     }),
   },
+  "memory:rebuild": {
+    req: z.null(),
+    res: z.object({
+      disabled: z.boolean(),
+      rebuilt: z.boolean(),
+      chunkCount: z.number(),
+      filesProcessed: z.number(),
+    }),
+  },
   "memory:indexProgress": {
     req: z.object({
       chunkCount: z.number(),
@@ -1034,6 +1053,207 @@ const ipcSchemas = {
   "voice:executeCommand": {
     req: z.object({ intent: VoiceCommandIntent, confirmed: z.boolean().default(false) }),
     res: z.object({ success: z.boolean(), message: z.string().optional() }),
+  },
+  // System-wide desktop dictation. Main owns the native modifier monitor and focused-
+  // app paste; a dedicated hidden renderer owns microphone capture and transcription.
+  "dictation:shortcut": {
+    req: z.object({
+      phase: z.enum([
+        "pressed",
+        "released",
+        "hands-free-locked",
+        "hands-free-stop",
+        "command-pressed",
+        "command-released",
+        "cancel",
+        "retry",
+      ]),
+      shortcut: z.string(),
+      language: DictationLanguage,
+      microphonePriority: z.array(z.string().trim().min(1).max(512)).max(32),
+    }),
+    res: z.null(),
+  },
+  "dictation:state": {
+    req: z.object({
+      state: z.enum(["idle", "listening", "transcribing", "success", "error"]),
+      message: z.string().optional(),
+      dock: DictationFlowBarDock.optional(),
+    }),
+    res: z.null(),
+  },
+  "dictation:flowBarDockChanged": {
+    req: z.object({ dock: DictationFlowBarDock }),
+    res: z.null(),
+  },
+  "dictation:historyChanged": {
+    req: z.object({}),
+    res: z.null(),
+  },
+  "dictation:languageChanged": {
+    req: z.object({ language: DictationLanguage, label: z.string() }),
+    res: z.null(),
+  },
+  "dictation:microphonesChanged": {
+    req: z.object({
+      microphonePriority: z.array(z.string().trim().min(1).max(512)).max(32),
+    }),
+    res: z.null(),
+  },
+  "dictation:getStatus": {
+    req: z.null(),
+    res: z.object({
+      available: z.boolean(),
+      monitorReady: z.boolean(),
+      commandModeReady: z.boolean(),
+      commandModeEnabled: z.boolean(),
+      transformsEnabled: z.boolean(),
+      transformShortcutsReady: z.boolean(),
+      accessibilityTrusted: z.boolean(),
+      shortcut: z.string(),
+      commandShortcut: z.string(),
+      transformShortcutError: z.string().optional(),
+      error: z.string().optional(),
+    }),
+  },
+  "dictation:getRecovery": {
+    req: z.null(),
+    res: z.object({
+      available: z.boolean(),
+      preview: z.string().optional(),
+      createdAt: z.string().optional(),
+      audioAvailable: z.boolean(),
+      audioCreatedAt: z.string().optional(),
+      audioDurationMs: z.number().optional(),
+      audioErrorCode: z.string().optional(),
+    }),
+  },
+  "dictation:pasteLast": {
+    req: z.null(),
+    res: z.object({ success: z.boolean(), error: z.string().optional() }),
+  },
+  "dictation:copyLast": {
+    req: z.null(),
+    res: z.object({ success: z.boolean(), error: z.string().optional() }),
+  },
+  "dictation:retryFailed": {
+    req: z.object({ id: z.string().uuid().optional() }).nullable(),
+    res: z.object({ success: z.boolean(), error: z.string().optional() }),
+  },
+  "dictation:getHistory": {
+    req: z.object({
+      query: z.string().trim().max(200).optional(),
+      limit: z.number().int().min(1).max(200).default(50),
+      offset: z.number().int().nonnegative().default(0),
+    }),
+    res: z.object({
+      entries: z.array(DictationHistoryEntry),
+      total: z.number().int().nonnegative(),
+      stats: DictationHistoryStats,
+      retention: DictationHistoryRetention,
+    }),
+  },
+  "dictation:copyHistoryEntry": {
+    req: z.object({ id: z.string().uuid() }),
+    res: z.object({ success: z.boolean(), error: z.string().optional() }),
+  },
+  "dictation:toggleHistoryFormatting": {
+    req: z.object({ id: z.string().uuid() }),
+    res: z.object({
+      success: z.boolean(),
+      entry: DictationHistoryEntry.optional(),
+      error: z.string().optional(),
+    }),
+  },
+  "dictation:deleteHistoryEntry": {
+    req: z.object({ id: z.string().uuid() }),
+    res: z.object({ success: z.boolean() }),
+  },
+  "dictation:clearHistory": {
+    req: z.null(),
+    res: z.object({ success: z.boolean() }),
+  },
+  "dictation:applyCommand": {
+    req: z.object({ instruction: z.string().trim().min(1).max(1_000) }),
+    res: z.object({
+      success: z.boolean(),
+      error: z.string().optional(),
+      source: z.enum(["local", "model"]).optional(),
+      copied: z.boolean().optional(),
+    }),
+  },
+  "dictation:saveFailedAudio": {
+    req: z.object({
+      pcm16: z.instanceof(ArrayBuffer),
+      sampleRate: z.literal(16000),
+      channels: z.literal(1),
+      errorCode: z.string().optional(),
+      language: DictationLanguage.optional(),
+    }),
+    res: z.object({ saved: z.boolean() }),
+  },
+  "dictation:requestAccessibility": {
+    req: z.null(),
+    res: z.object({ trusted: z.boolean() }),
+  },
+  "dictation:openInputMonitoring": {
+    req: z.null(),
+    res: z.object({ opened: z.boolean() }),
+  },
+  "dictation:updateState": {
+    req: z.object({
+      state: z.enum(["idle", "listening", "transcribing", "success", "error"]),
+      message: z.string().optional(),
+    }),
+    res: z.object({ ok: z.literal(true) }),
+  },
+  "dictation:controlDock": {
+    req: z.object({ action: z.enum(["start", "stop", "cancel"]) }),
+    res: z.object({
+      accepted: z.boolean(),
+      active: z.boolean(),
+      error: z.string().optional(),
+    }),
+  },
+  /** Desktop dictation prefers the Neural Engine Parakeet model when it is installed,
+   * then falls back to the configured local Whisper model. Audio never leaves the Mac. */
+  "dictation:transcribe": {
+    req: z.object({
+      pcm16: z.instanceof(ArrayBuffer),
+      sampleRate: z.literal(16000),
+      channels: z.literal(1),
+      lang: DictationLanguage.optional(),
+      retainForRetry: z.boolean().optional(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      text: z.string().optional(),
+      segments: z.array(WhisperSegment).optional(),
+      rtf: z.number().optional(),
+      durationMs: z.number().optional(),
+      engine: z.enum(["parakeet", "whisper"]).optional(),
+      language: DictationLanguage.optional(),
+      code: z.string().optional(),
+      message: z.string().optional(),
+    }),
+  },
+  "dictation:commit": {
+    req: z.object({
+      text: z.string().min(1).max(50_000),
+      audioDurationMs: z
+        .number()
+        .nonnegative()
+        .max(20 * 60 * 1_000)
+        .optional(),
+      transcriptionDurationMs: z
+        .number()
+        .nonnegative()
+        .max(20 * 60 * 1_000)
+        .optional(),
+      engine: DictationHistoryEngine.optional(),
+      language: DictationLanguage.optional(),
+    }),
+    res: z.object({ success: z.boolean(), error: z.string().optional() }),
   },
   // ---- Local on-device transcription (whisper.cpp) — RFC 009 §11 ----
   // Capability probe: which accel backend is compiled in + whether local is viable here.
@@ -1162,6 +1382,8 @@ const ipcSchemas = {
       meetingProvider: TranscriptionProvider.optional(),
       model: z.string().optional(),
       privacy: VoicePrivacySettings.partial().optional(),
+      // Complete block from the settings UI; core still merges it defensively.
+      dictation: DictationSettings.optional(),
       // RFC 017: on-device diarization settings (incl. the Local-diarization-beta toggle).
       diarization: DiarizationSettings.partial().optional(),
       // Native dual-track capture: engine, echo cancellation, audio retention.
@@ -2091,6 +2313,15 @@ const ipcSchemas = {
     }),
     res: z.object({ relationships: z.array(RelationshipSchema) }),
   },
+  "relationships:graph": {
+    req: z.object({
+      scope: z.enum(["portfolio", "relationship"]),
+      relationshipId: z.string().optional(),
+      depth: z.number().int().min(1).max(3).optional(),
+      asOf: z.iso.datetime({ offset: true }).optional(),
+    }),
+    res: RelationshipGraphSchema,
+  },
   "relationships:create": {
     req: z.object({
       kind: z.string().min(1),
@@ -2201,6 +2432,20 @@ const ipcSchemas = {
       proposedSubject: z.string().optional(),
       proposedMessage: z.string().optional(),
       reason: z.string().optional(),
+    }),
+    res: RelationshipActionSchema,
+  },
+  "relationships:createAction": {
+    req: z.object({
+      relationshipId: z.string().min(1),
+      actionType: z.string().min(1),
+      channel: z.string().min(1),
+      reason: z.string().min(1),
+      recipientEmail: z.string().optional(),
+      proposedSubject: z.string().optional(),
+      proposedMessage: z.string().optional(),
+      executionMode: z.enum(["draft", "send"]).optional(),
+      priorityScore: z.number().int().min(0).max(100).optional(),
     }),
     res: RelationshipActionSchema,
   },

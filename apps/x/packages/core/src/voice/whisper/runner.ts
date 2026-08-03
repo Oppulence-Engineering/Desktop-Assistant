@@ -54,9 +54,9 @@ export function autoThreads(): number {
   return Math.max(1, Math.min(8, cores - 1));
 }
 
-/** Default timeout: generous for the first (cold) run, scales with audio length. */
+/** Default timeout: covers cold Metal/Core ML startup and scales with audio length. */
 export function timeoutFor(audioSeconds: number): number {
-  return Math.max(15_000, Math.round(audioSeconds * 3_000));
+  return Math.max(30_000, Math.round(audioSeconds * 3_000));
 }
 
 export function pcmStats(pcm: Int16Array, channels = 1): PcmStats {

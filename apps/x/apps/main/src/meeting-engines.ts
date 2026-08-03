@@ -121,7 +121,7 @@ export interface ParakeetModelStatus {
 }
 
 /** Re-exported from the schema rather than redeclared — a local union drifts silently
- *  when the schema changes. v3 is multilingual (25 European languages); v2 English-only. */
+ *  when the schema changes. v3 is multilingual (28 European languages); v2 English-only. */
 export type ParakeetModel = SharedParakeetModel;
 
 export async function parakeetModelStatus(model: ParakeetModel): Promise<ParakeetModelStatus> {
@@ -161,6 +161,58 @@ interface SidecarTranscript {
   segments: { start: number; end: number; text: string }[];
 }
 
+export interface ParakeetTranscriptionResult extends SidecarTranscript {
+  text: string;
+  durationMs: number;
+  /** Realtime speed multiplier (audio seconds / processing seconds). */
+  rtf: number;
+}
+
+/**
+ * Run the Neural Engine Parakeet path for one mono PCM utterance. This is shared by
+ * meetings and system-wide dictation so the fast engine is not trapped behind the
+ * meeting feature.
+ */
+export async function transcribeParakeetPcm(
+  pcm: Int16Array,
+  args: { model: ParakeetModel; language?: string },
+): Promise<ParakeetTranscriptionResult> {
+  if (pcm.length === 0) throw new Error("cannot transcribe empty audio");
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-parakeet-"));
+  const wavPath = path.join(dir, "in.wav");
+  const startedAt = performance.now();
+  try {
+    const wav = pcm16ToWav(pcm.buffer.slice(pcm.byteOffset, pcm.byteOffset + pcm.byteLength), {
+      sampleRate: 16000,
+      channels: 1,
+    });
+    await fs.writeFile(wavPath, wav, { mode: 0o600 });
+
+    const argv = ["transcribe", "--in", wavPath, "--model", args.model, "--json"];
+    if (args.language && args.language !== "auto") argv.push("--language", args.language);
+
+    const { stdout } = await runSidecar(argv, {
+      // Parakeet measures ~70x realtime; this is a hang guard, not a budget.
+      timeoutMs: Math.max(60_000, Math.round((pcm.length / 16000) * 2_000)),
+    });
+    const result = lastJsonLine<SidecarTranscript>(stdout);
+    const durationMs = performance.now() - startedAt;
+    const audioSeconds = pcm.length / 16000;
+    return {
+      ...result,
+      segments: result.segments ?? [],
+      text: (result.segments ?? [])
+        .map((segment) => segment.text)
+        .join(" ")
+        .trim(),
+      durationMs,
+      rtf: audioSeconds / (durationMs / 1000),
+    };
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 /**
  * Parakeet as a {@link MeetingTranscriber}, so the queue drives it exactly like
  * whisper.
@@ -176,28 +228,11 @@ export function createParakeetTranscriber(args: {
 }): MeetingTranscriber {
   return {
     async transcribe(pcm, opts) {
-      const dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-parakeet-"));
-      const wavPath = path.join(dir, "in.wav");
-      try {
-        const wav = pcm16ToWav(pcm.buffer.slice(pcm.byteOffset, pcm.byteOffset + pcm.byteLength), {
-          sampleRate: 16000,
-          channels: 1,
-        });
-        await fs.writeFile(wavPath, wav, { mode: 0o600 });
-
-        const argv = ["transcribe", "--in", wavPath, "--model", args.model, "--json"];
-        const language = opts.lang ?? args.language;
-        if (language) argv.push("--language", language);
-
-        const { stdout } = await runSidecar(argv, {
-          // Parakeet measures ~70x realtime; this is a hang guard, not a budget.
-          timeoutMs: Math.max(60_000, Math.round((pcm.length / 16000) * 2_000)),
-        });
-        const result = lastJsonLine<SidecarTranscript>(stdout);
-        return { segments: result.segments ?? [] };
-      } finally {
-        await fs.rm(dir, { recursive: true, force: true }).catch(() => {});
-      }
+      const result = await transcribeParakeetPcm(pcm, {
+        model: args.model,
+        language: opts.lang ?? args.language,
+      });
+      return { segments: result.segments };
     },
   };
 }

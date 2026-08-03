@@ -40,6 +40,12 @@ type BackgroundTask struct {
 	Provider string `json:"provider,omitempty"`
 	// ExecutionTarget holds the value of the "execution_target" field.
 	ExecutionTarget string `json:"execution_target,omitempty"`
+	// TemplateSlug holds the value of the "template_slug" field.
+	TemplateSlug string `json:"template_slug,omitempty"`
+	// TemplateVersion holds the value of the "template_version" field.
+	TemplateVersion int `json:"template_version,omitempty"`
+	// SystemManaged holds the value of the "system_managed" field.
+	SystemManaged bool `json:"system_managed,omitempty"`
 	// TaskCreatedAt holds the value of the "task_created_at" field.
 	TaskCreatedAt time.Time `json:"task_created_at,omitempty"`
 	// LastAttemptAt holds the value of the "last_attempt_at" field.
@@ -144,11 +150,11 @@ func (*BackgroundTask) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case backgroundtask.FieldActive:
+		case backgroundtask.FieldActive, backgroundtask.FieldSystemManaged:
 			values[i] = new(sql.NullBool)
-		case backgroundtask.FieldRevision:
+		case backgroundtask.FieldTemplateVersion, backgroundtask.FieldRevision:
 			values[i] = new(sql.NullInt64)
-		case backgroundtask.FieldSlug, backgroundtask.FieldName, backgroundtask.FieldInstructions, backgroundtask.FieldTriggersJSON, backgroundtask.FieldModel, backgroundtask.FieldProvider, backgroundtask.FieldExecutionTarget, backgroundtask.FieldLastRunID, backgroundtask.FieldLastRunSummary, backgroundtask.FieldLastRunError, backgroundtask.FieldScheduleSyncState, backgroundtask.FieldScheduleSyncError:
+		case backgroundtask.FieldSlug, backgroundtask.FieldName, backgroundtask.FieldInstructions, backgroundtask.FieldTriggersJSON, backgroundtask.FieldModel, backgroundtask.FieldProvider, backgroundtask.FieldExecutionTarget, backgroundtask.FieldTemplateSlug, backgroundtask.FieldLastRunID, backgroundtask.FieldLastRunSummary, backgroundtask.FieldLastRunError, backgroundtask.FieldScheduleSyncState, backgroundtask.FieldScheduleSyncError:
 			values[i] = new(sql.NullString)
 		case backgroundtask.FieldCreatedAt, backgroundtask.FieldUpdatedAt, backgroundtask.FieldTaskCreatedAt, backgroundtask.FieldLastAttemptAt, backgroundtask.FieldLastRunAt, backgroundtask.FieldScheduleSyncedAt:
 			values[i] = new(sql.NullTime)
@@ -236,6 +242,24 @@ func (_m *BackgroundTask) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field execution_target", values[i])
 			} else if value.Valid {
 				_m.ExecutionTarget = value.String
+			}
+		case backgroundtask.FieldTemplateSlug:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field template_slug", values[i])
+			} else if value.Valid {
+				_m.TemplateSlug = value.String
+			}
+		case backgroundtask.FieldTemplateVersion:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field template_version", values[i])
+			} else if value.Valid {
+				_m.TemplateVersion = int(value.Int64)
+			}
+		case backgroundtask.FieldSystemManaged:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field system_managed", values[i])
+			} else if value.Valid {
+				_m.SystemManaged = value.Bool
 			}
 		case backgroundtask.FieldTaskCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -397,6 +421,15 @@ func (_m *BackgroundTask) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("execution_target=")
 	builder.WriteString(_m.ExecutionTarget)
+	builder.WriteString(", ")
+	builder.WriteString("template_slug=")
+	builder.WriteString(_m.TemplateSlug)
+	builder.WriteString(", ")
+	builder.WriteString("template_version=")
+	builder.WriteString(fmt.Sprintf("%v", _m.TemplateVersion))
+	builder.WriteString(", ")
+	builder.WriteString("system_managed=")
+	builder.WriteString(fmt.Sprintf("%v", _m.SystemManaged))
 	builder.WriteString(", ")
 	builder.WriteString("task_created_at=")
 	builder.WriteString(_m.TaskCreatedAt.Format(time.ANSIC))

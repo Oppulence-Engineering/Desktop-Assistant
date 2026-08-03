@@ -1,0 +1,87 @@
+{{- if .Values.observability.grafanaDashboard.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "rowboat-api.fullname" . }}-workflow-dashboard
+  labels:
+    {{- include "rowboat-api.labels" . | nindent 4 }}
+    {{- with .Values.observability.grafanaDashboard.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+data:
+  rowboat-workflows.json: |-
+    {
+      "annotations": {"list": []},
+      "editable": false,
+      "graphTooltip": 1,
+      "links": [],
+      "panels": [
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {"defaults": {"unit": "dateTimeFromNow"}, "overrides": []},
+          "gridPos": {"h": 7, "w": 8, "x": 0, "y": 0},
+          "id": 1,
+          "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+          "targets": [{"expr": "relationship_loop_last_success_timestamp_seconds", "legendFormat": "{{`{{loop}}`}}", "refId": "A"}],
+          "title": "Last successful relationship loop",
+          "type": "stat"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+          "gridPos": {"h": 7, "w": 8, "x": 8, "y": 0},
+          "id": 2,
+          "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [{"expr": "relationship_queue_depth", "legendFormat": "{{`{{queue}}`}}", "refId": "A"}],
+          "title": "Durable queue depth",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []},
+          "gridPos": {"h": 7, "w": 8, "x": 16, "y": 0},
+          "id": 3,
+          "options": {"legend": {"displayMode": "table", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [
+            {"expr": "sum by (result, loop) (rate(relationship_loop_sweeps_total[15m]))", "legendFormat": "{{`{{loop}}`}} / {{`{{result}}`}}", "refId": "A"},
+            {"expr": "sum(rate(cloud_runs_completed_total[15m]))", "legendFormat": "cloud succeeded", "refId": "B"},
+            {"expr": "sum(rate(cloud_runs_failed_total[15m]))", "legendFormat": "cloud failed", "refId": "C"}
+          ],
+          "title": "Workflow outcomes",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 7},
+          "id": 4,
+          "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [{"expr": "histogram_quantile(0.95, sum by (le, loop) (rate(relationship_loop_duration_seconds_bucket[15m])))", "legendFormat": "p95 {{`{{loop}}`}}", "refId": "A"}],
+          "title": "Relationship loop p95 duration",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+          "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 7},
+          "id": 5,
+          "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi", "sort": "desc"}},
+          "targets": [
+            {"expr": "histogram_quantile(0.95, sum by (le) (rate(cloud_run_duration_seconds_bucket[15m])))", "legendFormat": "execution p95", "refId": "A"},
+            {"expr": "histogram_quantile(0.95, sum by (le) (rate(cloud_run_queue_latency_seconds_bucket[15m])))", "legendFormat": "queue p95", "refId": "B"}
+          ],
+          "title": "Cloud Run latency",
+          "type": "timeseries"
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "tags": ["oppulence", "rowboat", "workflows", "revenue"],
+      "templating": {"list": []},
+      "time": {"from": "now-24h", "to": "now"},
+      "timezone": "browser",
+      "title": "Oppulence Cloud Workflows",
+      "uid": "oppulence-cloud-workflows",
+      "version": 1
+    }
+{{- end }}

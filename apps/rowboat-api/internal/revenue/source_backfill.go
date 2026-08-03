@@ -10,6 +10,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenuemetrics"
 	"go.uber.org/zap"
 )
 
@@ -100,20 +101,38 @@ func (r *SourceBackfillRunner) sweep(ctx context.Context) {
 		return
 	}
 	now := r.svc.now().UTC()
+	startedAt := time.Now()
+	result := "success"
+	defer func() {
+		revenuemetrics.RelationshipLoopSweeps.WithLabelValues("source_backfill", result).Inc()
+		revenuemetrics.RelationshipLoopDuration.WithLabelValues("source_backfill_sweep").Observe(time.Since(startedAt).Seconds())
+		if result == "success" {
+			revenuemetrics.RelationshipLoopLastSuccess.WithLabelValues("source_backfill_sweep").SetToCurrentTime()
+		}
+	}()
+	staleBefore := now.Add(-2 * sourceBackfillTimeout)
+	eligible := relationshipsourcestatus.Or(
+		relationshipsourcestatus.BackfillPhaseEQ("queued"),
+		relationshipsourcestatus.And(
+			relationshipsourcestatus.BackfillPhaseEQ("failed"),
+			relationshipsourcestatus.NextRetryAtLTE(now),
+			relationshipsourcestatus.ErrorCodeIn(
+				"provider_outage", "provider_unavailable", "rate_limited", "cursor_lost",
+			),
+		),
+		relationshipsourcestatus.And(
+			relationshipsourcestatus.BackfillPhaseEQ("running"),
+			relationshipsourcestatus.Or(
+				relationshipsourcestatus.SyncStartedAtLT(staleBefore),
+				relationshipsourcestatus.SyncStartedAtIsNil(),
+			),
+		),
+	)
 	statuses, err := r.svc.client.RelationshipSourceStatus.Query().
 		Where(
 			relationshipsourcestatus.DisconnectedAtIsNil(),
 			relationshipsourcestatus.RevokedAtIsNil(),
-			relationshipsourcestatus.Or(
-				relationshipsourcestatus.BackfillPhaseEQ("queued"),
-				relationshipsourcestatus.And(
-					relationshipsourcestatus.BackfillPhaseEQ("failed"),
-					relationshipsourcestatus.NextRetryAtLTE(now),
-					relationshipsourcestatus.ErrorCodeIn(
-						"provider_outage", "provider_unavailable", "rate_limited", "cursor_lost",
-					),
-				),
-			),
+			eligible,
 		).
 		WithWorkspace().
 		WithUser().
@@ -121,37 +140,70 @@ func (r *SourceBackfillRunner) sweep(ctx context.Context) {
 		Limit(r.batchSize).
 		All(auth.WithInternalOnly(ctx))
 	if err != nil {
+		result = "error"
 		r.log.Warn("relationship source backfill sweep", zap.Error(err))
 		return
+	}
+	queueDepth, depthErr := r.svc.client.RelationshipSourceStatus.Query().
+		Where(relationshipsourcestatus.DisconnectedAtIsNil(), relationshipsourcestatus.RevokedAtIsNil(), eligible).
+		Count(auth.WithInternalOnly(ctx))
+	if depthErr == nil {
+		revenuemetrics.RelationshipQueueDepth.WithLabelValues("source_backfill_eligible").Set(float64(queueDepth))
+	} else {
+		result = "partial"
 	}
 	for _, status := range statuses {
 		if ctx.Err() != nil {
 			return
 		}
-		claimed, claimErr := r.svc.client.RelationshipSourceStatus.Update().
+		claim := r.svc.client.RelationshipSourceStatus.Update().
 			Where(
 				relationshipsourcestatus.IDEQ(status.ID),
 				relationshipsourcestatus.BackfillPhaseEQ(status.BackfillPhase),
-			).
+			)
+		// A stale running row is reclaimed by transitioning running -> running.
+		// Include the observed lease timestamp in the compare-and-set so two
+		// replicas cannot both win that otherwise identity-looking transition.
+		if status.SyncStartedAt == nil {
+			claim = claim.Where(relationshipsourcestatus.SyncStartedAtIsNil())
+		} else {
+			claim = claim.Where(relationshipsourcestatus.SyncStartedAtEQ(*status.SyncStartedAt))
+		}
+		claimed, claimErr := claim.
 			SetStatus("backfilling").
 			SetBackfillPhase("running").
 			SetCompleteness("partial").
+			SetSyncStartedAt(now).
 			ClearNextRetryAt().
 			ClearLastError().
 			ClearErrorCode().
 			Save(auth.WithInternalOnly(ctx))
 		if claimErr != nil {
+			result = "partial"
 			r.log.Warn("claim relationship source backfill", zap.String("source", status.Source), zap.Error(claimErr))
 			continue
 		}
 		if claimed != 1 {
+			revenuemetrics.RelationshipLoopItems.WithLabelValues("source_backfill", "claim_lost").Inc()
 			continue
 		}
+		revenuemetrics.RelationshipLoopItems.WithLabelValues("source_backfill", "claimed").Inc()
 		r.process(ctx, status)
 	}
 }
 
 func (r *SourceBackfillRunner) process(parent context.Context, status *ent.RelationshipSourceStatus) {
+	startedAt := time.Now()
+	succeeded := false
+	defer func() {
+		revenuemetrics.RelationshipLoopDuration.WithLabelValues("source_backfill_job").Observe(time.Since(startedAt).Seconds())
+		outcome := "failed"
+		if succeeded {
+			outcome = "completed"
+			revenuemetrics.RelationshipLoopLastSuccess.WithLabelValues("source_backfill_job").SetToCurrentTime()
+		}
+		revenuemetrics.RelationshipLoopItems.WithLabelValues("source_backfill", outcome).Inc()
+	}()
 	provider := r.providers[canonicalSource(status.Source)]
 	u, err := r.sourceBackfillActor(parent, status)
 	if err != nil {
@@ -221,7 +273,9 @@ func (r *SourceBackfillRunner) process(parent context.Context, status *ent.Relat
 		OccurredAt: r.svc.now().UTC(),
 	}); err != nil {
 		r.log.Warn("complete relationship source backfill", zap.String("source", status.Source), zap.Error(err))
+		return
 	}
+	succeeded = true
 }
 
 func (r *SourceBackfillRunner) sourceBackfillActor(

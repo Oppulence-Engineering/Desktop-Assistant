@@ -194,13 +194,15 @@ func (s *Service) ProcessRelationshipProjectionJob(
 			Where(relationshipprojectionjob.IDEQ(jobID)).
 			WithRelationship().
 			Only(ctx)
-		if queryErr == nil && existing.Status == "completed" {
-			return existing.Edges.Relationship, existing.Status, nil
-		}
 		if queryErr != nil {
 			return nil, "", queryErr
 		}
-		return nil, existing.Status, ErrConflict
+		// A worker that did not acquire the lease must never report that it
+		// published the projection, even if the winning worker completed before
+		// this read. Returning the canonical row and status still lets callers
+		// observe the result while ErrConflict preserves single-publisher
+		// semantics and keeps concurrent delivery accounting honest.
+		return existing.Edges.Relationship, existing.Status, ErrConflict
 	}
 	if err != nil {
 		return nil, "", err

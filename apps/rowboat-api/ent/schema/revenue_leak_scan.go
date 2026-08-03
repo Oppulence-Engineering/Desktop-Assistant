@@ -25,6 +25,12 @@ func (RevenueLeakScan) Fields() []ent.Field {
 		field.String("status").
 			Default("pending").
 			Validate(oneOfRevenue("status", "pending", "running", "completed", "failed")),
+		// active_claim is set to the workspace UUID while a scan is pending or
+		// running and cleared at every terminal transition. Its unique index is
+		// the database-enforced cross-replica mutex: two scheduler replicas may
+		// race, but only one can own a workspace claim. NULL permits unlimited
+		// historical terminal scans without a partial-index portability trap.
+		field.String("active_claim").Optional().Nillable().Unique(),
 		// mode records the workspace mode at scan time: local scans observe
 		// only; linked scans can feed preflight downstream.
 		field.String("mode").

@@ -3,7 +3,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from "@oppulence/ui/components/collapsible";
 import { cn } from "@/lib/utils";
 import { ChevronDownIcon, BrainIcon } from "@/lib/icons";
 import { useFileCard } from "@/contexts/file-card-context";

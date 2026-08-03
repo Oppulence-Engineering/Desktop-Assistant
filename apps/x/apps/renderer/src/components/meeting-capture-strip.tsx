@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, Mic, TriangleAlertIcon } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 import { MeetingCaptureCheck } from "@/components/meeting-capture-check";
 import { cn } from "@/lib/utils";
+import { findMicrophoneBlocker } from "@/lib/meeting-readiness";
 import type {
   MeetingCaptureStatus,
   MeetingDoctorReport,
@@ -54,7 +55,11 @@ function LevelBar({ track, peak }: { track: MeetingTrackId; peak: number }) {
   );
 }
 
-export function MeetingCaptureStrip() {
+export function MeetingCaptureStrip({
+  onReadinessChange,
+}: {
+  onReadinessChange?: (microphoneBlocker: MeetingDoctorReport["checks"][number] | null) => void;
+} = {}) {
   const [available, setAvailable] = useState<boolean | null>(null);
   const [status, setStatus] = useState<MeetingCaptureStatus | null>(null);
   const [levels, setLevels] = useState<Partial<Record<MeetingTrackId, number>>>({});
@@ -128,6 +133,11 @@ export function MeetingCaptureStrip() {
       offProgress?.();
     };
   }, [refreshSessions]);
+
+  useEffect(() => {
+    const microphoneBlocker = doctor ? findMicrophoneBlocker(doctor.checks) : null;
+    onReadinessChange?.(microphoneBlocker);
+  }, [doctor, onReadinessChange]);
 
   // Tick locally rather than pushing a status event every second from main.
   useEffect(() => {

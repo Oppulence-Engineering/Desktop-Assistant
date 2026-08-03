@@ -170,6 +170,61 @@ func (_u *BackgroundTaskUpdate) SetNillableExecutionTarget(v *string) *Backgroun
 	return _u
 }
 
+// SetTemplateSlug sets the "template_slug" field.
+func (_u *BackgroundTaskUpdate) SetTemplateSlug(v string) *BackgroundTaskUpdate {
+	_u.mutation.SetTemplateSlug(v)
+	return _u
+}
+
+// SetNillableTemplateSlug sets the "template_slug" field if the given value is not nil.
+func (_u *BackgroundTaskUpdate) SetNillableTemplateSlug(v *string) *BackgroundTaskUpdate {
+	if v != nil {
+		_u.SetTemplateSlug(*v)
+	}
+	return _u
+}
+
+// ClearTemplateSlug clears the value of the "template_slug" field.
+func (_u *BackgroundTaskUpdate) ClearTemplateSlug() *BackgroundTaskUpdate {
+	_u.mutation.ClearTemplateSlug()
+	return _u
+}
+
+// SetTemplateVersion sets the "template_version" field.
+func (_u *BackgroundTaskUpdate) SetTemplateVersion(v int) *BackgroundTaskUpdate {
+	_u.mutation.ResetTemplateVersion()
+	_u.mutation.SetTemplateVersion(v)
+	return _u
+}
+
+// SetNillableTemplateVersion sets the "template_version" field if the given value is not nil.
+func (_u *BackgroundTaskUpdate) SetNillableTemplateVersion(v *int) *BackgroundTaskUpdate {
+	if v != nil {
+		_u.SetTemplateVersion(*v)
+	}
+	return _u
+}
+
+// AddTemplateVersion adds value to the "template_version" field.
+func (_u *BackgroundTaskUpdate) AddTemplateVersion(v int) *BackgroundTaskUpdate {
+	_u.mutation.AddTemplateVersion(v)
+	return _u
+}
+
+// SetSystemManaged sets the "system_managed" field.
+func (_u *BackgroundTaskUpdate) SetSystemManaged(v bool) *BackgroundTaskUpdate {
+	_u.mutation.SetSystemManaged(v)
+	return _u
+}
+
+// SetNillableSystemManaged sets the "system_managed" field if the given value is not nil.
+func (_u *BackgroundTaskUpdate) SetNillableSystemManaged(v *bool) *BackgroundTaskUpdate {
+	if v != nil {
+		_u.SetSystemManaged(*v)
+	}
+	return _u
+}
+
 // SetTaskCreatedAt sets the "task_created_at" field.
 func (_u *BackgroundTaskUpdate) SetTaskCreatedAt(v time.Time) *BackgroundTaskUpdate {
 	_u.mutation.SetTaskCreatedAt(v)
@@ -583,6 +638,11 @@ func (_u *BackgroundTaskUpdate) check() error {
 			return &ValidationError{Name: "execution_target", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.execution_target": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.TemplateVersion(); ok {
+		if err := backgroundtask.TemplateVersionValidator(v); err != nil {
+			return &ValidationError{Name: "template_version", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.template_version": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ScheduleSyncState(); ok {
 		if err := backgroundtask.ScheduleSyncStateValidator(v); err != nil {
 			return &ValidationError{Name: "schedule_sync_state", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.schedule_sync_state": %w`, err)}
@@ -646,6 +706,21 @@ func (_u *BackgroundTaskUpdate) sqlSave(ctx context.Context) (_node int, err err
 	}
 	if value, ok := _u.mutation.ExecutionTarget(); ok {
 		_spec.SetField(backgroundtask.FieldExecutionTarget, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TemplateSlug(); ok {
+		_spec.SetField(backgroundtask.FieldTemplateSlug, field.TypeString, value)
+	}
+	if _u.mutation.TemplateSlugCleared() {
+		_spec.ClearField(backgroundtask.FieldTemplateSlug, field.TypeString)
+	}
+	if value, ok := _u.mutation.TemplateVersion(); ok {
+		_spec.SetField(backgroundtask.FieldTemplateVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedTemplateVersion(); ok {
+		_spec.AddField(backgroundtask.FieldTemplateVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.SystemManaged(); ok {
+		_spec.SetField(backgroundtask.FieldSystemManaged, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.TaskCreatedAt(); ok {
 		_spec.SetField(backgroundtask.FieldTaskCreatedAt, field.TypeTime, value)
@@ -1049,6 +1124,61 @@ func (_u *BackgroundTaskUpdateOne) SetExecutionTarget(v string) *BackgroundTaskU
 func (_u *BackgroundTaskUpdateOne) SetNillableExecutionTarget(v *string) *BackgroundTaskUpdateOne {
 	if v != nil {
 		_u.SetExecutionTarget(*v)
+	}
+	return _u
+}
+
+// SetTemplateSlug sets the "template_slug" field.
+func (_u *BackgroundTaskUpdateOne) SetTemplateSlug(v string) *BackgroundTaskUpdateOne {
+	_u.mutation.SetTemplateSlug(v)
+	return _u
+}
+
+// SetNillableTemplateSlug sets the "template_slug" field if the given value is not nil.
+func (_u *BackgroundTaskUpdateOne) SetNillableTemplateSlug(v *string) *BackgroundTaskUpdateOne {
+	if v != nil {
+		_u.SetTemplateSlug(*v)
+	}
+	return _u
+}
+
+// ClearTemplateSlug clears the value of the "template_slug" field.
+func (_u *BackgroundTaskUpdateOne) ClearTemplateSlug() *BackgroundTaskUpdateOne {
+	_u.mutation.ClearTemplateSlug()
+	return _u
+}
+
+// SetTemplateVersion sets the "template_version" field.
+func (_u *BackgroundTaskUpdateOne) SetTemplateVersion(v int) *BackgroundTaskUpdateOne {
+	_u.mutation.ResetTemplateVersion()
+	_u.mutation.SetTemplateVersion(v)
+	return _u
+}
+
+// SetNillableTemplateVersion sets the "template_version" field if the given value is not nil.
+func (_u *BackgroundTaskUpdateOne) SetNillableTemplateVersion(v *int) *BackgroundTaskUpdateOne {
+	if v != nil {
+		_u.SetTemplateVersion(*v)
+	}
+	return _u
+}
+
+// AddTemplateVersion adds value to the "template_version" field.
+func (_u *BackgroundTaskUpdateOne) AddTemplateVersion(v int) *BackgroundTaskUpdateOne {
+	_u.mutation.AddTemplateVersion(v)
+	return _u
+}
+
+// SetSystemManaged sets the "system_managed" field.
+func (_u *BackgroundTaskUpdateOne) SetSystemManaged(v bool) *BackgroundTaskUpdateOne {
+	_u.mutation.SetSystemManaged(v)
+	return _u
+}
+
+// SetNillableSystemManaged sets the "system_managed" field if the given value is not nil.
+func (_u *BackgroundTaskUpdateOne) SetNillableSystemManaged(v *bool) *BackgroundTaskUpdateOne {
+	if v != nil {
+		_u.SetSystemManaged(*v)
 	}
 	return _u
 }
@@ -1479,6 +1609,11 @@ func (_u *BackgroundTaskUpdateOne) check() error {
 			return &ValidationError{Name: "execution_target", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.execution_target": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.TemplateVersion(); ok {
+		if err := backgroundtask.TemplateVersionValidator(v); err != nil {
+			return &ValidationError{Name: "template_version", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.template_version": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ScheduleSyncState(); ok {
 		if err := backgroundtask.ScheduleSyncStateValidator(v); err != nil {
 			return &ValidationError{Name: "schedule_sync_state", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.schedule_sync_state": %w`, err)}
@@ -1559,6 +1694,21 @@ func (_u *BackgroundTaskUpdateOne) sqlSave(ctx context.Context) (_node *Backgrou
 	}
 	if value, ok := _u.mutation.ExecutionTarget(); ok {
 		_spec.SetField(backgroundtask.FieldExecutionTarget, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TemplateSlug(); ok {
+		_spec.SetField(backgroundtask.FieldTemplateSlug, field.TypeString, value)
+	}
+	if _u.mutation.TemplateSlugCleared() {
+		_spec.ClearField(backgroundtask.FieldTemplateSlug, field.TypeString)
+	}
+	if value, ok := _u.mutation.TemplateVersion(); ok {
+		_spec.SetField(backgroundtask.FieldTemplateVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedTemplateVersion(); ok {
+		_spec.AddField(backgroundtask.FieldTemplateVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.SystemManaged(); ok {
+		_spec.SetField(backgroundtask.FieldSystemManaged, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.TaskCreatedAt(); ok {
 		_spec.SetField(backgroundtask.FieldTaskCreatedAt, field.TypeTime, value)

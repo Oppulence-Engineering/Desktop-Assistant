@@ -184,8 +184,8 @@ printf '%s\n' \
   '{' \
   '  "version": 2,' \
   '  "providers": {' \
-  '    "rowboat": {' \
-  '      "mode": "rowboat",' \
+  '    "solomon": {' \
+  '      "mode": "solomon",' \
   '      "tokens": {' \
   "        \"access_token\": \"${token}\"," \
   '        "refresh_token": null,' \
@@ -238,11 +238,11 @@ ab_connect >/dev/null
 ab wait --text "You're 2 clicks away" >/dev/null
 
 if ab snapshot -i -c | grep -q "You're 2 clicks away"; then
-  ab find role button click --name "Continue with Solomon AI" >/dev/null
-  ab wait --text "Connect the work surfaces" >/dev/null
-  ab find role button click --name "Skip source connections for now" >/dev/null
-  ab wait --text "Solomon AI is ready for the first run" >/dev/null
-  ab find role button click --name "Start Using Solomon AI" >/dev/null
+  ab find role button click --name "Continue with Oppulence" >/dev/null
+  ab wait --text "Choose the context" >/dev/null
+  ab find role button click --name "Continue" >/dev/null
+  ab wait --text "Oppulence is ready for the first run" >/dev/null
+  ab find role button click --name "Start Using Oppulence" >/dev/null
 fi
 
 ab wait --text "Free Plan" >/dev/null

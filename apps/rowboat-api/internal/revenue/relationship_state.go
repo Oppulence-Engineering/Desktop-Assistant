@@ -1069,7 +1069,13 @@ func bindRelationshipIdentities(
 			SetKeyHash(signal.KeyHash).SetNormalizedValue(signal.Value).
 			SetSource(source).SetConfidence(signal.Confidence).
 			SetFirstSeenAt(seenAt.UTC()).SetLastSeenAt(seenAt.UTC()).
-			OnConflict(entsql.ResolveWithIgnore()).Exec(ctx)
+			OnConflict(
+				entsql.ConflictColumns(
+					relationshipidentity.FieldKeyHash,
+					relationshipidentity.WorkspaceColumn,
+				),
+				entsql.DoNothing(),
+			).Exec(ctx)
 		if err != nil {
 			return err
 		}

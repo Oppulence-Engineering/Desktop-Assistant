@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Plus, Trash2 } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@oppulence/ui/components/button";
+import { Input } from "@oppulence/ui/components/input";
 import { cn } from "@/lib/utils";
 
 /**

@@ -1,0 +1,66 @@
+{{- if .Values.observability.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "rowboat-api.fullname" . }}-workflows
+  labels:
+    {{- include "rowboat-api.labels" . | nindent 4 }}
+    {{- with .Values.observability.prometheusRule.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: rowboat-api.workflow-availability
+      rules:
+        - alert: RowboatAPIWorkflowTargetMissing
+          expr: |
+            absent(up{namespace="{{ .Release.Namespace }}",service="{{ include "rowboat-api.fullname" . }}"})
+            or absent(up{namespace="{{ .Release.Namespace }}",service="{{ include "rowboat-api.fullname" . }}-worker"})
+            or absent(up{namespace="{{ .Release.Namespace }}",service="{{ include "rowboat-api.fullname" . }}-scheduler"})
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Oppulence cloud workflow metrics target is missing
+            description: The API, Temporal worker, and scheduler must all be scrapeable before governed workflow releases are safe.
+        - alert: RowboatAttentionMonitorStale
+          expr: time() - relationship_loop_last_success_timestamp_seconds{loop="attention"} > 93600
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: Relationship Attention Monitor has not completed in 26 hours
+            description: Time-driven relationship risks may no longer be projected into the attention queue.
+        - alert: RowboatSourceBackfillStale
+          expr: time() - relationship_loop_last_success_timestamp_seconds{loop="source_backfill_sweep"} > 300
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Connector Health and Repair sweep is stale
+            description: Eligible source backfills have not been swept successfully for at least five minutes.
+        - alert: RowboatRelationshipLoopErrors
+          expr: increase(relationship_loop_sweeps_total{result=~"error|partial"}[15m]) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: A relationship workflow loop is degraded
+            description: Inspect loop and result labels, then correlate with structured API logs.
+        - alert: RowboatCloudRunFailureRateHigh
+          expr: sum(rate(cloud_runs_failed_total[15m])) / clamp_min(sum(rate(cloud_runs_completed_total[15m]) + rate(cloud_runs_failed_total[15m])), 0.001) > 0.10
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: More than 10 percent of cloud workflow runs are failing
+            description: Review Cloud Runs transcripts and the error_code breakdown before promotion.
+        - alert: RowboatRelationshipQueueBacklog
+          expr: relationship_queue_depth{queue=~"attention_open|source_backfill_eligible"} > 500
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: Relationship workflow backlog is growing
+            description: A durable attention or connector-repair queue has remained above 500 items.
+{{- end }}

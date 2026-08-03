@@ -53,6 +53,25 @@ export interface SlackWorkspace {
   source?: "managed" | "local";
 }
 
+function settleWithin<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timeout = window.setTimeout(
+      () => reject(new Error(`${label} timed out after ${timeoutMs}ms`)),
+      timeoutMs,
+    );
+    promise.then(
+      (value) => {
+        window.clearTimeout(timeout);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timeout);
+        reject(error);
+      },
+    );
+  });
+}
+
 export function useConnectors(active: boolean) {
   const [providers, setProviders] = useState<string[]>([]);
   const [providersLoading, setProvidersLoading] = useState(true);
@@ -495,7 +514,11 @@ export function useConnectors(active: boolean) {
     const newStates: Record<string, ProviderState> = {};
 
     try {
-      const result = await window.ipc.invoke("oauth:getState", null);
+      const result = await settleWithin(
+        window.ipc.invoke("oauth:getState", null),
+        5_000,
+        "Connection status check",
+      );
       const config = result.config || {};
       const statusMap: Record<string, ProviderStatus> = {};
 
