@@ -13,10 +13,11 @@ import {
   XCircle,
 } from "@phosphor-icons/react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
+import { Checkbox } from "@oppulence/ui/components/checkbox";
+import { Input } from "@oppulence/ui/components/input";
 import {
   Sheet,
   SheetContent,
@@ -24,8 +25,8 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
+} from "@oppulence/ui/components/sheet";
+import { Textarea } from "@oppulence/ui/components/textarea";
 import {
   ACTION_TYPE_LABELS,
   approveAction,
@@ -229,13 +230,15 @@ export function ReviewSheet({
               {DETECTOR_LABELS[action.detector] ?? action.detector}
             </Badge>
             <ModeChip mode={action.executionMode} />
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => onOpenAudit(action)}
-              className="ml-auto flex items-center gap-1 text-xs text-primary/55 transition-colors hover:text-primary"
+              className="ml-auto text-primary/55 hover:text-primary"
             >
               <ClockCounterClockwise /> History
-            </button>
+            </Button>
           </div>
           <SheetTitle>{ACTION_TYPE_LABELS[action.actionType] ?? action.actionType}</SheetTitle>
           <SheetDescription>{action.reason}</SheetDescription>
@@ -368,10 +371,9 @@ export function ReviewSheet({
                   </Button>
                   {needsRisk ? (
                     <label className="flex items-center gap-1.5 text-xs text-primary/70">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={acceptRisk}
-                        onChange={(e) => setAcceptRisk(e.target.checked)}
+                        onCheckedChange={(checked) => setAcceptRisk(checked === true)}
                       />
                       Accept the review-required risk
                     </label>

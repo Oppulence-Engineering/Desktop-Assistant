@@ -10,14 +10,14 @@ import {
   ShieldCheck,
 } from "@phosphor-icons/react";
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@oppulence/ui/components/badge";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@oppulence/ui/components/sheet";
 import { getAudit } from "@/lib/actions";
 import { errMessage } from "@/components/revenue/shared";
 import type { AuditChain, AuditEntry } from "@/types/actions";

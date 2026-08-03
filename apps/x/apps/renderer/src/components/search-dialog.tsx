@@ -9,7 +9,7 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandItem,
-} from "@/components/ui/command";
+} from "@oppulence/ui/components/command";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useSidebarSection, type ActiveSection } from "@/contexts/sidebar-context";
 import { cn } from "@/lib/utils";

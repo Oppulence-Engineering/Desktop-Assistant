@@ -17,6 +17,8 @@ import {
   CircleNotch,
   ClockCounterClockwise,
   DownloadSimple,
+  Graph,
+  ListBullets,
   MagnifyingGlass,
   Plus,
   Sparkle,
@@ -25,8 +27,11 @@ import {
 } from "@phosphor-icons/react";
 
 import { EmptyBlock, errMessage, ListSkeleton, ModeChip } from "@/components/revenue/shared";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { RelationshipGraphWorkspace } from "@/components/revenue/relationship-graph";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
+import { Checkbox } from "@oppulence/ui/components/checkbox";
+import { DateTimePicker } from "@oppulence/ui/components/date-time-picker";
 import {
   Dialog,
   DialogContent,
@@ -34,23 +39,24 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+} from "@oppulence/ui/components/dialog";
+import { Input } from "@oppulence/ui/components/input";
+import { Textarea } from "@oppulence/ui/components/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@oppulence/ui/components/select";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@oppulence/ui/components/sheet";
+import { ToggleGroup, ToggleGroupItem } from "@oppulence/ui/components/toggle-group";
 import {
   ACTION_TYPE_LABELS,
   acknowledgeMissionControl,
@@ -149,6 +155,13 @@ export function RelationshipsView({
   const [query, setQuery] = React.useState("");
   const [health, setHealth] = React.useState("all");
   const [lifecycle, setLifecycle] = React.useState("all");
+  const [surface, setSurface] = React.useState<"list" | "graph">("list");
+
+  React.useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("graph") !== "1") return;
+    const timer = window.setTimeout(() => setSurface("graph"), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -224,6 +237,27 @@ export function RelationshipsView({
           </div>
           <div className="flex flex-col items-end gap-2">
             <SourceHealth statuses={sources} />
+            <ToggleGroup
+              type="single"
+              value={surface}
+              onValueChange={(value) => {
+                if (value === "list" || value === "graph") setSurface(value);
+              }}
+              variant="outline"
+              size="sm"
+              aria-label="Relationship view"
+            >
+              <ToggleGroupItem value="list" aria-label="Show accounts">
+                <ListBullets /> Accounts
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="graph"
+                aria-label="Show relationship graph"
+                data-capability="relationship-graph graph-query graph-saved-views graph-governed-actions"
+              >
+                <Graph /> Graph
+              </ToggleGroupItem>
+            </ToggleGroup>
             <Button
               type="button"
               size="sm"
@@ -237,145 +271,157 @@ export function RelationshipsView({
         </div>
       </section>
 
-      <PortfolioAttentionQueue
-        items={attention}
-        onOpenRelationship={setDetail}
-        onError={onError}
-        onChanged={() => void load()}
-      />
-
-      <SemanticSearch onError={onError} />
-
-      <SourceConnectionCards
-        inventory={sourceInventory}
-        onOpenConnectors={onOpenConnectors}
-        onError={onError}
-        onChanged={() => void load()}
-      />
-
-      <IdentityReviewInbox
-        candidates={identityCandidates}
-        onError={onError}
-        onChanged={() => {
-          onNotice("Identity decision applied.");
-          void load();
-        }}
-      />
-
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative min-w-0 flex-1">
-          <MagnifyingGlass className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-primary/40" />
-          <Input
-            aria-label="Filter relationships"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Filter by account, domain, or contact"
-            className="pl-8"
-          />
-        </div>
-        <Select value={health} onValueChange={setHealth}>
-          <SelectTrigger className="w-full sm:w-44" size="sm">
-            <SelectValue placeholder="Health" />
-          </SelectTrigger>
-          <SelectContent className="app-shell rounded-[2px]">
-            <SelectItem value="all">All health</SelectItem>
-            {HEALTH_OPTIONS.map((value) => (
-              <SelectItem key={value} value={value}>
-                {humanize(value)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={lifecycle} onValueChange={setLifecycle}>
-          <SelectTrigger className="w-full sm:w-44" size="sm">
-            <SelectValue placeholder="Lifecycle" />
-          </SelectTrigger>
-          <SelectContent className="app-shell rounded-[2px]">
-            <SelectItem value="all">All lifecycle</SelectItem>
-            {LIFECYCLE_OPTIONS.map((value) => (
-              <SelectItem key={value} value={value}>
-                {humanize(value)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button variant="outline" size="sm" onClick={() => setCreating(true)}>
-          <Plus /> New
-        </Button>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-primary/45">{rows.length} relationships</span>
-        <Button variant="ghost" size="sm" onClick={() => void load()} disabled={loading}>
-          <ArrowClockwise className={loading ? "animate-spin" : ""} /> Refresh
-        </Button>
-      </div>
-
-      {loading ? (
-        <ListSkeleton />
-      ) : rows.length === 0 ? (
-        <EmptyBlock
-          icon={<AddressBook className="size-6" />}
-          title="No matching relationships"
-          body="Connect a source to build living relationship state, or add an account by hand."
-        >
-          <Button size="sm" onClick={() => setCreating(true)}>
-            <Plus /> Add relationship
-          </Button>
-        </EmptyBlock>
+      {surface === "graph" ? (
+        <RelationshipGraphWorkspace
+          relationships={rows}
+          onOpenRelationship={setDetail}
+          onError={onError}
+          onNotice={onNotice}
+        />
       ) : (
-        <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
-          {rows.map((relationship) => (
-            <li key={relationship.id}>
-              <button
-                type="button"
-                onClick={() => setDetail(relationship.id)}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-background-100/60 dark:hover:bg-background-100/40"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="truncate text-sm font-medium text-primary">
-                      {relationship.displayName}
-                    </span>
-                    <Badge variant="outline" className="rounded-[2px] font-normal capitalize">
-                      {humanize(relationship.lifecycle)}
-                    </Badge>
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[11px] capitalize ${
-                        HEALTH_TONE[relationship.health] ?? HEALTH_TONE.unknown
-                      }`}
-                    >
-                      {humanize(relationship.health)}
-                    </span>
-                  </div>
-                  <p className="mt-1 truncate text-xs text-primary/55">
-                    {relationship.nextAction ||
-                      relationship.stateReason ||
-                      relationship.summary ||
-                      "Waiting for enough evidence to recommend a next action."}
-                  </p>
-                </div>
-                <div className="hidden shrink-0 text-right md:block">
-                  <p className="text-xs capitalize text-primary/55">
-                    {humanize(relationship.engagement)}
-                  </p>
-                  <p className="text-[11px] text-primary/35">
-                    {relationship.lastChangedAt
-                      ? `changed ${relativeTime(relationship.lastChangedAt)}`
-                      : relationship.lastTouchAt
-                        ? `touched ${relativeTime(relationship.lastTouchAt)}`
-                        : `state v${relationship.stateVersion}`}
-                  </p>
-                </div>
-                {relationship.openActions ? (
-                  <Badge variant="secondary" className="shrink-0">
-                    {relationship.openActions} action{relationship.openActions === 1 ? "" : "s"}
-                  </Badge>
-                ) : null}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          <PortfolioAttentionQueue
+            items={attention}
+            onOpenRelationship={setDetail}
+            onError={onError}
+            onChanged={() => void load()}
+          />
+
+          <SemanticSearch onError={onError} />
+
+          <SourceConnectionCards
+            inventory={sourceInventory}
+            onOpenConnectors={onOpenConnectors}
+            onError={onError}
+            onChanged={() => void load()}
+          />
+
+          <IdentityReviewInbox
+            candidates={identityCandidates}
+            onError={onError}
+            onChanged={() => {
+              onNotice("Identity decision applied.");
+              void load();
+            }}
+          />
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative min-w-0 flex-1">
+              <MagnifyingGlass className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-primary/40" />
+              <Input
+                aria-label="Filter relationships"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Filter by account, domain, or contact"
+                className="pl-8"
+              />
+            </div>
+            <Select value={health} onValueChange={setHealth}>
+              <SelectTrigger className="w-full sm:w-44" size="sm">
+                <SelectValue placeholder="Health" />
+              </SelectTrigger>
+              <SelectContent className="app-shell rounded-[2px]">
+                <SelectItem value="all">All health</SelectItem>
+                {HEALTH_OPTIONS.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {humanize(value)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={lifecycle} onValueChange={setLifecycle}>
+              <SelectTrigger className="w-full sm:w-44" size="sm">
+                <SelectValue placeholder="Lifecycle" />
+              </SelectTrigger>
+              <SelectContent className="app-shell rounded-[2px]">
+                <SelectItem value="all">All lifecycle</SelectItem>
+                {LIFECYCLE_OPTIONS.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {humanize(value)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={() => setCreating(true)}>
+              <Plus /> New
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-primary/45">{rows.length} relationships</span>
+            <Button variant="ghost" size="sm" onClick={() => void load()} disabled={loading}>
+              <ArrowClockwise className={loading ? "animate-spin" : ""} /> Refresh
+            </Button>
+          </div>
+
+          {loading ? (
+            <ListSkeleton />
+          ) : rows.length === 0 ? (
+            <EmptyBlock
+              icon={<AddressBook className="size-6" />}
+              title="No matching relationships"
+              body="Connect a source to build living relationship state, or add an account by hand."
+            >
+              <Button size="sm" onClick={() => setCreating(true)}>
+                <Plus /> Add relationship
+              </Button>
+            </EmptyBlock>
+          ) : (
+            <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
+              {rows.map((relationship) => (
+                <li key={relationship.id}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setDetail(relationship.id)}
+                    className="h-auto w-full justify-start rounded-none px-4 py-3 text-left hover:bg-background-100/60 dark:hover:bg-background-100/40"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="truncate text-sm font-medium text-primary">
+                          {relationship.displayName}
+                        </span>
+                        <Badge variant="outline" className="rounded-[2px] font-normal capitalize">
+                          {humanize(relationship.lifecycle)}
+                        </Badge>
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[11px] capitalize ${
+                            HEALTH_TONE[relationship.health] ?? HEALTH_TONE.unknown
+                          }`}
+                        >
+                          {humanize(relationship.health)}
+                        </span>
+                      </div>
+                      <p className="mt-1 truncate text-xs text-primary/55">
+                        {relationship.nextAction ||
+                          relationship.stateReason ||
+                          relationship.summary ||
+                          "Waiting for enough evidence to recommend a next action."}
+                      </p>
+                    </div>
+                    <div className="hidden shrink-0 text-right md:block">
+                      <p className="text-xs capitalize text-primary/55">
+                        {humanize(relationship.engagement)}
+                      </p>
+                      <p className="text-[11px] text-primary/35">
+                        {relationship.lastChangedAt
+                          ? `changed ${relativeTime(relationship.lastChangedAt)}`
+                          : relationship.lastTouchAt
+                            ? `touched ${relativeTime(relationship.lastTouchAt)}`
+                            : `state v${relationship.stateVersion}`}
+                      </p>
+                    </div>
+                    {relationship.openActions ? (
+                      <Badge variant="secondary" className="shrink-0">
+                        {relationship.openActions} action{relationship.openActions === 1 ? "" : "s"}
+                      </Badge>
+                    ) : null}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
 
       {detail ? (
@@ -470,9 +516,10 @@ function PortfolioAttentionQueue({
         {items.slice(0, 10).map((item) => (
           <li key={item.id} className="rounded-[2px] border border-border p-3">
             <div className="flex flex-wrap items-start gap-3">
-              <button
+              <Button
                 type="button"
-                className="min-w-0 flex-1 text-left"
+                variant="ghost"
+                className="h-auto min-w-0 flex-1 justify-start rounded-[8px] p-0 text-left hover:bg-transparent"
                 onClick={() => onOpenRelationship(item.relationshipId)}
               >
                 <div className="flex flex-wrap items-center gap-2">
@@ -491,7 +538,7 @@ function PortfolioAttentionQueue({
                   </Badge>
                 </div>
                 <p className="mt-1 text-xs text-primary/60">{item.explanation}</p>
-              </button>
+              </Button>
               <div className="flex flex-wrap gap-1">
                 <Button
                   type="button"
@@ -1109,7 +1156,7 @@ function ImportedTranscriptPublisher({
   const [title, setTitle] = React.useState("");
   const [transcript, setTranscript] = React.useState("");
   const [disclosureConfirmed, setDisclosureConfirmed] = React.useState(false);
-  const [occurredAt, setOccurredAt] = React.useState(() => new Date().toISOString().slice(0, 16));
+  const [occurredAt, setOccurredAt] = React.useState(() => new Date().toISOString());
   const disclosureId = React.useId();
 
   if (!open) {
@@ -1136,10 +1183,9 @@ function ImportedTranscriptPublisher({
         placeholder="Conversation title"
         aria-label="Imported transcript title"
       />
-      <Input
-        type="datetime-local"
+      <DateTimePicker
         value={occurredAt}
-        onChange={(event) => setOccurredAt(event.target.value)}
+        onChange={setOccurredAt}
         aria-label="Conversation time"
       />
       <Textarea
@@ -1149,13 +1195,12 @@ function ImportedTranscriptPublisher({
         aria-label="Imported transcript text"
         className="min-h-40"
       />
-      <label htmlFor={disclosureId} className="flex items-start gap-2 text-xs text-primary/60">
-        <input
+      <label htmlFor={disclosureId} className="flex cursor-pointer items-start gap-2 text-xs text-primary/60">
+        <Checkbox
           id={disclosureId}
-          type="checkbox"
-          className="mt-0.5 size-4 accent-current"
+          className="mt-0.5"
           checked={disclosureConfirmed}
-          onChange={(event) => setDisclosureConfirmed(event.target.checked)}
+          onCheckedChange={(checked) => setDisclosureConfirmed(checked === true)}
         />
         <span>
           I confirm this transcript may be stored under workspace policy and participants were
@@ -1862,10 +1907,11 @@ function RelationshipSheet({
                 <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
                   {timeline.map((observation) => (
                     <li key={observation.id} className="p-3">
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         onClick={() => void revealEvidence(observation)}
-                        className="w-full text-left"
+                        className="h-auto w-full justify-start rounded-[8px] p-0 text-left hover:bg-transparent"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-medium capitalize text-primary">
@@ -1878,7 +1924,7 @@ function RelationshipSheet({
                         <p className="mt-1 text-xs text-primary/55">
                           {observation.summary || "Open the source evidence"}
                         </p>
-                      </button>
+                      </Button>
                       {observation.id in evidence ? (
                         <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap rounded-[2px] bg-background-100 p-2 text-[11px] text-primary/60 dark:bg-background-200">
                           {JSON.stringify(evidence[observation.id], null, 2)}

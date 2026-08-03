@@ -23,7 +23,7 @@ vi.mock('./embed.js', () => ({
     }),
 }));
 
-import { memorySearch, runMemoryIndex, memoryStatus, relatedNotes } from './index.js';
+import { memorySearch, rebuildMemoryIndex, runMemoryIndex, memoryStatus, relatedNotes } from './index.js';
 
 const savedEnv = { ...process.env };
 
@@ -108,5 +108,20 @@ describe('façade end-to-end', () => {
         expect(related.length).toBeGreaterThan(0);
         expect(related.map((r) => r.path)).not.toContain('Acme.md'); // excludes self
         expect(related.every((r) => typeof r.score === 'number')).toBe(true);
+    });
+
+    it('rebuilds the derived index without changing source notes', async () => {
+        process.env.SOLOMON_MEMORY_MODEL = 'custom-test-model';
+        const notePath = path.join(TEST_WORKDIR, 'knowledge', 'Durable.md');
+        fs.writeFileSync(notePath, '# Durable\n\nSource-of-truth content stays intact.');
+        await runMemoryIndex();
+        fs.writeFileSync(path.join(TEST_WORKDIR, 'index', 'stale.tmp'), 'derived');
+
+        const stats = await rebuildMemoryIndex();
+
+        expect('disabled' in stats).toBe(false);
+        expect(fs.readFileSync(notePath, 'utf-8')).toContain('Source-of-truth content');
+        expect(fs.existsSync(path.join(TEST_WORKDIR, 'index', 'stale.tmp'))).toBe(false);
+        expect(memoryStatus().chunkCount).toBeGreaterThan(0);
     });
 });

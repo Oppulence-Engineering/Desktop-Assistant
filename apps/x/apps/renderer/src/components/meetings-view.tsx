@@ -15,13 +15,14 @@ import {
   X,
 } from "@/lib/icons";
 
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@oppulence/ui/components/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@oppulence/ui/components/popover";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { formatRelativeTime } from "@/lib/relative-time";
 import { conferenceProviderLabel, extractConferenceLink, isEventNow } from "@/lib/calendar-event";
 import { cn } from "@/lib/utils";
 import type { MeetingTranscriptionState } from "@/hooks/useMeetingTranscription";
+import type { MeetingDoctorCheck } from "@x/shared/dist/meetings.js";
 import { MeetingCaptureStrip } from "@/components/meeting-capture-strip";
 import { MeetingCommitments } from "@/components/meeting-commitments";
 import { MeetingLivePanel } from "@/components/meeting-live-panel";
@@ -43,6 +44,7 @@ type MeetingsViewProps = {
   onTakeMeetingNotes: () => void;
   meetingState: MeetingTranscriptionState;
   meetingSummarizing?: boolean;
+  onCaptureReadinessChange?: (blocker: MeetingDoctorCheck | null) => void;
 };
 
 function isMeetingPath(path: string | undefined): boolean {
@@ -1022,10 +1024,13 @@ export function MeetingsView({
   onTakeMeetingNotes,
   meetingState,
   meetingSummarizing = false,
+  onCaptureReadinessChange,
 }: MeetingsViewProps) {
   const [notes, setNotes] = useState<MeetingNoteRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [microphoneBlocker, setMicrophoneBlocker] = useState<MeetingDoctorCheck | null>(null);
+  const [captureSettingsOpen, setCaptureSettingsOpen] = useState(false);
 
   const loadNotes = useCallback(async () => {
     setLoading(true);
@@ -1132,8 +1137,9 @@ export function MeetingsView({
             type="button"
             size="sm"
             variant={isRecording ? "destructive" : "default"}
-            disabled={isBusy}
-            onClick={onTakeMeetingNotes}
+            disabled={isBusy || Boolean(microphoneBlocker)}
+            onClick={microphoneBlocker ? undefined : onTakeMeetingNotes}
+            title={microphoneBlocker?.detail}
           >
             {meetingSummarizing || meetingState === "connecting" || meetingState === "stopping" ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
@@ -1142,14 +1148,42 @@ export function MeetingsView({
             ) : (
               <Mic className="mr-2 size-4" />
             )}
-            {meetingSummarizing ? "Generating notes..." : getMeetingButtonLabel(meetingState)}
+            {meetingSummarizing
+              ? "Generating notes..."
+              : microphoneBlocker
+                ? "Microphone unavailable"
+                : getMeetingButtonLabel(meetingState)}
           </Button>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">Upcoming events and meeting notes.</p>
       </div>
       {/* Capture state: levels while recording, the transcription queue, and anything
           on disk that needs attention. Renders nothing when native capture is off. */}
-      <MeetingCaptureStrip />
+      <MeetingCaptureStrip
+        onReadinessChange={(blocker) => {
+          setMicrophoneBlocker(blocker);
+          onCaptureReadinessChange?.(blocker);
+        }}
+      />
+      {microphoneBlocker ? (
+        <div className="flex shrink-0 items-center gap-3 border-b border-amber-500/30 bg-amber-500/5 px-6 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-foreground">Fix microphone before recording</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {microphoneBlocker.detail}
+              {microphoneBlocker.remediation ? ` ${microphoneBlocker.remediation}` : ""}
+            </p>
+          </div>
+          <Button type="button" size="sm" onClick={() => setCaptureSettingsOpen(true)}>
+            Open transcription settings
+          </Button>
+        </div>
+      ) : null}
+      <SettingsDialog
+        open={captureSettingsOpen}
+        onOpenChange={setCaptureSettingsOpen}
+        defaultTab="transcription"
+      />
       <div className="flex-1 overflow-auto">
         <UpcomingEvents />
         {/* Recordings on disk: transcribe again, or delete. Renders nothing when there
@@ -1172,7 +1206,9 @@ export function MeetingsView({
                 <Mic className="size-6 text-muted-foreground" />
               </div>
               <p className="text-sm text-muted-foreground">
-                No meeting notes yet. Use <strong>Take meeting notes</strong> to start one.
+                {microphoneBlocker
+                  ? "Meeting capture will be available after the microphone check passes."
+                  : "No meeting notes yet. Use Take meeting notes to start one."}
               </p>
             </div>
           ) : (

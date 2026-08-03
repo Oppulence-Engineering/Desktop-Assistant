@@ -1,6 +1,6 @@
 import { useMemo, useEffect, useState, useCallback } from "react";
-import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverAnchor, PopoverContent } from "@oppulence/ui/components/popover";
+import { Command, CommandEmpty, CommandItem, CommandList } from "@oppulence/ui/components/command";
 import { wikiLabel, stripKnowledgePrefix } from "@/lib/wiki-links";
 import { FileTextIcon } from "@/lib/icons";
 import type { CaretCoordinates } from "@/lib/textarea-caret";

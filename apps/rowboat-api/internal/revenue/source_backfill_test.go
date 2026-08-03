@@ -19,6 +19,39 @@ type fixtureSourceBackfiller struct {
 	actor string
 }
 
+type blockingSourceBackfiller struct {
+	mu      sync.Mutex
+	calls   int
+	entered chan struct{}
+	release chan struct{}
+}
+
+func (f *blockingSourceBackfiller) Backfill(
+	ctx context.Context,
+	_ *ent.User,
+	_ string,
+	_ func(SourceBackfillBatch) error,
+) error {
+	f.mu.Lock()
+	f.calls++
+	if f.calls == 1 {
+		close(f.entered)
+	}
+	f.mu.Unlock()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-f.release:
+		return nil
+	}
+}
+
+func (f *blockingSourceBackfiller) callCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.calls
+}
+
 func (f *fixtureSourceBackfiller) Backfill(
 	_ context.Context,
 	u *ent.User,
@@ -117,6 +150,54 @@ func TestSourceBackfillRunnerConsumesDurableQueueAndReplaysIdempotently(t *testi
 	).CountX(f.ctx); count != 1 {
 		t.Fatalf("provider replay duplicated observation history: %d", count)
 	}
+}
+
+func TestSourceBackfillStaleReclaimHasSingleWinner(t *testing.T) {
+	f := newFixture(t)
+	base := time.Date(2026, 8, 2, 11, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return base }
+	if _, err := f.svc.ReportSourceAuthorization(f.ctx, f.user, "hubspot", SourceAuthorizationInput{
+		SourceAccountID: "portal-stale", State: "completed",
+		GrantedScopes: []string{
+			"crm.objects.companies.read", "crm.objects.contacts.read", "crm.objects.deals.read",
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	queued, err := f.svc.BeginSourceBackfill(f.ctx, f.user, "hubspot", "portal-stale")
+	if err != nil {
+		t.Fatal(err)
+	}
+	queued.Update().
+		SetBackfillPhase("running").
+		SetSyncStartedAt(base.Add(-3 * sourceBackfillTimeout)).
+		SaveX(f.ctx)
+
+	provider := &blockingSourceBackfiller{entered: make(chan struct{}), release: make(chan struct{})}
+	runnerA := NewSourceBackfillRunner(f.svc, map[string]SourceBackfillProvider{"hubspot": provider}, time.Second, 10, zap.NewNop())
+	runnerB := NewSourceBackfillRunner(f.svc, map[string]SourceBackfillProvider{"hubspot": provider}, time.Second, 10, zap.NewNop())
+	done := make(chan struct{}, 2)
+	start := make(chan struct{})
+	for _, runner := range []*SourceBackfillRunner{runnerA, runnerB} {
+		go func(runner *SourceBackfillRunner) {
+			<-start
+			runner.sweep(context.Background())
+			done <- struct{}{}
+		}(runner)
+	}
+	close(start)
+	select {
+	case <-provider.entered:
+	case <-time.After(2 * time.Second):
+		t.Fatal("stale backfill was not reclaimed")
+	}
+	time.Sleep(50 * time.Millisecond)
+	if calls := provider.callCount(); calls != 1 {
+		t.Fatalf("stale running row was claimed by %d replicas, want 1", calls)
+	}
+	close(provider.release)
+	<-done
+	<-done
 }
 
 func TestSourceBackfillRunnerFailsClosedWithCategoricalRetry(t *testing.T) {

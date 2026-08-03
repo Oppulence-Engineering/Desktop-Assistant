@@ -27,7 +27,7 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from "@/components/ui/command";
+} from "@oppulence/ui/components/command";
 import type { SessionMeta } from "@/lib/chat-sessions";
 
 export function CommandPalette({

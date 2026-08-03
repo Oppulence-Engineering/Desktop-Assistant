@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { CheckCircleIcon, Copy, LoaderIcon, MessageSquareIcon, Send } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 import { toast } from "sonner";
 
 interface SlackReplyDraftCardProps {

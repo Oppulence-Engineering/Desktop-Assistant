@@ -12,8 +12,8 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { cn } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
+import { Tabs, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import { getScan, getScans, getWorkspace, RevenueAPIError, startScan } from "@/lib/revenue";
 import { ImpactView } from "@/components/revenue/impact-view";
@@ -140,7 +140,11 @@ export function RevenuePanel({ onOpenConnectors }: { onOpenConnectors?: () => vo
   }, []);
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-4xl flex-col gap-6 px-6 py-8">
+    <Tabs
+      value={tab}
+      onValueChange={(value) => setTab(value as Tab)}
+      className="flex h-full w-full flex-col gap-6 px-4 py-6 lg:px-6 lg:py-8"
+    >
       <header className="flex items-start gap-3">
         <div className="mt-0.5 flex size-9 items-center justify-center rounded-[2px] bg-background-200 text-primary/70 dark:bg-background-100">
           <AddressBook weight="fill" className="size-5" />
@@ -155,27 +159,21 @@ export function RevenuePanel({ onOpenConnectors }: { onOpenConnectors?: () => vo
       </header>
 
       {/* sub-navigation */}
-      <div className="flex items-center gap-1 border-b border-border">
+      <TabsList variant="line" className="h-auto w-full justify-start border-b border-border p-0">
         {TABS.map((t) => (
-          <button
+          <TabsTrigger
             key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            className={cn(
-              "-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm transition-colors",
-              tab === t.key
-                ? "border-primary text-primary"
-                : "border-transparent text-primary/55 hover:text-primary",
-            )}
+            value={t.key}
+            className="h-9 flex-none rounded-t-[8px] px-3 text-[13px]"
           >
             {t.icon}
             {t.label}
             {t.key === "scans" && scanning ? (
               <span className="size-1.5 animate-pulse rounded-full bg-oppulence-orange" />
             ) : null}
-          </button>
+          </TabsTrigger>
         ))}
-      </div>
+      </TabsList>
 
       {error ? (
         <Alert variant="destructive">
@@ -221,6 +219,6 @@ export function RevenuePanel({ onOpenConnectors }: { onOpenConnectors?: () => vo
           onOpenConnectors={onOpenConnectors}
         />
       )}
-    </div>
+    </Tabs>
   );
 }

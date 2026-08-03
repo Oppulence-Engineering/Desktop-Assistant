@@ -21,6 +21,7 @@ import type {
   MutualActionPlanItem,
   ConversationDeletionReceipt,
   BetaDiagnostics,
+  RelationshipGraph,
 } from "@x/shared/dist/relationships.js";
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
@@ -59,6 +60,19 @@ export async function listRelationships(filters: {
   }
   const query = params.size ? `?${params.toString()}` : "";
   return call(`/v1/relationships${query}`);
+}
+
+export function getRelationshipGraph(input: {
+  scope: "portfolio" | "relationship";
+  relationshipId?: string;
+  depth?: number;
+  asOf?: string;
+}): Promise<RelationshipGraph> {
+  const params = new URLSearchParams({ scope: input.scope });
+  if (input.relationshipId) params.set("relationshipId", input.relationshipId);
+  if (input.depth) params.set("depth", String(input.depth));
+  if (input.asOf) params.set("asOf", input.asOf);
+  return call(`/v1/relationships/graph?${params.toString()}`);
 }
 
 export const createRelationship = (input: {
@@ -175,6 +189,22 @@ export const editRelationshipAction = (
   input: { proposedSubject?: string; proposedMessage?: string; reason?: string },
 ) =>
   call<RelationshipAction>(`/v1/revenue-actions/${encodeURIComponent(actionId)}/edit`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+export const createRelationshipAction = (input: {
+  relationshipId: string;
+  actionType: string;
+  channel: string;
+  reason: string;
+  recipientEmail?: string;
+  proposedSubject?: string;
+  proposedMessage?: string;
+  executionMode?: "draft" | "send";
+  priorityScore?: number;
+}) =>
+  call<RelationshipAction>("/v1/revenue-actions", {
     method: "POST",
     body: JSON.stringify(input),
   });

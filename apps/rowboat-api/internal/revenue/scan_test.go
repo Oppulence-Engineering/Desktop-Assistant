@@ -2,6 +2,8 @@ package revenue
 
 import (
 	"context"
+	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -232,6 +234,47 @@ func TestScanRejectsConcurrentRun(t *testing.T) {
 		t.Fatal("second concurrent scan must be rejected")
 	}
 	close(block)
+}
+
+func TestScanAdmissionIsReplicaSafe(t *testing.T) {
+	f := newFixture(t)
+	unblock := make(chan struct{})
+	f.svc.SetSweeper(&blockingSweeper{unblock: unblock})
+
+	start := make(chan struct{})
+	errs := make(chan error, 2)
+	var wg sync.WaitGroup
+	for range 2 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			_, err := f.svc.StartScan(f.ctx, f.user, 90)
+			errs <- err
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	succeeded, rejected := 0, 0
+	for err := range errs {
+		switch {
+		case err == nil:
+			succeeded++
+		case errors.Is(err, ErrScanUnavailable):
+			rejected++
+		default:
+			t.Fatalf("unexpected concurrent admission error: %v", err)
+		}
+	}
+	if succeeded != 1 || rejected != 1 {
+		t.Fatalf("concurrent admission: succeeded=%d rejected=%d, want 1/1", succeeded, rejected)
+	}
+	if count := f.client.RevenueLeakScan.Query().CountX(f.ctx); count != 1 {
+		t.Fatalf("concurrent admission created %d scans, want 1", count)
+	}
+	close(unblock)
 }
 
 type blockingSweeper struct{ unblock chan struct{} }

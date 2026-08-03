@@ -677,19 +677,19 @@ secret_value() {
 }
 
 webhook_signature() {
-  local secret="$1" body="$2"
+  local secret="$1" timestamp="$2" body="$3"
   if ! command -v python3 >/dev/null 2>&1; then
     echo "python3 is required to sign webhook smoke requests" >&2
     return 1
   fi
-  WEBHOOK_SECRET="$secret" WEBHOOK_BODY="$body" python3 - <<'PY'
+  WEBHOOK_SECRET="$secret" WEBHOOK_TIMESTAMP="$timestamp" WEBHOOK_BODY="$body" python3 - <<'PY'
 import hashlib
 import hmac
 import os
 
 secret = os.environ["WEBHOOK_SECRET"].encode()
-body = os.environ["WEBHOOK_BODY"].encode()
-print("sha256=" + hmac.new(secret, body, hashlib.sha256).hexdigest())
+message = (os.environ["WEBHOOK_TIMESTAMP"] + "." + os.environ["WEBHOOK_BODY"]).encode()
+print("sha256=" + hmac.new(secret, message, hashlib.sha256).hexdigest())
 PY
 }
 
@@ -872,7 +872,7 @@ validate_event_webhook_task() {
   local token="$1" user_id="$2"
   local slug="kind-event-webhook-$(date +%s)"
   local source_event_id="kind-webhook-$(date +%s)"
-  local fail="" task_json="" body="" sig="" ingest_json="" runs_json="" run_id="" status_json="" run_json=""
+  local fail="" task_json="" body="" timestamp="" sig="" ingest_json="" runs_json="" run_id="" status_json="" run_json=""
 
   echo "signed external webhook event-triggered task:"
 
@@ -909,10 +909,13 @@ print(json.dumps({
 PY
 )"; then
       fail="could not build webhook smoke body"
-    elif ! sig="$(webhook_signature "$webhook_secret" "$body")"; then
+    elif ! timestamp="$(date +%s)"; then
+      fail="could not timestamp webhook smoke body"
+    elif ! sig="$(webhook_signature "$webhook_secret" "$timestamp" "$body")"; then
       fail="could not sign webhook smoke body"
     elif ! ingest_json="$(curl_smoke \
       -H "Content-Type: application/json" \
+      -H "X-Webhook-Timestamp: ${timestamp}" \
       -H "X-Webhook-Signature: ${sig}" \
       -X POST \
       --data "$body" \
@@ -1097,9 +1100,34 @@ helm_validate() {
         exit 1
       fi
     else
-      # The scheduler must stay gated off outside kind until RFC 002 lands.
-      if grep -q 'name: rowboat-api-scheduler' "${rendered_dir}/${env}.yaml"; then
-        echo "${env} values must not render the scheduler (scheduler.enabled should be false)" >&2
+      # Staging and production intentionally run the same durable workflow
+      # topology. A candidate must soak with both worker and scheduler active
+      # before it can be promoted.
+      if ! grep -q 'name: rowboat-api-scheduler' "${rendered_dir}/${env}.yaml"; then
+        echo "${env} values must render the rowboat-api-scheduler Deployment" >&2
+        exit 1
+      fi
+      if ! grep -q 'name: rowboat-api-worker' "${rendered_dir}/${env}.yaml"; then
+        echo "${env} values must render the rowboat-api worker Deployment" >&2
+        exit 1
+      fi
+      if [[ "$(grep -c '^kind: ServiceMonitor$' "${rendered_dir}/${env}.yaml")" -lt 3 ]]; then
+        echo "${env} values must render API, worker, and scheduler ServiceMonitors" >&2
+        exit 1
+      fi
+      if ! grep -q '^kind: PrometheusRule$' "${rendered_dir}/${env}.yaml" ||
+        ! grep -q 'alert: RowboatAttentionMonitorStale' "${rendered_dir}/${env}.yaml" ||
+        ! grep -q 'alert: RowboatSourceBackfillStale' "${rendered_dir}/${env}.yaml"; then
+        echo "${env} values must render relationship workflow alert rules" >&2
+        exit 1
+      fi
+      if ! grep -q 'name: .*workflow-dashboard' "${rendered_dir}/${env}.yaml" ||
+        ! grep -q 'uid.*oppulence-cloud-workflows' "${rendered_dir}/${env}.yaml"; then
+        echo "${env} values must render the governed workflow Grafana dashboard" >&2
+        exit 1
+      fi
+      if ! grep -q 'TEMPORAL_ENABLED: "true"' "${rendered_dir}/${env}.yaml"; then
+        echo "${env} values must enable Temporal" >&2
         exit 1
       fi
     fi

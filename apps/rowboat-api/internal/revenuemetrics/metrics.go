@@ -127,4 +127,40 @@ var (
 		Help:    "Relationship projector transaction duration.",
 		Buckets: prometheus.DefBuckets,
 	})
+
+	// RelationshipLoopSweeps is the heartbeat and outcome counter for the
+	// deterministic relationship workers that run beside the HTTP server.
+	// loop/result are closed taxonomies; tenant identifiers are never labels.
+	RelationshipLoopSweeps = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "relationship_loop_sweeps_total",
+		Help: "Relationship worker sweeps by loop and result.",
+	}, []string{"loop", "result"})
+
+	// RelationshipLoopDuration measures bounded sweep and per-job latency using
+	// a closed loop-name taxonomy.
+	RelationshipLoopDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "relationship_loop_duration_seconds",
+		Help:    "Relationship worker sweep or job duration by loop.",
+		Buckets: []float64{0.01, 0.1, 0.5, 1, 5, 15, 60, 300, 600},
+	}, []string{"loop"})
+
+	// RelationshipLoopItems counts bounded worker outcomes without tenant or
+	// record identifiers.
+	RelationshipLoopItems = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "relationship_loop_items_total",
+		Help: "Bounded relationship work items processed by loop and outcome.",
+	}, []string{"loop", "outcome"})
+
+	// RelationshipLoopLastSuccess is the Unix heartbeat used by stale-loop
+	// alerts and the workflow operations dashboard.
+	RelationshipLoopLastSuccess = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "relationship_loop_last_success_timestamp_seconds",
+		Help: "Unix timestamp of the last successful relationship loop sweep or job.",
+	}, []string{"loop"})
+
+	// RelationshipQueueDepth reports durable backlog size by bounded queue name.
+	RelationshipQueueDepth = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "relationship_queue_depth",
+		Help: "Current durable relationship queue depth by bounded queue name.",
+	}, []string{"queue"})
 )

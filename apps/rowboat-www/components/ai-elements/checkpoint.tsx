@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@oppulence/ui/components/button";
+import { Separator } from "@oppulence/ui/components/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
 import { BookmarkSimple, type IconProps } from "@phosphor-icons/react";
 import type { ComponentProps, HTMLAttributes } from "react";

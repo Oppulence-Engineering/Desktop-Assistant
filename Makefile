@@ -6,6 +6,7 @@ ROWBOAT_WWW_CONTAINER ?= rowboat-www-local
 ROWBOAT_WWW_PORT ?= 18082
 ROWBOAT_WWW_PUBLIC_API_BASE_URL ?= http://localhost:18080
 ROWBOAT_WWW_API_PROXY_URL ?= http://host.docker.internal:18080
+ROWBOAT_WWW_SESSION_SECRET ?= dev-only-rowboat-www-session-secret-change-me
 
 .PHONY: help all stack api-up desktop www-up www-down www-smoke www-capture-screenshots product-screenshots smoke-desktop perf-desktop perf-desktop-full perf-desktop-deep perf-desktop-baseline perf-desktop-quick helm-validate infisical-validate validate validate-full validate-all status logs down delete-cluster
 
@@ -52,13 +53,14 @@ desktop:
 	$(ROWBOAT_KIND_SCRIPT) desktop
 
 www-up:
-	docker build -f apps/rowboat-www/Dockerfile -t $(ROWBOAT_WWW_IMAGE) apps/rowboat-www
+	docker build -f apps/rowboat-www/Dockerfile -t $(ROWBOAT_WWW_IMAGE) .
 	docker rm -f $(ROWBOAT_WWW_CONTAINER) >/dev/null 2>&1 || true
 	docker run --rm -d --name $(ROWBOAT_WWW_CONTAINER) \
 	  --add-host=host.docker.internal:host-gateway \
 	  -p $(ROWBOAT_WWW_PORT):8080 \
 	  -e ROWBOAT_WWW_PUBLIC_API_BASE_URL=$(ROWBOAT_WWW_PUBLIC_API_BASE_URL) \
 	  -e ROWBOAT_WWW_API_PROXY_URL=$(ROWBOAT_WWW_API_PROXY_URL) \
+	  -e ROWBOAT_WWW_SESSION_SECRET=$(ROWBOAT_WWW_SESSION_SECRET) \
 	  $(ROWBOAT_WWW_IMAGE)
 	@printf "rowboat-www: http://localhost:%s\n" "$(ROWBOAT_WWW_PORT)"
 

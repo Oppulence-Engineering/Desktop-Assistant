@@ -68,6 +68,20 @@ func (_c *RevenueLeakScanCreate) SetNillableStatus(v *string) *RevenueLeakScanCr
 	return _c
 }
 
+// SetActiveClaim sets the "active_claim" field.
+func (_c *RevenueLeakScanCreate) SetActiveClaim(v string) *RevenueLeakScanCreate {
+	_c.mutation.SetActiveClaim(v)
+	return _c
+}
+
+// SetNillableActiveClaim sets the "active_claim" field if the given value is not nil.
+func (_c *RevenueLeakScanCreate) SetNillableActiveClaim(v *string) *RevenueLeakScanCreate {
+	if v != nil {
+		_c.SetActiveClaim(*v)
+	}
+	return _c
+}
+
 // SetMode sets the "mode" field.
 func (_c *RevenueLeakScanCreate) SetMode(v string) *RevenueLeakScanCreate {
 	_c.mutation.SetMode(v)
@@ -465,6 +479,10 @@ func (_c *RevenueLeakScanCreate) createSpec() (*RevenueLeakScan, *sqlgraph.Creat
 		_spec.SetField(revenueleakscan.FieldStatus, field.TypeString, value)
 		_node.Status = value
 	}
+	if value, ok := _c.mutation.ActiveClaim(); ok {
+		_spec.SetField(revenueleakscan.FieldActiveClaim, field.TypeString, value)
+		_node.ActiveClaim = &value
+	}
 	if value, ok := _c.mutation.Mode(); ok {
 		_spec.SetField(revenueleakscan.FieldMode, field.TypeString, value)
 		_node.Mode = value
@@ -616,6 +634,24 @@ func (u *RevenueLeakScanUpsert) SetStatus(v string) *RevenueLeakScanUpsert {
 // UpdateStatus sets the "status" field to the value that was provided on create.
 func (u *RevenueLeakScanUpsert) UpdateStatus() *RevenueLeakScanUpsert {
 	u.SetExcluded(revenueleakscan.FieldStatus)
+	return u
+}
+
+// SetActiveClaim sets the "active_claim" field.
+func (u *RevenueLeakScanUpsert) SetActiveClaim(v string) *RevenueLeakScanUpsert {
+	u.Set(revenueleakscan.FieldActiveClaim, v)
+	return u
+}
+
+// UpdateActiveClaim sets the "active_claim" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsert) UpdateActiveClaim() *RevenueLeakScanUpsert {
+	u.SetExcluded(revenueleakscan.FieldActiveClaim)
+	return u
+}
+
+// ClearActiveClaim clears the value of the "active_claim" field.
+func (u *RevenueLeakScanUpsert) ClearActiveClaim() *RevenueLeakScanUpsert {
+	u.SetNull(revenueleakscan.FieldActiveClaim)
 	return u
 }
 
@@ -887,6 +923,27 @@ func (u *RevenueLeakScanUpsertOne) SetStatus(v string) *RevenueLeakScanUpsertOne
 func (u *RevenueLeakScanUpsertOne) UpdateStatus() *RevenueLeakScanUpsertOne {
 	return u.Update(func(s *RevenueLeakScanUpsert) {
 		s.UpdateStatus()
+	})
+}
+
+// SetActiveClaim sets the "active_claim" field.
+func (u *RevenueLeakScanUpsertOne) SetActiveClaim(v string) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetActiveClaim(v)
+	})
+}
+
+// UpdateActiveClaim sets the "active_claim" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertOne) UpdateActiveClaim() *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateActiveClaim()
+	})
+}
+
+// ClearActiveClaim clears the value of the "active_claim" field.
+func (u *RevenueLeakScanUpsertOne) ClearActiveClaim() *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.ClearActiveClaim()
 	})
 }
 
@@ -1357,6 +1414,27 @@ func (u *RevenueLeakScanUpsertBulk) SetStatus(v string) *RevenueLeakScanUpsertBu
 func (u *RevenueLeakScanUpsertBulk) UpdateStatus() *RevenueLeakScanUpsertBulk {
 	return u.Update(func(s *RevenueLeakScanUpsert) {
 		s.UpdateStatus()
+	})
+}
+
+// SetActiveClaim sets the "active_claim" field.
+func (u *RevenueLeakScanUpsertBulk) SetActiveClaim(v string) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetActiveClaim(v)
+	})
+}
+
+// UpdateActiveClaim sets the "active_claim" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertBulk) UpdateActiveClaim() *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateActiveClaim()
+	})
+}
+
+// ClearActiveClaim clears the value of the "active_claim" field.
+func (u *RevenueLeakScanUpsertBulk) ClearActiveClaim() *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.ClearActiveClaim()
 	})
 }
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Send, Sparkles, X } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 import type { MeetingTranscriptSegment } from "@x/shared/dist/meetings.js";
 import type { RelationshipLiveCue } from "@x/shared/dist/relationships.js";
 

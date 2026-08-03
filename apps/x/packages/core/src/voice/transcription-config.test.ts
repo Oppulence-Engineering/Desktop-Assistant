@@ -48,6 +48,43 @@ describe("transcription config I/O", () => {
     expect(cfg.meetingProvider).toBe("deepgram"); // meetings default cloud
     expect(cfg.whisper.model).toBe("base.en-q5_1");
     expect(cfg.whisper.vad).toBe(true);
+    expect(cfg.dictation).toEqual({
+      shortcut: "control-option",
+      flowBarDock: "bottom",
+      showFlowBar: true,
+      transformsEnabled: false,
+      transforms: [
+        {
+          id: "polish",
+          name: "Polish",
+          instruction:
+            "Fix grammar and spelling, improve clarity and readability, add useful structure, and preserve the original meaning, tone, names, technical terms, and URLs.",
+          shortcut: "option-1",
+        },
+        {
+          id: "prompt-engineer",
+          name: "Prompt Engineer",
+          instruction:
+            "Rewrite this as a precise, well-structured prompt for an AI assistant. Preserve every requirement, constraint, and concrete detail.",
+          shortcut: "option-2",
+        },
+      ],
+      language: "auto",
+      commandModeEnabled: true,
+      retryFailedAudio: true,
+      historyRetention: "forever",
+      contextEnabled: true,
+      cleanupLevel: "medium",
+      microphonePriority: [],
+      styles: {
+        email: "formal",
+        workMessaging: "casual",
+        personalMessaging: "casual",
+        other: "formal",
+      },
+      dictionary: [],
+      snippets: [],
+    });
   });
 
   it("persists and re-reads a partial update (merging the whisper block)", async () => {
@@ -87,6 +124,78 @@ describe("transcription config I/O", () => {
     const cfg = await voice.readTranscriptionConfig();
     expect(cfg?.voiceProvider).toBe("whisper-local");
     expect(cfg?.whisper.model).toBe("base.en-q5_1"); // nested default filled in
+  });
+
+  it("persists local dictation context, styles, dictionary, and snippets", async () => {
+    await voice.setTranscriptionConfig({
+      dictation: {
+        shortcut: "control-fn",
+        flowBarDock: "right",
+        showFlowBar: false,
+        transformsEnabled: true,
+        transforms: [
+          {
+            id: "polish",
+            name: "Polish",
+            instruction: "Fix grammar without changing URLs.",
+            shortcut: "option-1",
+          },
+        ],
+        language: "fr",
+        commandModeEnabled: false,
+        retryFailedAudio: false,
+        historyRetention: "24-hours",
+        contextEnabled: false,
+        cleanupLevel: "high",
+        microphonePriority: [
+          { deviceId: "studio-mic", label: "Studio Microphone" },
+          { deviceId: "built-in-mic", label: "MacBook Microphone" },
+        ],
+        styles: {
+          email: "formal",
+          workMessaging: "very-casual",
+          personalMessaging: "casual",
+          other: "excited",
+        },
+        dictionary: [{ term: "Oppulence", replacementFor: "opulence", starred: true }],
+        snippets: [{ trigger: "my signature", expansion: "Best,\nDan" }],
+      },
+    });
+    await voice.setTranscriptionConfig({ privacy: { localOnly: true } });
+
+    const cfg = await voice.readTranscriptionConfig();
+    expect(cfg?.dictation.contextEnabled).toBe(false);
+    expect(cfg?.dictation.cleanupLevel).toBe("high");
+    expect(cfg?.dictation.shortcut).toBe("control-fn");
+    expect(cfg?.dictation.flowBarDock).toBe("right");
+    expect(cfg?.dictation.showFlowBar).toBe(false);
+    expect(cfg?.dictation.transformsEnabled).toBe(true);
+    expect(cfg?.dictation.transforms).toEqual([
+      {
+        id: "polish",
+        name: "Polish",
+        instruction: "Fix grammar without changing URLs.",
+        shortcut: "option-1",
+      },
+    ]);
+    expect(cfg?.dictation.language).toBe("fr");
+    expect(cfg?.dictation.retryFailedAudio).toBe(false);
+    expect(cfg?.dictation.historyRetention).toBe("24-hours");
+    expect(cfg?.dictation.commandModeEnabled).toBe(false);
+    expect(cfg?.dictation.microphonePriority).toEqual([
+      { deviceId: "studio-mic", label: "Studio Microphone" },
+      { deviceId: "built-in-mic", label: "MacBook Microphone" },
+    ]);
+    expect(cfg?.dictation.styles.workMessaging).toBe("very-casual");
+    expect(cfg?.dictation.dictionary[0]).toEqual({
+      term: "Oppulence",
+      replacementFor: "opulence",
+      starred: true,
+    });
+    expect(cfg?.dictation.snippets[0]).toEqual({
+      trigger: "my signature",
+      expansion: "Best,\nDan",
+    });
   });
 });
 

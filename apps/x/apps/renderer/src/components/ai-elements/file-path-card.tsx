@@ -9,7 +9,7 @@ import {
   Play,
   Video,
 } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 import { useFileCard } from "@/contexts/file-card-context";
 import { useSidebarSection } from "@/contexts/sidebar-context";
 import { wikiLabel } from "@/lib/wiki-links";

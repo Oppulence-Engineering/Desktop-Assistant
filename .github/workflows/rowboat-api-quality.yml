@@ -6,6 +6,8 @@ on:
       - "apps/rowboat-api/**"
       - "charts/rowboat-api/**"
       - "packages/rowboat-api-client-ts/**"
+      - "docs/trustworthy-first-account-beta/**"
+      - "scripts/rowboat-api-kind.sh"
       - ".github/workflows/rowboat-api-quality.yml"
       - ".github/workflows/rowboat-api-deploy.yml"
   push:
@@ -14,6 +16,8 @@ on:
       - "apps/rowboat-api/**"
       - "charts/rowboat-api/**"
       - "packages/rowboat-api-client-ts/**"
+      - "docs/trustworthy-first-account-beta/**"
+      - "scripts/rowboat-api-kind.sh"
       - ".github/workflows/rowboat-api-quality.yml"
       - ".github/workflows/rowboat-api-deploy.yml"
 
@@ -110,14 +114,20 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: azure/setup-helm@v5
-      - name: Helm lint
-        run: helm lint charts/rowboat-api
-      - name: Helm template default values
-        run: helm template rowboat-api charts/rowboat-api
-      - name: Helm template kind values
-        run: helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-kind.yaml
-      - name: Helm template production values
-        run: helm template rowboat-api charts/rowboat-api -n rowboat -f charts/rowboat-api/values-production.yaml --set image.tag=ci
+      - name: Validate all Helm environments and topology invariants
+        run: make helm-validate
+
+  release-register:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/rowboat-api/go.mod
+          cache-dependency-path: apps/rowboat-api/go.sum
+      - name: Validate governed release evidence schema
+        run: make tfa-release-register-validate
+        working-directory: apps/rowboat-api
 
   vulnerability-scan:
     runs-on: ubuntu-latest

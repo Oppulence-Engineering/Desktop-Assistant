@@ -1,15 +1,15 @@
 import * as React from "react";
 import { Plus, Trash2, ShieldCheck, CodeIcon, Loader2 } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@oppulence/ui/components/button";
+import { Input } from "@oppulence/ui/components/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+} from "@oppulence/ui/components/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@oppulence/ui/components/collapsible";
 import { SettingsSection, StringListRows } from "./settings-ui";
 
 /**

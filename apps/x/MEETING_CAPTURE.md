@@ -130,7 +130,7 @@ from one still waiting on its transcript.
 | engine              | speed (measured)           | 1-hour meeting, 2 tracks | notes                               |
 | ------------------- | -------------------------- | ------------------------ | ----------------------------------- |
 | `whisper` (default) | 18x realtime               | ~6.6 min                 | already shipped, no download        |
-| `parakeet`          | 0.52 s/call + 70x realtime | ~1.8 min                 | Core ML, ~600 MB once, 25 languages |
+| `parakeet`          | 0.52 s/call + 70x realtime | ~1.8 min                 | Core ML, ~600 MB once, 28 languages |
 
 Parakeet is **not** trusted on its own. It can return zero tokens for audio that plainly
 contains speech — deterministically, on the same file, while whisper transcribes it

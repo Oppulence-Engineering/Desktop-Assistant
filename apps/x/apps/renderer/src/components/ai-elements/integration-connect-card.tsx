@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircleIcon, Link2Icon, LoaderIcon, XCircleIcon } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 import { IntegrationApiKeyModal } from "@/components/integration-api-key-modal";
 
 interface IntegrationConnectCardProps {

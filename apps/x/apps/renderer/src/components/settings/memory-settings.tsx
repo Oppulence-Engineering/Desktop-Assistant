@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { BrainIcon, Loader2 } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
+import { Button } from "@oppulence/ui/components/button";
+import { Switch } from "@oppulence/ui/components/switch";
+import { Input } from "@oppulence/ui/components/input";
 import { toast } from "sonner";
 import { SettingsSection, SettingsRow } from "./settings-ui";
 

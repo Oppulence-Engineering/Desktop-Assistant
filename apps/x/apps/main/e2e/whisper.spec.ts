@@ -110,6 +110,10 @@ test("packaged whisper engine is staged and reachable", async () => {
     args: ["--no-sandbox"],
     env: { ...process.env, ROWBOAT_WORKDIR: workdir, NODE_ENV: "production" },
   });
+  if (process.env.WHISPER_E2E_LOGS === "1") {
+    app.process().stdout?.on("data", (chunk) => process.stdout.write(`[app] ${chunk}`));
+    app.process().stderr?.on("data", (chunk) => process.stderr.write(`[app] ${chunk}`));
+  }
 
   const window = await app.firstWindow();
   await window.waitForLoadState("domcontentloaded");

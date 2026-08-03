@@ -7,16 +7,16 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+} from "@oppulence/ui/components/dialog";
+import { Button } from "@oppulence/ui/components/button";
+import { Textarea } from "@oppulence/ui/components/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@oppulence/ui/components/select";
 import { Loader2 } from "@/lib/icons";
 import { toast } from "sonner";
 import { feedbackSubmitted } from "@/lib/analytics";

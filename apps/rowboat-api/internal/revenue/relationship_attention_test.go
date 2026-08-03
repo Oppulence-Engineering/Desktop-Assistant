@@ -1,9 +1,44 @@
 package revenue
 
 import (
+	"context"
+	"fmt"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 )
+
+func TestRelationshipAttentionRunnerPaginatesAllActiveWorkspaces(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 2, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	users := []*ent.User{f.user}
+	for i := 1; i < 5; i++ {
+		users = append(users, newUser(t, f.client, fmt.Sprintf("attention-%d@example.com", i), fmt.Sprintf("attention_%d", i)))
+	}
+	for i, owner := range users {
+		ownerCtx := auth.WithUser(context.Background(), owner)
+		rel, err := f.svc.CreateRelationship(ownerCtx, owner, RelationshipInput{
+			Kind: "company", DisplayName: fmt.Sprintf("Account %d", i), AccountDomain: fmt.Sprintf("account-%d.example", i),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		rel.Update().SetLifecycle("renewal").SetStateVersion(1).SaveX(ownerCtx)
+	}
+
+	runner := NewRelationshipAttentionRunner(f.svc, time.Hour, 2, zap.NewNop())
+	runner.sweep(context.Background())
+
+	count := f.client.RelationshipAttentionItem.Query().CountX(auth.WithInternalOnly(context.Background()))
+	if count != len(users) {
+		t.Fatalf("attention runner processed %d of %d workspaces", count, len(users))
+	}
+}
 
 func TestRelationshipAttentionProjectionIsDeterministicAndMaterialChangesReopenTriage(t *testing.T) {
 	f := newFixture(t)

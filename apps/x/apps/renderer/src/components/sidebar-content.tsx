@@ -29,8 +29,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+} from "@oppulence/ui/components/alert-dialog";
+import { Button } from "@oppulence/ui/components/button";
 import {
   Sidebar,
   SidebarContent,
@@ -42,10 +42,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarTrigger,
   useSidebar,
-} from "@/components/ui/sidebar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+} from "@oppulence/ui/components/sidebar";
+import { Popover, PopoverContent, PopoverTrigger } from "@oppulence/ui/components/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { extractConferenceLink } from "@/lib/calendar-event";
@@ -53,6 +54,7 @@ import { useBilling } from "@/hooks/useBilling";
 import { useVoiceMode } from "@/hooks/useVoiceMode";
 import { toast } from "@/lib/toast";
 import { ServiceEvent } from "@x/shared/src/service-events.js";
+import type { RelationshipSourceStatus } from "@x/shared/src/relationships.js";
 import type { TranscriptionProvider } from "@x/shared/dist/transcription.js";
 import {
   PRODUCT_NAME,
@@ -60,6 +62,10 @@ import {
   getProductProviderState,
 } from "@x/shared/dist/branding.js";
 import z from "zod";
+import {
+  relationshipSourceHealthSummary,
+  relationshipSourceStatusLabel,
+} from "@/lib/relationship-source-health";
 
 interface TreeNode {
   path: string;
@@ -128,6 +134,14 @@ type ServiceEventType = z.infer<typeof ServiceEvent>;
 
 const MAX_SYNC_EVENTS = 1000;
 const RUN_STALE_MS = 2 * 60 * 60 * 1000;
+const USER_VISIBLE_SERVICE_ACTIVITY = new Set([
+  "gmail",
+  "calendar",
+  "fireflies",
+  "granola",
+  "graph",
+  "voice_memo",
+]);
 
 const SERVICE_LABELS: Record<string, string> = {
   gmail: "Syncing Gmail",
@@ -177,6 +191,8 @@ type SidebarContentPanelProps = {
   onNewChat?: () => void;
   onToggleBrowser?: () => void;
   onVoiceNoteCreated?: (path: string) => void;
+  /** Keep reconnect controls available without auto-opening another prompt in local mode. */
+  suppressOauthAlerts?: boolean;
   /** Which primary destination is currently active, for nav highlighting. */
   activeNav?:
     | "home"
@@ -199,6 +215,15 @@ function formatEventTime(ts: string): string {
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+function formatSourceLag(seconds: number): string {
+  if (seconds < 60) return "current";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m behind`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h behind`;
+  return `${Math.floor(hours / 24)}d behind`;
+}
+
 function SyncStatusBar() {
   const { state } = useSidebar();
   const [activeServices, setActiveServices] = useState<Map<string, string>>(new Map());
@@ -206,7 +231,23 @@ function SyncStatusBar() {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [logEvents, setLogEvents] = useState<ServiceEventType[]>([]);
   const [logLoading, setLogLoading] = useState(false);
+  const [relationshipSources, setRelationshipSources] = useState<RelationshipSourceStatus[]>([]);
   const runTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  const refreshRelationshipSources = useCallback(async () => {
+    try {
+      const result = await window.ipc.invoke("relationships:sources", null);
+      setRelationshipSources(result.sources);
+    } catch {
+      setRelationshipSources([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshRelationshipSources();
+    const timer = window.setInterval(() => void refreshRelationshipSources(), 60_000);
+    return () => window.clearInterval(timer);
+  }, [refreshRelationshipSources]);
 
   // Track active runs from real-time events
   useEffect(() => {
@@ -273,6 +314,7 @@ function SyncStatusBar() {
     let cancelled = false;
     async function loadLogs() {
       setLogLoading(true);
+      void refreshRelationshipSources();
       try {
         const result = await window.ipc.invoke("workspace:readFile", {
           path: "logs/services.jsonl",
@@ -304,33 +346,52 @@ function SyncStatusBar() {
     return () => {
       cancelled = true;
     };
-  }, [popoverOpen]);
+  }, [popoverOpen, refreshRelationshipSources]);
 
   const isSyncing = activeServices.size > 0;
   const isCollapsed = state === "collapsed";
   const errorEntries = Array.from(serviceErrors.entries());
   const primaryErrorService = errorEntries[0]?.[0] ?? null;
   const hasServiceErrors = errorEntries.length > 0;
+  const sourceHealth = relationshipSourceHealthSummary(relationshipSources);
+  const hasSourceAttention = sourceHealth.needsAttention.length > 0;
+  const hasSourceSyncing = sourceHealth.syncing.length > 0;
+  const visibleLogEvents = logEvents.filter((event) => {
+    if (event.level === "error" || event.level === "warn") return true;
+    if (!USER_VISIBLE_SERVICE_ACTIVITY.has(event.service)) return false;
+    if (event.type === "changes_identified") return true;
+    return event.type === "run_complete" && event.outcome === "ok";
+  });
 
   // Build status label from active services
   const activeServiceNames = [...new Set(activeServices.values())];
   const statusLabel = isSyncing
     ? activeServiceNames.map((s) => SERVICE_LABELS[s] || s).join(", ")
-    : hasServiceErrors
-      ? errorEntries.length === 1
-        ? `${SERVICE_LABELS[primaryErrorService ?? ""] || primaryErrorService} failed`
-        : "Recent sync issues"
-      : "All caught up";
+    : hasSourceAttention
+      ? `${sourceHealth.needsAttention.length} source${sourceHealth.needsAttention.length === 1 ? "" : "s"} need attention`
+      : hasServiceErrors
+        ? errorEntries.length === 1
+          ? `${SERVICE_LABELS[primaryErrorService ?? ""] || primaryErrorService} failed`
+          : "Recent sync issues"
+        : hasSourceSyncing
+          ? `${sourceHealth.syncing.length} source${sourceHealth.syncing.length === 1 ? "" : "s"} building history`
+          : relationshipSources.length > 0
+            ? "Evidence sources healthy"
+            : "Connect evidence sources";
 
   return (
     <>
-      {isCollapsed && isSyncing && (
+      {isCollapsed && (isSyncing || hasSourceAttention || hasServiceErrors) && (
         <div
           className="fixed bottom-4 z-40 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background shadow-sm"
           style={{ left: "0.5rem" }}
-          aria-label="Syncing"
+          aria-label={statusLabel}
         >
-          <LoaderIcon className="h-4 w-4 animate-spin text-muted-foreground" />
+          {isSyncing ? (
+            <LoaderIcon className="h-4 w-4 animate-spin text-muted-foreground" />
+          ) : (
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+          )}
         </div>
       )}
       <SidebarFooter className="border-t border-sidebar-border px-2 py-2">
@@ -340,15 +401,15 @@ function SyncStatusBar() {
               type="button"
               className={cn(
                 "flex w-full items-center justify-between rounded-none px-2 py-1 text-xs hover:bg-sidebar-accent",
-                hasServiceErrors && !isSyncing
-                  ? "text-red-600 dark:text-red-400"
+                (hasSourceAttention || hasServiceErrors) && !isSyncing
+                  ? "text-amber-700 dark:text-amber-400"
                   : "text-muted-foreground",
               )}
             >
               <span className="flex items-center gap-2 min-w-0">
                 {isSyncing ? (
                   <LoaderIcon className="h-3 w-3 shrink-0 animate-spin" />
-                ) : hasServiceErrors ? (
+                ) : hasSourceAttention || hasServiceErrors ? (
                   <AlertTriangle className="h-3 w-3 shrink-0" />
                 ) : (
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/60" />
@@ -360,23 +421,49 @@ function SyncStatusBar() {
           </PopoverTrigger>
           <PopoverContent side="right" align="end" sideOffset={4} className="w-96 p-0">
             <div className="p-3 border-b">
-              <h4 className="font-semibold text-sm">Sync Activity</h4>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {isSyncing || hasServiceErrors ? statusLabel : "All services up to date"}
-              </p>
+              <h4 className="font-semibold text-sm">Data health</h4>
+              <p className="text-xs text-muted-foreground mt-0.5">{statusLabel}</p>
             </div>
             <div className="max-h-80 overflow-y-auto p-2">
+              {relationshipSources.length > 0 ? (
+                <div className="mb-2 space-y-1" aria-label="Evidence source health">
+                  {relationshipSources.map((source) => (
+                    <div
+                      key={`${source.source}:${source.sourceAccountId}`}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-border px-2.5 py-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-medium capitalize">{source.source}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {relationshipSourceStatusLabel(source)} ·{" "}
+                          {formatSourceLag(source.lagSeconds)}
+                        </p>
+                      </div>
+                      {source.missingScopes.length > 0 ? (
+                        <span className="shrink-0 text-xs text-amber-700 dark:text-amber-400">
+                          Permission needed
+                        </span>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
               {logLoading ? (
                 <div className="flex items-center justify-center py-4">
                   <LoaderIcon className="h-4 w-4 animate-spin text-muted-foreground" />
                 </div>
-              ) : logEvents.length === 0 ? (
+              ) : visibleLogEvents.length === 0 ? (
                 <div className="py-4 text-center text-xs text-muted-foreground">
-                  No recent activity.
+                  {relationshipSources.length === 0
+                    ? "Connect Google, Slack, or HubSpot to build relationship evidence."
+                    : "No recent source activity."}
                 </div>
               ) : (
-                <div className="space-y-0.5">
-                  {logEvents.map((event, idx) => (
+                <div className="space-y-0.5 border-t border-border pt-2">
+                  <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">
+                    Recent source activity
+                  </p>
+                  {visibleLogEvents.slice(0, 20).map((event, idx) => (
                     <div
                       key={`${event.runId}-${event.ts}-${idx}`}
                       className="flex items-start gap-2 rounded-none px-2 py-1 text-xs hover:bg-accent"
@@ -437,6 +524,7 @@ export function SidebarContentPanel({
   onNewChat,
   onToggleBrowser,
   onVoiceNoteCreated,
+  suppressOauthAlerts = false,
   activeNav,
   meetingRecordingState = "idle",
   recordingMeetingSource = null,
@@ -451,14 +539,21 @@ export function SidebarContentPanel({
   const [isSolomonConnected, setIsSolomonConnected] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
   const [appUrl, setAppUrl] = useState<string | null>(null);
-  const { billing, error: billingError } = useBilling(isSolomonConnected);
-  const billingNeedsReconnect = billingError?.reason === "auth_unavailable";
+  const { billing } = useBilling(isSolomonConnected);
+  const { state: sidebarState } = useSidebar();
+  const isCollapsed = sidebarState === "collapsed";
 
   // Nav previews: unread important emails + next upcoming meetings (top 2 each).
   const [unreadEmailCount, setUnreadEmailCount] = useState(0);
   const [emailThreads, setEmailThreads] = useState<SidebarEmailThread[]>([]);
   const [meetings, setMeetings] = useState<UpcomingMeeting[]>([]);
   const [quickAccessExpanded, setQuickAccessExpanded] = useState(true);
+
+  useEffect(() => {
+    if (!suppressOauthAlerts) return;
+    setShowOauthAlert(false);
+    setOpenConnectionsAfterClose(false);
+  }, [suppressOauthAlerts]);
 
   useEffect(() => {
     let cancelled = false;
@@ -778,22 +873,23 @@ export function SidebarContentPanel({
       : null;
 
   return (
-    <Sidebar className="rowboat-sidebar border-r-0" variant="inset" {...props}>
-      <SidebarHeader className="titlebar-drag-region">
-        {/* Top spacer to clear the traffic lights + fixed toggle row */}
-        <div className="h-8" />
-        {/* Quick actions */}
-        <div className="titlebar-no-drag flex items-center gap-1.5 px-3 pb-2">
-          {onNewChat && <ActionButton icon={SquarePen} label="New chat" onClick={onNewChat} />}
-          <ActionButton
-            icon={FilePlus}
-            label="New note"
-            onClick={() => knowledgeActions.createNote()}
-          />
-          <VoiceNoteButton onNoteCreated={onVoiceNoteCreated} variant="action" />
-          {onToggleBrowser && (
-            <ActionButton icon={Globe} label="Run browser task" onClick={onToggleBrowser} />
-          )}
+    <Sidebar className="rowboat-sidebar border-r-0" variant="inset" collapsible="icon" {...props}>
+      <SidebarHeader className="titlebar-drag-region shrink-0 p-0">
+        {/* Keep the sidebar toggle and quick actions in one compact chrome row. */}
+        <div className="titlebar-no-drag flex h-10 items-center gap-2 pr-2">
+          <SidebarTrigger className="-ml-2 size-8 shrink-0 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" />
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            {onNewChat && <ActionButton icon={SquarePen} label="New chat" onClick={onNewChat} />}
+            <ActionButton
+              icon={FilePlus}
+              label="New note"
+              onClick={() => knowledgeActions.createNote()}
+            />
+            <VoiceNoteButton onNoteCreated={onVoiceNoteCreated} variant="action" />
+            {onToggleBrowser && (
+              <ActionButton icon={Globe} label="Run browser task" onClick={onToggleBrowser} />
+            )}
+          </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -1011,7 +1107,7 @@ export function SidebarContentPanel({
         <div className="mx-3 border-t border-sidebar-border" />
 
         {/* Recents */}
-        <SidebarGroup className="flex flex-col">
+        <SidebarGroup className={cn("flex flex-col", isCollapsed && "hidden")}>
           <SidebarGroupContent>
             <button
               type="button"
@@ -1050,7 +1146,7 @@ export function SidebarContentPanel({
         </SidebarGroup>
       </SidebarContent>
       {/* Billing / upgrade CTA or Log in CTA */}
-      {isSolomonConnected && billing ? (
+      {isSolomonConnected && billing && !isCollapsed ? (
         <div className="px-3 py-2">
           <div className="flex items-center justify-between rounded-none border border-sidebar-border bg-sidebar-accent/20 px-3 py-2">
             <div className="min-w-0">
@@ -1091,19 +1187,8 @@ export function SidebarContentPanel({
           </div>
         </div>
       ) : null}
-      {isSolomonConnected && billingNeedsReconnect ? (
-        <div className="px-3 py-2">
-          <button
-            onClick={handleSolomonLogin}
-            disabled={loggingIn}
-            className="flex w-full items-center justify-center rounded-none border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-xs font-medium text-sidebar-foreground transition-colors hover:bg-amber-500/15 disabled:opacity-50"
-          >
-            {loggingIn ? "Signing in..." : `Sign in again to ${PRODUCT_NAME}`}
-          </button>
-        </div>
-      ) : null}
       {/* Sign in CTA */}
-      {!isSolomonConnected && (
+      {!isSolomonConnected && !isCollapsed && (
         <div className="px-3 py-2">
           <button
             onClick={handleSolomonLogin}
@@ -1121,10 +1206,15 @@ export function SidebarContentPanel({
             <button
               ref={connectorsButtonRef}
               onClick={() => setConnectionsSettingsOpen(true)}
-              className="flex w-full items-center gap-2 rounded-none px-2 py-1 text-xs text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+              aria-label="Connect Accounts"
+              title="Connect Accounts"
+              className={cn(
+                "flex items-center gap-2 rounded-lg py-1 text-xs text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                isCollapsed ? "size-8 justify-center px-0" : "w-full px-2",
+              )}
             >
               <Plug className="size-4" />
-              <span>Connect Accounts</span>
+              <span className={isCollapsed ? "sr-only" : undefined}>Connect Accounts</span>
             </button>
             {hasOauthError && (
               <AlertDialog open={showOauthAlert} onOpenChange={setShowOauthAlert}>
@@ -1178,9 +1268,16 @@ export function SidebarContentPanel({
             )}
           </div>
           <SettingsDialog>
-            <button className="flex w-full items-center gap-2 rounded-none px-2 py-1 text-xs text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
+            <button
+              aria-label="Settings"
+              title="Settings"
+              className={cn(
+                "flex items-center gap-2 rounded-lg py-1 text-xs text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                isCollapsed ? "size-8 justify-center px-0" : "w-full px-2",
+              )}
+            >
               <Settings className="size-4" />
-              <span>Settings</span>
+              <span className={isCollapsed ? "sr-only" : undefined}>Settings</span>
             </button>
           </SettingsDialog>
         </div>

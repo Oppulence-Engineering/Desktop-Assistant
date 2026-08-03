@@ -337,6 +337,66 @@ func addRevenueSchemas(schemas obj) {
 		"deletionReceipts":          arraySchema("Deletion status and verification.", ref("ConversationDeletionReceipt")),
 	}, "claims", "reviewItems", "governanceReceipts", "delta", "liveCues", "contradictionCases", "recoveryEvaluations", "recommendationEvaluations", "mutualActionPlans", "effectivePolicy", "governanceDecisions", "deletionReceipts")
 
+	schemas["RelationshipGraphNode"] = objectSchema("A versioned, typed relationship graph node. Meaning is explicit so clients can render status without relying on color alone.", obj{
+		"id":                 stringSchema("Stable node id.", "relationship:9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"kind":               stringEnum("Node kind.", "relationship", "relationship", "person", "commitment", "risk", "milestone", "action", "evidence", "source", "note"),
+		"label":              stringSchema("Human-readable label.", "Northstar Labs"),
+		"relationshipId":     uuidSchema("Primary relationship id when applicable.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"relationshipIds":    arraySchema("All associated relationships, including shared participants.", uuidSchema("Relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5")),
+		"summary":            stringSchema("Evidence-backed summary.", "Security review is overdue."),
+		"status":             stringSchema("Domain status.", "open"),
+		"role":               stringSchema("Participant role.", "champion"),
+		"source":             stringSchema("Evidence source.", "meeting"),
+		"lifecycle":          stringSchema("Commercial lifecycle.", "renewal"),
+		"engagement":         stringSchema("Engagement state.", "declining"),
+		"sentiment":          stringSchema("Sentiment state.", "mixed"),
+		"health":             stringSchema("Health state.", "needs_attention"),
+		"approvalStatus":     stringSchema("Action approval state.", "pending"),
+		"policyStatus":       stringSchema("Action policy state.", "passed"),
+		"executionStatus":    stringSchema("Action execution state.", "pending"),
+		"freshness":          stringEnum("Evidence freshness.", "current", "current", "aging", "stale", "unknown"),
+		"confidence":         obj{"type": "number", "minimum": 0, "maximum": 1, "example": 0.88},
+		"priority":           obj{"type": "integer", "minimum": 0, "maximum": 100, "example": 82},
+		"dueAt":              stringSchema("Due time.", "2026-08-12T14:00:00Z", obj{"format": "date-time"}, nullable()),
+		"occurredAt":         stringSchema("Evidence occurrence time.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}, nullable()),
+		"updatedAt":          stringSchema("Last material update.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}, nullable()),
+		"changedSinceReview": boolSchema("Whether this state is newer than the viewer's acknowledgement.", true),
+		"changedDimensions":  arraySchema("Changed state dimensions.", stringSchema("Dimension.", "health")),
+		"evidenceRefs":       arraySchema("Inspectable evidence ids.", stringSchema("Evidence id.", "4b8dfa9b-a7b2-46ea-982c-622a914c00e5")),
+		"resourceRef":        stringSchema("Underlying record id used by explicit Open actions.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"metadata":           freeFormSchema("Kind-specific bounded metadata."),
+	}, "id", "kind", "label", "relationshipIds", "changedSinceReview", "changedDimensions", "evidenceRefs", "metadata")
+
+	schemas["RelationshipGraphEdge"] = objectSchema("A typed graph edge whose source-to-target direction is semantically meaningful.", obj{
+		"id":           stringSchema("Stable edge id.", "edge:ab12cd34"),
+		"source":       stringSchema("Source node id.", "commitment:1"),
+		"target":       stringSchema("Target node id.", "commitment:2"),
+		"kind":         stringEnum("Edge kind.", "requires", "participant_of", "owns", "has_commitment", "blocks", "requires", "supersedes", "has_risk", "has_milestone", "recommended_for", "supports", "contradicts", "observed_from", "linked_note"),
+		"label":        stringSchema("Human-readable edge label.", "requires"),
+		"directed":     boolSchema("Whether the source-to-target direction is meaningful.", true),
+		"confidence":   obj{"type": "number", "minimum": 0, "maximum": 1, "example": 0.88},
+		"evidenceRefs": arraySchema("Evidence supporting the connection.", stringSchema("Evidence id.", "4b8dfa9b-a7b2-46ea-982c-622a914c00e5")),
+	}, "id", "source", "target", "kind", "label", "directed", "evidenceRefs")
+
+	schemas["RelationshipGraph"] = objectSchema("Shared read model for Account Graph and Portfolio Graph in web and desktop. Historical reads are bounded by asOf and every governed action remains permission-gated.", obj{
+		"contractVersion": stringSchema("Wire contract version.", "2026-08-01"),
+		"generatedAt":     stringSchema("Projection generation time.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
+		"asOf":            stringSchema("Historical evidence boundary.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
+		"historical":      boolSchema("Whether the response is an historical projection.", false),
+		"scope":           stringEnum("Graph scope.", "portfolio", "portfolio", "relationship"),
+		"relationshipId":  uuidSchema("Relationship id for account scope.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"depth":           obj{"type": "integer", "minimum": 1, "maximum": 3, "example": 2},
+		"nodes":           arraySchema("Typed nodes.", ref("RelationshipGraphNode")),
+		"edges":           arraySchema("Typed directed edges.", ref("RelationshipGraphEdge")),
+		"permissions": objectSchema("Viewer capabilities for this projection.", obj{
+			"canView":       boolSchema("May view.", true),
+			"canContribute": boolSchema("May propose state or actions.", true),
+			"canApprove":    boolSchema("May approve current action revisions.", false),
+			"canExecute":    boolSchema("May explicitly execute approved actions.", false),
+			"canSaveViews":  boolSchema("May save graph views.", true),
+		}, "canView", "canContribute", "canApprove", "canExecute", "canSaveViews"),
+	}, "contractVersion", "generatedAt", "asOf", "historical", "scope", "depth", "nodes", "edges", "permissions")
+
 	schemas["RevenueAction"] = objectSchema("One Revenue Action Queue item. State is split into independent dimensions: queue triage, policy preflight, approval, and execution. Every edit creates a new revision and invalidates the previous policy decision and approval.", obj{
 		"id":                      uuidSchema("Action id.", "1a8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"relationshipId":          uuidSchema("Owning relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
@@ -535,6 +595,26 @@ func addRevenuePaths(paths obj) {
 			"401": responseRef("401"),
 		}),
 	}
+	paths["/v1/relationships/graph"] = obj{"get": operation(
+		"Relationship Intelligence",
+		"Get the relationship graph",
+		"Returns the shared versioned graph read model for an account or the authorized portfolio. Historical asOf reads exclude later evidence and proposed actions.",
+		"getRelationshipGraph",
+		bearer(),
+		[]any{
+			obj{"name": "scope", "in": "query", "required": false, "description": "Portfolio or one relationship.", "schema": obj{"type": "string", "enum": []string{"portfolio", "relationship"}, "default": "portfolio"}},
+			obj{"name": "relationshipId", "in": "query", "required": false, "description": "Required when scope=relationship.", "schema": obj{"type": "string", "format": "uuid"}},
+			obj{"name": "depth", "in": "query", "required": false, "description": "Bounded graph expansion depth.", "schema": obj{"type": "integer", "minimum": 1, "maximum": 3, "default": 2}},
+			obj{"name": "asOf", "in": "query", "required": false, "description": "Historical evidence boundary; must not be in the future.", "schema": obj{"type": "string", "format": "date-time"}},
+		},
+		nil,
+		obj{
+			"200": jsonResponse("Authorized relationship graph.", ref("RelationshipGraph"), nil),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+			"404": responseRef("404"),
+		},
+	)}
 	relationshipParam := []any{obj{"name": "relationshipId", "in": "path", "required": true, "description": "Relationship id.", "schema": obj{"type": "string", "format": "uuid"}}}
 	paths["/v1/relationships/{relationshipId}"] = obj{"get": operation("Relationship Intelligence", "Get relationship mission control", "Returns living relationship state, governed recommendations, participants, and commitments.", "getRelationship", bearer(), relationshipParam, nil, obj{
 		"200": jsonResponse("Relationship detail.", objectSchema("Relationship detail.", obj{

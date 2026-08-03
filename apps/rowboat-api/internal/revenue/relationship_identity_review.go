@@ -137,7 +137,13 @@ func createIdentityCandidate(
 		SetImpactJSON(string(impactJSON)).
 		SetRecommendedDecision("defer").
 		SetConfidence(signal.Confidence).
-		OnConflict(entsql.ResolveWithIgnore()).Exec(ctx)
+		OnConflict(
+			entsql.ConflictColumns(
+				relationshipidentitycandidate.FieldDedupeKey,
+				relationshipidentitycandidate.WorkspaceColumn,
+			),
+			entsql.DoNothing(),
+		).Exec(ctx)
 	if err != nil {
 		return nil, err
 	}

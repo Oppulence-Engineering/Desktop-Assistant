@@ -67,6 +67,7 @@ func (h *Handler) Mount(r chi.Router) {
 	r.Route("/v1/relationships", func(r chi.Router) {
 		r.Get("/", h.ListRelationships)
 		r.Post("/", h.CreateRelationship)
+		r.Get("/graph", h.RelationshipGraph)
 		r.Get("/{relationshipId}", h.GetRelationship)
 		r.Get("/{relationshipId}/timeline", h.RelationshipTimeline)
 		r.Get("/{relationshipId}/changes", h.RelationshipChanges)

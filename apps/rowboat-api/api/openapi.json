@@ -1255,10 +1255,45 @@
             "example": 2,
             "type": "integer"
           },
+          "scheduleSyncError": {
+            "description": "Latest schedule reconciliation error, empty when healthy.",
+            "example": "",
+            "nullable": true,
+            "type": "string"
+          },
+          "scheduleSyncState": {
+            "description": "Server-owned Temporal schedule reconciliation state.",
+            "enum": ["current", "syncing", "failed", "paused"],
+            "example": "current",
+            "type": "string"
+          },
+          "scheduleSyncedAt": {
+            "description": "Last successful schedule reconciliation timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
           "slug": {
             "description": "Stable per-user background task slug matching bg-tasks/\u003cslug\u003e locally.",
             "example": "daily-summary",
             "type": "string"
+          },
+          "systemManaged": {
+            "description": "Whether Oppulence owns and upgrades this definition. Managed tasks can be paused but not deleted or edited.",
+            "example": false,
+            "type": "boolean"
+          },
+          "templateSlug": {
+            "description": "First-party template that owns this definition. Empty for user-authored tasks.",
+            "example": "relationship-refresh",
+            "nullable": true,
+            "type": "string"
+          },
+          "templateVersion": {
+            "description": "Installed version of the owning first-party template. Zero for user-authored tasks.",
+            "example": 1,
+            "type": "integer"
           },
           "triggers": {
             "description": "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
@@ -1282,6 +1317,8 @@
           "instructions",
           "active",
           "executionTarget",
+          "systemManaged",
+          "scheduleSyncState",
           "createdAt",
           "updatedAt",
           "revision"
@@ -2329,6 +2366,11 @@
             "example": "api",
             "type": "string"
           },
+          "firstParty": {
+            "description": "Whether the template is installed and maintained automatically by Oppulence.",
+            "example": false,
+            "type": "boolean"
+          },
           "instructions": {
             "description": "Default task instructions.",
             "example": "Review recent important Gmail messages and produce a markdown digest.",
@@ -2386,6 +2428,11 @@
               "timezone": "America/New_York"
             },
             "nullable": true
+          },
+          "version": {
+            "description": "Monotonic product definition version used for safe upgrades.",
+            "example": 1,
+            "type": "integer"
           }
         },
         "required": [
@@ -2395,7 +2442,9 @@
           "description",
           "instructions",
           "active",
-          "executionTarget"
+          "executionTarget",
+          "version",
+          "firstParty"
         ],
         "type": "object"
       },
@@ -6643,6 +6692,361 @@
           }
         },
         "required": ["id", "direction", "text", "status", "confidence", "userConfirmed"],
+        "type": "object"
+      },
+      "RelationshipGraph": {
+        "description": "Shared read model for Account Graph and Portfolio Graph in web and desktop. Historical reads are bounded by asOf and every governed action remains permission-gated.",
+        "properties": {
+          "asOf": {
+            "description": "Historical evidence boundary.",
+            "example": "2026-08-01T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "contractVersion": {
+            "description": "Wire contract version.",
+            "example": "2026-08-01",
+            "type": "string"
+          },
+          "depth": {
+            "example": 2,
+            "maximum": 3,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "edges": {
+            "description": "Typed directed edges.",
+            "items": {
+              "$ref": "#/components/schemas/RelationshipGraphEdge"
+            },
+            "type": "array"
+          },
+          "generatedAt": {
+            "description": "Projection generation time.",
+            "example": "2026-08-01T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "historical": {
+            "description": "Whether the response is an historical projection.",
+            "example": false,
+            "type": "boolean"
+          },
+          "nodes": {
+            "description": "Typed nodes.",
+            "items": {
+              "$ref": "#/components/schemas/RelationshipGraphNode"
+            },
+            "type": "array"
+          },
+          "permissions": {
+            "description": "Viewer capabilities for this projection.",
+            "properties": {
+              "canApprove": {
+                "description": "May approve current action revisions.",
+                "example": false,
+                "type": "boolean"
+              },
+              "canContribute": {
+                "description": "May propose state or actions.",
+                "example": true,
+                "type": "boolean"
+              },
+              "canExecute": {
+                "description": "May explicitly execute approved actions.",
+                "example": false,
+                "type": "boolean"
+              },
+              "canSaveViews": {
+                "description": "May save graph views.",
+                "example": true,
+                "type": "boolean"
+              },
+              "canView": {
+                "description": "May view.",
+                "example": true,
+                "type": "boolean"
+              }
+            },
+            "required": ["canView", "canContribute", "canApprove", "canExecute", "canSaveViews"],
+            "type": "object"
+          },
+          "relationshipId": {
+            "description": "Relationship id for account scope.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "scope": {
+            "description": "Graph scope.",
+            "enum": ["portfolio", "relationship"],
+            "example": "portfolio",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "generatedAt",
+          "asOf",
+          "historical",
+          "scope",
+          "depth",
+          "nodes",
+          "edges",
+          "permissions"
+        ],
+        "type": "object"
+      },
+      "RelationshipGraphEdge": {
+        "description": "A typed graph edge whose source-to-target direction is semantically meaningful.",
+        "properties": {
+          "confidence": {
+            "example": 0.88,
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "directed": {
+            "description": "Whether the source-to-target direction is meaningful.",
+            "example": true,
+            "type": "boolean"
+          },
+          "evidenceRefs": {
+            "description": "Evidence supporting the connection.",
+            "items": {
+              "description": "Evidence id.",
+              "example": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "kind": {
+            "description": "Edge kind.",
+            "enum": [
+              "participant_of",
+              "owns",
+              "has_commitment",
+              "blocks",
+              "requires",
+              "supersedes",
+              "has_risk",
+              "has_milestone",
+              "recommended_for",
+              "supports",
+              "contradicts",
+              "observed_from",
+              "linked_note"
+            ],
+            "example": "requires",
+            "type": "string"
+          },
+          "label": {
+            "description": "Human-readable edge label.",
+            "example": "requires",
+            "type": "string"
+          },
+          "source": {
+            "description": "Source node id.",
+            "example": "commitment:1",
+            "type": "string"
+          },
+          "target": {
+            "description": "Target node id.",
+            "example": "commitment:2",
+            "type": "string"
+          }
+        },
+        "required": ["id", "source", "target", "kind", "label", "directed", "evidenceRefs"],
+        "type": "object"
+      },
+      "RelationshipGraphNode": {
+        "description": "A versioned, typed relationship graph node. Meaning is explicit so clients can render status without relying on color alone.",
+        "properties": {
+          "approvalStatus": {
+            "description": "Action approval state.",
+            "example": "pending",
+            "type": "string"
+          },
+          "changedDimensions": {
+            "description": "Changed state dimensions.",
+            "items": {
+              "description": "Dimension.",
+              "example": "health",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "changedSinceReview": {
+            "description": "Whether this state is newer than the viewer's acknowledgement.",
+            "example": true,
+            "type": "boolean"
+          },
+          "confidence": {
+            "example": 0.88,
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "dueAt": {
+            "description": "Due time.",
+            "example": "2026-08-12T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "engagement": {
+            "description": "Engagement state.",
+            "example": "declining",
+            "type": "string"
+          },
+          "evidenceRefs": {
+            "description": "Inspectable evidence ids.",
+            "items": {
+              "description": "Evidence id.",
+              "example": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "executionStatus": {
+            "description": "Action execution state.",
+            "example": "pending",
+            "type": "string"
+          },
+          "freshness": {
+            "description": "Evidence freshness.",
+            "enum": ["current", "aging", "stale", "unknown"],
+            "example": "current",
+            "type": "string"
+          },
+          "health": {
+            "description": "Health state.",
+            "example": "needs_attention",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "kind": {
+            "description": "Node kind.",
+            "enum": [
+              "relationship",
+              "person",
+              "commitment",
+              "risk",
+              "milestone",
+              "action",
+              "evidence",
+              "source",
+              "note"
+            ],
+            "example": "relationship",
+            "type": "string"
+          },
+          "label": {
+            "description": "Human-readable label.",
+            "example": "Northstar Labs",
+            "type": "string"
+          },
+          "lifecycle": {
+            "description": "Commercial lifecycle.",
+            "example": "renewal",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "description": "Kind-specific bounded metadata.",
+            "type": "object"
+          },
+          "occurredAt": {
+            "description": "Evidence occurrence time.",
+            "example": "2026-08-01T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "policyStatus": {
+            "description": "Action policy state.",
+            "example": "passed",
+            "type": "string"
+          },
+          "priority": {
+            "example": 82,
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "relationshipId": {
+            "description": "Primary relationship id when applicable.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "relationshipIds": {
+            "description": "All associated relationships, including shared participants.",
+            "items": {
+              "description": "Relationship id.",
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "resourceRef": {
+            "description": "Underlying record id used by explicit Open actions.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "type": "string"
+          },
+          "role": {
+            "description": "Participant role.",
+            "example": "champion",
+            "type": "string"
+          },
+          "sentiment": {
+            "description": "Sentiment state.",
+            "example": "mixed",
+            "type": "string"
+          },
+          "source": {
+            "description": "Evidence source.",
+            "example": "meeting",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "summary": {
+            "description": "Evidence-backed summary.",
+            "example": "Security review is overdue.",
+            "type": "string"
+          },
+          "updatedAt": {
+            "description": "Last material update.",
+            "example": "2026-08-01T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "relationshipIds",
+          "changedSinceReview",
+          "changedDimensions",
+          "evidenceRefs",
+          "metadata"
+        ],
         "type": "object"
       },
       "RelationshipIdentity": {
@@ -11070,6 +11474,7 @@
                       "active": true,
                       "description": "Summarize new priority email and produce a short follow-up plan.",
                       "executionTarget": "api",
+                      "firstParty": false,
                       "instructions": "Review recent important Gmail messages and produce a markdown digest.",
                       "model": "anthropic/claude-sonnet-4-5",
                       "name": "Inbox Digest",
@@ -11081,7 +11486,8 @@
                       "triggers": {
                         "cronExpr": "0 8 * * 1-5",
                         "timezone": "America/New_York"
-                      }
+                      },
+                      "version": 1
                     }
                   ]
                 },
@@ -11133,6 +11539,7 @@
                   "active": true,
                   "description": "Summarize new priority email and produce a short follow-up plan.",
                   "executionTarget": "api",
+                  "firstParty": false,
                   "instructions": "Review recent important Gmail messages and produce a markdown digest.",
                   "model": "anthropic/claude-sonnet-4-5",
                   "name": "Inbox Digest",
@@ -11144,7 +11551,8 @@
                   "triggers": {
                     "cronExpr": "0 8 * * 1-5",
                     "timezone": "America/New_York"
-                  }
+                  },
+                  "version": 1
                 },
                 "schema": {
                   "$ref": "#/components/schemas/BackgroundTaskTemplate"
@@ -11223,7 +11631,13 @@
                   "name": "Daily Account Summary",
                   "provider": "openai",
                   "revision": 2,
+                  "scheduleSyncError": "",
+                  "scheduleSyncState": "current",
+                  "scheduleSyncedAt": "2026-06-04T20:39:00Z",
                   "slug": "daily-summary",
+                  "systemManaged": false,
+                  "templateSlug": "",
+                  "templateVersion": 0,
                   "triggers": {
                     "cronExpr": "0 9 * * *",
                     "timezone": "America/New_York"
@@ -11302,7 +11716,13 @@
                       "name": "Daily Account Summary",
                       "provider": "openai",
                       "revision": 2,
+                      "scheduleSyncError": "",
+                      "scheduleSyncState": "current",
+                      "scheduleSyncedAt": "2026-06-04T20:39:00Z",
                       "slug": "daily-summary",
+                      "systemManaged": false,
+                      "templateSlug": "",
+                      "templateVersion": 0,
                       "triggers": {
                         "cronExpr": "0 9 * * *",
                         "timezone": "America/New_York"
@@ -11379,7 +11799,13 @@
                   "name": "Daily Account Summary",
                   "provider": "openai",
                   "revision": 2,
+                  "scheduleSyncError": "",
+                  "scheduleSyncState": "current",
+                  "scheduleSyncedAt": "2026-06-04T20:39:00Z",
                   "slug": "daily-summary",
+                  "systemManaged": false,
+                  "templateSlug": "",
+                  "templateVersion": 0,
                   "triggers": {
                     "cronExpr": "0 9 * * *",
                     "timezone": "America/New_York"
@@ -11427,6 +11853,69 @@
           }
         ],
         "summary": "Create background task mirror",
+        "tags": ["Background Tasks"]
+      }
+    },
+    "/v1/background-tasks/first-party/ensure": {
+      "post": {
+        "description": "Idempotently provisions or upgrades the six Oppulence-managed relationship workflows for the authenticated user. User pause choices are preserved during definition upgrades. Replica races converge on the same per-user task slugs.",
+        "operationId": "ensureFirstPartyBackgroundTasks",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "tasks": [
+                    {
+                      "active": true,
+                      "createdAt": "2026-06-04T20:38:00Z",
+                      "executionTarget": "desktop",
+                      "id": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+                      "instructions": "Summarize important account changes and draft follow-up notes.",
+                      "lastAttemptAt": "2026-06-04T21:00:00Z",
+                      "lastRunAt": "2026-06-04T21:02:00Z",
+                      "lastRunError": "",
+                      "lastRunId": "run-20260604-210000",
+                      "lastRunSummary": "No high-priority account changes.",
+                      "model": "openai/gpt-4.1-mini",
+                      "name": "Daily Account Summary",
+                      "provider": "openai",
+                      "revision": 2,
+                      "scheduleSyncError": "",
+                      "scheduleSyncState": "current",
+                      "scheduleSyncedAt": "2026-06-04T20:39:00Z",
+                      "slug": "daily-summary",
+                      "systemManaged": false,
+                      "templateSlug": "",
+                      "templateVersion": 0,
+                      "triggers": {
+                        "cronExpr": "0 9 * * *",
+                        "timezone": "America/New_York"
+                      },
+                      "updatedAt": "2026-06-04T20:39:00Z"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundTaskListResponse"
+                }
+              }
+            },
+            "description": "Current managed workflow definitions."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Ensure first-party workflows",
         "tags": ["Background Tasks"]
       }
     },
@@ -11537,7 +12026,13 @@
                   "name": "Daily Account Summary",
                   "provider": "openai",
                   "revision": 2,
+                  "scheduleSyncError": "",
+                  "scheduleSyncState": "current",
+                  "scheduleSyncedAt": "2026-06-04T20:39:00Z",
                   "slug": "daily-summary",
+                  "systemManaged": false,
+                  "templateSlug": "",
+                  "templateVersion": 0,
                   "triggers": {
                     "cronExpr": "0 9 * * *",
                     "timezone": "America/New_York"
@@ -11622,7 +12117,13 @@
                   "name": "Daily Account Summary",
                   "provider": "openai",
                   "revision": 2,
+                  "scheduleSyncError": "",
+                  "scheduleSyncState": "current",
+                  "scheduleSyncedAt": "2026-06-04T20:39:00Z",
                   "slug": "daily-summary",
+                  "systemManaged": false,
+                  "templateSlug": "",
+                  "templateVersion": 0,
                   "triggers": {
                     "cronExpr": "0 9 * * *",
                     "timezone": "America/New_York"
@@ -15798,6 +16299,85 @@
           }
         ],
         "summary": "Create a relationship",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/graph": {
+      "get": {
+        "description": "Returns the shared versioned graph read model for an account or the authorized portfolio. Historical asOf reads exclude later evidence and proposed actions.",
+        "operationId": "getRelationshipGraph",
+        "parameters": [
+          {
+            "description": "Portfolio or one relationship.",
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "default": "portfolio",
+              "enum": ["portfolio", "relationship"],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Required when scope=relationship.",
+            "in": "query",
+            "name": "relationshipId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Bounded graph expansion depth.",
+            "in": "query",
+            "name": "depth",
+            "required": false,
+            "schema": {
+              "default": 2,
+              "maximum": 3,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Historical evidence boundary; must not be in the future.",
+            "in": "query",
+            "name": "asOf",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipGraph"
+                }
+              }
+            },
+            "description": "Authorized relationship graph."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get the relationship graph",
         "tags": ["Relationship Intelligence"]
       }
     },

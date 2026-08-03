@@ -15411,6 +15411,10 @@ type BackgroundTaskMutation struct {
 	model                  *string
 	provider               *string
 	execution_target       *string
+	template_slug          *string
+	template_version       *int
+	addtemplate_version    *int
+	system_managed         *bool
 	task_created_at        *time.Time
 	last_attempt_at        *time.Time
 	last_run_id            *string
@@ -15942,6 +15946,147 @@ func (m *BackgroundTaskMutation) OldExecutionTarget(ctx context.Context) (v stri
 // ResetExecutionTarget resets all changes to the "execution_target" field.
 func (m *BackgroundTaskMutation) ResetExecutionTarget() {
 	m.execution_target = nil
+}
+
+// SetTemplateSlug sets the "template_slug" field.
+func (m *BackgroundTaskMutation) SetTemplateSlug(s string) {
+	m.template_slug = &s
+}
+
+// TemplateSlug returns the value of the "template_slug" field in the mutation.
+func (m *BackgroundTaskMutation) TemplateSlug() (r string, exists bool) {
+	v := m.template_slug
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTemplateSlug returns the old "template_slug" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldTemplateSlug(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTemplateSlug is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTemplateSlug requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTemplateSlug: %w", err)
+	}
+	return oldValue.TemplateSlug, nil
+}
+
+// ClearTemplateSlug clears the value of the "template_slug" field.
+func (m *BackgroundTaskMutation) ClearTemplateSlug() {
+	m.template_slug = nil
+	m.clearedFields[backgroundtask.FieldTemplateSlug] = struct{}{}
+}
+
+// TemplateSlugCleared returns if the "template_slug" field was cleared in this mutation.
+func (m *BackgroundTaskMutation) TemplateSlugCleared() bool {
+	_, ok := m.clearedFields[backgroundtask.FieldTemplateSlug]
+	return ok
+}
+
+// ResetTemplateSlug resets all changes to the "template_slug" field.
+func (m *BackgroundTaskMutation) ResetTemplateSlug() {
+	m.template_slug = nil
+	delete(m.clearedFields, backgroundtask.FieldTemplateSlug)
+}
+
+// SetTemplateVersion sets the "template_version" field.
+func (m *BackgroundTaskMutation) SetTemplateVersion(i int) {
+	m.template_version = &i
+	m.addtemplate_version = nil
+}
+
+// TemplateVersion returns the value of the "template_version" field in the mutation.
+func (m *BackgroundTaskMutation) TemplateVersion() (r int, exists bool) {
+	v := m.template_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTemplateVersion returns the old "template_version" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldTemplateVersion(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTemplateVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTemplateVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTemplateVersion: %w", err)
+	}
+	return oldValue.TemplateVersion, nil
+}
+
+// AddTemplateVersion adds i to the "template_version" field.
+func (m *BackgroundTaskMutation) AddTemplateVersion(i int) {
+	if m.addtemplate_version != nil {
+		*m.addtemplate_version += i
+	} else {
+		m.addtemplate_version = &i
+	}
+}
+
+// AddedTemplateVersion returns the value that was added to the "template_version" field in this mutation.
+func (m *BackgroundTaskMutation) AddedTemplateVersion() (r int, exists bool) {
+	v := m.addtemplate_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTemplateVersion resets all changes to the "template_version" field.
+func (m *BackgroundTaskMutation) ResetTemplateVersion() {
+	m.template_version = nil
+	m.addtemplate_version = nil
+}
+
+// SetSystemManaged sets the "system_managed" field.
+func (m *BackgroundTaskMutation) SetSystemManaged(b bool) {
+	m.system_managed = &b
+}
+
+// SystemManaged returns the value of the "system_managed" field in the mutation.
+func (m *BackgroundTaskMutation) SystemManaged() (r bool, exists bool) {
+	v := m.system_managed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSystemManaged returns the old "system_managed" field's value of the BackgroundTask entity.
+// If the BackgroundTask object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BackgroundTaskMutation) OldSystemManaged(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSystemManaged is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSystemManaged requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSystemManaged: %w", err)
+	}
+	return oldValue.SystemManaged, nil
+}
+
+// ResetSystemManaged resets all changes to the "system_managed" field.
+func (m *BackgroundTaskMutation) ResetSystemManaged() {
+	m.system_managed = nil
 }
 
 // SetTaskCreatedAt sets the "task_created_at" field.
@@ -16702,7 +16847,7 @@ func (m *BackgroundTaskMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackgroundTaskMutation) Fields() []string {
-	fields := make([]string, 0, 20)
+	fields := make([]string, 0, 23)
 	if m.created_at != nil {
 		fields = append(fields, backgroundtask.FieldCreatedAt)
 	}
@@ -16732,6 +16877,15 @@ func (m *BackgroundTaskMutation) Fields() []string {
 	}
 	if m.execution_target != nil {
 		fields = append(fields, backgroundtask.FieldExecutionTarget)
+	}
+	if m.template_slug != nil {
+		fields = append(fields, backgroundtask.FieldTemplateSlug)
+	}
+	if m.template_version != nil {
+		fields = append(fields, backgroundtask.FieldTemplateVersion)
+	}
+	if m.system_managed != nil {
+		fields = append(fields, backgroundtask.FieldSystemManaged)
 	}
 	if m.task_created_at != nil {
 		fields = append(fields, backgroundtask.FieldTaskCreatedAt)
@@ -16791,6 +16945,12 @@ func (m *BackgroundTaskMutation) Field(name string) (ent.Value, bool) {
 		return m.Provider()
 	case backgroundtask.FieldExecutionTarget:
 		return m.ExecutionTarget()
+	case backgroundtask.FieldTemplateSlug:
+		return m.TemplateSlug()
+	case backgroundtask.FieldTemplateVersion:
+		return m.TemplateVersion()
+	case backgroundtask.FieldSystemManaged:
+		return m.SystemManaged()
 	case backgroundtask.FieldTaskCreatedAt:
 		return m.TaskCreatedAt()
 	case backgroundtask.FieldLastAttemptAt:
@@ -16840,6 +17000,12 @@ func (m *BackgroundTaskMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldProvider(ctx)
 	case backgroundtask.FieldExecutionTarget:
 		return m.OldExecutionTarget(ctx)
+	case backgroundtask.FieldTemplateSlug:
+		return m.OldTemplateSlug(ctx)
+	case backgroundtask.FieldTemplateVersion:
+		return m.OldTemplateVersion(ctx)
+	case backgroundtask.FieldSystemManaged:
+		return m.OldSystemManaged(ctx)
 	case backgroundtask.FieldTaskCreatedAt:
 		return m.OldTaskCreatedAt(ctx)
 	case backgroundtask.FieldLastAttemptAt:
@@ -16939,6 +17105,27 @@ func (m *BackgroundTaskMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetExecutionTarget(v)
 		return nil
+	case backgroundtask.FieldTemplateSlug:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTemplateSlug(v)
+		return nil
+	case backgroundtask.FieldTemplateVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTemplateVersion(v)
+		return nil
+	case backgroundtask.FieldSystemManaged:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSystemManaged(v)
+		return nil
 	case backgroundtask.FieldTaskCreatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -17017,6 +17204,9 @@ func (m *BackgroundTaskMutation) SetField(name string, value ent.Value) error {
 // this mutation.
 func (m *BackgroundTaskMutation) AddedFields() []string {
 	var fields []string
+	if m.addtemplate_version != nil {
+		fields = append(fields, backgroundtask.FieldTemplateVersion)
+	}
 	if m.addrevision != nil {
 		fields = append(fields, backgroundtask.FieldRevision)
 	}
@@ -17028,6 +17218,8 @@ func (m *BackgroundTaskMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *BackgroundTaskMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
+	case backgroundtask.FieldTemplateVersion:
+		return m.AddedTemplateVersion()
 	case backgroundtask.FieldRevision:
 		return m.AddedRevision()
 	}
@@ -17039,6 +17231,13 @@ func (m *BackgroundTaskMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *BackgroundTaskMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case backgroundtask.FieldTemplateVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTemplateVersion(v)
+		return nil
 	case backgroundtask.FieldRevision:
 		v, ok := value.(int)
 		if !ok {
@@ -17062,6 +17261,9 @@ func (m *BackgroundTaskMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(backgroundtask.FieldProvider) {
 		fields = append(fields, backgroundtask.FieldProvider)
+	}
+	if m.FieldCleared(backgroundtask.FieldTemplateSlug) {
+		fields = append(fields, backgroundtask.FieldTemplateSlug)
 	}
 	if m.FieldCleared(backgroundtask.FieldTaskCreatedAt) {
 		fields = append(fields, backgroundtask.FieldTaskCreatedAt)
@@ -17109,6 +17311,9 @@ func (m *BackgroundTaskMutation) ClearField(name string) error {
 		return nil
 	case backgroundtask.FieldProvider:
 		m.ClearProvider()
+		return nil
+	case backgroundtask.FieldTemplateSlug:
+		m.ClearTemplateSlug()
 		return nil
 	case backgroundtask.FieldTaskCreatedAt:
 		m.ClearTaskCreatedAt()
@@ -17171,6 +17376,15 @@ func (m *BackgroundTaskMutation) ResetField(name string) error {
 		return nil
 	case backgroundtask.FieldExecutionTarget:
 		m.ResetExecutionTarget()
+		return nil
+	case backgroundtask.FieldTemplateSlug:
+		m.ResetTemplateSlug()
+		return nil
+	case backgroundtask.FieldTemplateVersion:
+		m.ResetTemplateVersion()
+		return nil
+	case backgroundtask.FieldSystemManaged:
+		m.ResetSystemManaged()
 		return nil
 	case backgroundtask.FieldTaskCreatedAt:
 		m.ResetTaskCreatedAt()
@@ -71760,6 +71974,7 @@ type RevenueLeakScanMutation struct {
 	created_at               *time.Time
 	updated_at               *time.Time
 	status                   *string
+	active_claim             *string
 	mode                     *string
 	lookback_days            *int
 	addlookback_days         *int
@@ -71997,6 +72212,55 @@ func (m *RevenueLeakScanMutation) OldStatus(ctx context.Context) (v string, err 
 // ResetStatus resets all changes to the "status" field.
 func (m *RevenueLeakScanMutation) ResetStatus() {
 	m.status = nil
+}
+
+// SetActiveClaim sets the "active_claim" field.
+func (m *RevenueLeakScanMutation) SetActiveClaim(s string) {
+	m.active_claim = &s
+}
+
+// ActiveClaim returns the value of the "active_claim" field in the mutation.
+func (m *RevenueLeakScanMutation) ActiveClaim() (r string, exists bool) {
+	v := m.active_claim
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActiveClaim returns the old "active_claim" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldActiveClaim(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActiveClaim is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActiveClaim requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActiveClaim: %w", err)
+	}
+	return oldValue.ActiveClaim, nil
+}
+
+// ClearActiveClaim clears the value of the "active_claim" field.
+func (m *RevenueLeakScanMutation) ClearActiveClaim() {
+	m.active_claim = nil
+	m.clearedFields[revenueleakscan.FieldActiveClaim] = struct{}{}
+}
+
+// ActiveClaimCleared returns if the "active_claim" field was cleared in this mutation.
+func (m *RevenueLeakScanMutation) ActiveClaimCleared() bool {
+	_, ok := m.clearedFields[revenueleakscan.FieldActiveClaim]
+	return ok
+}
+
+// ResetActiveClaim resets all changes to the "active_claim" field.
+func (m *RevenueLeakScanMutation) ResetActiveClaim() {
+	m.active_claim = nil
+	delete(m.clearedFields, revenueleakscan.FieldActiveClaim)
 }
 
 // SetMode sets the "mode" field.
@@ -72679,7 +72943,7 @@ func (m *RevenueLeakScanMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RevenueLeakScanMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 15)
 	if m.created_at != nil {
 		fields = append(fields, revenueleakscan.FieldCreatedAt)
 	}
@@ -72688,6 +72952,9 @@ func (m *RevenueLeakScanMutation) Fields() []string {
 	}
 	if m.status != nil {
 		fields = append(fields, revenueleakscan.FieldStatus)
+	}
+	if m.active_claim != nil {
+		fields = append(fields, revenueleakscan.FieldActiveClaim)
 	}
 	if m.mode != nil {
 		fields = append(fields, revenueleakscan.FieldMode)
@@ -72736,6 +73003,8 @@ func (m *RevenueLeakScanMutation) Field(name string) (ent.Value, bool) {
 		return m.UpdatedAt()
 	case revenueleakscan.FieldStatus:
 		return m.Status()
+	case revenueleakscan.FieldActiveClaim:
+		return m.ActiveClaim()
 	case revenueleakscan.FieldMode:
 		return m.Mode()
 	case revenueleakscan.FieldLookbackDays:
@@ -72773,6 +73042,8 @@ func (m *RevenueLeakScanMutation) OldField(ctx context.Context, name string) (en
 		return m.OldUpdatedAt(ctx)
 	case revenueleakscan.FieldStatus:
 		return m.OldStatus(ctx)
+	case revenueleakscan.FieldActiveClaim:
+		return m.OldActiveClaim(ctx)
 	case revenueleakscan.FieldMode:
 		return m.OldMode(ctx)
 	case revenueleakscan.FieldLookbackDays:
@@ -72824,6 +73095,13 @@ func (m *RevenueLeakScanMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
+		return nil
+	case revenueleakscan.FieldActiveClaim:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActiveClaim(v)
 		return nil
 	case revenueleakscan.FieldMode:
 		v, ok := value.(string)
@@ -73007,6 +73285,9 @@ func (m *RevenueLeakScanMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *RevenueLeakScanMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(revenueleakscan.FieldActiveClaim) {
+		fields = append(fields, revenueleakscan.FieldActiveClaim)
+	}
 	if m.FieldCleared(revenueleakscan.FieldStartedAt) {
 		fields = append(fields, revenueleakscan.FieldStartedAt)
 	}
@@ -73033,6 +73314,9 @@ func (m *RevenueLeakScanMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *RevenueLeakScanMutation) ClearField(name string) error {
 	switch name {
+	case revenueleakscan.FieldActiveClaim:
+		m.ClearActiveClaim()
+		return nil
 	case revenueleakscan.FieldStartedAt:
 		m.ClearStartedAt()
 		return nil
@@ -73061,6 +73345,9 @@ func (m *RevenueLeakScanMutation) ResetField(name string) error {
 		return nil
 	case revenueleakscan.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case revenueleakscan.FieldActiveClaim:
+		m.ResetActiveClaim()
 		return nil
 	case revenueleakscan.FieldMode:
 		m.ResetMode()

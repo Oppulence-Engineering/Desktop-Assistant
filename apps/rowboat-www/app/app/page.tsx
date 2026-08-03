@@ -8,6 +8,7 @@ import {
 } from "@/components/app-shell";
 import { SettingsView } from "@/components/app-settings";
 import { RevenuePanel } from "@/components/revenue-panel";
+import { CloudWorkflowsView } from "@/components/workflows/cloud-workflows-view";
 import { AuthGate, useAuthSession } from "@/components/auth-gate";
 import { CommandPalette } from "@/components/command-palette";
 import {
@@ -62,7 +63,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@oppulence/ui/components/select";
 import { JsonEditor } from "@/components/json-editor";
 import { TiptapMarkdownEditor } from "@/components/tiptap-markdown-editor";
 import { MarkdownViewer } from "@/components/markdown-viewer";
@@ -138,7 +139,7 @@ function PageBody() {
     conversation.length === 0 && !currentAssistantMessage && !currentReasoning;
   const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [view, setView] = useState<"chat" | "settings" | "revenue">("chat");
+  const [view, setView] = useState<"chat" | "settings" | "revenue" | "workflows">("chat");
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("overview");
   const [sessions, setSessions] = useState<SessionMeta[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -1002,12 +1003,18 @@ function PageBody() {
               setView("revenue");
               setSelectedResource(null);
             }}
+            onNavigateWorkflows={() => {
+              setView("workflows");
+              setSelectedResource(null);
+            }}
             onOpenSettings={(section) => {
               setSettingsSection(section);
               setView("settings");
             }}
             onSelectResource={(resource) => {
-              setView("chat");
+              setView(
+                resource.kind === "task" || resource.kind === "taskrun" ? "workflows" : "chat",
+              );
               setSelectedResource(resource);
             }}
             activeRunId={runId}
@@ -1058,7 +1065,9 @@ function PageBody() {
                     ? SETTINGS_SECTIONS.find((s) => s.key === settingsSection)?.label || "Settings"
                     : view === "revenue"
                       ? "Relationships"
-                      : "Chat"}
+                      : view === "workflows"
+                        ? "Cloud workflows"
+                        : "Chat"}
                 </span>
               </div>
               {view === "settings" ? (
@@ -1095,6 +1104,26 @@ function PageBody() {
                   }}
                 />
               </div>
+            ) : view === "workflows" ? (
+              <CloudWorkflowsView
+                key={
+                  selectedResource?.kind === "task" || selectedResource?.kind === "taskrun"
+                    ? selectedResource.name
+                    : "cloud-workflows"
+                }
+                initialRunId={
+                  selectedResource?.kind === "taskrun"
+                    ? selectedResource.name.split("/").slice(1).join("/")
+                    : undefined
+                }
+                initialSlug={
+                  selectedResource?.kind === "task"
+                    ? selectedResource.name
+                    : selectedResource?.kind === "taskrun"
+                      ? selectedResource.name.split("/")[0]
+                      : undefined
+                }
+              />
             ) : (
               <div className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pb-0 md:flex-row">
                 <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden">
@@ -1299,7 +1328,7 @@ function PageBody() {
 export default function HomePage() {
   return (
     <AuthGate>
-      <div className="app-shell contents">
+      <div className="app-shell contents" data-product-shell>
         <PageBody />
       </div>
     </AuthGate>

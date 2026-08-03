@@ -83,6 +83,10 @@ small set of concrete workflows:
   evidence, participants, commitments, risks, and recommended next action.
 - **Portfolio Attention Queue** — the relationships that need review now,
   ordered by explainable signals rather than an opaque score.
+- **Account and Portfolio Graphs** — typed, directional views of people,
+  commitments, risks, milestones, evidence, sources, and approval-gated actions,
+  with historical boundaries, natural-language investigation, and shareable
+  saved views.
 - **Relationship Timeline** — source-linked observations and state changes
   across email, meetings, Slack, calendar, notes, and CRM.
 - **Commitment and Risk Tracking** — open promises, unresolved objections,
@@ -148,8 +152,9 @@ backend.
 | Portfolio review, team coordination, Account Mission Control, evidence, corrections, recommendations, and approvals. | The same relationship state and workflows, plus local knowledge, meeting capture, voice notes, browser context, and native execution. |
 
 Platform-native affordances differ, but relationship state, evidence,
-corrections, recommendations, and approvals stay synchronized. Neither client
-ships a core relationship workflow alone.
+corrections, recommendations, approvals, and graph investigations stay
+synchronized. Both clients validate the same versioned graph contract at
+runtime. Neither client ships a core relationship workflow alone.
 
 ## Core workflows
 

@@ -116,6 +116,18 @@ serviceMonitor:
   enabled: false
   interval: 30s
 
+# Prometheus alerts and a Grafana sidecar dashboard for the cloud workflow and
+# relationship-worker control planes. Environment overlays enable these only
+# where the Prometheus Operator and Grafana sidecar are installed.
+observability:
+  prometheusRule:
+    enabled: false
+    additionalLabels: {}
+  grafanaDashboard:
+    enabled: false
+    additionalLabels:
+      grafana_dashboard: "1"
+
 podAnnotations: {}
 podSecurityContext:
   runAsNonRoot: true

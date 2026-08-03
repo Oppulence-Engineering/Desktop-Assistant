@@ -16,8 +16,8 @@ import {
   Pencil,
   Trash2,
 } from "@/lib/icons";
-import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Popover, PopoverTrigger, PopoverContent } from "@oppulence/ui/components/popover";
 import {
   Command,
   CommandInput,
@@ -25,14 +25,14 @@ import {
   CommandItem,
   CommandEmpty,
   CommandGroup,
-} from "@/components/ui/command";
+} from "@oppulence/ui/components/command";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from "@/components/ui/context-menu";
+} from "@oppulence/ui/components/context-menu";
 import {
   Dialog,
   DialogContent,
@@ -40,7 +40,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@oppulence/ui/components/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { splitFrontmatter, extractAllFrontmatterValues } from "@/lib/frontmatter";

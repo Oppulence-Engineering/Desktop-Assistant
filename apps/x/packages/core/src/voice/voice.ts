@@ -10,6 +10,7 @@ import {
   WhisperBenchmarkProfile as WhisperBenchmarkProfileSchema,
   isCloudProvider,
   type DiarizationSettings,
+  type DictationSettings,
   type MeetingsSettings,
   type TranscriptionProvider,
   type VoicePrivacySettings,
@@ -178,6 +179,8 @@ export interface TranscriptionConfigPatch {
   meetingProvider?: TranscriptionProvider;
   whisper?: Partial<WhisperSettings>;
   privacy?: Partial<VoicePrivacySettings>;
+  /** System-wide dictation context, styles, dictionary, and snippets. */
+  dictation?: Partial<DictationSettings>;
   /** RFC 017 on-device diarization settings (partial). */
   diarization?: Partial<DiarizationSettings>;
   /** Native dual-track meeting capture settings (partial). */
@@ -198,6 +201,11 @@ export async function setTranscriptionConfig(
     ...(patch.meetingProvider !== undefined ? { meetingProvider: patch.meetingProvider } : {}),
     whisper: { ...current.whisper, ...(patch.whisper ?? {}) },
     privacy: { ...current.privacy, ...(patch.privacy ?? {}) },
+    dictation: {
+      ...current.dictation,
+      ...(patch.dictation ?? {}),
+      styles: { ...current.dictation.styles, ...(patch.dictation?.styles ?? {}) },
+    },
     diarization: { ...current.diarization, ...(patch.diarization ?? {}) },
     meetings: { ...current.meetings, ...(patch.meetings ?? {}) },
   });

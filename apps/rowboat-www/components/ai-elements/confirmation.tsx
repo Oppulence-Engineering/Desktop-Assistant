@@ -1,7 +1,7 @@
 "use client";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@oppulence/ui/components/alert";
+import { Button } from "@oppulence/ui/components/button";
 import { cn } from "@/lib/utils";
 import type { ToolUIPart } from "ai";
 import {

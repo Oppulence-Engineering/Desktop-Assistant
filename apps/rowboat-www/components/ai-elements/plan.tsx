@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 import {
   Card,
   CardAction,
@@ -9,8 +9,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+} from "@oppulence/ui/components/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@oppulence/ui/components/collapsible";
 import { cn } from "@/lib/utils";
 import { CaretUpDown } from "@phosphor-icons/react";
 import type { ComponentProps } from "react";

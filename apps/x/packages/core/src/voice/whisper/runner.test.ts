@@ -100,9 +100,10 @@ describe("autoThreads / timeoutFor", () => {
     expect(t).toBeGreaterThanOrEqual(1);
     expect(t).toBeLessThanOrEqual(8);
   });
-  it("scales the timeout with audio length but never below 15s", () => {
-    expect(timeoutFor(0)).toBe(15000);
+  it("scales the timeout with audio length but never below 30s", () => {
+    expect(timeoutFor(0)).toBe(30000);
     expect(timeoutFor(10)).toBe(30000);
+    expect(timeoutFor(11)).toBe(33000);
   });
 });
 

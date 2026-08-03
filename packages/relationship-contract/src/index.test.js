@@ -8,8 +8,13 @@ import {
   COMPLETENESS_LABELS,
   MISSION_CONTROL_QUESTIONS,
   RELATIONSHIP_CLIENT_CAPABILITIES,
+  RELATIONSHIP_GRAPH_CONTRACT_VERSION,
   buildImportedTranscriptObservation,
   completenessTone,
+  createRelationshipGraphSavedView,
+  parseRelationshipGraphQuery,
+  queryRelationshipGraph,
+  relationshipGraphNeighborhood,
   relationshipLabel,
 } from "./index.js";
 
@@ -44,6 +49,123 @@ test("the cross-client capability contract has no duplicates", () => {
   assert.ok(RELATIONSHIP_CLIENT_CAPABILITIES.includes("assertion-retraction"));
   assert.ok(RELATIONSHIP_CLIENT_CAPABILITIES.includes("action-audit"));
   assert.ok(RELATIONSHIP_CLIENT_CAPABILITIES.includes("transcript-publication"));
+  assert.ok(RELATIONSHIP_CLIENT_CAPABILITIES.includes("relationship-graph"));
+  assert.ok(RELATIONSHIP_CLIENT_CAPABILITIES.includes("graph-governed-actions"));
+});
+
+test("natural-language graph queries stay deterministic and evidence-linked", () => {
+  const graph = {
+    contractVersion: RELATIONSHIP_GRAPH_CONTRACT_VERSION,
+    asOf: "2026-08-01T12:00:00.000Z",
+    nodes: [
+      {
+        id: "relationship:r-1",
+        kind: "relationship",
+        label: "Northstar Labs",
+        lifecycle: "renewal",
+        health: "needs_attention",
+        changedSinceReview: true,
+      },
+      {
+        id: "commitment:c-1",
+        kind: "commitment",
+        label: "Security review",
+        relationshipId: "r-1",
+        status: "open",
+        dueAt: "2026-07-15T12:00:00.000Z",
+        evidenceRefs: ["observation:o-1"],
+      },
+      {
+        id: "commitment:c-2",
+        kind: "commitment",
+        label: "Renewal approval",
+        relationshipId: "r-1",
+        status: "open",
+      },
+      {
+        id: "relationship:r-2",
+        kind: "relationship",
+        label: "Atlas Retail",
+        lifecycle: "onboarding",
+        health: "healthy",
+      },
+    ],
+    edges: [
+      {
+        id: "edge:r-1:c-1",
+        source: "relationship:r-1",
+        target: "commitment:c-1",
+        kind: "has_commitment",
+      },
+      {
+        id: "edge:c-2:c-1",
+        source: "commitment:c-2",
+        target: "commitment:c-1",
+        kind: "requires",
+        evidenceRefs: ["observation:o-2"],
+      },
+    ],
+  };
+  const parsed = parseRelationshipGraphQuery("Which renewals depend on overdue commitments?");
+  assert.deepEqual(parsed.filters.lifecycle, ["renewal"]);
+  assert.equal(parsed.filters.overdue, true);
+  assert.deepEqual(parsed.filters.edgeKinds, ["requires"]);
+  const result = queryRelationshipGraph(graph, parsed.raw);
+  assert.deepEqual(result.relationshipIds, ["r-1"]);
+  assert.ok(result.matchedNodeIds.includes("relationship:r-1"));
+  assert.ok(result.evidenceRefs.includes("observation:o-1"));
+  assert.ok(result.evidenceRefs.includes("observation:o-2"));
+  assert.deepEqual(result.matchedEdgeIds, ["edge:c-2:c-1"]);
+  assert.match(result.answer, /1 relationship matches/);
+
+  const withoutDependency = queryRelationshipGraph(
+    { ...graph, edges: graph.edges.filter((edge) => edge.kind !== "requires") },
+    parsed.raw,
+  );
+  assert.deepEqual(withoutDependency.relationshipIds, []);
+  assert.deepEqual(withoutDependency.matchedNodeIds, []);
+  assert.deepEqual(withoutDependency.visibleNodeIds, []);
+  assert.match(withoutDependency.answer, /0 relationships match/);
+});
+
+test("saved graph views normalize shareable state", () => {
+  const view = createRelationshipGraphSavedView({
+    label: "Renewal risks",
+    createdAt: "2026-08-01T12:00:00.000Z",
+    state: { scope: "portfolio", query: "critical renewals", density: 4, layout: "radial" },
+  });
+  assert.equal(view.label, "Renewal risks");
+  assert.equal(view.state.density, 1);
+  assert.equal(view.state.layout, "radial");
+  assert.equal(view.state.focusDepth, 0);
+  assert.match(view.id, /^graph-view-/);
+});
+
+test("graph neighborhoods are deterministic induced subgraphs", () => {
+  const graph = {
+    nodes: ["a", "b", "c", "d"].map((id) => ({ id, kind: "note", label: id })),
+    edges: [
+      { id: "a-b", source: "a", target: "b", kind: "linked_note" },
+      { id: "b-c", source: "b", target: "c", kind: "linked_note" },
+      { id: "a-c", source: "a", target: "c", kind: "linked_note" },
+      { id: "c-d", source: "c", target: "d", kind: "linked_note" },
+    ],
+  };
+
+  assert.deepEqual(relationshipGraphNeighborhood(graph, "b", 1), {
+    rootNodeId: "b",
+    depth: 1,
+    nodeIds: ["a", "b", "c"],
+    edgeIds: ["a-b", "b-c", "a-c"],
+    boundaryNodeIds: ["a", "c"],
+  });
+  assert.deepEqual(relationshipGraphNeighborhood(graph, "missing", 2).nodeIds, []);
+  assert.equal(relationshipGraphNeighborhood(graph, "b", 99).depth, 3);
+});
+
+test("saved graph views preserve a bounded neighborhood focus", () => {
+  assert.equal(createRelationshipGraphSavedView({ state: { focusDepth: 2 } }).state.focusDepth, 2);
+  assert.equal(createRelationshipGraphSavedView({ state: { focusDepth: 8 } }).state.focusDepth, 2);
 });
 
 test("every contracted capability has an explicit surface in web and desktop", () => {

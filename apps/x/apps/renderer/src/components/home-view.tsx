@@ -14,6 +14,11 @@ import {
 } from "@/lib/icons";
 import { extractConferenceLink } from "@/lib/calendar-event";
 import { SettingsDialog } from "@/components/settings-dialog";
+import { DictationHistoryPanel } from "@/components/dictation-history-panel";
+import {
+  HUBSPOT_BRAND_ICON,
+  WISPR_FLOW_BRAND_ICON,
+} from "@/components/onboarding/brand-icons";
 
 interface TreeNode {
   path: string;
@@ -188,17 +193,27 @@ let cachedToolkitPreviews: ToolkitPreview[] | null = null;
 let cachedToolkitLogosLoaded = false;
 
 function ToolkitPreviewIcon({ toolkit }: { toolkit: ToolkitPreview }) {
+  const normalized = toolkit.slug.toLowerCase();
+  const brandIcon = normalized.includes("hubspot")
+    ? HUBSPOT_BRAND_ICON
+    : normalized.includes("wispr")
+      ? WISPR_FLOW_BRAND_ICON
+      : null;
   return (
     <div
       title={`${toolkit.name}: ${toolkit.description}`}
       aria-label={toolkit.name}
-      className={`flex size-6 shrink-0 items-center justify-center rounded-md border text-[10px] font-semibold ${
+      className={`flex size-8 shrink-0 items-center justify-center rounded-lg border ${
         toolkit.connected
           ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
           : "border-border bg-muted/60 text-muted-foreground"
       }`}
     >
-      {toolkit.name.slice(0, 1).toUpperCase()}
+      {brandIcon ? (
+        <img src={brandIcon} alt="" aria-hidden="true" className="size-5 object-contain" />
+      ) : (
+        <Plug className="size-5" aria-hidden="true" />
+      )}
     </div>
   );
 }
@@ -393,6 +408,8 @@ export function HomeView({
             <span className="text-sm text-muted-foreground">{todayLabel()}</span>
           </div>
 
+          <DictationHistoryPanel />
+
           {/* Up-next hero */}
           {nextEvent && (
             <div className="rowboat-dev-card flex items-center gap-[18px] p-[18px]">
@@ -448,6 +465,7 @@ export function HomeView({
                 <button
                   type="button"
                   onClick={onOpenEmail}
+                  aria-label="Open inbox"
                   className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                 >
                   Open
@@ -484,6 +502,7 @@ export function HomeView({
                 <button
                   type="button"
                   onClick={onOpenAgents}
+                  aria-label="Open background tasks"
                   className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                 >
                   Open

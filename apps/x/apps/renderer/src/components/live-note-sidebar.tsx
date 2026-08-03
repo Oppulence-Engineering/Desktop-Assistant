@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import "@/styles/live-note-panel.css";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
+import { Button } from "@oppulence/ui/components/button";
+import { Switch } from "@oppulence/ui/components/switch";
+import { Textarea } from "@oppulence/ui/components/textarea";
+import { Input } from "@oppulence/ui/components/input";
 import {
   Play,
   Square,

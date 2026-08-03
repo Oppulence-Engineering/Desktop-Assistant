@@ -6,8 +6,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from "@oppulence/ui/components/dialog";
+import { Button } from "@oppulence/ui/components/button";
 import type { BillingErrorMatch } from "@/lib/billing-error";
 
 interface BillingErrorDialogProps {

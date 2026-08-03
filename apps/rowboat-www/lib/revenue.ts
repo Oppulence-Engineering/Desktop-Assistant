@@ -5,6 +5,7 @@
 // server-side and bounces the browser back through WorkOS on a 401.
 
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
+import { RelationshipGraphSchema } from "@/types/revenue";
 import type {
   ActionAudit,
   RelationshipDetail,
@@ -23,6 +24,7 @@ import type {
   RelationshipSourceInventoryItem,
   RelationshipSourceStatus,
   BetaDiagnostics,
+  RelationshipGraph,
   RelationshipStateSnapshot,
 } from "@/types/revenue";
 
@@ -158,7 +160,7 @@ export interface CreateActionInput {
   recipientEmail?: string;
   proposedSubject?: string;
   proposedMessage?: string;
-  executionMode?: string;
+  executionMode?: "draft" | "send";
   priorityScore?: number;
 }
 
@@ -184,6 +186,33 @@ export async function listRelationships(
   const query = params.size ? `?${params.toString()}` : "";
   const body = await call<{ relationships: RevenueRelationship[] }>(`/relationships${query}`);
   return body.relationships ?? [];
+}
+
+export interface RelationshipGraphRequest {
+  scope: "portfolio" | "relationship";
+  relationshipId?: string;
+  depth?: 1 | 2 | 3;
+  asOf?: string;
+}
+
+export async function getRelationshipGraph(
+  input: RelationshipGraphRequest,
+): Promise<RelationshipGraph> {
+  const params = new URLSearchParams({ scope: input.scope });
+  if (input.relationshipId) params.set("relationshipId", input.relationshipId);
+  if (input.depth) params.set("depth", String(input.depth));
+  if (input.asOf) params.set("asOf", input.asOf);
+
+  const payload = await call<unknown>(`/relationships/graph?${params.toString()}`);
+  const parsed = RelationshipGraphSchema.safeParse(payload);
+  if (!parsed.success) {
+    throw new RevenueAPIError(
+      "The relationship graph response did not match the supported contract.",
+      502,
+      "invalid_relationship_graph_contract",
+    );
+  }
+  return parsed.data;
 }
 
 export const getRelationship = (id: string) => call<RelationshipDetail>(`/relationships/${id}`);

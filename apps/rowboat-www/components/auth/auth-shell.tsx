@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 
 /** Multi-color Google "G". Explicit fills, so the button's currentColor rules don't tint it. */
 function GoogleLogo() {

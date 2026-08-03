@@ -52,7 +52,7 @@ export type MeetingKeepAudio = z.infer<typeof MeetingKeepAudio>;
 export const MeetingTranscriptionEngine = z.enum(["whisper", "parakeet"]);
 export type MeetingTranscriptionEngine = z.infer<typeof MeetingTranscriptionEngine>;
 
-/** Parakeet model: v3 is multilingual (25 European languages), v2 is English-only. */
+/** Parakeet model: v3 is multilingual (28 European languages), v2 is English-only. */
 export const ParakeetModel = z.enum(["v3", "v2"]);
 export type ParakeetModel = z.infer<typeof ParakeetModel>;
 

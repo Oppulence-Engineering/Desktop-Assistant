@@ -20,6 +20,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenuemetrics"
 )
 
 const relationshipAttentionDetectorVersion = 1
@@ -511,24 +512,62 @@ func (r *RelationshipAttentionRunner) Run(ctx context.Context) error {
 }
 
 func (r *RelationshipAttentionRunner) sweep(ctx context.Context) {
-	workspaces, err := r.svc.client.RevenueWorkspace.Query().
-		Where(revenueworkspace.StatusEQ("active")).
-		WithUser().Order(ent.Asc(revenueworkspace.FieldCreatedAt)).Limit(r.maxUsers).
-		All(auth.WithInternalOnly(ctx))
-	if err != nil {
-		r.log.Warn("relationship attention: list workspaces", zap.Error(err))
-		return
-	}
-	for _, workspace := range workspaces {
-		if ctx.Err() != nil {
+	startedAt := time.Now()
+	result := "success"
+	processed := 0
+	defer func() {
+		revenuemetrics.RelationshipLoopSweeps.WithLabelValues("attention", result).Inc()
+		revenuemetrics.RelationshipLoopDuration.WithLabelValues("attention").Observe(time.Since(startedAt).Seconds())
+		revenuemetrics.RelationshipLoopItems.WithLabelValues("attention", "workspace").Add(float64(processed))
+		if result == "success" {
+			revenuemetrics.RelationshipLoopLastSuccess.WithLabelValues("attention").SetToCurrentTime()
+		}
+	}()
+	internal := auth.WithInternalOnly(ctx)
+	var afterID *uuid.UUID
+	for {
+		query := r.svc.client.RevenueWorkspace.Query().
+			Where(revenueworkspace.StatusEQ("active")).
+			WithUser().
+			Order(ent.Asc(revenueworkspace.FieldID)).
+			Limit(r.maxUsers)
+		if afterID != nil {
+			query = query.Where(revenueworkspace.IDGT(*afterID))
+		}
+		workspaces, err := query.All(internal)
+		if err != nil {
+			result = "error"
+			r.log.Warn("relationship attention: list workspaces", zap.Error(err))
 			return
 		}
-		owner, err := workspace.Edges.UserOrErr()
-		if err != nil {
-			continue
+		for _, workspace := range workspaces {
+			if ctx.Err() != nil {
+				result = "cancelled"
+				return
+			}
+			owner, err := workspace.Edges.UserOrErr()
+			if err != nil {
+				result = "partial"
+				continue
+			}
+			if err := r.svc.RefreshRelationshipAttention(auth.WithUser(ctx, owner), owner); err != nil && !errors.Is(err, ErrCapabilityDisabled) {
+				result = "partial"
+				r.log.Warn("relationship attention sweep", zap.String("workspace", workspace.ID.String()), zap.Error(err))
+			}
+			processed++
 		}
-		if err := r.svc.RefreshRelationshipAttention(auth.WithUser(ctx, owner), owner); err != nil && !errors.Is(err, ErrCapabilityDisabled) {
-			r.log.Warn("relationship attention sweep", zap.String("workspace", workspace.ID.String()), zap.Error(err))
+		if len(workspaces) < r.maxUsers {
+			openItems, err := r.svc.client.RelationshipAttentionItem.Query().
+				Where(relationshipattentionitem.StatusEQ("open")).
+				Count(internal)
+			if err != nil {
+				result = "partial"
+			} else {
+				revenuemetrics.RelationshipQueueDepth.WithLabelValues("attention_open").Set(float64(openItems))
+			}
+			return
 		}
+		last := workspaces[len(workspaces)-1].ID
+		afterID = &last
 	}
 }

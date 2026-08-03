@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   ChevronRight,
@@ -21,8 +21,9 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import { Input } from "@/components/ui/input";
+} from "@oppulence/ui/components/context-menu";
+import { Input } from "@oppulence/ui/components/input";
+import { Button } from "@oppulence/ui/components/button";
 import { VoiceNoteButton } from "@/components/sidebar-content";
 import { formatRelativeTime } from "@/lib/relative-time";
 import { toast } from "@/lib/toast";
@@ -189,7 +190,7 @@ export function KnowledgeView({
     <div className="flex h-full flex-col overflow-hidden">
       <div className="shrink-0 flex items-start justify-between gap-4 border-b border-border px-8 py-6">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight">Notes</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Knowledge</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {totalNotes} {totalNotes === 1 ? "note" : "notes"} across{" "}
             {folders.length} {folders.length === 1 ? "folder" : "folders"}
@@ -285,6 +286,7 @@ export function KnowledgeView({
           <QuickActions
             actions={actions}
             currentFolder={currentFolder}
+            hasNotes={currentFolder ? collectNotes(currentFolder).length > 0 : totalNotes > 0}
             onOpenBases={onOpenBases}
             onFolderCreated={setRenameTarget}
           />
@@ -297,11 +299,13 @@ export function KnowledgeView({
 function QuickActions({
   actions,
   currentFolder,
+  hasNotes,
   onOpenBases,
   onFolderCreated,
 }: {
   actions: KnowledgeViewActions;
   currentFolder: TreeNode | null;
+  hasNotes: boolean;
   onOpenBases: () => void;
   onFolderCreated: (path: string) => void;
 }) {
@@ -311,11 +315,6 @@ function QuickActions({
     <div className="mt-8">
       <SectionHeader label="Quick actions" />
       <div className="flex flex-wrap gap-2">
-        <QuickAction
-          icon={FilePlus}
-          label="New note"
-          onClick={() => actions.createNote(parent)}
-        />
         <QuickAction
           icon={FolderPlus}
           label="New folder"
@@ -328,7 +327,13 @@ function QuickActions({
             }
           }}
         />
-        <QuickAction icon={Table2} label="Open as base" onClick={onOpenBases} />
+        <QuickAction
+          icon={Table2}
+          label="Table view"
+          disabled={!hasNotes}
+          title={hasNotes ? "Open these notes in a table" : "Create a note before opening table view"}
+          onClick={onOpenBases}
+        />
         <QuickAction
           icon={FolderOpen}
           label={`Reveal in ${getFileManagerName()}`}
@@ -366,16 +371,22 @@ function QuickAction({
   icon: Icon,
   label,
   onClick,
+  disabled = false,
+  title,
 }: {
   icon: typeof FilePlus;
   label: string;
   onClick: () => void;
+  disabled?: boolean;
+  title?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-none border border-border bg-background px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+      disabled={disabled}
+      title={title}
+      className="inline-flex items-center gap-2 rounded-none border border-border bg-background px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-45"
     >
       <Icon className="size-4 text-muted-foreground" />
       <span>{label}</span>
@@ -394,10 +405,11 @@ function SectionHeader({ label, aside }: { label: string; aside?: string }) {
   );
 }
 
-function EmptyState({ text }: { text: string }) {
+function EmptyState({ text, children }: { text: string; children?: ReactNode }) {
   return (
-    <div className="rounded-none border border-dashed border-border px-6 py-10 text-center text-sm text-muted-foreground">
-      {text}
+    <div className="flex flex-col items-center rounded-none border border-dashed border-border px-6 py-10 text-center text-sm text-muted-foreground">
+      <p>{text}</p>
+      {children ? <div className="mt-3">{children}</div> : null}
     </div>
   );
 }
@@ -569,7 +581,7 @@ function FolderDetail({
           onClick={() => onNavigate(null)}
           className="rounded-none px-1.5 py-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
-          Notes
+          Knowledge
         </button>
         {crumbs.map((c, i) => (
           <span key={c.path} className="flex min-w-0 items-center gap-1.5">
@@ -595,7 +607,11 @@ function FolderDetail({
         label={`${items.length} ${items.length === 1 ? "item" : "items"}`}
       />
       {items.length === 0 ? (
-        <EmptyState text="This folder is empty." />
+        <EmptyState text="This folder is empty.">
+          <Button type="button" size="sm" onClick={() => actions.createNote(folder.path)}>
+            <FilePlus className="size-4" /> Create note in {folder.name}
+          </Button>
+        </EmptyState>
       ) : (
         <div className="overflow-hidden rounded-none border border-border">
           {items.map((node, i) => (

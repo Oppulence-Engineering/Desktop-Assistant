@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@oppulence/ui/components/button";
+import { Textarea } from "@oppulence/ui/components/textarea";
 import { cn } from "@/lib/utils";
 import { MessageCircleIcon, ArrowUpIcon } from "@/lib/icons";
 import type { ComponentProps } from "react";

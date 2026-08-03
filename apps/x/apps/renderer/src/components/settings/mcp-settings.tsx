@@ -1,8 +1,8 @@
 import * as React from "react";
 import { Plus, Trash2, Server, Terminal, Globe, CodeIcon, Loader2 } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@oppulence/ui/components/button";
+import { Input } from "@oppulence/ui/components/input";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@oppulence/ui/components/collapsible";
 import { cn } from "@/lib/utils";
 import { McpServerConfig } from "@x/shared/dist/mcp.js";
 import { SettingsSection, SettingsField, KeyValueRows, StringListRows } from "./settings-ui";

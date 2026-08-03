@@ -1199,6 +1199,125 @@ export const RelationshipDetailSchema = z.object({
   missionControl: MissionControlReadModelSchema,
 });
 
+// ---------------------------------------------------------------------------
+// Shared relationship graph read model
+// ---------------------------------------------------------------------------
+
+export const RelationshipGraphNodeKindSchema = z.enum([
+  "relationship",
+  "person",
+  "commitment",
+  "risk",
+  "milestone",
+  "action",
+  "evidence",
+  "source",
+  "note",
+]);
+
+export const RelationshipGraphEdgeKindSchema = z.enum([
+  "participant_of",
+  "owns",
+  "has_commitment",
+  "blocks",
+  "requires",
+  "supersedes",
+  "has_risk",
+  "has_milestone",
+  "recommended_for",
+  "supports",
+  "contradicts",
+  "observed_from",
+  "linked_note",
+]);
+
+const RelationshipGraphTimestampSchema = z.iso.datetime({ offset: true });
+
+export const RelationshipGraphNodeSchema = z.object({
+  id: z.string().min(1),
+  kind: RelationshipGraphNodeKindSchema,
+  label: z.string(),
+  relationshipId: z.string().optional(),
+  relationshipIds: z.array(z.string()).optional().default([]),
+  summary: z.string().optional(),
+  status: z.string().optional(),
+  role: z.string().optional(),
+  source: z.string().optional(),
+  lifecycle: z.string().optional(),
+  engagement: z.string().optional(),
+  sentiment: z.string().optional(),
+  health: z.string().optional(),
+  approvalStatus: z.string().optional(),
+  policyStatus: z.string().optional(),
+  executionStatus: z.string().optional(),
+  freshness: z.string().optional(),
+  confidence: z.number().min(0).max(1).optional(),
+  priority: z.number().int().min(0).max(100).optional(),
+  dueAt: RelationshipGraphTimestampSchema.optional(),
+  occurredAt: RelationshipGraphTimestampSchema.optional(),
+  updatedAt: RelationshipGraphTimestampSchema.optional(),
+  changedSinceReview: z.boolean().optional().default(false),
+  changedDimensions: z.array(z.string()).optional().default([]),
+  evidenceRefs: z.array(z.string()).optional().default([]),
+  resourceRef: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional().default({}),
+});
+
+export const RelationshipGraphEdgeSchema = z.object({
+  id: z.string().min(1),
+  source: z.string().min(1),
+  target: z.string().min(1),
+  kind: RelationshipGraphEdgeKindSchema,
+  label: z.string().min(1),
+  directed: z.boolean(),
+  confidence: z.number().min(0).max(1).optional(),
+  evidenceRefs: z.array(z.string()).optional().default([]),
+});
+
+export const RelationshipGraphPermissionsSchema = z.object({
+  canView: z.boolean(),
+  canContribute: z.boolean(),
+  canApprove: z.boolean(),
+  canExecute: z.boolean(),
+  canSaveViews: z.boolean(),
+});
+
+export const RelationshipGraphSchema = z.object({
+  contractVersion: z.literal("2026-08-01"),
+  generatedAt: RelationshipGraphTimestampSchema,
+  asOf: RelationshipGraphTimestampSchema,
+  historical: z.boolean(),
+  scope: z.enum(["portfolio", "relationship"]),
+  relationshipId: z.string().optional(),
+  depth: z.number().int().min(1).max(3),
+  nodes: z.array(RelationshipGraphNodeSchema),
+  edges: z.array(RelationshipGraphEdgeSchema),
+  permissions: RelationshipGraphPermissionsSchema,
+});
+
+export const RelationshipGraphSavedViewStateSchema = z.object({
+  scope: z.enum(["portfolio", "relationship"]),
+  relationshipId: z.string().optional(),
+  query: z.string().default(""),
+  layout: z.enum(["force", "radial", "timeline"]).default("force"),
+  density: z.number().min(0.25).max(1).default(1),
+  hideIsolated: z.boolean().default(false),
+  selectedNodeId: z.string().optional(),
+  focusDepth: z.union([z.literal(0), z.literal(1), z.literal(2)]).default(0),
+  asOf: RelationshipGraphTimestampSchema.optional(),
+  changedSinceReview: z.boolean().default(false),
+});
+
+export const RelationshipGraphSavedViewSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  createdAt: RelationshipGraphTimestampSchema,
+  updatedAt: RelationshipGraphTimestampSchema,
+  state: RelationshipGraphSavedViewStateSchema,
+});
+
+export const RelationshipGraphSavedViewsSchema = z.array(RelationshipGraphSavedViewSchema);
+
 export type Relationship = z.infer<typeof RelationshipSchema>;
 export type RelationshipAction = z.infer<typeof RelationshipActionSchema>;
 export type RelationshipPolicyDecision = z.infer<typeof RelationshipPolicyDecisionSchema>;
@@ -1207,6 +1326,14 @@ export type RelationshipActionRevision = z.infer<typeof RelationshipActionRevisi
 export type RelationshipActionAudit = z.infer<typeof RelationshipActionAuditSchema>;
 export type RelationshipCommitment = z.infer<typeof RelationshipCommitmentSchema>;
 export type RelationshipDetail = z.infer<typeof RelationshipDetailSchema>;
+export type RelationshipGraphNodeKind = z.infer<typeof RelationshipGraphNodeKindSchema>;
+export type RelationshipGraphEdgeKind = z.infer<typeof RelationshipGraphEdgeKindSchema>;
+export type RelationshipGraphNode = z.infer<typeof RelationshipGraphNodeSchema>;
+export type RelationshipGraphEdge = z.infer<typeof RelationshipGraphEdgeSchema>;
+export type RelationshipGraphPermissions = z.infer<typeof RelationshipGraphPermissionsSchema>;
+export type RelationshipGraph = z.infer<typeof RelationshipGraphSchema>;
+export type RelationshipGraphSavedViewState = z.infer<typeof RelationshipGraphSavedViewStateSchema>;
+export type RelationshipGraphSavedView = z.infer<typeof RelationshipGraphSavedViewSchema>;
 export type MissionControlReadModel = z.infer<typeof MissionControlReadModelSchema>;
 export type RelationshipObservation = z.infer<typeof RelationshipObservationSchema>;
 export type RelationshipObservationInput = z.infer<typeof RelationshipObservationInputSchema>;

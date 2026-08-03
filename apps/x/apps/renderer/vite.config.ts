@@ -28,6 +28,7 @@ export default defineConfig({
       input: {
         main: path.resolve(__dirname, "index.html"),
         indicator: path.resolve(__dirname, "indicator.html"),
+        dictation: path.resolve(__dirname, "dictation.html"),
       },
     },
   },

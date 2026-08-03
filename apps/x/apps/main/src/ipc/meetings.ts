@@ -12,6 +12,7 @@ import {
   parakeetModelStatus,
   type ParakeetModel,
 } from "../meeting-engines.js";
+import { warmFastDictationEngine } from "../parakeet-dictation-runner.js";
 import { getMeetingController, type MeetingControllerDeps } from "../meeting-controller.js";
 import { getUiState, setUiState } from "@x/core/dist/config/ui_state.js";
 import { runMeetingPreflight } from "../meeting-preflight.js";
@@ -229,6 +230,7 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
             }
           }
         });
+        if (status.ready) await warmFastDictationEngine({ refresh: true });
         return { ready: status.ready };
       } catch (err) {
         return { ready: false, error: (err as Error).message };
