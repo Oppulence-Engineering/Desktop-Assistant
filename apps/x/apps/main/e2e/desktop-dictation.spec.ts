@@ -140,7 +140,7 @@ test("packaged desktop dictation helper and overlay are live", async () => {
         return { visible: overlay?.isVisible(), bounds: overlay?.getBounds() };
       }),
     )
-    .toMatchObject({ visible: true, bounds: { width: 132, height: 42 } });
+    .toMatchObject({ visible: true, bounds: { width: 48, height: 34 } });
   // Exercise the renderer/main state bridge without capturing the developer's mic.
   await mainWindow.evaluate(() =>
     window.ipc.invoke("dictation:updateState", {
@@ -148,7 +148,7 @@ test("packaged desktop dictation helper and overlay are live", async () => {
       message: "Desktop dictation test",
     }),
   );
-  await expect(dictationWindow!.getByRole("status")).toContainText("Desktop dictation test");
+  await expect(dictationWindow!.getByRole("status")).toContainText("Listening");
   await expect
     .poll(() => app.evaluate(({ globalShortcut }) => globalShortcut.isRegistered("Escape")))
     .toBe(true);
@@ -181,7 +181,7 @@ test("packaged desktop dictation helper and overlay are live", async () => {
       );
       return overlay?.getBounds();
     }),
-  ).toMatchObject({ width: 112, height: 280 });
+  ).toMatchObject({ width: 60, height: 156 });
 
   await mainWindow.evaluate(async () => {
     const config = await window.ipc.invoke("transcription:getConfig", null);
@@ -199,7 +199,7 @@ test("packaged desktop dictation helper and overlay are live", async () => {
         return overlay?.getBounds();
       }),
     )
-    .toMatchObject({ width: 420, height: 56 });
+    .toMatchObject({ width: 184, height: 40 });
 
   await mainWindow.evaluate(() => window.ipc.invoke("dictation:updateState", { state: "idle" }));
   await expect
@@ -215,7 +215,7 @@ test("packaged desktop dictation helper and overlay are live", async () => {
         return { visible: overlay?.isVisible(), bounds: overlay?.getBounds() };
       }),
     )
-    .toMatchObject({ visible: true, bounds: { width: 132, height: 42 } });
+    .toMatchObject({ visible: true, bounds: { width: 48, height: 34 } });
 
   await mainWindow.evaluate(async () => {
     const config = await window.ipc.invoke("transcription:getConfig", null);
@@ -249,7 +249,7 @@ test("packaged desktop dictation helper and overlay are live", async () => {
         return { visible: overlay?.isVisible(), bounds: overlay?.getBounds() };
       }),
     )
-    .toMatchObject({ visible: true, bounds: { width: 132, height: 42 } });
+    .toMatchObject({ visible: true, bounds: { width: 48, height: 34 } });
 });
 
 test("packaged dictation follows ranked microphones through failover and reconnection", async () => {
@@ -410,7 +410,7 @@ test("packaged dictation follows ranked microphones through failover and reconne
     });
   });
 
-  await expect(dictationWindow!.getByRole("status")).toContainText("Starting microphone");
+  await expect(dictationWindow!.getByRole("status")).toContainText("Listening");
   await expect
     .poll(
       () =>

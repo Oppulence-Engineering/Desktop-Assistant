@@ -178,34 +178,34 @@ test("snaps the Flow Bar to the nearest supported screen edge", () => {
 test("lays out horizontal and vertical Flow Bars inside the display work area", () => {
   const workArea = { x: 0, y: 0, width: 1_440, height: 900 };
   assert.deepEqual(flowBarBounds("bottom", workArea), {
-    x: 510,
-    y: 820,
-    width: 420,
-    height: 56,
+    x: 628,
+    y: 836,
+    width: 184,
+    height: 40,
   });
   assert.deepEqual(flowBarBounds("left", workArea), {
     x: 24,
-    y: 310,
-    width: 112,
-    height: 280,
+    y: 372,
+    width: 60,
+    height: 156,
   });
   assert.deepEqual(flowBarBounds("right", workArea), {
-    x: 1_304,
-    y: 310,
-    width: 112,
-    height: 280,
+    x: 1_356,
+    y: 372,
+    width: 60,
+    height: 156,
   });
   assert.deepEqual(flowBarBounds("bottom", workArea, true), {
-    x: 654,
-    y: 834,
-    width: 132,
-    height: 42,
+    x: 696,
+    y: 856,
+    width: 48,
+    height: 34,
   });
   assert.deepEqual(flowBarBounds("left", workArea, true), {
-    x: 24,
-    y: 392,
-    width: 58,
-    height: 116,
+    x: 10,
+    y: 418,
+    width: 34,
+    height: 64,
   });
 });
 

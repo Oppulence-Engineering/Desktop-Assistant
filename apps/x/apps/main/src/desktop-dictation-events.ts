@@ -142,11 +142,12 @@ export interface FlowBarRectangle {
   height: number;
 }
 
-export const BOTTOM_FLOW_BAR_SIZE = { width: 420, height: 56 } as const;
-export const SIDE_FLOW_BAR_SIZE = { width: 112, height: 280 } as const;
-export const BOTTOM_FLOW_BAR_IDLE_SIZE = { width: 132, height: 42 } as const;
-export const SIDE_FLOW_BAR_IDLE_SIZE = { width: 58, height: 116 } as const;
+export const BOTTOM_FLOW_BAR_SIZE = { width: 184, height: 40 } as const;
+export const SIDE_FLOW_BAR_SIZE = { width: 60, height: 156 } as const;
+export const BOTTOM_FLOW_BAR_IDLE_SIZE = { width: 48, height: 34 } as const;
+export const SIDE_FLOW_BAR_IDLE_SIZE = { width: 34, height: 64 } as const;
 const FLOW_BAR_EDGE_INSET = 24;
+const FLOW_BAR_IDLE_EDGE_INSET = 10;
 
 /** Pick the supported edge closest to the center of a dropped Flow Bar. */
 export function nearestFlowBarDock(
@@ -178,10 +179,11 @@ export function flowBarBounds(
       : compact
         ? SIDE_FLOW_BAR_IDLE_SIZE
         : SIDE_FLOW_BAR_SIZE;
-  const width = Math.min(preferred.width, Math.max(1, workArea.width - FLOW_BAR_EDGE_INSET * 2));
+  const edgeInset = compact ? FLOW_BAR_IDLE_EDGE_INSET : FLOW_BAR_EDGE_INSET;
+  const width = Math.min(preferred.width, Math.max(1, workArea.width - edgeInset * 2));
   const height = Math.min(
     preferred.height,
-    Math.max(1, workArea.height - FLOW_BAR_EDGE_INSET * 2),
+    Math.max(1, workArea.height - edgeInset * 2),
   );
 
   if (dock === "bottom") {
@@ -189,7 +191,7 @@ export function flowBarBounds(
       width,
       height,
       x: Math.round(workArea.x + (workArea.width - width) / 2),
-      y: Math.round(workArea.y + workArea.height - height - FLOW_BAR_EDGE_INSET),
+      y: Math.round(workArea.y + workArea.height - height - edgeInset),
     };
   }
 
@@ -198,8 +200,8 @@ export function flowBarBounds(
     height,
     x:
       dock === "left"
-        ? Math.round(workArea.x + FLOW_BAR_EDGE_INSET)
-        : Math.round(workArea.x + workArea.width - width - FLOW_BAR_EDGE_INSET),
+        ? Math.round(workArea.x + edgeInset)
+        : Math.round(workArea.x + workArea.width - width - edgeInset),
     y: Math.round(workArea.y + (workArea.height - height) / 2),
   };
 }

@@ -20,57 +20,57 @@ const CSS = `
 * { box-sizing: border-box; }
 html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 .dictation-pill {
-  display: flex; align-items: center; gap: 10px;
-  width: calc(100% - 4px); height: 52px; margin: 2px; padding: 0 16px;
-  border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 14px;
-  background: rgba(20, 20, 23, 0.94); color: #fafafa;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
-  font: 500 13px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  display: flex; align-items: center; gap: 6px;
+  width: calc(100% - 4px); height: 36px; margin: 2px; padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
+  background: rgba(18, 18, 21, 0.9); color: #fafafa;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  font: 500 11.5px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
   -webkit-app-region: drag; cursor: grab; user-select: none;
 }
 .dictation-pill:active { cursor: grabbing; }
 .dictation-pill.idle {
-  height: 38px; gap: 3px; padding: 0 5px 0 4px; border-radius: 999px;
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(18, 18, 21, 0.82);
+  height: 30px; gap: 1px; padding: 0 2px; border-radius: 999px;
+  border-color: rgba(255, 255, 255, 0.075);
+  background: rgba(18, 18, 21, 0.7);
   box-shadow:
-    0 8px 22px rgba(0, 0, 0, 0.3),
-    0 1px 4px rgba(0, 0, 0, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+    0 5px 14px rgba(0, 0, 0, 0.22),
+    0 1px 3px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
   -webkit-backdrop-filter: blur(20px) saturate(120%);
   backdrop-filter: blur(20px) saturate(120%);
 }
 .dock-action {
-  display: inline-flex; min-width: 0; height: 32px; flex: 1;
-  align-items: center; justify-content: flex-start; gap: 7px;
-  padding: 0 5px 0 2px; border: 0; border-radius: 999px;
-  background: transparent; color: rgba(255, 255, 255, 0.78);
+  display: inline-flex; min-width: 0; height: 26px; flex: 1;
+  align-items: center; justify-content: center; gap: 0;
+  padding: 0; border: 0; border-radius: 999px;
+  background: transparent; color: rgba(255, 255, 255, 0.62);
   font: inherit; cursor: pointer; -webkit-app-region: no-drag;
   transition: background 140ms ease, color 140ms ease, transform 140ms ease;
 }
-.dock-action:hover { background: rgba(255, 255, 255, 0.065); color: #fff; }
+.dock-action:hover { background: rgba(255, 255, 255, 0.055); color: rgba(255,255,255,.9); }
 .dock-action:active { transform: scale(.97); }
 .dock-action:focus-visible { outline: 2px solid #fb923c; outline-offset: 1px; }
 .mic-orb {
-  position: relative; display: inline-flex; width: 26px; height: 26px; flex: none;
+  position: relative; display: inline-flex; width: 22px; height: 22px; flex: none;
   align-items: center; justify-content: center; border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  background: rgba(255, 255, 255, 0.075);
-  color: rgba(255, 255, 255, 0.76);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.045);
+  color: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
   transition: background 140ms ease, color 140ms ease, transform 140ms ease;
 }
 .dock-action:hover .mic-orb {
-  background: rgba(255, 255, 255, 0.12); color: #fff; transform: scale(1.035);
+  background: rgba(255, 255, 255, 0.085); transform: scale(1.025);
 }
-.mic-orb svg { width: 13px; height: 13px; }
+.mic-orb svg { width: 11px; height: 11px; }
 .dock-label {
   overflow: hidden; color: inherit; font-size: 11.5px;
   font-weight: 520; letter-spacing: -0.005em; text-overflow: ellipsis; white-space: nowrap;
 }
 .drag-grip {
-  display: inline-flex; min-width: 14px; min-height: 28px;
+  display: inline-flex; min-width: 7px; min-height: 22px;
   align-items: center; justify-content: center; border-radius: 999px;
   cursor: grab; -webkit-app-region: drag;
   transition: background 140ms ease;
@@ -78,16 +78,17 @@ html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 .drag-grip:hover { background: rgba(255, 255, 255, 0.06); }
 .drag-grip:active { cursor: grabbing; }
 .grip-dots {
-  width: 2px; height: 2px; border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 -4px 0 rgba(255, 255, 255, 0.18), 0 4px 0 rgba(255, 255, 255, 0.18);
+  width: 1px; height: 1px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: 0 -3px 0 rgba(255, 255, 255, 0.13), 0 3px 0 rgba(255, 255, 255, 0.13);
 }
+.idle .dock-label { display: none; }
 .active-controls {
   display: inline-flex; flex: none; align-items: center; gap: 5px;
   -webkit-app-region: no-drag;
 }
 .control-button {
-  display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center;
+  display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center;
   border: 1px solid rgba(255,255,255,.12); border-radius: 50%;
   background: rgba(255,255,255,.07); color: #fafafa; cursor: pointer;
 }
@@ -95,19 +96,18 @@ html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 .control-button.cancel:hover { background: rgba(239,68,68,.22); }
 .control-button.stop { background: #fafafa; color: #141417; }
 .control-button.stop:hover { background: #e7e7ea; }
-.control-button svg { width: 14px; height: 14px; }
-.state-dot { width: 9px; height: 9px; flex: none; border-radius: 50%; background: #f97316; }
+.control-button svg { width: 11px; height: 11px; }
+.state-dot { width: 7px; height: 7px; flex: none; border-radius: 50%; background: #f97316; }
 .listening .state-dot { background: #ef4444; animation: pulse 1.1s ease-in-out infinite; }
 .transcribing .state-dot { border: 2px solid rgba(255,255,255,0.28); border-top-color: #f97316; background: transparent; animation: spin .8s linear infinite; }
 .success .state-dot { background: #34d399; }
 .error .state-dot { background: #f59e0b; }
 .copy { min-width: 0; flex: 1; cursor: default; -webkit-app-region: no-drag; }
-.title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hint { margin-top: 3px; overflow: hidden; color: rgba(250,250,250,.52); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.keys { flex: none; color: rgba(250,250,250,.55); font-size: 10px; letter-spacing: .02em; }
+.title { overflow: hidden; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.hint, .keys { display: none; }
 .dock-left, .dock-right {
-  flex-direction: column; justify-content: center; gap: 12px;
-  width: calc(100% - 4px); height: calc(100% - 4px); padding: 16px 9px;
+  flex-direction: column; justify-content: center; gap: 8px;
+  width: calc(100% - 4px); height: calc(100% - 4px); padding: 10px 6px;
   text-align: center;
 }
 .dock-left .copy, .dock-right .copy {
@@ -123,16 +123,15 @@ html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
   -webkit-box-orient: vertical; -webkit-line-clamp: 5;
 }
 .dock-left .keys, .dock-right .keys { max-width: 100%; line-height: 1.35; overflow-wrap: anywhere; }
-.dock-left.idle, .dock-right.idle { padding: 7px 5px; gap: 4px; }
+.dock-left.idle, .dock-right.idle {
+  width: calc(100% - 4px); height: calc(100% - 4px); padding: 3px 2px; gap: 2px;
+}
 .dock-left.idle .dock-action, .dock-right.idle .dock-action {
-  width: 46px; height: 76px; flex-direction: column; padding: 8px 3px;
+  width: 26px; height: 34px; flex-direction: column; padding: 0;
   line-height: 1.25; text-align: center;
 }
-.dock-left.idle .dock-label, .dock-right.idle .dock-label {
-  max-width: 42px; white-space: normal;
-}
 .dock-left.idle .drag-grip, .dock-right.idle .drag-grip {
-  width: 34px; min-height: 16px; transform: rotate(90deg);
+  width: 22px; min-height: 8px; transform: rotate(90deg);
 }
 .dock-left .active-controls, .dock-right .active-controls { flex-direction: column; }
 @keyframes pulse { 50% { transform: scale(.72); opacity: .55; } }
@@ -415,6 +414,21 @@ export function Dictation() {
     };
   }, [cancel, clearSessionTimers, finish, lockHandsFree, release, retryFailed, start]);
 
+  const statusLabel =
+    state === "listening"
+      ? purpose === "command"
+        ? "Command"
+        : mode === "hands-free"
+          ? "Hands-free"
+          : "Listening"
+      : state === "transcribing"
+        ? "Transcribing"
+        : state === "success"
+          ? "Done"
+          : state === "error"
+            ? "Try again"
+            : "Ready";
+
   const hint =
     state === "listening"
       ? voice.interimText ||
@@ -483,7 +497,7 @@ export function Dictation() {
             )}
             <div className="copy">
               <div className="title" title={message}>
-                {message}
+                {statusLabel}
               </div>
               <div className="hint" title={hint}>
                 {hint}
