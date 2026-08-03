@@ -49,6 +49,11 @@ type DictationStatus = {
 
 let app: ElectronApplication;
 
+test.skip(
+  process.platform !== "darwin",
+  "System-wide desktop dictation and its native modifier monitors are currently macOS-only.",
+);
+
 test.afterAll(async () => {
   await app?.close().catch(() => {});
 });
