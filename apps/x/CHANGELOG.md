@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.23](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.22...v0.1.23) (2026-08-01)
+
+
+### Features
+
+* add conversation follow-through intelligence ([23d0518](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/23d0518c7ddaa7ffcb9a737e66b5904bd501f66e))
+* add cross-channel relationship intelligence learning loop ([b16713e](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/b16713e9a9e5c9c78b2009f1a034579691ff9214))
+* connect transcription to relationship evidence ([#172](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/172)) ([f7ec822](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/f7ec82292250f1621a4657955d00bc67c8a1d75e))
+* enable production conversation intelligence integrations ([#175](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/175)) ([861b580](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/861b58047a2fb078c6d964ca8f13f09c7cdb9d98))
+* implement RFC 037 conversation intelligence and follow-through ([#174](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/174)) ([cbc6eba](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/cbc6eba2ad2ffaf1376707f887583e0a294aaeef))
+
 ## [0.1.22](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.21...v0.1.22) (2026-07-29)
 
 
