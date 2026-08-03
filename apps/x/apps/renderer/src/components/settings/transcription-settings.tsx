@@ -716,10 +716,10 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
               <label className="flex items-center justify-between gap-3 px-3 py-2.5">
                 <span className="min-w-0">
                   <span className="block text-xs font-medium text-foreground">
-                    Show Flow Bar at all times
+                    Show dictation dock
                   </span>
                   <span className="block text-[11px] leading-5 text-muted-foreground">
-                    Keeps a compact click-to-dictate bubble on the selected screen edge between
+                    Opt in to a compact click-to-dictate button on the selected screen edge between
                     recordings.
                   </span>
                 </span>
@@ -728,7 +728,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                   onCheckedChange={(showFlowBar) =>
                     void changeDictationSettings({ ...dictationSettings, showFlowBar })
                   }
-                  aria-label="Show desktop dictation Flow Bar at all times"
+                  aria-label="Show desktop dictation dock"
                   className="shrink-0"
                 />
               </label>

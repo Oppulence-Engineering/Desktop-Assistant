@@ -101,7 +101,9 @@ let preparedContext: Promise<DesktopTextContext | null> | null = null;
 let preparedCommandContext: Promise<DesktopTextContext | null> | null = null;
 let activeShortcut: DictationShortcut = "control-option";
 let activeFlowBarDock: DictationFlowBarDock = "bottom";
-let activeShowFlowBar = true;
+// The idle dock is opt-in. Starting false also prevents a visible flash while
+// the persisted transcription settings are loading during app startup.
+let activeShowFlowBar = false;
 let activeLanguage: DictationLanguage = "auto";
 let activeMicrophonePriority: string[] = [];
 let languageChangedListener: (() => void) | null = null;

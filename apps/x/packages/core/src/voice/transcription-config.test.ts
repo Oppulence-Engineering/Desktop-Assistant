@@ -51,7 +51,7 @@ describe("transcription config I/O", () => {
     expect(cfg.dictation).toEqual({
       shortcut: "control-option",
       flowBarDock: "bottom",
-      showFlowBar: true,
+      showFlowBar: false,
       transformsEnabled: false,
       transforms: [
         {

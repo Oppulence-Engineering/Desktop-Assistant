@@ -49,6 +49,11 @@ type DictationStatus = {
 
 let app: ElectronApplication;
 
+test.skip(
+  process.platform !== "darwin",
+  "System-wide desktop dictation and its native modifier monitors are currently macOS-only.",
+);
+
 test.afterAll(async () => {
   await app?.close().catch(() => {});
 });
@@ -127,9 +132,35 @@ test("packaged desktop dictation helper and overlay are live", async () => {
     .windows()
     .find((candidate) => candidate.url().endsWith("/dictation.html"));
   expect(dictationWindow, "dictation overlay renderer was not created").toBeTruthy();
-  // A real modifier event can arrive while Playwright is attaching. Normalize
-  // the overlay before asserting its persistent idle footprint.
+  // The persistent dock is opt-in and must remain hidden for a fresh profile.
   await mainWindow.evaluate(() => window.ipc.invoke("dictation:updateState", { state: "idle" }));
+  await expect
+    .poll(() =>
+      mainWindow.evaluate(async () => {
+        const config = await window.ipc.invoke("transcription:getConfig", null);
+        return config.dictation.showFlowBar;
+      }),
+    )
+    .toBe(false);
+  await expect
+    .poll(() =>
+      app.evaluate(({ BrowserWindow }) => {
+        const overlay = BrowserWindow.getAllWindows().find((candidate) =>
+          candidate.webContents.getURL().endsWith("/dictation.html"),
+        );
+        return overlay?.isVisible();
+      }),
+    )
+    .toBe(false);
+
+  // Enabling the setting reveals the idle dock immediately. A real modifier
+  // event can arrive while Playwright is attaching, so normalize first.
+  await mainWindow.evaluate(async () => {
+    const config = await window.ipc.invoke("transcription:getConfig", null);
+    await window.ipc.invoke("transcription:setConfig", {
+      dictation: { ...config.dictation, showFlowBar: true },
+    });
+  });
   await expect(dictationWindow!.getByRole("button", { name: "Start dictation" })).toBeVisible();
   await expect
     .poll(() =>
