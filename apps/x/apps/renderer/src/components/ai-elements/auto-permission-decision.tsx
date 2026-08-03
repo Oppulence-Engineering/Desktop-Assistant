@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@oppulence/ui/components/badge";
 import { cn } from "@/lib/utils";
 import { CheckCircle2Icon, ShieldAlertIcon, Terminal } from "@/lib/icons";
 import type { ComponentProps } from "react";

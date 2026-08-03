@@ -202,10 +202,16 @@ export class MeetingQueue {
       codec: this.deps.codec,
     });
 
+    // Retention may patch `meta.json` with an exact deletion timestamp or updated
+    // compressed track names. Publication must describe the artifact that exists now,
+    // not the pre-retention snapshot read at the start of the job. Falling back to the
+    // original value keeps publication non-fatal if a later metadata read is damaged.
+    const retainedMeta = (await readMeta(dir)) ?? meta;
+
     // Last, and never fatal: the meeting is already fully processed by this point, so a
     // failure to announce it must not undo any of that.
     try {
-      await this.deps.onTranscribed?.({ dir, meta, transcript, notePath });
+      await this.deps.onTranscribed?.({ dir, meta: retainedMeta, transcript, notePath });
     } catch (err) {
       await appendLog(dir, `event not published: ${(err as Error).message}`);
     }

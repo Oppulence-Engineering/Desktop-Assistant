@@ -1,14 +1,14 @@
 import { useCallback, useMemo, useState } from 'react'
 import { ExternalLink, MessageSquare, SearchIcon, SquarePen, Trash2 } from '@/lib/icons'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@oppulence/ui/components/button'
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '@/components/ui/context-menu'
+} from '@oppulence/ui/components/context-menu'
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '@oppulence/ui/components/dialog'
 import { formatRelativeTime } from '@/lib/relative-time'
 
 type Run = {
@@ -69,17 +69,17 @@ export function ChatHistoryView({
       <div className="shrink-0 flex items-center justify-between gap-3 border-b border-border px-8 py-6">
         <h1 className="text-2xl font-bold tracking-tight">Chat history</h1>
         <div className="flex items-center gap-2">
-          {onOpenSearch && (
-            <button
-              type="button"
+          {onOpenSearch && sortedRuns.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
               onClick={onOpenSearch}
-              className="inline-flex items-center gap-1.5 rounded-none border border-border bg-background px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-accent"
             >
               <SearchIcon className="size-4" />
               <span>Search</span>
-            </button>
+            </Button>
           )}
-          {onNewChat && (
+          {onNewChat && sortedRuns.length > 0 && (
             <Button size="sm" onClick={onNewChat}>
               <SquarePen className="size-4" />
               New chat
@@ -89,16 +89,24 @@ export function ChatHistoryView({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="min-w-[480px]">
+        {sortedRuns.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center px-8 text-center">
+            <span className="flex size-12 items-center justify-center rounded-2xl border border-border bg-muted/30">
+              <MessageSquare className="size-5 text-muted-foreground" />
+            </span>
+            <h2 className="mt-4 text-sm font-medium text-foreground">Your conversations will live here</h2>
+            <p className="mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
+              Start with an account, email, meeting, or note. Oppulence keeps each conversation so you can return to the work with its context intact.
+            </p>
+            {onNewChat ? <Button className="mt-4" size="sm" onClick={onNewChat}><SquarePen /> Start a conversation</Button> : null}
+          </div>
+        ) : <div className="min-w-[480px]">
           <div className="sticky top-0 z-10 flex items-center border-b border-border bg-background px-6 py-2 text-xs font-medium text-muted-foreground">
             <div className="flex-1">Title</div>
             <div className="w-32 shrink-0">Created</div>
           </div>
 
-          {sortedRuns.length === 0 ? (
-            <div className="px-6 py-8 text-sm text-muted-foreground">No chats yet.</div>
-          ) : (
-            sortedRuns.map((run) => {
+          {sortedRuns.map((run) => {
               const isActive = currentRunId === run.id
               const isProcessing = processingRunIds?.has(run.id)
               return (
@@ -149,9 +157,8 @@ export function ChatHistoryView({
                   </ContextMenuContent>
                 </ContextMenu>
               )
-            })
-          )}
-        </div>
+            })}
+        </div>}
       </div>
 
       <Dialog open={!!pendingDeleteId} onOpenChange={(open) => { if (!open) setPendingDeleteId(null) }}>

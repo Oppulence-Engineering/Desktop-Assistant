@@ -55,6 +55,12 @@ const (
 	FieldStateReason = "state_reason"
 	// FieldStateVersion holds the string denoting the state_version field in the database.
 	FieldStateVersion = "state_version"
+	// FieldStateHash holds the string denoting the state_hash field in the database.
+	FieldStateHash = "state_hash"
+	// FieldProjectorVersion holds the string denoting the projector_version field in the database.
+	FieldProjectorVersion = "projector_version"
+	// FieldProjectedAt holds the string denoting the projected_at field in the database.
+	FieldProjectedAt = "projected_at"
 	// FieldLastChangedAt holds the string denoting the last_changed_at field in the database.
 	FieldLastChangedAt = "last_changed_at"
 	// FieldRisks holds the string denoting the risks field in the database.
@@ -89,6 +95,18 @@ const (
 	EdgeAssertions = "assertions"
 	// EdgeSnapshots holds the string denoting the snapshots edge name in mutations.
 	EdgeSnapshots = "snapshots"
+	// EdgeProjectionJobs holds the string denoting the projection_jobs edge name in mutations.
+	EdgeProjectionJobs = "projection_jobs"
+	// EdgeTrustEvents holds the string denoting the trust_events edge name in mutations.
+	EdgeTrustEvents = "trust_events"
+	// EdgeProposedIdentityCandidates holds the string denoting the proposed_identity_candidates edge name in mutations.
+	EdgeProposedIdentityCandidates = "proposed_identity_candidates"
+	// EdgeExistingIdentityCandidates holds the string denoting the existing_identity_candidates edge name in mutations.
+	EdgeExistingIdentityCandidates = "existing_identity_candidates"
+	// EdgeReviewAcknowledgements holds the string denoting the review_acknowledgements edge name in mutations.
+	EdgeReviewAcknowledgements = "review_acknowledgements"
+	// EdgeAttentionItems holds the string denoting the attention_items edge name in mutations.
+	EdgeAttentionItems = "attention_items"
 	// Table holds the table name of the relationship in the database.
 	Table = "relationships"
 	// WorkspaceTable is the table that holds the workspace relation/edge.
@@ -187,6 +205,48 @@ const (
 	SnapshotsInverseTable = "relationship_state_snapshots"
 	// SnapshotsColumn is the table column denoting the snapshots relation/edge.
 	SnapshotsColumn = "relationship_id"
+	// ProjectionJobsTable is the table that holds the projection_jobs relation/edge.
+	ProjectionJobsTable = "relationship_projection_jobs"
+	// ProjectionJobsInverseTable is the table name for the RelationshipProjectionJob entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipprojectionjob" package.
+	ProjectionJobsInverseTable = "relationship_projection_jobs"
+	// ProjectionJobsColumn is the table column denoting the projection_jobs relation/edge.
+	ProjectionJobsColumn = "relationship_id"
+	// TrustEventsTable is the table that holds the trust_events relation/edge.
+	TrustEventsTable = "revenue_trust_events"
+	// TrustEventsInverseTable is the table name for the RevenueTrustEvent entity.
+	// It exists in this package in order to avoid circular dependency with the "revenuetrustevent" package.
+	TrustEventsInverseTable = "revenue_trust_events"
+	// TrustEventsColumn is the table column denoting the trust_events relation/edge.
+	TrustEventsColumn = "relationship_id"
+	// ProposedIdentityCandidatesTable is the table that holds the proposed_identity_candidates relation/edge.
+	ProposedIdentityCandidatesTable = "relationship_identity_candidates"
+	// ProposedIdentityCandidatesInverseTable is the table name for the RelationshipIdentityCandidate entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipidentitycandidate" package.
+	ProposedIdentityCandidatesInverseTable = "relationship_identity_candidates"
+	// ProposedIdentityCandidatesColumn is the table column denoting the proposed_identity_candidates relation/edge.
+	ProposedIdentityCandidatesColumn = "proposed_relationship_id"
+	// ExistingIdentityCandidatesTable is the table that holds the existing_identity_candidates relation/edge.
+	ExistingIdentityCandidatesTable = "relationship_identity_candidates"
+	// ExistingIdentityCandidatesInverseTable is the table name for the RelationshipIdentityCandidate entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipidentitycandidate" package.
+	ExistingIdentityCandidatesInverseTable = "relationship_identity_candidates"
+	// ExistingIdentityCandidatesColumn is the table column denoting the existing_identity_candidates relation/edge.
+	ExistingIdentityCandidatesColumn = "existing_relationship_id"
+	// ReviewAcknowledgementsTable is the table that holds the review_acknowledgements relation/edge.
+	ReviewAcknowledgementsTable = "relationship_review_acknowledgements"
+	// ReviewAcknowledgementsInverseTable is the table name for the RelationshipReviewAcknowledgement entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipreviewacknowledgement" package.
+	ReviewAcknowledgementsInverseTable = "relationship_review_acknowledgements"
+	// ReviewAcknowledgementsColumn is the table column denoting the review_acknowledgements relation/edge.
+	ReviewAcknowledgementsColumn = "relationship_id"
+	// AttentionItemsTable is the table that holds the attention_items relation/edge.
+	AttentionItemsTable = "relationship_attention_items"
+	// AttentionItemsInverseTable is the table name for the RelationshipAttentionItem entity.
+	// It exists in this package in order to avoid circular dependency with the "relationshipattentionitem" package.
+	AttentionItemsInverseTable = "relationship_attention_items"
+	// AttentionItemsColumn is the table column denoting the attention_items relation/edge.
+	AttentionItemsColumn = "relationship_id"
 )
 
 // Columns holds all SQL columns for relationship fields.
@@ -212,6 +272,9 @@ var Columns = []string{
 	FieldHealth,
 	FieldStateReason,
 	FieldStateVersion,
+	FieldStateHash,
+	FieldProjectorVersion,
+	FieldProjectedAt,
 	FieldLastChangedAt,
 	FieldRisks,
 	FieldMilestones,
@@ -282,6 +345,10 @@ var (
 	DefaultStateVersion int
 	// StateVersionValidator is a validator for the "state_version" field. It is called by the builders before save.
 	StateVersionValidator func(int) error
+	// DefaultProjectorVersion holds the default value on creation for the "projector_version" field.
+	DefaultProjectorVersion int
+	// ProjectorVersionValidator is a validator for the "projector_version" field. It is called by the builders before save.
+	ProjectorVersionValidator func(int) error
 	// DefaultRisks holds the default value on creation for the "risks" field.
 	DefaultRisks []string
 	// DefaultMilestones holds the default value on creation for the "milestones" field.
@@ -391,6 +458,21 @@ func ByStateReason(opts ...sql.OrderTermOption) OrderOption {
 // ByStateVersion orders the results by the state_version field.
 func ByStateVersion(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStateVersion, opts...).ToFunc()
+}
+
+// ByStateHash orders the results by the state_hash field.
+func ByStateHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStateHash, opts...).ToFunc()
+}
+
+// ByProjectorVersion orders the results by the projector_version field.
+func ByProjectorVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProjectorVersion, opts...).ToFunc()
+}
+
+// ByProjectedAt orders the results by the projected_at field.
+func ByProjectedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProjectedAt, opts...).ToFunc()
 }
 
 // ByLastChangedAt orders the results by the last_changed_at field.
@@ -579,6 +661,90 @@ func BySnapshots(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newSnapshotsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByProjectionJobsCount orders the results by projection_jobs count.
+func ByProjectionJobsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newProjectionJobsStep(), opts...)
+	}
+}
+
+// ByProjectionJobs orders the results by projection_jobs terms.
+func ByProjectionJobs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newProjectionJobsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByTrustEventsCount orders the results by trust_events count.
+func ByTrustEventsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newTrustEventsStep(), opts...)
+	}
+}
+
+// ByTrustEvents orders the results by trust_events terms.
+func ByTrustEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTrustEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByProposedIdentityCandidatesCount orders the results by proposed_identity_candidates count.
+func ByProposedIdentityCandidatesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newProposedIdentityCandidatesStep(), opts...)
+	}
+}
+
+// ByProposedIdentityCandidates orders the results by proposed_identity_candidates terms.
+func ByProposedIdentityCandidates(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newProposedIdentityCandidatesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByExistingIdentityCandidatesCount orders the results by existing_identity_candidates count.
+func ByExistingIdentityCandidatesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newExistingIdentityCandidatesStep(), opts...)
+	}
+}
+
+// ByExistingIdentityCandidates orders the results by existing_identity_candidates terms.
+func ByExistingIdentityCandidates(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newExistingIdentityCandidatesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByReviewAcknowledgementsCount orders the results by review_acknowledgements count.
+func ByReviewAcknowledgementsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newReviewAcknowledgementsStep(), opts...)
+	}
+}
+
+// ByReviewAcknowledgements orders the results by review_acknowledgements terms.
+func ByReviewAcknowledgements(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newReviewAcknowledgementsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByAttentionItemsCount orders the results by attention_items count.
+func ByAttentionItemsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAttentionItemsStep(), opts...)
+	}
+}
+
+// ByAttentionItems orders the results by attention_items terms.
+func ByAttentionItems(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAttentionItemsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newWorkspaceStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -675,5 +841,47 @@ func newSnapshotsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SnapshotsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SnapshotsTable, SnapshotsColumn),
+	)
+}
+func newProjectionJobsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ProjectionJobsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ProjectionJobsTable, ProjectionJobsColumn),
+	)
+}
+func newTrustEventsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TrustEventsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, TrustEventsTable, TrustEventsColumn),
+	)
+}
+func newProposedIdentityCandidatesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ProposedIdentityCandidatesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ProposedIdentityCandidatesTable, ProposedIdentityCandidatesColumn),
+	)
+}
+func newExistingIdentityCandidatesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ExistingIdentityCandidatesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ExistingIdentityCandidatesTable, ExistingIdentityCandidatesColumn),
+	)
+}
+func newReviewAcknowledgementsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ReviewAcknowledgementsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ReviewAcknowledgementsTable, ReviewAcknowledgementsColumn),
+	)
+}
+func newAttentionItemsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AttentionItemsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AttentionItemsTable, AttentionItemsColumn),
 	)
 }

@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Loader2, User, CreditCard, LogOut, ExternalLink } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@oppulence/ui/components/button";
+import { Separator } from "@oppulence/ui/components/separator";
 import { useBilling } from "@/hooks/useBilling";
 import { toast } from "sonner";
 import type { BillingUsageBucket } from "@x/shared/dist/billing.js";

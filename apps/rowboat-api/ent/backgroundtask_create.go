@@ -145,6 +145,48 @@ func (_c *BackgroundTaskCreate) SetNillableExecutionTarget(v *string) *Backgroun
 	return _c
 }
 
+// SetTemplateSlug sets the "template_slug" field.
+func (_c *BackgroundTaskCreate) SetTemplateSlug(v string) *BackgroundTaskCreate {
+	_c.mutation.SetTemplateSlug(v)
+	return _c
+}
+
+// SetNillableTemplateSlug sets the "template_slug" field if the given value is not nil.
+func (_c *BackgroundTaskCreate) SetNillableTemplateSlug(v *string) *BackgroundTaskCreate {
+	if v != nil {
+		_c.SetTemplateSlug(*v)
+	}
+	return _c
+}
+
+// SetTemplateVersion sets the "template_version" field.
+func (_c *BackgroundTaskCreate) SetTemplateVersion(v int) *BackgroundTaskCreate {
+	_c.mutation.SetTemplateVersion(v)
+	return _c
+}
+
+// SetNillableTemplateVersion sets the "template_version" field if the given value is not nil.
+func (_c *BackgroundTaskCreate) SetNillableTemplateVersion(v *int) *BackgroundTaskCreate {
+	if v != nil {
+		_c.SetTemplateVersion(*v)
+	}
+	return _c
+}
+
+// SetSystemManaged sets the "system_managed" field.
+func (_c *BackgroundTaskCreate) SetSystemManaged(v bool) *BackgroundTaskCreate {
+	_c.mutation.SetSystemManaged(v)
+	return _c
+}
+
+// SetNillableSystemManaged sets the "system_managed" field if the given value is not nil.
+func (_c *BackgroundTaskCreate) SetNillableSystemManaged(v *bool) *BackgroundTaskCreate {
+	if v != nil {
+		_c.SetSystemManaged(*v)
+	}
+	return _c
+}
+
 // SetTaskCreatedAt sets the "task_created_at" field.
 func (_c *BackgroundTaskCreate) SetTaskCreatedAt(v time.Time) *BackgroundTaskCreate {
 	_c.mutation.SetTaskCreatedAt(v)
@@ -425,6 +467,14 @@ func (_c *BackgroundTaskCreate) defaults() {
 		v := backgroundtask.DefaultExecutionTarget
 		_c.mutation.SetExecutionTarget(v)
 	}
+	if _, ok := _c.mutation.TemplateVersion(); !ok {
+		v := backgroundtask.DefaultTemplateVersion
+		_c.mutation.SetTemplateVersion(v)
+	}
+	if _, ok := _c.mutation.SystemManaged(); !ok {
+		v := backgroundtask.DefaultSystemManaged
+		_c.mutation.SetSystemManaged(v)
+	}
 	if _, ok := _c.mutation.ScheduleSyncState(); !ok {
 		v := backgroundtask.DefaultScheduleSyncState
 		_c.mutation.SetScheduleSyncState(v)
@@ -486,6 +536,17 @@ func (_c *BackgroundTaskCreate) check() error {
 		if err := backgroundtask.ExecutionTargetValidator(v); err != nil {
 			return &ValidationError{Name: "execution_target", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.execution_target": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.TemplateVersion(); !ok {
+		return &ValidationError{Name: "template_version", err: errors.New(`ent: missing required field "BackgroundTask.template_version"`)}
+	}
+	if v, ok := _c.mutation.TemplateVersion(); ok {
+		if err := backgroundtask.TemplateVersionValidator(v); err != nil {
+			return &ValidationError{Name: "template_version", err: fmt.Errorf(`ent: validator failed for field "BackgroundTask.template_version": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.SystemManaged(); !ok {
+		return &ValidationError{Name: "system_managed", err: errors.New(`ent: missing required field "BackgroundTask.system_managed"`)}
 	}
 	if _, ok := _c.mutation.ScheduleSyncState(); !ok {
 		return &ValidationError{Name: "schedule_sync_state", err: errors.New(`ent: missing required field "BackgroundTask.schedule_sync_state"`)}
@@ -581,6 +642,18 @@ func (_c *BackgroundTaskCreate) createSpec() (*BackgroundTask, *sqlgraph.CreateS
 	if value, ok := _c.mutation.ExecutionTarget(); ok {
 		_spec.SetField(backgroundtask.FieldExecutionTarget, field.TypeString, value)
 		_node.ExecutionTarget = value
+	}
+	if value, ok := _c.mutation.TemplateSlug(); ok {
+		_spec.SetField(backgroundtask.FieldTemplateSlug, field.TypeString, value)
+		_node.TemplateSlug = value
+	}
+	if value, ok := _c.mutation.TemplateVersion(); ok {
+		_spec.SetField(backgroundtask.FieldTemplateVersion, field.TypeInt, value)
+		_node.TemplateVersion = value
+	}
+	if value, ok := _c.mutation.SystemManaged(); ok {
+		_spec.SetField(backgroundtask.FieldSystemManaged, field.TypeBool, value)
+		_node.SystemManaged = value
 	}
 	if value, ok := _c.mutation.TaskCreatedAt(); ok {
 		_spec.SetField(backgroundtask.FieldTaskCreatedAt, field.TypeTime, value)
@@ -878,6 +951,54 @@ func (u *BackgroundTaskUpsert) SetExecutionTarget(v string) *BackgroundTaskUpser
 // UpdateExecutionTarget sets the "execution_target" field to the value that was provided on create.
 func (u *BackgroundTaskUpsert) UpdateExecutionTarget() *BackgroundTaskUpsert {
 	u.SetExcluded(backgroundtask.FieldExecutionTarget)
+	return u
+}
+
+// SetTemplateSlug sets the "template_slug" field.
+func (u *BackgroundTaskUpsert) SetTemplateSlug(v string) *BackgroundTaskUpsert {
+	u.Set(backgroundtask.FieldTemplateSlug, v)
+	return u
+}
+
+// UpdateTemplateSlug sets the "template_slug" field to the value that was provided on create.
+func (u *BackgroundTaskUpsert) UpdateTemplateSlug() *BackgroundTaskUpsert {
+	u.SetExcluded(backgroundtask.FieldTemplateSlug)
+	return u
+}
+
+// ClearTemplateSlug clears the value of the "template_slug" field.
+func (u *BackgroundTaskUpsert) ClearTemplateSlug() *BackgroundTaskUpsert {
+	u.SetNull(backgroundtask.FieldTemplateSlug)
+	return u
+}
+
+// SetTemplateVersion sets the "template_version" field.
+func (u *BackgroundTaskUpsert) SetTemplateVersion(v int) *BackgroundTaskUpsert {
+	u.Set(backgroundtask.FieldTemplateVersion, v)
+	return u
+}
+
+// UpdateTemplateVersion sets the "template_version" field to the value that was provided on create.
+func (u *BackgroundTaskUpsert) UpdateTemplateVersion() *BackgroundTaskUpsert {
+	u.SetExcluded(backgroundtask.FieldTemplateVersion)
+	return u
+}
+
+// AddTemplateVersion adds v to the "template_version" field.
+func (u *BackgroundTaskUpsert) AddTemplateVersion(v int) *BackgroundTaskUpsert {
+	u.Add(backgroundtask.FieldTemplateVersion, v)
+	return u
+}
+
+// SetSystemManaged sets the "system_managed" field.
+func (u *BackgroundTaskUpsert) SetSystemManaged(v bool) *BackgroundTaskUpsert {
+	u.Set(backgroundtask.FieldSystemManaged, v)
+	return u
+}
+
+// UpdateSystemManaged sets the "system_managed" field to the value that was provided on create.
+func (u *BackgroundTaskUpsert) UpdateSystemManaged() *BackgroundTaskUpsert {
+	u.SetExcluded(backgroundtask.FieldSystemManaged)
 	return u
 }
 
@@ -1250,6 +1371,62 @@ func (u *BackgroundTaskUpsertOne) SetExecutionTarget(v string) *BackgroundTaskUp
 func (u *BackgroundTaskUpsertOne) UpdateExecutionTarget() *BackgroundTaskUpsertOne {
 	return u.Update(func(s *BackgroundTaskUpsert) {
 		s.UpdateExecutionTarget()
+	})
+}
+
+// SetTemplateSlug sets the "template_slug" field.
+func (u *BackgroundTaskUpsertOne) SetTemplateSlug(v string) *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.SetTemplateSlug(v)
+	})
+}
+
+// UpdateTemplateSlug sets the "template_slug" field to the value that was provided on create.
+func (u *BackgroundTaskUpsertOne) UpdateTemplateSlug() *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.UpdateTemplateSlug()
+	})
+}
+
+// ClearTemplateSlug clears the value of the "template_slug" field.
+func (u *BackgroundTaskUpsertOne) ClearTemplateSlug() *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.ClearTemplateSlug()
+	})
+}
+
+// SetTemplateVersion sets the "template_version" field.
+func (u *BackgroundTaskUpsertOne) SetTemplateVersion(v int) *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.SetTemplateVersion(v)
+	})
+}
+
+// AddTemplateVersion adds v to the "template_version" field.
+func (u *BackgroundTaskUpsertOne) AddTemplateVersion(v int) *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.AddTemplateVersion(v)
+	})
+}
+
+// UpdateTemplateVersion sets the "template_version" field to the value that was provided on create.
+func (u *BackgroundTaskUpsertOne) UpdateTemplateVersion() *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.UpdateTemplateVersion()
+	})
+}
+
+// SetSystemManaged sets the "system_managed" field.
+func (u *BackgroundTaskUpsertOne) SetSystemManaged(v bool) *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.SetSystemManaged(v)
+	})
+}
+
+// UpdateSystemManaged sets the "system_managed" field to the value that was provided on create.
+func (u *BackgroundTaskUpsertOne) UpdateSystemManaged() *BackgroundTaskUpsertOne {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.UpdateSystemManaged()
 	})
 }
 
@@ -1818,6 +1995,62 @@ func (u *BackgroundTaskUpsertBulk) SetExecutionTarget(v string) *BackgroundTaskU
 func (u *BackgroundTaskUpsertBulk) UpdateExecutionTarget() *BackgroundTaskUpsertBulk {
 	return u.Update(func(s *BackgroundTaskUpsert) {
 		s.UpdateExecutionTarget()
+	})
+}
+
+// SetTemplateSlug sets the "template_slug" field.
+func (u *BackgroundTaskUpsertBulk) SetTemplateSlug(v string) *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.SetTemplateSlug(v)
+	})
+}
+
+// UpdateTemplateSlug sets the "template_slug" field to the value that was provided on create.
+func (u *BackgroundTaskUpsertBulk) UpdateTemplateSlug() *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.UpdateTemplateSlug()
+	})
+}
+
+// ClearTemplateSlug clears the value of the "template_slug" field.
+func (u *BackgroundTaskUpsertBulk) ClearTemplateSlug() *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.ClearTemplateSlug()
+	})
+}
+
+// SetTemplateVersion sets the "template_version" field.
+func (u *BackgroundTaskUpsertBulk) SetTemplateVersion(v int) *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.SetTemplateVersion(v)
+	})
+}
+
+// AddTemplateVersion adds v to the "template_version" field.
+func (u *BackgroundTaskUpsertBulk) AddTemplateVersion(v int) *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.AddTemplateVersion(v)
+	})
+}
+
+// UpdateTemplateVersion sets the "template_version" field to the value that was provided on create.
+func (u *BackgroundTaskUpsertBulk) UpdateTemplateVersion() *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.UpdateTemplateVersion()
+	})
+}
+
+// SetSystemManaged sets the "system_managed" field.
+func (u *BackgroundTaskUpsertBulk) SetSystemManaged(v bool) *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.SetSystemManaged(v)
+	})
+}
+
+// UpdateSystemManaged sets the "system_managed" field to the value that was provided on create.
+func (u *BackgroundTaskUpsertBulk) UpdateSystemManaged() *BackgroundTaskUpsertBulk {
+	return u.Update(func(s *BackgroundTaskUpsert) {
+		s.UpdateSystemManaged()
 	})
 }
 

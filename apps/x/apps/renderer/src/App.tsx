@@ -16,7 +16,6 @@ import z from "zod";
 import {
   CheckIcon,
   LoaderIcon,
-  PanelLeftIcon,
   ArrowLeft,
   ArrowRight,
   MessageSquare,
@@ -29,7 +28,7 @@ import { cn } from "@/lib/utils";
 import { MarkdownEditor, type MarkdownEditorHandle } from "./components/markdown-editor";
 import { ChatSidebar } from "./components/chat-sidebar";
 import { ChatHeader } from "./components/chat-header";
-import { ChatEmptyState } from "./components/chat-empty-state";
+import { ChatEmptyState, type ChatWorkContext } from "./components/chat-empty-state";
 import {
   ChatInputWithMentions,
   type PermissionMode,
@@ -89,8 +88,18 @@ import {
   ToolPermissionRequestEvent,
   AskHumanRequestEvent,
 } from "@x/shared/src/runs.js";
-import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@oppulence/ui/components/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@oppulence/ui/components/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -98,11 +107,17 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Toaster } from "@/components/ui/sonner";
+} from "@oppulence/ui/components/dialog";
+import { Button } from "@oppulence/ui/components/button";
+import { Toaster } from "@oppulence/ui/components/sonner";
 import { BillingErrorDialog } from "@/components/billing-error-dialog";
+import { SessionReconnectDialog } from "@/components/session-reconnect-dialog";
+import { shouldShowSessionReconnect } from "@/lib/session-reconnect";
 import { matchBillingError, type BillingErrorMatch } from "@/lib/billing-error";
+import {
+  buildKnowledgeGraphIncrementally,
+  invalidateKnowledgeGraphPaths,
+} from "@/lib/knowledge-graph-cache";
 import {
   ensureMarkdownExtension,
   normalizeWikiPath,
@@ -158,6 +173,8 @@ import { toast } from "sonner";
 import { useVoiceMode } from "@/hooks/useVoiceMode";
 import { useVoiceTTS } from "@/hooks/useVoiceTTS";
 import { useMeetingTranscription, type CalendarEventMeta } from "@/hooks/useMeetingTranscription";
+import type { MeetingDoctorCheck, MeetingRelationshipTarget } from "@x/shared/dist/meetings.js";
+import { findMicrophoneBlocker } from "@/lib/meeting-readiness";
 import { useAnalyticsIdentity } from "@/hooks/useAnalyticsIdentity";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
 import { useBilling } from "@/hooks/useBilling";
@@ -218,7 +235,6 @@ function AutoScrollPre({ className, children }: { className?: string; children: 
 
 const DEFAULT_SIDEBAR_WIDTH = 256;
 const DEFAULT_CHAT_PANE_WIDTH = 460;
-const wikiLinkRegex = /\[\[([^[\]]+)\]\]/g;
 const graphPalette = [
   { hue: 210, sat: 72, light: 52 },
   { hue: 28, sat: 78, light: 52 },
@@ -230,14 +246,13 @@ const graphPalette = [
   { hue: 0, sat: 72, light: 52 },
 ];
 
-const MACOS_TRAFFIC_LIGHTS_RESERVED_PX = 16 + 12 * 3 + 8 * 2;
-const TITLEBAR_TOGGLE_MARGIN_LEFT_PX = 12;
 const GRAPH_TAB_PATH = "__rowboat_graph_view__";
 const SUGGESTED_TOPICS_TAB_PATH = "__rowboat_suggested_topics__";
 const MEETINGS_TAB_PATH = "__rowboat_meetings__";
 const LIVE_NOTES_TAB_PATH = "__rowboat_live_notes__";
 const BG_TASKS_TAB_PATH = "__rowboat_bg_tasks__";
 const EMAIL_TAB_PATH = "__rowboat_email__";
+const RELATIONSHIPS_TAB_PATH = "__rowboat_relationships__";
 const WORKSPACE_TAB_PATH = "__rowboat_workspace__";
 const WORKSPACE_ROOT = "knowledge/Workspace";
 const KNOWLEDGE_VIEW_TAB_PATH = "__rowboat_knowledge_view__";
@@ -385,6 +400,7 @@ const isMeetingsTabPath = (path: string) => path === MEETINGS_TAB_PATH;
 const isLiveNotesTabPath = (path: string) => path === LIVE_NOTES_TAB_PATH;
 const isBgTasksTabPath = (path: string) => path === BG_TASKS_TAB_PATH;
 const isEmailTabPath = (path: string) => path === EMAIL_TAB_PATH;
+const isRelationshipsTabPath = (path: string) => path === RELATIONSHIPS_TAB_PATH;
 const isWorkspaceTabPath = (path: string) => path === WORKSPACE_TAB_PATH;
 const isKnowledgeViewTabPath = (path: string) => path === KNOWLEDGE_VIEW_TAB_PATH;
 const isChatHistoryTabPath = (path: string) => path === CHAT_HISTORY_TAB_PATH;
@@ -656,7 +672,7 @@ type ViewState =
   | { type: "live-notes" }
   | { type: "bg-tasks" }
   | { type: "email" }
-  | { type: "relationships"; id?: string }
+  | { type: "relationships"; id?: string; graphState?: string }
   | { type: "workspace"; path?: string }
   | { type: "knowledge-view"; folderPath?: string }
   | { type: "chat-history" }
@@ -670,6 +686,8 @@ function viewStatesEqual(a: ViewState, b: ViewState): boolean {
   if (a.type === "workspace" && b.type === "workspace") return (a.path ?? "") === (b.path ?? "");
   if (a.type === "knowledge-view" && b.type === "knowledge-view")
     return (a.folderPath ?? "") === (b.folderPath ?? "");
+  if (a.type === "relationships" && b.type === "relationships")
+    return (a.id ?? "") === (b.id ?? "") && (a.graphState ?? "") === (b.graphState ?? "");
   return true; // both graph
 }
 
@@ -721,8 +739,13 @@ function parseDeepLink(input: string): ViewState | null {
       const id = params.get("id");
       return { type: "relationships", id: id ?? undefined };
     }
-    case "relationships":
-      return { type: "relationships" };
+    case "relationships": {
+      const graphState = params.get("graphState") ?? undefined;
+      return {
+        type: "relationships",
+        graphState: graphState && graphState.length <= 8_192 ? graphState : undefined,
+      };
+    }
     case "workspace": {
       const path = params.get("path");
       return { type: "workspace", path: path ?? undefined };
@@ -740,29 +763,6 @@ function parseDeepLink(input: string): ViewState | null {
   }
 }
 
-/** Sidebar toggle (fixed position, top-left) */
-function FixedSidebarToggle({ leftInsetPx }: { leftInsetPx: number }) {
-  const { toggleSidebar } = useSidebar();
-  return (
-    <div
-      className="fixed left-0 top-0 z-50 flex h-12 items-center gap-1"
-      style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-    >
-      <div aria-hidden="true" className="h-12 shrink-0" style={{ width: leftInsetPx }} />
-      {/* Sidebar toggle */}
-      <button
-        type="button"
-        onClick={toggleSidebar}
-        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-        style={{ marginLeft: TITLEBAR_TOGGLE_MARGIN_LEFT_PX }}
-        aria-label="Toggle Sidebar"
-      >
-        <PanelLeftIcon className="size-5" />
-      </button>
-    </div>
-  );
-}
-
 /** Main content header inside the workspace card (tabs + nav). */
 function ContentHeader({
   children,
@@ -777,15 +777,22 @@ function ContentHeader({
   canNavigateBack?: boolean;
   canNavigateForward?: boolean;
 }) {
+  const { state: sidebarState } = useSidebar();
+  const isSidebarCollapsed = sidebarState === "collapsed";
+
   return (
     <header
-      className="rowboat-titlebar titlebar-drag-region flex h-10 shrink-0 items-stretch border-b border-border bg-background overflow-hidden"
+      className="rowboat-titlebar titlebar-drag-region flex h-10 shrink-0 items-stretch overflow-hidden border-b border-border bg-background transition-[padding] duration-200 ease-linear"
       style={{
-        // Traffic lights live in the workspace topbar now, so no reserved inset.
-        paddingLeft: 12,
+        paddingLeft: isSidebarCollapsed ? 0 : 12,
         paddingRight: 12,
       }}
     >
+      {isSidebarCollapsed ? (
+        <div className="titlebar-no-drag flex shrink-0 items-center pr-2">
+          <SidebarTrigger className="-ml-2 size-8 text-muted-foreground hover:bg-accent hover:text-foreground" />
+        </div>
+      ) : null}
       {onNavigateBack && onNavigateForward ? (
         <div className="titlebar-no-drag flex items-center gap-1 pr-2 shrink-0">
           <button
@@ -825,9 +832,26 @@ function App() {
 
   useAnalyticsIdentity();
   const solomonAccount = useSolomonAccount();
-  const { isLoading: solomonBillingLoading, error: solomonBillingError } = useBilling(
-    solomonAccount.signedIn,
-  );
+  const {
+    isLoading: solomonBillingLoading,
+    error: solomonBillingError,
+    refresh: refreshSolomonBilling,
+  } = useBilling(solomonAccount.signedIn);
+  const [sessionReconnectDeferred, setSessionReconnectDeferred] = useState(false);
+  const sessionReconnectRequired = shouldShowSessionReconnect({
+    isLoading: solomonAccount.isLoading,
+    signedIn: solomonAccount.signedIn,
+    authReason: solomonAccount.authReason,
+    billingErrorReason: solomonBillingError?.reason ?? null,
+    deferred: sessionReconnectDeferred,
+  });
+  const handleSessionReconnected = useCallback(async () => {
+    const account = await solomonAccount.refresh();
+    if (account?.accessToken) {
+      setSessionReconnectDeferred(false);
+      await refreshSolomonBilling();
+    }
+  }, [refreshSolomonBilling, solomonAccount.refresh]);
   const shouldOfferBgTaskCopilot =
     !solomonAccount.isLoading &&
     (!solomonAccount.signedIn ||
@@ -852,6 +876,13 @@ function App() {
   const [isEmailOpen, setIsEmailOpen] = useState(false);
   const [isRelationshipsOpen, setIsRelationshipsOpen] = useState(false);
   const [relationshipInitialId, setRelationshipInitialId] = useState<string | null>(null);
+  const [relationshipInitialGraphState, setRelationshipInitialGraphState] = useState<string | null>(
+    null,
+  );
+  const [relationshipChatContext, setRelationshipChatContext] = useState<{
+    label: string;
+    detail?: string;
+  } | null>(null);
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [workspaceInitialPath, setWorkspaceInitialPath] = useState<string | null>(null);
   const [isKnowledgeViewOpen, setIsKnowledgeViewOpen] = useState(false);
@@ -1012,6 +1043,24 @@ function App() {
   // Mirror of the live transcription state for the [] -dep join handler. (ERRORS.md E18)
   const meetingStateRef = useRef(meetingTranscription.state);
   meetingStateRef.current = meetingTranscription.state;
+  const [meetingCaptureBlocker, setMeetingCaptureBlocker] = useState<MeetingDoctorCheck | null>(
+    null,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    void window.ipc
+      .invoke("meeting:preflight", { probeSystemAudio: false })
+      .then((report) => {
+        if (!cancelled) setMeetingCaptureBlocker(findMicrophoneBlocker(report.problems));
+      })
+      .catch(() => {
+        if (!cancelled) setMeetingCaptureBlocker(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Check if voice is available on mount and when OAuth state changes
   const refreshVoiceAvailability = useCallback(() => {
@@ -1338,14 +1387,15 @@ function App() {
   const newFileTabId = () => `file-tab-${++fileTabIdCounterRef.current}`;
 
   const getFileTabTitle = useCallback((tab: FileTab) => {
-    if (isGraphTabPath(tab.path)) return "Graph View";
+    if (isGraphTabPath(tab.path)) return "Knowledge Graph";
     if (isSuggestedTopicsTabPath(tab.path)) return "Suggested Topics";
     if (isMeetingsTabPath(tab.path)) return "Meetings";
     if (isLiveNotesTabPath(tab.path)) return "Live notes";
     if (isBgTasksTabPath(tab.path)) return "Background tasks";
     if (isEmailTabPath(tab.path)) return "Email";
-    if (isWorkspaceTabPath(tab.path)) return "Workspace";
-    if (isKnowledgeViewTabPath(tab.path)) return "Notes";
+    if (isRelationshipsTabPath(tab.path)) return "Relationships";
+    if (isWorkspaceTabPath(tab.path)) return "Workspaces";
+    if (isKnowledgeViewTabPath(tab.path)) return "Knowledge";
     if (isChatHistoryTabPath(tab.path)) return "Chat history";
     if (isHomeTabPath(tab.path)) return "Home";
     if (tab.path === BASES_DEFAULT_TAB_PATH) return "Bases";
@@ -1659,6 +1709,7 @@ function App() {
         return [];
       })();
       const selectedPathAtEvent = selectedPathRef.current;
+      invalidateKnowledgeGraphPaths(eventPaths.filter((path) => path.endsWith(".md")));
 
       // Reload background tasks if agent-schedule.json changed
       if (
@@ -3426,6 +3477,7 @@ function App() {
         setIsLiveNotesOpen(false);
         setIsBgTasksOpen(false);
         setIsEmailOpen(false);
+        setIsRelationshipsOpen(false);
         setIsWorkspaceOpen(false);
         setIsKnowledgeViewOpen(false);
         setIsChatHistoryOpen(false);
@@ -3442,6 +3494,7 @@ function App() {
       setIsLiveNotesOpen(false);
       setIsBgTasksOpen(false);
       setIsEmailOpen(false);
+      setIsRelationshipsOpen(false);
       setIsWorkspaceOpen(false);
       setIsKnowledgeViewOpen(false);
       setIsChatHistoryOpen(false);
@@ -3459,6 +3512,9 @@ function App() {
       setActiveFileTabId(tabId);
       setSelectedBackgroundTask(null);
       setExpandedFrom(null);
+      setIsRelationshipsOpen(false);
+      setRelationshipInitialId(null);
+      setRelationshipInitialGraphState(null);
       // If chat-only maximize is active, drop back to a visible knowledge layout.
       if (isRightPaneMaximized) {
         setIsRightPaneMaximized(false);
@@ -3547,6 +3603,21 @@ function App() {
         setIsEmailOpen(true);
         return;
       }
+      if (isRelationshipsTabPath(tab.path)) {
+        setSelectedPath(null);
+        setIsGraphOpen(false);
+        setIsSuggestedTopicsOpen(false);
+        setIsMeetingsOpen(false);
+        setIsLiveNotesOpen(false);
+        setIsBgTasksOpen(false);
+        setIsEmailOpen(false);
+        setIsWorkspaceOpen(false);
+        setIsKnowledgeViewOpen(false);
+        setIsChatHistoryOpen(false);
+        setIsHomeOpen(false);
+        setIsRelationshipsOpen(true);
+        return;
+      }
       if (isWorkspaceTabPath(tab.path)) {
         setSelectedPath(null);
         setIsGraphOpen(false);
@@ -3628,6 +3699,7 @@ function App() {
         !isLiveNotesTabPath(closingTab.path) &&
         !isBgTasksTabPath(closingTab.path) &&
         !isEmailTabPath(closingTab.path) &&
+        !isRelationshipsTabPath(closingTab.path) &&
         !isWorkspaceTabPath(closingTab.path) &&
         !isKnowledgeViewTabPath(closingTab.path) &&
         !isChatHistoryTabPath(closingTab.path) &&
@@ -3660,6 +3732,7 @@ function App() {
           setIsLiveNotesOpen(false);
           setIsBgTasksOpen(false);
           setIsEmailOpen(false);
+          setIsRelationshipsOpen(false);
           setIsWorkspaceOpen(false);
           setIsKnowledgeViewOpen(false);
           setIsChatHistoryOpen(false);
@@ -3673,6 +3746,9 @@ function App() {
           const newIdx = Math.min(idx, next.length - 1);
           const newActiveTab = next[newIdx];
           setActiveFileTabId(newActiveTab.id);
+          setIsRelationshipsOpen(false);
+          setRelationshipInitialId(null);
+          setRelationshipInitialGraphState(null);
           if (isGraphTabPath(newActiveTab.path)) {
             setSelectedPath(null);
             setIsGraphOpen(true);
@@ -3745,6 +3821,19 @@ function App() {
             setIsChatHistoryOpen(false);
             setIsHomeOpen(false);
             setIsEmailOpen(true);
+          } else if (isRelationshipsTabPath(newActiveTab.path)) {
+            setSelectedPath(null);
+            setIsGraphOpen(false);
+            setIsSuggestedTopicsOpen(false);
+            setIsMeetingsOpen(false);
+            setIsLiveNotesOpen(false);
+            setIsBgTasksOpen(false);
+            setIsEmailOpen(false);
+            setIsWorkspaceOpen(false);
+            setIsKnowledgeViewOpen(false);
+            setIsChatHistoryOpen(false);
+            setIsHomeOpen(false);
+            setIsRelationshipsOpen(true);
           } else if (isWorkspaceTabPath(newActiveTab.path)) {
             setSelectedPath(null);
             setIsGraphOpen(false);
@@ -4175,7 +4264,11 @@ function App() {
   const currentViewState = React.useMemo<ViewState>(() => {
     if (selectedBackgroundTask) return { type: "task", name: selectedBackgroundTask };
     if (isRelationshipsOpen)
-      return { type: "relationships", id: relationshipInitialId ?? undefined };
+      return {
+        type: "relationships",
+        id: relationshipInitialId ?? undefined,
+        graphState: relationshipInitialGraphState ?? undefined,
+      };
     if (isEmailOpen) return { type: "email" };
     if (isMeetingsOpen) return { type: "meetings" };
     if (isLiveNotesOpen) return { type: "live-notes" };
@@ -4198,6 +4291,7 @@ function App() {
     selectedBackgroundTask,
     isRelationshipsOpen,
     relationshipInitialId,
+    relationshipInitialGraphState,
     isEmailOpen,
     isMeetingsOpen,
     isLiveNotesOpen,
@@ -4213,6 +4307,64 @@ function App() {
     workspaceInitialPath,
     runId,
   ]);
+
+  const chatWorkContext = React.useMemo<ChatWorkContext | undefined>(() => {
+    if (isBrowserOpen) return { type: "browser", label: "Browser", detail: "Current web research" };
+    switch (currentViewState.type) {
+      case "relationships":
+        return {
+          type: "relationship",
+          label: relationshipChatContext?.label || "Relationship Mission Control",
+          detail: relationshipChatContext?.detail || "Accounts, evidence, and governed actions",
+        };
+      case "email":
+        return { type: "email", label: "Email", detail: "Current inbox and thread" };
+      case "meetings":
+      case "live-notes":
+        return {
+          type: "meeting",
+          label: currentViewState.type === "meetings" ? "Meetings" : "Live meeting notes",
+        };
+      case "task":
+        return {
+          type: "task",
+          label: currentViewState.name,
+          detail: "Background task",
+          hasSelection: true,
+        };
+      case "bg-tasks":
+        return {
+          type: "task",
+          label: "Background tasks",
+          detail: "Automations and recent runs",
+          hasSelection: false,
+        };
+      case "file":
+        return {
+          type: "knowledge",
+          label: currentViewState.path.split("/").pop() || currentViewState.path,
+          detail: "Open knowledge file",
+        };
+      case "graph":
+        return { type: "knowledge", label: "Knowledge graph", detail: "Connected local knowledge" };
+      case "knowledge-view":
+        return {
+          type: "knowledge",
+          label: currentViewState.folderPath || "Knowledge",
+          detail: "Knowledge collection",
+        };
+      case "workspace":
+        return {
+          type: "workspace",
+          label: currentViewState.path || "Workspaces",
+          detail: "Current workspace",
+        };
+      case "home":
+        return { type: "home", label: "Home", detail: "Your current priorities" };
+      default:
+        return undefined;
+    }
+  }, [currentViewState, isBrowserOpen, relationshipChatContext]);
 
   const appendUnique = useCallback((stack: ViewState[], entry: ViewState) => {
     const last = stack[stack.length - 1];
@@ -4230,7 +4382,12 @@ function App() {
 
       if (activeFileTabId) {
         const activeTab = fileTabs.find((tab) => tab.id === activeFileTabId);
-        if (activeTab && !isGraphTabPath(activeTab.path) && !isBaseFilePath(activeTab.path)) {
+        if (
+          activeTab &&
+          !isGraphTabPath(activeTab.path) &&
+          !isRelationshipsTabPath(activeTab.path) &&
+          !isBaseFilePath(activeTab.path)
+        ) {
           setFileTabs((prev) =>
             prev.map((tab) => (tab.id === activeFileTabId ? { ...tab, path } : tab)),
           );
@@ -4313,6 +4470,17 @@ function App() {
     }
     const id = newFileTabId();
     setFileTabs((prev) => [...prev, { id, path: EMAIL_TAB_PATH }]);
+    setActiveFileTabId(id);
+  }, [fileTabs]);
+
+  const ensureRelationshipsFileTab = useCallback(() => {
+    const existing = fileTabs.find((tab) => isRelationshipsTabPath(tab.path));
+    if (existing) {
+      setActiveFileTabId(existing.id);
+      return;
+    }
+    const id = newFileTabId();
+    setFileTabs((prev) => [...prev, { id, path: RELATIONSHIPS_TAB_PATH }]);
     setActiveFileTabId(id);
   }, [fileTabs]);
 
@@ -4439,6 +4607,7 @@ function App() {
       if (view.type !== "relationships") {
         setIsRelationshipsOpen(false);
         setRelationshipInitialId(null);
+        setRelationshipInitialGraphState(null);
       }
       switch (view.type) {
         case "relationships":
@@ -4458,7 +4627,9 @@ function App() {
           setIsChatHistoryOpen(false);
           setIsHomeOpen(false);
           setRelationshipInitialId(view.id ?? null);
+          setRelationshipInitialGraphState(view.graphState ?? null);
           setIsRelationshipsOpen(true);
+          ensureRelationshipsFileTab();
           return;
         case "file":
           setSelectedBackgroundTask(null);
@@ -4726,6 +4897,7 @@ function App() {
     },
     [
       ensureEmailFileTab,
+      ensureRelationshipsFileTab,
       ensureMeetingsFileTab,
       ensureLiveNotesFileTab,
       ensureBgTasksFileTab,
@@ -5259,15 +5431,17 @@ function App() {
                 ? BG_TASKS_TAB_PATH
                 : isEmailOpen
                   ? EMAIL_TAB_PATH
-                  : isWorkspaceOpen
-                    ? WORKSPACE_TAB_PATH
-                    : isKnowledgeViewOpen
-                      ? KNOWLEDGE_VIEW_TAB_PATH
-                      : isChatHistoryOpen
-                        ? CHAT_HISTORY_TAB_PATH
-                        : isHomeOpen
-                          ? HOME_TAB_PATH
-                          : selectedPath;
+                  : isRelationshipsOpen
+                    ? RELATIONSHIPS_TAB_PATH
+                    : isWorkspaceOpen
+                      ? WORKSPACE_TAB_PATH
+                      : isKnowledgeViewOpen
+                        ? KNOWLEDGE_VIEW_TAB_PATH
+                        : isChatHistoryOpen
+                          ? CHAT_HISTORY_TAB_PATH
+                          : isHomeOpen
+                            ? HOME_TAB_PATH
+                            : selectedPath;
       const targetFileTabId =
         activeFileTabId ??
         (selectedKnowledgePath
@@ -5800,6 +5974,7 @@ function App() {
 
   const meetingNotePathRef = useRef<string | null>(null);
   const pendingCalendarEventRef = useRef<CalendarEventMeta | undefined>(undefined);
+  const pendingRelationshipTargetRef = useRef<MeetingRelationshipTarget | undefined>(undefined);
   const [meetingSummarizing, setMeetingSummarizing] = useState(false);
   const [showMeetingPermissions, setShowMeetingPermissions] = useState(false);
   const [recordingMeetingSource, setRecordingMeetingSource] = useState<string | null>(null);
@@ -5808,9 +5983,11 @@ function App() {
 
   const startMeetingNow = useCallback(async () => {
     const calEvent = pendingCalendarEventRef.current;
+    const relationshipTarget = pendingRelationshipTargetRef.current;
     pendingCalendarEventRef.current = undefined;
-    setRecordingMeetingSource(calEvent?.source ?? null);
-    const notePath = await meetingTranscription.start(calEvent);
+    pendingRelationshipTargetRef.current = undefined;
+    setRecordingMeetingSource(relationshipTarget?.displayName ?? calEvent?.source ?? null);
+    const notePath = await meetingTranscription.start(calEvent, relationshipTarget);
     if (notePath) {
       meetingNotePathRef.current = notePath;
       await handleVoiceNoteCreated(notePath);
@@ -5847,6 +6024,7 @@ function App() {
       setRecordingMeetingSource(null);
       // Clear any stale pending calendar event so it can't attach to a later run. (ERRORS.md E18)
       pendingCalendarEventRef.current = undefined;
+      pendingRelationshipTargetRef.current = undefined;
 
       // Read the final transcript and generate meeting notes via LLM.
       // Native capture transcribes asynchronously after stop, so its note is still the
@@ -5917,6 +6095,51 @@ function App() {
     }
   }, [meetingTranscription, handleVoiceNoteCreated, startMeetingNow]);
   handleToggleMeetingRef.current = handleToggleMeeting;
+
+  const handleStartRelationshipMeeting = useCallback(
+    async (target: MeetingRelationshipTarget) => {
+      if (meetingStateRef.current !== "idle") {
+        toast.error("A meeting is already being recorded. Stop it before starting another.");
+        return;
+      }
+      // This deliberate user gesture may ask macOS to verify the optional system-audio
+      // tap. Failures remain visible, but capture itself may continue honestly with the
+      // available track rather than fabricating a complete recording.
+      try {
+        const report = await window.ipc.invoke("meeting:preflight", {
+          probeSystemAudio: true,
+        });
+        const problems = report.problems;
+        const microphoneBlocker = findMicrophoneBlocker(problems);
+        setMeetingCaptureBlocker(microphoneBlocker);
+        if (microphoneBlocker) {
+          toast.error("Microphone unavailable", {
+            description: `${microphoneBlocker.detail}${
+              microphoneBlocker.remediation ? ` ${microphoneBlocker.remediation}` : ""
+            }`,
+          });
+          return;
+        }
+        if (problems.length > 0) {
+          const first = problems[0];
+          toast.warning(`Capture preflight: ${first.name}`, {
+            description: `${first.detail}${first.remediation ? ` — ${first.remediation}` : ""}`,
+          });
+        }
+      } catch (cause) {
+        toast.warning("Capture preflight could not finish", {
+          description:
+            cause instanceof Error
+              ? cause.message
+              : "The recorder will report track health after starting.",
+        });
+      }
+      pendingCalendarEventRef.current = undefined;
+      pendingRelationshipTargetRef.current = target;
+      await handleToggleMeeting();
+    },
+    [handleToggleMeeting],
+  );
 
   // Listen for calendar block "join meeting & take notes" events
   useEffect(() => {
@@ -6060,36 +6283,21 @@ function App() {
         return !normalized.toLowerCase().startsWith("meetings/");
       });
 
-      const nodeSet = new Set(graphFilePaths);
-      const edges: GraphEdge[] = [];
-      const edgeKeys = new Set<string>();
-
-      const contents = await Promise.all(
-        graphFilePaths.map(async (path) => {
+      const { edges } = await buildKnowledgeGraphIncrementally({
+        paths: graphFilePaths,
+        readFile: async (path) => {
           try {
             const result = await window.ipc.invoke("workspace:readFile", {
               path,
             });
-            return { path, data: result.data as string };
+            return result.data as string;
           } catch (err) {
             console.error("Failed to read file for graph:", path, err);
-            return { path, data: "" };
+            throw err;
           }
-        }),
-      );
-
-      for (const { path, data } of contents) {
-        for (const match of data.matchAll(wikiLinkRegex)) {
-          const rawTarget = match[1]?.trim() ?? "";
-          const targetPath = toKnowledgePath(rawTarget);
-          if (!targetPath || targetPath === path) continue;
-          if (!nodeSet.has(targetPath)) continue;
-          const edgeKey = path < targetPath ? `${path}|${targetPath}` : `${targetPath}|${path}`;
-          if (edgeKeys.has(edgeKey)) continue;
-          edgeKeys.add(edgeKey);
-          edges.push({ source: path, target: targetPath });
-        }
-      }
+        },
+        resolveTarget: (rawTarget) => toKnowledgePath(rawTarget),
+      });
 
       const degreeMap = new Map<string, number>();
       edges.forEach((edge) => {
@@ -6132,9 +6340,11 @@ function App() {
         const { group, depth } = getNodeGroup(path);
         const groupIndex = getGroupIndex(group);
         const colors = getNodeColors(groupIndex, depth);
+        const label = wikiLabel(path) || path;
         return {
           id: path,
-          label: wikiLabel(path) || path,
+          label: label.length > 32 ? `${label.slice(0, 31)}…` : label,
+          ariaLabel: label,
           degree,
           radius,
           group,
@@ -6461,22 +6671,20 @@ function App() {
           }
         }}
       >
-        <div className="rowboat-shell flex h-svh w-full flex-col overflow-hidden bg-sidebar">
-          {/* Workspace topbar on the canvas — logo/wordmark left, matching the web console. */}
-          <header
-            className="titlebar-drag-region flex h-12 shrink-0 items-center justify-between bg-sidebar pr-4"
-            style={{
-              paddingLeft: isMac ? MACOS_TRAFFIC_LIGHTS_RESERVED_PX + 52 : 16,
-            }}
-          >
-            <div className="oppulence-compact-lockup oppulence-compact-lockup--desktop">
-              <span aria-hidden="true" className="oppulence-compact-lockup__mark">
-                <img alt="" className="oppulence-compact-lockup__mark-image" src="/logo-only.png" />
+        <div
+          className="rowboat-shell flex h-svh w-full flex-col overflow-hidden bg-sidebar"
+          data-product-shell
+        >
+          {/* Workspace topbar — one unified product lockup, with the rest left draggable. */}
+          <header className="titlebar-drag-region flex h-12 shrink-0 items-center justify-end bg-sidebar px-4">
+            <span
+              aria-label="Oppulence AI"
+              className="titlebar-no-drag flex items-center gap-1.5 text-sm text-foreground/70"
+            >
+              <span aria-hidden="true" className="flex size-5 shrink-0 items-center justify-center">
+                <img alt="" className="titlebar-brand-mark" src="/logo-only.png" />
               </span>
-              <span className="oppulence-compact-lockup__wordmark">Oppulence</span>
-            </div>
-            <span className="titlebar-no-drag flex items-center gap-1.5 text-sm text-foreground/70">
-              Assistant
+              Oppulence
               <span className="rounded-sm bg-[var(--rowboat-attention)] px-1.5 py-0.5 text-[10px] font-medium text-white">
                 AI
               </span>
@@ -6535,6 +6743,7 @@ function App() {
                 onNewChat={handleNewChatTab}
                 onToggleBrowser={handleToggleBrowser}
                 onVoiceNoteCreated={handleVoiceNoteCreated}
+                suppressOauthAlerts={sessionReconnectDeferred}
                 meetingRecordingState={meetingTranscription.state}
                 recordingMeetingSource={recordingMeetingSource}
                 onToggleMeetingRecording={() => {
@@ -6571,6 +6780,7 @@ function App() {
                     isLiveNotesOpen ||
                     isBgTasksOpen ||
                     isEmailOpen ||
+                    isRelationshipsOpen ||
                     isWorkspaceOpen ||
                     isKnowledgeViewOpen ||
                     isChatHistoryOpen ||
@@ -6578,6 +6788,7 @@ function App() {
                   fileTabs.length >= 1 ? (
                     <TabBar
                       tabs={fileTabs}
+                      layout="scroll"
                       activeTabId={activeFileTabId ?? ""}
                       getTabTitle={getFileTabTitle}
                       getTabId={(t) => t.id}
@@ -6591,6 +6802,7 @@ function App() {
                           isLiveNotesOpen ||
                           isBgTasksOpen ||
                           isEmailOpen ||
+                          isRelationshipsOpen ||
                           isWorkspaceOpen ||
                           isKnowledgeViewOpen ||
                           isChatHistoryOpen ||
@@ -6806,6 +7018,7 @@ function App() {
                       }}
                       meetingState={meetingTranscription.state}
                       meetingSummarizing={meetingSummarizing}
+                      onCaptureReadinessChange={setMeetingCaptureBlocker}
                     />
                   </div>
                 ) : isLiveNotesOpen ? (
@@ -6840,7 +7053,13 @@ function App() {
                   </div>
                 ) : isRelationshipsOpen ? (
                   <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                    <RelationshipsView initialId={relationshipInitialId} />
+                    <RelationshipsView
+                      initialId={relationshipInitialId}
+                      initialGraphState={relationshipInitialGraphState}
+                      onStartMeeting={handleStartRelationshipMeeting}
+                      meetingCaptureBlocker={meetingCaptureBlocker}
+                      onChatContextChange={setRelationshipChatContext}
+                    />
                   </div>
                 ) : isEmailOpen ? (
                   <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -6951,6 +7170,31 @@ function App() {
                       isLoading={graphStatus === "loading"}
                       error={
                         graphStatus === "error" ? (graphError ?? "Failed to build graph") : null
+                      }
+                      emptyState={
+                        <div className="flex max-w-sm flex-col items-center gap-3 px-6 text-center">
+                          <div>
+                            <h2 className="text-sm font-medium text-foreground">
+                              Your Knowledge Graph is empty
+                            </h2>
+                            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                              Create your first note to begin connecting people, projects, and
+                              ideas.
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => void knowledgeActions.createNote()}>
+                              Create note
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => knowledgeActions.openKnowledgeView()}
+                            >
+                              Back to Knowledge
+                            </Button>
+                          </div>
+                        </div>
                       }
                       onSelectNode={(path) => {
                         navigateToFile(path);
@@ -7470,6 +7714,7 @@ function App() {
                   defaultWidth={DEFAULT_CHAT_PANE_WIDTH}
                   isOpen={isChatSidebarOpen}
                   isMaximized={isRightPaneMaximized}
+                  workContext={chatWorkContext}
                   chatTabs={chatTabs}
                   activeChatTabId={activeChatTabId}
                   getChatTabTitle={getChatTabTitle}
@@ -7562,8 +7807,6 @@ function App() {
                   onIntegrationConnected={handleIntegrationConnected}
                 />
               )}
-              {/* Rendered last so its no-drag region paints over the sidebar drag region */}
-              <FixedSidebarToggle leftInsetPx={isMac ? MACOS_TRAFFIC_LIGHTS_RESERVED_PX : 0} />
             </SidebarProvider>
           </div>
         </div>
@@ -7585,6 +7828,11 @@ function App() {
         open={billingErrorOpen}
         match={billingErrorMatch}
         onOpenChange={setBillingErrorOpen}
+      />
+      <SessionReconnectDialog
+        open={!showOnboarding && sessionReconnectRequired}
+        onReconnected={handleSessionReconnected}
+        onContinueOffline={() => setSessionReconnectDeferred(true)}
       />
       <Dialog open={showMeetingPermissions} onOpenChange={setShowMeetingPermissions}>
         <DialogContent showCloseButton={false}>

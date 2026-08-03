@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { useTheme } from "@/contexts/theme-context";
 import { SettingsDialog } from "@/components/settings-dialog";
+import { Button } from "@oppulence/ui/components/button";
 
 type GmailThread = blocks.GmailThread;
 type GmailThreadMessage = blocks.GmailThreadMessage;
@@ -1742,7 +1743,7 @@ export function EmailView({ initialThreadId, threadIdVersion }: EmailViewProps =
   return (
     <div className="gmail-shell">
       <div className="gmail-main">
-        <div className="gmail-topbar">
+        {!needsEmailConnect && !needsEmailReconnect ? <div className="gmail-topbar">
           <div className="gmail-search">
             <Search size={18} />
             <input
@@ -1763,7 +1764,7 @@ export function EmailView({ initialThreadId, threadIdVersion }: EmailViewProps =
               <RefreshCw size={18} />
             )}
           </button>
-        </div>
+        </div> : null}
 
         {error && !hasAny ? (
           <div className="gmail-empty-state">Could not load mail: {error}</div>
@@ -1817,14 +1818,13 @@ export function EmailView({ initialThreadId, threadIdVersion }: EmailViewProps =
                 ? "Reconnect your email to enable Gmail sync and actions."
                 : "Connect your email to see your inbox here."}
             </p>
-            <button
-              type="button"
+            <Button
               onClick={() => setSettingsOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-none border border-border bg-background px-3.5 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+              size="sm"
             >
               <Mail size={15} />
               {needsEmailReconnect ? "Reconnect your email" : "Connect your email"}
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="gmail-empty-state">

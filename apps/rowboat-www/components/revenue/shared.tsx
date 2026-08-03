@@ -9,8 +9,8 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Skeleton } from "@oppulence/ui/components/skeleton";
 import { cn } from "@/lib/utils";
 import { PRIORITY_COMPONENT_LABELS } from "@/lib/revenue";
 import type { RevenueAction } from "@/types/revenue";

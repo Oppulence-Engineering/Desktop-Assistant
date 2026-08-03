@@ -1,13 +1,13 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group";
+import { Button } from "@oppulence/ui/components/button";
+import { ButtonGroup, ButtonGroupText } from "@oppulence/ui/components/button-group";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
 import type { FileUIPart, UIMessage } from "ai";
 import {

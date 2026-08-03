@@ -142,6 +142,9 @@ func (a *Activities) toolRegistry(ctx context.Context, task *ent.BackgroundTask,
 		tools = append(tools, backgroundtaskruntime.NewEventReadTool(a.Client, a.Sealer, *run.CloudEventID))
 	}
 	owner := task.Edges.User
+	if owner != nil {
+		tools = append(tools, backgroundtaskruntime.NewRelationshipReadTool(a.Client, owner.ID))
+	}
 	if owner != nil && a.Slack != nil && a.SlackTokens != nil {
 		defaults := backgroundtaskruntime.SlackThreadDefaults{}
 		if run.CloudEventID != nil && a.Sealer != nil {

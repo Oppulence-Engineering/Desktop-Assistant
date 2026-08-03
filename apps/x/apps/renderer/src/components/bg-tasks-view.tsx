@@ -47,10 +47,17 @@ import type {
   Triggers,
 } from "@x/shared/dist/background-task.js";
 import type { Run } from "@x/shared/dist/runs.js";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@oppulence/ui/components/button";
+import { Switch } from "@oppulence/ui/components/switch";
+import { Input } from "@oppulence/ui/components/input";
+import { Textarea } from "@oppulence/ui/components/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@oppulence/ui/components/select";
 import { useBackgroundTaskAgentStatus } from "@/hooks/use-bg-task-agent-status";
 import { formatRelativeTime } from "@/lib/relative-time";
 import { toast } from "@/lib/toast";
@@ -2215,19 +2222,36 @@ function RunTranscriptView({
 function CloudRunsHistoryTab({ slug }: { slug: string }) {
   const [rows, setRows] = useState<BackgroundTaskCloudRunType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (
+    cursor?: string,
+    mode: "replace" | "append" | "refresh" = "replace",
+  ) => {
+    if (mode === "append") {
+      setLoadingMore(true);
+    } else if (mode === "replace") {
+      setLoading(true);
+    }
     try {
       const result = await window.ipc.invoke("bg-task:listCloudRuns", {
         slug,
         executor: "api",
         limit: 100,
+        ...(cursor ? { cursor } : {}),
       });
       if (result.success) {
-        setRows(result.runs);
+        setRows((current) => {
+          if (mode === "replace") return result.runs;
+          const ordered = mode === "append" ? [...current, ...result.runs] : [...result.runs, ...current];
+          return [...new Map(ordered.map((run) => [run.runId, run])).values()];
+        });
+        if (mode !== "refresh") {
+          setNextCursor(result.nextCursor ?? null);
+        }
         setError(null);
       } else {
         setError(result.error ?? "Could not load API-worker runs.");
@@ -2235,7 +2259,11 @@ function CloudRunsHistoryTab({ slug }: { slug: string }) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load API-worker runs.");
     } finally {
-      setLoading(false);
+      if (mode === "append") {
+        setLoadingMore(false);
+      } else if (mode === "replace") {
+        setLoading(false);
+      }
     }
   }, [slug]);
 
@@ -2246,7 +2274,7 @@ function CloudRunsHistoryTab({ slug }: { slug: string }) {
   useEffect(() => {
     if (!rows.some((row) => !isTerminalCloudStatus(row.status))) return;
     const interval = window.setInterval(() => {
-      void load();
+      void load(undefined, "refresh");
     }, 3_000);
     return () => window.clearInterval(interval);
   }, [load, rows]);
@@ -2332,6 +2360,20 @@ function CloudRunsHistoryTab({ slug }: { slug: string }) {
               <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
             </button>
           ))}
+          {nextCursor ? (
+            <div className="flex justify-center px-4 py-3">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={loadingMore}
+                onClick={() => void load(nextCursor, "append")}
+              >
+                {loadingMore ? <Loader2 className="size-3 animate-spin" /> : null}
+                Load more runs
+              </Button>
+            </div>
+          ) : null}
         </div>
       )}
     </div>
@@ -3381,12 +3423,16 @@ const CLOUD_TRIGGER_FILTERS: {
 function GlobalCloudRunsView({
   taskNameBySlug,
   onOpenTask,
+  onShowTasks,
 }: {
   taskNameBySlug: Map<string, string>;
   onOpenTask: (slug: string) => void;
+  onShowTasks: () => void;
 }) {
   const [rows, setRows] = useState<BackgroundTaskCloudRunType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<BackgroundTaskRunStatusType | "all">("all");
   const [triggerFilter, setTriggerFilter] = useState<BackgroundTaskTriggerType | "all">("all");
@@ -3397,8 +3443,15 @@ function GlobalCloudRunsView({
     runId: string;
   } | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (
+    cursor?: string,
+    mode: "replace" | "append" | "refresh" = "replace",
+  ) => {
+    if (mode === "append") {
+      setLoadingMore(true);
+    } else if (mode === "replace") {
+      setLoading(true);
+    }
     try {
       const sinceMs =
         sinceFilter === "24h"
@@ -3415,9 +3468,17 @@ function GlobalCloudRunsView({
         ...(triggerFilter !== "all" ? { trigger: triggerFilter } : {}),
         ...(slugFilter !== "all" ? { slug: slugFilter } : {}),
         ...(sinceMs ? { since: new Date(Date.now() - sinceMs).toISOString() } : {}),
+        ...(cursor ? { cursor } : {}),
       });
       if (result.success) {
-        setRows(result.runs);
+        setRows((current) => {
+          if (mode === "replace") return result.runs;
+          const ordered = mode === "append" ? [...current, ...result.runs] : [...result.runs, ...current];
+          return [...new Map(ordered.map((run) => [`${run.slug}:${run.runId}`, run])).values()];
+        });
+        if (mode !== "refresh") {
+          setNextCursor(result.nextCursor ?? null);
+        }
         setError(null);
       } else {
         setError(result.error ?? "Could not load cloud runs.");
@@ -3425,7 +3486,11 @@ function GlobalCloudRunsView({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load cloud runs.");
     } finally {
-      setLoading(false);
+      if (mode === "append") {
+        setLoadingMore(false);
+      } else if (mode === "replace") {
+        setLoading(false);
+      }
     }
   }, [statusFilter, triggerFilter, slugFilter, sinceFilter]);
 
@@ -3437,7 +3502,7 @@ function GlobalCloudRunsView({
   useEffect(() => {
     if (!rows.some((r) => !isTerminalCloudStatus(r.status))) return;
     const interval = window.setInterval(() => {
-      void load();
+      void load(undefined, "refresh");
     }, 3_000);
     return () => window.clearInterval(interval);
   }, [load, rows]);
@@ -3457,8 +3522,22 @@ function GlobalCloudRunsView({
     );
   }
 
+  const hasActiveFilters =
+    statusFilter !== "all" ||
+    triggerFilter !== "all" ||
+    slugFilter !== "all" ||
+    sinceFilter !== "all";
+
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setTriggerFilter("all");
+    setSlugFilter("all");
+    setSinceFilter("all");
+  };
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
+      {rows.length > 0 || hasActiveFilters ? (
       <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-border px-6 py-2.5">
         {CLOUD_STATUS_FILTERS.map((f) => (
           <FilterChip
@@ -3490,30 +3569,40 @@ function GlobalCloudRunsView({
           </FilterChip>
         ))}
         <span className="mx-1 h-4 w-px bg-border" aria-hidden />
-        <select
+        <Select
           value={slugFilter}
-          onChange={(e) => setSlugFilter(e.target.value)}
-          className="h-6 max-w-[180px] rounded-none border border-border bg-background px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
-          aria-label="Filter by task"
+          onValueChange={setSlugFilter}
         >
-          <option value="all">All tasks</option>
-          {[...taskNameBySlug.entries()].map(([slug, name]) => (
-            <option key={slug} value={slug}>
-              {name}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger
+            size="sm"
+            className="h-6 max-w-[180px] rounded-[2px] text-[11px]"
+            aria-label="Filter by task"
+          >
+            <SelectValue placeholder="All tasks" />
+          </SelectTrigger>
+          <SelectContent className="app-shell rounded-[2px]">
+            <SelectItem value="all">All tasks</SelectItem>
+            {[...taskNameBySlug.entries()].map(([slug, name]) => (
+              <SelectItem key={slug} value={slug}>
+                {name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <span className="ml-auto" />
-        <button
+        <Button
           type="button"
-          onClick={() => void load()}
-          className="inline-flex items-center gap-1 rounded-none border border-border bg-background px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
+          size="sm"
+          variant="outline"
+          onClick={() => void load(undefined, "replace")}
+          className="h-6 gap-1 rounded-[2px] px-2 text-[11px] text-muted-foreground"
           title="Refresh"
         >
           {loading ? <Loader2 className="size-3 animate-spin" /> : <RotateCcw className="size-3" />}
           Refresh
-        </button>
+        </Button>
       </div>
+      ) : null}
 
       <div className="flex-1 overflow-auto">
         {loading && rows.length === 0 ? (
@@ -3525,7 +3614,23 @@ function GlobalCloudRunsView({
         ) : rows.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center">
             <Cloud className="size-6 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">No cloud runs match these filters.</p>
+            <p className="text-sm font-medium text-foreground">
+              {hasActiveFilters
+                ? "No cloud runs match these filters"
+                : taskNameBySlug.size === 0
+                  ? "No background tasks yet"
+                  : "No cloud runs yet"}
+            </p>
+            <p className="max-w-sm text-xs leading-5 text-muted-foreground">
+              {hasActiveFilters
+                ? "Clear the filters to see every run."
+                : taskNameBySlug.size === 0
+                  ? "Create a task first; its cloud execution history will appear here."
+                  : "Run a task in the cloud and its status, timeline, and output will appear here."}
+            </p>
+            <Button size="sm" variant="outline" onClick={hasActiveFilters ? clearFilters : onShowTasks}>
+              {hasActiveFilters ? "Clear filters" : "Open tasks"}
+            </Button>
           </div>
         ) : (
           <div className="divide-y divide-border/60">
@@ -3593,6 +3698,20 @@ function GlobalCloudRunsView({
                 <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
               </div>
             ))}
+            {nextCursor ? (
+              <div className="flex justify-center px-6 py-3">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={loadingMore}
+                  onClick={() => void load(nextCursor, "append")}
+                >
+                  {loadingMore ? <Loader2 className="size-3 animate-spin" /> : null}
+                  Load more runs
+                </Button>
+              </div>
+            ) : null}
           </div>
         )}
       </div>
@@ -3738,7 +3857,7 @@ export function BgTasksView({
                 <Cloud className="size-3" /> Cloud runs
               </button>
             </div>
-            {listMode === "tasks" && (
+            {listMode === "tasks" && !loading && items.length > 0 && (
               <Button size="sm" onClick={() => setShowNewDialog(true)}>
                 New task
               </Button>
@@ -3752,7 +3871,11 @@ export function BgTasksView({
         </p>
       </div>
       {listMode === "runs" ? (
-        <GlobalCloudRunsView taskNameBySlug={taskNameBySlug} onOpenTask={setSelectedSlug} />
+        <GlobalCloudRunsView
+          taskNameBySlug={taskNameBySlug}
+          onOpenTask={setSelectedSlug}
+          onShowTasks={() => setListMode("tasks")}
+        />
       ) : (
         <div className="flex-1 overflow-auto p-6">
           {loading ? (
@@ -3771,7 +3894,10 @@ export function BgTasksView({
               <div className="rounded-full bg-muted p-3">
                 <ListChecks className="size-6 text-muted-foreground" />
               </div>
-              <p className="text-sm text-muted-foreground">No background tasks yet.</p>
+              <p className="text-sm font-medium text-foreground">Give recurring work a reliable owner</p>
+              <p className="max-w-md text-xs leading-5 text-muted-foreground">
+                Background tasks can watch for changes, prepare drafts, and surface exceptions. External actions still follow your approval policy.
+              </p>
               <Button size="sm" onClick={() => setShowNewDialog(true)}>
                 <Plus className="size-3" /> Create your first task
               </Button>

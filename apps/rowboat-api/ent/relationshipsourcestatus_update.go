@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
@@ -65,6 +66,26 @@ func (_u *RelationshipSourceStatusUpdate) SetNillableSourceAccountID(v *string) 
 	return _u
 }
 
+// SetConsentingActorID sets the "consenting_actor_id" field.
+func (_u *RelationshipSourceStatusUpdate) SetConsentingActorID(v uuid.UUID) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetConsentingActorID(v)
+	return _u
+}
+
+// SetNillableConsentingActorID sets the "consenting_actor_id" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableConsentingActorID(v *uuid.UUID) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetConsentingActorID(*v)
+	}
+	return _u
+}
+
+// ClearConsentingActorID clears the value of the "consenting_actor_id" field.
+func (_u *RelationshipSourceStatusUpdate) ClearConsentingActorID() *RelationshipSourceStatusUpdate {
+	_u.mutation.ClearConsentingActorID()
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *RelationshipSourceStatusUpdate) SetStatus(v string) *RelationshipSourceStatusUpdate {
 	_u.mutation.SetStatus(v)
@@ -75,6 +96,395 @@ func (_u *RelationshipSourceStatusUpdate) SetStatus(v string) *RelationshipSourc
 func (_u *RelationshipSourceStatusUpdate) SetNillableStatus(v *string) *RelationshipSourceStatusUpdate {
 	if v != nil {
 		_u.SetStatus(*v)
+	}
+	return _u
+}
+
+// SetBackfillPhase sets the "backfill_phase" field.
+func (_u *RelationshipSourceStatusUpdate) SetBackfillPhase(v string) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetBackfillPhase(v)
+	return _u
+}
+
+// SetNillableBackfillPhase sets the "backfill_phase" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableBackfillPhase(v *string) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetBackfillPhase(*v)
+	}
+	return _u
+}
+
+// SetBackfillCompleted sets the "backfill_completed" field.
+func (_u *RelationshipSourceStatusUpdate) SetBackfillCompleted(v int) *RelationshipSourceStatusUpdate {
+	_u.mutation.ResetBackfillCompleted()
+	_u.mutation.SetBackfillCompleted(v)
+	return _u
+}
+
+// SetNillableBackfillCompleted sets the "backfill_completed" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableBackfillCompleted(v *int) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetBackfillCompleted(*v)
+	}
+	return _u
+}
+
+// AddBackfillCompleted adds value to the "backfill_completed" field.
+func (_u *RelationshipSourceStatusUpdate) AddBackfillCompleted(v int) *RelationshipSourceStatusUpdate {
+	_u.mutation.AddBackfillCompleted(v)
+	return _u
+}
+
+// SetBackfillTotal sets the "backfill_total" field.
+func (_u *RelationshipSourceStatusUpdate) SetBackfillTotal(v int) *RelationshipSourceStatusUpdate {
+	_u.mutation.ResetBackfillTotal()
+	_u.mutation.SetBackfillTotal(v)
+	return _u
+}
+
+// SetNillableBackfillTotal sets the "backfill_total" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableBackfillTotal(v *int) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetBackfillTotal(*v)
+	}
+	return _u
+}
+
+// AddBackfillTotal adds value to the "backfill_total" field.
+func (_u *RelationshipSourceStatusUpdate) AddBackfillTotal(v int) *RelationshipSourceStatusUpdate {
+	_u.mutation.AddBackfillTotal(v)
+	return _u
+}
+
+// SetWatermark sets the "watermark" field.
+func (_u *RelationshipSourceStatusUpdate) SetWatermark(v string) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetWatermark(v)
+	return _u
+}
+
+// SetNillableWatermark sets the "watermark" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableWatermark(v *string) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetWatermark(*v)
+	}
+	return _u
+}
+
+// ClearWatermark clears the value of the "watermark" field.
+func (_u *RelationshipSourceStatusUpdate) ClearWatermark() *RelationshipSourceStatusUpdate {
+	_u.mutation.ClearWatermark()
+	return _u
+}
+
+// SetSyncStartedAt sets the "sync_started_at" field.
+func (_u *RelationshipSourceStatusUpdate) SetSyncStartedAt(v time.Time) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetSyncStartedAt(v)
+	return _u
+}
+
+// SetNillableSyncStartedAt sets the "sync_started_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableSyncStartedAt(v *time.Time) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetSyncStartedAt(*v)
+	}
+	return _u
+}
+
+// ClearSyncStartedAt clears the value of the "sync_started_at" field.
+func (_u *RelationshipSourceStatusUpdate) ClearSyncStartedAt() *RelationshipSourceStatusUpdate {
+	_u.mutation.ClearSyncStartedAt()
+	return _u
+}
+
+// SetAuthorizationStartedAt sets the "authorization_started_at" field.
+func (_u *RelationshipSourceStatusUpdate) SetAuthorizationStartedAt(v time.Time) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetAuthorizationStartedAt(v)
+	return _u
+}
+
+// SetNillableAuthorizationStartedAt sets the "authorization_started_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableAuthorizationStartedAt(v *time.Time) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetAuthorizationStartedAt(*v)
+	}
+	return _u
+}
+
+// ClearAuthorizationStartedAt clears the value of the "authorization_started_at" field.
+func (_u *RelationshipSourceStatusUpdate) ClearAuthorizationStartedAt() *RelationshipSourceStatusUpdate {
+	_u.mutation.ClearAuthorizationStartedAt()
+	return _u
+}
+
+// SetAuthorizedAt sets the "authorized_at" field.
+func (_u *RelationshipSourceStatusUpdate) SetAuthorizedAt(v time.Time) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetAuthorizedAt(v)
+	return _u
+}
+
+// SetNillableAuthorizedAt sets the "authorized_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableAuthorizedAt(v *time.Time) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetAuthorizedAt(*v)
+	}
+	return _u
+}
+
+// ClearAuthorizedAt clears the value of the "authorized_at" field.
+func (_u *RelationshipSourceStatusUpdate) ClearAuthorizedAt() *RelationshipSourceStatusUpdate {
+	_u.mutation.ClearAuthorizedAt()
+	return _u
+}
+
+// SetBackfillCompletedAt sets the "backfill_completed_at" field.
+func (_u *RelationshipSourceStatusUpdate) SetBackfillCompletedAt(v time.Time) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetBackfillCompletedAt(v)
+	return _u
+}
+
+// SetNillableBackfillCompletedAt sets the "backfill_completed_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableBackfillCompletedAt(v *time.Time) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetBackfillCompletedAt(*v)
+	}
+	return _u
+}
+
+// ClearBackfillCompletedAt clears the value of the "backfill_completed_at" field.
+func (_u *RelationshipSourceStatusUpdate) ClearBackfillCompletedAt() *RelationshipSourceStatusUpdate {
+	_u.mutation.ClearBackfillCompletedAt()
+	return _u
+}
+
+// SetLastFailedSyncAt sets the "last_failed_sync_at" field.
+func (_u *RelationshipSourceStatusUpdate) SetLastFailedSyncAt(v time.Time) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetLastFailedSyncAt(v)
+	return _u
+}
+
+// SetNillableLastFailedSyncAt sets the "last_failed_sync_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableLastFailedSyncAt(v *time.Time) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetLastFailedSyncAt(*v)
+	}
+	return _u
+}
+
+// ClearLastFailedSyncAt clears the value of the "last_failed_sync_at" field.
+func (_u *RelationshipSourceStatusUpdate) ClearLastFailedSyncAt() *RelationshipSourceStatusUpdate {
+	_u.mutation.ClearLastFailedSyncAt()
+	return _u
+}
+
+// SetDisconnectedAt sets the "disconnected_at" field.
+func (_u *RelationshipSourceStatusUpdate) SetDisconnectedAt(v time.Time) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetDisconnectedAt(v)
+	return _u
+}
+
+// SetNillableDisconnectedAt sets the "disconnected_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableDisconnectedAt(v *time.Time) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetDisconnectedAt(*v)
+	}
+	return _u
+}
+
+// ClearDisconnectedAt clears the value of the "disconnected_at" field.
+func (_u *RelationshipSourceStatusUpdate) ClearDisconnectedAt() *RelationshipSourceStatusUpdate {
+	_u.mutation.ClearDisconnectedAt()
+	return _u
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (_u *RelationshipSourceStatusUpdate) SetRevokedAt(v time.Time) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetRevokedAt(v)
+	return _u
+}
+
+// SetNillableRevokedAt sets the "revoked_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableRevokedAt(v *time.Time) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetRevokedAt(*v)
+	}
+	return _u
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (_u *RelationshipSourceStatusUpdate) ClearRevokedAt() *RelationshipSourceStatusUpdate {
+	_u.mutation.ClearRevokedAt()
+	return _u
+}
+
+// SetLastSyncAt sets the "last_sync_at" field.
+func (_u *RelationshipSourceStatusUpdate) SetLastSyncAt(v time.Time) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetLastSyncAt(v)
+	return _u
+}
+
+// SetNillableLastSyncAt sets the "last_sync_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableLastSyncAt(v *time.Time) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetLastSyncAt(*v)
+	}
+	return _u
+}
+
+// ClearLastSyncAt clears the value of the "last_sync_at" field.
+func (_u *RelationshipSourceStatusUpdate) ClearLastSyncAt() *RelationshipSourceStatusUpdate {
+	_u.mutation.ClearLastSyncAt()
+	return _u
+}
+
+// SetExpectedCadenceSeconds sets the "expected_cadence_seconds" field.
+func (_u *RelationshipSourceStatusUpdate) SetExpectedCadenceSeconds(v int64) *RelationshipSourceStatusUpdate {
+	_u.mutation.ResetExpectedCadenceSeconds()
+	_u.mutation.SetExpectedCadenceSeconds(v)
+	return _u
+}
+
+// SetNillableExpectedCadenceSeconds sets the "expected_cadence_seconds" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableExpectedCadenceSeconds(v *int64) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetExpectedCadenceSeconds(*v)
+	}
+	return _u
+}
+
+// AddExpectedCadenceSeconds adds value to the "expected_cadence_seconds" field.
+func (_u *RelationshipSourceStatusUpdate) AddExpectedCadenceSeconds(v int64) *RelationshipSourceStatusUpdate {
+	_u.mutation.AddExpectedCadenceSeconds(v)
+	return _u
+}
+
+// SetLagSeconds sets the "lag_seconds" field.
+func (_u *RelationshipSourceStatusUpdate) SetLagSeconds(v int64) *RelationshipSourceStatusUpdate {
+	_u.mutation.ResetLagSeconds()
+	_u.mutation.SetLagSeconds(v)
+	return _u
+}
+
+// SetNillableLagSeconds sets the "lag_seconds" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableLagSeconds(v *int64) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetLagSeconds(*v)
+	}
+	return _u
+}
+
+// AddLagSeconds adds value to the "lag_seconds" field.
+func (_u *RelationshipSourceStatusUpdate) AddLagSeconds(v int64) *RelationshipSourceStatusUpdate {
+	_u.mutation.AddLagSeconds(v)
+	return _u
+}
+
+// SetRequiredScopes sets the "required_scopes" field.
+func (_u *RelationshipSourceStatusUpdate) SetRequiredScopes(v []string) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetRequiredScopes(v)
+	return _u
+}
+
+// AppendRequiredScopes appends value to the "required_scopes" field.
+func (_u *RelationshipSourceStatusUpdate) AppendRequiredScopes(v []string) *RelationshipSourceStatusUpdate {
+	_u.mutation.AppendRequiredScopes(v)
+	return _u
+}
+
+// SetGrantedScopes sets the "granted_scopes" field.
+func (_u *RelationshipSourceStatusUpdate) SetGrantedScopes(v []string) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetGrantedScopes(v)
+	return _u
+}
+
+// AppendGrantedScopes appends value to the "granted_scopes" field.
+func (_u *RelationshipSourceStatusUpdate) AppendGrantedScopes(v []string) *RelationshipSourceStatusUpdate {
+	_u.mutation.AppendGrantedScopes(v)
+	return _u
+}
+
+// SetMissingScopes sets the "missing_scopes" field.
+func (_u *RelationshipSourceStatusUpdate) SetMissingScopes(v []string) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetMissingScopes(v)
+	return _u
+}
+
+// AppendMissingScopes appends value to the "missing_scopes" field.
+func (_u *RelationshipSourceStatusUpdate) AppendMissingScopes(v []string) *RelationshipSourceStatusUpdate {
+	_u.mutation.AppendMissingScopes(v)
+	return _u
+}
+
+// SetErrorCode sets the "error_code" field.
+func (_u *RelationshipSourceStatusUpdate) SetErrorCode(v string) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetErrorCode(v)
+	return _u
+}
+
+// SetNillableErrorCode sets the "error_code" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableErrorCode(v *string) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetErrorCode(*v)
+	}
+	return _u
+}
+
+// ClearErrorCode clears the value of the "error_code" field.
+func (_u *RelationshipSourceStatusUpdate) ClearErrorCode() *RelationshipSourceStatusUpdate {
+	_u.mutation.ClearErrorCode()
+	return _u
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (_u *RelationshipSourceStatusUpdate) SetRetryCount(v int) *RelationshipSourceStatusUpdate {
+	_u.mutation.ResetRetryCount()
+	_u.mutation.SetRetryCount(v)
+	return _u
+}
+
+// SetNillableRetryCount sets the "retry_count" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableRetryCount(v *int) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetRetryCount(*v)
+	}
+	return _u
+}
+
+// AddRetryCount adds value to the "retry_count" field.
+func (_u *RelationshipSourceStatusUpdate) AddRetryCount(v int) *RelationshipSourceStatusUpdate {
+	_u.mutation.AddRetryCount(v)
+	return _u
+}
+
+// SetNextRetryAt sets the "next_retry_at" field.
+func (_u *RelationshipSourceStatusUpdate) SetNextRetryAt(v time.Time) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetNextRetryAt(v)
+	return _u
+}
+
+// SetNillableNextRetryAt sets the "next_retry_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableNextRetryAt(v *time.Time) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetNextRetryAt(*v)
+	}
+	return _u
+}
+
+// ClearNextRetryAt clears the value of the "next_retry_at" field.
+func (_u *RelationshipSourceStatusUpdate) ClearNextRetryAt() *RelationshipSourceStatusUpdate {
+	_u.mutation.ClearNextRetryAt()
+	return _u
+}
+
+// SetCompleteness sets the "completeness" field.
+func (_u *RelationshipSourceStatusUpdate) SetCompleteness(v string) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetCompleteness(v)
+	return _u
+}
+
+// SetNillableCompleteness sets the "completeness" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableCompleteness(v *string) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetCompleteness(*v)
 	}
 	return _u
 }
@@ -136,6 +546,26 @@ func (_u *RelationshipSourceStatusUpdate) SetNillableLastObservationAt(v *time.T
 // ClearLastObservationAt clears the value of the "last_observation_at" field.
 func (_u *RelationshipSourceStatusUpdate) ClearLastObservationAt() *RelationshipSourceStatusUpdate {
 	_u.mutation.ClearLastObservationAt()
+	return _u
+}
+
+// SetLastProviderEventAt sets the "last_provider_event_at" field.
+func (_u *RelationshipSourceStatusUpdate) SetLastProviderEventAt(v time.Time) *RelationshipSourceStatusUpdate {
+	_u.mutation.SetLastProviderEventAt(v)
+	return _u
+}
+
+// SetNillableLastProviderEventAt sets the "last_provider_event_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdate) SetNillableLastProviderEventAt(v *time.Time) *RelationshipSourceStatusUpdate {
+	if v != nil {
+		_u.SetLastProviderEventAt(*v)
+	}
+	return _u
+}
+
+// ClearLastProviderEventAt clears the value of the "last_provider_event_at" field.
+func (_u *RelationshipSourceStatusUpdate) ClearLastProviderEventAt() *RelationshipSourceStatusUpdate {
+	_u.mutation.ClearLastProviderEventAt()
 	return _u
 }
 
@@ -246,6 +676,41 @@ func (_u *RelationshipSourceStatusUpdate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.status": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.BackfillPhase(); ok {
+		if err := relationshipsourcestatus.BackfillPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "backfill_phase", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.backfill_phase": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.BackfillCompleted(); ok {
+		if err := relationshipsourcestatus.BackfillCompletedValidator(v); err != nil {
+			return &ValidationError{Name: "backfill_completed", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.backfill_completed": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.BackfillTotal(); ok {
+		if err := relationshipsourcestatus.BackfillTotalValidator(v); err != nil {
+			return &ValidationError{Name: "backfill_total", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.backfill_total": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ExpectedCadenceSeconds(); ok {
+		if err := relationshipsourcestatus.ExpectedCadenceSecondsValidator(v); err != nil {
+			return &ValidationError{Name: "expected_cadence_seconds", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.expected_cadence_seconds": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.LagSeconds(); ok {
+		if err := relationshipsourcestatus.LagSecondsValidator(v); err != nil {
+			return &ValidationError{Name: "lag_seconds", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.lag_seconds": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.RetryCount(); ok {
+		if err := relationshipsourcestatus.RetryCountValidator(v); err != nil {
+			return &ValidationError{Name: "retry_count", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.retry_count": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Completeness(); ok {
+		if err := relationshipsourcestatus.CompletenessValidator(v); err != nil {
+			return &ValidationError{Name: "completeness", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.completeness": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RelationshipSourceStatus.workspace"`)
 	}
@@ -276,8 +741,140 @@ func (_u *RelationshipSourceStatusUpdate) sqlSave(ctx context.Context) (_node in
 	if value, ok := _u.mutation.SourceAccountID(); ok {
 		_spec.SetField(relationshipsourcestatus.FieldSourceAccountID, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.ConsentingActorID(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldConsentingActorID, field.TypeUUID, value)
+	}
+	if _u.mutation.ConsentingActorIDCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldConsentingActorID, field.TypeUUID)
+	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(relationshipsourcestatus.FieldStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.BackfillPhase(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldBackfillPhase, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.BackfillCompleted(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldBackfillCompleted, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedBackfillCompleted(); ok {
+		_spec.AddField(relationshipsourcestatus.FieldBackfillCompleted, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.BackfillTotal(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldBackfillTotal, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedBackfillTotal(); ok {
+		_spec.AddField(relationshipsourcestatus.FieldBackfillTotal, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.Watermark(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldWatermark, field.TypeString, value)
+	}
+	if _u.mutation.WatermarkCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldWatermark, field.TypeString)
+	}
+	if value, ok := _u.mutation.SyncStartedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldSyncStartedAt, field.TypeTime, value)
+	}
+	if _u.mutation.SyncStartedAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldSyncStartedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.AuthorizationStartedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldAuthorizationStartedAt, field.TypeTime, value)
+	}
+	if _u.mutation.AuthorizationStartedAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldAuthorizationStartedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.AuthorizedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldAuthorizedAt, field.TypeTime, value)
+	}
+	if _u.mutation.AuthorizedAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldAuthorizedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.BackfillCompletedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldBackfillCompletedAt, field.TypeTime, value)
+	}
+	if _u.mutation.BackfillCompletedAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldBackfillCompletedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.LastFailedSyncAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldLastFailedSyncAt, field.TypeTime, value)
+	}
+	if _u.mutation.LastFailedSyncAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldLastFailedSyncAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.DisconnectedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldDisconnectedAt, field.TypeTime, value)
+	}
+	if _u.mutation.DisconnectedAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldDisconnectedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.RevokedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldRevokedAt, field.TypeTime, value)
+	}
+	if _u.mutation.RevokedAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldRevokedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.LastSyncAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldLastSyncAt, field.TypeTime, value)
+	}
+	if _u.mutation.LastSyncAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldLastSyncAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.ExpectedCadenceSeconds(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldExpectedCadenceSeconds, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedExpectedCadenceSeconds(); ok {
+		_spec.AddField(relationshipsourcestatus.FieldExpectedCadenceSeconds, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.LagSeconds(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldLagSeconds, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedLagSeconds(); ok {
+		_spec.AddField(relationshipsourcestatus.FieldLagSeconds, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.RequiredScopes(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldRequiredScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequiredScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, relationshipsourcestatus.FieldRequiredScopes, value)
+		})
+	}
+	if value, ok := _u.mutation.GrantedScopes(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldGrantedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedGrantedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, relationshipsourcestatus.FieldGrantedScopes, value)
+		})
+	}
+	if value, ok := _u.mutation.MissingScopes(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldMissingScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedMissingScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, relationshipsourcestatus.FieldMissingScopes, value)
+		})
+	}
+	if value, ok := _u.mutation.ErrorCode(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldErrorCode, field.TypeString, value)
+	}
+	if _u.mutation.ErrorCodeCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldErrorCode, field.TypeString)
+	}
+	if value, ok := _u.mutation.RetryCount(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldRetryCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRetryCount(); ok {
+		_spec.AddField(relationshipsourcestatus.FieldRetryCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.NextRetryAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldNextRetryAt, field.TypeTime, value)
+	}
+	if _u.mutation.NextRetryAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldNextRetryAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Completeness(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldCompleteness, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Cursor(); ok {
 		_spec.SetField(relationshipsourcestatus.FieldCursor, field.TypeString, value)
@@ -296,6 +893,12 @@ func (_u *RelationshipSourceStatusUpdate) sqlSave(ctx context.Context) (_node in
 	}
 	if _u.mutation.LastObservationAtCleared() {
 		_spec.ClearField(relationshipsourcestatus.FieldLastObservationAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.LastProviderEventAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldLastProviderEventAt, field.TypeTime, value)
+	}
+	if _u.mutation.LastProviderEventAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldLastProviderEventAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.LastError(); ok {
 		_spec.SetField(relationshipsourcestatus.FieldLastError, field.TypeString, value)
@@ -415,6 +1018,26 @@ func (_u *RelationshipSourceStatusUpdateOne) SetNillableSourceAccountID(v *strin
 	return _u
 }
 
+// SetConsentingActorID sets the "consenting_actor_id" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetConsentingActorID(v uuid.UUID) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetConsentingActorID(v)
+	return _u
+}
+
+// SetNillableConsentingActorID sets the "consenting_actor_id" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableConsentingActorID(v *uuid.UUID) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetConsentingActorID(*v)
+	}
+	return _u
+}
+
+// ClearConsentingActorID clears the value of the "consenting_actor_id" field.
+func (_u *RelationshipSourceStatusUpdateOne) ClearConsentingActorID() *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ClearConsentingActorID()
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *RelationshipSourceStatusUpdateOne) SetStatus(v string) *RelationshipSourceStatusUpdateOne {
 	_u.mutation.SetStatus(v)
@@ -425,6 +1048,395 @@ func (_u *RelationshipSourceStatusUpdateOne) SetStatus(v string) *RelationshipSo
 func (_u *RelationshipSourceStatusUpdateOne) SetNillableStatus(v *string) *RelationshipSourceStatusUpdateOne {
 	if v != nil {
 		_u.SetStatus(*v)
+	}
+	return _u
+}
+
+// SetBackfillPhase sets the "backfill_phase" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetBackfillPhase(v string) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetBackfillPhase(v)
+	return _u
+}
+
+// SetNillableBackfillPhase sets the "backfill_phase" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableBackfillPhase(v *string) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetBackfillPhase(*v)
+	}
+	return _u
+}
+
+// SetBackfillCompleted sets the "backfill_completed" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetBackfillCompleted(v int) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ResetBackfillCompleted()
+	_u.mutation.SetBackfillCompleted(v)
+	return _u
+}
+
+// SetNillableBackfillCompleted sets the "backfill_completed" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableBackfillCompleted(v *int) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetBackfillCompleted(*v)
+	}
+	return _u
+}
+
+// AddBackfillCompleted adds value to the "backfill_completed" field.
+func (_u *RelationshipSourceStatusUpdateOne) AddBackfillCompleted(v int) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.AddBackfillCompleted(v)
+	return _u
+}
+
+// SetBackfillTotal sets the "backfill_total" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetBackfillTotal(v int) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ResetBackfillTotal()
+	_u.mutation.SetBackfillTotal(v)
+	return _u
+}
+
+// SetNillableBackfillTotal sets the "backfill_total" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableBackfillTotal(v *int) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetBackfillTotal(*v)
+	}
+	return _u
+}
+
+// AddBackfillTotal adds value to the "backfill_total" field.
+func (_u *RelationshipSourceStatusUpdateOne) AddBackfillTotal(v int) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.AddBackfillTotal(v)
+	return _u
+}
+
+// SetWatermark sets the "watermark" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetWatermark(v string) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetWatermark(v)
+	return _u
+}
+
+// SetNillableWatermark sets the "watermark" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableWatermark(v *string) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetWatermark(*v)
+	}
+	return _u
+}
+
+// ClearWatermark clears the value of the "watermark" field.
+func (_u *RelationshipSourceStatusUpdateOne) ClearWatermark() *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ClearWatermark()
+	return _u
+}
+
+// SetSyncStartedAt sets the "sync_started_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetSyncStartedAt(v time.Time) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetSyncStartedAt(v)
+	return _u
+}
+
+// SetNillableSyncStartedAt sets the "sync_started_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableSyncStartedAt(v *time.Time) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetSyncStartedAt(*v)
+	}
+	return _u
+}
+
+// ClearSyncStartedAt clears the value of the "sync_started_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) ClearSyncStartedAt() *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ClearSyncStartedAt()
+	return _u
+}
+
+// SetAuthorizationStartedAt sets the "authorization_started_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetAuthorizationStartedAt(v time.Time) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetAuthorizationStartedAt(v)
+	return _u
+}
+
+// SetNillableAuthorizationStartedAt sets the "authorization_started_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableAuthorizationStartedAt(v *time.Time) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetAuthorizationStartedAt(*v)
+	}
+	return _u
+}
+
+// ClearAuthorizationStartedAt clears the value of the "authorization_started_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) ClearAuthorizationStartedAt() *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ClearAuthorizationStartedAt()
+	return _u
+}
+
+// SetAuthorizedAt sets the "authorized_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetAuthorizedAt(v time.Time) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetAuthorizedAt(v)
+	return _u
+}
+
+// SetNillableAuthorizedAt sets the "authorized_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableAuthorizedAt(v *time.Time) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetAuthorizedAt(*v)
+	}
+	return _u
+}
+
+// ClearAuthorizedAt clears the value of the "authorized_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) ClearAuthorizedAt() *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ClearAuthorizedAt()
+	return _u
+}
+
+// SetBackfillCompletedAt sets the "backfill_completed_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetBackfillCompletedAt(v time.Time) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetBackfillCompletedAt(v)
+	return _u
+}
+
+// SetNillableBackfillCompletedAt sets the "backfill_completed_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableBackfillCompletedAt(v *time.Time) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetBackfillCompletedAt(*v)
+	}
+	return _u
+}
+
+// ClearBackfillCompletedAt clears the value of the "backfill_completed_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) ClearBackfillCompletedAt() *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ClearBackfillCompletedAt()
+	return _u
+}
+
+// SetLastFailedSyncAt sets the "last_failed_sync_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetLastFailedSyncAt(v time.Time) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetLastFailedSyncAt(v)
+	return _u
+}
+
+// SetNillableLastFailedSyncAt sets the "last_failed_sync_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableLastFailedSyncAt(v *time.Time) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetLastFailedSyncAt(*v)
+	}
+	return _u
+}
+
+// ClearLastFailedSyncAt clears the value of the "last_failed_sync_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) ClearLastFailedSyncAt() *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ClearLastFailedSyncAt()
+	return _u
+}
+
+// SetDisconnectedAt sets the "disconnected_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetDisconnectedAt(v time.Time) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetDisconnectedAt(v)
+	return _u
+}
+
+// SetNillableDisconnectedAt sets the "disconnected_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableDisconnectedAt(v *time.Time) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetDisconnectedAt(*v)
+	}
+	return _u
+}
+
+// ClearDisconnectedAt clears the value of the "disconnected_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) ClearDisconnectedAt() *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ClearDisconnectedAt()
+	return _u
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetRevokedAt(v time.Time) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetRevokedAt(v)
+	return _u
+}
+
+// SetNillableRevokedAt sets the "revoked_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableRevokedAt(v *time.Time) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetRevokedAt(*v)
+	}
+	return _u
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) ClearRevokedAt() *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ClearRevokedAt()
+	return _u
+}
+
+// SetLastSyncAt sets the "last_sync_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetLastSyncAt(v time.Time) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetLastSyncAt(v)
+	return _u
+}
+
+// SetNillableLastSyncAt sets the "last_sync_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableLastSyncAt(v *time.Time) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetLastSyncAt(*v)
+	}
+	return _u
+}
+
+// ClearLastSyncAt clears the value of the "last_sync_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) ClearLastSyncAt() *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ClearLastSyncAt()
+	return _u
+}
+
+// SetExpectedCadenceSeconds sets the "expected_cadence_seconds" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetExpectedCadenceSeconds(v int64) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ResetExpectedCadenceSeconds()
+	_u.mutation.SetExpectedCadenceSeconds(v)
+	return _u
+}
+
+// SetNillableExpectedCadenceSeconds sets the "expected_cadence_seconds" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableExpectedCadenceSeconds(v *int64) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetExpectedCadenceSeconds(*v)
+	}
+	return _u
+}
+
+// AddExpectedCadenceSeconds adds value to the "expected_cadence_seconds" field.
+func (_u *RelationshipSourceStatusUpdateOne) AddExpectedCadenceSeconds(v int64) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.AddExpectedCadenceSeconds(v)
+	return _u
+}
+
+// SetLagSeconds sets the "lag_seconds" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetLagSeconds(v int64) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ResetLagSeconds()
+	_u.mutation.SetLagSeconds(v)
+	return _u
+}
+
+// SetNillableLagSeconds sets the "lag_seconds" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableLagSeconds(v *int64) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetLagSeconds(*v)
+	}
+	return _u
+}
+
+// AddLagSeconds adds value to the "lag_seconds" field.
+func (_u *RelationshipSourceStatusUpdateOne) AddLagSeconds(v int64) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.AddLagSeconds(v)
+	return _u
+}
+
+// SetRequiredScopes sets the "required_scopes" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetRequiredScopes(v []string) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetRequiredScopes(v)
+	return _u
+}
+
+// AppendRequiredScopes appends value to the "required_scopes" field.
+func (_u *RelationshipSourceStatusUpdateOne) AppendRequiredScopes(v []string) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.AppendRequiredScopes(v)
+	return _u
+}
+
+// SetGrantedScopes sets the "granted_scopes" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetGrantedScopes(v []string) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetGrantedScopes(v)
+	return _u
+}
+
+// AppendGrantedScopes appends value to the "granted_scopes" field.
+func (_u *RelationshipSourceStatusUpdateOne) AppendGrantedScopes(v []string) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.AppendGrantedScopes(v)
+	return _u
+}
+
+// SetMissingScopes sets the "missing_scopes" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetMissingScopes(v []string) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetMissingScopes(v)
+	return _u
+}
+
+// AppendMissingScopes appends value to the "missing_scopes" field.
+func (_u *RelationshipSourceStatusUpdateOne) AppendMissingScopes(v []string) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.AppendMissingScopes(v)
+	return _u
+}
+
+// SetErrorCode sets the "error_code" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetErrorCode(v string) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetErrorCode(v)
+	return _u
+}
+
+// SetNillableErrorCode sets the "error_code" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableErrorCode(v *string) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetErrorCode(*v)
+	}
+	return _u
+}
+
+// ClearErrorCode clears the value of the "error_code" field.
+func (_u *RelationshipSourceStatusUpdateOne) ClearErrorCode() *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ClearErrorCode()
+	return _u
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetRetryCount(v int) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ResetRetryCount()
+	_u.mutation.SetRetryCount(v)
+	return _u
+}
+
+// SetNillableRetryCount sets the "retry_count" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableRetryCount(v *int) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetRetryCount(*v)
+	}
+	return _u
+}
+
+// AddRetryCount adds value to the "retry_count" field.
+func (_u *RelationshipSourceStatusUpdateOne) AddRetryCount(v int) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.AddRetryCount(v)
+	return _u
+}
+
+// SetNextRetryAt sets the "next_retry_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetNextRetryAt(v time.Time) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetNextRetryAt(v)
+	return _u
+}
+
+// SetNillableNextRetryAt sets the "next_retry_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableNextRetryAt(v *time.Time) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetNextRetryAt(*v)
+	}
+	return _u
+}
+
+// ClearNextRetryAt clears the value of the "next_retry_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) ClearNextRetryAt() *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ClearNextRetryAt()
+	return _u
+}
+
+// SetCompleteness sets the "completeness" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetCompleteness(v string) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetCompleteness(v)
+	return _u
+}
+
+// SetNillableCompleteness sets the "completeness" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableCompleteness(v *string) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetCompleteness(*v)
 	}
 	return _u
 }
@@ -486,6 +1498,26 @@ func (_u *RelationshipSourceStatusUpdateOne) SetNillableLastObservationAt(v *tim
 // ClearLastObservationAt clears the value of the "last_observation_at" field.
 func (_u *RelationshipSourceStatusUpdateOne) ClearLastObservationAt() *RelationshipSourceStatusUpdateOne {
 	_u.mutation.ClearLastObservationAt()
+	return _u
+}
+
+// SetLastProviderEventAt sets the "last_provider_event_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) SetLastProviderEventAt(v time.Time) *RelationshipSourceStatusUpdateOne {
+	_u.mutation.SetLastProviderEventAt(v)
+	return _u
+}
+
+// SetNillableLastProviderEventAt sets the "last_provider_event_at" field if the given value is not nil.
+func (_u *RelationshipSourceStatusUpdateOne) SetNillableLastProviderEventAt(v *time.Time) *RelationshipSourceStatusUpdateOne {
+	if v != nil {
+		_u.SetLastProviderEventAt(*v)
+	}
+	return _u
+}
+
+// ClearLastProviderEventAt clears the value of the "last_provider_event_at" field.
+func (_u *RelationshipSourceStatusUpdateOne) ClearLastProviderEventAt() *RelationshipSourceStatusUpdateOne {
+	_u.mutation.ClearLastProviderEventAt()
 	return _u
 }
 
@@ -609,6 +1641,41 @@ func (_u *RelationshipSourceStatusUpdateOne) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.status": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.BackfillPhase(); ok {
+		if err := relationshipsourcestatus.BackfillPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "backfill_phase", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.backfill_phase": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.BackfillCompleted(); ok {
+		if err := relationshipsourcestatus.BackfillCompletedValidator(v); err != nil {
+			return &ValidationError{Name: "backfill_completed", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.backfill_completed": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.BackfillTotal(); ok {
+		if err := relationshipsourcestatus.BackfillTotalValidator(v); err != nil {
+			return &ValidationError{Name: "backfill_total", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.backfill_total": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ExpectedCadenceSeconds(); ok {
+		if err := relationshipsourcestatus.ExpectedCadenceSecondsValidator(v); err != nil {
+			return &ValidationError{Name: "expected_cadence_seconds", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.expected_cadence_seconds": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.LagSeconds(); ok {
+		if err := relationshipsourcestatus.LagSecondsValidator(v); err != nil {
+			return &ValidationError{Name: "lag_seconds", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.lag_seconds": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.RetryCount(); ok {
+		if err := relationshipsourcestatus.RetryCountValidator(v); err != nil {
+			return &ValidationError{Name: "retry_count", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.retry_count": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Completeness(); ok {
+		if err := relationshipsourcestatus.CompletenessValidator(v); err != nil {
+			return &ValidationError{Name: "completeness", err: fmt.Errorf(`ent: validator failed for field "RelationshipSourceStatus.completeness": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RelationshipSourceStatus.workspace"`)
 	}
@@ -656,8 +1723,140 @@ func (_u *RelationshipSourceStatusUpdateOne) sqlSave(ctx context.Context) (_node
 	if value, ok := _u.mutation.SourceAccountID(); ok {
 		_spec.SetField(relationshipsourcestatus.FieldSourceAccountID, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.ConsentingActorID(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldConsentingActorID, field.TypeUUID, value)
+	}
+	if _u.mutation.ConsentingActorIDCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldConsentingActorID, field.TypeUUID)
+	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(relationshipsourcestatus.FieldStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.BackfillPhase(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldBackfillPhase, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.BackfillCompleted(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldBackfillCompleted, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedBackfillCompleted(); ok {
+		_spec.AddField(relationshipsourcestatus.FieldBackfillCompleted, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.BackfillTotal(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldBackfillTotal, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedBackfillTotal(); ok {
+		_spec.AddField(relationshipsourcestatus.FieldBackfillTotal, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.Watermark(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldWatermark, field.TypeString, value)
+	}
+	if _u.mutation.WatermarkCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldWatermark, field.TypeString)
+	}
+	if value, ok := _u.mutation.SyncStartedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldSyncStartedAt, field.TypeTime, value)
+	}
+	if _u.mutation.SyncStartedAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldSyncStartedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.AuthorizationStartedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldAuthorizationStartedAt, field.TypeTime, value)
+	}
+	if _u.mutation.AuthorizationStartedAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldAuthorizationStartedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.AuthorizedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldAuthorizedAt, field.TypeTime, value)
+	}
+	if _u.mutation.AuthorizedAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldAuthorizedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.BackfillCompletedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldBackfillCompletedAt, field.TypeTime, value)
+	}
+	if _u.mutation.BackfillCompletedAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldBackfillCompletedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.LastFailedSyncAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldLastFailedSyncAt, field.TypeTime, value)
+	}
+	if _u.mutation.LastFailedSyncAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldLastFailedSyncAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.DisconnectedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldDisconnectedAt, field.TypeTime, value)
+	}
+	if _u.mutation.DisconnectedAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldDisconnectedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.RevokedAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldRevokedAt, field.TypeTime, value)
+	}
+	if _u.mutation.RevokedAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldRevokedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.LastSyncAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldLastSyncAt, field.TypeTime, value)
+	}
+	if _u.mutation.LastSyncAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldLastSyncAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.ExpectedCadenceSeconds(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldExpectedCadenceSeconds, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedExpectedCadenceSeconds(); ok {
+		_spec.AddField(relationshipsourcestatus.FieldExpectedCadenceSeconds, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.LagSeconds(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldLagSeconds, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedLagSeconds(); ok {
+		_spec.AddField(relationshipsourcestatus.FieldLagSeconds, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.RequiredScopes(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldRequiredScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequiredScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, relationshipsourcestatus.FieldRequiredScopes, value)
+		})
+	}
+	if value, ok := _u.mutation.GrantedScopes(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldGrantedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedGrantedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, relationshipsourcestatus.FieldGrantedScopes, value)
+		})
+	}
+	if value, ok := _u.mutation.MissingScopes(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldMissingScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedMissingScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, relationshipsourcestatus.FieldMissingScopes, value)
+		})
+	}
+	if value, ok := _u.mutation.ErrorCode(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldErrorCode, field.TypeString, value)
+	}
+	if _u.mutation.ErrorCodeCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldErrorCode, field.TypeString)
+	}
+	if value, ok := _u.mutation.RetryCount(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldRetryCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRetryCount(); ok {
+		_spec.AddField(relationshipsourcestatus.FieldRetryCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.NextRetryAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldNextRetryAt, field.TypeTime, value)
+	}
+	if _u.mutation.NextRetryAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldNextRetryAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Completeness(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldCompleteness, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Cursor(); ok {
 		_spec.SetField(relationshipsourcestatus.FieldCursor, field.TypeString, value)
@@ -676,6 +1875,12 @@ func (_u *RelationshipSourceStatusUpdateOne) sqlSave(ctx context.Context) (_node
 	}
 	if _u.mutation.LastObservationAtCleared() {
 		_spec.ClearField(relationshipsourcestatus.FieldLastObservationAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.LastProviderEventAt(); ok {
+		_spec.SetField(relationshipsourcestatus.FieldLastProviderEventAt, field.TypeTime, value)
+	}
+	if _u.mutation.LastProviderEventAtCleared() {
+		_spec.ClearField(relationshipsourcestatus.FieldLastProviderEventAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.LastError(); ok {
 		_spec.SetField(relationshipsourcestatus.FieldLastError, field.TypeString, value)

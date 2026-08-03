@@ -2,11 +2,23 @@
 
 import * as React from "react";
 import {
+  AUTHORITY_LABELS,
+  buildImportedTranscriptObservation,
+  COMPLETENESS_LABELS,
+  MISSION_CONTROL_QUESTIONS,
+  RELATIONSHIP_DIMENSION_LABELS,
+  completenessTone,
+  relationshipLabel,
+} from "@oppulence/relationship-contract";
+import {
   AddressBook,
   ArrowClockwise,
   Check,
   CircleNotch,
   ClockCounterClockwise,
+  DownloadSimple,
+  Graph,
+  ListBullets,
   MagnifyingGlass,
   Plus,
   Sparkle,
@@ -15,8 +27,11 @@ import {
 } from "@phosphor-icons/react";
 
 import { EmptyBlock, errMessage, ListSkeleton, ModeChip } from "@/components/revenue/shared";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { RelationshipGraphWorkspace } from "@/components/revenue/relationship-graph";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
+import { Checkbox } from "@oppulence/ui/components/checkbox";
+import { DateTimePicker } from "@oppulence/ui/components/date-time-picker";
 import {
   Dialog,
   DialogContent,
@@ -24,24 +39,29 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+} from "@oppulence/ui/components/dialog";
+import { Input } from "@oppulence/ui/components/input";
+import { Textarea } from "@oppulence/ui/components/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@oppulence/ui/components/select";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@oppulence/ui/components/sheet";
+import { ToggleGroup, ToggleGroupItem } from "@oppulence/ui/components/toggle-group";
 import {
   ACTION_TYPE_LABELS,
+  acknowledgeMissionControl,
+  decideIdentityCandidate,
+  decideRelationshipAttention,
   approveRecommendation,
   correctConversationReview,
   decideConversationReview,
@@ -49,11 +69,18 @@ import {
   createRelationship,
   DETECTOR_LABELS,
   getRelationship,
+  getRelationshipBetaDiagnostics,
   getRelationshipChanges,
   getRelationshipEvidence,
   getRelationshipTimeline,
+  ingestRelationshipObservations,
   listRelationships,
+  listIdentityCandidates,
+  listRelationshipAttention,
+  listRelationshipSources,
   listRelationshipSourceStatuses,
+  disconnectRelationshipSource,
+  resyncRelationshipSource,
   rejectRecommendation,
   resolveRelationshipContradiction,
   runCommitmentRecovery,
@@ -62,6 +89,7 @@ import {
   approveMutualActionPlan,
   shareMutualActionPlan,
   requestConversationDeletion,
+  retractRelationshipAssertion,
   RELATIONSHIP_KIND_LABELS,
   relativeTime,
   semanticSearch,
@@ -69,9 +97,13 @@ import {
 } from "@/lib/revenue";
 import type {
   ConversationReviewItem,
+  MissionControlReadModel,
+  RelationshipIdentityCandidate,
+  RelationshipAttentionItem,
   RelationshipDetail,
   RelationshipObservation,
   RelationshipSourceStatus,
+  RelationshipSourceInventoryItem,
   RelationshipStateSnapshot,
   RevenueRelationship,
 } from "@/types/revenue";
@@ -102,32 +134,62 @@ const humanize = (value?: string) => (value || "unknown").replaceAll("_", " ");
 export function RelationshipsView({
   onError,
   onNotice,
+  onOpenConnectors,
 }: {
   onError: (m: string) => void;
   onNotice: (m: string) => void;
+  onOpenConnectors?: () => void;
 }) {
   const [rows, setRows] = React.useState<RevenueRelationship[]>([]);
   const [sources, setSources] = React.useState<RelationshipSourceStatus[]>([]);
+  const [identityCandidates, setIdentityCandidates] = React.useState<
+    RelationshipIdentityCandidate[]
+  >([]);
+  const [attention, setAttention] = React.useState<RelationshipAttentionItem[]>([]);
+  const [sourceInventory, setSourceInventory] = React.useState<RelationshipSourceInventoryItem[]>(
+    [],
+  );
   const [loading, setLoading] = React.useState(true);
   const [detail, setDetail] = React.useState<string | null>(null);
   const [creating, setCreating] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [health, setHealth] = React.useState("all");
   const [lifecycle, setLifecycle] = React.useState("all");
+  const [surface, setSurface] = React.useState<"list" | "graph">("list");
+
+  React.useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("graph") !== "1") return;
+    const timer = window.setTimeout(() => setSurface("graph"), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const load = React.useCallback(async () => {
     setLoading(true);
     try {
-      const [relationships, sourceStatuses] = await Promise.all([
+      const [
+        relationships,
+        sourceStatuses,
+        inventory,
+        pendingCandidates,
+        deferredCandidates,
+        attentionItems,
+      ] = await Promise.all([
         listRelationships({
           q: query.trim() || undefined,
           health: health === "all" ? undefined : health,
           lifecycle: lifecycle === "all" ? undefined : lifecycle,
         }),
         listRelationshipSourceStatuses(),
+        listRelationshipSources(),
+        listIdentityCandidates("pending"),
+        listIdentityCandidates("deferred"),
+        listRelationshipAttention("open"),
       ]);
       setRows(relationships);
       setSources(sourceStatuses);
+      setSourceInventory(inventory);
+      setIdentityCandidates([...pendingCandidates, ...deferredCandidates]);
+      setAttention(attentionItems);
     } catch (e) {
       onError(errMessage(e, "Could not load relationship intelligence."));
     } finally {
@@ -139,6 +201,23 @@ export function RelationshipsView({
     const timer = window.setTimeout(() => void load(), 180);
     return () => window.clearTimeout(timer);
   }, [load]);
+
+  const exportDiagnostics = React.useCallback(async () => {
+    try {
+      const bundle = await getRelationshipBetaDiagnostics();
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `oppulence-beta-diagnostics-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      onNotice("Redacted beta diagnostics exported.");
+    } catch (error) {
+      onError(errMessage(error, "Could not export beta diagnostics."));
+    }
+  }, [onError, onNotice]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -156,126 +235,193 @@ export function RelationshipsView({
               recommendation explains what changed and waits for approval.
             </p>
           </div>
-          <SourceHealth statuses={sources} />
+          <div className="flex flex-col items-end gap-2">
+            <SourceHealth statuses={sources} />
+            <ToggleGroup
+              type="single"
+              value={surface}
+              onValueChange={(value) => {
+                if (value === "list" || value === "graph") setSurface(value);
+              }}
+              variant="outline"
+              size="sm"
+              aria-label="Relationship view"
+            >
+              <ToggleGroupItem value="list" aria-label="Show accounts">
+                <ListBullets /> Accounts
+              </ToggleGroupItem>
+              <ToggleGroupItem
+                value="graph"
+                aria-label="Show relationship graph"
+                data-capability="relationship-graph graph-query graph-saved-views graph-governed-actions"
+              >
+                <Graph /> Graph
+              </ToggleGroupItem>
+            </ToggleGroup>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              data-capability="support-diagnostics"
+              onClick={() => void exportDiagnostics()}
+            >
+              <DownloadSimple /> Export diagnostics
+            </Button>
+          </div>
         </div>
       </section>
 
-      <SemanticSearch onError={onError} />
-
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative min-w-0 flex-1">
-          <MagnifyingGlass className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-primary/40" />
-          <Input
-            aria-label="Filter relationships"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Filter by account, domain, or contact"
-            className="pl-8"
-          />
-        </div>
-        <Select value={health} onValueChange={setHealth}>
-          <SelectTrigger className="w-full sm:w-44" size="sm">
-            <SelectValue placeholder="Health" />
-          </SelectTrigger>
-          <SelectContent className="app-shell rounded-[2px]">
-            <SelectItem value="all">All health</SelectItem>
-            {HEALTH_OPTIONS.map((value) => (
-              <SelectItem key={value} value={value}>
-                {humanize(value)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={lifecycle} onValueChange={setLifecycle}>
-          <SelectTrigger className="w-full sm:w-44" size="sm">
-            <SelectValue placeholder="Lifecycle" />
-          </SelectTrigger>
-          <SelectContent className="app-shell rounded-[2px]">
-            <SelectItem value="all">All lifecycle</SelectItem>
-            {LIFECYCLE_OPTIONS.map((value) => (
-              <SelectItem key={value} value={value}>
-                {humanize(value)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button variant="outline" size="sm" onClick={() => setCreating(true)}>
-          <Plus /> New
-        </Button>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-primary/45">{rows.length} relationships</span>
-        <Button variant="ghost" size="sm" onClick={() => void load()} disabled={loading}>
-          <ArrowClockwise className={loading ? "animate-spin" : ""} /> Refresh
-        </Button>
-      </div>
-
-      {loading ? (
-        <ListSkeleton />
-      ) : rows.length === 0 ? (
-        <EmptyBlock
-          icon={<AddressBook className="size-6" />}
-          title="No matching relationships"
-          body="Connect a source to build living relationship state, or add an account by hand."
-        >
-          <Button size="sm" onClick={() => setCreating(true)}>
-            <Plus /> Add relationship
-          </Button>
-        </EmptyBlock>
+      {surface === "graph" ? (
+        <RelationshipGraphWorkspace
+          relationships={rows}
+          onOpenRelationship={setDetail}
+          onError={onError}
+          onNotice={onNotice}
+        />
       ) : (
-        <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
-          {rows.map((relationship) => (
-            <li key={relationship.id}>
-              <button
-                type="button"
-                onClick={() => setDetail(relationship.id)}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-background-100/60 dark:hover:bg-background-100/40"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="truncate text-sm font-medium text-primary">
-                      {relationship.displayName}
-                    </span>
-                    <Badge variant="outline" className="rounded-[2px] font-normal capitalize">
-                      {humanize(relationship.lifecycle)}
-                    </Badge>
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[11px] capitalize ${
-                        HEALTH_TONE[relationship.health] ?? HEALTH_TONE.unknown
-                      }`}
-                    >
-                      {humanize(relationship.health)}
-                    </span>
-                  </div>
-                  <p className="mt-1 truncate text-xs text-primary/55">
-                    {relationship.nextAction ||
-                      relationship.stateReason ||
-                      relationship.summary ||
-                      "Waiting for enough evidence to recommend a next action."}
-                  </p>
-                </div>
-                <div className="hidden shrink-0 text-right md:block">
-                  <p className="text-xs capitalize text-primary/55">
-                    {humanize(relationship.engagement)}
-                  </p>
-                  <p className="text-[11px] text-primary/35">
-                    {relationship.lastChangedAt
-                      ? `changed ${relativeTime(relationship.lastChangedAt)}`
-                      : relationship.lastTouchAt
-                        ? `touched ${relativeTime(relationship.lastTouchAt)}`
-                        : `state v${relationship.stateVersion}`}
-                  </p>
-                </div>
-                {relationship.openActions ? (
-                  <Badge variant="secondary" className="shrink-0">
-                    {relationship.openActions} action{relationship.openActions === 1 ? "" : "s"}
-                  </Badge>
-                ) : null}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          <PortfolioAttentionQueue
+            items={attention}
+            onOpenRelationship={setDetail}
+            onError={onError}
+            onChanged={() => void load()}
+          />
+
+          <SemanticSearch onError={onError} />
+
+          <SourceConnectionCards
+            inventory={sourceInventory}
+            onOpenConnectors={onOpenConnectors}
+            onError={onError}
+            onChanged={() => void load()}
+          />
+
+          <IdentityReviewInbox
+            candidates={identityCandidates}
+            onError={onError}
+            onChanged={() => {
+              onNotice("Identity decision applied.");
+              void load();
+            }}
+          />
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative min-w-0 flex-1">
+              <MagnifyingGlass className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-primary/40" />
+              <Input
+                aria-label="Filter relationships"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Filter by account, domain, or contact"
+                className="pl-8"
+              />
+            </div>
+            <Select value={health} onValueChange={setHealth}>
+              <SelectTrigger className="w-full sm:w-44" size="sm">
+                <SelectValue placeholder="Health" />
+              </SelectTrigger>
+              <SelectContent className="app-shell rounded-[2px]">
+                <SelectItem value="all">All health</SelectItem>
+                {HEALTH_OPTIONS.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {humanize(value)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={lifecycle} onValueChange={setLifecycle}>
+              <SelectTrigger className="w-full sm:w-44" size="sm">
+                <SelectValue placeholder="Lifecycle" />
+              </SelectTrigger>
+              <SelectContent className="app-shell rounded-[2px]">
+                <SelectItem value="all">All lifecycle</SelectItem>
+                {LIFECYCLE_OPTIONS.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {humanize(value)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={() => setCreating(true)}>
+              <Plus /> New
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-primary/45">{rows.length} relationships</span>
+            <Button variant="ghost" size="sm" onClick={() => void load()} disabled={loading}>
+              <ArrowClockwise className={loading ? "animate-spin" : ""} /> Refresh
+            </Button>
+          </div>
+
+          {loading ? (
+            <ListSkeleton />
+          ) : rows.length === 0 ? (
+            <EmptyBlock
+              icon={<AddressBook className="size-6" />}
+              title="No matching relationships"
+              body="Connect a source to build living relationship state, or add an account by hand."
+            >
+              <Button size="sm" onClick={() => setCreating(true)}>
+                <Plus /> Add relationship
+              </Button>
+            </EmptyBlock>
+          ) : (
+            <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
+              {rows.map((relationship) => (
+                <li key={relationship.id}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setDetail(relationship.id)}
+                    className="h-auto w-full justify-start rounded-none px-4 py-3 text-left hover:bg-background-100/60 dark:hover:bg-background-100/40"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="truncate text-sm font-medium text-primary">
+                          {relationship.displayName}
+                        </span>
+                        <Badge variant="outline" className="rounded-[2px] font-normal capitalize">
+                          {humanize(relationship.lifecycle)}
+                        </Badge>
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[11px] capitalize ${
+                            HEALTH_TONE[relationship.health] ?? HEALTH_TONE.unknown
+                          }`}
+                        >
+                          {humanize(relationship.health)}
+                        </span>
+                      </div>
+                      <p className="mt-1 truncate text-xs text-primary/55">
+                        {relationship.nextAction ||
+                          relationship.stateReason ||
+                          relationship.summary ||
+                          "Waiting for enough evidence to recommend a next action."}
+                      </p>
+                    </div>
+                    <div className="hidden shrink-0 text-right md:block">
+                      <p className="text-xs capitalize text-primary/55">
+                        {humanize(relationship.engagement)}
+                      </p>
+                      <p className="text-[11px] text-primary/35">
+                        {relationship.lastChangedAt
+                          ? `changed ${relativeTime(relationship.lastChangedAt)}`
+                          : relationship.lastTouchAt
+                            ? `touched ${relativeTime(relationship.lastTouchAt)}`
+                            : `state v${relationship.stateVersion}`}
+                      </p>
+                    </div>
+                    {relationship.openActions ? (
+                      <Badge variant="secondary" className="shrink-0">
+                        {relationship.openActions} action{relationship.openActions === 1 ? "" : "s"}
+                      </Badge>
+                    ) : null}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
 
       {detail ? (
@@ -305,6 +451,153 @@ export function RelationshipsView({
   );
 }
 
+function PortfolioAttentionQueue({
+  items,
+  onOpenRelationship,
+  onChanged,
+  onError,
+}: {
+  items: RelationshipAttentionItem[];
+  onOpenRelationship: (id: string) => void;
+  onChanged: () => void;
+  onError: (message: string) => void;
+}) {
+  const [busy, setBusy] = React.useState<string | null>(null);
+  if (items.length === 0) return null;
+
+  const decide = async (
+    item: RelationshipAttentionItem,
+    decision: "acknowledge" | "snooze" | "dismiss",
+  ) => {
+    const reason =
+      decision === "dismiss"
+        ? window.prompt("Why should this attention item be dismissed?", "Not relevant right now")
+        : decision === "acknowledge"
+          ? "Reviewed from the portfolio attention queue."
+          : "Snoozed from the portfolio attention queue.";
+    if (reason === null || (decision === "dismiss" && !reason.trim())) return;
+    setBusy(`${item.id}:${decision}`);
+    try {
+      await decideRelationshipAttention(item.id, {
+        decision,
+        reason,
+        expectedVersion: item.version,
+        snoozedUntil:
+          decision === "snooze"
+            ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+            : undefined,
+      });
+      onChanged();
+    } catch (error) {
+      onError(errMessage(error, "Could not update the attention item."));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section
+      aria-labelledby="portfolio-attention-heading"
+      className="space-y-2"
+      data-capability="attention-queue"
+    >
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
+            Portfolio attention
+          </p>
+          <h3 id="portfolio-attention-heading" className="text-sm font-medium text-primary">
+            {items.length} relationship{items.length === 1 ? "" : "s"} need review
+          </h3>
+        </div>
+        <span className="text-[11px] text-primary/40">Deterministic order · factors visible</span>
+      </div>
+      <ol className="space-y-2">
+        {items.slice(0, 10).map((item) => (
+          <li key={item.id} className="rounded-[2px] border border-border p-3">
+            <div className="flex flex-wrap items-start gap-3">
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-auto min-w-0 flex-1 justify-start rounded-[8px] p-0 text-left hover:bg-transparent"
+                onClick={() => onOpenRelationship(item.relationshipId)}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium text-primary">{item.relationshipName}</span>
+                  <Badge
+                    variant="outline"
+                    className={`rounded-[2px] capitalize ${
+                      item.urgencyBand === "critical"
+                        ? "border-red-500/40 text-red-600"
+                        : item.urgencyBand === "high"
+                          ? "border-amber-500/40 text-amber-600"
+                          : ""
+                    }`}
+                  >
+                    {relationshipLabel(item.reasonCode)} · {item.rankScore}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-xs text-primary/60">{item.explanation}</p>
+              </Button>
+              <div className="flex flex-wrap gap-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy !== null}
+                  onClick={() => void decide(item, "acknowledge")}
+                >
+                  {busy === `${item.id}:acknowledge` ? (
+                    <CircleNotch className="animate-spin" />
+                  ) : (
+                    <Check />
+                  )}{" "}
+                  Review
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy !== null}
+                  onClick={() => void decide(item, "snooze")}
+                >
+                  Snooze 1d
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy !== null}
+                  onClick={() => void decide(item, "dismiss")}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+            <details className="mt-2 text-[11px] text-primary/50">
+              <summary className="cursor-pointer">Why this rank?</summary>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                {Object.entries(item.rankFactors).map(([factor, contribution]) => (
+                  <span key={factor}>
+                    {relationshipLabel(factor)}: {contribution >= 0 ? "+" : ""}
+                    {contribution}
+                  </span>
+                ))}
+                {item.sourceRequirements.length > 0 ? (
+                  <span>Requires: {item.sourceRequirements.join(", ")}</span>
+                ) : null}
+                <span>
+                  State v{item.relationshipStateVersion} · detector v{item.detectorVersion}
+                </span>
+              </div>
+            </details>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
   if (statuses.length === 0) {
     return (
@@ -313,7 +606,9 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
       </Badge>
     );
   }
-  const stale = statuses.filter((source) => source.status !== "connected").length;
+  const needsRepair = statuses.filter(
+    (source) => !["connected", "backfilling", "live"].includes(source.status),
+  ).length;
   return (
     <div className="flex max-w-sm flex-wrap justify-end gap-1.5">
       {statuses.slice(0, 4).map((source) => (
@@ -322,18 +617,272 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
           variant="outline"
           title={source.lastError || source.lastObservationAt}
           className={`rounded-[2px] font-normal capitalize ${
-            source.status === "connected" ? "border-emerald-500/30" : "border-amber-500/30"
+            source.status === "live"
+              ? "border-emerald-500/30"
+              : ["connected", "backfilling"].includes(source.status)
+                ? "border-sky-500/30"
+                : "border-amber-500/30"
           }`}
         >
           {source.source} · {source.status}
         </Badge>
       ))}
-      {stale > 0 ? (
+      {needsRepair > 0 ? (
         <span className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-          <Warning /> {stale} need attention
+          <Warning /> {needsRepair} need attention
         </span>
       ) : null}
     </div>
+  );
+}
+
+function SourceConnectionCards({
+  inventory,
+  onOpenConnectors,
+  onChanged,
+  onError,
+}: {
+  inventory: RelationshipSourceInventoryItem[];
+  onOpenConnectors?: () => void;
+  onChanged: () => void;
+  onError: (message: string) => void;
+}) {
+  const [busy, setBusy] = React.useState<string | null>(null);
+  const needsAttention = inventory.filter(
+    (item) =>
+      item.accounts.length === 0 ||
+      item.accounts.some(
+        (account) => account.status !== "live" || account.missingScopes.length > 0,
+      ),
+  );
+  if (needsAttention.length === 0) return null;
+
+  const mutate = async (key: string, operation: () => Promise<unknown>) => {
+    setBusy(key);
+    try {
+      await operation();
+      onChanged();
+    } catch (error) {
+      onError(errMessage(error, "Could not update the evidence source."));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section
+      aria-labelledby="source-connections-heading"
+      className="space-y-3"
+      data-capability="source-lifecycle"
+    >
+      <div>
+        <h3 id="source-connections-heading" className="text-sm font-medium text-primary">
+          Evidence sources
+        </h3>
+        <p className="mt-0.5 text-xs text-primary/55">
+          Connect Google plus Slack or HubSpot. Read access builds history; action scopes remain
+          approval-gated.
+        </p>
+      </div>
+      <div className="grid gap-2 md:grid-cols-3">
+        {needsAttention.map((item) => {
+          const account = item.accounts[0];
+          const progress =
+            account && account.backfillTotal > 0
+              ? Math.round((account.backfillCompleted / account.backfillTotal) * 100)
+              : null;
+          return (
+            <article key={item.source} className="space-y-3 rounded-[2px] border border-border p-3">
+              <div className="flex items-start justify-between gap-2">
+                <h4 className="text-sm font-medium text-primary">{item.displayName}</h4>
+                <Badge variant="outline" className="rounded-[2px] capitalize">
+                  {humanize(account?.status || "not_connected")}
+                </Badge>
+              </div>
+              <p className="text-xs text-primary/55">{item.scopeExplanation}</p>
+              <details className="text-[11px] text-primary/55">
+                <summary className="cursor-pointer">Permissions and capabilities</summary>
+                <p className="mt-1">
+                  <span className="font-medium">Read:</span> {item.readScopes.join(", ")}
+                </p>
+                <p className="mt-1">
+                  <span className="font-medium">On approval:</span> {item.writeScopes.join(", ")}
+                </p>
+              </details>
+              {account ? (
+                <div className="space-y-1 text-[11px] text-primary/50">
+                  <p>
+                    {humanize(account.completeness)}
+                    {progress !== null ? ` · backfill ${progress}%` : ""}
+                    {account.lagSeconds ? ` · ${Math.round(account.lagSeconds / 60)}m lag` : ""}
+                  </p>
+                  {account.missingScopes.length > 0 ? (
+                    <p className="text-amber-600">Missing: {account.missingScopes.join(", ")}</p>
+                  ) : null}
+                  {account.lastError ? (
+                    <p className="text-destructive">{account.lastError}</p>
+                  ) : null}
+                </div>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                {!account ||
+                account.status === "disconnected" ||
+                account.status === "reconnect_required" ? (
+                  <Button type="button" size="sm" onClick={onOpenConnectors}>
+                    Connect
+                  </Button>
+                ) : null}
+                {account && item.supportsResync ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={busy !== null}
+                    onClick={() =>
+                      void mutate(`${item.source}:resync`, () =>
+                        resyncRelationshipSource(item.source, account.sourceAccountId),
+                      )
+                    }
+                  >
+                    {busy === `${item.source}:resync` ? (
+                      <CircleNotch className="animate-spin" />
+                    ) : (
+                      <ArrowClockwise />
+                    )}{" "}
+                    Resync
+                  </Button>
+                ) : null}
+                {account && account.status !== "disconnected" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={busy !== null}
+                    onClick={() =>
+                      void mutate(`${item.source}:disconnect`, () =>
+                        disconnectRelationshipSource(item.source, account.sourceAccountId),
+                      )
+                    }
+                  >
+                    Disconnect
+                  </Button>
+                ) : null}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function IdentityReviewInbox({
+  candidates,
+  onChanged,
+  onError,
+}: {
+  candidates: RelationshipIdentityCandidate[];
+  onChanged: () => void;
+  onError: (message: string) => void;
+}) {
+  const [reasons, setReasons] = React.useState<Record<string, string>>({});
+  const [busy, setBusy] = React.useState<string | null>(null);
+  if (candidates.length === 0) return null;
+
+  const decide = async (candidate: RelationshipIdentityCandidate, decision: string) => {
+    setBusy(`${candidate.id}:${decision}`);
+    try {
+      await decideIdentityCandidate(candidate.id, {
+        decision,
+        reason: reasons[candidate.id]?.trim() || `Reviewed in the identity inbox: ${decision}.`,
+        expectedVersion: candidate.version,
+        idempotencyKey: crypto.randomUUID(),
+      });
+      onChanged();
+    } catch (error) {
+      onError(errMessage(error, "Could not apply the identity decision. Refresh and try again."));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section
+      aria-labelledby="identity-review-heading"
+      className="space-y-2 rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+      data-capability="identity-review"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 id="identity-review-heading" className="text-sm font-medium text-primary">
+            Identity review
+          </h3>
+          <p className="mt-0.5 text-xs text-primary/55">
+            {candidates.length} ambiguous relationship{candidates.length === 1 ? "" : "s"} cannot
+            receive actions until reviewed.
+          </p>
+        </div>
+        <Badge variant="outline" className="rounded-[2px] border-amber-500/40">
+          Human decision required
+        </Badge>
+      </div>
+      {candidates.map((candidate) => (
+        <article key={candidate.id} className="space-y-3 border-t border-amber-500/20 pt-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium text-primary">
+                {candidate.proposedRelationship.displayName} may match{" "}
+                {candidate.existingRelationship.displayName}
+              </p>
+              <p className="mt-0.5 text-xs text-primary/55">
+                Exact {humanize(candidate.anchorKind)} anchor
+                {candidate.anchorProvider ? ` from ${candidate.anchorProvider}` : ""}:{" "}
+                {candidate.anchorPreview || "preview withheld"}
+              </p>
+            </div>
+            <span className="text-xs text-primary/45">
+              {candidate.evidenceCount} evidence item{candidate.evidenceCount === 1 ? "" : "s"} ·{" "}
+              {Math.round(candidate.recommendationConfidence * 100)}% recommendation confidence
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 text-[11px] text-primary/55">
+            {Object.entries(candidate.impact).map(([kind, count]) => (
+              <span key={kind} className="border border-border px-2 py-1">
+                {count} {humanize(kind)}
+              </span>
+            ))}
+          </div>
+          <Input
+            aria-label={`Reason for identity decision about ${candidate.proposedRelationship.displayName}`}
+            value={reasons[candidate.id] ?? ""}
+            onChange={(event) =>
+              setReasons((current) => ({ ...current, [candidate.id]: event.target.value }))
+            }
+            placeholder="Optional audit reason"
+          />
+          <div className="flex flex-wrap gap-2">
+            {(candidate.status === "resolved"
+              ? (["split", "undo"] as const)
+              : (["merge", "keep_separate", "move_evidence", "defer"] as const)
+            ).map((decision) => (
+              <Button
+                key={decision}
+                type="button"
+                size="sm"
+                variant={candidate.recommendedDecision === decision ? "default" : "outline"}
+                disabled={busy !== null}
+                onClick={() => void decide(candidate, decision)}
+              >
+                {busy === `${candidate.id}:${decision}` ? (
+                  <CircleNotch className="animate-spin" />
+                ) : null}
+                {relationshipLabel(decision)}
+              </Button>
+            ))}
+          </div>
+        </article>
+      ))}
+    </section>
   );
 }
 
@@ -408,6 +957,287 @@ function SemanticSearch({ onError }: { onError: (m: string) => void }) {
   );
 }
 
+function MissionControlOverview({
+  model,
+  busy,
+  onAcknowledge,
+  onRetract,
+}: {
+  model: MissionControlReadModel;
+  busy: boolean;
+  onAcknowledge: () => void;
+  onRetract: (assertionId: string, reason: string) => void;
+}) {
+  const tone = completenessTone(model.completeness.status);
+  const supported = Object.values(model.evidence).filter((item) => item.supported).length;
+  const total = Object.keys(model.evidence).length;
+  return (
+    <section
+      aria-labelledby="mission-control-heading"
+      className="space-y-3"
+      data-capability="mission-control evidence-inspection assertion-retraction"
+    >
+      <div
+        className={`border p-3 ${
+          tone === "safe"
+            ? "border-emerald-500/30 bg-emerald-500/5"
+            : tone === "caution"
+              ? "border-amber-500/30 bg-amber-500/5"
+              : "border-red-500/30 bg-red-500/5"
+        }`}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 id="mission-control-heading" className="text-sm font-medium text-primary">
+              {COMPLETENESS_LABELS[model.completeness.status] ??
+                relationshipLabel(model.completeness.status)}
+            </h3>
+            <p className="mt-1 text-xs text-primary/60">{model.completeness.explanation}</p>
+          </div>
+          <Badge variant="outline" className="rounded-[2px] font-normal">
+            {supported}/{total} state dimensions sourced
+          </Badge>
+        </div>
+        {model.completeness.unresolvedIdentityCount > 0 ? (
+          <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">
+            {model.completeness.unresolvedIdentityCount} identity review
+            {model.completeness.unresolvedIdentityCount === 1 ? "" : "s"} block acting.
+          </p>
+        ) : null}
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        {MISSION_CONTROL_QUESTIONS.map((question) => {
+          let answer = "No supported answer yet.";
+          if (question.key === "state") {
+            answer = `${relationshipLabel(String(model.evidence.lifecycle?.value ?? "unknown"))} · ${relationshipLabel(String(model.evidence.health?.value ?? "unknown"))}`;
+          } else if (question.key === "change") {
+            answer = model.changedSinceReview
+              ? model.changes
+                  .map(
+                    (change) =>
+                      RELATIONSHIP_DIMENSION_LABELS[change.dimension] ??
+                      relationshipLabel(change.dimension),
+                  )
+                  .join(", ") || "State changed"
+              : "Nothing changed since your last review.";
+          } else if (question.key === "evidence") {
+            answer = `${supported} of ${total} dimensions have an accessible winning assertion.`;
+          } else if (question.key === "action") {
+            answer = model.activeRecommendation?.reason || "No action is currently recommended.";
+          }
+          return (
+            <div key={question.key} className="border border-border p-3">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-primary/45">
+                {question.label}
+              </p>
+              <p className="mt-1 text-xs text-primary/75">{answer}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      <details className="border border-border p-3 text-xs">
+        <summary className="cursor-pointer font-medium text-primary">
+          Inspect dimension evidence
+        </summary>
+        <ul className="mt-3 space-y-2">
+          {Object.values(model.evidence).map((item) => (
+            <li key={item.dimension} className="border-l border-border pl-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">
+                  {RELATIONSHIP_DIMENSION_LABELS[item.dimension] ??
+                    relationshipLabel(item.dimension)}
+                </span>
+                <Badge variant="outline" className="rounded-[2px] font-normal">
+                  {item.supported
+                    ? (AUTHORITY_LABELS[item.authority ?? ""] ?? relationshipLabel(item.authority))
+                    : "Explicitly incomplete"}
+                </Badge>
+                {!item.fresh ? <span className="text-amber-600">stale</span> : null}
+              </div>
+              <p className="mt-1 text-primary/55">{item.reason || item.missingReason}</p>
+              {item.evidence.length ? (
+                <p className="mt-1 text-primary/40">
+                  {item.evidence
+                    .map(
+                      (ref) => `${relationshipLabel(ref.source)} · ${relativeTime(ref.observedAt)}`,
+                    )
+                    .join("; ")}
+                </p>
+              ) : null}
+              {item.authority === "user_correction" && item.assertionId ? (
+                <CorrectionRetraction
+                  assertionId={item.assertionId}
+                  disabled={busy}
+                  onRetract={onRetract}
+                />
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </details>
+
+      {model.changedSinceReview ? (
+        <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onAcknowledge}>
+          <Check /> Mark state v{model.stateVersion} reviewed
+        </Button>
+      ) : (
+        <p className="text-[11px] text-primary/40">
+          Reviewed through state v{model.previousReviewedStateVersion} · as of{" "}
+          {new Date(model.asOf).toLocaleString()}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function CorrectionRetraction({
+  assertionId,
+  disabled,
+  onRetract,
+}: {
+  assertionId: string;
+  disabled: boolean;
+  onRetract: (assertionId: string, reason: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [reason, setReason] = React.useState("");
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        className="mt-2"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+      >
+        Retract correction
+      </Button>
+    );
+  }
+  return (
+    <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+      <Input
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+        placeholder="Why is this correction no longer valid?"
+        aria-label="Correction retraction reason"
+      />
+      <Button
+        type="button"
+        size="sm"
+        variant="destructive"
+        disabled={disabled || !reason.trim()}
+        onClick={() => onRetract(assertionId, reason.trim())}
+      >
+        Confirm retraction
+      </Button>
+      <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
+        Cancel
+      </Button>
+    </div>
+  );
+}
+
+function ImportedTranscriptPublisher({
+  relationshipId,
+  disabled,
+  onPublish,
+}: {
+  relationshipId: string;
+  disabled: boolean;
+  onPublish: (
+    observation: ReturnType<typeof buildImportedTranscriptObservation>,
+  ) => Promise<boolean>;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [title, setTitle] = React.useState("");
+  const [transcript, setTranscript] = React.useState("");
+  const [disclosureConfirmed, setDisclosureConfirmed] = React.useState(false);
+  const [occurredAt, setOccurredAt] = React.useState(() => new Date().toISOString());
+  const disclosureId = React.useId();
+
+  if (!open) {
+    return (
+      <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)}>
+        Import transcript
+      </Button>
+    );
+  }
+
+  return (
+    <section
+      className="space-y-2 border border-border p-3"
+      data-capability="transcript-publication"
+    >
+      <SectionTitle title="Publish an imported transcript" />
+      <p className="text-xs text-primary/55">
+        Paste reviewed transcript text. Prefix lines with a speaker name and colon when known.
+        Imported text is preserved as evidence and does not become a trusted claim automatically.
+      </p>
+      <Input
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+        placeholder="Conversation title"
+        aria-label="Imported transcript title"
+      />
+      <DateTimePicker
+        value={occurredAt}
+        onChange={setOccurredAt}
+        aria-label="Conversation time"
+      />
+      <Textarea
+        value={transcript}
+        onChange={(event) => setTranscript(event.target.value)}
+        placeholder={"Avery: We can renew next week.\nYou: I will send the paperwork."}
+        aria-label="Imported transcript text"
+        className="min-h-40"
+      />
+      <label htmlFor={disclosureId} className="flex cursor-pointer items-start gap-2 text-xs text-primary/60">
+        <Checkbox
+          id={disclosureId}
+          className="mt-0.5"
+          checked={disclosureConfirmed}
+          onCheckedChange={(checked) => setDisclosureConfirmed(checked === true)}
+        />
+        <span>
+          I confirm this transcript may be stored under workspace policy and participants were
+          notified where required.
+        </span>
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          disabled={disabled || !transcript.trim() || !occurredAt || !disclosureConfirmed}
+          onClick={async () => {
+            const published = await onPublish(
+              buildImportedTranscriptObservation({
+                relationshipId,
+                title,
+                transcript,
+                occurredAt: new Date(occurredAt).toISOString(),
+              }),
+            );
+            if (!published) return;
+            setOpen(false);
+            setTitle("");
+            setTranscript("");
+            setDisclosureConfirmed(false);
+          }}
+        >
+          Publish reviewed evidence
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 function RelationshipSheet({
   id,
   onClose,
@@ -422,19 +1252,26 @@ function RelationshipSheet({
   const [data, setData] = React.useState<RelationshipDetail | null>(null);
   const [timeline, setTimeline] = React.useState<RelationshipObservation[]>([]);
   const [changes, setChanges] = React.useState<RelationshipStateSnapshot[]>([]);
+  const [identityCandidates, setIdentityCandidates] = React.useState<
+    RelationshipIdentityCandidate[]
+  >([]);
   const [busy, setBusy] = React.useState<string | null>(null);
   const [evidence, setEvidence] = React.useState<Record<string, unknown>>({});
 
   const load = React.useCallback(async () => {
     try {
-      const [nextData, nextTimeline, nextChanges] = await Promise.all([
+      const [nextData, nextTimeline, nextChanges, pending, deferred, resolved] = await Promise.all([
         getRelationship(id),
         getRelationshipTimeline(id),
         getRelationshipChanges(id),
+        listIdentityCandidates("pending", id),
+        listIdentityCandidates("deferred", id),
+        listIdentityCandidates("resolved", id),
       ]);
       setData(nextData);
       setTimeline(nextTimeline);
       setChanges(nextChanges);
+      setIdentityCandidates([...pending, ...deferred, ...resolved]);
     } catch (error) {
       onError(errMessage(error, "Could not load the relationship."));
     }
@@ -444,14 +1281,16 @@ function RelationshipSheet({
     void load();
   }, [load]);
 
-  const act = async (key: string, operation: () => Promise<unknown>) => {
+  const act = async (key: string, operation: () => Promise<unknown>): Promise<boolean> => {
     setBusy(key);
     try {
       await operation();
       await load();
       onChanged();
+      return true;
     } catch (error) {
       onError(errMessage(error, "Could not update this relationship."));
+      return false;
     } finally {
       setBusy(null);
     }
@@ -519,6 +1358,34 @@ function RelationshipSheet({
               </p>
             </section>
 
+            <MissionControlOverview
+              model={data.missionControl}
+              busy={Boolean(busy)}
+              onAcknowledge={() =>
+                act("acknowledge", () =>
+                  acknowledgeMissionControl(
+                    id,
+                    data.missionControl.stateVersion,
+                    data.missionControl.stateHash,
+                  ),
+                )
+              }
+              onRetract={(assertionId, reason) =>
+                void act(`retract:${assertionId}`, () =>
+                  retractRelationshipAssertion(id, assertionId, reason),
+                )
+              }
+            />
+
+            <IdentityReviewInbox
+              candidates={identityCandidates}
+              onError={onError}
+              onChanged={() => {
+                void load();
+                onChanged();
+              }}
+            />
+
             <StateCorrection
               key={data.relationship.stateVersion}
               relationship={data.relationship}
@@ -527,6 +1394,14 @@ function RelationshipSheet({
                 act(`correct:${dimension}`, () =>
                   correctRelationship(id, { dimension, value, reason }),
                 )
+              }
+            />
+
+            <ImportedTranscriptPublisher
+              relationshipId={id}
+              disabled={Boolean(busy)}
+              onPublish={(observation) =>
+                act("publish-transcript", () => ingestRelationshipObservations([observation]))
               }
             />
 
@@ -582,7 +1457,10 @@ function RelationshipSheet({
             />
 
             {data.intelligence?.effectivePolicy ? (
-              <div className="border border-border p-3 text-xs text-primary/60">
+              <div
+                className="border border-border p-3 text-xs text-primary/60"
+                data-capability="privacy-deletion"
+              >
                 <details>
                   <summary className="cursor-pointer font-medium text-primary">
                     Privacy policy · {humanize(data.intelligence.effectivePolicy.modelRoute)}
@@ -590,14 +1468,23 @@ function RelationshipSheet({
                   <div className="mt-2 grid gap-1 sm:grid-cols-2">
                     <span>Capture: {humanize(data.intelligence.effectivePolicy.capture)}</span>
                     <span>Retention: {data.intelligence.effectivePolicy.retentionDays} days</span>
-                    <span>Evidence: {data.intelligence.effectivePolicy.publishEvidence ? "allowed" : "blocked"}</span>
-                    <span>External share: {data.intelligence.effectivePolicy.externalShare ? "allowed" : "blocked"}</span>
+                    <span>
+                      Evidence:{" "}
+                      {data.intelligence.effectivePolicy.publishEvidence ? "allowed" : "blocked"}
+                    </span>
+                    <span>
+                      External share:{" "}
+                      {data.intelligence.effectivePolicy.externalShare ? "allowed" : "blocked"}
+                    </span>
                   </div>
                   <p className="mt-2 break-all text-[11px]">
-                    {data.intelligence.effectivePolicy.policyVersion} · {data.intelligence.governanceDecisions.length} recorded decisions
+                    {data.intelligence.effectivePolicy.policyVersion} ·{" "}
+                    {data.intelligence.governanceDecisions.length} recorded decisions
                   </p>
                   {data.intelligence.deletionReceipts[0] ? (
-                    <p className="mt-1">Last deletion: {humanize(data.intelligence.deletionReceipts[0].status)}</p>
+                    <p className="mt-1">
+                      Last deletion: {humanize(data.intelligence.deletionReceipts[0].status)}
+                    </p>
                   ) : null}
                 </details>
                 <Button
@@ -607,7 +1494,12 @@ function RelationshipSheet({
                   className="mt-3"
                   disabled={busy === "delete-conversation"}
                   onClick={() => {
-                    if (!window.confirm("Delete shared conversation evidence for this relationship? Device and provider copies will remain pending until separately confirmed.")) return;
+                    if (
+                      !window.confirm(
+                        "Delete shared conversation evidence for this relationship? Device and provider copies will remain pending until separately confirmed.",
+                      )
+                    )
+                      return;
                     void act("delete-conversation", () =>
                       requestConversationDeletion(id, crypto.randomUUID()),
                     );
@@ -618,7 +1510,7 @@ function RelationshipSheet({
               </div>
             ) : null}
 
-            <section>
+            <section data-capability="commitment-management">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <SectionTitle
                   title={`Commitment recovery (${data.intelligence?.recoveryEvaluations.length ?? 0})`}
@@ -665,7 +1557,7 @@ function RelationshipSheet({
               ) : null}
             </section>
 
-            <section>
+            <section data-capability="governed-actions">
               <SectionTitle title={`Recommendations (${data.recommendations.length})`} />
               {data.recommendations.length === 0 ? (
                 <EmptyText>No action is currently recommended.</EmptyText>
@@ -778,7 +1670,7 @@ function RelationshipSheet({
               </section>
             ) : null}
 
-            <section>
+            <section data-capability="mutual-action-plans">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <SectionTitle
                   title={`Mutual action plans (${data.intelligence?.mutualActionPlans.length ?? 0})`}
@@ -788,14 +1680,17 @@ function RelationshipSheet({
                   size="sm"
                   variant="outline"
                   disabled={
-                    Boolean(busy) || !data.commitments.some((item) => item.acceptance === "accepted")
+                    Boolean(busy) ||
+                    !data.commitments.some((item) => item.acceptance === "accepted")
                   }
                   onClick={() =>
                     void act("create-plan", () =>
                       createMutualActionPlan(
                         id,
                         data.commitments
-                          .filter((item) => item.acceptance === "accepted" && item.status === "open")
+                          .filter(
+                            (item) => item.acceptance === "accepted" && item.status === "open",
+                          )
                           .map((item) => item.id),
                       ),
                     )
@@ -840,7 +1735,9 @@ function RelationshipSheet({
                       </p>
                       <ul className="mt-1 list-disc pl-4 text-primary/60">
                         {plan.currentRevision.items.map((item) => (
-                          <li key={item.itemId}>{item.title} · {item.ownerParticipantRef}</li>
+                          <li key={item.itemId}>
+                            {item.title} · {item.ownerParticipantRef}
+                          </li>
                         ))}
                       </ul>
                       <div className="mt-2 flex gap-1.5">
@@ -879,7 +1776,7 @@ function RelationshipSheet({
               )}
             </section>
 
-            <section>
+            <section data-capability="contradiction-resolution">
               <SectionTitle title={`What changed (${changes.length})`} />
               {data.intelligence?.delta.changes.length ? (
                 <ul className="mb-3 flex flex-col gap-2">
@@ -1010,10 +1907,11 @@ function RelationshipSheet({
                 <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
                   {timeline.map((observation) => (
                     <li key={observation.id} className="p-3">
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
                         onClick={() => void revealEvidence(observation)}
-                        className="w-full text-left"
+                        className="h-auto w-full justify-start rounded-[8px] p-0 text-left hover:bg-transparent"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-medium capitalize text-primary">
@@ -1026,7 +1924,7 @@ function RelationshipSheet({
                         <p className="mt-1 text-xs text-primary/55">
                           {observation.summary || "Open the source evidence"}
                         </p>
-                      </button>
+                      </Button>
                       {observation.id in evidence ? (
                         <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap rounded-[2px] bg-background-100 p-2 text-[11px] text-primary/60 dark:bg-background-200">
                           {JSON.stringify(evidence[observation.id], null, 2)}
@@ -1063,7 +1961,10 @@ function CorrectionReview({
   const [drafts, setDrafts] = React.useState<Record<string, string>>({});
   if (items.length === 0) return null;
   return (
-    <section className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3">
+    <section
+      className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+      data-capability="conversation-review"
+    >
       <SectionTitle title={`Focused evidence review (${items.length})`} />
       <p className="mb-3 text-xs text-primary/55">
         Approve, correct, reject, or defer each proposed material change before it affects state.
@@ -1175,7 +2076,10 @@ function StateCorrection({
           : HEALTH_OPTIONS;
 
   return (
-    <section className="rounded-[2px] border border-dashed border-border p-3">
+    <section
+      className="rounded-[2px] border border-dashed border-border p-3"
+      data-capability="state-correction"
+    >
       <SectionTitle title="Correct the model" />
       <div className="grid gap-2 sm:grid-cols-[130px_150px_1fr_auto]">
         <Select

@@ -5,6 +5,7 @@
 // server-side and bounces the browser back through WorkOS on a 401.
 
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
+import { RelationshipGraphSchema } from "@/types/revenue";
 import type {
   ActionAudit,
   RelationshipDetail,
@@ -17,7 +18,13 @@ import type {
   RevenueRelationship,
   RevenueWorkspace,
   RelationshipObservation,
+  RelationshipObservationInput,
+  RelationshipIdentityCandidate,
+  RelationshipAttentionItem,
+  RelationshipSourceInventoryItem,
   RelationshipSourceStatus,
+  BetaDiagnostics,
+  RelationshipGraph,
   RelationshipStateSnapshot,
 } from "@/types/revenue";
 
@@ -153,7 +160,7 @@ export interface CreateActionInput {
   recipientEmail?: string;
   proposedSubject?: string;
   proposedMessage?: string;
-  executionMode?: string;
+  executionMode?: "draft" | "send";
   priorityScore?: number;
 }
 
@@ -181,7 +188,42 @@ export async function listRelationships(
   return body.relationships ?? [];
 }
 
+export interface RelationshipGraphRequest {
+  scope: "portfolio" | "relationship";
+  relationshipId?: string;
+  depth?: 1 | 2 | 3;
+  asOf?: string;
+}
+
+export async function getRelationshipGraph(
+  input: RelationshipGraphRequest,
+): Promise<RelationshipGraph> {
+  const params = new URLSearchParams({ scope: input.scope });
+  if (input.relationshipId) params.set("relationshipId", input.relationshipId);
+  if (input.depth) params.set("depth", String(input.depth));
+  if (input.asOf) params.set("asOf", input.asOf);
+
+  const payload = await call<unknown>(`/relationships/graph?${params.toString()}`);
+  const parsed = RelationshipGraphSchema.safeParse(payload);
+  if (!parsed.success) {
+    throw new RevenueAPIError(
+      "The relationship graph response did not match the supported contract.",
+      502,
+      "invalid_relationship_graph_contract",
+    );
+  }
+  return parsed.data;
+}
+
 export const getRelationship = (id: string) => call<RelationshipDetail>(`/relationships/${id}`);
+
+export const acknowledgeMissionControl = (id: string, stateVersion: number, stateHash: string) =>
+  post(`/relationships/${id}/acknowledgements`, { stateVersion, stateHash }) as Promise<{
+    id: string;
+    stateVersion: number;
+    stateHash: string;
+    acknowledgedAt: string;
+  }>;
 
 export const getRelationshipTimeline = (id: string, limit = 50) =>
   call<{ observations: RelationshipObservation[] }>(
@@ -198,15 +240,34 @@ export const getRelationshipEvidence = (relationshipId: string, evidenceId: stri
     `/relationships/${relationshipId}/evidence/${evidenceId}`,
   );
 
+export const ingestRelationshipObservations = (observations: RelationshipObservationInput[]) =>
+  post("/relationship-observations/batch", { observations }) as Promise<{
+    results: Array<{
+      observation: RelationshipObservation;
+      relationship: RevenueRelationship;
+      duplicate: boolean;
+    }>;
+  }>;
+
 export interface RelationshipCorrectionInput {
   dimension: "lifecycle" | "engagement" | "sentiment" | "health" | "next_action";
   value: string;
   reason: string;
   supersedesAssertionId?: string;
+  validTo?: string;
 }
 
 export const correctRelationship = (id: string, input: RelationshipCorrectionInput) =>
   post(`/relationships/${id}/corrections`, input) as Promise<RevenueRelationship>;
+
+export const retractRelationshipAssertion = (
+  relationshipId: string,
+  assertionId: string,
+  reason: string,
+) =>
+  post(`/relationships/${relationshipId}/assertions/${assertionId}/retract`, {
+    reason,
+  }) as Promise<RevenueRelationship>;
 
 export const correctConversationReview = (
   id: string,
@@ -288,6 +349,75 @@ export const listRelationshipSourceStatuses = () =>
   call<{ sources: RelationshipSourceStatus[] }>("/relationship-sources/status").then(
     (body) => body.sources ?? [],
   );
+
+export const listRelationshipSources = () =>
+  call<{ sources: RelationshipSourceInventoryItem[] }>("/relationship-sources").then(
+    (body) => body.sources ?? [],
+  );
+
+export const getRelationshipBetaDiagnostics = () =>
+  call<BetaDiagnostics>("/relationship-beta/diagnostics");
+
+export const reportRelationshipSourceAuthorization = (
+  source: string,
+  input: {
+    sourceAccountId?: string;
+    state: "started" | "completed" | "canceled" | "failed";
+    grantedScopes?: string[];
+    errorCode?: string;
+  },
+) =>
+  post(
+    `/relationship-sources/${encodeURIComponent(source)}/authorization`,
+    input,
+  ) as Promise<RelationshipSourceStatus>;
+
+export const resyncRelationshipSource = (source: string, sourceAccountId: string) =>
+  post(`/relationship-sources/${encodeURIComponent(source)}/resync`, {
+    sourceAccountId,
+  }) as Promise<RelationshipSourceStatus>;
+
+export const disconnectRelationshipSource = (source: string, sourceAccountId: string) =>
+  post(
+    `/relationship-sources/${encodeURIComponent(source)}/${encodeURIComponent(sourceAccountId)}/disconnect`,
+    {},
+  ) as Promise<RelationshipSourceStatus>;
+
+export const listIdentityCandidates = (status = "pending", relationshipId?: string) => {
+  const params = new URLSearchParams({ status });
+  if (relationshipId) params.set("relationshipId", relationshipId);
+  return call<{ candidates: RelationshipIdentityCandidate[] }>(
+    `/relationship-identity-candidates?${params.toString()}`,
+  ).then((body) => body.candidates ?? []);
+};
+
+export const decideIdentityCandidate = (
+  candidateId: string,
+  input: { decision: string; reason: string; expectedVersion: number; idempotencyKey: string },
+) =>
+  post(
+    `/relationship-identity-candidates/${encodeURIComponent(candidateId)}/decisions`,
+    input,
+  ) as Promise<RelationshipIdentityCandidate>;
+
+export const listRelationshipAttention = (status = "open") =>
+  call<{ contractVersion: string; asOf: string; items: RelationshipAttentionItem[] }>(
+    `/relationship-attention?status=${encodeURIComponent(status)}`,
+  ).then((body) => body.items ?? []);
+
+export const decideRelationshipAttention = (
+  attentionId: string,
+  input: {
+    decision: "acknowledge" | "snooze" | "dismiss";
+    reason: string;
+    expectedVersion: number;
+    snoozedUntil?: string;
+  },
+) =>
+  post(
+    `/relationship-attention/${encodeURIComponent(attentionId)}/decisions`,
+    input,
+  ) as Promise<RelationshipAttentionItem>;
 
 export const approveRecommendation = (actionId: string, acceptRisk = false) =>
   post(`/relationship-recommendations/${actionId}/approve`, {

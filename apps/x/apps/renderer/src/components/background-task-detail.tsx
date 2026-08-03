@@ -1,5 +1,5 @@
 import { Workflow, Calendar, Clock, AlertCircle, CheckCircle } from "@/lib/icons"
-import { Switch } from "@/components/ui/switch"
+import { Switch } from "@oppulence/ui/components/switch"
 
 interface BackgroundTaskSchedule {
   type: "cron" | "window" | "once"

@@ -74,6 +74,55 @@ func (_u *RelationshipStateSnapshotUpdate) SetNillableStateJSON(v *string) *Rela
 	return _u
 }
 
+// SetStateHash sets the "state_hash" field.
+func (_u *RelationshipStateSnapshotUpdate) SetStateHash(v string) *RelationshipStateSnapshotUpdate {
+	_u.mutation.SetStateHash(v)
+	return _u
+}
+
+// SetNillableStateHash sets the "state_hash" field if the given value is not nil.
+func (_u *RelationshipStateSnapshotUpdate) SetNillableStateHash(v *string) *RelationshipStateSnapshotUpdate {
+	if v != nil {
+		_u.SetStateHash(*v)
+	}
+	return _u
+}
+
+// SetProjectorVersion sets the "projector_version" field.
+func (_u *RelationshipStateSnapshotUpdate) SetProjectorVersion(v int) *RelationshipStateSnapshotUpdate {
+	_u.mutation.ResetProjectorVersion()
+	_u.mutation.SetProjectorVersion(v)
+	return _u
+}
+
+// SetNillableProjectorVersion sets the "projector_version" field if the given value is not nil.
+func (_u *RelationshipStateSnapshotUpdate) SetNillableProjectorVersion(v *int) *RelationshipStateSnapshotUpdate {
+	if v != nil {
+		_u.SetProjectorVersion(*v)
+	}
+	return _u
+}
+
+// AddProjectorVersion adds value to the "projector_version" field.
+func (_u *RelationshipStateSnapshotUpdate) AddProjectorVersion(v int) *RelationshipStateSnapshotUpdate {
+	_u.mutation.AddProjectorVersion(v)
+	return _u
+}
+
+// SetEvaluatedAt sets the "evaluated_at" field.
+func (_u *RelationshipStateSnapshotUpdate) SetEvaluatedAt(v time.Time) *RelationshipStateSnapshotUpdate {
+	_u.mutation.SetEvaluatedAt(v)
+	return _u
+}
+
+// SetNillableEvaluatedAt sets the "evaluated_at" field if the given value is not nil.
+func (_u *RelationshipStateSnapshotUpdate) SetNillableEvaluatedAt(v *time.Time) *RelationshipStateSnapshotUpdate {
+	if v != nil {
+		_u.SetEvaluatedAt(*v)
+	}
+	return _u
+}
+
 // SetChangedDimensions sets the "changed_dimensions" field.
 func (_u *RelationshipStateSnapshotUpdate) SetChangedDimensions(v []string) *RelationshipStateSnapshotUpdate {
 	_u.mutation.SetChangedDimensions(v)
@@ -197,6 +246,16 @@ func (_u *RelationshipStateSnapshotUpdate) check() error {
 			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "RelationshipStateSnapshot.version": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.StateHash(); ok {
+		if err := relationshipstatesnapshot.StateHashValidator(v); err != nil {
+			return &ValidationError{Name: "state_hash", err: fmt.Errorf(`ent: validator failed for field "RelationshipStateSnapshot.state_hash": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ProjectorVersion(); ok {
+		if err := relationshipstatesnapshot.ProjectorVersionValidator(v); err != nil {
+			return &ValidationError{Name: "projector_version", err: fmt.Errorf(`ent: validator failed for field "RelationshipStateSnapshot.projector_version": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RelationshipStateSnapshot.workspace"`)
 	}
@@ -232,6 +291,18 @@ func (_u *RelationshipStateSnapshotUpdate) sqlSave(ctx context.Context) (_node i
 	}
 	if value, ok := _u.mutation.StateJSON(); ok {
 		_spec.SetField(relationshipstatesnapshot.FieldStateJSON, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.StateHash(); ok {
+		_spec.SetField(relationshipstatesnapshot.FieldStateHash, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ProjectorVersion(); ok {
+		_spec.SetField(relationshipstatesnapshot.FieldProjectorVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedProjectorVersion(); ok {
+		_spec.AddField(relationshipstatesnapshot.FieldProjectorVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.EvaluatedAt(); ok {
+		_spec.SetField(relationshipstatesnapshot.FieldEvaluatedAt, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.ChangedDimensions(); ok {
 		_spec.SetField(relationshipstatesnapshot.FieldChangedDimensions, field.TypeJSON, value)
@@ -397,6 +468,55 @@ func (_u *RelationshipStateSnapshotUpdateOne) SetNillableStateJSON(v *string) *R
 	return _u
 }
 
+// SetStateHash sets the "state_hash" field.
+func (_u *RelationshipStateSnapshotUpdateOne) SetStateHash(v string) *RelationshipStateSnapshotUpdateOne {
+	_u.mutation.SetStateHash(v)
+	return _u
+}
+
+// SetNillableStateHash sets the "state_hash" field if the given value is not nil.
+func (_u *RelationshipStateSnapshotUpdateOne) SetNillableStateHash(v *string) *RelationshipStateSnapshotUpdateOne {
+	if v != nil {
+		_u.SetStateHash(*v)
+	}
+	return _u
+}
+
+// SetProjectorVersion sets the "projector_version" field.
+func (_u *RelationshipStateSnapshotUpdateOne) SetProjectorVersion(v int) *RelationshipStateSnapshotUpdateOne {
+	_u.mutation.ResetProjectorVersion()
+	_u.mutation.SetProjectorVersion(v)
+	return _u
+}
+
+// SetNillableProjectorVersion sets the "projector_version" field if the given value is not nil.
+func (_u *RelationshipStateSnapshotUpdateOne) SetNillableProjectorVersion(v *int) *RelationshipStateSnapshotUpdateOne {
+	if v != nil {
+		_u.SetProjectorVersion(*v)
+	}
+	return _u
+}
+
+// AddProjectorVersion adds value to the "projector_version" field.
+func (_u *RelationshipStateSnapshotUpdateOne) AddProjectorVersion(v int) *RelationshipStateSnapshotUpdateOne {
+	_u.mutation.AddProjectorVersion(v)
+	return _u
+}
+
+// SetEvaluatedAt sets the "evaluated_at" field.
+func (_u *RelationshipStateSnapshotUpdateOne) SetEvaluatedAt(v time.Time) *RelationshipStateSnapshotUpdateOne {
+	_u.mutation.SetEvaluatedAt(v)
+	return _u
+}
+
+// SetNillableEvaluatedAt sets the "evaluated_at" field if the given value is not nil.
+func (_u *RelationshipStateSnapshotUpdateOne) SetNillableEvaluatedAt(v *time.Time) *RelationshipStateSnapshotUpdateOne {
+	if v != nil {
+		_u.SetEvaluatedAt(*v)
+	}
+	return _u
+}
+
 // SetChangedDimensions sets the "changed_dimensions" field.
 func (_u *RelationshipStateSnapshotUpdateOne) SetChangedDimensions(v []string) *RelationshipStateSnapshotUpdateOne {
 	_u.mutation.SetChangedDimensions(v)
@@ -533,6 +653,16 @@ func (_u *RelationshipStateSnapshotUpdateOne) check() error {
 			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "RelationshipStateSnapshot.version": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.StateHash(); ok {
+		if err := relationshipstatesnapshot.StateHashValidator(v); err != nil {
+			return &ValidationError{Name: "state_hash", err: fmt.Errorf(`ent: validator failed for field "RelationshipStateSnapshot.state_hash": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ProjectorVersion(); ok {
+		if err := relationshipstatesnapshot.ProjectorVersionValidator(v); err != nil {
+			return &ValidationError{Name: "projector_version", err: fmt.Errorf(`ent: validator failed for field "RelationshipStateSnapshot.projector_version": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RelationshipStateSnapshot.workspace"`)
 	}
@@ -585,6 +715,18 @@ func (_u *RelationshipStateSnapshotUpdateOne) sqlSave(ctx context.Context) (_nod
 	}
 	if value, ok := _u.mutation.StateJSON(); ok {
 		_spec.SetField(relationshipstatesnapshot.FieldStateJSON, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.StateHash(); ok {
+		_spec.SetField(relationshipstatesnapshot.FieldStateHash, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ProjectorVersion(); ok {
+		_spec.SetField(relationshipstatesnapshot.FieldProjectorVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedProjectorVersion(); ok {
+		_spec.AddField(relationshipstatesnapshot.FieldProjectorVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.EvaluatedAt(); ok {
+		_spec.SetField(relationshipstatesnapshot.FieldEvaluatedAt, field.TypeTime, value)
 	}
 	if value, ok := _u.mutation.ChangedDimensions(); ok {
 		_spec.SetField(relationshipstatesnapshot.FieldChangedDimensions, field.TypeJSON, value)

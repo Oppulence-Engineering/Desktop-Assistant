@@ -80,9 +80,13 @@ func (s *Service) StartScan(ctx context.Context, u *ent.User, lookbackDays int) 
 		Where(
 			revenueleakscan.HasUserWith(user.IDEQ(u.ID)),
 			revenueleakscan.StatusIn("pending", "running"),
-			revenueleakscan.StartedAtLT(staleBefore),
+			revenueleakscan.Or(
+				revenueleakscan.StartedAtLT(staleBefore),
+				revenueleakscan.StartedAtIsNil(),
+			),
 		).
 		SetStatus("failed").
+		ClearActiveClaim().
 		SetError("scan abandoned (process restart)").
 		SetCompletedAt(s.now()).
 		Save(ctx); err != nil {
@@ -105,11 +109,15 @@ func (s *Service) StartScan(ctx context.Context, u *ent.User, lookbackDays int) 
 		SetWorkspace(ws).
 		SetUser(u).
 		SetStatus("running").
+		SetActiveClaim(ws.ID.String()).
 		SetMode(ws.Mode).
 		SetLookbackDays(lookbackDays).
 		SetStartedAt(s.now()).
 		Save(ctx)
 	if err != nil {
+		if ent.IsConstraintError(err) {
+			return nil, fmt.Errorf("%w: a scan is already running", ErrScanUnavailable)
+		}
 		return nil, err
 	}
 	// The request context dies with the response; the scan continues on a
@@ -126,6 +134,7 @@ func (s *Service) StartScan(ctx context.Context, u *ent.User, lookbackDays int) 
 				s.log.Error("revenue: scan panicked", zap.String("scan", scan.ID.String()), zap.Any("panic", r))
 				_, _ = s.client.RevenueLeakScan.UpdateOneID(scan.ID).
 					SetStatus("failed").
+					ClearActiveClaim().
 					SetError("scan aborted by an internal error").
 					SetCompletedAt(s.now()).
 					Save(bg)
@@ -179,6 +188,7 @@ func (s *Service) runScan(ctx context.Context, u *ent.User, scan *ent.RevenueLea
 		SetRelationshipsCreated(stats.relationships).
 		SetEvidencesCreated(stats.evidences).
 		SetActionsCreated(stats.actions).
+		ClearActiveClaim().
 		SetCompletedAt(s.now())
 	if stats.freshest != nil {
 		upd.SetSourceFreshnessAt(*stats.freshest)

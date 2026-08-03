@@ -3,6 +3,8 @@
 // through the same-origin proxy (/api/rowboat/v1/...), so no generated SDK is
 // needed — these keep the UI type-safe against the contract.
 
+import { z } from "zod";
+
 export type WorkspaceMode = "local" | "linked";
 export type WorkspaceStatus = "active" | "disconnected" | "repair_required";
 
@@ -44,7 +46,12 @@ export type QueueStatus = "open" | "snoozed" | "dismissed" | "handled";
 export type PolicyStatus = "pending" | "passed" | "review_required" | "blocked" | "stale";
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 export type ExecutionStatus =
-  "pending" | "requested" | "sent" | "failed" | "ambiguous" | "cancelled";
+  | "pending"
+  | "requested"
+  | "sent"
+  | "failed"
+  | "ambiguous"
+  | "cancelled";
 export type ExecutionMode = "draft" | "send";
 
 export interface RevenueAction {
@@ -75,6 +82,11 @@ export interface RevenueAction {
   providerThreadId?: string;
   executedAt?: string;
   executionError?: string;
+  reconciliationStatus?: "pending" | "found" | "not_found" | "error" | "manual_review";
+  reconciliationAttempts?: number;
+  reconciliationCheckedAt?: string;
+  reconciliationNextAt?: string;
+  reconciliationError?: string;
   dismissReason?: string;
   snoozedUntil?: string;
   dueAt?: string;
@@ -91,7 +103,12 @@ export interface RevenueAction {
 }
 
 export type RelationshipKind =
-  "person" | "company" | "customer" | "opportunity" | "referral" | "partner";
+  | "person"
+  | "company"
+  | "customer"
+  | "opportunity"
+  | "referral"
+  | "partner";
 
 export type RelationshipLifecycle =
   | "prospect"
@@ -124,6 +141,9 @@ export interface RevenueRelationship {
   health: RelationshipHealth;
   stateReason?: string;
   stateVersion: number;
+  stateHash?: string;
+  projectorVersion: number;
+  projectedAt?: string;
   lastChangedAt?: string;
   risks: string[];
   milestones: string[];
@@ -173,22 +193,220 @@ export interface RelationshipObservation {
   contentHash: string;
 }
 
+export interface RelationshipObservationInput {
+  relationshipId?: string;
+  displayName?: string;
+  primaryEmail?: string;
+  accountDomain?: string;
+  source: string;
+  sourceAccountId?: string;
+  externalId: string;
+  sourceVersion?: string;
+  eventType: string;
+  occurredAt: string;
+  receivedAt?: string;
+  summary?: string;
+  normalizedFacts: Record<string, unknown>;
+  payload?: unknown;
+  participants?: Array<{
+    displayName: string;
+    email?: string;
+    role?: string;
+    title?: string;
+    externalRefs?: string[];
+  }>;
+  assertions?: Array<{
+    dimension: string;
+    value: string;
+    sourceType: string;
+    confidence: number;
+    reason: string;
+    validFrom: string;
+  }>;
+}
+
 export interface RelationshipStateSnapshot {
   id: string;
   version: number;
   state: Record<string, unknown>;
+  stateHash: string;
+  projectorVersion: number;
+  evaluatedAt: string;
   changedDimensions: string[];
   assertionIds: string[];
   createdAt: string;
 }
 
 export interface RelationshipSourceStatus {
+  connectionId: string;
   source: string;
   sourceAccountId: string;
+  consentingActorId?: string;
   status: string;
+  backfillPhase: string;
+  backfillCompleted: number;
+  backfillTotal: number;
+  completeness: string;
+  expectedCadenceSeconds: number;
+  lagSeconds: number;
+  requiredScopes: string[];
+  grantedScopes: string[];
+  missingScopes: string[];
+  errorCode?: string;
+  retryCount: number;
+  nextRetryAt?: string;
+  syncStartedAt?: string;
+  authorizationStartedAt?: string;
+  authorizedAt?: string;
+  backfillCompletedAt?: string;
+  lastFailedSyncAt?: string;
+  disconnectedAt?: string;
+  revokedAt?: string;
+  lastSyncAt?: string;
   lastSuccessAt?: string;
   lastObservationAt?: string;
+  lastProviderEventAt?: string;
   lastError?: string;
+}
+
+export interface RelationshipSourceInventoryItem {
+  source: string;
+  displayName: string;
+  evidence: string[];
+  actions: string[];
+  readScopes: string[];
+  writeScopes: string[];
+  scopeExplanation: string;
+  connectPath: string;
+  disconnectPath: string;
+  supportsReconnect: boolean;
+  supportsResync: boolean;
+  expectedCadenceSeconds: number;
+  accounts: RelationshipSourceStatus[];
+}
+
+export interface BetaDiagnostics {
+  schemaVersion: string;
+  generatedAt: string;
+  workspaceRef: string;
+  features: Array<{
+    capability: string;
+    enabled: boolean;
+    rolloutStage: string;
+    reasonCode?: string;
+  }>;
+  sources: Array<{
+    connectionRef: string;
+    source: string;
+    sourceAccountRef: string;
+    status: string;
+    completeness: string;
+    backfillPhase: string;
+    backfillCompleted: number;
+    backfillTotal: number;
+    lagSeconds: number;
+    missingScopeCount: number;
+    errorCode?: string;
+    retryCount: number;
+    lastSuccessAt?: string;
+    lastObservationAt?: string;
+    lastFailedSyncAt?: string;
+    authorizationAt?: string;
+    authorizationStartedAt?: string;
+    backfillCompletedAt?: string;
+  }>;
+  counts: Record<string, number>;
+  trustFunnel: Array<{ eventName: string; outcome: string; count: number }>;
+  checks: Array<{
+    code: string;
+    status: "pass" | "attention";
+    explanation: string;
+    count: number;
+  }>;
+}
+
+export interface RelationshipIdentityCandidate {
+  id: string;
+  status: "pending" | "deferred" | "resolving" | "resolved" | "undone";
+  candidateType: string;
+  version: number;
+  proposedRelationship: RevenueRelationship;
+  existingRelationship: RevenueRelationship;
+  anchorKind: string;
+  anchorProvider?: string;
+  anchorPreview?: string;
+  matchingAnchors: string[];
+  conflictingAnchors: string[];
+  evidenceRefs: string[];
+  evidenceCount: number;
+  evidenceFrom?: string;
+  evidenceTo?: string;
+  impact: Record<string, number>;
+  recommendedDecision: string;
+  recommendationConfidence: number;
+  decision?: string;
+  decisionReason?: string;
+  decisionActorId?: string;
+  decidedAt?: string;
+  decisions: Array<{
+    id: string;
+    decision: string;
+    candidateVersion: number;
+    actorId: string;
+    reason?: string;
+    decidedAt: string;
+    compensatesDecisionId?: string;
+  }>;
+  lineage: Array<{
+    id: string;
+    kind: string;
+    actorId: string;
+    reason?: string;
+    observationIds: string[];
+    identityIds: string[];
+    movedObjectRefs: string[];
+    beforeRelationshipIds: string[];
+    afterRelationshipIds: string[];
+    occurredAt: string;
+  }>;
+}
+
+export interface RelationshipAttentionItem {
+  id: string;
+  version: number;
+  relationshipId: string;
+  relationshipName: string;
+  reasonCode:
+    | "quiet_account"
+    | "overdue_commitment"
+    | "unresolved_risk"
+    | "missing_next_step"
+    | "source_degradation"
+    | "action_outcome_review"
+    | "recommendation";
+  explanation: string;
+  triggeringObjectRef: string;
+  evidenceRefs: string[];
+  urgencyBand: "low" | "normal" | "high" | "critical";
+  rankScore: number;
+  rankFactors: Record<string, number>;
+  sourceRequirements: string[];
+  recommendationId?: string;
+  recommendationRevision?: number;
+  ownerId?: string;
+  status: "open" | "acknowledged" | "snoozed" | "dismissed" | "superseded" | "resolved";
+  stateReason?: string;
+  snoozedUntil?: string;
+  expiresAt?: string;
+  detectorVersion: number;
+  projectorVersion: number;
+  relationshipStateVersion: number;
+  acknowledgedBy?: string;
+  acknowledgedAt?: string;
+  dismissedBy?: string;
+  dismissedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type ScanStatus = "pending" | "running" | "completed" | "failed";
@@ -271,6 +489,82 @@ export interface RelationshipDetail {
   commitments: RelationshipCommitment[];
   commitmentDependencies: CommitmentDependency[];
   intelligence?: RelationshipIntelligence;
+  missionControl: MissionControlReadModel;
+}
+
+export interface MissionControlEvidenceReference {
+  observationId: string;
+  source: string;
+  observedAt: string;
+  evidencePath: string;
+  contentHash: string;
+}
+
+export interface MissionControlDimensionEvidence {
+  dimension: string;
+  value?: unknown;
+  supported: boolean;
+  missingReason?: string;
+  assertionId?: string;
+  authority?: string;
+  confidence?: number;
+  reason?: string;
+  validFrom?: string;
+  validTo?: string;
+  fresh: boolean;
+  evidence: MissionControlEvidenceReference[];
+}
+
+export interface MissionControlReadModel {
+  contractVersion: string;
+  aggregateHash: string;
+  asOf: string;
+  stateVersion: number;
+  stateHash: string;
+  projectorVersion: number;
+  detectorVersion: number;
+  freshnessBoundary?: string;
+  previousReviewedStateVersion: number;
+  changedSinceReview: boolean;
+  changes: Array<{ dimension: string; before?: unknown; after?: unknown; assertionIds: string[] }>;
+  evidence: Record<string, MissionControlDimensionEvidence>;
+  completeness: {
+    status: "complete" | "partial" | "stale" | "rebuilding" | "ambiguous" | "disconnected";
+    explanation: string;
+    externalActionSafe: boolean;
+    unresolvedIdentityCount: number;
+    missingMaterialDimensions: string[];
+    sources: Array<{
+      source: string;
+      sourceAccountId: string;
+      status: string;
+      completeness: string;
+      lagSeconds: number;
+      expectedCadenceSeconds: number;
+      lastObservationAt?: string;
+      missingScopes: string[];
+      repairPath?: string;
+    }>;
+  };
+  activeRecommendation?: {
+    id: string;
+    revision: number;
+    actionType: string;
+    channel: string;
+    reason: string;
+    rankFactors: Record<string, number>;
+    policyStatus: string;
+    approvalStatus: string;
+    executionStatus: string;
+  };
+  pending: {
+    corrections: number;
+    identityReview: number;
+    approval: number;
+    execution: number;
+    reconciliation: number;
+  };
+  capabilities: Record<string, string>;
 }
 
 export interface CommitmentDependency {
@@ -396,7 +690,13 @@ export interface RelationshipIntelligence {
     relationshipId: string;
     subjectRef: string;
     dimension: string;
-    status: "open" | "auto_resolved_by_authority" | "user_resolved" | "source_corrected" | "deferred" | "obsolete";
+    status:
+      | "open"
+      | "auto_resolved_by_authority"
+      | "user_resolved"
+      | "source_corrected"
+      | "deferred"
+      | "obsolete";
     reason: string;
     sides: Array<{
       assertionId: string;
@@ -431,7 +731,12 @@ export interface RelationshipIntelligence {
     rankerVersion: string;
     baselineScore: number;
     finalScore: number;
-    factors: Array<{ factor: string; value: string | number | boolean; contribution: number; reason: string }>;
+    factors: Array<{
+      factor: string;
+      value: string | number | boolean;
+      contribution: number;
+      reason: string;
+    }>;
     evaluatedAt: string;
     sampleScope: "cold_start" | "workspace" | "user";
   }>;
@@ -541,3 +846,127 @@ export interface RevenueImpact {
   outcomes: Record<string, number>;
   byDetector: DetectorStat[];
 }
+
+export const RelationshipGraphNodeKindSchema = z.enum([
+  "relationship",
+  "person",
+  "commitment",
+  "risk",
+  "milestone",
+  "action",
+  "evidence",
+  "source",
+  "note",
+]);
+
+export const RelationshipGraphEdgeKindSchema = z.enum([
+  "participant_of",
+  "owns",
+  "has_commitment",
+  "blocks",
+  "requires",
+  "supersedes",
+  "has_risk",
+  "has_milestone",
+  "recommended_for",
+  "supports",
+  "contradicts",
+  "observed_from",
+  "linked_note",
+]);
+
+const RelationshipGraphTimestampSchema = z.iso.datetime({ offset: true });
+
+export const RelationshipGraphNodeSchema = z.object({
+  id: z.string().min(1),
+  kind: RelationshipGraphNodeKindSchema,
+  label: z.string(),
+  relationshipId: z.string().optional(),
+  relationshipIds: z.array(z.string()).optional().default([]),
+  summary: z.string().optional(),
+  status: z.string().optional(),
+  role: z.string().optional(),
+  source: z.string().optional(),
+  lifecycle: z.string().optional(),
+  engagement: z.string().optional(),
+  sentiment: z.string().optional(),
+  health: z.string().optional(),
+  approvalStatus: z.string().optional(),
+  policyStatus: z.string().optional(),
+  executionStatus: z.string().optional(),
+  freshness: z.string().optional(),
+  confidence: z.number().min(0).max(1).optional(),
+  priority: z.number().int().min(0).max(100).optional(),
+  dueAt: RelationshipGraphTimestampSchema.optional(),
+  occurredAt: RelationshipGraphTimestampSchema.optional(),
+  updatedAt: RelationshipGraphTimestampSchema.optional(),
+  changedSinceReview: z.boolean().optional().default(false),
+  changedDimensions: z.array(z.string()).optional().default([]),
+  evidenceRefs: z.array(z.string()).optional().default([]),
+  resourceRef: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional().default({}),
+});
+
+export const RelationshipGraphEdgeSchema = z.object({
+  id: z.string().min(1),
+  source: z.string().min(1),
+  target: z.string().min(1),
+  kind: RelationshipGraphEdgeKindSchema,
+  label: z.string().min(1),
+  directed: z.boolean(),
+  confidence: z.number().min(0).max(1).optional(),
+  evidenceRefs: z.array(z.string()).optional().default([]),
+});
+
+export const RelationshipGraphPermissionsSchema = z.object({
+  canView: z.boolean(),
+  canContribute: z.boolean(),
+  canApprove: z.boolean(),
+  canExecute: z.boolean(),
+  canSaveViews: z.boolean(),
+});
+
+export const RelationshipGraphSchema = z.object({
+  contractVersion: z.literal("2026-08-01"),
+  generatedAt: RelationshipGraphTimestampSchema,
+  asOf: RelationshipGraphTimestampSchema,
+  historical: z.boolean(),
+  scope: z.enum(["portfolio", "relationship"]),
+  relationshipId: z.string().optional(),
+  depth: z.number().int().min(1).max(3),
+  nodes: z.array(RelationshipGraphNodeSchema),
+  edges: z.array(RelationshipGraphEdgeSchema),
+  permissions: RelationshipGraphPermissionsSchema,
+});
+
+export const RelationshipGraphSavedViewStateSchema = z.object({
+  scope: z.enum(["portfolio", "relationship"]),
+  relationshipId: z.string().optional(),
+  query: z.string().default(""),
+  layout: z.enum(["force", "radial", "timeline"]).default("force"),
+  density: z.number().min(0.25).max(1).default(1),
+  hideIsolated: z.boolean().default(false),
+  selectedNodeId: z.string().optional(),
+  focusDepth: z.union([z.literal(0), z.literal(1), z.literal(2)]).default(0),
+  asOf: RelationshipGraphTimestampSchema.optional(),
+  changedSinceReview: z.boolean().default(false),
+});
+
+export const RelationshipGraphSavedViewSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  createdAt: RelationshipGraphTimestampSchema,
+  updatedAt: RelationshipGraphTimestampSchema,
+  state: RelationshipGraphSavedViewStateSchema,
+});
+
+export const RelationshipGraphSavedViewsSchema = z.array(RelationshipGraphSavedViewSchema);
+
+export type RelationshipGraphNodeKind = z.infer<typeof RelationshipGraphNodeKindSchema>;
+export type RelationshipGraphEdgeKind = z.infer<typeof RelationshipGraphEdgeKindSchema>;
+export type RelationshipGraphNode = z.infer<typeof RelationshipGraphNodeSchema>;
+export type RelationshipGraphEdge = z.infer<typeof RelationshipGraphEdgeSchema>;
+export type RelationshipGraphPermissions = z.infer<typeof RelationshipGraphPermissionsSchema>;
+export type RelationshipGraph = z.infer<typeof RelationshipGraphSchema>;
+export type RelationshipGraphSavedViewState = z.infer<typeof RelationshipGraphSavedViewStateSchema>;
+export type RelationshipGraphSavedView = z.infer<typeof RelationshipGraphSavedViewSchema>;

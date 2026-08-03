@@ -1,13 +1,13 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
+} from "@oppulence/ui/components/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangleIcon,

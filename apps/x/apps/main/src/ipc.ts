@@ -71,7 +71,12 @@ import {
 } from "@x/core/dist/agent-schedule/runner.js";
 import { loadAgent } from "@x/core/dist/agents/runtime.js";
 import { search } from "@x/core/dist/search/search.js";
-import { memorySearch, relatedNotes, memoryStatus } from "@x/core/dist/memory/index.js";
+import {
+  memorySearch,
+  relatedNotes,
+  memoryStatus,
+  rebuildMemoryIndex,
+} from "@x/core/dist/memory/index.js";
 import { memoryBus } from "@x/core/dist/memory/bus.js";
 import { versionHistory, voice } from "@x/core";
 import {
@@ -84,6 +89,7 @@ import {
   type StreamPort,
 } from "@x/core/dist/voice/whisper/index.js";
 import { parseVoiceCommand } from "@x/core/dist/voice/commands/parser.js";
+import { transformDictationCommand } from "@x/core/dist/voice/command-mode.js";
 import {
   executeVoiceCommand,
   type VoiceEmailActions,
@@ -91,6 +97,8 @@ import {
 import { buildTranscriptionRouting, providerDataLocation } from "@x/core/dist/voice/routing.js";
 import { WhisperUtilityRunner } from "./whisper-utility-client.js";
 import type {
+  DictationLanguage,
+  TranscriptionConfig,
   TranscriptionDataLocation,
   TranscriptionProvider,
 } from "@x/shared/dist/transcription.js";
@@ -137,16 +145,37 @@ import { getInstallationId } from "@x/core/dist/analytics/installation.js";
 import { API_URL } from "@x/core/dist/config/env.js";
 import {
   approveRelationshipRecommendation,
+  acknowledgeMissionControl,
   correctConversationReview,
   decideConversationReview,
   correctRelationship,
+  createRelationshipAction,
   createRelationship,
   getRelationship,
+  getRelationshipGraph,
   getRelationshipChanges,
   getRelationshipEvidence,
+  getRelationshipSourceInventory,
   getRelationshipSources,
+  getRelationshipBetaDiagnostics,
+  reportRelationshipSourceAuthorization,
   getRelationshipTimeline,
+  getRelationshipActionAudit,
+  getRelationshipActionSourceBody,
+  recordRelationshipActionOutcome,
+  ingestRelationshipObservations,
   listRelationships,
+  listIdentityCandidates,
+  listRelationshipAttention,
+  decideRelationshipAttention,
+  editRelationshipAction,
+  evaluateRelationshipAction,
+  executeRelationshipAction,
+  snoozeRelationshipAction,
+  dismissRelationshipAction,
+  decideIdentityCandidate,
+  resyncRelationshipSource,
+  disconnectRelationshipSource,
   rejectRelationshipRecommendation,
   resolveRelationshipContradiction,
   runCommitmentRecovery,
@@ -156,6 +185,7 @@ import {
   approveMutualActionPlan,
   shareMutualActionPlan,
   requestConversationDeletion,
+  retractRelationshipAssertion,
   searchRelationships,
 } from "@x/core/dist/relationships/client.js";
 import {
@@ -194,9 +224,33 @@ import { browserIpcHandlers } from "./browser/ipc.js";
 import { mailboxIpcHandlers } from "./ipc/mailbox.js";
 import { createMeetingIpcHandlers } from "./ipc/meetings.js";
 import { nativeCaptureAvailable, resolveCaptureEngine } from "./meeting-capture.js";
+import { transcribeFastDictation } from "./parakeet-dictation-runner.js";
 import { getMeetingController } from "./meeting-controller.js";
 import { initMeetingTray } from "./tray.js";
 import { ensureAgentSlackAvailable } from "./agent-slack.js";
+import {
+  applyDesktopDictationSettings,
+  consumeDesktopCommandContext,
+  copyDesktopDictationHistoryEntry,
+  copyLastDesktopDictation,
+  clearDesktopDictationHistory,
+  completeFailedDesktopDictationHistory,
+  controlDesktopDictationDock,
+  deleteDesktopDictationHistoryEntry,
+  desktopDictationAudioRecoveryStore,
+  desktopDictationStatus,
+  getDesktopDictationHistory,
+  getDesktopDictationRecovery,
+  notifyDesktopDictationHistoryChanged,
+  openInputMonitoringSettings,
+  pasteDesktopDictation,
+  pasteDesktopCommandResult,
+  pasteLastDesktopDictation,
+  requestDictationAccessibility,
+  recordFailedDesktopDictation,
+  toggleDesktopDictationHistoryFormatting,
+  updateDesktopDictationState,
+} from "./desktop-dictation.js";
 
 /**
  * Convert markdown to a styled HTML document for PDF/DOCX export.
@@ -493,6 +547,8 @@ export function emitOAuthEvent(event: {
   success: boolean;
   error?: string;
   userId?: string;
+  sourceAccountId?: string;
+  grantedScopes?: string[];
 }): void {
   const windows = BrowserWindow.getAllWindows();
   for (const win of windows) {
@@ -586,16 +642,26 @@ export function stopServicesWatcher(): void {
 async function getSolomonAccountState() {
   const signedIn = await isSignedIn();
   if (!signedIn) {
-    return { signedIn: false, accessToken: null, config: null };
+    return {
+      signedIn: false,
+      accessToken: null,
+      config: null,
+      authReason: "not_signed_in" as const,
+    };
   }
 
   const config = await getSolomonConfig();
 
   try {
     const accessToken = await getAccessToken();
-    return { signedIn: true, accessToken, config };
-  } catch {
-    return { signedIn: true, accessToken: null, config };
+    return { signedIn: true, accessToken, config, authReason: null };
+  } catch (error) {
+    return {
+      signedIn: true,
+      accessToken: null,
+      config,
+      authReason: error instanceof AuthUnavailableError ? error.reason : null,
+    };
   }
 }
 
@@ -648,6 +714,79 @@ function getWhisper(): WhisperService {
     whisperUtilityRunner.transcribePcm,
   );
   return whisperService;
+}
+
+async function transcribeDictationPcm(
+  pcm16: Int16Array,
+  cfg: TranscriptionConfig,
+  requestedLanguage?: DictationLanguage,
+) {
+  const audioMs = (pcm16.length / 16_000) * 1_000;
+  const language = requestedLanguage ?? cfg.dictation.language;
+
+  // Parakeet is the low-latency primary. Whisper is also the automatic retry
+  // engine: a user sees a retry prompt only if both independent local paths fail.
+  try {
+    console.log("[dictation] parakeet transcribe start", { audioMs, language });
+    const result = await transcribeFastDictation(pcm16, language);
+    if (!result.text.trim()) throw new Error("Parakeet returned an empty transcript");
+    console.log("[dictation] parakeet transcribe success", {
+      textLength: result.text.length,
+      durationMs: Math.round(result.durationMs),
+      rtf: Number(result.rtf.toFixed(1)),
+    });
+    return {
+      success: true as const,
+      text: result.text,
+      segments: result.segments,
+      rtf: result.rtf,
+      durationMs: result.durationMs,
+      engine: "parakeet" as const,
+      language: result.language ?? language,
+    };
+  } catch (error) {
+    console.warn("[dictation] fast engine failed; falling back to whisper", error);
+  }
+
+  try {
+    let model = cfg.whisper.model;
+    if (language !== "en" && model.includes(".en-")) {
+      const multilingualModel = model.replace(".en-", "-");
+      const models = await getWhisper().listModels();
+      if (models.some((candidate) => candidate.id === multilingualModel && candidate.installed)) {
+        model = multilingualModel;
+      }
+    }
+    console.log("[dictation] whisper fallback start", { audioMs, model, lang: language });
+    const result = await getWhisper().transcribe(pcm16, {
+      channels: 1,
+      model,
+      lang: language,
+    });
+    if (!result.text.trim()) {
+      return {
+        success: false as const,
+        code: "audio_invalid",
+        message: "The local engines did not produce a transcript.",
+      };
+    }
+    return {
+      success: true as const,
+      text: result.text,
+      segments: result.segments,
+      rtf: result.rtf,
+      durationMs: result.durationMs,
+      engine: "whisper" as const,
+      language,
+    };
+  } catch (error) {
+    console.error("[dictation] local transcription failed", error);
+    return {
+      success: false as const,
+      code: whisperCodeOf(error),
+      message: (error as Error)?.message,
+    };
+  }
 }
 
 /**
@@ -906,12 +1045,51 @@ export function setupIpcHandlers() {
       };
     },
     "relationships:list": async (_event, args) => listRelationships(args),
+    "relationships:graph": async (_event, args) => getRelationshipGraph(args),
     "relationships:create": async (_event, args) => createRelationship(args),
     "relationships:search": async (_event, args) => searchRelationships(args.query),
     "relationships:get": async (_event, args) => getRelationship(args.id),
+    "relationships:acknowledge": async (_event, args) =>
+      acknowledgeMissionControl(args.id, args.stateVersion, args.stateHash),
     "relationships:timeline": async (_event, args) => getRelationshipTimeline(args.id, args.limit),
     "relationships:changes": async (_event, args) => getRelationshipChanges(args.id),
     "relationships:sources": async () => getRelationshipSources(),
+    "relationships:sourceInventory": async () => getRelationshipSourceInventory(),
+    "relationships:betaDiagnostics": async () => getRelationshipBetaDiagnostics(),
+    "relationships:reportSourceAuthorization": async (_event, args) =>
+      reportRelationshipSourceAuthorization(args.source, args),
+    "relationships:resyncSource": async (_event, args) =>
+      resyncRelationshipSource(args.source, args.sourceAccountId),
+    "relationships:disconnectSource": async (_event, args) =>
+      disconnectRelationshipSource(args.source, args.sourceAccountId),
+    "relationships:listIdentityCandidates": async (_event, args) =>
+      listIdentityCandidates(args.status, args.relationshipId),
+    "relationships:decideIdentityCandidate": async (_event, args) =>
+      decideIdentityCandidate(args.candidateId, args),
+    "relationships:listAttention": async (_event, args) => listRelationshipAttention(args.status),
+    "relationships:decideAttention": async (_event, args) =>
+      decideRelationshipAttention(args.attentionId, args),
+    "relationships:editAction": async (_event, args) => editRelationshipAction(args.actionId, args),
+    "relationships:createAction": async (_event, args) => createRelationshipAction(args),
+    "relationships:evaluateAction": async (_event, args) =>
+      evaluateRelationshipAction(args.actionId),
+    "relationships:executeAction": async (_event, args) => executeRelationshipAction(args.actionId),
+    "relationships:snoozeAction": async (_event, args) =>
+      snoozeRelationshipAction(args.actionId, args.until),
+    "relationships:dismissAction": async (_event, args) =>
+      dismissRelationshipAction(args.actionId, args.reason),
+    "relationships:actionAudit": async (_event, args) => getRelationshipActionAudit(args.actionId),
+    "relationships:actionSourceBody": async (_event, args) =>
+      getRelationshipActionSourceBody(args.actionId),
+    "relationships:recordOutcome": async (_event, args) =>
+      recordRelationshipActionOutcome(args.actionId, {
+        kind: args.kind,
+        source: "user",
+        sourceEventId: args.sourceEventId,
+        occurredAt: args.occurredAt,
+      }),
+    "relationships:ingestObservations": async (_event, args) =>
+      ingestRelationshipObservations(args.observations),
     "relationships:evidence": async (_event, args) =>
       getRelationshipEvidence(args.relationshipId, args.evidenceId),
     "relationships:correct": async (_event, args) =>
@@ -920,6 +1098,8 @@ export function setupIpcHandlers() {
         value: args.value,
         reason: args.reason,
       }),
+    "relationships:retractAssertion": async (_event, args) =>
+      retractRelationshipAssertion(args.relationshipId, args.assertionId, args.reason),
     "relationships:correctConversation": async (_event, args) =>
       correctConversationReview(args.id, {
         reviewItemId: args.reviewItemId,
@@ -939,8 +1119,7 @@ export function setupIpcHandlers() {
         selectedAssertionId: args.selectedAssertionId,
         reason: args.reason,
       }),
-    "relationships:runCommitmentRecovery": async (_event, args) =>
-      runCommitmentRecovery(args.id),
+    "relationships:runCommitmentRecovery": async (_event, args) => runCommitmentRecovery(args.id),
     "relationships:appendCommitmentTransition": async (_event, args) =>
       appendCommitmentTransition(args.relationshipId, args.commitmentId, args),
     "relationships:createMutualActionPlan": async (_event, args) =>
@@ -1434,6 +1613,26 @@ export function setupIpcHandlers() {
     "memory:status": async () => {
       return memoryStatus();
     },
+    "memory:rebuild": async () => {
+      const result = await rebuildMemoryIndex();
+      if ("disabled" in result) {
+        return { disabled: true, rebuilt: false, chunkCount: 0, filesProcessed: 0 };
+      }
+      memoryBus.publish({
+        chunkCount: result.chunkCount,
+        filesProcessed: result.filesProcessed,
+        chunksNew: result.chunksNew,
+        tokens: result.tokens,
+        rebuilt: true,
+        durationMs: result.durationMs,
+      });
+      return {
+        disabled: false,
+        rebuilt: true,
+        chunkCount: result.chunkCount,
+        filesProcessed: result.filesProcessed,
+      };
+    },
     // Inline task schedule classification
     "export:note": async (event, args) => {
       const { markdown, format, title } = args;
@@ -1560,6 +1759,213 @@ export function setupIpcHandlers() {
         emailActions: unavailableEmailActions,
       });
     },
+    "dictation:getStatus": async () => desktopDictationStatus(),
+    "dictation:getRecovery": async () => getDesktopDictationRecovery(),
+    "dictation:getHistory": async (_event, options) => {
+      const cfg = await voice.getTranscriptionConfig();
+      const page = await getDesktopDictationHistory(options, cfg.dictation.historyRetention);
+      return { ...page, retention: cfg.dictation.historyRetention };
+    },
+    "dictation:copyHistoryEntry": async (_event, { id }) => copyDesktopDictationHistoryEntry(id),
+    "dictation:toggleHistoryFormatting": async (_event, { id }) => {
+      const entry = await toggleDesktopDictationHistoryFormatting(id);
+      return entry
+        ? { success: true, entry }
+        : { success: false, error: "The original transcript is unavailable." };
+    },
+    "dictation:deleteHistoryEntry": async (_event, { id }) => ({
+      success: await deleteDesktopDictationHistoryEntry(id),
+    }),
+    "dictation:clearHistory": async () => {
+      await clearDesktopDictationHistory();
+      return { success: true };
+    },
+    "dictation:pasteLast": async () => pasteLastDesktopDictation(),
+    "dictation:copyLast": async () => copyLastDesktopDictation(),
+    "dictation:requestAccessibility": async () => ({
+      trusted: requestDictationAccessibility(),
+    }),
+    "dictation:openInputMonitoring": async () => ({
+      opened: await openInputMonitoringSettings(),
+    }),
+    "dictation:updateState": async (_event, { state, message }) => {
+      updateDesktopDictationState(state, message);
+      return { ok: true };
+    },
+    "dictation:controlDock": async (_event, { action }) =>
+      controlDesktopDictationDock(action),
+    "dictation:transcribe": async (_event, req) => {
+      const pcm16 = new Int16Array(req.pcm16);
+      const cfg = await voice.getTranscriptionConfig();
+      const store = desktopDictationAudioRecoveryStore();
+      const staged =
+        cfg.dictation.retryFailedAudio && req.retainForRetry !== false
+          ? store.stage(pcm16, req.sampleRate).catch((error) => {
+              console.warn("[dictation] could not stage retry audio", error);
+              return null;
+            })
+          : null;
+      const result = await transcribeDictationPcm(pcm16, cfg, req.lang);
+      if (staged) {
+        if (result.success) {
+          void staged
+            .then((value) => (value ? store.discard(value) : undefined))
+            .catch((error) => console.warn("[dictation] could not discard staged audio", error));
+        } else {
+          const value = await staged;
+          const historyId =
+            req.retainForRetry !== false
+              ? await recordFailedDesktopDictation(
+                  {
+                    audioDurationMs: (pcm16.length / req.sampleRate) * 1_000,
+                    engine: "unknown",
+                    errorCode: result.code,
+                    language: req.lang ?? cfg.dictation.language,
+                  },
+                  cfg.dictation.historyRetention,
+                )
+              : undefined;
+          if (value) {
+            await store.markFailed(value, result.code, result.message, historyId);
+            notifyDesktopDictationHistoryChanged();
+          }
+        }
+      } else if (!result.success && req.retainForRetry !== false) {
+        await recordFailedDesktopDictation(
+          {
+            audioDurationMs: (pcm16.length / req.sampleRate) * 1_000,
+            engine: "unknown",
+            errorCode: result.code,
+            language: req.lang ?? cfg.dictation.language,
+          },
+          cfg.dictation.historyRetention,
+        );
+      }
+      return result;
+    },
+    "dictation:retryFailed": async (_event, request) => {
+      const store = desktopDictationAudioRecoveryStore();
+      const failed = await store.read();
+      if (!failed) return { success: false, error: "No failed dictation audio is available." };
+      if (request?.id && request.id !== failed.historyId) {
+        return {
+          success: false,
+          error: "Audio for that failed transcript is no longer available.",
+        };
+      }
+      const cfg = await voice.getTranscriptionConfig();
+      const result = await transcribeDictationPcm(failed.pcm16, cfg, cfg.dictation.language);
+      if (!result.success) {
+        return {
+          success: false,
+          error: "Retry did not produce a transcript. The audio is still saved.",
+        };
+      }
+      if (request?.id) {
+        const recovered = await completeFailedDesktopDictationHistory(
+          request.id,
+          result.text,
+          cfg.dictation,
+          {
+            audioDurationMs: failed.durationMs,
+            transcriptionDurationMs: result.durationMs,
+            engine: result.engine,
+            language: result.language,
+          },
+        );
+        if (!recovered) {
+          return { success: false, error: "That failed transcript is no longer available." };
+        }
+        await store.clear();
+        return { success: true };
+      }
+      const pasted = await pasteDesktopDictation(result.text, cfg.dictation, {
+        audioDurationMs: failed.durationMs,
+        transcriptionDurationMs: result.durationMs,
+        engine: result.engine,
+        language: result.language,
+        historyId: failed.historyId,
+      });
+      await store.clear();
+      return pasted;
+    },
+    "dictation:applyCommand": async (_event, { instruction }) => {
+      const context = await consumeDesktopCommandContext();
+      if (!context) {
+        return { success: false, error: "Could not read the focused text field." };
+      }
+      if (context.sensitive) {
+        return { success: false, error: "Command Mode is unavailable in password fields." };
+      }
+      if (context.selectedTextLength > context.selectedText.length) {
+        return {
+          success: false,
+          error: "The selection is too large for Command Mode. Select a smaller passage.",
+        };
+      }
+      try {
+        const cfg = await voice.getTranscriptionConfig();
+        const transformed = await transformDictationCommand({
+          instruction,
+          selectedText: context.selectedText,
+          beforeText: context.beforeText,
+          afterText: context.afterText,
+          appName: context.appName,
+          localOnly: cfg.privacy.localOnly,
+        });
+        const pasted = await pasteDesktopCommandResult(transformed.text, context);
+        return { ...pasted, source: transformed.source };
+      } catch (error) {
+        console.warn("[dictation] Command Mode failed", error);
+        return {
+          success: false,
+          error:
+            error instanceof Error && error.name === "DictationCommandPrivacyError"
+              ? error.message
+              : "Command Mode could not complete that edit. Your original text was not changed.",
+        };
+      }
+    },
+    "dictation:saveFailedAudio": async (_event, req) => {
+      const cfg = await voice.getTranscriptionConfig();
+      try {
+        const historyId = await recordFailedDesktopDictation(
+          {
+            audioDurationMs: (new Int16Array(req.pcm16).length / req.sampleRate) * 1_000,
+            engine: "unknown",
+            errorCode: req.errorCode ?? "cloud_transcription_failed",
+            language: req.language ?? cfg.dictation.language,
+          },
+          cfg.dictation.historyRetention,
+        );
+        if (!cfg.dictation.retryFailedAudio) return { saved: false };
+        const store = desktopDictationAudioRecoveryStore();
+        const staged = await store.stage(new Int16Array(req.pcm16), req.sampleRate);
+        await store.markFailed(
+          staged,
+          req.errorCode ?? "cloud_transcription_failed",
+          undefined,
+          historyId,
+        );
+        notifyDesktopDictationHistoryChanged();
+        return { saved: true };
+      } catch (error) {
+        console.warn("[dictation] could not save failed cloud audio", error);
+        return { saved: false };
+      }
+    },
+    "dictation:commit": async (
+      _event,
+      { text, audioDurationMs, transcriptionDurationMs, engine, language },
+    ) => {
+      const config = await voice.getTranscriptionConfig();
+      return pasteDesktopDictation(text, config.dictation, {
+        audioDurationMs,
+        transcriptionDurationMs,
+        engine,
+        language,
+      });
+    },
     // ---- Local on-device transcription (whisper.cpp) — RFC 009 ----
     "whisper:capability": async () => {
       return getWhisper().capability();
@@ -1683,6 +2089,7 @@ export function setupIpcHandlers() {
         meetingProvider: patch.meetingProvider,
         ...(patch.model ? { whisper: { model: patch.model } } : {}),
         privacy: patch.privacy,
+        ...(patch.dictation ? { dictation: patch.dictation } : {}),
         // RFC 017: persist the on-device diarization beta toggle + tunables.
         ...(patch.diarization ? { diarization: patch.diarization } : {}),
         // Native capture: engine choice, echo cancellation, audio retention.
@@ -1691,6 +2098,7 @@ export function setupIpcHandlers() {
       if (patch.meetings) {
         await getMeetingController({ whisper: getWhisper }).refreshSettings();
       }
+      if (patch.dictation) applyDesktopDictationSettings(next.dictation);
       return next;
     },
     "notifications:getConfig": async () => {

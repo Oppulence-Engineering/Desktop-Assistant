@@ -134,7 +134,7 @@ host can surface while there is still time to fix it.
 `transcribe` runs Parakeet TDT 0.6B on the Neural Engine and prints timed segments as
 JSON. Measured on an M-series machine: **0.52 s fixed cost per invocation, then ~70×
 realtime** — about 54 s for an hour-long track, against roughly 3.3 minutes for
-whisper.cpp `base.en`. v3 is multilingual (25 European languages) and the default; v2 is
+whisper.cpp `base.en`. v3 is multilingual (28 European languages) and the default; v2 is
 English-only.
 
 Models are ~600 MB and download once into FluidAudio's cache. `models` reports whether

@@ -7,6 +7,7 @@ on:
       - "apps/rowboat-api/**"
       - "packages/oauth-resource-server-go/**"
       - "charts/rowboat-api/**"
+      - "docs/trustworthy-first-account-beta/**"
       - ".github/workflows/rowboat-api-deploy.yml"
   workflow_dispatch:
     inputs:
@@ -87,6 +88,7 @@ jobs:
               - 'packages/oauth-resource-server-go/**'
               - 'charts/rowboat-api/**'
               - '.github/workflows/rowboat-api-deploy.yml'
+              - 'docs/trustworthy-first-account-beta/**'
             db:
               - 'apps/rowboat-api/ent/**'
               - 'apps/rowboat-api/migrations/**'
@@ -143,12 +145,154 @@ jobs:
             org.opencontainers.image.version=${{ needs.resolve-context.outputs.image_tag }}
           tags: |
             ${{ env.IMAGE_REPOSITORY }}:${{ needs.resolve-context.outputs.image_tag }}
-            ${{ env.IMAGE_REPOSITORY }}:production-latest
+            ${{ env.IMAGE_REPOSITORY }}:candidate-latest
+
+  release-governance:
+    name: Verify Governed Release Evidence
+    needs: [resolve-context, check-changes]
+    if: needs.check-changes.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/rowboat-api/go.mod
+          cache-dependency-path: apps/rowboat-api/go.sum
+      - name: Validate release register
+        run: make tfa-release-register-validate
+        working-directory: apps/rowboat-api
+      - name: Enforce design-partner governed-action gates
+        run: make tfa-release-governed-check
+        working-directory: apps/rowboat-api
+
+  stage-and-soak:
+    name: Stage Exact Candidate and Soak
+    needs: [resolve-context, check-changes, build-image]
+    if: needs.check-changes.outputs.should_deploy == 'true' && needs.build-image.result == 'success'
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      KUBE_NAMESPACE: rowboat-staging
+      RELEASE_NAME: rowboat-api
+      VALUES_FILE: charts/rowboat-api/values-staging.yaml
+      STAGING_API_URL: https://api.x.staging.solomon-ai.co
+      STAGING_SOAK_SECONDS: "600"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/rowboat-api/go.mod
+          cache-dependency-path: apps/rowboat-api/go.sum
+      - uses: azure/setup-helm@v5
+      - uses: azure/setup-kubectl@v5
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
+      - name: Load kubeconfig
+        env:
+          KUBE_CONFIG_US_EAST: ${{ secrets.KUBE_CONFIG_US_EAST }}
+        run: |
+          set -euo pipefail
+          test -n "${KUBE_CONFIG_US_EAST}" || { echo "KUBE_CONFIG_US_EAST is required"; exit 1; }
+          mkdir -p "$HOME/.kube"
+          printf '%s' "$KUBE_CONFIG_US_EAST" > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+      - name: Verify staging workflow secrets
+        run: |
+          set -euo pipefail
+          kubectl create namespace "${KUBE_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
+          required_keys=(DATABASE_URL REDIS_URL DB_ENCRYPTION_KEY WORKOS_CLIENT_ID WORKOS_API_KEY JWKS_URL HOOK_HMAC_SECRET INTERNAL_API_SECRET OPENAI_API_KEY GOOGLE_OAUTH_CLIENT_ID GOOGLE_OAUTH_CLIENT_SECRET TEMPORAL_API_KEY)
+          missing=()
+          for key in "${required_keys[@]}"; do
+            value="$(kubectl -n "${KUBE_NAMESPACE}" get secret rowboat-api-secrets -o "jsonpath={.data.${key}}" 2>/dev/null || true)"
+            [[ -n "$value" ]] || missing+=("$key")
+          done
+          if (( ${#missing[@]} > 0 )); then
+            echo "staging rowboat-api-secrets is missing: ${missing[*]}"
+            exit 1
+          fi
+      - name: Record staging migration decision
+        if: |
+          needs.resolve-context.outputs.run_db_migration == 'never' ||
+          (needs.resolve-context.outputs.run_db_migration == 'auto' && needs.check-changes.outputs.db_changed != 'true')
+        run: echo "No staging schema migration requested for this candidate."
+      - name: Migrate staging schema before candidate rollout
+        if: |
+          needs.resolve-context.outputs.run_db_migration == 'always' ||
+          (needs.resolve-context.outputs.run_db_migration == 'auto' && needs.check-changes.outputs.db_changed == 'true')
+        env:
+          DB_ENCRYPTION_KEY: migration-placeholder-key-at-least-32-bytes
+          HOOK_HMAC_SECRET: migration-placeholder
+          INTERNAL_API_SECRET: migration-placeholder
+          PUBLIC_BASE_URL: https://api.x.staging.solomon-ai.co
+          GOOGLE_REDIRECT_URI: https://api.x.staging.solomon-ai.co/oauth/google/callback
+          REDIS_URL: redis://localhost:6379/0
+          TOKEN_ISSUER: https://api.workos.com
+          WORKOS_API_KEY: migration-placeholder
+          WORKOS_CLIENT_ID: migration-placeholder
+        run: |
+          set -euo pipefail
+          database_url="$(kubectl -n "${KUBE_NAMESPACE}" get secret rowboat-api-secrets -o jsonpath='{.data.MIGRATION_DATABASE_URL}' 2>/dev/null | base64 -d || true)"
+          if [[ -z "${database_url}" ]]; then
+            database_url="$(kubectl -n "${KUBE_NAMESPACE}" get secret rowboat-api-secrets -o jsonpath='{.data.DATABASE_URL}' 2>/dev/null | base64 -d || true)"
+          fi
+          test -n "${database_url}" || { echo "staging requires MIGRATION_DATABASE_URL or DATABASE_URL"; exit 1; }
+          (
+            cd apps/rowboat-api
+            ENVIRONMENT=staging \
+              DATABASE_URL="${database_url}" \
+              CORS_ALLOWED_ORIGINS=https://x.staging.solomon-ai.co \
+              AUTO_MIGRATE=false \
+              go run ./cmd/migrate apply
+          )
+      - name: Deploy exact candidate to staging
+        run: |
+          set -euo pipefail
+          helm dependency build charts/rowboat-api || helm dependency update charts/rowboat-api
+          helm upgrade --install "${RELEASE_NAME}" charts/rowboat-api \
+            -n "${KUBE_NAMESPACE}" \
+            --create-namespace \
+            -f "${VALUES_FILE}" \
+            --set "image.repository=${IMAGE_REPOSITORY}" \
+            --set "image.tag=${{ needs.resolve-context.outputs.image_tag }}" \
+            --set-string "podAnnotations.rollout-revision=${GITHUB_SHA}" \
+            --wait \
+            --timeout 10m
+          kubectl -n "${KUBE_NAMESPACE}" rollout status deploy/rowboat-api-rowboat-api --timeout=5m
+          kubectl -n "${KUBE_NAMESPACE}" rollout status deploy/rowboat-api-rowboat-api-worker --timeout=5m
+          kubectl -n "${KUBE_NAMESPACE}" rollout status deploy/rowboat-api-rowboat-api-scheduler --timeout=5m
+      - name: Authenticated staging workflow smoke
+        env:
+          ROWBOAT_STAGING_SMOKE_TOKEN: ${{ secrets.ROWBOAT_STAGING_SMOKE_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "${ROWBOAT_STAGING_SMOKE_TOKEN}" || { echo "ROWBOAT_STAGING_SMOKE_TOKEN is required"; exit 1; }
+          curl -fsS "${STAGING_API_URL}/readyz"
+          scripts/rowboat-cloud-workflow-smoke.sh "${STAGING_API_URL}" "${ROWBOAT_STAGING_SMOKE_TOKEN}"
+      - name: Soak candidate and reject unhealthy loops
+        run: |
+          set -euo pipefail
+          sleep "${STAGING_SOAK_SECONDS}"
+          curl -fsS "${STAGING_API_URL}/readyz"
+          if kubectl -n "${KUBE_NAMESPACE}" get pods -l app.kubernetes.io/instance="${RELEASE_NAME}" -o json \
+              | jq -e '(.items | length) > 0 and all(.items[]; .status.phase == "Running" and all(.status.containerStatuses[]?; .ready == true))' >/dev/null; then
+            echo "all staging candidate pods remained ready"
+          else
+            kubectl -n "${KUBE_NAMESPACE}" get pods -o wide
+            exit 1
+          fi
+          if kubectl -n "${KUBE_NAMESPACE}" logs -l app.kubernetes.io/instance="${RELEASE_NAME}" --all-containers --since="${STAGING_SOAK_SECONDS}s" --prefix \
+              | grep -E 'panic|fatal|level[=:](error|fatal)|"level":"(error|fatal)"' >/tmp/rowboat-staging-errors.log; then
+            cat /tmp/rowboat-staging-errors.log
+            echo "staging candidate emitted error/fatal logs during soak"
+            exit 1
+          fi
 
   deploy:
     name: Deploy to Production
-    needs: [resolve-context, check-changes, build-image]
-    if: needs.check-changes.outputs.should_deploy == 'true' && needs.build-image.result == 'success'
+    needs: [resolve-context, check-changes, build-image, release-governance, stage-and-soak]
+    if: needs.check-changes.outputs.should_deploy == 'true' && needs.build-image.result == 'success' && needs.release-governance.result == 'success' && needs.stage-and-soak.result == 'success'
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -425,6 +569,14 @@ jobs:
           echo
           curl -fsS https://api.oppulence.io/readyz
           echo
+
+      - name: Authenticated production workflow smoke
+        env:
+          ROWBOAT_PRODUCTION_SMOKE_TOKEN: ${{ secrets.ROWBOAT_PRODUCTION_SMOKE_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "${ROWBOAT_PRODUCTION_SMOKE_TOKEN}" || { echo "ROWBOAT_PRODUCTION_SMOKE_TOKEN is required"; exit 1; }
+          scripts/rowboat-cloud-workflow-smoke.sh https://api.oppulence.io "${ROWBOAT_PRODUCTION_SMOKE_TOKEN}"
 
       - name: Diagnose rollout on failure
         if: failure()

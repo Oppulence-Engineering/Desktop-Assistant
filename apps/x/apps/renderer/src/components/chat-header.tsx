@@ -1,12 +1,12 @@
 import { ArrowUpRight, ChevronDown, MessageSquare, Plus } from "@/lib/icons";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@oppulence/ui/components/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@oppulence/ui/components/dropdown-menu";
 import { formatRelativeTime } from "@/lib/relative-time";
 
 export interface ChatHeaderRecentRun {
@@ -47,11 +47,9 @@ export function ChatHeader({
   onSelectRun,
   onOpenChatHistory,
 }: ChatHeaderProps) {
-  const hasHistory = recentRuns.length > 0 || Boolean(onOpenChatHistory);
-
   return (
     <>
-      {hasHistory ? (
+      {recentRuns.length > 0 ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -98,6 +96,17 @@ export function ChatHeader({
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+      ) : onOpenChatHistory ? (
+        <button
+          type="button"
+          onClick={onOpenChatHistory}
+          className="titlebar-no-drag flex min-w-0 flex-1 items-center gap-2 px-3 text-sm font-medium text-foreground hover:bg-accent/60"
+          aria-label="Open chat history"
+        >
+          <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
+          <span className="truncate">{activeTitle}</span>
+          <span className="ml-auto text-[10px] text-muted-foreground">History</span>
+        </button>
       ) : (
         <div className="flex min-w-0 flex-1 items-center gap-2 px-3 text-sm font-medium text-foreground">
           <MessageSquare className="size-4 shrink-0 text-muted-foreground" />

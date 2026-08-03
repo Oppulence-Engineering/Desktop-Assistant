@@ -226,24 +226,30 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"currentRevision": intSchema("Current server revision for the resource that rejected the write.", 3),
 	}, "type", "title", "status", "code", "currentRevision")
 	schemas["BackgroundTask"] = objectSchema("Server-readable mirror of one background task. The API is the control plane; executionTarget=desktop runs locally in the desktop and executionTarget=api runs through the API Temporal worker.", obj{
-		"id":              uuidSchema("Stable server id for this mirrored task.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
-		"slug":            stringSchema("Stable task slug matching the desktop bg-tasks/<slug> directory.", "daily-summary"),
-		"name":            stringSchema("Human-readable task name from task.yaml.", "Daily Account Summary"),
-		"instructions":    stringSchema("Task instructions from task.yaml. This is stored server-side so the API can audit, inspect, and eventually orchestrate task lifecycle actions.", "Summarize important account changes and draft follow-up notes."),
-		"active":          boolSchema("Whether the task is enabled for local scheduling and remote trigger pickup.", true),
-		"triggers":        triggerJSON,
-		"model":           stringSchema("Preferred desktop-facing model id for runs of this task.", "openai/gpt-4.1-mini", nullable()),
-		"provider":        stringSchema("Preferred provider slug for the model or execution backend.", "openai", nullable()),
-		"executionTarget": stringEnum("Where this task executes. desktop preserves the local-first path; api dispatches to the Temporal-backed API worker.", "desktop", "desktop", "api"),
-		"createdAt":       stringSchema("Original desktop task creation timestamp when known; otherwise the server row creation time.", "2026-06-04T20:38:00Z", obj{"format": "date-time"}),
-		"updatedAt":       stringSchema("Server timestamp for the last mirrored task update.", "2026-06-04T20:39:00Z", obj{"format": "date-time"}),
-		"lastAttemptAt":   stringSchema("Last time the desktop attempted to run this task.", "2026-06-04T21:00:00Z", obj{"format": "date-time"}, nullable()),
-		"lastRunId":       stringSchema("Last desktop or remote-trigger run id mirrored for this task.", "run-20260604-210000", nullable()),
-		"lastRunAt":       stringSchema("Last time the desktop completed or recorded a run for this task.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
-		"lastRunSummary":  stringSchema("Short summary from the latest run.", "No high-priority account changes.", nullable()),
-		"lastRunError":    stringSchema("Latest run error, empty when the latest run did not fail.", "", nullable()),
-		"revision":        intSchema("Optimistic-lock revision. PATCH and DELETE must send the current value.", 2),
-	}, "id", "slug", "name", "instructions", "active", "executionTarget", "createdAt", "updatedAt", "revision")
+		"id":                uuidSchema("Stable server id for this mirrored task.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
+		"slug":              stringSchema("Stable task slug matching the desktop bg-tasks/<slug> directory.", "daily-summary"),
+		"name":              stringSchema("Human-readable task name from task.yaml.", "Daily Account Summary"),
+		"instructions":      stringSchema("Task instructions from task.yaml. This is stored server-side so the API can audit, inspect, and eventually orchestrate task lifecycle actions.", "Summarize important account changes and draft follow-up notes."),
+		"active":            boolSchema("Whether the task is enabled for local scheduling and remote trigger pickup.", true),
+		"triggers":          triggerJSON,
+		"model":             stringSchema("Preferred desktop-facing model id for runs of this task.", "openai/gpt-4.1-mini", nullable()),
+		"provider":          stringSchema("Preferred provider slug for the model or execution backend.", "openai", nullable()),
+		"executionTarget":   stringEnum("Where this task executes. desktop preserves the local-first path; api dispatches to the Temporal-backed API worker.", "desktop", "desktop", "api"),
+		"templateSlug":      stringSchema("First-party template that owns this definition. Empty for user-authored tasks.", "relationship-refresh", nullable()),
+		"templateVersion":   intSchema("Installed version of the owning first-party template. Zero for user-authored tasks.", 1),
+		"systemManaged":     boolSchema("Whether Oppulence owns and upgrades this definition. Managed tasks can be paused but not deleted or edited.", false),
+		"createdAt":         stringSchema("Original desktop task creation timestamp when known; otherwise the server row creation time.", "2026-06-04T20:38:00Z", obj{"format": "date-time"}),
+		"updatedAt":         stringSchema("Server timestamp for the last mirrored task update.", "2026-06-04T20:39:00Z", obj{"format": "date-time"}),
+		"lastAttemptAt":     stringSchema("Last time the desktop attempted to run this task.", "2026-06-04T21:00:00Z", obj{"format": "date-time"}, nullable()),
+		"lastRunId":         stringSchema("Last desktop or remote-trigger run id mirrored for this task.", "run-20260604-210000", nullable()),
+		"lastRunAt":         stringSchema("Last time the desktop completed or recorded a run for this task.", "2026-06-04T21:02:00Z", obj{"format": "date-time"}, nullable()),
+		"lastRunSummary":    stringSchema("Short summary from the latest run.", "No high-priority account changes.", nullable()),
+		"lastRunError":      stringSchema("Latest run error, empty when the latest run did not fail.", "", nullable()),
+		"scheduleSyncState": stringEnum("Server-owned Temporal schedule reconciliation state.", "current", "current", "syncing", "failed", "paused"),
+		"scheduleSyncError": stringSchema("Latest schedule reconciliation error, empty when healthy.", "", nullable()),
+		"scheduleSyncedAt":  stringSchema("Last successful schedule reconciliation timestamp.", "2026-06-04T20:39:00Z", obj{"format": "date-time"}, nullable()),
+		"revision":          intSchema("Optimistic-lock revision. PATCH and DELETE must send the current value.", 2),
+	}, "id", "slug", "name", "instructions", "active", "executionTarget", "systemManaged", "scheduleSyncState", "createdAt", "updatedAt", "revision")
 	schemas["BackgroundTaskListResponse"] = objectSchema("Task list for the authenticated user, ordered by slug.", obj{
 		"tasks": arraySchema("Mirrored background tasks visible to this user.", ref("BackgroundTask")),
 	}, "tasks")
@@ -260,7 +266,9 @@ func addBackgroundTaskSchemas(schemas obj) {
 		"executionTarget":    stringEnum("Default execution target.", "api", "api", "desktop"),
 		"tags":               arraySchema("Template tags for UI grouping.", stringSchema("Tag.", "gmail")),
 		"requiredConnectors": arraySchema("Connectors this template expects for full fidelity.", stringSchema("Connector slug.", "google")),
-	}, "slug", "taskSlug", "name", "description", "instructions", "active", "executionTarget")
+		"version":            intSchema("Monotonic product definition version used for safe upgrades.", 1),
+		"firstParty":         boolSchema("Whether the template is installed and maintained automatically by Oppulence.", false),
+	}, "slug", "taskSlug", "name", "description", "instructions", "active", "executionTarget", "version", "firstParty")
 	schemas["BackgroundTaskTemplatesResponse"] = objectSchema("Built-in background task templates available to the authenticated user.", obj{
 		"templates": arraySchema("Available task templates.", ref("BackgroundTaskTemplate")),
 	}, "templates")
@@ -985,6 +993,13 @@ func addBackgroundTaskPaths(paths obj) {
 			"400": responseRef("400"),
 			"401": responseRef("401"),
 			"409": problemResponse("A task with this slug already exists for the user.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "background task already exists", "conflict")),
+			"500": responseRef("500"),
+		}),
+	}
+	paths["/v1/background-tasks/first-party/ensure"] = obj{
+		"post": operation("Background Tasks", "Ensure first-party workflows", "Idempotently provisions or upgrades the six Oppulence-managed relationship workflows for the authenticated user. User pause choices are preserved during definition upgrades. Replica races converge on the same per-user task slugs.", "ensureFirstPartyBackgroundTasks", bearer(), nil, nil, obj{
+			"200": jsonResponse("Current managed workflow definitions.", ref("BackgroundTaskListResponse"), obj{"tasks": []any{backgroundTaskExample()}}),
+			"401": responseRef("401"),
 			"500": responseRef("500"),
 		}),
 	}
@@ -1727,23 +1742,29 @@ func revisionConflictResponse() obj {
 
 func backgroundTaskExample() obj {
 	return obj{
-		"id":              "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
-		"slug":            "daily-summary",
-		"name":            "Daily Account Summary",
-		"instructions":    "Summarize important account changes and draft follow-up notes.",
-		"active":          true,
-		"triggers":        obj{"cronExpr": "0 9 * * *", "timezone": "America/New_York"},
-		"model":           "openai/gpt-4.1-mini",
-		"provider":        "openai",
-		"executionTarget": "desktop",
-		"createdAt":       "2026-06-04T20:38:00Z",
-		"updatedAt":       "2026-06-04T20:39:00Z",
-		"lastAttemptAt":   "2026-06-04T21:00:00Z",
-		"lastRunId":       "run-20260604-210000",
-		"lastRunAt":       "2026-06-04T21:02:00Z",
-		"lastRunSummary":  "No high-priority account changes.",
-		"lastRunError":    "",
-		"revision":        2,
+		"id":                "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+		"slug":              "daily-summary",
+		"name":              "Daily Account Summary",
+		"instructions":      "Summarize important account changes and draft follow-up notes.",
+		"active":            true,
+		"triggers":          obj{"cronExpr": "0 9 * * *", "timezone": "America/New_York"},
+		"model":             "openai/gpt-4.1-mini",
+		"provider":          "openai",
+		"executionTarget":   "desktop",
+		"templateSlug":      "",
+		"templateVersion":   0,
+		"systemManaged":     false,
+		"createdAt":         "2026-06-04T20:38:00Z",
+		"updatedAt":         "2026-06-04T20:39:00Z",
+		"lastAttemptAt":     "2026-06-04T21:00:00Z",
+		"lastRunId":         "run-20260604-210000",
+		"lastRunAt":         "2026-06-04T21:02:00Z",
+		"lastRunSummary":    "No high-priority account changes.",
+		"lastRunError":      "",
+		"scheduleSyncState": "current",
+		"scheduleSyncError": "",
+		"scheduleSyncedAt":  "2026-06-04T20:39:00Z",
+		"revision":          2,
 	}
 }
 
@@ -1761,6 +1782,8 @@ func backgroundTaskTemplateExample() obj {
 		"executionTarget":    "api",
 		"tags":               []any{"gmail", "digest", "scheduled"},
 		"requiredConnectors": []any{"google"},
+		"version":            1,
+		"firstParty":         false,
 	}
 }
 

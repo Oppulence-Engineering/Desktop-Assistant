@@ -120,14 +120,32 @@ type Relationship func(*sql.Selector)
 // RelationshipAssertion is the predicate function for relationshipassertion builders.
 type RelationshipAssertion func(*sql.Selector)
 
+// RelationshipAttentionItem is the predicate function for relationshipattentionitem builders.
+type RelationshipAttentionItem func(*sql.Selector)
+
 // RelationshipIdentity is the predicate function for relationshipidentity builders.
 type RelationshipIdentity func(*sql.Selector)
+
+// RelationshipIdentityCandidate is the predicate function for relationshipidentitycandidate builders.
+type RelationshipIdentityCandidate func(*sql.Selector)
+
+// RelationshipIdentityDecision is the predicate function for relationshipidentitydecision builders.
+type RelationshipIdentityDecision func(*sql.Selector)
+
+// RelationshipLineageEvent is the predicate function for relationshiplineageevent builders.
+type RelationshipLineageEvent func(*sql.Selector)
 
 // RelationshipObservation is the predicate function for relationshipobservation builders.
 type RelationshipObservation func(*sql.Selector)
 
 // RelationshipParticipant is the predicate function for relationshipparticipant builders.
 type RelationshipParticipant func(*sql.Selector)
+
+// RelationshipProjectionJob is the predicate function for relationshipprojectionjob builders.
+type RelationshipProjectionJob func(*sql.Selector)
+
+// RelationshipReviewAcknowledgement is the predicate function for relationshipreviewacknowledgement builders.
+type RelationshipReviewAcknowledgement func(*sql.Selector)
 
 // RelationshipSourceStatus is the predicate function for relationshipsourcestatus builders.
 type RelationshipSourceStatus func(*sql.Selector)
@@ -150,6 +168,9 @@ type RevenueLeakScan func(*sql.Selector)
 // RevenueOutboxEvent is the predicate function for revenueoutboxevent builders.
 type RevenueOutboxEvent func(*sql.Selector)
 
+// RevenueTrustEvent is the predicate function for revenuetrustevent builders.
+type RevenueTrustEvent func(*sql.Selector)
+
 // RevenueWorkspace is the predicate function for revenueworkspace builders.
 type RevenueWorkspace func(*sql.Selector)
 
@@ -162,8 +183,14 @@ type Subscription func(*sql.Selector)
 // SubscriptionHistory is the predicate function for subscriptionhistory builders.
 type SubscriptionHistory func(*sql.Selector)
 
+// TenantEvidenceKey is the predicate function for tenantevidencekey builders.
+type TenantEvidenceKey func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)
 
 // UserHistory is the predicate function for userhistory builders.
 type UserHistory func(*sql.Selector)
+
+// WorkspaceFeatureControl is the predicate function for workspacefeaturecontrol builders.
+type WorkspaceFeatureControl func(*sql.Selector)

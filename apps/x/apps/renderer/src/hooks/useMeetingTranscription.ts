@@ -7,6 +7,7 @@ import type { TranscriptionProvider } from "@x/shared/dist/transcription.js";
 import {
   formatMeetingNote,
   type MeetingCalendarEvent,
+  type MeetingRelationshipTarget,
   type MeetingResolvedEngine,
 } from "@x/shared/dist/meetings.js";
 
@@ -111,6 +112,7 @@ export function useMeetingTranscription(
   onSystemAudioUnavailableRef.current = onSystemAudioUnavailable;
   const dateRef = useRef<string>("");
   const calendarEventRef = useRef<CalendarEventMeta | undefined>(undefined);
+  const relationshipTargetRef = useRef<MeetingRelationshipTarget | undefined>(undefined);
   const privacyGenerationRef = useRef(0);
   // RFC 017 provenance fields written into the note frontmatter (provider/model,
   // diarization provider+mode, audio-uploaded, identity persistence).
@@ -285,9 +287,13 @@ export function useMeetingTranscription(
   );
 
   const start = useCallback(
-    async (calendarEvent?: CalendarEventMeta): Promise<string | null> => {
+    async (
+      calendarEvent?: CalendarEventMeta,
+      relationshipTarget?: MeetingRelationshipTarget,
+    ): Promise<string | null> => {
       if (state !== "idle") return null;
       setState("connecting");
+      relationshipTargetRef.current = relationshipTarget;
 
       // Native capture: the sidecar records both tracks to disk and main transcribes
       // afterwards, so there is no audio graph, no socket, and no window dependency
@@ -299,6 +305,7 @@ export function useMeetingTranscription(
         if (engine === "native") {
           const result = await window.ipc.invoke("meeting:startCapture", {
             calendarEventJson: calendarEvent ? JSON.stringify(calendarEvent) : undefined,
+            relationshipTarget,
           });
           if (!result.started) {
             console.error("[meeting] native capture failed to start:", result.error);
@@ -309,6 +316,7 @@ export function useMeetingTranscription(
               captureEngine: "native",
             });
             setState("idle");
+            relationshipTargetRef.current = undefined;
             return null;
           }
           engineRef.current = "native";
@@ -345,6 +353,7 @@ export function useMeetingTranscription(
           code: "device_unsupported",
         });
         setState("idle");
+        relationshipTargetRef.current = undefined;
         return null;
       }
       useLocalRef.current = meetingProvider === "whisper-local";
@@ -705,6 +714,7 @@ export function useMeetingTranscription(
       }
       engineRef.current = "renderer";
       analytics.transcriptionCompleted({ provider: "whisper-local", mode: "meeting" });
+      relationshipTargetRef.current = undefined;
       setState("idle");
       return { engine };
     }
@@ -729,6 +739,7 @@ export function useMeetingTranscription(
           ...(calendarEventRef.current
             ? { calendarEventJson: JSON.stringify(calendarEventRef.current) }
             : {}),
+          relationshipTarget: relationshipTargetRef.current,
           provider: useLocalRef.current ? "whisper-local" : "deepgram",
           segments: finalEntries,
         });
@@ -743,6 +754,7 @@ export function useMeetingTranscription(
       provider: useLocalRef.current ? "whisper-local" : "deepgram",
       mode: "meeting",
     });
+    relationshipTargetRef.current = undefined;
     setState("idle");
     return { engine };
   }, [state, cleanup, writeTranscriptToFile]);

@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { motion } from "motion/react";
+import { cn } from "@/lib/utils";
 import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
 
 const DIAGRAM_BARS = [
@@ -14,6 +15,9 @@ interface MinimalOnboardingLayoutProps {
   panelDescription?: ReactNode;
   footer?: ReactNode;
   children: ReactNode;
+  panelSize?: "default" | "wide";
+  panelAlign?: "center" | "start";
+  presentation?: "page" | "dialog";
 }
 
 export function MinimalOnboardingLayout({
@@ -24,10 +28,24 @@ export function MinimalOnboardingLayout({
   panelDescription,
   footer,
   children,
+  panelSize = "default",
+  panelAlign = "center",
+  presentation = "page",
 }: MinimalOnboardingLayoutProps) {
   return (
-    <div className="onboarding-welcome-screen flex min-h-full flex-1 flex-col bg-[#09090b] text-white lg:flex-row">
-      <section className="onboarding-welcome-hero relative flex min-h-[520px] flex-1 items-center justify-center overflow-hidden px-6 py-14 lg:min-h-0">
+    <div
+      data-presentation={presentation}
+      className={cn(
+        "onboarding-welcome-screen flex flex-1 flex-col overflow-hidden bg-[#09090b] text-white lg:flex-row",
+        presentation === "dialog" ? "h-full min-h-0" : "min-h-full",
+      )}
+    >
+      <section
+        className={cn(
+          "onboarding-welcome-hero relative flex flex-1 items-center justify-center overflow-hidden px-6",
+          presentation === "dialog" ? "min-h-[320px] py-10 lg:min-h-0" : "min-h-[520px] py-14 lg:min-h-0",
+        )}
+      >
         <div className="absolute left-7 top-7 flex items-center gap-3">
           <span className="flex size-9 items-center justify-center border border-white/14 bg-white/[0.03]">
             <img src="/logo-only.png" alt="" className="size-5 invert" />
@@ -64,17 +82,27 @@ export function MinimalOnboardingLayout({
         </motion.div>
       </section>
 
-      <aside className="onboarding-welcome-panel flex shrink-0 flex-col justify-center border-t border-white/8 bg-[#0d0d11] px-6 py-10 lg:w-[390px] lg:border-l lg:border-t-0 lg:px-10">
+      <aside
+        className={cn(
+          "onboarding-welcome-panel flex shrink-0 flex-col border-t border-white/8 bg-[#0d0d11] px-6 lg:border-l lg:border-t-0",
+          panelAlign === "start" ? "justify-start py-7 lg:overflow-y-auto" : "justify-center py-10",
+          panelSize === "wide" ? "lg:w-[460px] lg:px-8" : "lg:w-[390px] lg:px-10",
+          presentation === "dialog" && "min-h-0 overflow-y-auto",
+        )}
+      >
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.16 }}
-          className="mx-auto w-full max-w-[300px]"
+          className={cn(
+            "mx-auto w-full",
+            panelSize === "wide" ? "max-w-[380px]" : "max-w-[300px]",
+          )}
         >
           <div className="mb-7">
             <h2 className="text-lg font-semibold tracking-tight text-white">{panelTitle}</h2>
             {panelDescription && (
-              <p className="mt-2 text-sm leading-5 text-white/42">{panelDescription}</p>
+              <p className="mt-2 text-sm leading-5 text-white/52">{panelDescription}</p>
             )}
           </div>
 

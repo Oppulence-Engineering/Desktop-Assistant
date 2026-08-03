@@ -11,6 +11,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/testsuite"
+	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -34,6 +35,10 @@ func newWFHarness(t *testing.T) *wfHarness {
 	var ts testsuite.WorkflowTestSuite
 	h := &wfHarness{env: ts.NewTestWorkflowEnvironment()}
 	h.env.SetTestTimeout(30 * time.Second)
+	// The SDK's one-second default is tight enough to report false workflow
+	// deadlocks when the full repository test suite is CPU-bound. Keep a bounded
+	// detector so genuine non-yielding workflow code still fails quickly.
+	h.env.SetWorkerOptions(worker.Options{DeadlockDetectionTimeout: 5 * time.Second})
 	// Default LLM: end the turn immediately with a final message.
 	h.llm = func(_ LLMCompleteInput) LLMCompleteResult {
 		return finalMsg("done.")

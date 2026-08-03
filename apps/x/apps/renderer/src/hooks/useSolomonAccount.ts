@@ -7,6 +7,7 @@ interface SolomonAccountState {
   signedIn: boolean;
   accessToken: string | null;
   config: z.infer<typeof SolomonApiConfig> | null;
+  authReason: "not_signed_in" | "reconnect_required" | "refresh_backoff" | null;
 }
 
 export type SolomonAccountSnapshot = SolomonAccountState;
@@ -15,6 +16,7 @@ const DEFAULT_STATE: SolomonAccountState = {
   signedIn: false,
   accessToken: null,
   config: null,
+  authReason: null,
 };
 
 interface UseSolomonAccountOptions {
@@ -33,6 +35,7 @@ export function useSolomonAccount({ autoRefresh = true }: UseSolomonAccountOptio
         signedIn: result.signedIn,
         accessToken: result.accessToken,
         config: result.config,
+        authReason: result.authReason,
       };
       setState(next);
       return next;
@@ -65,6 +68,7 @@ export function useSolomonAccount({ autoRefresh = true }: UseSolomonAccountOptio
     signedIn: state.signedIn,
     accessToken: state.accessToken,
     config: state.config,
+    authReason: state.authReason,
     isLoading,
     refresh,
   };

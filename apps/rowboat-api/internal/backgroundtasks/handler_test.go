@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -49,6 +50,7 @@ func testRouter(h *Handler) http.Handler {
 	r.Route("/v1/background-tasks", func(r chi.Router) {
 		r.Get("/", h.List)
 		r.Post("/", h.Create)
+		r.Post("/first-party/ensure", h.EnsureFirstParty)
 		r.Get("/{slug}", h.Get)
 		r.Patch("/{slug}", h.Patch)
 		r.Delete("/{slug}", h.Delete)
@@ -427,6 +429,76 @@ func TestBackgroundTaskTemplatesInstantiate(t *testing.T) {
 	missingRec := authedJSON(t, router, u, http.MethodPost, "/v1/background-task-templates/nope/instantiate", map[string]any{})
 	if missingRec.Code != http.StatusNotFound {
 		t.Fatalf("missing template: want 404, got %d: %s", missingRec.Code, missingRec.Body.String())
+	}
+}
+
+func TestFirstPartyWorkflowCatalogAndProvisioning(t *testing.T) {
+	client, u, router := setupTest(t)
+	wanted := map[string]bool{
+		"relationship-refresh": false, "attention-monitor": false, "meeting-pre-brief": false,
+		"post-meeting-processor": false, "recommendation-review": false, "connector-health-repair": false,
+	}
+	for _, tpl := range builtInTaskTemplates {
+		if _, ok := wanted[tpl.Slug]; !ok {
+			continue
+		}
+		if !tpl.FirstParty || tpl.Version < 1 || tpl.ExecutionTarget != "api" || len(tpl.Triggers) == 0 {
+			t.Fatalf("first-party template is not operational: %+v", tpl)
+		}
+		wanted[tpl.Slug] = true
+	}
+	for slug, present := range wanted {
+		if !present {
+			t.Fatalf("missing first-party workflow %q", slug)
+		}
+	}
+
+	reservedCreate := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks", map[string]any{
+		"slug": "oppulence-attention-monitor", "name": "Mine", "instructions": "take over reserved workflow",
+	})
+	if reservedCreate.Code != http.StatusBadRequest {
+		t.Fatalf("reserved first-party slug: want 400, got %d: %s", reservedCreate.Code, reservedCreate.Body.String())
+	}
+	firstPartyInstantiate := authedJSON(t, router, u, http.MethodPost, "/v1/background-task-templates/attention-monitor/instantiate", map[string]any{})
+	if firstPartyInstantiate.Code != http.StatusBadRequest {
+		t.Fatalf("instantiate first-party template: want 400, got %d: %s", firstPartyInstantiate.Code, firstPartyInstantiate.Body.String())
+	}
+
+	ensure := authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/first-party/ensure", nil)
+	if ensure.Code != http.StatusOK {
+		t.Fatalf("ensure first-party workflows: want 200, got %d: %s", ensure.Code, ensure.Body.String())
+	}
+	ctx := auth.WithUser(context.Background(), u)
+	if count := client.BackgroundTask.Query().Where(backgroundtask.SystemManagedEQ(true)).CountX(ctx); count != 6 {
+		t.Fatalf("provisioned first-party tasks = %d, want 6", count)
+	}
+
+	// Reconciliation is idempotent and preserves the operator's pause choice.
+	paused := client.BackgroundTask.Query().Where(backgroundtask.SlugEQ("oppulence-attention-monitor")).OnlyX(ctx)
+	paused = paused.Update().SetActive(false).SaveX(ctx)
+	ensure = authedJSON(t, router, u, http.MethodPost, "/v1/background-tasks/first-party/ensure", nil)
+	if ensure.Code != http.StatusOK {
+		t.Fatalf("second ensure: want 200, got %d: %s", ensure.Code, ensure.Body.String())
+	}
+	if count := client.BackgroundTask.Query().CountX(ctx); count != 6 {
+		t.Fatalf("idempotent ensure created duplicates: %d", count)
+	}
+	if client.BackgroundTask.GetX(ctx, paused.ID).Active {
+		t.Fatal("first-party reconciliation must preserve a user's paused state")
+	}
+
+	definitionPatch := authedJSON(t, router, u, http.MethodPatch,
+		"/v1/background-tasks/oppulence-attention-monitor", map[string]any{
+			"revision": paused.Revision, "instructions": "silently replace the product workflow",
+		})
+	if definitionPatch.Code != http.StatusConflict {
+		t.Fatalf("system-managed definition patch: want 409, got %d: %s", definitionPatch.Code, definitionPatch.Body.String())
+	}
+
+	deleteRec := authedJSON(t, router, u, http.MethodDelete,
+		"/v1/background-tasks/oppulence-attention-monitor?revision="+strconv.Itoa(paused.Revision), nil)
+	if deleteRec.Code != http.StatusConflict {
+		t.Fatalf("system-managed delete: want 409, got %d: %s", deleteRec.Code, deleteRec.Body.String())
 	}
 }
 

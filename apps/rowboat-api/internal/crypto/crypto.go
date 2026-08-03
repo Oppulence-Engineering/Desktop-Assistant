@@ -45,7 +45,17 @@ func NewSealer(passphrase string) (*Sealer, error) {
 		return nil, errors.New("crypto: empty passphrase")
 	}
 	key := sha256.Sum256([]byte(passphrase))
-	block, err := aes.NewCipher(key[:])
+	return NewSealerFromKey(key[:])
+}
+
+// NewSealerFromKey builds a sealer from an already-random 256-bit data key.
+// Envelope-encryption callers use this path so a tenant DEK is not re-derived
+// from a passphrase.
+func NewSealerFromKey(key []byte) (*Sealer, error) {
+	if len(key) != 32 {
+		return nil, errors.New("crypto: AES-256 key must be exactly 32 bytes")
+	}
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, fmt.Errorf("crypto: new cipher: %w", err)
 	}
@@ -58,22 +68,34 @@ func NewSealer(passphrase string) (*Sealer, error) {
 
 // Seal returns nonce||ciphertext. Each call uses a fresh random nonce.
 func (s *Sealer) Seal(plaintext []byte) ([]byte, error) {
+	return s.SealWithAAD(plaintext, nil)
+}
+
+// SealWithAAD authenticates tenant/version metadata without storing it in the
+// ciphertext body.
+func (s *Sealer) SealWithAAD(plaintext, additionalData []byte) ([]byte, error) {
 	nonce := make([]byte, s.aead.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, fmt.Errorf("crypto: nonce: %w", err)
 	}
 	// Seal appends the ciphertext to nonce, so the nonce prefixes the output.
-	return s.aead.Seal(nonce, nonce, plaintext, nil), nil
+	return s.aead.Seal(nonce, nonce, plaintext, additionalData), nil
 }
 
 // Open reverses Seal.
 func (s *Sealer) Open(sealed []byte) ([]byte, error) {
+	return s.OpenWithAAD(sealed, nil)
+}
+
+// OpenWithAAD reverses SealWithAAD and fails authentication if the tenant or
+// key version binding differs.
+func (s *Sealer) OpenWithAAD(sealed, additionalData []byte) ([]byte, error) {
 	ns := s.aead.NonceSize()
 	if len(sealed) < ns {
 		return nil, ErrCiphertextTooShort
 	}
 	nonce, ct := sealed[:ns], sealed[ns:]
-	out, err := s.aead.Open(nil, nonce, ct, nil)
+	out, err := s.aead.Open(nil, nonce, ct, additionalData)
 	if err != nil {
 		return nil, fmt.Errorf("crypto: open: %w", err)
 	}

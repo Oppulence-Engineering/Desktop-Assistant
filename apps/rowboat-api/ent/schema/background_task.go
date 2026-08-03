@@ -44,6 +44,11 @@ func (BackgroundTask) Fields() []ent.Field {
 		field.String("execution_target").
 			Default("desktop").
 			Validate(oneOfBackgroundTask("execution_target", "desktop", "api")),
+		// First-party workflow provenance lets the server safely reconcile
+		// versioned product workflows without overwriting user-authored tasks.
+		field.String("template_slug").Optional(),
+		field.Int("template_version").Default(0).NonNegative(),
+		field.Bool("system_managed").Default(false),
 		field.Time("task_created_at").Optional(),
 		field.Time("last_attempt_at").Optional().Nillable(),
 		field.String("last_run_id").Optional(),

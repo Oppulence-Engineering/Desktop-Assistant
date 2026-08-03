@@ -33,14 +33,26 @@ type RelationshipAssertion struct {
 	Value string `json:"-"`
 	// SourceType holds the value of the "source_type" field.
 	SourceType string `json:"source_type,omitempty"`
+	// Status holds the value of the "status" field.
+	Status string `json:"status,omitempty"`
 	// Confidence holds the value of the "confidence" field.
 	Confidence float64 `json:"confidence,omitempty"`
 	// Reason holds the value of the "reason" field.
 	Reason string `json:"-"`
 	// ValidFrom holds the value of the "valid_from" field.
 	ValidFrom time.Time `json:"valid_from,omitempty"`
+	// ValidTo holds the value of the "valid_to" field.
+	ValidTo *time.Time `json:"valid_to,omitempty"`
+	// RetractedAt holds the value of the "retracted_at" field.
+	RetractedAt *time.Time `json:"retracted_at,omitempty"`
+	// RetractionReason holds the value of the "retraction_reason" field.
+	RetractionReason string `json:"-"`
 	// SupersedesAssertionID holds the value of the "supersedes_assertion_id" field.
 	SupersedesAssertionID string `json:"supersedes_assertion_id,omitempty"`
+	// ExtractorVersion holds the value of the "extractor_version" field.
+	ExtractorVersion string `json:"extractor_version,omitempty"`
+	// ProjectorCompatVersion holds the value of the "projector_compat_version" field.
+	ProjectorCompatVersion int `json:"projector_compat_version,omitempty"`
 	// SupportingObservationIds holds the value of the "supporting_observation_ids" field.
 	SupportingObservationIds []string `json:"supporting_observation_ids,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -123,9 +135,11 @@ func (*RelationshipAssertion) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case relationshipassertion.FieldConfidence:
 			values[i] = new(sql.NullFloat64)
-		case relationshipassertion.FieldDimension, relationshipassertion.FieldValue, relationshipassertion.FieldSourceType, relationshipassertion.FieldReason, relationshipassertion.FieldSupersedesAssertionID:
+		case relationshipassertion.FieldProjectorCompatVersion:
+			values[i] = new(sql.NullInt64)
+		case relationshipassertion.FieldDimension, relationshipassertion.FieldValue, relationshipassertion.FieldSourceType, relationshipassertion.FieldStatus, relationshipassertion.FieldReason, relationshipassertion.FieldRetractionReason, relationshipassertion.FieldSupersedesAssertionID, relationshipassertion.FieldExtractorVersion:
 			values[i] = new(sql.NullString)
-		case relationshipassertion.FieldCreatedAt, relationshipassertion.FieldUpdatedAt, relationshipassertion.FieldValidFrom:
+		case relationshipassertion.FieldCreatedAt, relationshipassertion.FieldUpdatedAt, relationshipassertion.FieldValidFrom, relationshipassertion.FieldValidTo, relationshipassertion.FieldRetractedAt:
 			values[i] = new(sql.NullTime)
 		case relationshipassertion.FieldID:
 			values[i] = new(uuid.UUID)
@@ -188,6 +202,12 @@ func (_m *RelationshipAssertion) assignValues(columns []string, values []any) er
 			} else if value.Valid {
 				_m.SourceType = value.String
 			}
+		case relationshipassertion.FieldStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status", values[i])
+			} else if value.Valid {
+				_m.Status = value.String
+			}
 		case relationshipassertion.FieldConfidence:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field confidence", values[i])
@@ -206,11 +226,43 @@ func (_m *RelationshipAssertion) assignValues(columns []string, values []any) er
 			} else if value.Valid {
 				_m.ValidFrom = value.Time
 			}
+		case relationshipassertion.FieldValidTo:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field valid_to", values[i])
+			} else if value.Valid {
+				_m.ValidTo = new(time.Time)
+				*_m.ValidTo = value.Time
+			}
+		case relationshipassertion.FieldRetractedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field retracted_at", values[i])
+			} else if value.Valid {
+				_m.RetractedAt = new(time.Time)
+				*_m.RetractedAt = value.Time
+			}
+		case relationshipassertion.FieldRetractionReason:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field retraction_reason", values[i])
+			} else if value.Valid {
+				_m.RetractionReason = value.String
+			}
 		case relationshipassertion.FieldSupersedesAssertionID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field supersedes_assertion_id", values[i])
 			} else if value.Valid {
 				_m.SupersedesAssertionID = value.String
+			}
+		case relationshipassertion.FieldExtractorVersion:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field extractor_version", values[i])
+			} else if value.Valid {
+				_m.ExtractorVersion = value.String
+			}
+		case relationshipassertion.FieldProjectorCompatVersion:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field projector_compat_version", values[i])
+			} else if value.Valid {
+				_m.ProjectorCompatVersion = int(value.Int64)
 			}
 		case relationshipassertion.FieldSupportingObservationIds:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -318,6 +370,9 @@ func (_m *RelationshipAssertion) String() string {
 	builder.WriteString("source_type=")
 	builder.WriteString(_m.SourceType)
 	builder.WriteString(", ")
+	builder.WriteString("status=")
+	builder.WriteString(_m.Status)
+	builder.WriteString(", ")
 	builder.WriteString("confidence=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Confidence))
 	builder.WriteString(", ")
@@ -326,8 +381,26 @@ func (_m *RelationshipAssertion) String() string {
 	builder.WriteString("valid_from=")
 	builder.WriteString(_m.ValidFrom.Format(time.ANSIC))
 	builder.WriteString(", ")
+	if v := _m.ValidTo; v != nil {
+		builder.WriteString("valid_to=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.RetractedAt; v != nil {
+		builder.WriteString("retracted_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("retraction_reason=<sensitive>")
+	builder.WriteString(", ")
 	builder.WriteString("supersedes_assertion_id=")
 	builder.WriteString(_m.SupersedesAssertionID)
+	builder.WriteString(", ")
+	builder.WriteString("extractor_version=")
+	builder.WriteString(_m.ExtractorVersion)
+	builder.WriteString(", ")
+	builder.WriteString("projector_compat_version=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ProjectorCompatVersion))
 	builder.WriteString(", ")
 	builder.WriteString("supporting_observation_ids=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SupportingObservationIds))

@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -53,10 +54,22 @@ func (c *Client) SetBaseURL(u string) {
 
 // Message is one Slack thread message (the fields tools care about).
 type Message struct {
-	User  string `json:"user"`
-	BotID string `json:"bot_id"`
-	Text  string `json:"text"`
-	TS    string `json:"ts"`
+	User     string `json:"user"`
+	BotID    string `json:"bot_id"`
+	Text     string `json:"text"`
+	TS       string `json:"ts"`
+	ThreadTS string `json:"thread_ts"`
+	Edited   struct {
+		TS string `json:"ts"`
+	} `json:"edited"`
+}
+
+// Channel is the bounded identity needed to turn Slack history into account
+// evidence. Only channels the installed bot is a member of are backfilled.
+type Channel struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	IsMember bool   `json:"is_member"`
 }
 
 // PostMessage posts text into channel, threaded under threadTS when non-empty.
@@ -245,6 +258,84 @@ func (c *Client) ReadThread(ctx context.Context, botToken, channel, threadTS str
 		return nil, fmt.Errorf("slackclient: conversations.replies failed: %s", sr.Error)
 	}
 	return sr.Messages, nil
+}
+
+// ListChannels returns a single bounded page of public channels. The beta
+// connector asks only for channels:read, so private-channel discovery is not
+// implied and is deliberately excluded.
+func (c *Client) ListChannels(ctx context.Context, botToken string, limit int) ([]Channel, error) {
+	if botToken == "" {
+		return nil, fmt.Errorf("slackclient: missing bot token")
+	}
+	if limit <= 0 || limit > 200 {
+		limit = 100
+	}
+	q := url.Values{}
+	q.Set("types", "public_channel")
+	q.Set("exclude_archived", "true")
+	q.Set("limit", strconv.Itoa(limit))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/conversations.list?"+q.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+botToken)
+	var response struct {
+		OK       bool      `json:"ok"`
+		Error    string    `json:"error"`
+		Channels []Channel `json:"channels"`
+	}
+	if err := c.do(req, &response); err != nil {
+		return nil, err
+	}
+	if !response.OK {
+		return nil, fmt.Errorf("slackclient: conversations.list failed: %s", response.Error)
+	}
+	return response.Channels, nil
+}
+
+// ReadChannelHistory returns one bounded recent page in chronological order.
+// Slack serves newest first; reversing here keeps provider observations stable.
+func (c *Client) ReadChannelHistory(
+	ctx context.Context,
+	botToken, channel string,
+	oldest time.Time,
+	limit int,
+) ([]Message, error) {
+	if botToken == "" {
+		return nil, fmt.Errorf("slackclient: missing bot token")
+	}
+	if channel == "" {
+		return nil, fmt.Errorf("slackclient: missing channel")
+	}
+	if limit <= 0 || limit > 100 {
+		limit = 100
+	}
+	q := url.Values{}
+	q.Set("channel", channel)
+	q.Set("limit", strconv.Itoa(limit))
+	if !oldest.IsZero() {
+		q.Set("oldest", fmt.Sprintf("%d.%06d", oldest.Unix(), oldest.Nanosecond()/1_000))
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/conversations.history?"+q.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+botToken)
+	var response struct {
+		OK       bool      `json:"ok"`
+		Error    string    `json:"error"`
+		Messages []Message `json:"messages"`
+	}
+	if err := c.do(req, &response); err != nil {
+		return nil, err
+	}
+	if !response.OK {
+		return nil, fmt.Errorf("slackclient: conversations.history failed: %s", response.Error)
+	}
+	for left, right := 0, len(response.Messages)-1; left < right; left, right = left+1, right-1 {
+		response.Messages[left], response.Messages[right] = response.Messages[right], response.Messages[left]
+	}
+	return response.Messages, nil
 }
 
 // do executes req, enforces the 200 + response-cap contract, and decodes the

@@ -41,9 +41,15 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitydecision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshiplineageevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipprojectionjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
@@ -51,10 +57,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenuetrustevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 )
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
@@ -1902,6 +1911,21 @@ func (_q *BackgroundTaskQuery) collectField(ctx context.Context, oneNode bool, o
 			if _, ok := fieldSeen[backgroundtask.FieldExecutionTarget]; !ok {
 				selectedFields = append(selectedFields, backgroundtask.FieldExecutionTarget)
 				fieldSeen[backgroundtask.FieldExecutionTarget] = struct{}{}
+			}
+		case "templateSlug":
+			if _, ok := fieldSeen[backgroundtask.FieldTemplateSlug]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldTemplateSlug)
+				fieldSeen[backgroundtask.FieldTemplateSlug] = struct{}{}
+			}
+		case "templateVersion":
+			if _, ok := fieldSeen[backgroundtask.FieldTemplateVersion]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldTemplateVersion)
+				fieldSeen[backgroundtask.FieldTemplateVersion] = struct{}{}
+			}
+		case "systemManaged":
+			if _, ok := fieldSeen[backgroundtask.FieldSystemManaged]; !ok {
+				selectedFields = append(selectedFields, backgroundtask.FieldSystemManaged)
+				fieldSeen[backgroundtask.FieldSystemManaged] = struct{}{}
 			}
 		case "taskCreatedAt":
 			if _, ok := fieldSeen[backgroundtask.FieldTaskCreatedAt]; !ok {
@@ -5068,6 +5092,84 @@ func (_q *RelationshipQuery) collectField(ctx context.Context, oneNode bool, opC
 			_q.WithNamedSnapshots(alias, func(wq *RelationshipStateSnapshotQuery) {
 				*wq = *query
 			})
+
+		case "projectionJobs":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipProjectionJobClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipprojectionjobImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedProjectionJobs(alias, func(wq *RelationshipProjectionJobQuery) {
+				*wq = *query
+			})
+
+		case "trustEvents":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueTrustEventClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, revenuetrusteventImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedTrustEvents(alias, func(wq *RevenueTrustEventQuery) {
+				*wq = *query
+			})
+
+		case "proposedIdentityCandidates":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipIdentityCandidateClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipidentitycandidateImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedProposedIdentityCandidates(alias, func(wq *RelationshipIdentityCandidateQuery) {
+				*wq = *query
+			})
+
+		case "existingIdentityCandidates":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipIdentityCandidateClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipidentitycandidateImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedExistingIdentityCandidates(alias, func(wq *RelationshipIdentityCandidateQuery) {
+				*wq = *query
+			})
+
+		case "reviewAcknowledgements":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipReviewAcknowledgementClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipreviewacknowledgementImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedReviewAcknowledgements(alias, func(wq *RelationshipReviewAcknowledgementQuery) {
+				*wq = *query
+			})
+
+		case "attentionItems":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipAttentionItemClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipattentionitemImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedAttentionItems(alias, func(wq *RelationshipAttentionItemQuery) {
+				*wq = *query
+			})
 		case "createdAt":
 			if _, ok := fieldSeen[relationship.FieldCreatedAt]; !ok {
 				selectedFields = append(selectedFields, relationship.FieldCreatedAt)
@@ -5162,6 +5264,21 @@ func (_q *RelationshipQuery) collectField(ctx context.Context, oneNode bool, opC
 			if _, ok := fieldSeen[relationship.FieldStateVersion]; !ok {
 				selectedFields = append(selectedFields, relationship.FieldStateVersion)
 				fieldSeen[relationship.FieldStateVersion] = struct{}{}
+			}
+		case "stateHash":
+			if _, ok := fieldSeen[relationship.FieldStateHash]; !ok {
+				selectedFields = append(selectedFields, relationship.FieldStateHash)
+				fieldSeen[relationship.FieldStateHash] = struct{}{}
+			}
+		case "projectorVersion":
+			if _, ok := fieldSeen[relationship.FieldProjectorVersion]; !ok {
+				selectedFields = append(selectedFields, relationship.FieldProjectorVersion)
+				fieldSeen[relationship.FieldProjectorVersion] = struct{}{}
+			}
+		case "projectedAt":
+			if _, ok := fieldSeen[relationship.FieldProjectedAt]; !ok {
+				selectedFields = append(selectedFields, relationship.FieldProjectedAt)
+				fieldSeen[relationship.FieldProjectedAt] = struct{}{}
 			}
 		case "lastChangedAt":
 			if _, ok := fieldSeen[relationship.FieldLastChangedAt]; !ok {
@@ -5304,6 +5421,11 @@ func (_q *RelationshipAssertionQuery) collectField(ctx context.Context, oneNode 
 				selectedFields = append(selectedFields, relationshipassertion.FieldSourceType)
 				fieldSeen[relationshipassertion.FieldSourceType] = struct{}{}
 			}
+		case "status":
+			if _, ok := fieldSeen[relationshipassertion.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, relationshipassertion.FieldStatus)
+				fieldSeen[relationshipassertion.FieldStatus] = struct{}{}
+			}
 		case "confidence":
 			if _, ok := fieldSeen[relationshipassertion.FieldConfidence]; !ok {
 				selectedFields = append(selectedFields, relationshipassertion.FieldConfidence)
@@ -5314,10 +5436,30 @@ func (_q *RelationshipAssertionQuery) collectField(ctx context.Context, oneNode 
 				selectedFields = append(selectedFields, relationshipassertion.FieldValidFrom)
 				fieldSeen[relationshipassertion.FieldValidFrom] = struct{}{}
 			}
+		case "validTo":
+			if _, ok := fieldSeen[relationshipassertion.FieldValidTo]; !ok {
+				selectedFields = append(selectedFields, relationshipassertion.FieldValidTo)
+				fieldSeen[relationshipassertion.FieldValidTo] = struct{}{}
+			}
+		case "retractedAt":
+			if _, ok := fieldSeen[relationshipassertion.FieldRetractedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipassertion.FieldRetractedAt)
+				fieldSeen[relationshipassertion.FieldRetractedAt] = struct{}{}
+			}
 		case "supersedesAssertionID":
 			if _, ok := fieldSeen[relationshipassertion.FieldSupersedesAssertionID]; !ok {
 				selectedFields = append(selectedFields, relationshipassertion.FieldSupersedesAssertionID)
 				fieldSeen[relationshipassertion.FieldSupersedesAssertionID] = struct{}{}
+			}
+		case "extractorVersion":
+			if _, ok := fieldSeen[relationshipassertion.FieldExtractorVersion]; !ok {
+				selectedFields = append(selectedFields, relationshipassertion.FieldExtractorVersion)
+				fieldSeen[relationshipassertion.FieldExtractorVersion] = struct{}{}
+			}
+		case "projectorCompatVersion":
+			if _, ok := fieldSeen[relationshipassertion.FieldProjectorCompatVersion]; !ok {
+				selectedFields = append(selectedFields, relationshipassertion.FieldProjectorCompatVersion)
+				fieldSeen[relationshipassertion.FieldProjectorCompatVersion] = struct{}{}
 			}
 		case "supportingObservationIds":
 			if _, ok := fieldSeen[relationshipassertion.FieldSupportingObservationIds]; !ok {
@@ -5361,6 +5503,241 @@ func newRelationshipAssertionPaginateArgs(rv map[string]any) *relationshipassert
 	}
 	if v, ok := rv[whereField].(*RelationshipAssertionWhereInput); ok {
 		args.opts = append(args.opts, WithRelationshipAssertionFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *RelationshipAttentionItemQuery) CollectFields(ctx context.Context, satisfies ...string) (*RelationshipAttentionItemQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *RelationshipAttentionItemQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(relationshipattentionitem.Columns))
+		selectedFields = []string{relationshipattentionitem.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "relationship":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relationshipImplementors)...); err != nil {
+				return err
+			}
+			_q.withRelationship = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldCreatedAt)
+				fieldSeen[relationshipattentionitem.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldUpdatedAt)
+				fieldSeen[relationshipattentionitem.FieldUpdatedAt] = struct{}{}
+			}
+		case "stableKey":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldStableKey]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldStableKey)
+				fieldSeen[relationshipattentionitem.FieldStableKey] = struct{}{}
+			}
+		case "version":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldVersion]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldVersion)
+				fieldSeen[relationshipattentionitem.FieldVersion] = struct{}{}
+			}
+		case "reasonCode":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldReasonCode]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldReasonCode)
+				fieldSeen[relationshipattentionitem.FieldReasonCode] = struct{}{}
+			}
+		case "explanation":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldExplanation]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldExplanation)
+				fieldSeen[relationshipattentionitem.FieldExplanation] = struct{}{}
+			}
+		case "triggeringObjectRef":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldTriggeringObjectRef]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldTriggeringObjectRef)
+				fieldSeen[relationshipattentionitem.FieldTriggeringObjectRef] = struct{}{}
+			}
+		case "evidenceRefs":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldEvidenceRefs]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldEvidenceRefs)
+				fieldSeen[relationshipattentionitem.FieldEvidenceRefs] = struct{}{}
+			}
+		case "urgencyBand":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldUrgencyBand]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldUrgencyBand)
+				fieldSeen[relationshipattentionitem.FieldUrgencyBand] = struct{}{}
+			}
+		case "rankScore":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldRankScore]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldRankScore)
+				fieldSeen[relationshipattentionitem.FieldRankScore] = struct{}{}
+			}
+		case "rankFactorsJSON":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldRankFactorsJSON]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldRankFactorsJSON)
+				fieldSeen[relationshipattentionitem.FieldRankFactorsJSON] = struct{}{}
+			}
+		case "sourceRequirements":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldSourceRequirements]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldSourceRequirements)
+				fieldSeen[relationshipattentionitem.FieldSourceRequirements] = struct{}{}
+			}
+		case "recommendationID":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldRecommendationID]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldRecommendationID)
+				fieldSeen[relationshipattentionitem.FieldRecommendationID] = struct{}{}
+			}
+		case "recommendationRevision":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldRecommendationRevision]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldRecommendationRevision)
+				fieldSeen[relationshipattentionitem.FieldRecommendationRevision] = struct{}{}
+			}
+		case "ownerID":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldOwnerID]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldOwnerID)
+				fieldSeen[relationshipattentionitem.FieldOwnerID] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldStatus)
+				fieldSeen[relationshipattentionitem.FieldStatus] = struct{}{}
+			}
+		case "stateReason":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldStateReason]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldStateReason)
+				fieldSeen[relationshipattentionitem.FieldStateReason] = struct{}{}
+			}
+		case "snoozedUntil":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldSnoozedUntil]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldSnoozedUntil)
+				fieldSeen[relationshipattentionitem.FieldSnoozedUntil] = struct{}{}
+			}
+		case "expiresAt":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldExpiresAt]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldExpiresAt)
+				fieldSeen[relationshipattentionitem.FieldExpiresAt] = struct{}{}
+			}
+		case "detectorVersion":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldDetectorVersion]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldDetectorVersion)
+				fieldSeen[relationshipattentionitem.FieldDetectorVersion] = struct{}{}
+			}
+		case "projectorVersion":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldProjectorVersion]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldProjectorVersion)
+				fieldSeen[relationshipattentionitem.FieldProjectorVersion] = struct{}{}
+			}
+		case "relationshipStateVersion":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldRelationshipStateVersion]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldRelationshipStateVersion)
+				fieldSeen[relationshipattentionitem.FieldRelationshipStateVersion] = struct{}{}
+			}
+		case "materialHash":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldMaterialHash]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldMaterialHash)
+				fieldSeen[relationshipattentionitem.FieldMaterialHash] = struct{}{}
+			}
+		case "lastDetectedAt":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldLastDetectedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldLastDetectedAt)
+				fieldSeen[relationshipattentionitem.FieldLastDetectedAt] = struct{}{}
+			}
+		case "acknowledgedBy":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldAcknowledgedBy]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldAcknowledgedBy)
+				fieldSeen[relationshipattentionitem.FieldAcknowledgedBy] = struct{}{}
+			}
+		case "acknowledgedAt":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldAcknowledgedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldAcknowledgedAt)
+				fieldSeen[relationshipattentionitem.FieldAcknowledgedAt] = struct{}{}
+			}
+		case "dismissedBy":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldDismissedBy]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldDismissedBy)
+				fieldSeen[relationshipattentionitem.FieldDismissedBy] = struct{}{}
+			}
+		case "dismissedAt":
+			if _, ok := fieldSeen[relationshipattentionitem.FieldDismissedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipattentionitem.FieldDismissedAt)
+				fieldSeen[relationshipattentionitem.FieldDismissedAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type relationshipattentionitemPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []RelationshipAttentionItemPaginateOption
+}
+
+func newRelationshipAttentionItemPaginateArgs(rv map[string]any) *relationshipattentionitemPaginateArgs {
+	args := &relationshipattentionitemPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*RelationshipAttentionItemWhereInput); ok {
+		args.opts = append(args.opts, WithRelationshipAttentionItemFilter(v.Filter))
 	}
 	return args
 }
@@ -5501,6 +5878,518 @@ func newRelationshipIdentityPaginateArgs(rv map[string]any) *relationshipidentit
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *RelationshipIdentityCandidateQuery) CollectFields(ctx context.Context, satisfies ...string) (*RelationshipIdentityCandidateQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *RelationshipIdentityCandidateQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(relationshipidentitycandidate.Columns))
+		selectedFields = []string{relationshipidentitycandidate.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "proposedRelationship":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relationshipImplementors)...); err != nil {
+				return err
+			}
+			_q.withProposedRelationship = query
+
+		case "existingRelationship":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relationshipImplementors)...); err != nil {
+				return err
+			}
+			_q.withExistingRelationship = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+
+		case "lineageEvents":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipLineageEventClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshiplineageeventImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedLineageEvents(alias, func(wq *RelationshipLineageEventQuery) {
+				*wq = *query
+			})
+
+		case "decisions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipIdentityDecisionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipidentitydecisionImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedDecisions(alias, func(wq *RelationshipIdentityDecisionQuery) {
+				*wq = *query
+			})
+		case "createdAt":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldCreatedAt)
+				fieldSeen[relationshipidentitycandidate.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldUpdatedAt)
+				fieldSeen[relationshipidentitycandidate.FieldUpdatedAt] = struct{}{}
+			}
+		case "dedupeKey":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldDedupeKey]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldDedupeKey)
+				fieldSeen[relationshipidentitycandidate.FieldDedupeKey] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldStatus)
+				fieldSeen[relationshipidentitycandidate.FieldStatus] = struct{}{}
+			}
+		case "candidateType":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldCandidateType]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldCandidateType)
+				fieldSeen[relationshipidentitycandidate.FieldCandidateType] = struct{}{}
+			}
+		case "anchorKind":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldAnchorKind]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldAnchorKind)
+				fieldSeen[relationshipidentitycandidate.FieldAnchorKind] = struct{}{}
+			}
+		case "anchorProvider":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldAnchorProvider]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldAnchorProvider)
+				fieldSeen[relationshipidentitycandidate.FieldAnchorProvider] = struct{}{}
+			}
+		case "matchingAnchors":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldMatchingAnchors]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldMatchingAnchors)
+				fieldSeen[relationshipidentitycandidate.FieldMatchingAnchors] = struct{}{}
+			}
+		case "conflictingAnchors":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldConflictingAnchors]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldConflictingAnchors)
+				fieldSeen[relationshipidentitycandidate.FieldConflictingAnchors] = struct{}{}
+			}
+		case "evidenceRefs":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldEvidenceRefs]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldEvidenceRefs)
+				fieldSeen[relationshipidentitycandidate.FieldEvidenceRefs] = struct{}{}
+			}
+		case "evidenceCount":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldEvidenceCount]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldEvidenceCount)
+				fieldSeen[relationshipidentitycandidate.FieldEvidenceCount] = struct{}{}
+			}
+		case "evidenceFrom":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldEvidenceFrom]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldEvidenceFrom)
+				fieldSeen[relationshipidentitycandidate.FieldEvidenceFrom] = struct{}{}
+			}
+		case "evidenceTo":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldEvidenceTo]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldEvidenceTo)
+				fieldSeen[relationshipidentitycandidate.FieldEvidenceTo] = struct{}{}
+			}
+		case "recommendedDecision":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldRecommendedDecision]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldRecommendedDecision)
+				fieldSeen[relationshipidentitycandidate.FieldRecommendedDecision] = struct{}{}
+			}
+		case "confidence":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldConfidence]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldConfidence)
+				fieldSeen[relationshipidentitycandidate.FieldConfidence] = struct{}{}
+			}
+		case "version":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldVersion]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldVersion)
+				fieldSeen[relationshipidentitycandidate.FieldVersion] = struct{}{}
+			}
+		case "decision":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldDecision]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldDecision)
+				fieldSeen[relationshipidentitycandidate.FieldDecision] = struct{}{}
+			}
+		case "decisionActorID":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldDecisionActorID]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldDecisionActorID)
+				fieldSeen[relationshipidentitycandidate.FieldDecisionActorID] = struct{}{}
+			}
+		case "decidedAt":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldDecidedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldDecidedAt)
+				fieldSeen[relationshipidentitycandidate.FieldDecidedAt] = struct{}{}
+			}
+		case "undoesCandidateID":
+			if _, ok := fieldSeen[relationshipidentitycandidate.FieldUndoesCandidateID]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitycandidate.FieldUndoesCandidateID)
+				fieldSeen[relationshipidentitycandidate.FieldUndoesCandidateID] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type relationshipidentitycandidatePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []RelationshipIdentityCandidatePaginateOption
+}
+
+func newRelationshipIdentityCandidatePaginateArgs(rv map[string]any) *relationshipidentitycandidatePaginateArgs {
+	args := &relationshipidentitycandidatePaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*RelationshipIdentityCandidateWhereInput); ok {
+		args.opts = append(args.opts, WithRelationshipIdentityCandidateFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *RelationshipIdentityDecisionQuery) CollectFields(ctx context.Context, satisfies ...string) (*RelationshipIdentityDecisionQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *RelationshipIdentityDecisionQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(relationshipidentitydecision.Columns))
+		selectedFields = []string{relationshipidentitydecision.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "candidate":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipIdentityCandidateClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relationshipidentitycandidateImplementors)...); err != nil {
+				return err
+			}
+			_q.withCandidate = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[relationshipidentitydecision.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitydecision.FieldCreatedAt)
+				fieldSeen[relationshipidentitydecision.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[relationshipidentitydecision.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitydecision.FieldUpdatedAt)
+				fieldSeen[relationshipidentitydecision.FieldUpdatedAt] = struct{}{}
+			}
+		case "idempotencyKey":
+			if _, ok := fieldSeen[relationshipidentitydecision.FieldIdempotencyKey]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitydecision.FieldIdempotencyKey)
+				fieldSeen[relationshipidentitydecision.FieldIdempotencyKey] = struct{}{}
+			}
+		case "decision":
+			if _, ok := fieldSeen[relationshipidentitydecision.FieldDecision]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitydecision.FieldDecision)
+				fieldSeen[relationshipidentitydecision.FieldDecision] = struct{}{}
+			}
+		case "candidateVersion":
+			if _, ok := fieldSeen[relationshipidentitydecision.FieldCandidateVersion]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitydecision.FieldCandidateVersion)
+				fieldSeen[relationshipidentitydecision.FieldCandidateVersion] = struct{}{}
+			}
+		case "actorID":
+			if _, ok := fieldSeen[relationshipidentitydecision.FieldActorID]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitydecision.FieldActorID)
+				fieldSeen[relationshipidentitydecision.FieldActorID] = struct{}{}
+			}
+		case "decidedAt":
+			if _, ok := fieldSeen[relationshipidentitydecision.FieldDecidedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitydecision.FieldDecidedAt)
+				fieldSeen[relationshipidentitydecision.FieldDecidedAt] = struct{}{}
+			}
+		case "compensatesDecisionID":
+			if _, ok := fieldSeen[relationshipidentitydecision.FieldCompensatesDecisionID]; !ok {
+				selectedFields = append(selectedFields, relationshipidentitydecision.FieldCompensatesDecisionID)
+				fieldSeen[relationshipidentitydecision.FieldCompensatesDecisionID] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type relationshipidentitydecisionPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []RelationshipIdentityDecisionPaginateOption
+}
+
+func newRelationshipIdentityDecisionPaginateArgs(rv map[string]any) *relationshipidentitydecisionPaginateArgs {
+	args := &relationshipidentitydecisionPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*RelationshipIdentityDecisionWhereInput); ok {
+		args.opts = append(args.opts, WithRelationshipIdentityDecisionFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *RelationshipLineageEventQuery) CollectFields(ctx context.Context, satisfies ...string) (*RelationshipLineageEventQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *RelationshipLineageEventQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(relationshiplineageevent.Columns))
+		selectedFields = []string{relationshiplineageevent.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "candidate":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipIdentityCandidateClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relationshipidentitycandidateImplementors)...); err != nil {
+				return err
+			}
+			_q.withCandidate = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[relationshiplineageevent.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, relationshiplineageevent.FieldCreatedAt)
+				fieldSeen[relationshiplineageevent.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[relationshiplineageevent.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, relationshiplineageevent.FieldUpdatedAt)
+				fieldSeen[relationshiplineageevent.FieldUpdatedAt] = struct{}{}
+			}
+		case "kind":
+			if _, ok := fieldSeen[relationshiplineageevent.FieldKind]; !ok {
+				selectedFields = append(selectedFields, relationshiplineageevent.FieldKind)
+				fieldSeen[relationshiplineageevent.FieldKind] = struct{}{}
+			}
+		case "actorID":
+			if _, ok := fieldSeen[relationshiplineageevent.FieldActorID]; !ok {
+				selectedFields = append(selectedFields, relationshiplineageevent.FieldActorID)
+				fieldSeen[relationshiplineageevent.FieldActorID] = struct{}{}
+			}
+		case "observationIds":
+			if _, ok := fieldSeen[relationshiplineageevent.FieldObservationIds]; !ok {
+				selectedFields = append(selectedFields, relationshiplineageevent.FieldObservationIds)
+				fieldSeen[relationshiplineageevent.FieldObservationIds] = struct{}{}
+			}
+		case "identityIds":
+			if _, ok := fieldSeen[relationshiplineageevent.FieldIdentityIds]; !ok {
+				selectedFields = append(selectedFields, relationshiplineageevent.FieldIdentityIds)
+				fieldSeen[relationshiplineageevent.FieldIdentityIds] = struct{}{}
+			}
+		case "movedObjectRefs":
+			if _, ok := fieldSeen[relationshiplineageevent.FieldMovedObjectRefs]; !ok {
+				selectedFields = append(selectedFields, relationshiplineageevent.FieldMovedObjectRefs)
+				fieldSeen[relationshiplineageevent.FieldMovedObjectRefs] = struct{}{}
+			}
+		case "beforeRelationshipIds":
+			if _, ok := fieldSeen[relationshiplineageevent.FieldBeforeRelationshipIds]; !ok {
+				selectedFields = append(selectedFields, relationshiplineageevent.FieldBeforeRelationshipIds)
+				fieldSeen[relationshiplineageevent.FieldBeforeRelationshipIds] = struct{}{}
+			}
+		case "afterRelationshipIds":
+			if _, ok := fieldSeen[relationshiplineageevent.FieldAfterRelationshipIds]; !ok {
+				selectedFields = append(selectedFields, relationshiplineageevent.FieldAfterRelationshipIds)
+				fieldSeen[relationshiplineageevent.FieldAfterRelationshipIds] = struct{}{}
+			}
+		case "occurredAt":
+			if _, ok := fieldSeen[relationshiplineageevent.FieldOccurredAt]; !ok {
+				selectedFields = append(selectedFields, relationshiplineageevent.FieldOccurredAt)
+				fieldSeen[relationshiplineageevent.FieldOccurredAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type relationshiplineageeventPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []RelationshipLineageEventPaginateOption
+}
+
+func newRelationshipLineageEventPaginateArgs(rv map[string]any) *relationshiplineageeventPaginateArgs {
+	args := &relationshiplineageeventPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*RelationshipLineageEventWhereInput); ok {
+		args.opts = append(args.opts, WithRelationshipLineageEventFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *RelationshipObservationQuery) CollectFields(ctx context.Context, satisfies ...string) (*RelationshipObservationQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -5616,6 +6505,11 @@ func (_q *RelationshipObservationQuery) collectField(ctx context.Context, oneNod
 			if _, ok := fieldSeen[relationshipobservation.FieldContentHash]; !ok {
 				selectedFields = append(selectedFields, relationshipobservation.FieldContentHash)
 				fieldSeen[relationshipobservation.FieldContentHash] = struct{}{}
+			}
+		case "encryptionKeyVersion":
+			if _, ok := fieldSeen[relationshipobservation.FieldEncryptionKeyVersion]; !ok {
+				selectedFields = append(selectedFields, relationshipobservation.FieldEncryptionKeyVersion)
+				fieldSeen[relationshipobservation.FieldEncryptionKeyVersion] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -5789,6 +6683,286 @@ func newRelationshipParticipantPaginateArgs(rv map[string]any) *relationshippart
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *RelationshipProjectionJobQuery) CollectFields(ctx context.Context, satisfies ...string) (*RelationshipProjectionJobQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *RelationshipProjectionJobQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(relationshipprojectionjob.Columns))
+		selectedFields = []string{relationshipprojectionjob.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "relationship":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relationshipImplementors)...); err != nil {
+				return err
+			}
+			_q.withRelationship = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[relationshipprojectionjob.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipprojectionjob.FieldCreatedAt)
+				fieldSeen[relationshipprojectionjob.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[relationshipprojectionjob.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipprojectionjob.FieldUpdatedAt)
+				fieldSeen[relationshipprojectionjob.FieldUpdatedAt] = struct{}{}
+			}
+		case "idempotencyKey":
+			if _, ok := fieldSeen[relationshipprojectionjob.FieldIdempotencyKey]; !ok {
+				selectedFields = append(selectedFields, relationshipprojectionjob.FieldIdempotencyKey)
+				fieldSeen[relationshipprojectionjob.FieldIdempotencyKey] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[relationshipprojectionjob.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, relationshipprojectionjob.FieldStatus)
+				fieldSeen[relationshipprojectionjob.FieldStatus] = struct{}{}
+			}
+		case "projectorVersion":
+			if _, ok := fieldSeen[relationshipprojectionjob.FieldProjectorVersion]; !ok {
+				selectedFields = append(selectedFields, relationshipprojectionjob.FieldProjectorVersion)
+				fieldSeen[relationshipprojectionjob.FieldProjectorVersion] = struct{}{}
+			}
+		case "evaluatedAt":
+			if _, ok := fieldSeen[relationshipprojectionjob.FieldEvaluatedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipprojectionjob.FieldEvaluatedAt)
+				fieldSeen[relationshipprojectionjob.FieldEvaluatedAt] = struct{}{}
+			}
+		case "triggerRefs":
+			if _, ok := fieldSeen[relationshipprojectionjob.FieldTriggerRefs]; !ok {
+				selectedFields = append(selectedFields, relationshipprojectionjob.FieldTriggerRefs)
+				fieldSeen[relationshipprojectionjob.FieldTriggerRefs] = struct{}{}
+			}
+		case "attempts":
+			if _, ok := fieldSeen[relationshipprojectionjob.FieldAttempts]; !ok {
+				selectedFields = append(selectedFields, relationshipprojectionjob.FieldAttempts)
+				fieldSeen[relationshipprojectionjob.FieldAttempts] = struct{}{}
+			}
+		case "nextAttemptAt":
+			if _, ok := fieldSeen[relationshipprojectionjob.FieldNextAttemptAt]; !ok {
+				selectedFields = append(selectedFields, relationshipprojectionjob.FieldNextAttemptAt)
+				fieldSeen[relationshipprojectionjob.FieldNextAttemptAt] = struct{}{}
+			}
+		case "leaseOwner":
+			if _, ok := fieldSeen[relationshipprojectionjob.FieldLeaseOwner]; !ok {
+				selectedFields = append(selectedFields, relationshipprojectionjob.FieldLeaseOwner)
+				fieldSeen[relationshipprojectionjob.FieldLeaseOwner] = struct{}{}
+			}
+		case "leaseExpiresAt":
+			if _, ok := fieldSeen[relationshipprojectionjob.FieldLeaseExpiresAt]; !ok {
+				selectedFields = append(selectedFields, relationshipprojectionjob.FieldLeaseExpiresAt)
+				fieldSeen[relationshipprojectionjob.FieldLeaseExpiresAt] = struct{}{}
+			}
+		case "completedAt":
+			if _, ok := fieldSeen[relationshipprojectionjob.FieldCompletedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipprojectionjob.FieldCompletedAt)
+				fieldSeen[relationshipprojectionjob.FieldCompletedAt] = struct{}{}
+			}
+		case "resultStateHash":
+			if _, ok := fieldSeen[relationshipprojectionjob.FieldResultStateHash]; !ok {
+				selectedFields = append(selectedFields, relationshipprojectionjob.FieldResultStateHash)
+				fieldSeen[relationshipprojectionjob.FieldResultStateHash] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type relationshipprojectionjobPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []RelationshipProjectionJobPaginateOption
+}
+
+func newRelationshipProjectionJobPaginateArgs(rv map[string]any) *relationshipprojectionjobPaginateArgs {
+	args := &relationshipprojectionjobPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*RelationshipProjectionJobWhereInput); ok {
+		args.opts = append(args.opts, WithRelationshipProjectionJobFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *RelationshipReviewAcknowledgementQuery) CollectFields(ctx context.Context, satisfies ...string) (*RelationshipReviewAcknowledgementQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *RelationshipReviewAcknowledgementQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(relationshipreviewacknowledgement.Columns))
+		selectedFields = []string{relationshipreviewacknowledgement.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "relationship":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relationshipImplementors)...); err != nil {
+				return err
+			}
+			_q.withRelationship = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[relationshipreviewacknowledgement.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipreviewacknowledgement.FieldCreatedAt)
+				fieldSeen[relationshipreviewacknowledgement.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[relationshipreviewacknowledgement.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipreviewacknowledgement.FieldUpdatedAt)
+				fieldSeen[relationshipreviewacknowledgement.FieldUpdatedAt] = struct{}{}
+			}
+		case "stateVersion":
+			if _, ok := fieldSeen[relationshipreviewacknowledgement.FieldStateVersion]; !ok {
+				selectedFields = append(selectedFields, relationshipreviewacknowledgement.FieldStateVersion)
+				fieldSeen[relationshipreviewacknowledgement.FieldStateVersion] = struct{}{}
+			}
+		case "stateHash":
+			if _, ok := fieldSeen[relationshipreviewacknowledgement.FieldStateHash]; !ok {
+				selectedFields = append(selectedFields, relationshipreviewacknowledgement.FieldStateHash)
+				fieldSeen[relationshipreviewacknowledgement.FieldStateHash] = struct{}{}
+			}
+		case "acknowledgedAt":
+			if _, ok := fieldSeen[relationshipreviewacknowledgement.FieldAcknowledgedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipreviewacknowledgement.FieldAcknowledgedAt)
+				fieldSeen[relationshipreviewacknowledgement.FieldAcknowledgedAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type relationshipreviewacknowledgementPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []RelationshipReviewAcknowledgementPaginateOption
+}
+
+func newRelationshipReviewAcknowledgementPaginateArgs(rv map[string]any) *relationshipreviewacknowledgementPaginateArgs {
+	args := &relationshipreviewacknowledgementPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*RelationshipReviewAcknowledgementWhereInput); ok {
+		args.opts = append(args.opts, WithRelationshipReviewAcknowledgementFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *RelationshipSourceStatusQuery) CollectFields(ctx context.Context, satisfies ...string) (*RelationshipSourceStatusQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -5851,10 +7025,115 @@ func (_q *RelationshipSourceStatusQuery) collectField(ctx context.Context, oneNo
 				selectedFields = append(selectedFields, relationshipsourcestatus.FieldSourceAccountID)
 				fieldSeen[relationshipsourcestatus.FieldSourceAccountID] = struct{}{}
 			}
+		case "consentingActorID":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldConsentingActorID]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldConsentingActorID)
+				fieldSeen[relationshipsourcestatus.FieldConsentingActorID] = struct{}{}
+			}
 		case "status":
 			if _, ok := fieldSeen[relationshipsourcestatus.FieldStatus]; !ok {
 				selectedFields = append(selectedFields, relationshipsourcestatus.FieldStatus)
 				fieldSeen[relationshipsourcestatus.FieldStatus] = struct{}{}
+			}
+		case "backfillPhase":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldBackfillPhase]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldBackfillPhase)
+				fieldSeen[relationshipsourcestatus.FieldBackfillPhase] = struct{}{}
+			}
+		case "backfillCompleted":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldBackfillCompleted]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldBackfillCompleted)
+				fieldSeen[relationshipsourcestatus.FieldBackfillCompleted] = struct{}{}
+			}
+		case "backfillTotal":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldBackfillTotal]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldBackfillTotal)
+				fieldSeen[relationshipsourcestatus.FieldBackfillTotal] = struct{}{}
+			}
+		case "syncStartedAt":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldSyncStartedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldSyncStartedAt)
+				fieldSeen[relationshipsourcestatus.FieldSyncStartedAt] = struct{}{}
+			}
+		case "authorizationStartedAt":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldAuthorizationStartedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldAuthorizationStartedAt)
+				fieldSeen[relationshipsourcestatus.FieldAuthorizationStartedAt] = struct{}{}
+			}
+		case "authorizedAt":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldAuthorizedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldAuthorizedAt)
+				fieldSeen[relationshipsourcestatus.FieldAuthorizedAt] = struct{}{}
+			}
+		case "backfillCompletedAt":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldBackfillCompletedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldBackfillCompletedAt)
+				fieldSeen[relationshipsourcestatus.FieldBackfillCompletedAt] = struct{}{}
+			}
+		case "lastFailedSyncAt":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldLastFailedSyncAt]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldLastFailedSyncAt)
+				fieldSeen[relationshipsourcestatus.FieldLastFailedSyncAt] = struct{}{}
+			}
+		case "disconnectedAt":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldDisconnectedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldDisconnectedAt)
+				fieldSeen[relationshipsourcestatus.FieldDisconnectedAt] = struct{}{}
+			}
+		case "revokedAt":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldRevokedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldRevokedAt)
+				fieldSeen[relationshipsourcestatus.FieldRevokedAt] = struct{}{}
+			}
+		case "lastSyncAt":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldLastSyncAt]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldLastSyncAt)
+				fieldSeen[relationshipsourcestatus.FieldLastSyncAt] = struct{}{}
+			}
+		case "expectedCadenceSeconds":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldExpectedCadenceSeconds]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldExpectedCadenceSeconds)
+				fieldSeen[relationshipsourcestatus.FieldExpectedCadenceSeconds] = struct{}{}
+			}
+		case "lagSeconds":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldLagSeconds]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldLagSeconds)
+				fieldSeen[relationshipsourcestatus.FieldLagSeconds] = struct{}{}
+			}
+		case "requiredScopes":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldRequiredScopes]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldRequiredScopes)
+				fieldSeen[relationshipsourcestatus.FieldRequiredScopes] = struct{}{}
+			}
+		case "grantedScopes":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldGrantedScopes]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldGrantedScopes)
+				fieldSeen[relationshipsourcestatus.FieldGrantedScopes] = struct{}{}
+			}
+		case "missingScopes":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldMissingScopes]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldMissingScopes)
+				fieldSeen[relationshipsourcestatus.FieldMissingScopes] = struct{}{}
+			}
+		case "errorCode":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldErrorCode]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldErrorCode)
+				fieldSeen[relationshipsourcestatus.FieldErrorCode] = struct{}{}
+			}
+		case "retryCount":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldRetryCount]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldRetryCount)
+				fieldSeen[relationshipsourcestatus.FieldRetryCount] = struct{}{}
+			}
+		case "nextRetryAt":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldNextRetryAt]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldNextRetryAt)
+				fieldSeen[relationshipsourcestatus.FieldNextRetryAt] = struct{}{}
+			}
+		case "completeness":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldCompleteness]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldCompleteness)
+				fieldSeen[relationshipsourcestatus.FieldCompleteness] = struct{}{}
 			}
 		case "lastSuccessAt":
 			if _, ok := fieldSeen[relationshipsourcestatus.FieldLastSuccessAt]; !ok {
@@ -5865,6 +7144,11 @@ func (_q *RelationshipSourceStatusQuery) collectField(ctx context.Context, oneNo
 			if _, ok := fieldSeen[relationshipsourcestatus.FieldLastObservationAt]; !ok {
 				selectedFields = append(selectedFields, relationshipsourcestatus.FieldLastObservationAt)
 				fieldSeen[relationshipsourcestatus.FieldLastObservationAt] = struct{}{}
+			}
+		case "lastProviderEventAt":
+			if _, ok := fieldSeen[relationshipsourcestatus.FieldLastProviderEventAt]; !ok {
+				selectedFields = append(selectedFields, relationshipsourcestatus.FieldLastProviderEventAt)
+				fieldSeen[relationshipsourcestatus.FieldLastProviderEventAt] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -5975,6 +7259,21 @@ func (_q *RelationshipStateSnapshotQuery) collectField(ctx context.Context, oneN
 			if _, ok := fieldSeen[relationshipstatesnapshot.FieldVersion]; !ok {
 				selectedFields = append(selectedFields, relationshipstatesnapshot.FieldVersion)
 				fieldSeen[relationshipstatesnapshot.FieldVersion] = struct{}{}
+			}
+		case "stateHash":
+			if _, ok := fieldSeen[relationshipstatesnapshot.FieldStateHash]; !ok {
+				selectedFields = append(selectedFields, relationshipstatesnapshot.FieldStateHash)
+				fieldSeen[relationshipstatesnapshot.FieldStateHash] = struct{}{}
+			}
+		case "projectorVersion":
+			if _, ok := fieldSeen[relationshipstatesnapshot.FieldProjectorVersion]; !ok {
+				selectedFields = append(selectedFields, relationshipstatesnapshot.FieldProjectorVersion)
+				fieldSeen[relationshipstatesnapshot.FieldProjectorVersion] = struct{}{}
+			}
+		case "evaluatedAt":
+			if _, ok := fieldSeen[relationshipstatesnapshot.FieldEvaluatedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipstatesnapshot.FieldEvaluatedAt)
+				fieldSeen[relationshipstatesnapshot.FieldEvaluatedAt] = struct{}{}
 			}
 		case "changedDimensions":
 			if _, ok := fieldSeen[relationshipstatesnapshot.FieldChangedDimensions]; !ok {
@@ -6131,6 +7430,19 @@ func (_q *RevenueActionQuery) collectField(ctx context.Context, oneNode bool, op
 				return err
 			}
 			_q.WithNamedOutcomes(alias, func(wq *ActionOutcomeQuery) {
+				*wq = *query
+			})
+
+		case "trustEvents":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueTrustEventClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, revenuetrusteventImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedTrustEvents(alias, func(wq *RevenueTrustEventQuery) {
 				*wq = *query
 			})
 		case "createdAt":
@@ -6625,6 +7937,11 @@ func (_q *RevenueEvidenceQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, revenueevidence.FieldContentHash)
 				fieldSeen[revenueevidence.FieldContentHash] = struct{}{}
 			}
+		case "encryptionKeyVersion":
+			if _, ok := fieldSeen[revenueevidence.FieldEncryptionKeyVersion]; !ok {
+				selectedFields = append(selectedFields, revenueevidence.FieldEncryptionKeyVersion)
+				fieldSeen[revenueevidence.FieldEncryptionKeyVersion] = struct{}{}
+			}
 		case "occurredAt":
 			if _, ok := fieldSeen[revenueevidence.FieldOccurredAt]; !ok {
 				selectedFields = append(selectedFields, revenueevidence.FieldOccurredAt)
@@ -6738,6 +8055,11 @@ func (_q *RevenueLeakScanQuery) collectField(ctx context.Context, oneNode bool, 
 			if _, ok := fieldSeen[revenueleakscan.FieldStatus]; !ok {
 				selectedFields = append(selectedFields, revenueleakscan.FieldStatus)
 				fieldSeen[revenueleakscan.FieldStatus] = struct{}{}
+			}
+		case "activeClaim":
+			if _, ok := fieldSeen[revenueleakscan.FieldActiveClaim]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldActiveClaim)
+				fieldSeen[revenueleakscan.FieldActiveClaim] = struct{}{}
 			}
 		case "mode":
 			if _, ok := fieldSeen[revenueleakscan.FieldMode]; !ok {
@@ -6990,6 +8312,167 @@ func newRevenueOutboxEventPaginateArgs(rv map[string]any) *revenueoutboxeventPag
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *RevenueTrustEventQuery) CollectFields(ctx context.Context, satisfies ...string) (*RevenueTrustEventQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *RevenueTrustEventQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(revenuetrustevent.Columns))
+		selectedFields = []string{revenuetrustevent.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+
+		case "relationship":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relationshipImplementors)...); err != nil {
+				return err
+			}
+			_q.withRelationship = query
+
+		case "action":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueActionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueactionImplementors)...); err != nil {
+				return err
+			}
+			_q.withAction = query
+		case "createdAt":
+			if _, ok := fieldSeen[revenuetrustevent.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, revenuetrustevent.FieldCreatedAt)
+				fieldSeen[revenuetrustevent.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[revenuetrustevent.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, revenuetrustevent.FieldUpdatedAt)
+				fieldSeen[revenuetrustevent.FieldUpdatedAt] = struct{}{}
+			}
+		case "eventName":
+			if _, ok := fieldSeen[revenuetrustevent.FieldEventName]; !ok {
+				selectedFields = append(selectedFields, revenuetrustevent.FieldEventName)
+				fieldSeen[revenuetrustevent.FieldEventName] = struct{}{}
+			}
+		case "outcome":
+			if _, ok := fieldSeen[revenuetrustevent.FieldOutcome]; !ok {
+				selectedFields = append(selectedFields, revenuetrustevent.FieldOutcome)
+				fieldSeen[revenuetrustevent.FieldOutcome] = struct{}{}
+			}
+		case "reasonCode":
+			if _, ok := fieldSeen[revenuetrustevent.FieldReasonCode]; !ok {
+				selectedFields = append(selectedFields, revenuetrustevent.FieldReasonCode)
+				fieldSeen[revenuetrustevent.FieldReasonCode] = struct{}{}
+			}
+		case "correlationID":
+			if _, ok := fieldSeen[revenuetrustevent.FieldCorrelationID]; !ok {
+				selectedFields = append(selectedFields, revenuetrustevent.FieldCorrelationID)
+				fieldSeen[revenuetrustevent.FieldCorrelationID] = struct{}{}
+			}
+		case "source":
+			if _, ok := fieldSeen[revenuetrustevent.FieldSource]; !ok {
+				selectedFields = append(selectedFields, revenuetrustevent.FieldSource)
+				fieldSeen[revenuetrustevent.FieldSource] = struct{}{}
+			}
+		case "channel":
+			if _, ok := fieldSeen[revenuetrustevent.FieldChannel]; !ok {
+				selectedFields = append(selectedFields, revenuetrustevent.FieldChannel)
+				fieldSeen[revenuetrustevent.FieldChannel] = struct{}{}
+			}
+		case "stateVersion":
+			if _, ok := fieldSeen[revenuetrustevent.FieldStateVersion]; !ok {
+				selectedFields = append(selectedFields, revenuetrustevent.FieldStateVersion)
+				fieldSeen[revenuetrustevent.FieldStateVersion] = struct{}{}
+			}
+		case "durationMs":
+			if _, ok := fieldSeen[revenuetrustevent.FieldDurationMs]; !ok {
+				selectedFields = append(selectedFields, revenuetrustevent.FieldDurationMs)
+				fieldSeen[revenuetrustevent.FieldDurationMs] = struct{}{}
+			}
+		case "occurredAt":
+			if _, ok := fieldSeen[revenuetrustevent.FieldOccurredAt]; !ok {
+				selectedFields = append(selectedFields, revenuetrustevent.FieldOccurredAt)
+				fieldSeen[revenuetrustevent.FieldOccurredAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type revenuetrusteventPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []RevenueTrustEventPaginateOption
+}
+
+func newRevenueTrustEventPaginateArgs(rv map[string]any) *revenuetrusteventPaginateArgs {
+	args := &revenuetrusteventPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*RevenueTrustEventWhereInput); ok {
+		args.opts = append(args.opts, WithRevenueTrustEventFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *RevenueWorkspaceQuery) CollectFields(ctx context.Context, satisfies ...string) (*RevenueWorkspaceQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -7201,6 +8684,123 @@ func (_q *RevenueWorkspaceQuery) collectField(ctx context.Context, oneNode bool,
 				return err
 			}
 			_q.WithNamedRelationshipIdentities(alias, func(wq *RelationshipIdentityQuery) {
+				*wq = *query
+			})
+
+		case "relationshipProjectionJobs":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipProjectionJobClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipprojectionjobImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRelationshipProjectionJobs(alias, func(wq *RelationshipProjectionJobQuery) {
+				*wq = *query
+			})
+
+		case "evidenceKeys":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&TenantEvidenceKeyClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, tenantevidencekeyImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedEvidenceKeys(alias, func(wq *TenantEvidenceKeyQuery) {
+				*wq = *query
+			})
+
+		case "featureControls":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&WorkspaceFeatureControlClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, workspacefeaturecontrolImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedFeatureControls(alias, func(wq *WorkspaceFeatureControlQuery) {
+				*wq = *query
+			})
+
+		case "trustEvents":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueTrustEventClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, revenuetrusteventImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedTrustEvents(alias, func(wq *RevenueTrustEventQuery) {
+				*wq = *query
+			})
+
+		case "identityCandidates":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipIdentityCandidateClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipidentitycandidateImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedIdentityCandidates(alias, func(wq *RelationshipIdentityCandidateQuery) {
+				*wq = *query
+			})
+
+		case "relationshipLineageEvents":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipLineageEventClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshiplineageeventImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRelationshipLineageEvents(alias, func(wq *RelationshipLineageEventQuery) {
+				*wq = *query
+			})
+
+		case "relationshipIdentityDecisions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipIdentityDecisionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipidentitydecisionImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRelationshipIdentityDecisions(alias, func(wq *RelationshipIdentityDecisionQuery) {
+				*wq = *query
+			})
+
+		case "relationshipReviewAcknowledgements":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipReviewAcknowledgementClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipreviewacknowledgementImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRelationshipReviewAcknowledgements(alias, func(wq *RelationshipReviewAcknowledgementQuery) {
+				*wq = *query
+			})
+
+		case "relationshipAttentionItems":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipAttentionItemClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipattentionitemImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRelationshipAttentionItems(alias, func(wq *RelationshipAttentionItemQuery) {
 				*wq = *query
 			})
 
@@ -7564,6 +9164,130 @@ func newBillingSubscriptionPaginateArgs(rv map[string]any) *billingsubscriptionP
 	}
 	if v, ok := rv[whereField].(*BillingSubscriptionWhereInput); ok {
 		args.opts = append(args.opts, WithBillingSubscriptionFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *TenantEvidenceKeyQuery) CollectFields(ctx context.Context, satisfies ...string) (*TenantEvidenceKeyQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *TenantEvidenceKeyQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(tenantevidencekey.Columns))
+		selectedFields = []string{tenantevidencekey.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[tenantevidencekey.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, tenantevidencekey.FieldCreatedAt)
+				fieldSeen[tenantevidencekey.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[tenantevidencekey.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, tenantevidencekey.FieldUpdatedAt)
+				fieldSeen[tenantevidencekey.FieldUpdatedAt] = struct{}{}
+			}
+		case "version":
+			if _, ok := fieldSeen[tenantevidencekey.FieldVersion]; !ok {
+				selectedFields = append(selectedFields, tenantevidencekey.FieldVersion)
+				fieldSeen[tenantevidencekey.FieldVersion] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[tenantevidencekey.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, tenantevidencekey.FieldStatus)
+				fieldSeen[tenantevidencekey.FieldStatus] = struct{}{}
+			}
+		case "keyFingerprint":
+			if _, ok := fieldSeen[tenantevidencekey.FieldKeyFingerprint]; !ok {
+				selectedFields = append(selectedFields, tenantevidencekey.FieldKeyFingerprint)
+				fieldSeen[tenantevidencekey.FieldKeyFingerprint] = struct{}{}
+			}
+		case "rotatedAt":
+			if _, ok := fieldSeen[tenantevidencekey.FieldRotatedAt]; !ok {
+				selectedFields = append(selectedFields, tenantevidencekey.FieldRotatedAt)
+				fieldSeen[tenantevidencekey.FieldRotatedAt] = struct{}{}
+			}
+		case "destroyedAt":
+			if _, ok := fieldSeen[tenantevidencekey.FieldDestroyedAt]; !ok {
+				selectedFields = append(selectedFields, tenantevidencekey.FieldDestroyedAt)
+				fieldSeen[tenantevidencekey.FieldDestroyedAt] = struct{}{}
+			}
+		case "erasureProof":
+			if _, ok := fieldSeen[tenantevidencekey.FieldErasureProof]; !ok {
+				selectedFields = append(selectedFields, tenantevidencekey.FieldErasureProof)
+				fieldSeen[tenantevidencekey.FieldErasureProof] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type tenantevidencekeyPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []TenantEvidenceKeyPaginateOption
+}
+
+func newTenantEvidenceKeyPaginateArgs(rv map[string]any) *tenantevidencekeyPaginateArgs {
+	args := &tenantevidencekeyPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*TenantEvidenceKeyWhereInput); ok {
+		args.opts = append(args.opts, WithTenantEvidenceKeyFilter(v.Filter))
 	}
 	return args
 }
@@ -8108,6 +9832,123 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				*wq = *query
 			})
 
+		case "relationshipProjectionJobs":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipProjectionJobClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipprojectionjobImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRelationshipProjectionJobs(alias, func(wq *RelationshipProjectionJobQuery) {
+				*wq = *query
+			})
+
+		case "tenantEvidenceKeys":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&TenantEvidenceKeyClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, tenantevidencekeyImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedTenantEvidenceKeys(alias, func(wq *TenantEvidenceKeyQuery) {
+				*wq = *query
+			})
+
+		case "workspaceFeatureControls":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&WorkspaceFeatureControlClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, workspacefeaturecontrolImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedWorkspaceFeatureControls(alias, func(wq *WorkspaceFeatureControlQuery) {
+				*wq = *query
+			})
+
+		case "revenueTrustEvents":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueTrustEventClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, revenuetrusteventImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRevenueTrustEvents(alias, func(wq *RevenueTrustEventQuery) {
+				*wq = *query
+			})
+
+		case "relationshipIdentityCandidates":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipIdentityCandidateClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipidentitycandidateImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRelationshipIdentityCandidates(alias, func(wq *RelationshipIdentityCandidateQuery) {
+				*wq = *query
+			})
+
+		case "relationshipLineageEvents":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipLineageEventClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshiplineageeventImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRelationshipLineageEvents(alias, func(wq *RelationshipLineageEventQuery) {
+				*wq = *query
+			})
+
+		case "relationshipIdentityDecisions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipIdentityDecisionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipidentitydecisionImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRelationshipIdentityDecisions(alias, func(wq *RelationshipIdentityDecisionQuery) {
+				*wq = *query
+			})
+
+		case "relationshipReviewAcknowledgements":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipReviewAcknowledgementClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipreviewacknowledgementImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRelationshipReviewAcknowledgements(alias, func(wq *RelationshipReviewAcknowledgementQuery) {
+				*wq = *query
+			})
+
+		case "relationshipAttentionItems":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipAttentionItemClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, relationshipattentionitemImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedRelationshipAttentionItems(alias, func(wq *RelationshipAttentionItemQuery) {
+				*wq = *query
+			})
+
 		case "relationshipObservations":
 			var (
 				alias = field.Alias
@@ -8247,6 +10088,120 @@ func newUserPaginateArgs(rv map[string]any) *userPaginateArgs {
 	}
 	if v, ok := rv[whereField].(*UserWhereInput); ok {
 		args.opts = append(args.opts, WithUserFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *WorkspaceFeatureControlQuery) CollectFields(ctx context.Context, satisfies ...string) (*WorkspaceFeatureControlQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *WorkspaceFeatureControlQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(workspacefeaturecontrol.Columns))
+		selectedFields = []string{workspacefeaturecontrol.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[workspacefeaturecontrol.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, workspacefeaturecontrol.FieldCreatedAt)
+				fieldSeen[workspacefeaturecontrol.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[workspacefeaturecontrol.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, workspacefeaturecontrol.FieldUpdatedAt)
+				fieldSeen[workspacefeaturecontrol.FieldUpdatedAt] = struct{}{}
+			}
+		case "capability":
+			if _, ok := fieldSeen[workspacefeaturecontrol.FieldCapability]; !ok {
+				selectedFields = append(selectedFields, workspacefeaturecontrol.FieldCapability)
+				fieldSeen[workspacefeaturecontrol.FieldCapability] = struct{}{}
+			}
+		case "enabled":
+			if _, ok := fieldSeen[workspacefeaturecontrol.FieldEnabled]; !ok {
+				selectedFields = append(selectedFields, workspacefeaturecontrol.FieldEnabled)
+				fieldSeen[workspacefeaturecontrol.FieldEnabled] = struct{}{}
+			}
+		case "rolloutStage":
+			if _, ok := fieldSeen[workspacefeaturecontrol.FieldRolloutStage]; !ok {
+				selectedFields = append(selectedFields, workspacefeaturecontrol.FieldRolloutStage)
+				fieldSeen[workspacefeaturecontrol.FieldRolloutStage] = struct{}{}
+			}
+		case "reasonCode":
+			if _, ok := fieldSeen[workspacefeaturecontrol.FieldReasonCode]; !ok {
+				selectedFields = append(selectedFields, workspacefeaturecontrol.FieldReasonCode)
+				fieldSeen[workspacefeaturecontrol.FieldReasonCode] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type workspacefeaturecontrolPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []WorkspaceFeatureControlPaginateOption
+}
+
+func newWorkspaceFeatureControlPaginateArgs(rv map[string]any) *workspacefeaturecontrolPaginateArgs {
+	args := &workspacefeaturecontrolPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*WorkspaceFeatureControlWhereInput); ok {
+		args.opts = append(args.opts, WithWorkspaceFeatureControlFilter(v.Filter))
 	}
 	return args
 }

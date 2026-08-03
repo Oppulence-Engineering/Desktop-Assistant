@@ -105,8 +105,15 @@ func (a *AutoScanner) sweep(ctx context.Context) {
 	}
 
 	// Mail leak scanning remains restricted to users with a connected Google account.
+	cutoff := a.svc.now().Add(-a.cfg.MinPerUser)
 	users, err := a.svc.client.User.Query().
-		Where(user.HasOauthConnectionsWith(oauthconnection.ProviderEQ("google"))).
+		Where(
+			user.HasOauthConnectionsWith(oauthconnection.ProviderEQ("google")),
+			// Apply due-ness before LIMIT. The old order selected the oldest 200
+			// connected users and only then skipped recent scans in Go, which
+			// could permanently hide every later account.
+			user.Not(user.HasRevenueLeakScansWith(revenueleakscan.StartedAtGTE(cutoff))),
+		).
 		Order(ent.Asc(user.FieldCreatedAt)).
 		Limit(a.cfg.MaxPerCycle).
 		All(ictx)
@@ -122,9 +129,6 @@ func (a *AutoScanner) sweep(ctx context.Context) {
 		// Each scan runs under the owning user's context so tenancy scoping
 		// and the workspace get-or-create resolve to that user.
 		uctx := auth.WithUser(ctx, u)
-		if !a.due(ictx, u) {
-			continue
-		}
 		if _, err := a.svc.StartScan(uctx, u, a.cfg.LookbackDays); err != nil {
 			// scan_unavailable (already running, or Gmail not connected mid-flight)
 			// is expected and benign; anything else is worth a debug line.
@@ -156,21 +160,6 @@ func (a *AutoScanner) sweep(ctx context.Context) {
 	} else if n > 0 {
 		a.log.Info("revenue body cache pruned", zap.Int("rows", n))
 	}
-}
-
-// due reports whether the user has no recent scan and should be scanned now.
-func (a *AutoScanner) due(ctx context.Context, u *ent.User) bool {
-	cutoff := a.svc.now().Add(-a.cfg.MinPerUser)
-	recent, err := a.svc.client.RevenueLeakScan.Query().
-		Where(
-			revenueleakscan.HasUserWith(user.IDEQ(u.ID)),
-			revenueleakscan.StartedAtGTE(cutoff),
-		).
-		Exist(ctx)
-	if err != nil {
-		return false // fail closed: skip this user this cycle
-	}
-	return !recent
 }
 
 func isScanUnavailable(err error) bool {

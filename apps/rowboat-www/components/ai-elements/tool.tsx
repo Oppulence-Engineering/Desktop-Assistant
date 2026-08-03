@@ -1,7 +1,7 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@oppulence/ui/components/collapsible";
 import { cn } from "@/lib/utils";
 import type { ToolUIPart } from "ai";
 import { CheckCircle, CaretDown, Circle, Clock, Wrench, XCircle } from "@phosphor-icons/react";

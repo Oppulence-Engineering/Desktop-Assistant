@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ArrowUp } from '@/lib/icons'
-import { Button } from '@/components/ui/button'
+import { Button } from '@oppulence/ui/components/button'
 import { cn } from '@/lib/utils'
 
 interface ChatInputBarProps {

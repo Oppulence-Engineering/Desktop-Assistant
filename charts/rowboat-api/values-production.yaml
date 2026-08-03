@@ -22,7 +22,13 @@ autoscaling:
   targetCPUUtilizationPercentage: 65
 
 serviceMonitor:
-  enabled: false
+  enabled: true
+
+observability:
+  prometheusRule:
+    enabled: true
+  grafanaDashboard:
+    enabled: true
 
 config:
   ENVIRONMENT: production

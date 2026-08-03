@@ -1,0 +1,7 @@
+.git
+.rowboat-kind
+**/.next
+**/dist
+**/node_modules
+**/out
+**/*.tsbuildinfo

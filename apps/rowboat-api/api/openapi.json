@@ -1255,10 +1255,45 @@
             "example": 2,
             "type": "integer"
           },
+          "scheduleSyncError": {
+            "description": "Latest schedule reconciliation error, empty when healthy.",
+            "example": "",
+            "nullable": true,
+            "type": "string"
+          },
+          "scheduleSyncState": {
+            "description": "Server-owned Temporal schedule reconciliation state.",
+            "enum": ["current", "syncing", "failed", "paused"],
+            "example": "current",
+            "type": "string"
+          },
+          "scheduleSyncedAt": {
+            "description": "Last successful schedule reconciliation timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
           "slug": {
             "description": "Stable per-user background task slug matching bg-tasks/\u003cslug\u003e locally.",
             "example": "daily-summary",
             "type": "string"
+          },
+          "systemManaged": {
+            "description": "Whether Oppulence owns and upgrades this definition. Managed tasks can be paused but not deleted or edited.",
+            "example": false,
+            "type": "boolean"
+          },
+          "templateSlug": {
+            "description": "First-party template that owns this definition. Empty for user-authored tasks.",
+            "example": "relationship-refresh",
+            "nullable": true,
+            "type": "string"
+          },
+          "templateVersion": {
+            "description": "Installed version of the owning first-party template. Zero for user-authored tasks.",
+            "example": 1,
+            "type": "integer"
           },
           "triggers": {
             "description": "Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.",
@@ -1282,6 +1317,8 @@
           "instructions",
           "active",
           "executionTarget",
+          "systemManaged",
+          "scheduleSyncState",
           "createdAt",
           "updatedAt",
           "revision"
@@ -2329,6 +2366,11 @@
             "example": "api",
             "type": "string"
           },
+          "firstParty": {
+            "description": "Whether the template is installed and maintained automatically by Oppulence.",
+            "example": false,
+            "type": "boolean"
+          },
           "instructions": {
             "description": "Default task instructions.",
             "example": "Review recent important Gmail messages and produce a markdown digest.",
@@ -2386,6 +2428,11 @@
               "timezone": "America/New_York"
             },
             "nullable": true
+          },
+          "version": {
+            "description": "Monotonic product definition version used for safe upgrades.",
+            "example": 1,
+            "type": "integer"
           }
         },
         "required": [
@@ -2395,7 +2442,9 @@
           "description",
           "instructions",
           "active",
-          "executionTarget"
+          "executionTarget",
+          "version",
+          "firstParty"
         ],
         "type": "object"
       },
@@ -2478,6 +2527,215 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "BetaDiagnostics": {
+        "description": "Metadata-only support export. It excludes relationship names, addresses, evidence, action bodies, tokens, cursors, raw errors, and correlation identifiers.",
+        "properties": {
+          "checks": {
+            "description": "Release guardrail checks.",
+            "items": {
+              "description": "Diagnostic check.",
+              "properties": {
+                "code": {
+                  "description": "Stable check code.",
+                  "example": "projection_dead_letter",
+                  "type": "string"
+                },
+                "count": {
+                  "description": "Affected objects.",
+                  "example": 0,
+                  "type": "integer"
+                },
+                "explanation": {
+                  "description": "Content-free operator explanation.",
+                  "example": "No relationship projection is dead-lettered.",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Check state.",
+                  "enum": ["pass", "attention"],
+                  "example": "pass",
+                  "type": "string"
+                }
+              },
+              "required": ["code", "status", "explanation", "count"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "counts": {
+            "additionalProperties": true,
+            "description": "Bounded operational counts keyed by stable category.",
+            "type": "object"
+          },
+          "features": {
+            "description": "Workspace rollout controls.",
+            "items": {
+              "description": "Feature diagnostic.",
+              "properties": {
+                "capability": {
+                  "description": "Capability id.",
+                  "example": "action_gmail",
+                  "type": "string"
+                },
+                "enabled": {
+                  "description": "Whether enabled.",
+                  "example": false,
+                  "type": "boolean"
+                },
+                "reasonCode": {
+                  "description": "Categorical change reason.",
+                  "example": "internal_canary",
+                  "type": "string"
+                },
+                "rolloutStage": {
+                  "description": "Rollout stage.",
+                  "example": "internal_read_only",
+                  "type": "string"
+                }
+              },
+              "required": ["capability", "enabled", "rolloutStage"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "generatedAt": {
+            "description": "Generation time.",
+            "example": "2026-08-01T15:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "schemaVersion": {
+            "description": "Diagnostics contract version.",
+            "example": "tfa-support-v1",
+            "type": "string"
+          },
+          "sources": {
+            "description": "Redacted connection lifecycle metadata.",
+            "items": {
+              "description": "Source diagnostic.",
+              "properties": {
+                "backfillCompleted": {
+                  "description": "Completed units.",
+                  "example": 20,
+                  "type": "integer"
+                },
+                "backfillPhase": {
+                  "description": "Backfill phase.",
+                  "example": "failed",
+                  "type": "string"
+                },
+                "backfillTotal": {
+                  "description": "Total units.",
+                  "example": 100,
+                  "type": "integer"
+                },
+                "completeness": {
+                  "description": "Completeness state.",
+                  "example": "stale",
+                  "type": "string"
+                },
+                "connectionRef": {
+                  "description": "One-way connection support reference.",
+                  "example": "connection:sha256:ab12",
+                  "type": "string"
+                },
+                "errorCode": {
+                  "description": "Safe categorical error.",
+                  "example": "provider_outage",
+                  "type": "string"
+                },
+                "lagSeconds": {
+                  "description": "Current lag.",
+                  "example": 900,
+                  "type": "integer"
+                },
+                "missingScopeCount": {
+                  "description": "Count only; scope values remain on the user-facing connection card.",
+                  "example": 0,
+                  "type": "integer"
+                },
+                "retryCount": {
+                  "description": "Retry attempts.",
+                  "example": 2,
+                  "type": "integer"
+                },
+                "source": {
+                  "description": "Provider.",
+                  "example": "hubspot",
+                  "type": "string"
+                },
+                "sourceAccountRef": {
+                  "description": "One-way provider account support reference.",
+                  "example": "source-account:sha256:cd34",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Lifecycle state.",
+                  "example": "degraded",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "connectionRef",
+                "source",
+                "sourceAccountRef",
+                "status",
+                "completeness",
+                "backfillPhase",
+                "backfillCompleted",
+                "backfillTotal",
+                "lagSeconds",
+                "missingScopeCount",
+                "retryCount"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "trustFunnel": {
+            "description": "Categorical trust funnel totals.",
+            "items": {
+              "description": "Trust total.",
+              "properties": {
+                "count": {
+                  "description": "Total.",
+                  "example": 12,
+                  "type": "integer"
+                },
+                "eventName": {
+                  "description": "Event category.",
+                  "example": "mission_control_opened",
+                  "type": "string"
+                },
+                "outcome": {
+                  "description": "Outcome category.",
+                  "example": "viewed",
+                  "type": "string"
+                }
+              },
+              "required": ["eventName", "outcome", "count"],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "workspaceRef": {
+            "description": "One-way workspace support reference.",
+            "example": "workspace:sha256:ab12",
+            "type": "string"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "generatedAt",
+          "workspaceRef",
+          "features",
+          "sources",
+          "counts",
+          "trustFunnel",
+          "checks"
+        ],
         "type": "object"
       },
       "BillingState": {
@@ -5295,6 +5553,115 @@
         ],
         "type": "object"
       },
+      "MissionControlReadModel": {
+        "description": "One server-owned, version-consistent answer to state, change, evidence, action, completeness, and control.",
+        "properties": {
+          "activeRecommendation": {
+            "additionalProperties": true,
+            "description": "Active revision-bound recommendation and factors.",
+            "type": "object"
+          },
+          "aggregateHash": {
+            "description": "Stable hash of every material answer in this aggregate.",
+            "example": "sha256:cd34",
+            "type": "string"
+          },
+          "asOf": {
+            "description": "Explicit response boundary.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "capabilities": {
+            "additionalProperties": true,
+            "description": "Authorized operation links.",
+            "type": "object"
+          },
+          "changedSinceReview": {
+            "description": "Whether material state changed.",
+            "example": true,
+            "type": "boolean"
+          },
+          "changes": {
+            "description": "Dimension-level changes.",
+            "items": {
+              "additionalProperties": true,
+              "description": "Mission Control change.",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "completeness": {
+            "additionalProperties": true,
+            "description": "Source coverage, missing dimensions, ambiguity, and external-action safety.",
+            "type": "object"
+          },
+          "contractVersion": {
+            "description": "Read-contract version.",
+            "example": "tfa-2026-07-31",
+            "type": "string"
+          },
+          "detectorVersion": {
+            "description": "Detector version.",
+            "example": 1,
+            "type": "integer"
+          },
+          "evidence": {
+            "additionalProperties": true,
+            "description": "Dimension-keyed winning assertions and evidence references.",
+            "type": "object"
+          },
+          "freshnessBoundary": {
+            "description": "Earliest source freshness boundary.",
+            "example": "2026-07-31T14:30:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "pending": {
+            "additionalProperties": true,
+            "description": "Pending correction, identity, approval, execution, and reconciliation counts.",
+            "type": "object"
+          },
+          "previousReviewedStateVersion": {
+            "description": "Last acknowledged version.",
+            "example": 3,
+            "type": "integer"
+          },
+          "projectorVersion": {
+            "description": "Projector version.",
+            "example": 1,
+            "type": "integer"
+          },
+          "stateHash": {
+            "description": "Stable state hash.",
+            "example": "sha256:ab12",
+            "type": "string"
+          },
+          "stateVersion": {
+            "description": "Relationship state version.",
+            "example": 4,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "aggregateHash",
+          "asOf",
+          "stateVersion",
+          "stateHash",
+          "projectorVersion",
+          "detectorVersion",
+          "previousReviewedStateVersion",
+          "changedSinceReview",
+          "changes",
+          "evidence",
+          "completeness",
+          "pending",
+          "capabilities"
+        ],
+        "type": "object"
+      },
       "OAuthConnection": {
         "description": "Long-lived third-party OAuth connection such as Google. Refresh tokens are sealed before storage.",
         "properties": {
@@ -5748,6 +6115,12 @@
             },
             "type": "array"
           },
+          "attention_items": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipAttentionItem"
+            },
+            "type": "array"
+          },
           "commitment_dependencies": {
             "items": {
               "$ref": "#/components/schemas/CommitmentDependency"
@@ -5787,6 +6160,12 @@
           "evidences": {
             "items": {
               "$ref": "#/components/schemas/RevenueEvidence"
+            },
+            "type": "array"
+          },
+          "existing_identity_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipIdentityCandidate"
             },
             "type": "array"
           },
@@ -5859,9 +6238,34 @@
           "primary_email": {
             "type": "string"
           },
+          "projected_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "projection_jobs": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipProjectionJob"
+            },
+            "type": "array"
+          },
+          "projector_version": {
+            "type": "integer"
+          },
+          "proposed_identity_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipIdentityCandidate"
+            },
+            "type": "array"
+          },
           "resource_refs": {
             "items": {
               "type": "string"
+            },
+            "type": "array"
+          },
+          "review_acknowledgements": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipReviewAcknowledgement"
             },
             "type": "array"
           },
@@ -5880,6 +6284,9 @@
             },
             "type": "array"
           },
+          "state_hash": {
+            "type": "string"
+          },
           "state_reason": {
             "type": "string"
           },
@@ -5893,6 +6300,12 @@
           },
           "summary": {
             "type": "string"
+          },
+          "trust_events": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueTrustEvent"
+            },
+            "type": "array"
           },
           "updated_at": {
             "description": "Last row update timestamp.",
@@ -5921,6 +6334,7 @@
           "sentiment",
           "health",
           "state_version",
+          "projector_version",
           "risks",
           "milestones",
           "workspace",
@@ -5943,6 +6357,9 @@
           "dimension": {
             "type": "string"
           },
+          "extractor_version": {
+            "type": "string"
+          },
           "id": {
             "description": "Stable UUID primary key.",
             "example": "123e4567-e89b-12d3-a456-426614174000",
@@ -5951,6 +6368,9 @@
           },
           "observation": {
             "$ref": "#/components/schemas/RelationshipObservation"
+          },
+          "projector_compat_version": {
+            "type": "integer"
           },
           "reason": {
             "description": "Reason code for the ledger entry.",
@@ -5969,7 +6389,19 @@
           "relationship": {
             "$ref": "#/components/schemas/Relationship"
           },
+          "retracted_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "retraction_reason": {
+            "type": "string"
+          },
           "source_type": {
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
             "type": "string"
           },
           "supersedes_assertion_id": {
@@ -5995,6 +6427,10 @@
             "format": "date-time",
             "type": "string"
           },
+          "valid_to": {
+            "format": "date-time",
+            "type": "string"
+          },
           "value": {
             "type": "string"
           },
@@ -6009,12 +6445,207 @@
           "dimension",
           "value",
           "source_type",
+          "status",
           "confidence",
           "valid_from",
+          "extractor_version",
+          "projector_compat_version",
           "supporting_observation_ids",
           "workspace",
           "relationship",
           "user"
+        ],
+        "type": "object"
+      },
+      "RelationshipAttentionItem": {
+        "description": "Versioned relationship-native reason for portfolio attention.",
+        "properties": {
+          "acknowledgedAt": {
+            "description": "Acknowledged time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "acknowledgedBy": {
+            "description": "Acknowledging actor.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "Created time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "detectorVersion": {
+            "description": "Detector version.",
+            "example": 1,
+            "type": "integer"
+          },
+          "dismissedAt": {
+            "description": "Dismissed time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "dismissedBy": {
+            "description": "Dismissing actor.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "evidenceRefs": {
+            "description": "Evidence refs.",
+            "items": {
+              "description": "Evidence ref.",
+              "example": "relationship-observation:1",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "expiresAt": {
+            "description": "Expiry time.",
+            "example": "2026-08-07T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "explanation": {
+            "description": "Readable explanation.",
+            "example": "A confirmed commitment is overdue by two days.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "ownerId": {
+            "description": "Owner id.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "projectorVersion": {
+            "description": "Projector version.",
+            "example": 1,
+            "type": "integer"
+          },
+          "rankFactors": {
+            "additionalProperties": true,
+            "description": "Readable factor contributions.",
+            "type": "object"
+          },
+          "rankScore": {
+            "description": "Internal deterministic rank.",
+            "example": 82,
+            "type": "integer"
+          },
+          "reasonCode": {
+            "description": "Detector reason.",
+            "example": "overdue_commitment",
+            "type": "string"
+          },
+          "recommendationId": {
+            "description": "Recommendation id.",
+            "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "recommendationRevision": {
+            "description": "Recommendation revision.",
+            "example": 2,
+            "type": "integer"
+          },
+          "relationshipId": {
+            "description": "Relationship id.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "relationshipName": {
+            "description": "Relationship name.",
+            "example": "Acme",
+            "type": "string"
+          },
+          "relationshipStateVersion": {
+            "description": "Relationship version evaluated.",
+            "example": 4,
+            "type": "integer"
+          },
+          "snoozedUntil": {
+            "description": "Snooze time.",
+            "example": "2026-08-07T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "sourceRequirements": {
+            "description": "Fresh sources required.",
+            "items": {
+              "description": "Source.",
+              "example": "google",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "stateReason": {
+            "description": "Triage reason.",
+            "example": "Reviewed with account owner.",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "enum": ["open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved"],
+            "example": "active",
+            "type": "string"
+          },
+          "triggeringObjectRef": {
+            "description": "Triggering object.",
+            "example": "commitment:123",
+            "type": "string"
+          },
+          "updatedAt": {
+            "description": "Updated time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "urgencyBand": {
+            "description": "Urgency.",
+            "enum": ["low", "normal", "high", "critical"],
+            "example": "high",
+            "type": "string"
+          },
+          "version": {
+            "description": "Optimistic version.",
+            "example": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "relationshipId",
+          "relationshipName",
+          "reasonCode",
+          "explanation",
+          "triggeringObjectRef",
+          "evidenceRefs",
+          "urgencyBand",
+          "rankScore",
+          "rankFactors",
+          "sourceRequirements",
+          "status",
+          "detectorVersion",
+          "projectorVersion",
+          "relationshipStateVersion",
+          "createdAt",
+          "updatedAt"
         ],
         "type": "object"
       },
@@ -6061,6 +6692,361 @@
           }
         },
         "required": ["id", "direction", "text", "status", "confidence", "userConfirmed"],
+        "type": "object"
+      },
+      "RelationshipGraph": {
+        "description": "Shared read model for Account Graph and Portfolio Graph in web and desktop. Historical reads are bounded by asOf and every governed action remains permission-gated.",
+        "properties": {
+          "asOf": {
+            "description": "Historical evidence boundary.",
+            "example": "2026-08-01T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "contractVersion": {
+            "description": "Wire contract version.",
+            "example": "2026-08-01",
+            "type": "string"
+          },
+          "depth": {
+            "example": 2,
+            "maximum": 3,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "edges": {
+            "description": "Typed directed edges.",
+            "items": {
+              "$ref": "#/components/schemas/RelationshipGraphEdge"
+            },
+            "type": "array"
+          },
+          "generatedAt": {
+            "description": "Projection generation time.",
+            "example": "2026-08-01T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "historical": {
+            "description": "Whether the response is an historical projection.",
+            "example": false,
+            "type": "boolean"
+          },
+          "nodes": {
+            "description": "Typed nodes.",
+            "items": {
+              "$ref": "#/components/schemas/RelationshipGraphNode"
+            },
+            "type": "array"
+          },
+          "permissions": {
+            "description": "Viewer capabilities for this projection.",
+            "properties": {
+              "canApprove": {
+                "description": "May approve current action revisions.",
+                "example": false,
+                "type": "boolean"
+              },
+              "canContribute": {
+                "description": "May propose state or actions.",
+                "example": true,
+                "type": "boolean"
+              },
+              "canExecute": {
+                "description": "May explicitly execute approved actions.",
+                "example": false,
+                "type": "boolean"
+              },
+              "canSaveViews": {
+                "description": "May save graph views.",
+                "example": true,
+                "type": "boolean"
+              },
+              "canView": {
+                "description": "May view.",
+                "example": true,
+                "type": "boolean"
+              }
+            },
+            "required": ["canView", "canContribute", "canApprove", "canExecute", "canSaveViews"],
+            "type": "object"
+          },
+          "relationshipId": {
+            "description": "Relationship id for account scope.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "scope": {
+            "description": "Graph scope.",
+            "enum": ["portfolio", "relationship"],
+            "example": "portfolio",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "generatedAt",
+          "asOf",
+          "historical",
+          "scope",
+          "depth",
+          "nodes",
+          "edges",
+          "permissions"
+        ],
+        "type": "object"
+      },
+      "RelationshipGraphEdge": {
+        "description": "A typed graph edge whose source-to-target direction is semantically meaningful.",
+        "properties": {
+          "confidence": {
+            "example": 0.88,
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "directed": {
+            "description": "Whether the source-to-target direction is meaningful.",
+            "example": true,
+            "type": "boolean"
+          },
+          "evidenceRefs": {
+            "description": "Evidence supporting the connection.",
+            "items": {
+              "description": "Evidence id.",
+              "example": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "kind": {
+            "description": "Edge kind.",
+            "enum": [
+              "participant_of",
+              "owns",
+              "has_commitment",
+              "blocks",
+              "requires",
+              "supersedes",
+              "has_risk",
+              "has_milestone",
+              "recommended_for",
+              "supports",
+              "contradicts",
+              "observed_from",
+              "linked_note"
+            ],
+            "example": "requires",
+            "type": "string"
+          },
+          "label": {
+            "description": "Human-readable edge label.",
+            "example": "requires",
+            "type": "string"
+          },
+          "source": {
+            "description": "Source node id.",
+            "example": "commitment:1",
+            "type": "string"
+          },
+          "target": {
+            "description": "Target node id.",
+            "example": "commitment:2",
+            "type": "string"
+          }
+        },
+        "required": ["id", "source", "target", "kind", "label", "directed", "evidenceRefs"],
+        "type": "object"
+      },
+      "RelationshipGraphNode": {
+        "description": "A versioned, typed relationship graph node. Meaning is explicit so clients can render status without relying on color alone.",
+        "properties": {
+          "approvalStatus": {
+            "description": "Action approval state.",
+            "example": "pending",
+            "type": "string"
+          },
+          "changedDimensions": {
+            "description": "Changed state dimensions.",
+            "items": {
+              "description": "Dimension.",
+              "example": "health",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "changedSinceReview": {
+            "description": "Whether this state is newer than the viewer's acknowledgement.",
+            "example": true,
+            "type": "boolean"
+          },
+          "confidence": {
+            "example": 0.88,
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "dueAt": {
+            "description": "Due time.",
+            "example": "2026-08-12T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "engagement": {
+            "description": "Engagement state.",
+            "example": "declining",
+            "type": "string"
+          },
+          "evidenceRefs": {
+            "description": "Inspectable evidence ids.",
+            "items": {
+              "description": "Evidence id.",
+              "example": "4b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "executionStatus": {
+            "description": "Action execution state.",
+            "example": "pending",
+            "type": "string"
+          },
+          "freshness": {
+            "description": "Evidence freshness.",
+            "enum": ["current", "aging", "stale", "unknown"],
+            "example": "current",
+            "type": "string"
+          },
+          "health": {
+            "description": "Health state.",
+            "example": "needs_attention",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "kind": {
+            "description": "Node kind.",
+            "enum": [
+              "relationship",
+              "person",
+              "commitment",
+              "risk",
+              "milestone",
+              "action",
+              "evidence",
+              "source",
+              "note"
+            ],
+            "example": "relationship",
+            "type": "string"
+          },
+          "label": {
+            "description": "Human-readable label.",
+            "example": "Northstar Labs",
+            "type": "string"
+          },
+          "lifecycle": {
+            "description": "Commercial lifecycle.",
+            "example": "renewal",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "description": "Kind-specific bounded metadata.",
+            "type": "object"
+          },
+          "occurredAt": {
+            "description": "Evidence occurrence time.",
+            "example": "2026-08-01T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "policyStatus": {
+            "description": "Action policy state.",
+            "example": "passed",
+            "type": "string"
+          },
+          "priority": {
+            "example": 82,
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "relationshipId": {
+            "description": "Primary relationship id when applicable.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "relationshipIds": {
+            "description": "All associated relationships, including shared participants.",
+            "items": {
+              "description": "Relationship id.",
+              "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "resourceRef": {
+            "description": "Underlying record id used by explicit Open actions.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "type": "string"
+          },
+          "role": {
+            "description": "Participant role.",
+            "example": "champion",
+            "type": "string"
+          },
+          "sentiment": {
+            "description": "Sentiment state.",
+            "example": "mixed",
+            "type": "string"
+          },
+          "source": {
+            "description": "Evidence source.",
+            "example": "meeting",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "summary": {
+            "description": "Evidence-backed summary.",
+            "example": "Security review is overdue.",
+            "type": "string"
+          },
+          "updatedAt": {
+            "description": "Last material update.",
+            "example": "2026-08-01T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "relationshipIds",
+          "changedSinceReview",
+          "changedDimensions",
+          "evidenceRefs",
+          "metadata"
+        ],
         "type": "object"
       },
       "RelationshipIdentity": {
@@ -6128,6 +7114,325 @@
           "workspace",
           "relationship",
           "user"
+        ],
+        "type": "object"
+      },
+      "RelationshipIdentityCandidate": {
+        "description": "Durable, optimistic-versioned exact-anchor ambiguity review.",
+        "properties": {
+          "anchorKind": {
+            "description": "Exact anchor kind.",
+            "example": "provider_resource",
+            "type": "string"
+          },
+          "anchorPreview": {
+            "description": "Redacted anchor preview.",
+            "example": "contact …123",
+            "type": "string"
+          },
+          "anchorProvider": {
+            "description": "Provider.",
+            "example": "hubspot",
+            "type": "string"
+          },
+          "candidateType": {
+            "description": "Candidate kind.",
+            "example": "anchor_collision",
+            "type": "string"
+          },
+          "conflictingAnchors": {
+            "description": "Conflicting anchors.",
+            "items": {
+              "description": "Anchor.",
+              "example": "email:other@example.com",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "decidedAt": {
+            "description": "Decision time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "decision": {
+            "description": "Resolved decision.",
+            "example": "merge",
+            "type": "string"
+          },
+          "decisionActorId": {
+            "description": "Actor.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "decisionReason": {
+            "description": "Reason.",
+            "example": "Confirmed duplicate.",
+            "type": "string"
+          },
+          "decisions": {
+            "description": "Decision history.",
+            "items": {
+              "$ref": "#/components/schemas/RelationshipIdentityDecision"
+            },
+            "type": "array"
+          },
+          "evidenceCount": {
+            "description": "Affected evidence count.",
+            "example": 4,
+            "type": "integer"
+          },
+          "evidenceFrom": {
+            "description": "Earliest evidence.",
+            "example": "2026-01-01T00:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "evidenceRefs": {
+            "description": "Evidence references.",
+            "items": {
+              "description": "Evidence ref.",
+              "example": "relationship-observation:1",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "evidenceTo": {
+            "description": "Latest evidence.",
+            "example": "2026-07-31T00:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "existingRelationship": {
+            "$ref": "#/components/schemas/RevenueRelationship"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "impact": {
+            "additionalProperties": true,
+            "description": "Counts and history that would move.",
+            "type": "object"
+          },
+          "lineage": {
+            "description": "Lineage history.",
+            "items": {
+              "$ref": "#/components/schemas/RelationshipIdentityLineage"
+            },
+            "type": "array"
+          },
+          "matchingAnchors": {
+            "description": "Matching exact anchors.",
+            "items": {
+              "description": "Anchor.",
+              "example": "hubspot:contact:123",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "proposedRelationship": {
+            "$ref": "#/components/schemas/RevenueRelationship"
+          },
+          "recommendationConfidence": {
+            "description": "Advisory confidence.",
+            "example": 0.92,
+            "type": "number"
+          },
+          "recommendedDecision": {
+            "description": "Advisory decision.",
+            "example": "merge",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "enum": ["pending", "deferred", "resolving", "resolved", "undone"],
+            "example": "active",
+            "type": "string"
+          },
+          "version": {
+            "description": "Optimistic version.",
+            "example": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "candidateType",
+          "version",
+          "proposedRelationship",
+          "existingRelationship",
+          "anchorKind",
+          "matchingAnchors",
+          "conflictingAnchors",
+          "evidenceRefs",
+          "evidenceCount",
+          "impact",
+          "recommendedDecision",
+          "recommendationConfidence",
+          "decisions",
+          "lineage"
+        ],
+        "type": "object"
+      },
+      "RelationshipIdentityDecision": {
+        "description": "Immutable actor-bound identity decision.",
+        "properties": {
+          "actorId": {
+            "description": "Decision actor.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "candidateVersion": {
+            "description": "Candidate version decided.",
+            "example": 1,
+            "type": "integer"
+          },
+          "compensatesDecisionId": {
+            "description": "Decision compensated by undo.",
+            "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "decidedAt": {
+            "description": "Decision time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "decision": {
+            "description": "Decision kind.",
+            "example": "merge",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "type": "string"
+          }
+        },
+        "required": ["id", "decision", "candidateVersion", "actorId", "decidedAt"],
+        "type": "object"
+      },
+      "RelationshipIdentityLineage": {
+        "description": "Immutable graph lineage produced by an identity decision.",
+        "properties": {
+          "actorId": {
+            "description": "Actor.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "afterRelationshipIds": {
+            "description": "Relationship ids after.",
+            "items": {
+              "description": "Relationship id.",
+              "example": "relationship:2",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "beforeRelationshipIds": {
+            "description": "Relationship ids before.",
+            "items": {
+              "description": "Relationship id.",
+              "example": "relationship:1",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "identityIds": {
+            "description": "Affected identity ids.",
+            "items": {
+              "description": "Identity id.",
+              "example": "identity:1",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "description": "Lineage kind.",
+            "example": "merged",
+            "type": "string"
+          },
+          "movedObjectRefs": {
+            "description": "All moved graph objects.",
+            "items": {
+              "description": "Object ref.",
+              "example": "relationship-observation:1",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "observationIds": {
+            "description": "Moved observation ids.",
+            "items": {
+              "description": "Observation id.",
+              "example": "observation:1",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "occurredAt": {
+            "description": "Event time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "actorId",
+          "observationIds",
+          "identityIds",
+          "movedObjectRefs",
+          "beforeRelationshipIds",
+          "afterRelationshipIds",
+          "occurredAt"
         ],
         "type": "object"
       },
@@ -6239,6 +7544,110 @@
           "effectivePolicy",
           "governanceDecisions",
           "deletionReceipts"
+        ],
+        "type": "object"
+      },
+      "RelationshipLineageEvent": {
+        "properties": {
+          "actor_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "after_relationship_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "before_relationship_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/RelationshipIdentityCandidate"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "identity_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "moved_object_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "observation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "kind",
+          "actor_id",
+          "observation_ids",
+          "identity_ids",
+          "moved_object_refs",
+          "before_relationship_ids",
+          "after_relationship_ids",
+          "occurred_at",
+          "workspace",
+          "candidate",
+          "user"
         ],
         "type": "object"
       },
@@ -6364,45 +7773,474 @@
         "required": ["id", "displayName", "role", "active", "externalRefs"],
         "type": "object"
       },
-      "RelationshipSourceStatus": {
-        "description": "Freshness and failure state for one relationship evidence source.",
+      "RelationshipProjectionJob": {
         "properties": {
-          "lastError": {
-            "description": "Bounded provider error.",
-            "example": "",
-            "type": "string"
+          "attempts": {
+            "type": "integer"
           },
-          "lastObservationAt": {
-            "description": "Newest provider event seen.",
-            "example": "2026-07-26T11:58:00Z",
+          "completed_at": {
             "format": "date-time",
-            "nullable": true,
             "type": "string"
           },
-          "lastSuccessAt": {
-            "description": "Last successful ingestion.",
-            "example": "2026-07-26T12:00:00Z",
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
             "format": "date-time",
-            "nullable": true,
             "type": "string"
           },
-          "source": {
-            "description": "Source name.",
-            "example": "gmail",
+          "evaluated_at": {
+            "format": "date-time",
             "type": "string"
           },
-          "sourceAccountId": {
-            "description": "Provider account id.",
-            "example": "me@company.com",
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "idempotency_key": {
+            "type": "string"
+          },
+          "last_error": {
+            "type": "string"
+          },
+          "lease_expires_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lease_owner": {
+            "type": "string"
+          },
+          "next_attempt_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "projector_version": {
+            "type": "integer"
+          },
+          "relationship": {
+            "$ref": "#/components/schemas/Relationship"
+          },
+          "result_state_hash": {
             "type": "string"
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
             "example": "active",
             "type": "string"
+          },
+          "trigger_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
           }
         },
-        "required": ["source", "sourceAccountId", "status"],
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "idempotency_key",
+          "status",
+          "projector_version",
+          "evaluated_at",
+          "trigger_refs",
+          "attempts",
+          "workspace",
+          "relationship",
+          "user"
+        ],
+        "type": "object"
+      },
+      "RelationshipReviewAcknowledgement": {
+        "properties": {
+          "acknowledged_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "relationship": {
+            "$ref": "#/components/schemas/Relationship"
+          },
+          "state_hash": {
+            "type": "string"
+          },
+          "state_version": {
+            "type": "integer"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "state_version",
+          "acknowledged_at",
+          "workspace",
+          "relationship",
+          "user"
+        ],
+        "type": "object"
+      },
+      "RelationshipSourceInventoryItem": {
+        "description": "Guided source card with consent explanation, supported evidence/actions, and every connected account.",
+        "properties": {
+          "accounts": {
+            "description": "Provider accounts.",
+            "items": {
+              "$ref": "#/components/schemas/RelationshipSourceStatus"
+            },
+            "type": "array"
+          },
+          "actions": {
+            "description": "Approval-gated actions supported.",
+            "items": {
+              "description": "Action category.",
+              "example": "gmail_send",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "connectPath": {
+            "description": "Managed connection entry path.",
+            "example": "/v1/google-oauth/start",
+            "type": "string"
+          },
+          "disconnectPath": {
+            "description": "Credential disconnect path.",
+            "example": "/v1/google-oauth",
+            "type": "string"
+          },
+          "displayName": {
+            "description": "Provider display name.",
+            "example": "Google Gmail \u0026 Calendar",
+            "type": "string"
+          },
+          "evidence": {
+            "description": "Evidence contributed.",
+            "items": {
+              "description": "Evidence category.",
+              "example": "email_threads",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "expectedCadenceSeconds": {
+            "description": "Expected cadence.",
+            "example": 900,
+            "type": "integer"
+          },
+          "readScopes": {
+            "description": "Progressive read scopes.",
+            "items": {
+              "description": "Scope.",
+              "example": "https://www.googleapis.com/auth/gmail.readonly",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "scopeExplanation": {
+            "description": "Why the scopes are requested.",
+            "example": "Read scopes build relationship history.",
+            "type": "string"
+          },
+          "source": {
+            "description": "Source provider.",
+            "enum": ["google", "slack", "hubspot"],
+            "example": "google",
+            "type": "string"
+          },
+          "supportsReconnect": {
+            "description": "Whether reconnect is supported.",
+            "example": true,
+            "type": "boolean"
+          },
+          "supportsResync": {
+            "description": "Whether resync is supported.",
+            "example": true,
+            "type": "boolean"
+          },
+          "writeScopes": {
+            "description": "Progressive action scopes.",
+            "items": {
+              "description": "Scope.",
+              "example": "gmail.send",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "source",
+          "displayName",
+          "evidence",
+          "actions",
+          "readScopes",
+          "writeScopes",
+          "scopeExplanation",
+          "connectPath",
+          "disconnectPath",
+          "supportsReconnect",
+          "supportsResync",
+          "expectedCadenceSeconds",
+          "accounts"
+        ],
+        "type": "object"
+      },
+      "RelationshipSourceStatus": {
+        "description": "User-facing authorization, backfill, freshness, repair, revocation, and disconnect state for one stable provider connection. Tokens and raw cursors are never returned.",
+        "properties": {
+          "authorizationStartedAt": {
+            "description": "Authorization start.",
+            "example": "2026-07-31T13:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "authorizedAt": {
+            "description": "Authorization completion.",
+            "example": "2026-07-31T13:01:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "backfillCompleted": {
+            "description": "Accepted backfill records.",
+            "example": 250,
+            "type": "integer"
+          },
+          "backfillCompletedAt": {
+            "description": "Backfill completion.",
+            "example": "2026-07-31T13:10:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "backfillPhase": {
+            "description": "Backfill phase.",
+            "enum": ["idle", "queued", "running", "live", "paused", "failed"],
+            "example": "live",
+            "type": "string"
+          },
+          "backfillTotal": {
+            "description": "Known backfill total, zero when unknown.",
+            "example": 1000,
+            "type": "integer"
+          },
+          "completeness": {
+            "description": "Impact on relationship completeness.",
+            "enum": ["complete", "partial", "stale", "rebuilding", "disconnected"],
+            "example": "partial",
+            "type": "string"
+          },
+          "connectionId": {
+            "description": "Stable source connection id.",
+            "example": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "consentingActorId": {
+            "description": "Actor who initiated consent.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "disconnectedAt": {
+            "description": "User disconnect time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "errorCode": {
+            "description": "Categorical safe error code.",
+            "example": "rate_limited",
+            "type": "string"
+          },
+          "expectedCadenceSeconds": {
+            "description": "Expected live-sync cadence.",
+            "example": 900,
+            "type": "integer"
+          },
+          "grantedScopes": {
+            "description": "Currently granted scopes.",
+            "items": {
+              "description": "Scope.",
+              "example": "https://www.googleapis.com/auth/gmail.readonly",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "lagSeconds": {
+            "description": "Calculated sync lag.",
+            "example": 42,
+            "type": "integer"
+          },
+          "lastError": {
+            "description": "Bounded, user-safe error summary.",
+            "example": "Provider synchronization is delayed.",
+            "type": "string"
+          },
+          "lastFailedSyncAt": {
+            "description": "Most recent failed sync.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "lastObservationAt": {
+            "description": "Newest accepted observation.",
+            "example": "2026-07-31T13:58:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "lastProviderEventAt": {
+            "description": "Newest provider event observed.",
+            "example": "2026-07-31T13:58:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "lastSuccessAt": {
+            "description": "Most recent successful sync.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "lastSyncAt": {
+            "description": "Most recent sync attempt.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "missingScopes": {
+            "description": "Missing or revoked required scopes.",
+            "items": {
+              "description": "Scope.",
+              "example": "https://www.googleapis.com/auth/gmail.readonly",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "nextRetryAt": {
+            "description": "Next retry.",
+            "example": "2026-07-31T14:05:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "requiredScopes": {
+            "description": "Scopes required by enabled capabilities.",
+            "items": {
+              "description": "Scope.",
+              "example": "https://www.googleapis.com/auth/gmail.readonly",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "retryCount": {
+            "description": "Bounded retry count.",
+            "example": 2,
+            "type": "integer"
+          },
+          "revokedAt": {
+            "description": "Provider revocation time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "source": {
+            "description": "Source provider.",
+            "enum": ["google", "slack", "hubspot"],
+            "example": "google",
+            "type": "string"
+          },
+          "sourceAccountId": {
+            "description": "Provider account or workspace id.",
+            "example": "me@company.com",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "enum": [
+              "not_connected",
+              "authorizing",
+              "connected",
+              "backfilling",
+              "live",
+              "degraded",
+              "stale",
+              "rebuilding",
+              "reconnect_required",
+              "disconnected"
+            ],
+            "example": "active",
+            "type": "string"
+          },
+          "syncStartedAt": {
+            "description": "Backfill start.",
+            "example": "2026-07-31T13:01:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "connectionId",
+          "source",
+          "sourceAccountId",
+          "status",
+          "backfillPhase",
+          "backfillCompleted",
+          "backfillTotal",
+          "completeness",
+          "expectedCadenceSeconds",
+          "lagSeconds",
+          "requiredScopes",
+          "grantedScopes",
+          "missingScopes",
+          "retryCount"
+        ],
         "type": "object"
       },
       "RelationshipStateSnapshot": {
@@ -6432,11 +8270,22 @@
             "format": "date-time",
             "type": "string"
           },
+          "evaluatedAt": {
+            "description": "Explicit evaluation time used by the projector.",
+            "example": "2026-07-25T16:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
           "id": {
             "description": "Stable UUID primary key.",
             "example": "123e4567-e89b-12d3-a456-426614174000",
             "format": "uuid",
             "type": "string"
+          },
+          "projectorVersion": {
+            "description": "Projector version used for this snapshot.",
+            "example": 1,
+            "type": "integer"
           },
           "state": {
             "additionalProperties": true,
@@ -6444,13 +8293,28 @@
             "example": "state_abc123",
             "type": "object"
           },
+          "stateHash": {
+            "description": "Stable hash of canonical state and winning assertions.",
+            "example": "sha256:ab12cd34",
+            "type": "string"
+          },
           "version": {
             "description": "Relationship state version.",
             "example": 4,
             "type": "integer"
           }
         },
-        "required": ["id", "version", "state", "changedDimensions", "assertionIds", "createdAt"],
+        "required": [
+          "id",
+          "version",
+          "state",
+          "stateHash",
+          "projectorVersion",
+          "evaluatedAt",
+          "changedDimensions",
+          "assertionIds",
+          "createdAt"
+        ],
         "type": "object"
       },
       "ResolvedConversationPolicy": {
@@ -7011,6 +8875,9 @@
             "format": "date-time",
             "type": "string"
           },
+          "encryption_key_version": {
+            "type": "integer"
+          },
           "excerpt": {
             "type": "string"
           },
@@ -7080,6 +8947,7 @@
           "source",
           "source_record_id",
           "content_hash",
+          "encryption_key_version",
           "occurred_at",
           "observed_at",
           "external_evidence_refs",
@@ -7574,6 +9442,18 @@
             "example": "buyer@example.com",
             "type": "string"
           },
+          "projectedAt": {
+            "description": "Explicit evaluation time used by the projector.",
+            "example": "2026-07-25T16:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "projectorVersion": {
+            "description": "Deterministic projector version.",
+            "example": 1,
+            "type": "integer"
+          },
           "risks": {
             "description": "Current relationship risks.",
             "items": {
@@ -7587,6 +9467,11 @@
             "description": "Observed sentiment.",
             "enum": ["unknown", "positive", "mixed", "negative"],
             "example": "mixed",
+            "type": "string"
+          },
+          "stateHash": {
+            "description": "Stable hash of canonical projected values and winning assertions.",
+            "example": "sha256:ab12cd34",
             "type": "string"
           },
           "stateReason": {
@@ -7621,8 +9506,84 @@
           "sentiment",
           "health",
           "stateVersion",
+          "projectorVersion",
           "risks",
           "milestones"
+        ],
+        "type": "object"
+      },
+      "RevenueTrustEvent": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/RevenueAction"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "correlation_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "duration_ms": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "event_name": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "relationship": {
+            "$ref": "#/components/schemas/Relationship"
+          },
+          "source": {
+            "type": "string"
+          },
+          "state_version": {
+            "type": "integer"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "event_name",
+          "outcome",
+          "occurred_at",
+          "workspace",
+          "user"
         ],
         "type": "object"
       },
@@ -8157,6 +10118,72 @@
         ],
         "type": "object"
       },
+      "TenantEvidenceKey": {
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "destroyed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "erasure_proof": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "key_fingerprint": {
+            "type": "string"
+          },
+          "rotated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "version": {
+            "type": "integer"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          },
+          "wrapped_key": {
+            "format": "byte",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "version",
+          "status",
+          "key_fingerprint",
+          "workspace",
+          "user"
+        ],
+        "type": "object"
+      },
       "Upsell": {
         "description": "Upgrade instruction returned when a connector requires a higher plan.",
         "properties": {
@@ -8395,9 +10422,33 @@
             },
             "type": "array"
           },
+          "relationship_attention_items": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipAttentionItem"
+            },
+            "type": "array"
+          },
           "relationship_identities": {
             "items": {
               "$ref": "#/components/schemas/RelationshipIdentity"
+            },
+            "type": "array"
+          },
+          "relationship_identity_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipIdentityCandidate"
+            },
+            "type": "array"
+          },
+          "relationship_identity_decisions": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipIdentityDecision"
+            },
+            "type": "array"
+          },
+          "relationship_lineage_events": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipLineageEvent"
             },
             "type": "array"
           },
@@ -8410,6 +10461,18 @@
           "relationship_participants": {
             "items": {
               "$ref": "#/components/schemas/RelationshipParticipant"
+            },
+            "type": "array"
+          },
+          "relationship_projection_jobs": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipProjectionJob"
+            },
+            "type": "array"
+          },
+          "relationship_review_acknowledgements": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipReviewAcknowledgement"
             },
             "type": "array"
           },
@@ -8461,6 +10524,12 @@
             },
             "type": "array"
           },
+          "revenue_trust_events": {
+            "items": {
+              "$ref": "#/components/schemas/RevenueTrustEvent"
+            },
+            "type": "array"
+          },
           "revenue_workspace_members": {
             "items": {
               "$ref": "#/components/schemas/RevenueWorkspaceMember"
@@ -8477,6 +10546,12 @@
             "$ref": "#/components/schemas/Subscription",
             "description": "The user's billing subscription."
           },
+          "tenant_evidence_keys": {
+            "items": {
+              "$ref": "#/components/schemas/TenantEvidenceKey"
+            },
+            "type": "array"
+          },
           "updated_at": {
             "description": "Last row update timestamp.",
             "example": "2026-06-04T20:39:00Z",
@@ -8492,6 +10567,12 @@
             "description": "WorkOS user id used to resolve bearer tokens into local users.",
             "example": "user_01HABCDEF",
             "type": "string"
+          },
+          "workspace_feature_controls": {
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceFeatureControl"
+            },
+            "type": "array"
           }
         },
         "required": ["id", "created_at", "updated_at", "workos_user_id"],
@@ -8688,6 +10769,58 @@
           }
         },
         "required": ["access_token", "expires_at", "token_type"],
+        "type": "object"
+      },
+      "WorkspaceFeatureControl": {
+        "properties": {
+          "capability": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "rollout_stage": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "capability",
+          "enabled",
+          "rollout_stage",
+          "workspace",
+          "user"
+        ],
         "type": "object"
       }
     },
@@ -9341,6 +11474,7 @@
                       "active": true,
                       "description": "Summarize new priority email and produce a short follow-up plan.",
                       "executionTarget": "api",
+                      "firstParty": false,
                       "instructions": "Review recent important Gmail messages and produce a markdown digest.",
                       "model": "anthropic/claude-sonnet-4-5",
                       "name": "Inbox Digest",
@@ -9352,7 +11486,8 @@
                       "triggers": {
                         "cronExpr": "0 8 * * 1-5",
                         "timezone": "America/New_York"
-                      }
+                      },
+                      "version": 1
                     }
                   ]
                 },
@@ -9404,6 +11539,7 @@
                   "active": true,
                   "description": "Summarize new priority email and produce a short follow-up plan.",
                   "executionTarget": "api",
+                  "firstParty": false,
                   "instructions": "Review recent important Gmail messages and produce a markdown digest.",
                   "model": "anthropic/claude-sonnet-4-5",
                   "name": "Inbox Digest",
@@ -9415,7 +11551,8 @@
                   "triggers": {
                     "cronExpr": "0 8 * * 1-5",
                     "timezone": "America/New_York"
-                  }
+                  },
+                  "version": 1
                 },
                 "schema": {
                   "$ref": "#/components/schemas/BackgroundTaskTemplate"
@@ -9494,7 +11631,13 @@
                   "name": "Daily Account Summary",
                   "provider": "openai",
                   "revision": 2,
+                  "scheduleSyncError": "",
+                  "scheduleSyncState": "current",
+                  "scheduleSyncedAt": "2026-06-04T20:39:00Z",
                   "slug": "daily-summary",
+                  "systemManaged": false,
+                  "templateSlug": "",
+                  "templateVersion": 0,
                   "triggers": {
                     "cronExpr": "0 9 * * *",
                     "timezone": "America/New_York"
@@ -9573,7 +11716,13 @@
                       "name": "Daily Account Summary",
                       "provider": "openai",
                       "revision": 2,
+                      "scheduleSyncError": "",
+                      "scheduleSyncState": "current",
+                      "scheduleSyncedAt": "2026-06-04T20:39:00Z",
                       "slug": "daily-summary",
+                      "systemManaged": false,
+                      "templateSlug": "",
+                      "templateVersion": 0,
                       "triggers": {
                         "cronExpr": "0 9 * * *",
                         "timezone": "America/New_York"
@@ -9650,7 +11799,13 @@
                   "name": "Daily Account Summary",
                   "provider": "openai",
                   "revision": 2,
+                  "scheduleSyncError": "",
+                  "scheduleSyncState": "current",
+                  "scheduleSyncedAt": "2026-06-04T20:39:00Z",
                   "slug": "daily-summary",
+                  "systemManaged": false,
+                  "templateSlug": "",
+                  "templateVersion": 0,
                   "triggers": {
                     "cronExpr": "0 9 * * *",
                     "timezone": "America/New_York"
@@ -9698,6 +11853,69 @@
           }
         ],
         "summary": "Create background task mirror",
+        "tags": ["Background Tasks"]
+      }
+    },
+    "/v1/background-tasks/first-party/ensure": {
+      "post": {
+        "description": "Idempotently provisions or upgrades the six Oppulence-managed relationship workflows for the authenticated user. User pause choices are preserved during definition upgrades. Replica races converge on the same per-user task slugs.",
+        "operationId": "ensureFirstPartyBackgroundTasks",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "tasks": [
+                    {
+                      "active": true,
+                      "createdAt": "2026-06-04T20:38:00Z",
+                      "executionTarget": "desktop",
+                      "id": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+                      "instructions": "Summarize important account changes and draft follow-up notes.",
+                      "lastAttemptAt": "2026-06-04T21:00:00Z",
+                      "lastRunAt": "2026-06-04T21:02:00Z",
+                      "lastRunError": "",
+                      "lastRunId": "run-20260604-210000",
+                      "lastRunSummary": "No high-priority account changes.",
+                      "model": "openai/gpt-4.1-mini",
+                      "name": "Daily Account Summary",
+                      "provider": "openai",
+                      "revision": 2,
+                      "scheduleSyncError": "",
+                      "scheduleSyncState": "current",
+                      "scheduleSyncedAt": "2026-06-04T20:39:00Z",
+                      "slug": "daily-summary",
+                      "systemManaged": false,
+                      "templateSlug": "",
+                      "templateVersion": 0,
+                      "triggers": {
+                        "cronExpr": "0 9 * * *",
+                        "timezone": "America/New_York"
+                      },
+                      "updatedAt": "2026-06-04T20:39:00Z"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundTaskListResponse"
+                }
+              }
+            },
+            "description": "Current managed workflow definitions."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Ensure first-party workflows",
         "tags": ["Background Tasks"]
       }
     },
@@ -9808,7 +12026,13 @@
                   "name": "Daily Account Summary",
                   "provider": "openai",
                   "revision": 2,
+                  "scheduleSyncError": "",
+                  "scheduleSyncState": "current",
+                  "scheduleSyncedAt": "2026-06-04T20:39:00Z",
                   "slug": "daily-summary",
+                  "systemManaged": false,
+                  "templateSlug": "",
+                  "templateVersion": 0,
                   "triggers": {
                     "cronExpr": "0 9 * * *",
                     "timezone": "America/New_York"
@@ -9893,7 +12117,13 @@
                   "name": "Daily Account Summary",
                   "provider": "openai",
                   "revision": 2,
+                  "scheduleSyncError": "",
+                  "scheduleSyncState": "current",
+                  "scheduleSyncedAt": "2026-06-04T20:39:00Z",
                   "slug": "daily-summary",
+                  "systemManaged": false,
+                  "templateSlug": "",
+                  "templateVersion": 0,
                   "triggers": {
                     "cronExpr": "0 9 * * *",
                     "timezone": "America/New_York"
@@ -12942,6 +15172,416 @@
         "tags": ["Relationship Intelligence"]
       }
     },
+    "/v1/relationship-attention": {
+      "get": {
+        "description": "Returns deterministic relationship-native attention ordered by explicit factor contributions.",
+        "operationId": "listRelationshipAttention",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "open",
+                "acknowledged",
+                "snoozed",
+                "dismissed",
+                "superseded",
+                "resolved",
+                "all"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Attention list.",
+                  "properties": {
+                    "asOf": {
+                      "description": "Read boundary.",
+                      "example": "2026-07-31T14:00:00Z",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "contractVersion": {
+                      "description": "Contract version.",
+                      "example": "relationship-attention.v1",
+                      "type": "string"
+                    },
+                    "items": {
+                      "description": "Attention items.",
+                      "items": {
+                        "$ref": "#/components/schemas/RelationshipAttentionItem"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["contractVersion", "asOf", "items"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Attention projection."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List portfolio attention",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationship-attention/{attentionId}/decisions": {
+      "post": {
+        "description": "Acknowledges, snoozes, or dismisses at the expected optimistic version. Materially new evidence reopens the item.",
+        "operationId": "decideRelationshipAttention",
+        "parameters": [
+          {
+            "description": "Attention item id.",
+            "in": "path",
+            "name": "attentionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "decision": "acknowledge",
+                "expectedVersion": 1
+              },
+              "schema": {
+                "description": "Attention decision request.",
+                "properties": {
+                  "decision": {
+                    "description": "Decision.",
+                    "enum": ["acknowledge", "snooze", "dismiss"],
+                    "example": "acknowledge",
+                    "type": "string"
+                  },
+                  "expectedVersion": {
+                    "description": "Expected version.",
+                    "example": 1,
+                    "type": "integer"
+                  },
+                  "reason": {
+                    "description": "Decision reason.",
+                    "example": "Reviewed with the account owner.",
+                    "type": "string"
+                  },
+                  "snoozedUntil": {
+                    "description": "Bounded future wake time.",
+                    "example": "2026-08-07T14:00:00Z",
+                    "format": "date-time",
+                    "nullable": true,
+                    "type": "string"
+                  }
+                },
+                "required": ["decision", "expectedVersion"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Attention decision.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipAttentionItem"
+                }
+              }
+            },
+            "description": "Updated attention item."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Decide attention item",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationship-beta/diagnostics": {
+      "get": {
+        "description": "Returns metadata-only rollout, source, queue, projection, uncertainty, and trust-funnel diagnostics for workspace administrators. Customer content, credentials, cursors, raw errors, and correlation identifiers are excluded.",
+        "operationId": "getRelationshipBetaDiagnostics",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BetaDiagnostics"
+                }
+              }
+            },
+            "description": "Support-safe diagnostic bundle."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Export redacted beta diagnostics",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationship-identity-candidates": {
+      "get": {
+        "description": "Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage.",
+        "operationId": "listRelationshipIdentityCandidates",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": ["pending", "deferred", "resolving", "resolved", "undone"],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "relationshipId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Identity candidate list.",
+                  "properties": {
+                    "candidates": {
+                      "description": "Candidates.",
+                      "items": {
+                        "$ref": "#/components/schemas/RelationshipIdentityCandidate"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["candidates"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Identity inbox."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List identity review candidates",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationship-identity-candidates/{candidateId}": {
+      "get": {
+        "description": "Returns exact anchors, provider records, evidence range, impact, advisory confidence, immutable decisions, and lineage.",
+        "operationId": "getRelationshipIdentityCandidate",
+        "parameters": [
+          {
+            "description": "Identity candidate id.",
+            "in": "path",
+            "name": "candidateId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipIdentityCandidate"
+                }
+              }
+            },
+            "description": "Identity candidate."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Inspect identity candidate",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationship-identity-candidates/{candidateId}/decisions": {
+      "post": {
+        "description": "Applies merge, keep-separate, move-evidence, split, defer, or compensating undo once at the expected optimistic version.",
+        "operationId": "decideRelationshipIdentityCandidate",
+        "parameters": [
+          {
+            "description": "Identity candidate id.",
+            "in": "path",
+            "name": "candidateId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "decision": "merge",
+                "expectedVersion": 1,
+                "idempotencyKey": "identity-review:123"
+              },
+              "schema": {
+                "description": "Identity decision request.",
+                "properties": {
+                  "decision": {
+                    "description": "Decision.",
+                    "enum": ["merge", "keep_separate", "move_evidence", "split", "defer", "undo"],
+                    "example": "merge",
+                    "type": "string"
+                  },
+                  "expectedVersion": {
+                    "description": "Expected candidate version.",
+                    "example": 1,
+                    "type": "integer"
+                  },
+                  "idempotencyKey": {
+                    "description": "Stable client idempotency key.",
+                    "example": "identity-review:123",
+                    "type": "string"
+                  },
+                  "reason": {
+                    "description": "Actor reason.",
+                    "example": "Confirmed provider records are the same account.",
+                    "type": "string"
+                  }
+                },
+                "required": ["decision", "expectedVersion", "idempotencyKey"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Identity decision.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipIdentityCandidate"
+                }
+              }
+            },
+            "description": "Resolved candidate."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Decide identity candidate",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
     "/v1/relationship-observations/batch": {
       "post": {
         "description": "Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.",
@@ -13216,9 +15856,48 @@
         "tags": ["Relationship Intelligence"]
       }
     },
+    "/v1/relationship-sources": {
+      "get": {
+        "description": "Returns Google, Slack, and HubSpot capability/scopes plus durable account lifecycle state. No token, secret, or raw cursor is exposed.",
+        "operationId": "getRelationshipSourceInventory",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Source inventory.",
+                  "properties": {
+                    "sources": {
+                      "description": "Source cards.",
+                      "items": {
+                        "$ref": "#/components/schemas/RelationshipSourceInventoryItem"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["sources"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Guided source inventory."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List guided source connections",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
     "/v1/relationship-sources/status": {
       "get": {
-        "description": "Returns freshness and failure state for each relationship evidence source.",
+        "description": "Returns authorization, backfill, freshness, failure, repair, revocation, and disconnect state for each relationship evidence source.",
         "operationId": "getRelationshipSourceStatuses",
         "responses": {
           "200": {
@@ -13251,6 +15930,224 @@
           }
         ],
         "summary": "Get source health",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationship-sources/{source}/authorization": {
+      "post": {
+        "description": "Records the bounded consent state, actor, granted read scopes, and safe categorical failure without exposing provider tokens or authorization codes.",
+        "operationId": "reportRelationshipSourceAuthorization",
+        "parameters": [
+          {
+            "description": "Beta source provider.",
+            "in": "path",
+            "name": "source",
+            "required": true,
+            "schema": {
+              "enum": ["google", "slack", "hubspot"],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "grantedScopes": [
+                  "https://www.googleapis.com/auth/gmail.readonly",
+                  "https://www.googleapis.com/auth/calendar.events.readonly"
+                ],
+                "sourceAccountId": "me@company.com",
+                "state": "completed"
+              },
+              "schema": {
+                "description": "Source authorization transition.",
+                "properties": {
+                  "errorCode": {
+                    "description": "Safe categorical error for failed transitions.",
+                    "example": "invalid_grant",
+                    "type": "string"
+                  },
+                  "grantedScopes": {
+                    "description": "Scopes returned by the provider.",
+                    "items": {
+                      "description": "Scope.",
+                      "example": "https://www.googleapis.com/auth/gmail.readonly",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "sourceAccountId": {
+                    "description": "Provider account id when known; otherwise default.",
+                    "example": "me@company.com",
+                    "type": "string"
+                  },
+                  "state": {
+                    "description": "Consent transition.",
+                    "enum": ["started", "completed", "canceled", "failed"],
+                    "example": "completed",
+                    "type": "string"
+                  }
+                },
+                "required": ["state"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Authorization lifecycle transition.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipSourceStatus"
+                }
+              }
+            },
+            "description": "Updated authorization lifecycle."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Report source authorization lifecycle",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationship-sources/{source}/resync": {
+      "post": {
+        "description": "Explicitly starts or resumes a durable source backfill and immediately marks relationship completeness rebuilding.",
+        "operationId": "resyncRelationshipSource",
+        "parameters": [
+          {
+            "description": "Beta source provider.",
+            "in": "path",
+            "name": "source",
+            "required": true,
+            "schema": {
+              "enum": ["google", "slack", "hubspot"],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "sourceAccountId": "me@company.com"
+              },
+              "schema": {
+                "description": "Source resync request.",
+                "properties": {
+                  "sourceAccountId": {
+                    "description": "Provider account id.",
+                    "example": "me@company.com",
+                    "type": "string"
+                  }
+                },
+                "required": ["sourceAccountId"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Source account.",
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipSourceStatus"
+                }
+              }
+            },
+            "description": "Queued source lifecycle."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Resync a source",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationship-sources/{source}/{sourceAccountId}/disconnect": {
+      "post": {
+        "description": "Marks the relationship-facing source disconnected and immediately downgrades completeness. Credential revocation remains owned by the connector path shown on the source card.",
+        "operationId": "disconnectRelationshipSource",
+        "parameters": [
+          {
+            "description": "Beta source provider.",
+            "in": "path",
+            "name": "source",
+            "required": true,
+            "schema": {
+              "enum": ["google", "slack", "hubspot"],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Provider account id.",
+            "in": "path",
+            "name": "sourceAccountId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipSourceStatus"
+                }
+              }
+            },
+            "description": "Disconnected lifecycle."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Disconnect relationship source",
         "tags": ["Relationship Intelligence"]
       }
     },
@@ -13405,6 +16302,85 @@
         "tags": ["Relationship Intelligence"]
       }
     },
+    "/v1/relationships/graph": {
+      "get": {
+        "description": "Returns the shared versioned graph read model for an account or the authorized portfolio. Historical asOf reads exclude later evidence and proposed actions.",
+        "operationId": "getRelationshipGraph",
+        "parameters": [
+          {
+            "description": "Portfolio or one relationship.",
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "default": "portfolio",
+              "enum": ["portfolio", "relationship"],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Required when scope=relationship.",
+            "in": "query",
+            "name": "relationshipId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Bounded graph expansion depth.",
+            "in": "query",
+            "name": "depth",
+            "required": false,
+            "schema": {
+              "default": 2,
+              "maximum": 3,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Historical evidence boundary; must not be in the future.",
+            "in": "query",
+            "name": "asOf",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelationshipGraph"
+                }
+              }
+            },
+            "description": "Authorized relationship graph."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get the relationship graph",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
     "/v1/relationships/{relationshipId}": {
       "get": {
         "description": "Returns living relationship state, governed recommendations, participants, and commitments.",
@@ -13452,6 +16428,9 @@
                     "intelligence": {
                       "$ref": "#/components/schemas/RelationshipIntelligence"
                     },
+                    "missionControl": {
+                      "$ref": "#/components/schemas/MissionControlReadModel"
+                    },
                     "participants": {
                       "description": "Relationship participants.",
                       "items": {
@@ -13489,6 +16468,192 @@
           }
         ],
         "summary": "Get relationship mission control",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/acknowledgements": {
+      "post": {
+        "description": "Records the exact state version and hash the actor reviewed. A stale acknowledgement fails with 409.",
+        "operationId": "acknowledgeMissionControl",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "stateHash": "sha256:ab12",
+                "stateVersion": 4
+              },
+              "schema": {
+                "description": "Mission Control acknowledgement.",
+                "properties": {
+                  "stateHash": {
+                    "description": "Reviewed state hash.",
+                    "example": "sha256:ab12",
+                    "type": "string"
+                  },
+                  "stateVersion": {
+                    "description": "Reviewed state version.",
+                    "example": 4,
+                    "type": "integer"
+                  }
+                },
+                "required": ["stateVersion", "stateHash"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Review boundary.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Mission Control acknowledgement result.",
+                  "properties": {
+                    "acknowledgedAt": {
+                      "description": "Review time.",
+                      "example": "2026-07-31T14:00:00Z",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "id": {
+                      "description": "Acknowledgement id.",
+                      "example": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "stateHash": {
+                      "description": "Reviewed hash.",
+                      "example": "sha256:ab12",
+                      "type": "string"
+                    },
+                    "stateVersion": {
+                      "description": "Reviewed state version.",
+                      "example": 4,
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["id", "stateVersion", "stateHash", "acknowledgedAt"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Acknowledgement."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Acknowledge Mission Control state",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/relationships/{relationshipId}/assertions/{assertionId}/retract": {
+      "post": {
+        "description": "Ends one active user correction without rewriting its immutable history, then reprojects at the same explicit evaluation time.",
+        "operationId": "retractRelationshipAssertion",
+        "parameters": [
+          {
+            "description": "Relationship id.",
+            "in": "path",
+            "name": "relationshipId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "User-correction assertion id.",
+            "in": "path",
+            "name": "assertionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "reason": "The correction was entered against the wrong customer call."
+              },
+              "schema": {
+                "description": "Correction retraction.",
+                "properties": {
+                  "reason": {
+                    "description": "Why the correction is being retracted.",
+                    "example": "The correction was entered against the wrong customer call.",
+                    "type": "string"
+                  }
+                },
+                "required": ["reason"],
+                "type": "object"
+              }
+            }
+          },
+          "description": "Retraction.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueRelationship"
+                }
+              }
+            },
+            "description": "Reprojected relationship."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Retract a relationship correction",
         "tags": ["Relationship Intelligence"]
       }
     },
@@ -14405,6 +17570,19 @@
                   "reason": {
                     "description": "Why the model is wrong.",
                     "example": "The review happened yesterday.",
+                    "type": "string"
+                  },
+                  "supersedesAssertionId": {
+                    "description": "Optional active assertion on the same relationship and dimension that this correction permanently replaces.",
+                    "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                    "format": "uuid",
+                    "type": "string"
+                  },
+                  "validTo": {
+                    "description": "Optional exclusive expiry boundary for a temporary correction.",
+                    "example": "2026-08-31T17:00:00Z",
+                    "format": "date-time",
+                    "nullable": true,
                     "type": "string"
                   },
                   "value": {

@@ -51,6 +51,26 @@ func (_u *RevenueLeakScanUpdate) SetNillableStatus(v *string) *RevenueLeakScanUp
 	return _u
 }
 
+// SetActiveClaim sets the "active_claim" field.
+func (_u *RevenueLeakScanUpdate) SetActiveClaim(v string) *RevenueLeakScanUpdate {
+	_u.mutation.SetActiveClaim(v)
+	return _u
+}
+
+// SetNillableActiveClaim sets the "active_claim" field if the given value is not nil.
+func (_u *RevenueLeakScanUpdate) SetNillableActiveClaim(v *string) *RevenueLeakScanUpdate {
+	if v != nil {
+		_u.SetActiveClaim(*v)
+	}
+	return _u
+}
+
+// ClearActiveClaim clears the value of the "active_claim" field.
+func (_u *RevenueLeakScanUpdate) ClearActiveClaim() *RevenueLeakScanUpdate {
+	_u.mutation.ClearActiveClaim()
+	return _u
+}
+
 // SetMode sets the "mode" field.
 func (_u *RevenueLeakScanUpdate) SetMode(v string) *RevenueLeakScanUpdate {
 	_u.mutation.SetMode(v)
@@ -415,6 +435,12 @@ func (_u *RevenueLeakScanUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(revenueleakscan.FieldStatus, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.ActiveClaim(); ok {
+		_spec.SetField(revenueleakscan.FieldActiveClaim, field.TypeString, value)
+	}
+	if _u.mutation.ActiveClaimCleared() {
+		_spec.ClearField(revenueleakscan.FieldActiveClaim, field.TypeString)
+	}
 	if value, ok := _u.mutation.Mode(); ok {
 		_spec.SetField(revenueleakscan.FieldMode, field.TypeString, value)
 	}
@@ -573,6 +599,26 @@ func (_u *RevenueLeakScanUpdateOne) SetNillableStatus(v *string) *RevenueLeakSca
 	if v != nil {
 		_u.SetStatus(*v)
 	}
+	return _u
+}
+
+// SetActiveClaim sets the "active_claim" field.
+func (_u *RevenueLeakScanUpdateOne) SetActiveClaim(v string) *RevenueLeakScanUpdateOne {
+	_u.mutation.SetActiveClaim(v)
+	return _u
+}
+
+// SetNillableActiveClaim sets the "active_claim" field if the given value is not nil.
+func (_u *RevenueLeakScanUpdateOne) SetNillableActiveClaim(v *string) *RevenueLeakScanUpdateOne {
+	if v != nil {
+		_u.SetActiveClaim(*v)
+	}
+	return _u
+}
+
+// ClearActiveClaim clears the value of the "active_claim" field.
+func (_u *RevenueLeakScanUpdateOne) ClearActiveClaim() *RevenueLeakScanUpdateOne {
+	_u.mutation.ClearActiveClaim()
 	return _u
 }
 
@@ -969,6 +1015,12 @@ func (_u *RevenueLeakScanUpdateOne) sqlSave(ctx context.Context) (_node *Revenue
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(revenueleakscan.FieldStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ActiveClaim(); ok {
+		_spec.SetField(revenueleakscan.FieldActiveClaim, field.TypeString, value)
+	}
+	if _u.mutation.ActiveClaimCleared() {
+		_spec.ClearField(revenueleakscan.FieldActiveClaim, field.TypeString)
 	}
 	if value, ok := _u.mutation.Mode(); ok {
 		_spec.SetField(revenueleakscan.FieldMode, field.TypeString, value)

@@ -6,7 +6,7 @@
  * else is internal to the engine.
  */
 export { WhisperService } from "./service.js";
-export { pcmStats, transcribePcm } from "./runner.js";
+export { pcmStats, timeoutFor, transcribePcm } from "./runner.js";
 export type {
   TranscribeOpts,
   TranscribeResult,

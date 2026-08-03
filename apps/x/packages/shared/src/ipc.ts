@@ -49,6 +49,8 @@ import { BrowserStateSchema } from "./browser-control.js";
 import { BillingInfoSchema } from "./billing.js";
 import {
   RelationshipActionSchema,
+  RelationshipActionAuditSchema,
+  RelationshipOutcomeSchema,
   ConversationReviewDecisionKindSchema,
   CommitmentRecoveryEvaluationSchema,
   RelationshipCommitmentSchema,
@@ -58,10 +60,16 @@ import {
   RelationshipDetailSchema,
   RelationshipLiveCueSchema,
   RelationshipObservationSchema,
+  RelationshipObservationInputSchema,
   RelationshipSchema,
   RelationshipSemanticMatchSchema,
+  RelationshipIdentityCandidateSchema,
+  RelationshipAttentionItemSchema,
+  RelationshipSourceInventoryItemSchema,
   RelationshipSourceStatusSchema,
+  BetaDiagnosticsSchema,
   RelationshipStateSnapshotSchema,
+  RelationshipGraphSchema,
 } from "./relationships.js";
 import {
   GmailThreadSchema,
@@ -88,6 +96,13 @@ import {
   VoiceCommandIntent,
   WhisperDiagnosticResult,
   VoicePrivacySettings,
+  DictationSettings,
+  DictationFlowBarDock,
+  DictationLanguage,
+  DictationHistoryEntry,
+  DictationHistoryRetention,
+  DictationHistoryStats,
+  DictationHistoryEngine,
   DiarizationSettings,
   TranscriptionRouting,
 } from "./transcription.js";
@@ -712,6 +727,7 @@ const ipcSchemas = {
       signedIn: z.boolean(),
       accessToken: z.string().nullable(),
       config: SolomonApiConfig.nullable(),
+      authReason: z.enum(["not_signed_in", "reconnect_required", "refresh_backoff"]).nullable(),
     }),
   },
   "account:getRowboat": {
@@ -720,6 +736,7 @@ const ipcSchemas = {
       signedIn: z.boolean(),
       accessToken: z.string().nullable(),
       config: SolomonApiConfig.nullable(),
+      authReason: z.enum(["not_signed_in", "reconnect_required", "refresh_backoff"]).nullable(),
     }),
   },
   "oauth:didConnect": {
@@ -728,6 +745,8 @@ const ipcSchemas = {
       success: z.boolean(),
       error: z.string().optional(),
       userId: z.string().optional(),
+      sourceAccountId: z.string().optional(),
+      grantedScopes: z.array(z.string()).optional(),
     }),
     res: z.null(),
   },
@@ -990,6 +1009,15 @@ const ipcSchemas = {
       lastBuiltMs: z.number().nullable(),
     }),
   },
+  "memory:rebuild": {
+    req: z.null(),
+    res: z.object({
+      disabled: z.boolean(),
+      rebuilt: z.boolean(),
+      chunkCount: z.number(),
+      filesProcessed: z.number(),
+    }),
+  },
   "memory:indexProgress": {
     req: z.object({
       chunkCount: z.number(),
@@ -1025,6 +1053,207 @@ const ipcSchemas = {
   "voice:executeCommand": {
     req: z.object({ intent: VoiceCommandIntent, confirmed: z.boolean().default(false) }),
     res: z.object({ success: z.boolean(), message: z.string().optional() }),
+  },
+  // System-wide desktop dictation. Main owns the native modifier monitor and focused-
+  // app paste; a dedicated hidden renderer owns microphone capture and transcription.
+  "dictation:shortcut": {
+    req: z.object({
+      phase: z.enum([
+        "pressed",
+        "released",
+        "hands-free-locked",
+        "hands-free-stop",
+        "command-pressed",
+        "command-released",
+        "cancel",
+        "retry",
+      ]),
+      shortcut: z.string(),
+      language: DictationLanguage,
+      microphonePriority: z.array(z.string().trim().min(1).max(512)).max(32),
+    }),
+    res: z.null(),
+  },
+  "dictation:state": {
+    req: z.object({
+      state: z.enum(["idle", "listening", "transcribing", "success", "error"]),
+      message: z.string().optional(),
+      dock: DictationFlowBarDock.optional(),
+    }),
+    res: z.null(),
+  },
+  "dictation:flowBarDockChanged": {
+    req: z.object({ dock: DictationFlowBarDock }),
+    res: z.null(),
+  },
+  "dictation:historyChanged": {
+    req: z.object({}),
+    res: z.null(),
+  },
+  "dictation:languageChanged": {
+    req: z.object({ language: DictationLanguage, label: z.string() }),
+    res: z.null(),
+  },
+  "dictation:microphonesChanged": {
+    req: z.object({
+      microphonePriority: z.array(z.string().trim().min(1).max(512)).max(32),
+    }),
+    res: z.null(),
+  },
+  "dictation:getStatus": {
+    req: z.null(),
+    res: z.object({
+      available: z.boolean(),
+      monitorReady: z.boolean(),
+      commandModeReady: z.boolean(),
+      commandModeEnabled: z.boolean(),
+      transformsEnabled: z.boolean(),
+      transformShortcutsReady: z.boolean(),
+      accessibilityTrusted: z.boolean(),
+      shortcut: z.string(),
+      commandShortcut: z.string(),
+      transformShortcutError: z.string().optional(),
+      error: z.string().optional(),
+    }),
+  },
+  "dictation:getRecovery": {
+    req: z.null(),
+    res: z.object({
+      available: z.boolean(),
+      preview: z.string().optional(),
+      createdAt: z.string().optional(),
+      audioAvailable: z.boolean(),
+      audioCreatedAt: z.string().optional(),
+      audioDurationMs: z.number().optional(),
+      audioErrorCode: z.string().optional(),
+    }),
+  },
+  "dictation:pasteLast": {
+    req: z.null(),
+    res: z.object({ success: z.boolean(), error: z.string().optional() }),
+  },
+  "dictation:copyLast": {
+    req: z.null(),
+    res: z.object({ success: z.boolean(), error: z.string().optional() }),
+  },
+  "dictation:retryFailed": {
+    req: z.object({ id: z.string().uuid().optional() }).nullable(),
+    res: z.object({ success: z.boolean(), error: z.string().optional() }),
+  },
+  "dictation:getHistory": {
+    req: z.object({
+      query: z.string().trim().max(200).optional(),
+      limit: z.number().int().min(1).max(200).default(50),
+      offset: z.number().int().nonnegative().default(0),
+    }),
+    res: z.object({
+      entries: z.array(DictationHistoryEntry),
+      total: z.number().int().nonnegative(),
+      stats: DictationHistoryStats,
+      retention: DictationHistoryRetention,
+    }),
+  },
+  "dictation:copyHistoryEntry": {
+    req: z.object({ id: z.string().uuid() }),
+    res: z.object({ success: z.boolean(), error: z.string().optional() }),
+  },
+  "dictation:toggleHistoryFormatting": {
+    req: z.object({ id: z.string().uuid() }),
+    res: z.object({
+      success: z.boolean(),
+      entry: DictationHistoryEntry.optional(),
+      error: z.string().optional(),
+    }),
+  },
+  "dictation:deleteHistoryEntry": {
+    req: z.object({ id: z.string().uuid() }),
+    res: z.object({ success: z.boolean() }),
+  },
+  "dictation:clearHistory": {
+    req: z.null(),
+    res: z.object({ success: z.boolean() }),
+  },
+  "dictation:applyCommand": {
+    req: z.object({ instruction: z.string().trim().min(1).max(1_000) }),
+    res: z.object({
+      success: z.boolean(),
+      error: z.string().optional(),
+      source: z.enum(["local", "model"]).optional(),
+      copied: z.boolean().optional(),
+    }),
+  },
+  "dictation:saveFailedAudio": {
+    req: z.object({
+      pcm16: z.instanceof(ArrayBuffer),
+      sampleRate: z.literal(16000),
+      channels: z.literal(1),
+      errorCode: z.string().optional(),
+      language: DictationLanguage.optional(),
+    }),
+    res: z.object({ saved: z.boolean() }),
+  },
+  "dictation:requestAccessibility": {
+    req: z.null(),
+    res: z.object({ trusted: z.boolean() }),
+  },
+  "dictation:openInputMonitoring": {
+    req: z.null(),
+    res: z.object({ opened: z.boolean() }),
+  },
+  "dictation:updateState": {
+    req: z.object({
+      state: z.enum(["idle", "listening", "transcribing", "success", "error"]),
+      message: z.string().optional(),
+    }),
+    res: z.object({ ok: z.literal(true) }),
+  },
+  "dictation:controlDock": {
+    req: z.object({ action: z.enum(["start", "stop", "cancel"]) }),
+    res: z.object({
+      accepted: z.boolean(),
+      active: z.boolean(),
+      error: z.string().optional(),
+    }),
+  },
+  /** Desktop dictation prefers the Neural Engine Parakeet model when it is installed,
+   * then falls back to the configured local Whisper model. Audio never leaves the Mac. */
+  "dictation:transcribe": {
+    req: z.object({
+      pcm16: z.instanceof(ArrayBuffer),
+      sampleRate: z.literal(16000),
+      channels: z.literal(1),
+      lang: DictationLanguage.optional(),
+      retainForRetry: z.boolean().optional(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      text: z.string().optional(),
+      segments: z.array(WhisperSegment).optional(),
+      rtf: z.number().optional(),
+      durationMs: z.number().optional(),
+      engine: z.enum(["parakeet", "whisper"]).optional(),
+      language: DictationLanguage.optional(),
+      code: z.string().optional(),
+      message: z.string().optional(),
+    }),
+  },
+  "dictation:commit": {
+    req: z.object({
+      text: z.string().min(1).max(50_000),
+      audioDurationMs: z
+        .number()
+        .nonnegative()
+        .max(20 * 60 * 1_000)
+        .optional(),
+      transcriptionDurationMs: z
+        .number()
+        .nonnegative()
+        .max(20 * 60 * 1_000)
+        .optional(),
+      engine: DictationHistoryEngine.optional(),
+      language: DictationLanguage.optional(),
+    }),
+    res: z.object({ success: z.boolean(), error: z.string().optional() }),
   },
   // ---- Local on-device transcription (whisper.cpp) — RFC 009 §11 ----
   // Capability probe: which accel backend is compiled in + whether local is viable here.
@@ -1153,6 +1382,8 @@ const ipcSchemas = {
       meetingProvider: TranscriptionProvider.optional(),
       model: z.string().optional(),
       privacy: VoicePrivacySettings.partial().optional(),
+      // Complete block from the settings UI; core still merges it defensively.
+      dictation: DictationSettings.optional(),
       // RFC 017: on-device diarization settings (incl. the Local-diarization-beta toggle).
       diarization: DiarizationSettings.partial().optional(),
       // Native dual-track capture: engine, echo cancellation, audio retention.
@@ -1188,7 +1419,10 @@ const ipcSchemas = {
     res: z.object({ engine: meetings.MeetingResolvedEngine }),
   },
   "meeting:startCapture": {
-    req: z.object({ calendarEventJson: z.string().optional() }),
+    req: z.object({
+      calendarEventJson: z.string().optional(),
+      relationshipTarget: meetings.MeetingRelationshipTarget.optional(),
+    }),
     res: z.object({
       started: z.boolean(),
       sessionId: z.string().optional(),
@@ -1200,7 +1434,10 @@ const ipcSchemas = {
   },
   /** Open both sources and hold the last few minutes in memory, writing nothing. */
   "meeting:startStandby": {
-    req: z.object({ calendarEventJson: z.string().optional() }),
+    req: z.object({
+      calendarEventJson: z.string().optional(),
+      relationshipTarget: meetings.MeetingRelationshipTarget.optional(),
+    }),
     res: z.object({
       started: z.boolean(),
       sessionId: z.string().optional(),
@@ -1232,10 +1469,27 @@ const ipcSchemas = {
       sessionId: z.string(),
       startedAt: z.string(),
       calendarEventJson: z.string().optional(),
+      relationshipTarget: meetings.MeetingRelationshipTarget.optional(),
       provider: TranscriptionProvider,
       segments: z.array(z.object({ speaker: z.string(), text: z.string() })),
     }),
     res: z.object({ queued: z.boolean(), reason: z.string().optional() }),
+  },
+  /** Attach an already-transcribed native session to an explicitly selected
+   * relationship and publish it through the same durable outbox. */
+  "meeting:publishSessionEvidence": {
+    req: z.object({
+      sessionId: z.string(),
+      relationshipTarget: meetings.MeetingRelationshipTarget,
+    }),
+    res: z.object({
+      queued: z.boolean(),
+      published: z.boolean().optional(),
+      pending: z.number().int().nonnegative().optional(),
+      relationshipStateVersion: z.number().int().nonnegative().optional(),
+      relationshipStateHash: z.string().optional(),
+      reason: z.string().optional(),
+    }),
   },
   "meeting:captureStatus": {
     req: z.null(),
@@ -1255,7 +1509,14 @@ const ipcSchemas = {
      *  flag crosses the wire — main derives the note path from the session itself, so
      *  nothing can ask for an arbitrary file to be deleted. */
     req: z.object({ sessionId: z.string(), deleteNote: z.boolean().default(false) }),
-    res: z.object({ deleted: z.boolean(), noteDeleted: z.boolean().default(false) }),
+    res: z.object({
+      deleted: z.boolean(),
+      noteDeleted: z.boolean().default(false),
+      sharedEvidence: z
+        .enum(["not_attached", "retained_by_workspace_policy"])
+        .default("not_attached"),
+      relationshipId: z.string().optional(),
+    }),
   },
   /** Delete every recording at once. `deleteNotes` is opt-in for the same reason it is
    *  per-session: the note is the durable artifact and may have been edited since. */
@@ -1467,6 +1728,12 @@ const ipcSchemas = {
      *  happens behind an explicit user action — never on a view mounting. */
     req: z.object({ probeSystemAudio: z.boolean().default(false) }),
     res: meetings.MeetingDoctorReport,
+  },
+  "meeting:preflight": {
+    /** A deliberate relationship-capture start may probe the optional system
+     * audio track. Background preflight always leaves this false. */
+    req: z.object({ probeSystemAudio: z.boolean().default(false) }),
+    res: meetings.MeetingPreflightReport,
   },
   /** Whether the fast (Parakeet) transcription models are downloaded. */
   "meeting:transcriptionModels": {
@@ -2046,6 +2313,15 @@ const ipcSchemas = {
     }),
     res: z.object({ relationships: z.array(RelationshipSchema) }),
   },
+  "relationships:graph": {
+    req: z.object({
+      scope: z.enum(["portfolio", "relationship"]),
+      relationshipId: z.string().optional(),
+      depth: z.number().int().min(1).max(3).optional(),
+      asOf: z.iso.datetime({ offset: true }).optional(),
+    }),
+    res: RelationshipGraphSchema,
+  },
   "relationships:create": {
     req: z.object({
       kind: z.string().min(1),
@@ -2067,6 +2343,19 @@ const ipcSchemas = {
     req: z.object({ id: z.string() }),
     res: RelationshipDetailSchema,
   },
+  "relationships:acknowledge": {
+    req: z.object({
+      id: z.string(),
+      stateVersion: z.number().int().nonnegative(),
+      stateHash: z.string(),
+    }),
+    res: z.object({
+      id: z.string(),
+      stateVersion: z.number().int().nonnegative(),
+      stateHash: z.string(),
+      acknowledgedAt: z.string(),
+    }),
+  },
   "relationships:timeline": {
     req: z.object({ id: z.string(), limit: z.number().int().min(1).max(100).optional() }),
     res: z.object({ observations: z.array(RelationshipObservationSchema) }),
@@ -2079,6 +2368,132 @@ const ipcSchemas = {
     req: z.null(),
     res: z.object({ sources: z.array(RelationshipSourceStatusSchema) }),
   },
+  "relationships:sourceInventory": {
+    req: z.null(),
+    res: z.object({ sources: z.array(RelationshipSourceInventoryItemSchema) }),
+  },
+  "relationships:betaDiagnostics": {
+    req: z.null(),
+    res: BetaDiagnosticsSchema,
+  },
+  "relationships:reportSourceAuthorization": {
+    req: z.object({
+      source: z.string().min(1),
+      sourceAccountId: z.string().optional(),
+      state: z.enum(["started", "completed", "canceled", "failed"]),
+      grantedScopes: z.array(z.string()).optional(),
+      errorCode: z.string().optional(),
+    }),
+    res: RelationshipSourceStatusSchema,
+  },
+  "relationships:resyncSource": {
+    req: z.object({ source: z.string().min(1), sourceAccountId: z.string().min(1) }),
+    res: RelationshipSourceStatusSchema,
+  },
+  "relationships:disconnectSource": {
+    req: z.object({ source: z.string().min(1), sourceAccountId: z.string().min(1) }),
+    res: RelationshipSourceStatusSchema,
+  },
+  "relationships:listIdentityCandidates": {
+    req: z.object({ status: z.string().optional(), relationshipId: z.string().optional() }),
+    res: z.object({ candidates: z.array(RelationshipIdentityCandidateSchema) }),
+  },
+  "relationships:decideIdentityCandidate": {
+    req: z.object({
+      candidateId: z.string(),
+      decision: z.enum(["merge", "keep_separate", "move_evidence", "split", "defer", "undo"]),
+      reason: z.string(),
+      expectedVersion: z.number().int().positive(),
+      idempotencyKey: z.string().min(1),
+    }),
+    res: RelationshipIdentityCandidateSchema,
+  },
+  "relationships:listAttention": {
+    req: z.object({ status: z.string().optional() }),
+    res: z.object({
+      contractVersion: z.string(),
+      asOf: z.string(),
+      items: z.array(RelationshipAttentionItemSchema),
+    }),
+  },
+  "relationships:decideAttention": {
+    req: z.object({
+      attentionId: z.string(),
+      decision: z.enum(["acknowledge", "snooze", "dismiss"]),
+      reason: z.string(),
+      expectedVersion: z.number().int().positive(),
+      snoozedUntil: z.string().optional(),
+    }),
+    res: RelationshipAttentionItemSchema,
+  },
+  "relationships:editAction": {
+    req: z.object({
+      actionId: z.string(),
+      proposedSubject: z.string().optional(),
+      proposedMessage: z.string().optional(),
+      reason: z.string().optional(),
+    }),
+    res: RelationshipActionSchema,
+  },
+  "relationships:createAction": {
+    req: z.object({
+      relationshipId: z.string().min(1),
+      actionType: z.string().min(1),
+      channel: z.string().min(1),
+      reason: z.string().min(1),
+      recipientEmail: z.string().optional(),
+      proposedSubject: z.string().optional(),
+      proposedMessage: z.string().optional(),
+      executionMode: z.enum(["draft", "send"]).optional(),
+      priorityScore: z.number().int().min(0).max(100).optional(),
+    }),
+    res: RelationshipActionSchema,
+  },
+  "relationships:evaluateAction": {
+    req: z.object({ actionId: z.string() }),
+    res: z.unknown(),
+  },
+  "relationships:executeAction": {
+    req: z.object({ actionId: z.string() }),
+    res: RelationshipActionSchema,
+  },
+  "relationships:snoozeAction": {
+    req: z.object({ actionId: z.string(), until: z.string() }),
+    res: RelationshipActionSchema,
+  },
+  "relationships:dismissAction": {
+    req: z.object({ actionId: z.string(), reason: z.string().min(1) }),
+    res: RelationshipActionSchema,
+  },
+  "relationships:actionAudit": {
+    req: z.object({ actionId: z.string() }),
+    res: RelationshipActionAuditSchema,
+  },
+  "relationships:actionSourceBody": {
+    req: z.object({ actionId: z.string() }),
+    res: z.string(),
+  },
+  "relationships:recordOutcome": {
+    req: z.object({
+      actionId: z.string(),
+      kind: z.string().min(1),
+      sourceEventId: z.string().min(1),
+      occurredAt: z.string().optional(),
+    }),
+    res: RelationshipOutcomeSchema,
+  },
+  "relationships:ingestObservations": {
+    req: z.object({ observations: z.array(RelationshipObservationInputSchema).min(1).max(100) }),
+    res: z.object({
+      results: z.array(
+        z.object({
+          observation: RelationshipObservationSchema,
+          relationship: RelationshipSchema,
+          duplicate: z.boolean(),
+        }),
+      ),
+    }),
+  },
   "relationships:evidence": {
     req: z.object({ relationshipId: z.string(), evidenceId: z.string() }),
     res: z.object({ observation: RelationshipObservationSchema, payload: z.unknown() }),
@@ -2088,6 +2503,14 @@ const ipcSchemas = {
       id: z.string(),
       dimension: z.enum(["lifecycle", "engagement", "sentiment", "health", "next_action"]),
       value: z.string().min(1),
+      reason: z.string().min(1),
+    }),
+    res: RelationshipSchema,
+  },
+  "relationships:retractAssertion": {
+    req: z.object({
+      relationshipId: z.string(),
+      assertionId: z.string(),
       reason: z.string().min(1),
     }),
     res: RelationshipSchema,

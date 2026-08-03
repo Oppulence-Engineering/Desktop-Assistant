@@ -35,6 +35,8 @@ const (
 	FieldExcerpt = "excerpt"
 	// FieldPayloadCiphertext holds the string denoting the payload_ciphertext field in the database.
 	FieldPayloadCiphertext = "payload_ciphertext"
+	// FieldEncryptionKeyVersion holds the string denoting the encryption_key_version field in the database.
+	FieldEncryptionKeyVersion = "encryption_key_version"
 	// FieldOccurredAt holds the string denoting the occurred_at field in the database.
 	FieldOccurredAt = "occurred_at"
 	// FieldObservedAt holds the string denoting the observed_at field in the database.
@@ -97,6 +99,7 @@ var Columns = []string{
 	FieldContentHash,
 	FieldExcerpt,
 	FieldPayloadCiphertext,
+	FieldEncryptionKeyVersion,
 	FieldOccurredAt,
 	FieldObservedAt,
 	FieldExternalEvidenceRefs,
@@ -149,6 +152,10 @@ var (
 	SourceRecordIDValidator func(string) error
 	// ContentHashValidator is a validator for the "content_hash" field. It is called by the builders before save.
 	ContentHashValidator func(string) error
+	// DefaultEncryptionKeyVersion holds the default value on creation for the "encryption_key_version" field.
+	DefaultEncryptionKeyVersion int
+	// EncryptionKeyVersionValidator is a validator for the "encryption_key_version" field. It is called by the builders before save.
+	EncryptionKeyVersionValidator func(int) error
 	// DefaultExternalEvidenceRefs holds the default value on creation for the "external_evidence_refs" field.
 	DefaultExternalEvidenceRefs []string
 	// DefaultID holds the default value on creation for the "id" field.
@@ -206,6 +213,11 @@ func ByContentHash(opts ...sql.OrderTermOption) OrderOption {
 // ByExcerpt orders the results by the excerpt field.
 func ByExcerpt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldExcerpt, opts...).ToFunc()
+}
+
+// ByEncryptionKeyVersion orders the results by the encryption_key_version field.
+func ByEncryptionKeyVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEncryptionKeyVersion, opts...).ToFunc()
 }
 
 // ByOccurredAt orders the results by the occurred_at field.

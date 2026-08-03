@@ -14,10 +14,10 @@ import {
   User,
 } from "@/lib/icons";
 
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@oppulence/ui/components/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@oppulence/ui/components/tooltip";
+import { Button } from "@oppulence/ui/components/button";
+import { Separator } from "@oppulence/ui/components/separator";
 import { GoogleClientIdModal } from "@/components/google-client-id-modal";
 import { IntegrationApiKeyModal } from "@/components/integration-api-key-modal";
 import { useConnectors } from "@/hooks/useConnectors";

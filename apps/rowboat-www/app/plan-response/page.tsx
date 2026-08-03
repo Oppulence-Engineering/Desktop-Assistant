@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@oppulence/ui/components/button";
+import { Input } from "@oppulence/ui/components/input";
 
 type PublicPlan = {
   planId: string;

@@ -3,8 +3,8 @@
 import * as React from "react";
 import { CheckCircle, CircleNotch, MagnifyingGlass, WarningCircle } from "@phosphor-icons/react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
 import { relativeTime } from "@/lib/revenue";
 import { EmptyBlock } from "@/components/revenue/shared";
 import type { RevenueLeakScan } from "@/types/revenue";
@@ -28,7 +28,7 @@ export function ScansView({
   }, [scans, activeScan]);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex w-full min-w-0 flex-col gap-4">
       <div className="flex items-center justify-between">
         <p className="max-w-md text-sm text-primary/60">
           A scan reads your sent Gmail over the last 90 days and turns dormant threads into

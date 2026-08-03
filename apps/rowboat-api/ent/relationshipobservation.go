@@ -47,6 +47,8 @@ type RelationshipObservation struct {
 	ContentHash string `json:"content_hash,omitempty"`
 	// PayloadCiphertext holds the value of the "payload_ciphertext" field.
 	PayloadCiphertext []byte `json:"-"`
+	// EncryptionKeyVersion holds the value of the "encryption_key_version" field.
+	EncryptionKeyVersion int `json:"encryption_key_version,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RelationshipObservationQuery when eager-loading is set.
 	Edges                          RelationshipObservationEdges `json:"edges"`
@@ -124,6 +126,8 @@ func (*RelationshipObservation) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case relationshipobservation.FieldPayloadCiphertext:
 			values[i] = new([]byte)
+		case relationshipobservation.FieldEncryptionKeyVersion:
+			values[i] = new(sql.NullInt64)
 		case relationshipobservation.FieldSource, relationshipobservation.FieldSourceAccountID, relationshipobservation.FieldExternalID, relationshipobservation.FieldSourceVersion, relationshipobservation.FieldEventType, relationshipobservation.FieldSummary, relationshipobservation.FieldNormalizedFactsJSON, relationshipobservation.FieldContentHash:
 			values[i] = new(sql.NullString)
 		case relationshipobservation.FieldCreatedAt, relationshipobservation.FieldUpdatedAt, relationshipobservation.FieldOccurredAt, relationshipobservation.FieldReceivedAt:
@@ -234,6 +238,12 @@ func (_m *RelationshipObservation) assignValues(columns []string, values []any) 
 				return fmt.Errorf("unexpected type %T for field payload_ciphertext", values[i])
 			} else if value != nil {
 				_m.PayloadCiphertext = *value
+			}
+		case relationshipobservation.FieldEncryptionKeyVersion:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field encryption_key_version", values[i])
+			} else if value.Valid {
+				_m.EncryptionKeyVersion = int(value.Int64)
 			}
 		case relationshipobservation.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -347,6 +357,9 @@ func (_m *RelationshipObservation) String() string {
 	builder.WriteString(_m.ContentHash)
 	builder.WriteString(", ")
 	builder.WriteString("payload_ciphertext=<sensitive>")
+	builder.WriteString(", ")
+	builder.WriteString("encryption_key_version=")
+	builder.WriteString(fmt.Sprintf("%v", _m.EncryptionKeyVersion))
 	builder.WriteByte(')')
 	return builder.String()
 }

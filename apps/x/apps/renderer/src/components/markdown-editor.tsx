@@ -319,8 +319,8 @@ import { useLiveNoteForPath } from "@/hooks/use-live-note-for-path";
 import { formatRelativeTime } from "@/lib/relative-time";
 import { FrontmatterProperties } from "./frontmatter-properties";
 import { WikiLink } from "@/extensions/wiki-link";
-import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverAnchor, PopoverContent } from "@oppulence/ui/components/popover";
+import { Command, CommandEmpty, CommandItem, CommandList } from "@oppulence/ui/components/command";
 import {
   ensureMarkdownExtension,
   normalizeWikiPath,

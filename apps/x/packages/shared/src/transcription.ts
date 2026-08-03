@@ -124,6 +124,328 @@ export const VoicePrivacySettings = z.object({
 });
 export type VoicePrivacySettings = z.infer<typeof VoicePrivacySettings>;
 
+/** App-aware, on-device formatting for system-wide desktop dictation. */
+export const DictationAppCategory = z.enum([
+  "email",
+  "work-messaging",
+  "personal-messaging",
+  "other",
+]);
+export type DictationAppCategory = z.infer<typeof DictationAppCategory>;
+
+export const DictationStyle = z.enum(["formal", "casual", "very-casual", "excited"]);
+export type DictationStyle = z.infer<typeof DictationStyle>;
+
+export const DictationStyleSettings = z.object({
+  email: DictationStyle.default("formal"),
+  workMessaging: DictationStyle.default("casual"),
+  personalMessaging: DictationStyle.default("casual"),
+  other: DictationStyle.default("formal"),
+});
+export type DictationStyleSettings = z.infer<typeof DictationStyleSettings>;
+
+export const DEFAULT_DICTATION_STYLE_SETTINGS: DictationStyleSettings = {
+  email: "formal",
+  workMessaging: "casual",
+  personalMessaging: "casual",
+  other: "formal",
+};
+
+/** Native macOS hold-to-talk chord. Control+Option remains the migration-safe default. */
+export const DictationShortcut = z.enum(["control-option", "fn", "control-fn"]);
+export type DictationShortcut = z.infer<typeof DictationShortcut>;
+
+export const DICTATION_SHORTCUT_LABELS: Record<DictationShortcut, string> = {
+  "control-option": "Control + Option",
+  fn: "Fn",
+  "control-fn": "Control + Fn",
+};
+
+/** Screen edge where the always-on-top desktop dictation status bar is docked. */
+export const DictationFlowBarDock = z.enum(["bottom", "left", "right"]);
+export type DictationFlowBarDock = z.infer<typeof DictationFlowBarDock>;
+
+/** Opt-in one-keystroke selection transforms, matching the available Mac slots. */
+export const DictationTransformShortcut = z.enum([
+  "option-1",
+  "option-2",
+  "option-3",
+  "option-4",
+  "option-5",
+  "option-6",
+  "option-7",
+  "option-8",
+  "option-9",
+]);
+export type DictationTransformShortcut = z.infer<typeof DictationTransformShortcut>;
+
+export const DICTATION_TRANSFORM_SHORTCUT_LABELS: Record<DictationTransformShortcut, string> = {
+  "option-1": "Option + 1",
+  "option-2": "Option + 2",
+  "option-3": "Option + 3",
+  "option-4": "Option + 4",
+  "option-5": "Option + 5",
+  "option-6": "Option + 6",
+  "option-7": "Option + 7",
+  "option-8": "Option + 8",
+  "option-9": "Option + 9",
+};
+
+export const DICTATION_TRANSFORM_SHORTCUT_OPTIONS = DictationTransformShortcut.options.map(
+  (value) => ({ value, label: DICTATION_TRANSFORM_SHORTCUT_LABELS[value] }),
+);
+
+export const DictationTransform = z.object({
+  id: z.string().trim().min(1).max(80),
+  name: z.string().trim().min(1).max(60),
+  instruction: z.string().trim().min(1).max(2_000),
+  shortcut: DictationTransformShortcut,
+});
+export type DictationTransform = z.infer<typeof DictationTransform>;
+
+export const DEFAULT_DICTATION_TRANSFORMS: DictationTransform[] = [
+  {
+    id: "polish",
+    name: "Polish",
+    instruction:
+      "Fix grammar and spelling, improve clarity and readability, add useful structure, and preserve the original meaning, tone, names, technical terms, and URLs.",
+    shortcut: "option-1",
+  },
+  {
+    id: "prompt-engineer",
+    name: "Prompt Engineer",
+    instruction:
+      "Rewrite this as a precise, well-structured prompt for an AI assistant. Preserve every requirement, constraint, and concrete detail.",
+    shortcut: "option-2",
+  },
+];
+
+/** Languages supported by the resident Parakeet v3 desktop-dictation model. */
+export const DICTATION_LANGUAGE_CODES = [
+  "auto",
+  "en",
+  "es",
+  "fr",
+  "de",
+  "it",
+  "pt",
+  "ro",
+  "nl",
+  "da",
+  "sv",
+  "fi",
+  "hu",
+  "et",
+  "lv",
+  "lt",
+  "mt",
+  "pl",
+  "cs",
+  "sk",
+  "sl",
+  "hr",
+  "bs",
+  "ru",
+  "uk",
+  "be",
+  "bg",
+  "sr",
+  "el",
+] as const;
+
+export const DictationLanguage = z.enum(DICTATION_LANGUAGE_CODES);
+export type DictationLanguage = z.infer<typeof DictationLanguage>;
+
+export const DICTATION_LANGUAGE_LABELS: Record<DictationLanguage, string> = {
+  auto: "Auto-detect",
+  en: "English",
+  es: "Español",
+  fr: "Français",
+  de: "Deutsch",
+  it: "Italiano",
+  pt: "Português",
+  ro: "Română",
+  nl: "Nederlands",
+  da: "Dansk",
+  sv: "Svenska",
+  fi: "Suomi",
+  hu: "Magyar",
+  et: "Eesti",
+  lv: "Latviešu",
+  lt: "Lietuvių",
+  mt: "Malti",
+  pl: "Polski",
+  cs: "Čeština",
+  sk: "Slovenčina",
+  sl: "Slovenščina",
+  hr: "Hrvatski",
+  bs: "Bosanski",
+  ru: "Русский",
+  uk: "Українська",
+  be: "Беларуская",
+  bg: "Български",
+  sr: "Српски",
+  el: "Ελληνικά",
+};
+
+export const DICTATION_LANGUAGE_OPTIONS = DICTATION_LANGUAGE_CODES.map((value) => ({
+  value,
+  label: DICTATION_LANGUAGE_LABELS[value],
+}));
+
+/** A correct word/phrase plus an optional spelling the recognizer commonly returns. */
+export const DictationDictionaryEntry = z.object({
+  term: z.string().trim().min(1).max(60),
+  replacementFor: z.string().trim().min(1).max(60).optional(),
+  starred: z.boolean().default(false),
+});
+export type DictationDictionaryEntry = z.infer<typeof DictationDictionaryEntry>;
+
+/** Spoken trigger → exact local expansion. Plain text is intentionally portable. */
+export const DictationSnippet = z.object({
+  trigger: z.string().trim().min(1).max(60),
+  expansion: z.string().min(1).max(4_000),
+});
+export type DictationSnippet = z.infer<typeof DictationSnippet>;
+
+/** Stable browser media-device identity retained locally so disconnected mics stay ranked. */
+export const DictationMicrophonePreference = z.object({
+  deviceId: z.string().trim().min(1).max(512),
+  label: z.string().trim().min(1).max(200),
+});
+export type DictationMicrophonePreference = z.infer<typeof DictationMicrophonePreference>;
+
+/** How much successful desktop-dictation history is retained on this Mac. */
+export const DictationHistoryRetention = z.enum(["forever", "24-hours", "never"]);
+export type DictationHistoryRetention = z.infer<typeof DictationHistoryRetention>;
+
+export const DictationHistoryStatus = z.enum(["success", "failed"]);
+export type DictationHistoryStatus = z.infer<typeof DictationHistoryStatus>;
+
+export const DictationHistoryEngine = z.enum([
+  "parakeet",
+  "whisper",
+  "solomon",
+  "deepgram",
+  "unknown",
+]);
+export type DictationHistoryEngine = z.infer<typeof DictationHistoryEngine>;
+
+/** Auditable, deterministic transforms applied after speech recognition. */
+export const DictationPolishChange = z.enum([
+  "press-enter",
+  "fillers",
+  "backtrack",
+  "brevity",
+  "formatting",
+  "dictionary",
+  "snippet",
+  "context",
+  "style",
+]);
+export type DictationPolishChange = z.infer<typeof DictationPolishChange>;
+
+/** One privacy-bounded, local-only desktop dictation record. Raw audio is separate. */
+export const DictationHistoryEntry = z.object({
+  id: z.string().uuid(),
+  createdAt: z.string().datetime(),
+  /** Currently selected history representation (formatted or restored raw text). */
+  text: z.string().max(50_000),
+  /** Exact normalized ASR output. Kept only under the transcript-retention policy. */
+  rawText: z.string().max(50_000).optional(),
+  /** Formatted output retained so Undo AI edit can be reversed losslessly. */
+  polishedText: z.string().max(50_000).optional(),
+  polishChanges: z.array(DictationPolishChange).default([]),
+  formattingUndone: z.boolean().default(false),
+  status: DictationHistoryStatus,
+  delivery: z.enum(["pasted", "copied", "none"]),
+  appName: z.string().trim().min(1).max(200).optional(),
+  bundleIdentifier: z.string().trim().min(1).max(300).optional(),
+  engine: DictationHistoryEngine,
+  language: DictationLanguage.optional(),
+  audioDurationMs: z
+    .number()
+    .nonnegative()
+    .max(20 * 60 * 1_000),
+  transcriptionDurationMs: z
+    .number()
+    .nonnegative()
+    .max(20 * 60 * 1_000)
+    .optional(),
+  wordCount: z.number().int().nonnegative(),
+  errorCode: z.string().trim().min(1).max(100).optional(),
+  /** Response-only capability derived from the separately retained 14-day audio item. */
+  retryAvailable: z.boolean().optional(),
+});
+export type DictationHistoryEntry = z.infer<typeof DictationHistoryEntry>;
+
+export const DictationHistoryStats = z.object({
+  totalWords: z.number().int().nonnegative(),
+  todayWords: z.number().int().nonnegative(),
+  averageWpm: z.number().nonnegative(),
+  streakDays: z.number().int().nonnegative(),
+  daysUsed: z.number().int().nonnegative(),
+  totalDictations: z.number().int().nonnegative(),
+  totalAudioDurationMs: z.number().nonnegative(),
+  automaticallyEditedDictations: z.number().int().nonnegative(),
+  wordsCleanedUp: z.number().int().nonnegative(),
+  topApps: z.array(
+    z.object({ appName: z.string().min(1).max(200), dictations: z.number().int().positive() }),
+  ),
+});
+export type DictationHistoryStats = z.infer<typeof DictationHistoryStats>;
+
+/** How strongly local post-processing may edit a desktop dictation. */
+export const DictationCleanupLevel = z.enum(["none", "light", "medium", "high"]);
+export type DictationCleanupLevel = z.infer<typeof DictationCleanupLevel>;
+
+export const DictationSettings = z.object({
+  shortcut: DictationShortcut.default("control-option"),
+  /** Persisted edge for the draggable desktop dictation status bar. */
+  flowBarDock: DictationFlowBarDock.default("bottom"),
+  /** Keeps the compact click-to-dictate bubble visible between recordings. */
+  showFlowBar: z.boolean().default(false),
+  /** Transform shortcuts stay unregistered until the user explicitly opts in. */
+  transformsEnabled: z.boolean().default(false),
+  transforms: z.array(DictationTransform).max(9).default(DEFAULT_DICTATION_TRANSFORMS),
+  /** One language per capture; auto asks the active engine to detect it. */
+  language: DictationLanguage.default("auto"),
+  /** Enables selection-aware voice commands on Command + Control + Option. */
+  commandModeEnabled: z.boolean().default(true),
+  /** Keeps only failed 16 kHz PCM locally for up to 14 days so it can be retried. */
+  retryFailedAudio: z.boolean().default(true),
+  /** Transcript history remains local and can be disabled or limited to the last day. */
+  historyRetention: DictationHistoryRetention.default("forever"),
+  /** Reads only nearby focused-textbox text; screenshots and full-window text are excluded. */
+  contextEnabled: z.boolean().default(true),
+  /** None preserves ASR text; stronger levels progressively add clarity and brevity edits. */
+  cleanupLevel: DictationCleanupLevel.default("medium"),
+  /** Highest available device wins; an empty list follows the macOS system default. */
+  microphonePriority: z.array(DictationMicrophonePreference).max(32).default([]),
+  styles: DictationStyleSettings.default(DEFAULT_DICTATION_STYLE_SETTINGS),
+  dictionary: z.array(DictationDictionaryEntry).max(1_000).default([]),
+  snippets: z.array(DictationSnippet).max(1_000).default([]),
+});
+export type DictationSettings = z.infer<typeof DictationSettings>;
+
+export const DEFAULT_DICTATION_SETTINGS: DictationSettings = {
+  shortcut: "control-option",
+  flowBarDock: "bottom",
+  showFlowBar: false,
+  transformsEnabled: false,
+  transforms: DEFAULT_DICTATION_TRANSFORMS,
+  language: "auto",
+  commandModeEnabled: true,
+  retryFailedAudio: true,
+  historyRetention: "forever",
+  contextEnabled: true,
+  cleanupLevel: "medium",
+  microphonePriority: [],
+  styles: DEFAULT_DICTATION_STYLE_SETTINGS,
+  dictionary: [],
+  snippets: [],
+};
+
 export const WhisperDiagnosticResult = z.object({
   success: z.boolean(),
   provider: TranscriptionProvider,
@@ -263,6 +585,8 @@ export const TranscriptionConfig = z.object({
     retainDiagnostics: false,
     redactTranscriptsInLogs: true,
   }),
+  // System-wide dictation personalization. Context is read and processed locally.
+  dictation: DictationSettings.default(DEFAULT_DICTATION_SETTINGS),
   // RFC 017: on-device meeting diarization (off by default, beta).
   diarization: DiarizationSettings.default(DEFAULT_DIARIZATION_SETTINGS),
   // Native dual-track meeting capture: engine choice, echo cancellation, retention.

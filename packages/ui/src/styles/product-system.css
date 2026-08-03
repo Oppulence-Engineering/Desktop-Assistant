@@ -1,0 +1,182 @@
+/*
+ * Oppulence product system
+ *
+ * This file is intentionally framework-neutral. Both the Next.js console and
+ * the Electron renderer opt in with `data-product-shell`, while retaining
+ * their own surface and status colors around these shared hierarchy tokens.
+ */
+[data-product-shell] {
+  --font-product: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --product-text-strong: #292929;
+  --product-text-secondary: #5d5d5d;
+  --product-text-tertiary: #9e9e9e;
+  --foreground: var(--product-text-strong);
+  --card-foreground: var(--product-text-strong);
+  --popover-foreground: var(--product-text-strong);
+  --primary: var(--product-text-strong);
+  --secondary-foreground: var(--product-text-strong);
+  --accent-foreground: var(--product-text-strong);
+  --muted-foreground: var(--product-text-secondary);
+  color: var(--product-text-strong);
+  font-family: var(--font-product);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: -0.15px;
+}
+
+.dark [data-product-shell],
+[data-product-shell].dark {
+  --product-text-strong: #f5f5f5;
+  --product-text-secondary: #b7b7b7;
+  --product-text-tertiary: #7f7f7f;
+}
+
+[data-product-shell] :where(*):not(code, pre, kbd, [class*="font-mono"]) {
+  font-family: var(--font-product) !important;
+  letter-spacing: -0.15px !important;
+}
+
+[data-product-shell]
+  :where(
+    strong,
+    b,
+    [class~="font-medium"],
+    [class~="font-semibold"],
+    [class~="font-bold"],
+    [class~="font-extrabold"],
+    [class~="font-black"]
+  ) {
+  font-weight: 500 !important;
+}
+
+[data-product-shell] :where([class~="font-thin"], [class~="font-light"], [class~="font-normal"]) {
+  font-weight: 400 !important;
+}
+
+/* Product typography has four intentional stops: caption, body, label, title. */
+[data-product-shell]
+  :where(
+    small,
+    [data-slot="badge"],
+    [class~="text-xs"],
+    [class~="text-[7px]"],
+    [class~="text-[8px]"],
+    [class~="text-[9px]"],
+    [class~="text-[10px]"],
+    [class~="text-[11px]"],
+    [class~="text-[12px]"]
+  ) {
+  font-size: 12px !important;
+}
+
+[data-product-shell] :where([class~="text-[13px]"]) {
+  font-size: 13px !important;
+}
+
+[data-product-shell]
+  :where(
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    [class~="text-sm"],
+    [class~="text-base"],
+    [class~="text-lg"],
+    [class~="text-[14px]"],
+    [class~="text-[15px]"],
+    [class~="text-[16px]"],
+    [class~="text-[17px]"],
+    [class~="text-[18px]"]
+  ) {
+  font-size: 14px !important;
+}
+
+[data-product-shell]
+  :where(
+    h1,
+    [data-product-title],
+    [class~="text-xl"],
+    [class~="text-2xl"],
+    [class~="text-3xl"],
+    [class~="text-4xl"],
+    [class~="text-5xl"],
+    [class~="text-[20px]"],
+    [class~="text-[22px]"],
+    [class~="text-[24px]"],
+    [class~="text-[28px]"],
+    [class~="text-[30px]"],
+    [class~="text-[32px]"]
+  ) {
+  font-size: 24px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+}
+
+[data-product-shell] :where(button, input, select, textarea, [data-slot="button"]) {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+[data-product-shell] :where([data-tone="secondary"]) {
+  color: var(--product-text-secondary) !important;
+}
+
+[data-product-shell] :where([data-tone="tertiary"]) {
+  color: var(--product-text-tertiary) !important;
+}
+
+/* Geometry: navigation is compact, content cards are soft, primary CTAs pill. */
+[data-product-shell]
+  :where(
+    [data-slot="sidebar-menu-button"],
+    [data-slot="tabs-trigger"],
+    [data-slot="toggle"],
+    [data-slot="select-trigger"],
+    [data-slot="input"],
+    [data-slot="textarea"],
+    [data-slot="checkbox"],
+    [data-slot="button"]
+  ) {
+  border-radius: 8px !important;
+}
+
+[data-product-shell]
+  :where(
+    [data-slot="card"],
+    [data-product-card],
+    [class*="rounded-[2px]"][class*="border"]
+  ) {
+  border-radius: 16px !important;
+}
+
+[data-product-shell]
+  :where(
+    [data-slot="button"][data-variant="default"],
+    [data-cta],
+    [class~="rounded-full"]
+  ) {
+  border-radius: 9999px !important;
+}
+
+/* Navigation and card icon scales remain distinct even when nested. */
+[data-product-shell]
+  :where(nav, [data-navigation], [data-slot="sidebar"], [data-slot="tabs-list"])
+  svg:not([data-preserve-size]) {
+  height: 14px !important;
+  width: 14px !important;
+}
+
+[data-product-shell] :where([data-slot="card"], [data-product-card]) svg:not([data-preserve-size]) {
+  height: 20px !important;
+  width: 20px !important;
+}
+
+[data-product-shell]
+  :where(nav, [data-navigation], [data-slot="sidebar"], [data-slot="tabs-list"])
+  [data-slot="card"]
+  svg:not([data-preserve-size]) {
+  height: 14px !important;
+  width: 14px !important;
+}

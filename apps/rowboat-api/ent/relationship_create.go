@@ -19,12 +19,17 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipprojectionjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenuetrustevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
@@ -294,6 +299,48 @@ func (_c *RelationshipCreate) SetNillableStateVersion(v *int) *RelationshipCreat
 	return _c
 }
 
+// SetStateHash sets the "state_hash" field.
+func (_c *RelationshipCreate) SetStateHash(v string) *RelationshipCreate {
+	_c.mutation.SetStateHash(v)
+	return _c
+}
+
+// SetNillableStateHash sets the "state_hash" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableStateHash(v *string) *RelationshipCreate {
+	if v != nil {
+		_c.SetStateHash(*v)
+	}
+	return _c
+}
+
+// SetProjectorVersion sets the "projector_version" field.
+func (_c *RelationshipCreate) SetProjectorVersion(v int) *RelationshipCreate {
+	_c.mutation.SetProjectorVersion(v)
+	return _c
+}
+
+// SetNillableProjectorVersion sets the "projector_version" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableProjectorVersion(v *int) *RelationshipCreate {
+	if v != nil {
+		_c.SetProjectorVersion(*v)
+	}
+	return _c
+}
+
+// SetProjectedAt sets the "projected_at" field.
+func (_c *RelationshipCreate) SetProjectedAt(v time.Time) *RelationshipCreate {
+	_c.mutation.SetProjectedAt(v)
+	return _c
+}
+
+// SetNillableProjectedAt sets the "projected_at" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableProjectedAt(v *time.Time) *RelationshipCreate {
+	if v != nil {
+		_c.SetProjectedAt(*v)
+	}
+	return _c
+}
+
 // SetLastChangedAt sets the "last_changed_at" field.
 func (_c *RelationshipCreate) SetLastChangedAt(v time.Time) *RelationshipCreate {
 	_c.mutation.SetLastChangedAt(v)
@@ -536,6 +583,96 @@ func (_c *RelationshipCreate) AddSnapshots(v ...*RelationshipStateSnapshot) *Rel
 	return _c.AddSnapshotIDs(ids...)
 }
 
+// AddProjectionJobIDs adds the "projection_jobs" edge to the RelationshipProjectionJob entity by IDs.
+func (_c *RelationshipCreate) AddProjectionJobIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddProjectionJobIDs(ids...)
+	return _c
+}
+
+// AddProjectionJobs adds the "projection_jobs" edges to the RelationshipProjectionJob entity.
+func (_c *RelationshipCreate) AddProjectionJobs(v ...*RelationshipProjectionJob) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddProjectionJobIDs(ids...)
+}
+
+// AddTrustEventIDs adds the "trust_events" edge to the RevenueTrustEvent entity by IDs.
+func (_c *RelationshipCreate) AddTrustEventIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddTrustEventIDs(ids...)
+	return _c
+}
+
+// AddTrustEvents adds the "trust_events" edges to the RevenueTrustEvent entity.
+func (_c *RelationshipCreate) AddTrustEvents(v ...*RevenueTrustEvent) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddTrustEventIDs(ids...)
+}
+
+// AddProposedIdentityCandidateIDs adds the "proposed_identity_candidates" edge to the RelationshipIdentityCandidate entity by IDs.
+func (_c *RelationshipCreate) AddProposedIdentityCandidateIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddProposedIdentityCandidateIDs(ids...)
+	return _c
+}
+
+// AddProposedIdentityCandidates adds the "proposed_identity_candidates" edges to the RelationshipIdentityCandidate entity.
+func (_c *RelationshipCreate) AddProposedIdentityCandidates(v ...*RelationshipIdentityCandidate) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddProposedIdentityCandidateIDs(ids...)
+}
+
+// AddExistingIdentityCandidateIDs adds the "existing_identity_candidates" edge to the RelationshipIdentityCandidate entity by IDs.
+func (_c *RelationshipCreate) AddExistingIdentityCandidateIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddExistingIdentityCandidateIDs(ids...)
+	return _c
+}
+
+// AddExistingIdentityCandidates adds the "existing_identity_candidates" edges to the RelationshipIdentityCandidate entity.
+func (_c *RelationshipCreate) AddExistingIdentityCandidates(v ...*RelationshipIdentityCandidate) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddExistingIdentityCandidateIDs(ids...)
+}
+
+// AddReviewAcknowledgementIDs adds the "review_acknowledgements" edge to the RelationshipReviewAcknowledgement entity by IDs.
+func (_c *RelationshipCreate) AddReviewAcknowledgementIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddReviewAcknowledgementIDs(ids...)
+	return _c
+}
+
+// AddReviewAcknowledgements adds the "review_acknowledgements" edges to the RelationshipReviewAcknowledgement entity.
+func (_c *RelationshipCreate) AddReviewAcknowledgements(v ...*RelationshipReviewAcknowledgement) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddReviewAcknowledgementIDs(ids...)
+}
+
+// AddAttentionItemIDs adds the "attention_items" edge to the RelationshipAttentionItem entity by IDs.
+func (_c *RelationshipCreate) AddAttentionItemIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddAttentionItemIDs(ids...)
+	return _c
+}
+
+// AddAttentionItems adds the "attention_items" edges to the RelationshipAttentionItem entity.
+func (_c *RelationshipCreate) AddAttentionItems(v ...*RelationshipAttentionItem) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAttentionItemIDs(ids...)
+}
+
 // Mutation returns the RelationshipMutation object of the builder.
 func (_c *RelationshipCreate) Mutation() *RelationshipMutation {
 	return _c.mutation
@@ -606,6 +743,10 @@ func (_c *RelationshipCreate) defaults() {
 	if _, ok := _c.mutation.StateVersion(); !ok {
 		v := relationship.DefaultStateVersion
 		_c.mutation.SetStateVersion(v)
+	}
+	if _, ok := _c.mutation.ProjectorVersion(); !ok {
+		v := relationship.DefaultProjectorVersion
+		_c.mutation.SetProjectorVersion(v)
 	}
 	if _, ok := _c.mutation.Risks(); !ok {
 		v := relationship.DefaultRisks
@@ -694,6 +835,14 @@ func (_c *RelationshipCreate) check() error {
 	if v, ok := _c.mutation.StateVersion(); ok {
 		if err := relationship.StateVersionValidator(v); err != nil {
 			return &ValidationError{Name: "state_version", err: fmt.Errorf(`ent: validator failed for field "Relationship.state_version": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.ProjectorVersion(); !ok {
+		return &ValidationError{Name: "projector_version", err: errors.New(`ent: missing required field "Relationship.projector_version"`)}
+	}
+	if v, ok := _c.mutation.ProjectorVersion(); ok {
+		if err := relationship.ProjectorVersionValidator(v); err != nil {
+			return &ValidationError{Name: "projector_version", err: fmt.Errorf(`ent: validator failed for field "Relationship.projector_version": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Risks(); !ok {
@@ -823,6 +972,18 @@ func (_c *RelationshipCreate) createSpec() (*Relationship, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.StateVersion(); ok {
 		_spec.SetField(relationship.FieldStateVersion, field.TypeInt, value)
 		_node.StateVersion = value
+	}
+	if value, ok := _c.mutation.StateHash(); ok {
+		_spec.SetField(relationship.FieldStateHash, field.TypeString, value)
+		_node.StateHash = value
+	}
+	if value, ok := _c.mutation.ProjectorVersion(); ok {
+		_spec.SetField(relationship.FieldProjectorVersion, field.TypeInt, value)
+		_node.ProjectorVersion = value
+	}
+	if value, ok := _c.mutation.ProjectedAt(); ok {
+		_spec.SetField(relationship.FieldProjectedAt, field.TypeTime, value)
+		_node.ProjectedAt = &value
 	}
 	if value, ok := _c.mutation.LastChangedAt(); ok {
 		_spec.SetField(relationship.FieldLastChangedAt, field.TypeTime, value)
@@ -1055,6 +1216,102 @@ func (_c *RelationshipCreate) createSpec() (*Relationship, *sqlgraph.CreateSpec)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipstatesnapshot.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ProjectionJobsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ProjectionJobsTable,
+			Columns: []string{relationship.ProjectionJobsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipprojectionjob.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.TrustEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.TrustEventsTable,
+			Columns: []string{relationship.TrustEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revenuetrustevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ProposedIdentityCandidatesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ProposedIdentityCandidatesTable,
+			Columns: []string{relationship.ProposedIdentityCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipidentitycandidate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ExistingIdentityCandidatesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ExistingIdentityCandidatesTable,
+			Columns: []string{relationship.ExistingIdentityCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipidentitycandidate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ReviewAcknowledgementsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.ReviewAcknowledgementsTable,
+			Columns: []string{relationship.ReviewAcknowledgementsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipreviewacknowledgement.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AttentionItemsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.AttentionItemsTable,
+			Columns: []string{relationship.AttentionItemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationshipattentionitem.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1399,6 +1656,60 @@ func (u *RelationshipUpsert) UpdateStateVersion() *RelationshipUpsert {
 // AddStateVersion adds v to the "state_version" field.
 func (u *RelationshipUpsert) AddStateVersion(v int) *RelationshipUpsert {
 	u.Add(relationship.FieldStateVersion, v)
+	return u
+}
+
+// SetStateHash sets the "state_hash" field.
+func (u *RelationshipUpsert) SetStateHash(v string) *RelationshipUpsert {
+	u.Set(relationship.FieldStateHash, v)
+	return u
+}
+
+// UpdateStateHash sets the "state_hash" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateStateHash() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldStateHash)
+	return u
+}
+
+// ClearStateHash clears the value of the "state_hash" field.
+func (u *RelationshipUpsert) ClearStateHash() *RelationshipUpsert {
+	u.SetNull(relationship.FieldStateHash)
+	return u
+}
+
+// SetProjectorVersion sets the "projector_version" field.
+func (u *RelationshipUpsert) SetProjectorVersion(v int) *RelationshipUpsert {
+	u.Set(relationship.FieldProjectorVersion, v)
+	return u
+}
+
+// UpdateProjectorVersion sets the "projector_version" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateProjectorVersion() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldProjectorVersion)
+	return u
+}
+
+// AddProjectorVersion adds v to the "projector_version" field.
+func (u *RelationshipUpsert) AddProjectorVersion(v int) *RelationshipUpsert {
+	u.Add(relationship.FieldProjectorVersion, v)
+	return u
+}
+
+// SetProjectedAt sets the "projected_at" field.
+func (u *RelationshipUpsert) SetProjectedAt(v time.Time) *RelationshipUpsert {
+	u.Set(relationship.FieldProjectedAt, v)
+	return u
+}
+
+// UpdateProjectedAt sets the "projected_at" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateProjectedAt() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldProjectedAt)
+	return u
+}
+
+// ClearProjectedAt clears the value of the "projected_at" field.
+func (u *RelationshipUpsert) ClearProjectedAt() *RelationshipUpsert {
+	u.SetNull(relationship.FieldProjectedAt)
 	return u
 }
 
@@ -1828,6 +2139,69 @@ func (u *RelationshipUpsertOne) AddStateVersion(v int) *RelationshipUpsertOne {
 func (u *RelationshipUpsertOne) UpdateStateVersion() *RelationshipUpsertOne {
 	return u.Update(func(s *RelationshipUpsert) {
 		s.UpdateStateVersion()
+	})
+}
+
+// SetStateHash sets the "state_hash" field.
+func (u *RelationshipUpsertOne) SetStateHash(v string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetStateHash(v)
+	})
+}
+
+// UpdateStateHash sets the "state_hash" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateStateHash() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateStateHash()
+	})
+}
+
+// ClearStateHash clears the value of the "state_hash" field.
+func (u *RelationshipUpsertOne) ClearStateHash() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearStateHash()
+	})
+}
+
+// SetProjectorVersion sets the "projector_version" field.
+func (u *RelationshipUpsertOne) SetProjectorVersion(v int) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetProjectorVersion(v)
+	})
+}
+
+// AddProjectorVersion adds v to the "projector_version" field.
+func (u *RelationshipUpsertOne) AddProjectorVersion(v int) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.AddProjectorVersion(v)
+	})
+}
+
+// UpdateProjectorVersion sets the "projector_version" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateProjectorVersion() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateProjectorVersion()
+	})
+}
+
+// SetProjectedAt sets the "projected_at" field.
+func (u *RelationshipUpsertOne) SetProjectedAt(v time.Time) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetProjectedAt(v)
+	})
+}
+
+// UpdateProjectedAt sets the "projected_at" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateProjectedAt() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateProjectedAt()
+	})
+}
+
+// ClearProjectedAt clears the value of the "projected_at" field.
+func (u *RelationshipUpsertOne) ClearProjectedAt() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearProjectedAt()
 	})
 }
 
@@ -2431,6 +2805,69 @@ func (u *RelationshipUpsertBulk) AddStateVersion(v int) *RelationshipUpsertBulk 
 func (u *RelationshipUpsertBulk) UpdateStateVersion() *RelationshipUpsertBulk {
 	return u.Update(func(s *RelationshipUpsert) {
 		s.UpdateStateVersion()
+	})
+}
+
+// SetStateHash sets the "state_hash" field.
+func (u *RelationshipUpsertBulk) SetStateHash(v string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetStateHash(v)
+	})
+}
+
+// UpdateStateHash sets the "state_hash" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateStateHash() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateStateHash()
+	})
+}
+
+// ClearStateHash clears the value of the "state_hash" field.
+func (u *RelationshipUpsertBulk) ClearStateHash() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearStateHash()
+	})
+}
+
+// SetProjectorVersion sets the "projector_version" field.
+func (u *RelationshipUpsertBulk) SetProjectorVersion(v int) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetProjectorVersion(v)
+	})
+}
+
+// AddProjectorVersion adds v to the "projector_version" field.
+func (u *RelationshipUpsertBulk) AddProjectorVersion(v int) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.AddProjectorVersion(v)
+	})
+}
+
+// UpdateProjectorVersion sets the "projector_version" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateProjectorVersion() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateProjectorVersion()
+	})
+}
+
+// SetProjectedAt sets the "projected_at" field.
+func (u *RelationshipUpsertBulk) SetProjectedAt(v time.Time) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetProjectedAt(v)
+	})
+}
+
+// UpdateProjectedAt sets the "projected_at" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateProjectedAt() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateProjectedAt()
+	})
+}
+
+// ClearProjectedAt clears the value of the "projected_at" field.
+func (u *RelationshipUpsertBulk) ClearProjectedAt() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearProjectedAt()
 	})
 }
 

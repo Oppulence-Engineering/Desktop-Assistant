@@ -2847,6 +2847,29 @@ func HasOutcomesWith(preds ...predicate.ActionOutcome) predicate.RevenueAction {
 	})
 }
 
+// HasTrustEvents applies the HasEdge predicate on the "trust_events" edge.
+func HasTrustEvents() predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, TrustEventsTable, TrustEventsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTrustEventsWith applies the HasEdge predicate on the "trust_events" edge with a given conditions (other predicates).
+func HasTrustEventsWith(preds ...predicate.RevenueTrustEvent) predicate.RevenueAction {
+	return predicate.RevenueAction(func(s *sql.Selector) {
+		step := newTrustEventsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.RevenueAction) predicate.RevenueAction {
 	return predicate.RevenueAction(sql.AndPredicates(predicates...))

@@ -71,6 +71,11 @@ func Status(v string) predicate.RevenueLeakScan {
 	return predicate.RevenueLeakScan(sql.FieldEQ(FieldStatus, v))
 }
 
+// ActiveClaim applies equality check predicate on the "active_claim" field. It's identical to ActiveClaimEQ.
+func ActiveClaim(v string) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEQ(FieldActiveClaim, v))
+}
+
 // Mode applies equality check predicate on the "mode" field. It's identical to ModeEQ.
 func Mode(v string) predicate.RevenueLeakScan {
 	return predicate.RevenueLeakScan(sql.FieldEQ(FieldMode, v))
@@ -269,6 +274,81 @@ func StatusEqualFold(v string) predicate.RevenueLeakScan {
 // StatusContainsFold applies the ContainsFold predicate on the "status" field.
 func StatusContainsFold(v string) predicate.RevenueLeakScan {
 	return predicate.RevenueLeakScan(sql.FieldContainsFold(FieldStatus, v))
+}
+
+// ActiveClaimEQ applies the EQ predicate on the "active_claim" field.
+func ActiveClaimEQ(v string) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEQ(FieldActiveClaim, v))
+}
+
+// ActiveClaimNEQ applies the NEQ predicate on the "active_claim" field.
+func ActiveClaimNEQ(v string) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNEQ(FieldActiveClaim, v))
+}
+
+// ActiveClaimIn applies the In predicate on the "active_claim" field.
+func ActiveClaimIn(vs ...string) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldIn(FieldActiveClaim, vs...))
+}
+
+// ActiveClaimNotIn applies the NotIn predicate on the "active_claim" field.
+func ActiveClaimNotIn(vs ...string) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNotIn(FieldActiveClaim, vs...))
+}
+
+// ActiveClaimGT applies the GT predicate on the "active_claim" field.
+func ActiveClaimGT(v string) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldGT(FieldActiveClaim, v))
+}
+
+// ActiveClaimGTE applies the GTE predicate on the "active_claim" field.
+func ActiveClaimGTE(v string) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldGTE(FieldActiveClaim, v))
+}
+
+// ActiveClaimLT applies the LT predicate on the "active_claim" field.
+func ActiveClaimLT(v string) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldLT(FieldActiveClaim, v))
+}
+
+// ActiveClaimLTE applies the LTE predicate on the "active_claim" field.
+func ActiveClaimLTE(v string) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldLTE(FieldActiveClaim, v))
+}
+
+// ActiveClaimContains applies the Contains predicate on the "active_claim" field.
+func ActiveClaimContains(v string) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldContains(FieldActiveClaim, v))
+}
+
+// ActiveClaimHasPrefix applies the HasPrefix predicate on the "active_claim" field.
+func ActiveClaimHasPrefix(v string) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldHasPrefix(FieldActiveClaim, v))
+}
+
+// ActiveClaimHasSuffix applies the HasSuffix predicate on the "active_claim" field.
+func ActiveClaimHasSuffix(v string) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldHasSuffix(FieldActiveClaim, v))
+}
+
+// ActiveClaimIsNil applies the IsNil predicate on the "active_claim" field.
+func ActiveClaimIsNil() predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldIsNull(FieldActiveClaim))
+}
+
+// ActiveClaimNotNil applies the NotNil predicate on the "active_claim" field.
+func ActiveClaimNotNil() predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNotNull(FieldActiveClaim))
+}
+
+// ActiveClaimEqualFold applies the EqualFold predicate on the "active_claim" field.
+func ActiveClaimEqualFold(v string) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEqualFold(FieldActiveClaim, v))
+}
+
+// ActiveClaimContainsFold applies the ContainsFold predicate on the "active_claim" field.
+func ActiveClaimContainsFold(v string) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldContainsFold(FieldActiveClaim, v))
 }
 
 // ModeEQ applies the EQ predicate on the "mode" field.

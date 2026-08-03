@@ -3,22 +3,22 @@
 import * as React from "react";
 import { CircleNotch, Plus } from "@phosphor-icons/react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@oppulence/ui/components/select";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
+} from "@oppulence/ui/components/sheet";
 import {
   ACTION_TYPE_LABELS,
   getAudit,
@@ -96,7 +96,10 @@ export function AuditSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-1 flex-col gap-6 px-4 py-5">
+        <div
+          className="flex flex-1 flex-col gap-6 px-4 py-5"
+          data-capability="action-audit outcome-observation"
+        >
           {loading && !audit ? (
             <p className="text-sm text-primary/50">Loading history…</p>
           ) : audit ? (

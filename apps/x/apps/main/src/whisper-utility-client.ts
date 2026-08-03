@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   WhisperError,
+  timeoutFor,
   type RunResult,
   type WhisperErrorCode,
   type WhisperPcmRunner,
@@ -42,8 +43,7 @@ export class WhisperUtilityRunner {
   readonly transcribePcm: WhisperPcmRunner = (pcm, opts) => {
     const child = this.ensureChild();
     const id = randomUUID();
-    const timeoutMs =
-      (opts.timeoutMs ?? Math.max(15_000, Math.round(opts.audioSeconds * 3_000))) + 5_000;
+    const timeoutMs = (opts.timeoutMs ?? timeoutFor(opts.audioSeconds)) + 5_000;
     const pcm16 = pcm.buffer.slice(pcm.byteOffset, pcm.byteOffset + pcm.byteLength);
 
     return new Promise<RunResult>((resolve, reject) => {

@@ -7,7 +7,10 @@ import {
   type SettingsSection,
 } from "@/components/app-shell";
 import { SettingsView } from "@/components/app-settings";
+import { AgentsView } from "@/components/agents/agents-view";
+import { AgentConfigurationForm } from "@/components/agents/agent-configuration-form";
 import { RevenuePanel } from "@/components/revenue-panel";
+import { CloudWorkflowsView } from "@/components/workflows/cloud-workflows-view";
 import { AuthGate, useAuthSession } from "@/components/auth-gate";
 import { CommandPalette } from "@/components/command-palette";
 import {
@@ -62,7 +65,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@oppulence/ui/components/select";
 import { JsonEditor } from "@/components/json-editor";
 import { TiptapMarkdownEditor } from "@/components/tiptap-markdown-editor";
 import { MarkdownViewer } from "@/components/markdown-viewer";
@@ -117,6 +120,38 @@ type RunEvent = {
   [key: string]: unknown;
 };
 
+function agentViewToDocument(value: unknown, fallbackSlug: string): Record<string, unknown> {
+  const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const slug = typeof record.slug === "string" && record.slug ? record.slug : fallbackSlug;
+  const name = typeof record.name === "string" && record.name ? record.name : slug;
+  const tools = Array.isArray(record.enabledTools)
+    ? record.enabledTools.filter((tool): tool is string => typeof tool === "string")
+    : [];
+  const subagents = Array.isArray(record.subagentRefs)
+    ? record.subagentRefs.filter((agent): agent is string => typeof agent === "string")
+    : [];
+  const connections = Array.isArray(record.connectorReqs)
+    ? record.connectorReqs
+        .filter((scope): scope is string => typeof scope === "string")
+        .map((scope) => ({ scope }))
+    : [];
+  const spec: Record<string, unknown> = {
+    instructions: typeof record.instructions === "string" ? record.instructions : "",
+    tools,
+  };
+  if (typeof record.model === "string" && record.model) spec.model = record.model;
+  if (typeof record.provider === "string" && record.provider) spec.provider = record.provider;
+  if (subagents.length) spec.subagents = subagents;
+  if (connections.length) spec.connections = connections;
+  if (record.limits && typeof record.limits === "object") spec.limits = record.limits;
+  return {
+    apiVersion: "agent.rowboat.dev/v1",
+    kind: "Agent",
+    metadata: { slug, name },
+    spec,
+  };
+}
+
 function PageBody() {
   const session = useAuthSession();
   const [text, setText] = useState<string>("");
@@ -138,7 +173,10 @@ function PageBody() {
     conversation.length === 0 && !currentAssistantMessage && !currentReasoning;
   const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [view, setView] = useState<"chat" | "settings" | "revenue">("chat");
+  const [view, setView] = useState<"chat" | "settings" | "revenue" | "workflows" | "agents">(
+    "chat",
+  );
+  const [workflowFocus, setWorkflowFocus] = useState<"scheduled" | "runs">("scheduled");
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("overview");
   const [sessions, setSessions] = useState<SessionMeta[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -283,16 +321,17 @@ function PageBody() {
       if (!res.ok) {
         if (res.status === 404 && allow404) return null;
         if (isJson) {
+          let errMsg = "";
           try {
             const errObj = JSON.parse(text);
-            const errMsg =
+            errMsg =
               typeof errObj === "string"
                 ? errObj
                 : errObj?.message || errObj?.error || JSON.stringify(errObj);
-            throw new Error(errMsg || `Request failed: ${res.status} ${res.statusText}`);
           } catch {
-            /* fall through to generic error */
+            // Fall through when the response body is not valid JSON.
           }
+          if (errMsg) throw new Error(String(errMsg));
         }
         if (res.status === 404) {
           throw new Error("Resource not found on the CLI backend (404)");
@@ -709,8 +748,13 @@ function PageBody() {
             const id = stripExtension(raw) || raw;
             const data = await requestJson(`/agents/${encodeURIComponent(id)}`);
 
-            subtitle = "Agent";
-            text = JSON.stringify(data ?? {}, null, 2);
+            const source =
+              data && typeof data === "object" && typeof data.source === "string"
+                ? data.source
+                : "";
+            readOnly = source === "builtin" || source === "gitops";
+            subtitle = readOnly ? `${source || "Managed"} agent` : "Agent definition";
+            text = JSON.stringify(agentViewToDocument(data, id), null, 2);
             setArtifactFileType("json");
           }
         } else if (selectedResource.kind === "config") {
@@ -1002,14 +1046,39 @@ function PageBody() {
               setView("revenue");
               setSelectedResource(null);
             }}
+            onNavigateAgents={() => {
+              setView("agents");
+              setSelectedResource(null);
+            }}
+            onNavigateScheduled={() => {
+              setWorkflowFocus("scheduled");
+              setView("workflows");
+              setSelectedResource(null);
+            }}
+            onNavigateRuns={() => {
+              setWorkflowFocus("runs");
+              setView("workflows");
+              setSelectedResource(null);
+            }}
             onOpenSettings={(section) => {
               setSettingsSection(section);
               setView("settings");
             }}
             onSelectResource={(resource) => {
-              setView("chat");
+              if (resource.kind === "task") setWorkflowFocus("scheduled");
+              if (resource.kind === "taskrun") setWorkflowFocus("runs");
+              setView(
+                resource.kind === "task" || resource.kind === "taskrun" ? "workflows" : "chat",
+              );
               setSelectedResource(resource);
             }}
+            activeResourceGroup={
+              view === "agents" || selectedResource?.kind === "agent"
+                ? "agents"
+                : view === "workflows"
+                  ? workflowFocus
+                  : undefined
+            }
             activeRunId={runId}
             onNewChat={startNewChat}
             onOpenSession={openSession}
@@ -1058,7 +1127,13 @@ function PageBody() {
                     ? SETTINGS_SECTIONS.find((s) => s.key === settingsSection)?.label || "Settings"
                     : view === "revenue"
                       ? "Relationships"
-                      : "Chat"}
+                      : view === "agents"
+                        ? "Agents"
+                      : view === "workflows"
+                        ? workflowFocus === "runs"
+                          ? "Runs"
+                          : "Scheduled"
+                        : "Chat"}
                 </span>
               </div>
               {view === "settings" ? (
@@ -1095,6 +1170,38 @@ function PageBody() {
                   }}
                 />
               </div>
+            ) : view === "agents" ? (
+              <AgentsView
+                onOpenDefinition={(slug) => {
+                  setSelectedResource({ kind: "agent", name: slug });
+                  setView("chat");
+                }}
+                onUseAgent={(slug) => {
+                  startNewChat();
+                  setSelectedAgent(slug);
+                }}
+              />
+            ) : view === "workflows" ? (
+              <CloudWorkflowsView
+                key={
+                  selectedResource?.kind === "task" || selectedResource?.kind === "taskrun"
+                    ? `${workflowFocus}:${selectedResource.name}`
+                    : workflowFocus
+                }
+                focus={workflowFocus}
+                initialRunId={
+                  selectedResource?.kind === "taskrun"
+                    ? selectedResource.name.split("/").slice(1).join("/")
+                    : undefined
+                }
+                initialSlug={
+                  selectedResource?.kind === "task"
+                    ? selectedResource.name
+                    : selectedResource?.kind === "taskrun"
+                      ? selectedResource.name.split("/")[0]
+                      : undefined
+                }
+              />
             ) : (
               <div className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pb-0 md:flex-row">
                 <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden">
@@ -1229,6 +1336,7 @@ function PageBody() {
                         <ArtifactActions>
                           {!artifactReadOnly && (
                             <ArtifactAction
+                              className="w-auto gap-1.5 px-3"
                               tooltip={artifactDirty ? "Save changes" : "Saved"}
                               disabled={!artifactDirty || artifactLoading}
                               onClick={handleSave}
@@ -1238,6 +1346,7 @@ function PageBody() {
                               ) : (
                                 <FloppyDisk className="h-4 w-4" />
                               )}
+                              <span>{artifactDirty ? "Save changes" : "Saved"}</span>
                             </ArtifactAction>
                           )}
                           <ArtifactClose onClick={() => setSelectedResource(null)} />
@@ -1254,7 +1363,14 @@ function PageBody() {
                           </div>
                         ) : (
                           <div className="flex h-full flex-col gap-2">
-                            {artifactReadOnly ? (
+                            {selectedResource.kind === "agent" && artifactFileType === "json" ? (
+                              <AgentConfigurationForm
+                                agentSlugs={agentOptions}
+                                content={artifactText}
+                                onChange={setArtifactText}
+                                readOnly={artifactReadOnly}
+                              />
+                            ) : artifactReadOnly ? (
                               artifactFileType === "markdown" ? (
                                 <MarkdownViewer content={artifactText} />
                               ) : (
@@ -1278,7 +1394,9 @@ function PageBody() {
                             )}
                             {artifactReadOnly && (
                               <p className="text-xs text-muted-foreground">
-                                Runs are read-only; use the API to replay or inspect in detail.
+                                {selectedResource.kind === "agent"
+                                  ? "This managed agent can be viewed here but cannot be changed from the workspace."
+                                  : "Runs are read-only; use the API to replay or inspect in detail."}
                               </p>
                             )}
                           </div>
@@ -1299,7 +1417,7 @@ function PageBody() {
 export default function HomePage() {
   return (
     <AuthGate>
-      <div className="app-shell contents">
+      <div className="app-shell contents" data-product-shell>
         <PageBody />
       </div>
     </AuthGate>

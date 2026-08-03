@@ -91,6 +91,9 @@ type taskView struct {
 	Model           string          `json:"model,omitempty"`
 	Provider        string          `json:"provider,omitempty"`
 	ExecutionTarget string          `json:"executionTarget"`
+	TemplateSlug    string          `json:"templateSlug,omitempty"`
+	TemplateVersion int             `json:"templateVersion,omitempty"`
+	SystemManaged   bool            `json:"systemManaged"`
 	CreatedAt       string          `json:"createdAt"`
 	UpdatedAt       string          `json:"updatedAt"`
 	LastAttemptAt   *string         `json:"lastAttemptAt,omitempty"`
@@ -207,6 +210,11 @@ type createTaskRequest struct {
 	LastRunAt       string          `json:"lastRunAt"`
 	LastRunSummary  string          `json:"lastRunSummary"`
 	LastRunError    string          `json:"lastRunError"`
+	// Server-only first-party provenance. These fields are never decoded from
+	// public JSON; only the reconciler sets them.
+	TemplateSlug    string `json:"-"`
+	TemplateVersion int    `json:"-"`
+	SystemManaged   bool   `json:"-"`
 }
 
 type patchTaskRequest struct {
@@ -224,6 +232,13 @@ type patchTaskRequest struct {
 	LastRunAt       *string         `json:"lastRunAt"`
 	LastRunSummary  *string         `json:"lastRunSummary"`
 	LastRunError    *string         `json:"lastRunError"`
+}
+
+func (r patchTaskRequest) changesSystemManagedDefinition() bool {
+	return r.Name != nil || r.Instructions != nil || len(r.Triggers) > 0 ||
+		r.Model != nil || r.Provider != nil || r.ExecutionTarget != nil ||
+		r.CreatedAt != nil || r.LastAttemptAt != nil || r.LastRunID != nil ||
+		r.LastRunAt != nil || r.LastRunSummary != nil || r.LastRunError != nil
 }
 
 type putArtifactRequest struct {
@@ -374,6 +389,9 @@ func (h *Handler) createTaskFromRequest(ctx context.Context, u *ent.User, req cr
 		// those ids unparseable for the reconciler's orphan sweep.
 		return nil, badRequest("slug must not contain '/'")
 	}
+	if !req.SystemManaged && isFirstPartyTaskSlug(slug) {
+		return nil, badRequest("slug is reserved for an Oppulence-managed workflow")
+	}
 	active := true
 	if req.Active != nil {
 		active = *req.Active
@@ -403,6 +421,15 @@ func (h *Handler) createTaskFromRequest(ctx context.Context, u *ent.User, req cr
 		return nil, badRequest(err.Error())
 	}
 	create = create.SetExecutionTarget(executionTarget)
+	if req.TemplateSlug != "" {
+		create = create.SetTemplateSlug(req.TemplateSlug)
+	}
+	if req.TemplateVersion > 0 {
+		create = create.SetTemplateVersion(req.TemplateVersion)
+	}
+	if req.SystemManaged {
+		create = create.SetSystemManaged(true)
+	}
 	if ts, ok, err := parseOptionalTime(req.CreatedAt); err != nil {
 		return nil, badRequest("invalid createdAt")
 	} else if ok {
@@ -459,6 +486,10 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Revision == nil {
 		httpx.Error(w, http.StatusBadRequest, "missing revision", "bad_request")
+		return
+	}
+	if task.SystemManaged && req.changesSystemManagedDefinition() {
+		httpx.Error(w, http.StatusConflict, "first-party workflow definitions are managed by Oppulence; only active can be changed", "system_managed")
 		return
 	}
 	update := h.client.BackgroundTask.Update().
@@ -539,6 +570,10 @@ func (h *Handler) Patch(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	task, ok := h.lookupTask(w, r)
 	if !ok {
+		return
+	}
+	if task.SystemManaged {
+		httpx.Error(w, http.StatusConflict, "first-party workflows can be disabled but not deleted", "system_managed")
 		return
 	}
 	revision, ok := revisionQuery(w, r)
@@ -1641,6 +1676,9 @@ func viewTask(t *ent.BackgroundTask) taskView {
 		Model:           t.Model,
 		Provider:        t.Provider,
 		ExecutionTarget: t.ExecutionTarget,
+		TemplateSlug:    t.TemplateSlug,
+		TemplateVersion: t.TemplateVersion,
+		SystemManaged:   t.SystemManaged,
 		CreatedAt:       createdAt.UTC().Format(time.RFC3339),
 		UpdatedAt:       t.UpdatedAt.UTC().Format(time.RFC3339),
 		LastAttemptAt:   formatOptionalTime(t.LastAttemptAt),

@@ -35,6 +35,12 @@ const (
 	FieldProvider = "provider"
 	// FieldExecutionTarget holds the string denoting the execution_target field in the database.
 	FieldExecutionTarget = "execution_target"
+	// FieldTemplateSlug holds the string denoting the template_slug field in the database.
+	FieldTemplateSlug = "template_slug"
+	// FieldTemplateVersion holds the string denoting the template_version field in the database.
+	FieldTemplateVersion = "template_version"
+	// FieldSystemManaged holds the string denoting the system_managed field in the database.
+	FieldSystemManaged = "system_managed"
 	// FieldTaskCreatedAt holds the string denoting the task_created_at field in the database.
 	FieldTaskCreatedAt = "task_created_at"
 	// FieldLastAttemptAt holds the string denoting the last_attempt_at field in the database.
@@ -117,6 +123,9 @@ var Columns = []string{
 	FieldModel,
 	FieldProvider,
 	FieldExecutionTarget,
+	FieldTemplateSlug,
+	FieldTemplateVersion,
+	FieldSystemManaged,
 	FieldTaskCreatedAt,
 	FieldLastAttemptAt,
 	FieldLastRunID,
@@ -171,6 +180,12 @@ var (
 	DefaultExecutionTarget string
 	// ExecutionTargetValidator is a validator for the "execution_target" field. It is called by the builders before save.
 	ExecutionTargetValidator func(string) error
+	// DefaultTemplateVersion holds the default value on creation for the "template_version" field.
+	DefaultTemplateVersion int
+	// TemplateVersionValidator is a validator for the "template_version" field. It is called by the builders before save.
+	TemplateVersionValidator func(int) error
+	// DefaultSystemManaged holds the default value on creation for the "system_managed" field.
+	DefaultSystemManaged bool
 	// DefaultScheduleSyncState holds the default value on creation for the "schedule_sync_state" field.
 	DefaultScheduleSyncState string
 	// ScheduleSyncStateValidator is a validator for the "schedule_sync_state" field. It is called by the builders before save.
@@ -239,6 +254,21 @@ func ByProvider(opts ...sql.OrderTermOption) OrderOption {
 // ByExecutionTarget orders the results by the execution_target field.
 func ByExecutionTarget(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldExecutionTarget, opts...).ToFunc()
+}
+
+// ByTemplateSlug orders the results by the template_slug field.
+func ByTemplateSlug(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTemplateSlug, opts...).ToFunc()
+}
+
+// ByTemplateVersion orders the results by the template_version field.
+func ByTemplateVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTemplateVersion, opts...).ToFunc()
+}
+
+// BySystemManaged orders the results by the system_managed field.
+func BySystemManaged(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSystemManaged, opts...).ToFunc()
 }
 
 // ByTaskCreatedAt orders the results by the task_created_at field.

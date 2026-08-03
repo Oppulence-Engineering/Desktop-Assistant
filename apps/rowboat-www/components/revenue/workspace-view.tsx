@@ -3,9 +3,9 @@
 import * as React from "react";
 import { CircleNotch, LinkSimple, Plugs, ShieldCheck } from "@phosphor-icons/react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
+import { Button } from "@oppulence/ui/components/button";
+import { Input } from "@oppulence/ui/components/input";
 import { linkWorkspace, relativeTime, RevenueAPIError } from "@/lib/revenue";
 import { Field, errMessage } from "@/components/revenue/shared";
 import { capture, RevenueEvents } from "@/lib/analytics";
@@ -56,7 +56,7 @@ export function WorkspaceView({
   };
 
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       {/* status card */}
       <section className="rounded-[2px] border border-border">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">

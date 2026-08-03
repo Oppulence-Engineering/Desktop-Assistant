@@ -47,7 +47,7 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
   const maxFunnel = Math.max(...funnel.map((f) => f.value), 1);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       {/* weekly digest preview — the same summary the email is built from */}
       {digest && digest.top.length > 0 ? (
         <section className="rounded-[2px] border border-border p-4">

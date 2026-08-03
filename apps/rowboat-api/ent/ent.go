@@ -50,9 +50,15 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitydecision"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshiplineageevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipprojectionjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
@@ -60,12 +66,15 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenuetrustevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscriptionhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -126,60 +135,69 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			actionoutcome.Table:                    actionoutcome.ValidColumn,
-			actionproposal.Table:                   actionproposal.ValidColumn,
-			agentapproval.Table:                    agentapproval.ValidColumn,
-			agentdefinition.Table:                  agentdefinition.ValidColumn,
-			agentdefinitionhistory.Table:           agentdefinitionhistory.ValidColumn,
-			agentsession.Table:                     agentsession.ValidColumn,
-			agentsessionevent.Table:                agentsessionevent.ValidColumn,
-			agenttoolcall.Table:                    agenttoolcall.ValidColumn,
-			agenttoolresultblob.Table:              agenttoolresultblob.ValidColumn,
-			agentturn.Table:                        agentturn.ValidColumn,
-			approvaltoken.Table:                    approvaltoken.ValidColumn,
-			backgroundtask.Table:                   backgroundtask.ValidColumn,
-			backgroundtaskartifact.Table:           backgroundtaskartifact.ValidColumn,
-			backgroundtaskrun.Table:                backgroundtaskrun.ValidColumn,
-			backgroundtaskrunevent.Table:           backgroundtaskrunevent.ValidColumn,
-			backgroundtaskschedulestate.Table:      backgroundtaskschedulestate.ValidColumn,
-			cloudevent.Table:                       cloudevent.ValidColumn,
-			commitment.Table:                       commitment.ValidColumn,
-			commitmentdependency.Table:             commitmentdependency.ValidColumn,
-			commitmentevent.Table:                  commitmentevent.ValidColumn,
-			conversationintelligenceartifact.Table: conversationintelligenceartifact.ValidColumn,
-			creditledger.Table:                     creditledger.ValidColumn,
-			googlewatch.Table:                      googlewatch.ValidColumn,
-			llmusage.Table:                         llmusage.ValidColumn,
-			llmusagehistory.Table:                  llmusagehistory.ValidColumn,
-			mcpconnection.Table:                    mcpconnection.ValidColumn,
-			mcpconnectionhistory.Table:             mcpconnectionhistory.ValidColumn,
-			mailbodycache.Table:                    mailbodycache.ValidColumn,
-			mailmessagemeta.Table:                  mailmessagemeta.ValidColumn,
-			mailsignal.Table:                       mailsignal.ValidColumn,
-			mailthread.Table:                       mailthread.ValidColumn,
-			meetingminuteusage.Table:               meetingminuteusage.ValidColumn,
-			oauthconnection.Table:                  oauthconnection.ValidColumn,
-			oauthconnectionhistory.Table:           oauthconnectionhistory.ValidColumn,
-			oauthpending.Table:                     oauthpending.ValidColumn,
-			policydecisionsnapshot.Table:           policydecisionsnapshot.ValidColumn,
-			relationship.Table:                     relationship.ValidColumn,
-			relationshipassertion.Table:            relationshipassertion.ValidColumn,
-			relationshipidentity.Table:             relationshipidentity.ValidColumn,
-			relationshipobservation.Table:          relationshipobservation.ValidColumn,
-			relationshipparticipant.Table:          relationshipparticipant.ValidColumn,
-			relationshipsourcestatus.Table:         relationshipsourcestatus.ValidColumn,
-			relationshipstatesnapshot.Table:        relationshipstatesnapshot.ValidColumn,
-			revenueaction.Table:                    revenueaction.ValidColumn,
-			revenueactionrevision.Table:            revenueactionrevision.ValidColumn,
-			revenueevidence.Table:                  revenueevidence.ValidColumn,
-			revenueleakscan.Table:                  revenueleakscan.ValidColumn,
-			revenueoutboxevent.Table:               revenueoutboxevent.ValidColumn,
-			revenueworkspace.Table:                 revenueworkspace.ValidColumn,
-			revenueworkspacemember.Table:           revenueworkspacemember.ValidColumn,
-			subscription.Table:                     subscription.ValidColumn,
-			subscriptionhistory.Table:              subscriptionhistory.ValidColumn,
-			user.Table:                             user.ValidColumn,
-			userhistory.Table:                      userhistory.ValidColumn,
+			actionoutcome.Table:                     actionoutcome.ValidColumn,
+			actionproposal.Table:                    actionproposal.ValidColumn,
+			agentapproval.Table:                     agentapproval.ValidColumn,
+			agentdefinition.Table:                   agentdefinition.ValidColumn,
+			agentdefinitionhistory.Table:            agentdefinitionhistory.ValidColumn,
+			agentsession.Table:                      agentsession.ValidColumn,
+			agentsessionevent.Table:                 agentsessionevent.ValidColumn,
+			agenttoolcall.Table:                     agenttoolcall.ValidColumn,
+			agenttoolresultblob.Table:               agenttoolresultblob.ValidColumn,
+			agentturn.Table:                         agentturn.ValidColumn,
+			approvaltoken.Table:                     approvaltoken.ValidColumn,
+			backgroundtask.Table:                    backgroundtask.ValidColumn,
+			backgroundtaskartifact.Table:            backgroundtaskartifact.ValidColumn,
+			backgroundtaskrun.Table:                 backgroundtaskrun.ValidColumn,
+			backgroundtaskrunevent.Table:            backgroundtaskrunevent.ValidColumn,
+			backgroundtaskschedulestate.Table:       backgroundtaskschedulestate.ValidColumn,
+			cloudevent.Table:                        cloudevent.ValidColumn,
+			commitment.Table:                        commitment.ValidColumn,
+			commitmentdependency.Table:              commitmentdependency.ValidColumn,
+			commitmentevent.Table:                   commitmentevent.ValidColumn,
+			conversationintelligenceartifact.Table:  conversationintelligenceartifact.ValidColumn,
+			creditledger.Table:                      creditledger.ValidColumn,
+			googlewatch.Table:                       googlewatch.ValidColumn,
+			llmusage.Table:                          llmusage.ValidColumn,
+			llmusagehistory.Table:                   llmusagehistory.ValidColumn,
+			mcpconnection.Table:                     mcpconnection.ValidColumn,
+			mcpconnectionhistory.Table:              mcpconnectionhistory.ValidColumn,
+			mailbodycache.Table:                     mailbodycache.ValidColumn,
+			mailmessagemeta.Table:                   mailmessagemeta.ValidColumn,
+			mailsignal.Table:                        mailsignal.ValidColumn,
+			mailthread.Table:                        mailthread.ValidColumn,
+			meetingminuteusage.Table:                meetingminuteusage.ValidColumn,
+			oauthconnection.Table:                   oauthconnection.ValidColumn,
+			oauthconnectionhistory.Table:            oauthconnectionhistory.ValidColumn,
+			oauthpending.Table:                      oauthpending.ValidColumn,
+			policydecisionsnapshot.Table:            policydecisionsnapshot.ValidColumn,
+			relationship.Table:                      relationship.ValidColumn,
+			relationshipassertion.Table:             relationshipassertion.ValidColumn,
+			relationshipattentionitem.Table:         relationshipattentionitem.ValidColumn,
+			relationshipidentity.Table:              relationshipidentity.ValidColumn,
+			relationshipidentitycandidate.Table:     relationshipidentitycandidate.ValidColumn,
+			relationshipidentitydecision.Table:      relationshipidentitydecision.ValidColumn,
+			relationshiplineageevent.Table:          relationshiplineageevent.ValidColumn,
+			relationshipobservation.Table:           relationshipobservation.ValidColumn,
+			relationshipparticipant.Table:           relationshipparticipant.ValidColumn,
+			relationshipprojectionjob.Table:         relationshipprojectionjob.ValidColumn,
+			relationshipreviewacknowledgement.Table: relationshipreviewacknowledgement.ValidColumn,
+			relationshipsourcestatus.Table:          relationshipsourcestatus.ValidColumn,
+			relationshipstatesnapshot.Table:         relationshipstatesnapshot.ValidColumn,
+			revenueaction.Table:                     revenueaction.ValidColumn,
+			revenueactionrevision.Table:             revenueactionrevision.ValidColumn,
+			revenueevidence.Table:                   revenueevidence.ValidColumn,
+			revenueleakscan.Table:                   revenueleakscan.ValidColumn,
+			revenueoutboxevent.Table:                revenueoutboxevent.ValidColumn,
+			revenuetrustevent.Table:                 revenuetrustevent.ValidColumn,
+			revenueworkspace.Table:                  revenueworkspace.ValidColumn,
+			revenueworkspacemember.Table:            revenueworkspacemember.ValidColumn,
+			subscription.Table:                      subscription.ValidColumn,
+			subscriptionhistory.Table:               subscriptionhistory.ValidColumn,
+			tenantevidencekey.Table:                 tenantevidencekey.ValidColumn,
+			user.Table:                              user.ValidColumn,
+			userhistory.Table:                       userhistory.ValidColumn,
+			workspacefeaturecontrol.Table:           workspacefeaturecontrol.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

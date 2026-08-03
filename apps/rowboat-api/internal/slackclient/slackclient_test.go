@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 )
@@ -131,6 +132,43 @@ func TestReadThreadError(t *testing.T) {
 	c.SetBaseURL(srv.URL)
 	if _, err := c.ReadThread(context.Background(), "xoxb-1", "C1", "1.1", 0); err == nil || !strings.Contains(err.Error(), "channel_not_found") {
 		t.Fatalf("expected channel_not_found error, got %v", err)
+	}
+}
+
+func TestBackfillReadsMemberChannelsAndChronologicalHistory(t *testing.T) {
+	var paths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path+"?"+r.URL.RawQuery)
+		if r.Header.Get("Authorization") != "Bearer fixture-backfill-token" {
+			t.Errorf("authorization = %q", r.Header.Get("Authorization"))
+		}
+		switch r.URL.Path {
+		case "/conversations.list":
+			_, _ = io.WriteString(w, `{"ok":true,"channels":[{"id":"C1","name":"customer-acme","is_member":true}]}`)
+		case "/conversations.history":
+			_, _ = io.WriteString(w, `{"ok":true,"messages":[{"user":"U2","text":"new","ts":"1785585602.000000","thread_ts":"1785585601.000000","edited":{"ts":"1785585603.000000"}},{"user":"U1","text":"old","ts":"1785585601.000000"}]}`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client := New(outbound.Policy{})
+	client.SetBaseURL(server.URL)
+	channels, err := client.ListChannels(context.Background(), "fixture-backfill-token", 50)
+	if err != nil || len(channels) != 1 || !channels[0].IsMember {
+		t.Fatalf("channels=%+v err=%v", channels, err)
+	}
+	oldest := time.Date(2025, 8, 1, 0, 0, 0, 0, time.UTC)
+	messages, err := client.ReadChannelHistory(context.Background(), "fixture-backfill-token", "C1", oldest, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(messages) != 2 || messages[0].Text != "old" || messages[1].Edited.TS != "1785585603.000000" {
+		t.Fatalf("messages are not chronological or revision-aware: %+v", messages)
+	}
+	if len(paths) != 2 || !strings.Contains(paths[0], "types=public_channel") || !strings.Contains(paths[1], "oldest=") {
+		t.Fatalf("provider paths = %#v", paths)
 	}
 }
 

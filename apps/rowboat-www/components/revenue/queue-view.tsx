@@ -12,8 +12,8 @@ import {
   Prohibit,
 } from "@phosphor-icons/react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -21,16 +21,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+} from "@oppulence/ui/components/dialog";
+import { Input } from "@oppulence/ui/components/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+} from "@oppulence/ui/components/select";
+import { Textarea } from "@oppulence/ui/components/textarea";
 import { cn } from "@/lib/utils";
 import {
   createAction,
@@ -108,7 +108,7 @@ export function QueueView({
   const empty = !loading && actions.length === 0;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex w-full min-w-0 flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Select value={filter} onValueChange={setFilter}>

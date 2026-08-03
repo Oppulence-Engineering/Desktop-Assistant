@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@oppulence/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +7,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@oppulence/ui/components/dialog";
 import type { VoiceCommandIntent } from "@x/shared/dist/transcription.js";
 
 export interface VoiceCommandConfirmationProps {

@@ -28,10 +28,18 @@ func (RelationshipAssertion) Fields() []ent.Field {
 		field.String("source_type").
 			Validate(oneOfRevenue("source_type",
 				"user_correction", "source_fact", "deterministic", "ai_inference")),
+		field.String("status").
+			Default("active").
+			Validate(oneOfRevenue("status", "active", "retracted", "superseded")),
 		field.Float("confidence").Default(1).Min(0).Max(1),
 		field.Text("reason").Optional().Sensitive(),
 		field.Time("valid_from"),
+		field.Time("valid_to").Optional().Nillable(),
+		field.Time("retracted_at").Optional().Nillable(),
+		field.Text("retraction_reason").Optional().Sensitive(),
 		field.String("supersedes_assertion_id").Optional(),
+		field.String("extractor_version").Default("unknown-v1"),
+		field.Int("projector_compat_version").Default(1).Positive(),
 		field.JSON("supporting_observation_ids", []string{}).Default([]string{}),
 	}
 }
@@ -54,5 +62,6 @@ func (RelationshipAssertion) Edges() []ent.Edge {
 func (RelationshipAssertion) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("relationship").Fields("dimension", "valid_from"),
+		index.Edges("relationship").Fields("status", "valid_to"),
 	}
 }

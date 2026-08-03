@@ -30,7 +30,7 @@ type MailBodyFetcher interface {
 // at-rest cache (bodies are fetched fresh every time and never stored).
 func (s *Service) SetBodyFetcher(f MailBodyFetcher, sealer *crypto.Sealer, ttl time.Duration) {
 	s.bodyFetcher = f
-	s.sealer = sealer
+	s.SetEvidenceSealer(sealer)
 	if ttl <= 0 {
 		ttl = 72 * time.Hour
 	}

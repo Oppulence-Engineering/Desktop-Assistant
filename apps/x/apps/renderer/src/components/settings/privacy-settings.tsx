@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check, Cloud, HardDrive, Laptop, Loader2, Trash2, TriangleAlertIcon } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@oppulence/ui/components/button";
+import { Checkbox } from "@oppulence/ui/components/checkbox";
 import type {
   TranscriptionDataLocation,
   TranscriptionRouting,
@@ -13,7 +13,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@oppulence/ui/components/alert-dialog";
 import { SettingsSection } from "@/components/settings/settings-ui";
 
 /**

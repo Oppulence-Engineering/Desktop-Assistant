@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/testsuite"
+	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -32,6 +33,9 @@ func newWorkflowTestEnv(t *testing.T, h *integrationHarness,
 	// Activities do real httptest round-trips + sqlite writes; the default
 	// idle test timeout (~3s) is too tight for slower CI machines.
 	env.SetTestTimeout(time.Minute)
+	// Preserve deadlock detection while avoiding the SDK's one-second
+	// false-positive threshold when repository packages compete for CPU.
+	env.SetWorkerOptions(worker.Options{DeadlockDetectionTimeout: 5 * time.Second})
 	env.RegisterWorkflowWithOptions(BackgroundTaskWorkflow, workflow.RegisterOptions{Name: WorkflowName})
 	env.RegisterActivityWithOptions(h.activities.MarkRunRunning, activity.RegisterOptions{Name: ActivityMarkRunRunning})
 	env.RegisterActivityWithOptions(exec, activity.RegisterOptions{Name: ActivityExecuteAPITask})

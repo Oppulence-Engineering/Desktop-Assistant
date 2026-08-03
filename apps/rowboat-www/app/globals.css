@@ -1,10 +1,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@oppulence/ui/product-system.css";
+
+@source "../../../packages/ui/src/**/*.{ts,tsx}";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
   --font-display: var(--font-f37-stout);
   --font-mono: var(--font-geist-mono);
   --font-f37-stout: var(--font-f37-stout);
@@ -1178,12 +1181,12 @@
 
 /*
  * Authenticated console theme ("app shell"). Scoped overrides only — the
- * marketing pages keep their own look. Sharp 2px radii, hairline borders
+ * marketing pages keep their own look. Square corners and hairline borders
  * instead of shadows, workspace card floating on a tinted canvas, orange
  * as the single semantic accent (use text-oppulence-orange sparingly).
  */
 .app-shell {
-  --radius: 2px;
+  --radius: 0;
 }
 
 @layer base {

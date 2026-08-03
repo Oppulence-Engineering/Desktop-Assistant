@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertCircle, CheckCircle, Loader2, Mic, Square } from "@/lib/icons";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@oppulence/ui/components/button";
+import { Progress } from "@oppulence/ui/components/progress";
 import { cn } from "@/lib/utils";
 import type { WhisperDiagnosticResult } from "@x/shared/dist/transcription.js";
 

@@ -13,8 +13,8 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -22,8 +22,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+} from "@oppulence/ui/components/dialog";
+import { Textarea } from "@oppulence/ui/components/textarea";
 import { cn } from "@/lib/utils";
 import { capture, ActionEvents } from "@/lib/analytics";
 import { ActionAPIError, approve, execute, getAudit, listPending, reject } from "@/lib/actions";
@@ -174,7 +174,7 @@ export function ActionsView() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex w-full min-w-0 flex-col gap-4">
       <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-lg font-medium text-primary">Actions</h1>

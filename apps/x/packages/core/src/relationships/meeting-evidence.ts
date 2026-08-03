@@ -37,9 +37,12 @@ function emailDomain(email: string | undefined): string | undefined {
 }
 
 function relationshipIdentity(counterparty: Counterparty) {
-  const domain = emailDomain(counterparty.email);
+  const domain = counterparty.accountDomain || emailDomain(counterparty.email);
   return {
-    displayName: counterparty.organization || domain || counterparty.label,
+    ...(counterparty.relationshipId ? { relationshipId: counterparty.relationshipId } : {}),
+    displayName: counterparty.relationshipId
+      ? counterparty.label
+      : counterparty.organization || domain || counterparty.label,
     ...(counterparty.email ? { primaryEmail: counterparty.email } : {}),
     ...(domain ? { accountDomain: domain } : {}),
     participants: [

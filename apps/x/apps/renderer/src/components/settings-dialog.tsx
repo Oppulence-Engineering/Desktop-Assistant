@@ -46,11 +46,11 @@ import {
   DialogDescription,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
+} from "@oppulence/ui/components/dialog";
+import { Button } from "@oppulence/ui/components/button";
+import { Input } from "@oppulence/ui/components/input";
+import { Separator } from "@oppulence/ui/components/separator";
+import { Switch } from "@oppulence/ui/components/switch";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { AccountSettings } from "@/components/settings/account-settings";
@@ -61,6 +61,7 @@ import { SecuritySettings } from "@/components/settings/security-settings";
 import { ModelSettings, SolomonModelSettings } from "@/components/settings/model-settings";
 import { AppearanceSettings } from "@/components/settings/appearance-settings";
 import { MemorySettings } from "@/components/settings/memory-settings";
+import { RecoverySettings } from "@/components/settings/recovery-settings";
 import { SettingsSection } from "@/components/settings/settings-ui";
 import { PrivacySettings } from "@/components/settings/privacy-settings";
 import { FeedbackDialog } from "@/components/feedback-dialog";
@@ -106,6 +107,7 @@ interface TabConfig {
   description: string;
   group?: SettingsGroup;
   beta?: boolean;
+  keywords?: readonly string[];
 }
 
 const GROUP_LABELS: Record<SettingsGroup, string> = {
@@ -137,6 +139,7 @@ const tabs: TabConfig[] = [
     icon: Bell,
     description: "Configure system notification preferences.",
     group: "workspace",
+    keywords: ["alerts", "banners", "system notifications"],
   },
   {
     id: "permissions",
@@ -144,6 +147,7 @@ const tabs: TabConfig[] = [
     icon: Shield,
     description: "Control file, command, and workspace access.",
     group: "workspace",
+    keywords: ["microphone", "audio", "screen recording", "camera", "files", "commands"],
   },
   {
     id: "privacy",
@@ -180,6 +184,7 @@ const tabs: TabConfig[] = [
     icon: AudioLines,
     description: "Choose on-device or cloud speech-to-text.",
     group: "workspace",
+    keywords: ["microphone", "audio input", "recording", "speech", "voice", "meeting"],
   },
   {
     id: "note-tagging",
@@ -254,13 +259,15 @@ const tabs: TabConfig[] = [
     path: "config/index.json",
     description: "Manage the semantic index over your knowledge vault.",
     group: "global",
+    keywords: ["semantic search", "recall", "index", "embeddings", "knowledge"],
   },
   {
     id: "recovery",
     label: "Recovery",
     icon: RotateCcw,
-    description: "Repair local settings and recover semantic memory.",
+    description: "Diagnose local data and rebuild semantic memory.",
     group: "global",
+    keywords: ["repair", "reset", "rebuild", "diagnostics", "broken", "index"],
   },
   {
     id: "account",
@@ -1274,78 +1281,80 @@ function SettingsPage({
 }
 
 function SettingsOverview({ onNavigate }: { onNavigate: (tab: ConfigTab) => void }) {
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
+  const commonTaskIds: ConfigTab[] = [
+    "connections",
+    "transcription",
+    "privacy",
+    "models",
+    "appearance",
+    "permissions",
+  ];
+  const results = tabs.filter(
+    (tab) =>
+      tab.id !== "overview" &&
+      (!normalizedQuery ||
+        `${tab.label} ${tab.description} ${tab.group || ""} ${(tab.keywords ?? []).join(" ")}`
+          .toLowerCase()
+          .includes(normalizedQuery)),
+  );
+  const visibleCards = normalizedQuery
+    ? results
+    : commonTaskIds
+        .map((id) => tabs.find((tab) => tab.id === id))
+        .filter((tab): tab is TabConfig => Boolean(tab));
+
   return (
     <SettingsPage
       description="Configure how Oppulence reasons, connects, and acts across every customer relationship."
       title="Settings"
       wide
     >
-      {GROUP_ORDER.map((group) => (
-        <section className="settings-overview-group" key={group}>
-          <h2 className="settings-overview-label">{GROUP_LABELS[group]}</h2>
-          <div className="settings-card-grid">
-            {tabs
-              .filter((tab) => tab.group === group)
-              .map((tab) => (
-                <button
-                  className="settings-card"
-                  key={tab.id}
-                  onClick={() => onNavigate(tab.id)}
-                  type="button"
-                >
-                  <span className="settings-card-icon">
-                    <tab.icon />
-                  </span>
-                  <span className="settings-card-copy">
-                    <span className="settings-card-title">{tab.label}</span>
-                    <span className="settings-card-description">{tab.description}</span>
-                  </span>
-                  <ChevronRight className="ml-auto size-3.5 shrink-0 text-muted-foreground/50" />
-                </button>
-              ))}
-          </div>
-        </section>
-      ))}
-      <section className="settings-overview-group">
-        <h2 className="settings-overview-label">Help</h2>
-        <div className="settings-card-grid">
-          <button
-            className="settings-card"
-            onClick={() => window.open("mailto:hello@oppulence.io?subject=Oppulence%20feedback")}
-            type="button"
-          >
-            <span className="settings-card-icon">
-              <MessageSquare />
-            </span>
-            <span className="settings-card-copy">
-              <span className="settings-card-title">Send feedback</span>
-              <span className="settings-card-description">
-                Tell us where relationship intelligence should go next.
-              </span>
-            </span>
-            <ChevronRight className="ml-auto size-3.5 text-muted-foreground/50" />
-          </button>
-          <button
-            className="settings-card"
-            onClick={() => window.open("https://oppulence.io", "_blank")}
-            type="button"
-          >
-            <span className="settings-card-icon">
-              <BookOpen />
-            </span>
-            <span className="settings-card-copy">
-              <span className="settings-card-title">Read the documentation</span>
-              <span className="settings-card-description">
-                Review the relationship model and product guides.
-              </span>
-            </span>
-            <ExternalLink className="ml-auto size-3.5 text-muted-foreground/50" />
-          </button>
-        </div>
-      </section>
-      <div className="mt-8">
-        <HelpSettings />
+      <div className="relative mb-6 max-w-xl">
+        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search settings"
+          aria-label="Search settings"
+          className="pl-9"
+        />
       </div>
+      <section className="settings-overview-group">
+        <h2 className="settings-overview-label">
+          {normalizedQuery ? `${results.length} result${results.length === 1 ? "" : "s"}` : "Common tasks"}
+        </h2>
+        {visibleCards.length ? (
+          <div className="settings-card-grid">
+            {visibleCards.map((tab) => (
+              <button
+                className="settings-card"
+                key={tab.id}
+                onClick={() => onNavigate(tab.id)}
+                type="button"
+              >
+                <span className="settings-card-icon"><tab.icon /></span>
+                <span className="settings-card-copy">
+                  <span className="settings-card-title">{tab.label}</span>
+                  <span className="settings-card-description">{tab.description}</span>
+                </span>
+                <ChevronRight className="ml-auto size-3.5 shrink-0 text-muted-foreground/50" />
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
+            No settings match “{query}”. Try a provider, permission, transcription, or appearance.
+          </p>
+        )}
+      </section>
+      {!normalizedQuery ? (
+        <p className="mt-6 max-w-xl text-xs leading-5 text-muted-foreground">
+          Every setting remains available in the navigation. Start here for the tasks people use most,
+          or search by what you want to change.
+        </p>
+      ) : null}
     </SettingsPage>
   );
 }
@@ -1842,20 +1851,12 @@ export function SettingsDialog({
                       </SettingsSection>
                     </div>
                   ) : activeTab === "connections" ? (
-                    <div className="space-y-7">
-                      <SettingsSection title="Connected accounts">
-                        <ConnectedAccountsSettings dialogOpen={open} />
-                      </SettingsSection>
-                      <SettingsSection
-                        title="Available tools"
-                        description="Connect tools your relationship model can observe and act through."
-                      >
-                        <ToolsLibrarySettings
-                          dialogOpen={open}
-                          rowboatConnected={solomonConnected}
-                        />
-                      </SettingsSection>
-                    </div>
+                    <SettingsSection
+                      title="Sources and accounts"
+                      description="Connected sources, anything that needs attention, and the available catalog."
+                    >
+                      <ConnectedAccountsSettings dialogOpen={open} />
+                    </SettingsSection>
                   ) : activeTab === "transcription" ? (
                     <TranscriptionSettings dialogOpen={open} />
                   ) : activeTab === "note-tagging" ? (
@@ -1889,7 +1890,7 @@ export function SettingsDialog({
                   ) : activeTab === "memory" ? (
                     <MemorySettings dialogOpen={open} />
                   ) : activeTab === "recovery" ? (
-                    <MemorySettings dialogOpen={open} />
+                    <RecoverySettings dialogOpen={open} />
                   ) : activeTab === "account" ? (
                     <AccountSettings dialogOpen={open} />
                   ) : activeTab === "connect" ? (

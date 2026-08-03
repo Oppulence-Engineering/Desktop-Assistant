@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	entsql "entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -22,6 +23,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 // RelationshipState is the shared, explainable projection rendered by web and
@@ -39,6 +41,8 @@ type RelationshipState struct {
 	StateVersion int      `json:"stateVersion"`
 }
 
+const relationshipProjectorVersion = 1
+
 // RelationshipParticipantInput identifies a participant observed in a relationship event.
 type RelationshipParticipantInput struct {
 	DisplayName  string   `json:"displayName"`
@@ -50,13 +54,17 @@ type RelationshipParticipantInput struct {
 
 // RelationshipAssertionInput describes a sourced candidate value for canonical state.
 type RelationshipAssertionInput struct {
-	ID         uuid.UUID `json:"-"`
-	Dimension  string    `json:"dimension"`
-	Value      string    `json:"value"`
-	SourceType string    `json:"sourceType"`
-	Confidence float64   `json:"confidence"`
-	Reason     string    `json:"reason"`
-	ValidFrom  time.Time `json:"validFrom"`
+	ID                     uuid.UUID  `json:"-"`
+	Dimension              string     `json:"dimension"`
+	Value                  string     `json:"value"`
+	SourceType             string     `json:"sourceType"`
+	Confidence             float64    `json:"confidence"`
+	Reason                 string     `json:"reason"`
+	ValidFrom              time.Time  `json:"validFrom"`
+	ValidTo                *time.Time `json:"validTo,omitempty"`
+	SupersedesAssertionID  string     `json:"supersedesAssertionId,omitempty"`
+	ExtractorVersion       string     `json:"extractorVersion,omitempty"`
+	ProjectorCompatVersion int        `json:"projectorCompatVersion,omitempty"`
 }
 
 // RelationshipObservationInput is the provider-neutral adapter contract.
@@ -87,11 +95,25 @@ type RelationshipObservationResult struct {
 	Observation  *ent.RelationshipObservation
 	Relationship *ent.Relationship
 	Duplicate    bool
+	// ProjectionStatus is completed when the inline fast path projected the
+	// accepted evidence. Failed/dead means the evidence is durable and the
+	// outbox will retry or requires operator repair; it never means the
+	// observation was discarded.
+	ProjectionStatus string
+	ProjectionJobID  uuid.UUID
 }
 
-// IngestRelationshipObservations appends a batch atomically and reprojects
-// each affected relationship once. A provider replay returns the existing
-// observation and never duplicates assertions or participants.
+type relationshipProjectionBatch struct {
+	rel        *ent.Relationship
+	refs       []string
+	boundaries []time.Time
+	job        *ent.RelationshipProjectionJob
+}
+
+// IngestRelationshipObservations appends a batch and its projection outbox
+// jobs atomically. Projection runs inline as a latency optimization only after
+// evidence commits. A provider replay returns the existing observation and
+// never duplicates assertions, participants, or jobs.
 func (s *Service) IngestRelationshipObservations(
 	ctx context.Context,
 	u *ent.User,
@@ -103,9 +125,16 @@ func (s *Service) IngestRelationshipObservations(
 	if len(inputs) > 100 {
 		return nil, fmt.Errorf("%w: at most 100 observations per batch", ErrInvalidInput)
 	}
-	ws, err := s.CurrentWorkspace(ctx, u)
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceContribute)
 	if err != nil {
 		return nil, err
+	}
+	for _, input := range inputs {
+		if capability := sourceCapability(input.Source); capability != "" {
+			if err := s.requireWorkspaceFeature(ctx, ws, capability); err != nil {
+				return nil, err
+			}
+		}
 	}
 	tx, err := s.client.Tx(ctx)
 	if err != nil {
@@ -113,7 +142,8 @@ func (s *Service) IngestRelationshipObservations(
 	}
 	txc := tx.Client()
 	results := make([]RelationshipObservationResult, 0, len(inputs))
-	affected := map[uuid.UUID]*ent.Relationship{}
+	affected := map[uuid.UUID]*relationshipProjectionBatch{}
+	evaluatedAt := s.now().UTC()
 
 	for _, input := range inputs {
 		result, ingestErr := s.ingestRelationshipObservation(ctx, txc, ws, u, input)
@@ -123,23 +153,111 @@ func (s *Service) IngestRelationshipObservations(
 		}
 		results = append(results, result)
 		if !result.Duplicate {
-			affected[result.Relationship.ID] = result.Relationship
+			batch := affected[result.Relationship.ID]
+			if batch == nil {
+				batch = &relationshipProjectionBatch{rel: result.Relationship}
+				affected[result.Relationship.ID] = batch
+			}
+			ref := "relationship-observation:" + result.Observation.ID.String()
+			batch.refs = append(batch.refs, ref)
+			if trustErr := appendTrustEvent(ctx, txc, ws, u, TrustEventInput{
+				Name: "observation_accepted", Outcome: "accepted",
+				CorrelationID: ref, Source: input.Source, OccurredAt: evaluatedAt,
+				Relationship: result.Relationship,
+			}); trustErr != nil {
+				_ = tx.Rollback()
+				return nil, trustErr
+			}
+			for _, assertion := range input.Assertions {
+				validFrom := assertion.ValidFrom
+				if validFrom.IsZero() {
+					validFrom = result.Observation.OccurredAt
+				}
+				if validFrom.After(evaluatedAt) {
+					batch.boundaries = append(batch.boundaries, validFrom.UTC())
+				}
+				if assertion.ValidTo != nil && assertion.ValidTo.After(evaluatedAt) {
+					batch.boundaries = append(batch.boundaries, assertion.ValidTo.UTC())
+				}
+			}
 		}
 	}
-	for _, rel := range affected {
-		if _, err := projectRelationshipState(ctx, txc, ws, u, rel); err != nil {
+	for _, batch := range affected {
+		job, enqueueErr := s.enqueueRelationshipProjectionTx(
+			ctx, txc, ws, u, batch.rel, evaluatedAt, batch.refs,
+		)
+		if enqueueErr != nil {
 			_ = tx.Rollback()
-			return nil, err
+			return nil, enqueueErr
 		}
-		if err := persistContradictionArtifacts(ctx, txc, ws, u, rel, s.now()); err != nil {
-			_ = tx.Rollback()
-			return nil, err
+		batch.job = job
+		for _, boundary := range uniqueProjectionBoundaries(batch.boundaries) {
+			if _, enqueueErr := s.enqueueRelationshipProjectionTx(
+				ctx, txc, ws, u, batch.rel, boundary, append(batch.refs, "temporal-boundary"),
+			); enqueueErr != nil {
+				_ = tx.Rollback()
+				return nil, enqueueErr
+			}
 		}
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
+
+	workerID := "inline-relationship-projector-" + uuid.NewString()
+	for relationshipID, batch := range affected {
+		status := "pending"
+		projected, processedStatus, projectErr := s.ProcessRelationshipProjectionJob(
+			ctx, u, batch.job.ID, workerID,
+		)
+		if processedStatus != "" {
+			status = processedStatus
+		}
+		if projectErr != nil {
+			s.log.Warn("relationship projection deferred",
+				zap.String("relationship", relationshipID.String()),
+				zap.String("job", batch.job.ID.String()),
+				zap.String("status", status),
+				zap.Error(projectErr),
+			)
+		}
+		for i := range results {
+			if results[i].Relationship.ID != relationshipID {
+				continue
+			}
+			results[i].ProjectionJobID = batch.job.ID
+			results[i].ProjectionStatus = status
+			if projected != nil {
+				results[i].Relationship = projected
+			} else {
+				results[i].Relationship = results[i].Relationship.Unwrap()
+			}
+		}
+	}
+	for i := range results {
+		if results[i].ProjectionStatus == "" {
+			results[i].ProjectionStatus = "duplicate"
+			results[i].Relationship = results[i].Relationship.Unwrap()
+		}
+		results[i].Observation = results[i].Observation.Unwrap()
+	}
 	return results, nil
+}
+
+func uniqueProjectionBoundaries(values []time.Time) []time.Time {
+	seen := make(map[string]struct{}, len(values))
+	out := make([]time.Time, 0, len(values))
+	for _, value := range values {
+		value = value.UTC()
+		key := value.Format(time.RFC3339Nano)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, value)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Before(out[j]) })
+	return out
 }
 
 func (s *Service) ingestRelationshipObservation(
@@ -221,20 +339,23 @@ func (s *Service) ingestRelationshipObservation(
 		SetNormalizedFactsJSON(string(factsJSON)).
 		SetContentHash(hex.EncodeToString(sum[:]))
 	if len(input.Payload) > 0 {
-		payload := []byte(input.Payload)
-		if s.sealer != nil {
-			payload, err = s.sealer.Seal(payload)
-			if err != nil {
-				return RelationshipObservationResult{}, err
-			}
+		if s.evidenceKeys == nil {
+			return RelationshipObservationResult{}, ErrEvidenceEncryptionUnavailable
 		}
-		create.SetPayloadCiphertext(payload)
+		payload, keyVersion, sealErr := s.evidenceKeys.Seal(ctx, client, ws, u, []byte(input.Payload))
+		if sealErr != nil {
+			return RelationshipObservationResult{}, sealErr
+		}
+		create.SetPayloadCiphertext(payload).SetEncryptionKeyVersion(keyVersion)
 	}
 	observation, err := create.Save(ctx)
 	if err != nil {
 		if isValidationError(err) {
 			return RelationshipObservationResult{}, fmt.Errorf("%w: %v", ErrInvalidInput, err)
 		}
+		return RelationshipObservationResult{}, err
+	}
+	if err := attachObservationToIdentityCandidates(ctx, client, rel, observation); err != nil {
 		return RelationshipObservationResult{}, err
 	}
 	if err := persistConversationObservationArtifacts(ctx, client, ws, u, rel, observation, input); err != nil {
@@ -247,6 +368,9 @@ func (s *Service) ingestRelationshipObservation(
 		}
 	}
 	for _, assertionInput := range input.Assertions {
+		if assertionInput.ValidFrom.IsZero() {
+			assertionInput.ValidFrom = input.OccurredAt
+		}
 		if _, err := createRelationshipAssertion(
 			ctx, client, ws, u, rel, observation, assertionInput,
 		); err != nil {
@@ -567,11 +691,26 @@ func resolveObservationRelationship(
 		if err != nil {
 			return nil, err
 		}
-		rel, err = mergeRelationshipIdentityFields(ctx, rel, input, refs)
+		allSignals := dedupeRelationshipIdentitySignals(append(signals, relationshipIdentitySignals(rel)...))
+		safe, conflicts, err := classifyRelationshipIdentitySignals(ctx, client, ws, rel, allSignals)
 		if err != nil {
 			return nil, err
 		}
-		if err := bindRelationshipIdentities(ctx, client, ws, u, rel, append(signals, relationshipIdentitySignals(rel)...), input.Source, input.ReceivedAt); err != nil {
+		for _, conflict := range conflicts {
+			if _, err := createIdentityCandidate(ctx, client, ws, u, rel, conflict.owner, conflict.signal, "anchor_collision", input.ReceivedAt); err != nil {
+				return nil, err
+			}
+		}
+		sanitized := removeConflictingIdentityFields(input, conflicts)
+		sanitizedRefs, err := normalizeResourceRefs(sanitized.ResourceRefs)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+		}
+		rel, err = mergeRelationshipIdentityFields(ctx, rel, sanitized, sanitizedRefs)
+		if err != nil {
+			return nil, err
+		}
+		if err := bindRelationshipIdentities(ctx, client, ws, u, rel, safe, input.Source, input.ReceivedAt); err != nil {
 			return nil, err
 		}
 		return rel, nil
@@ -634,7 +773,52 @@ func resolveObservationRelationship(
 		}
 	}
 	if len(matches) > 1 {
-		return nil, fmt.Errorf("%w: ambiguous relationship identity requires review", ErrConflict)
+		// Never pick a winner. The event is accepted on an isolated proposed
+		// relationship and each exact collision becomes independently reviewable.
+		proposed, err := createProposedRelationship(ctx, client, ws, u, input)
+		if err != nil {
+			return nil, err
+		}
+		created := map[uuid.UUID]bool{}
+		for _, signal := range signals {
+			identity, lookupErr := client.RelationshipIdentity.Query().
+				Where(
+					relationshipidentity.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+					relationshipidentity.KeyHashEQ(signal.KeyHash),
+				).WithRelationship().Only(ctx)
+			if lookupErr != nil {
+				if ent.IsNotFound(lookupErr) {
+					continue
+				}
+				return nil, lookupErr
+			}
+			owner, edgeErr := identity.Edges.RelationshipOrErr()
+			if edgeErr != nil {
+				return nil, edgeErr
+			}
+			if created[owner.ID] {
+				continue
+			}
+			if _, err := createIdentityCandidate(ctx, client, ws, u, proposed, owner, signal, "multi_match", input.ReceivedAt); err != nil {
+				return nil, err
+			}
+			created[owner.ID] = true
+		}
+		// Legacy field matches may not yet have durable anchors. Preserve them as
+		// candidates with an exact email/domain signal rather than auto-merging.
+		for id, owner := range matches {
+			if created[id] {
+				continue
+			}
+			signal := newRelationshipIdentitySignal("email", "", email, 1)
+			if email == "" || owner.PrimaryEmail != email {
+				signal = newRelationshipIdentitySignal("domain", "", domain, 0.9)
+			}
+			if _, err := createIdentityCandidate(ctx, client, ws, u, proposed, owner, signal, "multi_match", input.ReceivedAt); err != nil {
+				return nil, err
+			}
+		}
+		return proposed, nil
 	}
 	for _, rel := range matches {
 		rel, err = mergeRelationshipIdentityFields(ctx, rel, input, refs)
@@ -681,6 +865,83 @@ func resolveObservationRelationship(
 		return nil, err
 	}
 	return rel, nil
+}
+
+type relationshipIdentityConflict struct {
+	signal relationshipIdentitySignal
+	owner  *ent.Relationship
+}
+
+func classifyRelationshipIdentitySignals(
+	ctx context.Context,
+	client *ent.Client,
+	ws *ent.RevenueWorkspace,
+	proposed *ent.Relationship,
+	signals []relationshipIdentitySignal,
+) ([]relationshipIdentitySignal, []relationshipIdentityConflict, error) {
+	safe := make([]relationshipIdentitySignal, 0, len(signals))
+	conflicts := make([]relationshipIdentityConflict, 0)
+	for _, signal := range dedupeRelationshipIdentitySignals(signals) {
+		identity, err := client.RelationshipIdentity.Query().Where(
+			relationshipidentity.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+			relationshipidentity.KeyHashEQ(signal.KeyHash),
+		).WithRelationship().Only(ctx)
+		if ent.IsNotFound(err) {
+			safe = append(safe, signal)
+			continue
+		}
+		if err != nil {
+			return nil, nil, err
+		}
+		owner, err := identity.Edges.RelationshipOrErr()
+		if err != nil {
+			return nil, nil, err
+		}
+		if owner.ID == proposed.ID {
+			safe = append(safe, signal)
+			continue
+		}
+		conflicts = append(conflicts, relationshipIdentityConflict{signal: signal, owner: owner})
+	}
+	return safe, conflicts, nil
+}
+
+func removeConflictingIdentityFields(input RelationshipObservationInput, conflicts []relationshipIdentityConflict) RelationshipObservationInput {
+	blocked := make(map[string]struct{}, len(conflicts))
+	for _, conflict := range conflicts {
+		blocked[conflict.signal.KeyHash] = struct{}{}
+	}
+	if _, blockedEmail := blocked[newRelationshipIdentitySignal("email", "", strings.ToLower(strings.TrimSpace(input.PrimaryEmail)), 1).KeyHash]; blockedEmail && input.PrimaryEmail != "" {
+		input.PrimaryEmail = ""
+	}
+	if _, blockedDomain := blocked[newRelationshipIdentitySignal("domain", "", strings.ToLower(strings.TrimSpace(input.AccountDomain)), 0.9).KeyHash]; blockedDomain && input.AccountDomain != "" {
+		input.AccountDomain = ""
+	}
+	refs := make([]string, 0, len(input.ResourceRefs))
+	for _, ref := range input.ResourceRefs {
+		normalized, err := normalizeResourceRefs([]string{ref})
+		if err != nil || len(normalized) == 0 {
+			continue
+		}
+		signal := newRelationshipIdentitySignal("resource_ref", strings.SplitN(normalized[0], ":", 2)[0], normalized[0], 1)
+		if _, isBlocked := blocked[signal.KeyHash]; !isBlocked {
+			refs = append(refs, normalized[0])
+		}
+	}
+	input.ResourceRefs = refs
+	return input
+}
+
+func createProposedRelationship(ctx context.Context, client *ent.Client, ws *ent.RevenueWorkspace, u *ent.User, input RelationshipObservationInput) (*ent.Relationship, error) {
+	displayName := strings.TrimSpace(input.DisplayName)
+	if displayName == "" {
+		displayName = "Identity review required"
+	}
+	kind := "company"
+	if strings.TrimSpace(input.PrimaryEmail) != "" && (strings.TrimSpace(input.AccountDomain) == "" || isPublicMailboxDomain(input.AccountDomain)) {
+		kind = "person"
+	}
+	return client.Relationship.Create().SetWorkspace(ws).SetUser(u).SetKind(kind).SetDisplayName(displayName).Save(ctx)
 }
 
 type relationshipIdentitySignal struct {
@@ -773,7 +1034,12 @@ func bindRelationshipIdentities(
 				return edgeErr
 			}
 			if owner.ID != rel.ID {
-				return fmt.Errorf("%w: identity %s is already linked to another relationship", ErrConflict, signal.Kind)
+				if _, candidateErr := createIdentityCandidate(
+					ctx, client, ws, u, rel, owner, signal, "anchor_collision", seenAt,
+				); candidateErr != nil {
+					return candidateErr
+				}
+				continue
 			}
 			update := existing.Update()
 			changed := false
@@ -797,18 +1063,40 @@ func bindRelationshipIdentities(
 		if !ent.IsNotFound(err) {
 			return err
 		}
-		_, err = client.RelationshipIdentity.Create().
+		err = client.RelationshipIdentity.Create().
 			SetWorkspace(ws).SetRelationship(rel).SetUser(u).
 			SetKind(signal.Kind).SetProvider(signal.Provider).
 			SetKeyHash(signal.KeyHash).SetNormalizedValue(signal.Value).
 			SetSource(source).SetConfidence(signal.Confidence).
 			SetFirstSeenAt(seenAt.UTC()).SetLastSeenAt(seenAt.UTC()).
-			Save(ctx)
+			OnConflict(
+				entsql.ConflictColumns(
+					relationshipidentity.FieldKeyHash,
+					relationshipidentity.WorkspaceColumn,
+				),
+				entsql.DoNothing(),
+			).Exec(ctx)
 		if err != nil {
-			if ent.IsConstraintError(err) {
-				return fmt.Errorf("%w: identity was claimed concurrently and requires review", ErrConflict)
-			}
 			return err
+		}
+		// Read the winner after the conflict-safe insert. This works for both the
+		// inserting transaction and a concurrent claimant without relying on a
+		// statement error (which would abort PostgreSQL's surrounding transaction).
+		winner, err := client.RelationshipIdentity.Query().Where(
+			relationshipidentity.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+			relationshipidentity.KeyHashEQ(signal.KeyHash),
+		).WithRelationship().Only(ctx)
+		if err != nil {
+			return err
+		}
+		owner, err := winner.Edges.RelationshipOrErr()
+		if err != nil {
+			return err
+		}
+		if owner.ID != rel.ID {
+			if _, err := createIdentityCandidate(ctx, client, ws, u, rel, owner, signal, "anchor_collision", seenAt); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -999,6 +1287,14 @@ func createRelationshipAssertion(
 	if input.ValidFrom.IsZero() {
 		input.ValidFrom = time.Now().UTC()
 	}
+	input.ValidFrom = input.ValidFrom.UTC()
+	if input.ValidTo != nil {
+		validTo := input.ValidTo.UTC()
+		if !validTo.After(input.ValidFrom) {
+			return nil, fmt.Errorf("%w: assertion validTo must be after validFrom", ErrInvalidInput)
+		}
+		input.ValidTo = &validTo
+	}
 	if input.SourceType == "" {
 		input.SourceType = "ai_inference"
 	}
@@ -1008,6 +1304,12 @@ func createRelationshipAssertion(
 	if input.SourceType == "user_correction" {
 		input.Confidence = 1
 	}
+	if strings.TrimSpace(input.ExtractorVersion) == "" {
+		input.ExtractorVersion = input.SourceType + "-v1"
+	}
+	if input.ProjectorCompatVersion == 0 {
+		input.ProjectorCompatVersion = relationshipProjectorVersion
+	}
 	create := client.RelationshipAssertion.Create().
 		SetWorkspace(ws).
 		SetRelationship(rel).
@@ -1015,9 +1317,18 @@ func createRelationshipAssertion(
 		SetDimension(strings.TrimSpace(input.Dimension)).
 		SetValue(strings.TrimSpace(input.Value)).
 		SetSourceType(input.SourceType).
+		SetStatus("active").
 		SetConfidence(input.Confidence).
 		SetReason(input.Reason).
-		SetValidFrom(input.ValidFrom.UTC())
+		SetValidFrom(input.ValidFrom).
+		SetExtractorVersion(strings.TrimSpace(input.ExtractorVersion)).
+		SetProjectorCompatVersion(input.ProjectorCompatVersion)
+	if input.ValidTo != nil {
+		create.SetValidTo(*input.ValidTo)
+	}
+	if strings.TrimSpace(input.SupersedesAssertionID) != "" {
+		create.SetSupersedesAssertionID(strings.TrimSpace(input.SupersedesAssertionID))
+	}
 	if input.ID != uuid.Nil {
 		create.SetID(input.ID)
 	}
@@ -1039,6 +1350,7 @@ func updateRelationshipSourceStatus(
 	u *ent.User,
 	input RelationshipObservationInput,
 ) error {
+	input.Source = canonicalSource(input.Source)
 	accountID := input.SourceAccountID
 	if accountID == "" {
 		accountID = "default"
@@ -1050,13 +1362,42 @@ func updateRelationshipSourceStatus(
 			relationshipsourcestatus.SourceAccountIDEQ(accountID),
 		).
 		Only(ctx)
+	if ent.IsNotFound(err) && accountID != "default" {
+		// Consent callbacks do not always expose a provider account identifier.
+		// Reuse their stable default connection when the first provider event
+		// supplies the real account, avoiding a duplicate lifecycle card.
+		status, err = client.RelationshipSourceStatus.Query().Where(
+			relationshipsourcestatus.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+			relationshipsourcestatus.SourceEQ(input.Source),
+			relationshipsourcestatus.SourceAccountIDEQ("default"),
+		).Only(ctx)
+	}
 	if err == nil {
-		_, err = status.Update().
-			SetStatus("connected").
+		// Disconnect is sticky. A delayed webhook may still be accepted as immutable
+		// evidence, but it cannot silently claim the credential/source is live again.
+		if status.Status == "disconnected" || status.Status == "reconnect_required" ||
+			status.DisconnectedAt != nil || status.RevokedAt != nil || len(status.MissingScopes) > 0 {
+			return nil
+		}
+		update := status.Update().
 			SetLastSuccessAt(input.ReceivedAt.UTC()).
 			SetLastObservationAt(input.OccurredAt.UTC()).
+			SetLastProviderEventAt(input.OccurredAt.UTC()).
+			SetLastSyncAt(input.ReceivedAt.UTC()).
+			SetLagSeconds(0).
 			ClearLastError().
-			Save(ctx)
+			ClearErrorCode()
+		if status.BackfillPhase == "queued" || status.BackfillPhase == "running" {
+			update.SetStatus("backfilling").SetCompleteness("partial")
+		} else {
+			update.SetStatus("live").SetAuthorizedAt(input.ReceivedAt.UTC())
+			if status.BackfillPhase == "live" {
+				update.SetCompleteness("complete")
+			} else {
+				update.SetCompleteness("partial")
+			}
+		}
+		_, err = update.Save(ctx)
 		return err
 	}
 	if !ent.IsNotFound(err) {
@@ -1067,9 +1408,16 @@ func updateRelationshipSourceStatus(
 		SetUser(u).
 		SetSource(input.Source).
 		SetSourceAccountID(accountID).
-		SetStatus("connected").
+		SetConsentingActorID(u.ID).
+		SetStatus("live").
+		SetBackfillPhase("idle").
+		SetCompleteness("partial").
+		SetExpectedCadenceSeconds(sourceDescriptor(canonicalSource(input.Source)).ExpectedCadenceSec).
 		SetLastSuccessAt(input.ReceivedAt.UTC()).
+		SetLastSyncAt(input.ReceivedAt.UTC()).
 		SetLastObservationAt(input.OccurredAt.UTC()).
+		SetLastProviderEventAt(input.OccurredAt.UTC()).
+		SetAuthorizedAt(input.ReceivedAt.UTC()).
 		Save(ctx)
 	return err
 }
@@ -1087,41 +1435,53 @@ func assertionPriority(sourceType string) int {
 	}
 }
 
-func projectRelationshipState(
+var relationshipProjectionDimensions = [...]string{
+	"lifecycle", "engagement", "sentiment", "health", "summary", "next_action", "risk", "milestone",
+}
+
+type relationshipProjectionHashState struct {
+	Lifecycle  string   `json:"lifecycle"`
+	Engagement string   `json:"engagement"`
+	Sentiment  string   `json:"sentiment"`
+	Health     string   `json:"health"`
+	Summary    string   `json:"summary"`
+	NextAction string   `json:"nextAction"`
+	Risks      []string `json:"risks"`
+	Milestones []string `json:"milestones"`
+}
+
+type relationshipProjectionHashWinner struct {
+	Dimension   string `json:"dimension"`
+	AssertionID string `json:"assertionId"`
+}
+
+type relationshipProjectionHashEnvelope struct {
+	ProjectorVersion int                                `json:"projectorVersion"`
+	State            relationshipProjectionHashState    `json:"state"`
+	Winners          []relationshipProjectionHashWinner `json:"winners"`
+}
+
+func projectRelationshipStateAt(
 	ctx context.Context,
 	client *ent.Client,
 	ws *ent.RevenueWorkspace,
 	u *ent.User,
 	rel *ent.Relationship,
+	evaluatedAt time.Time,
 ) (*ent.Relationship, error) {
+	evaluatedAt = evaluatedAt.UTC()
 	assertions, err := client.RelationshipAssertion.Query().
 		Where(relationshipassertion.HasRelationshipWith(relationship.IDEQ(rel.ID))).
 		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	sort.SliceStable(assertions, func(i, j int) bool {
-		left, right := assertions[i], assertions[j]
-		lp, rp := assertionPriority(left.SourceType), assertionPriority(right.SourceType)
-		if lp != rp {
-			return lp > rp
-		}
-		if !left.ValidFrom.Equal(right.ValidFrom) {
-			return left.ValidFrom.After(right.ValidFrom)
-		}
-		if left.Confidence != right.Confidence {
-			return left.Confidence > right.Confidence
-		}
-		return left.ID.String() > right.ID.String()
-	})
-	selected := map[string]*ent.RelationshipAssertion{}
-	for _, assertion := range assertions {
-		if selected[assertion.Dimension] == nil {
-			selected[assertion.Dimension] = assertion
-		}
+	selected, seenDimensions, err := selectRelationshipAssertionsAt(assertions, evaluatedAt)
+	if err != nil {
+		return nil, err
 	}
 
-	next := RelationshipState{
+	current := RelationshipState{
 		Lifecycle:    rel.Lifecycle,
 		Engagement:   rel.Engagement,
 		Sentiment:    rel.Sentiment,
@@ -1133,51 +1493,75 @@ func projectRelationshipState(
 		Milestones:   append([]string(nil), rel.Milestones...),
 		StateVersion: rel.StateVersion,
 	}
-	changed := make([]string, 0, len(selected))
-	apply := func(dimension, current string, target *string) {
-		if assertion := selected[dimension]; assertion != nil && assertion.Value != current {
+	next := RelationshipState{
+		Lifecycle:    current.Lifecycle,
+		Engagement:   current.Engagement,
+		Sentiment:    current.Sentiment,
+		Health:       current.Health,
+		Summary:      current.Summary,
+		NextAction:   current.NextAction,
+		StateReason:  current.StateReason,
+		Risks:        append([]string(nil), current.Risks...),
+		Milestones:   append([]string(nil), current.Milestones...),
+		StateVersion: current.StateVersion,
+	}
+	for dimension := range seenDimensions {
+		resetRelationshipProjectionDimension(&next, dimension)
+	}
+	apply := func(dimension string, target *string) {
+		if assertion := selected[dimension]; assertion != nil {
 			*target = assertion.Value
-			changed = append(changed, dimension)
 		}
 	}
-	apply("lifecycle", next.Lifecycle, &next.Lifecycle)
-	apply("engagement", next.Engagement, &next.Engagement)
-	apply("sentiment", next.Sentiment, &next.Sentiment)
-	apply("health", next.Health, &next.Health)
-	apply("summary", next.Summary, &next.Summary)
-	apply("next_action", next.NextAction, &next.NextAction)
+	apply("lifecycle", &next.Lifecycle)
+	apply("engagement", &next.Engagement)
+	apply("sentiment", &next.Sentiment)
+	apply("health", &next.Health)
+	apply("summary", &next.Summary)
+	apply("next_action", &next.NextAction)
 	if assertion := selected["risk"]; assertion != nil {
-		risks := []string{assertion.Value}
-		if !equalStrings(next.Risks, risks) {
-			next.Risks = risks
-			changed = append(changed, "risks")
-		}
+		next.Risks = []string{assertion.Value}
 	}
 	if assertion := selected["milestone"]; assertion != nil {
-		milestones := []string{assertion.Value}
-		if !equalStrings(next.Milestones, milestones) {
-			next.Milestones = milestones
-			changed = append(changed, "milestones")
-		}
+		next.Milestones = []string{assertion.Value}
+	}
+
+	changed := relationshipStateChangedDimensions(current, next)
+	stateHash, assertionIDs, err := relationshipProjectionHash(next, selected)
+	if err != nil {
+		return nil, err
+	}
+	if len(changed) == 0 && rel.StateHash == "" {
+		return rel.Update().
+			SetStateHash(stateHash).
+			SetProjectorVersion(relationshipProjectorVersion).
+			SetProjectedAt(evaluatedAt).
+			Save(ctx)
+	}
+	if len(changed) == 0 && rel.StateHash == stateHash && rel.ProjectorVersion == relationshipProjectorVersion {
+		return rel.Update().SetProjectedAt(evaluatedAt).Save(ctx)
 	}
 	if len(changed) == 0 {
-		return rel, nil
+		changed = append(changed, "evidence")
 	}
 	sort.Strings(changed)
 	reasons := make([]string, 0, len(changed))
-	assertionIDs := make([]string, 0, len(changed))
 	for _, dimension := range changed {
+		if dimension == "evidence" {
+			reasons = append(reasons, "Supporting evidence changed.")
+			continue
+		}
 		key := strings.TrimSuffix(dimension, "s")
 		if assertion := selected[key]; assertion != nil {
-			assertionIDs = append(assertionIDs, assertion.ID.String())
 			if assertion.Reason != "" {
 				reasons = append(reasons, assertion.Reason)
 			}
+		} else {
+			reasons = append(reasons, "No active "+strings.ReplaceAll(key, "_", " ")+" assertion at evaluation time.")
 		}
 	}
 	next.StateVersion++
 	next.StateReason = strings.Join(reasons, " ")
-	now := time.Now().UTC()
 	stateJSON, err := json.Marshal(next)
 	if err != nil {
 		return nil, err
@@ -1191,7 +1575,10 @@ func projectRelationshipState(
 		SetNextAction(next.NextAction).
 		SetStateReason(next.StateReason).
 		SetStateVersion(next.StateVersion).
-		SetLastChangedAt(now).
+		SetStateHash(stateHash).
+		SetProjectorVersion(relationshipProjectorVersion).
+		SetProjectedAt(evaluatedAt).
+		SetLastChangedAt(evaluatedAt).
 		SetRisks(next.Risks).
 		SetMilestones(next.Milestones).
 		Save(ctx)
@@ -1204,10 +1591,152 @@ func projectRelationshipState(
 		SetUser(u).
 		SetVersion(next.StateVersion).
 		SetStateJSON(string(stateJSON)).
+		SetStateHash(stateHash).
+		SetProjectorVersion(relationshipProjectorVersion).
+		SetEvaluatedAt(evaluatedAt).
 		SetChangedDimensions(changed).
 		SetAssertionIds(assertionIDs).
 		Save(ctx)
 	return updated, err
+}
+
+// selectRelationshipAssertionsAt is shared by projection and Mission Control,
+// guaranteeing that a rendered evidence winner is the exact assertion that
+// produced the state hash at the same evaluation boundary.
+func selectRelationshipAssertionsAt(
+	assertions []*ent.RelationshipAssertion,
+	evaluatedAt time.Time,
+) (map[string]*ent.RelationshipAssertion, map[string]struct{}, error) {
+	seenDimensions := make(map[string]struct{}, len(relationshipProjectionDimensions))
+	superseded := make(map[string]struct{})
+	eligible := make([]*ent.RelationshipAssertion, 0, len(assertions))
+	for _, assertion := range assertions {
+		seenDimensions[assertion.Dimension] = struct{}{}
+		if assertion.ProjectorCompatVersion > relationshipProjectorVersion {
+			return nil, nil, fmt.Errorf(
+				"%w: assertion %s requires projector compatibility version %d",
+				ErrReviewRequired, assertion.ID, assertion.ProjectorCompatVersion,
+			)
+		}
+		if assertion.Status != "active" || assertion.ValidFrom.After(evaluatedAt) ||
+			(assertion.ValidTo != nil && !assertion.ValidTo.After(evaluatedAt)) {
+			continue
+		}
+		eligible = append(eligible, assertion)
+		if assertion.SupersedesAssertionID != "" {
+			superseded[assertion.SupersedesAssertionID] = struct{}{}
+		}
+	}
+	sort.SliceStable(eligible, func(i, j int) bool {
+		left, right := eligible[i], eligible[j]
+		lp, rp := assertionPriority(left.SourceType), assertionPriority(right.SourceType)
+		if lp != rp {
+			return lp > rp
+		}
+		if !left.ValidFrom.Equal(right.ValidFrom) {
+			return left.ValidFrom.After(right.ValidFrom)
+		}
+		if left.Confidence != right.Confidence {
+			return left.Confidence > right.Confidence
+		}
+		return left.ID.String() > right.ID.String()
+	})
+	selected := map[string]*ent.RelationshipAssertion{}
+	for _, assertion := range eligible {
+		if _, isSuperseded := superseded[assertion.ID.String()]; isSuperseded {
+			continue
+		}
+		if selected[assertion.Dimension] == nil {
+			selected[assertion.Dimension] = assertion
+		}
+	}
+	return selected, seenDimensions, nil
+}
+
+func resetRelationshipProjectionDimension(state *RelationshipState, dimension string) {
+	switch dimension {
+	case "lifecycle":
+		state.Lifecycle = "prospect"
+	case "engagement":
+		state.Engagement = "unknown"
+	case "sentiment":
+		state.Sentiment = "unknown"
+	case "health":
+		state.Health = "unknown"
+	case "summary":
+		state.Summary = ""
+	case "next_action":
+		state.NextAction = ""
+	case "risk":
+		state.Risks = []string{}
+	case "milestone":
+		state.Milestones = []string{}
+	}
+}
+
+func relationshipStateChangedDimensions(current, next RelationshipState) []string {
+	changed := make([]string, 0, len(relationshipProjectionDimensions))
+	if current.Lifecycle != next.Lifecycle {
+		changed = append(changed, "lifecycle")
+	}
+	if current.Engagement != next.Engagement {
+		changed = append(changed, "engagement")
+	}
+	if current.Sentiment != next.Sentiment {
+		changed = append(changed, "sentiment")
+	}
+	if current.Health != next.Health {
+		changed = append(changed, "health")
+	}
+	if current.Summary != next.Summary {
+		changed = append(changed, "summary")
+	}
+	if current.NextAction != next.NextAction {
+		changed = append(changed, "next_action")
+	}
+	if !equalStrings(current.Risks, next.Risks) {
+		changed = append(changed, "risks")
+	}
+	if !equalStrings(current.Milestones, next.Milestones) {
+		changed = append(changed, "milestones")
+	}
+	return changed
+}
+
+func relationshipProjectionHash(
+	state RelationshipState,
+	selected map[string]*ent.RelationshipAssertion,
+) (string, []string, error) {
+	winners := make([]relationshipProjectionHashWinner, 0, len(selected))
+	assertionIDs := make([]string, 0, len(selected))
+	for _, dimension := range relationshipProjectionDimensions {
+		assertion := selected[dimension]
+		if assertion == nil {
+			continue
+		}
+		id := assertion.ID.String()
+		winners = append(winners, relationshipProjectionHashWinner{Dimension: dimension, AssertionID: id})
+		assertionIDs = append(assertionIDs, id)
+	}
+	payload, err := json.Marshal(relationshipProjectionHashEnvelope{
+		ProjectorVersion: relationshipProjectorVersion,
+		State: relationshipProjectionHashState{
+			Lifecycle:  state.Lifecycle,
+			Engagement: state.Engagement,
+			Sentiment:  state.Sentiment,
+			Health:     state.Health,
+			Summary:    state.Summary,
+			NextAction: state.NextAction,
+			Risks:      append([]string(nil), state.Risks...),
+			Milestones: append([]string(nil), state.Milestones...),
+		},
+		Winners: winners,
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	digest := sha256.Sum256(payload)
+	return "sha256:" + hex.EncodeToString(digest[:]), assertionIDs, nil
 }
 
 func equalStrings(left, right []string) bool {
@@ -1228,45 +1757,206 @@ type RelationshipCorrectionInput struct {
 	Value                 string
 	Reason                string
 	SupersedesAssertionID string
+	ValidTo               *time.Time
 }
 
-// CorrectRelationship appends a user correction and deterministically reprojects state.
+// CorrectRelationship appends a user correction and its projection job in one
+// transaction. The inline projection is only a fast path; an incompatible or
+// temporarily failing projector cannot roll back the accepted correction.
 func (s *Service) CorrectRelationship(
 	ctx context.Context,
 	u *ent.User,
 	relationshipID uuid.UUID,
 	input RelationshipCorrectionInput,
 ) (*ent.Relationship, error) {
-	ws, err := s.CurrentWorkspace(ctx, u)
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceContribute)
 	if err != nil {
 		return nil, err
 	}
-	rel, err := s.client.Relationship.Get(ctx, relationshipID)
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rollback := func(cause error) (*ent.Relationship, error) {
+		_ = tx.Rollback()
+		return nil, cause
+	}
+	txc := tx.Client()
+	rel, err := txc.Relationship.Get(ctx, relationshipID)
 	if ent.IsNotFound(err) {
-		return nil, ErrNotFound
+		return rollback(ErrNotFound)
 	}
 	if err != nil {
-		return nil, err
+		return rollback(err)
 	}
-	assertion, err := createRelationshipAssertion(ctx, s.client, ws, u, rel, nil, RelationshipAssertionInput{
-		Dimension:  input.Dimension,
-		Value:      input.Value,
-		SourceType: "user_correction",
-		Confidence: 1,
-		Reason:     input.Reason,
-		ValidFrom:  s.now(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	if input.SupersedesAssertionID != "" {
-		if _, err := assertion.Update().
-			SetSupersedesAssertionID(input.SupersedesAssertionID).
-			Save(ctx); err != nil {
-			return nil, err
+	evaluatedAt := s.now().UTC()
+	var superseded *ent.RelationshipAssertion
+	if rawID := strings.TrimSpace(input.SupersedesAssertionID); rawID != "" {
+		assertionID, parseErr := uuid.Parse(rawID)
+		if parseErr != nil {
+			return rollback(fmt.Errorf("%w: invalid supersedesAssertionId", ErrInvalidInput))
+		}
+		superseded, err = txc.RelationshipAssertion.Query().
+			Where(
+				relationshipassertion.IDEQ(assertionID),
+				relationshipassertion.StatusEQ("active"),
+				relationshipassertion.HasRelationshipWith(relationship.IDEQ(rel.ID)),
+			).
+			Only(ctx)
+		if ent.IsNotFound(err) {
+			return rollback(fmt.Errorf("%w: superseded assertion is not active on this relationship", ErrInvalidInput))
+		}
+		if err != nil {
+			return rollback(err)
+		}
+		if superseded.Dimension != strings.TrimSpace(input.Dimension) {
+			return rollback(fmt.Errorf("%w: superseded assertion dimension does not match correction", ErrInvalidInput))
 		}
 	}
-	return projectRelationshipState(ctx, s.client, ws, u, rel)
+	created, err := createRelationshipAssertion(ctx, txc, ws, u, rel, nil, RelationshipAssertionInput{
+		Dimension:              input.Dimension,
+		Value:                  input.Value,
+		SourceType:             "user_correction",
+		Confidence:             1,
+		Reason:                 input.Reason,
+		ValidFrom:              evaluatedAt,
+		ValidTo:                input.ValidTo,
+		SupersedesAssertionID:  strings.TrimSpace(input.SupersedesAssertionID),
+		ExtractorVersion:       "user-correction-v1",
+		ProjectorCompatVersion: relationshipProjectorVersion,
+	})
+	if err != nil {
+		return rollback(err)
+	}
+	if superseded != nil {
+		if _, err := superseded.Update().
+			SetStatus("superseded").
+			SetValidTo(evaluatedAt).
+			Save(ctx); err != nil {
+			return rollback(err)
+		}
+	}
+	triggerRefs := []string{"relationship-assertion:" + created.ID.String()}
+	job, err := s.enqueueRelationshipProjectionTx(ctx, txc, ws, u, rel, evaluatedAt, triggerRefs)
+	if err != nil {
+		return rollback(err)
+	}
+	if err := appendTrustEvent(ctx, txc, ws, u, TrustEventInput{
+		Name: "correction_applied", Outcome: "corrected",
+		ReasonCode: "user_correction", CorrelationID: triggerRefs[0],
+		OccurredAt: evaluatedAt, Relationship: rel,
+	}); err != nil {
+		return rollback(err)
+	}
+	if input.ValidTo != nil && input.ValidTo.After(evaluatedAt) {
+		if _, err := s.enqueueRelationshipProjectionTx(
+			ctx, txc, ws, u, rel, input.ValidTo.UTC(), append(triggerRefs, "temporal-boundary"),
+		); err != nil {
+			return rollback(err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	updated, status, projectErr := s.ProcessRelationshipProjectionJob(
+		ctx, u, job.ID, "inline-relationship-projector-"+uuid.NewString(),
+	)
+	if projectErr != nil {
+		s.log.Warn("relationship correction projection deferred",
+			zap.String("relationship", rel.ID.String()), zap.String("job", job.ID.String()),
+			zap.String("status", status), zap.Error(projectErr))
+		return rel.Unwrap(), nil
+	}
+	return updated, nil
+}
+
+// RetractRelationshipAssertion ends one active user correction and durably
+// requests projection at the same evaluation time.
+// Source facts are never rewritten through this path; a user who disagrees
+// with a source appends a higher-authority correction instead.
+func (s *Service) RetractRelationshipAssertion(
+	ctx context.Context,
+	u *ent.User,
+	relationshipID uuid.UUID,
+	assertionID uuid.UUID,
+	reason string,
+) (*ent.Relationship, error) {
+	if strings.TrimSpace(reason) == "" {
+		return nil, fmt.Errorf("%w: retraction reason is required", ErrInvalidInput)
+	}
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceContribute)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rollback := func(cause error) (*ent.Relationship, error) {
+		_ = tx.Rollback()
+		return nil, cause
+	}
+	txc := tx.Client()
+	rel, err := txc.Relationship.Get(ctx, relationshipID)
+	if ent.IsNotFound(err) {
+		return rollback(ErrNotFound)
+	}
+	if err != nil {
+		return rollback(err)
+	}
+	assertion, err := txc.RelationshipAssertion.Query().
+		Where(
+			relationshipassertion.IDEQ(assertionID),
+			relationshipassertion.HasRelationshipWith(relationship.IDEQ(rel.ID)),
+		).
+		Only(ctx)
+	if ent.IsNotFound(err) {
+		return rollback(ErrNotFound)
+	}
+	if err != nil {
+		return rollback(err)
+	}
+	if assertion.SourceType != "user_correction" {
+		return rollback(fmt.Errorf("%w: only user corrections can be retracted", ErrInvalidInput))
+	}
+	if assertion.Status == "retracted" {
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+		return rel.Unwrap(), nil
+	}
+	if assertion.Status != "active" {
+		return rollback(fmt.Errorf("%w: assertion is no longer active", ErrConflict))
+	}
+	evaluatedAt := s.now().UTC()
+	if _, err := assertion.Update().
+		SetStatus("retracted").
+		SetValidTo(evaluatedAt).
+		SetRetractedAt(evaluatedAt).
+		SetRetractionReason(strings.TrimSpace(reason)).
+		Save(ctx); err != nil {
+		return rollback(err)
+	}
+	job, err := s.enqueueRelationshipProjectionTx(
+		ctx, txc, ws, u, rel, evaluatedAt,
+		[]string{"relationship-assertion-retraction:" + assertion.ID.String()},
+	)
+	if err != nil {
+		return rollback(err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	updated, status, projectErr := s.ProcessRelationshipProjectionJob(
+		ctx, u, job.ID, "inline-relationship-projector-"+uuid.NewString(),
+	)
+	if projectErr != nil {
+		s.log.Warn("relationship retraction projection deferred",
+			zap.String("relationship", rel.ID.String()), zap.String("job", job.ID.String()),
+			zap.String("status", status), zap.Error(projectErr))
+		return rel.Unwrap(), nil
+	}
+	return updated, nil
 }
 
 // RelationshipTimeline returns relationship observations in chronological order.
@@ -1302,6 +1992,7 @@ func (s *Service) RelationshipObservation(
 			relationshipobservation.IDEQ(observationID),
 			relationshipobservation.HasRelationshipWith(relationship.IDEQ(relationshipID)),
 		).
+		WithWorkspace().
 		Only(ctx)
 	if ent.IsNotFound(err) {
 		return nil, ErrNotFound
@@ -1322,10 +2013,16 @@ func (s *Service) RelationshipObservationPayload(
 	if len(observation.PayloadCiphertext) == 0 {
 		return observation, nil, nil
 	}
-	if s.sealer == nil {
-		return observation, observation.PayloadCiphertext, nil
+	ws, edgeErr := observation.Edges.WorkspaceOrErr()
+	if edgeErr != nil {
+		return nil, nil, edgeErr
 	}
-	payload, err := s.sealer.Open(observation.PayloadCiphertext)
+	if s.evidenceKeys == nil {
+		return nil, nil, ErrEvidenceEncryptionUnavailable
+	}
+	payload, err := s.evidenceKeys.Open(
+		ctx, ws.ID, observation.EncryptionKeyVersion, observation.PayloadCiphertext,
+	)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1355,12 +2052,23 @@ func (s *Service) RelationshipSourceStatuses(
 	ctx context.Context,
 	u *ent.User,
 ) ([]*ent.RelationshipSourceStatus, error) {
-	ws, err := s.CurrentWorkspace(ctx, u)
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
 	if err != nil {
 		return nil, err
 	}
-	return s.client.RelationshipSourceStatus.Query().
+	statuses, err := s.client.RelationshipSourceStatus.Query().
 		Where(relationshipsourcestatus.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID))).
-		Order(ent.Asc(relationshipsourcestatus.FieldSource)).
+		Order(
+			ent.Asc(relationshipsourcestatus.FieldSource),
+			ent.Asc(relationshipsourcestatus.FieldSourceAccountID),
+		).
 		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	now := s.now().UTC()
+	for _, status := range statuses {
+		applySourceFreshness(status, now)
+	}
+	return statuses, nil
 }

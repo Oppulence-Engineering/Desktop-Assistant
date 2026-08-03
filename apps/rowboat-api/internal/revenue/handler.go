@@ -48,6 +48,14 @@ func (h *Handler) Mount(r chi.Router) {
 	r.Route("/v1/revenue-workspaces", func(r chi.Router) {
 		r.Get("/current", h.CurrentWorkspace)
 		r.Post("/link", h.LinkWorkspace)
+		r.Get("/current/members", h.ListWorkspaceMembers)
+		r.Put("/current/members/{userId}", h.UpsertWorkspaceMember)
+		r.Delete("/current/members/{membershipId}", h.RemoveWorkspaceMember)
+		r.Get("/current/evidence-keys", h.TenantEvidenceKeyStatuses)
+		r.Post("/current/evidence-keys/rotate", h.RotateTenantEvidenceKey)
+		r.Post("/current/evidence-keys/destroy", h.DestroyTenantEvidenceKeys)
+		r.Get("/current/features", h.WorkspaceFeatureControls)
+		r.Put("/current/features/{capability}", h.SetWorkspaceFeatureControl)
 	})
 	r.Get("/v1/revenue-impact", h.Impact)
 	r.Get("/v1/revenue-digest", h.Digest)
@@ -59,11 +67,14 @@ func (h *Handler) Mount(r chi.Router) {
 	r.Route("/v1/relationships", func(r chi.Router) {
 		r.Get("/", h.ListRelationships)
 		r.Post("/", h.CreateRelationship)
+		r.Get("/graph", h.RelationshipGraph)
 		r.Get("/{relationshipId}", h.GetRelationship)
 		r.Get("/{relationshipId}/timeline", h.RelationshipTimeline)
 		r.Get("/{relationshipId}/changes", h.RelationshipChanges)
+		r.Post("/{relationshipId}/acknowledgements", h.AcknowledgeMissionControl)
 		r.Get("/{relationshipId}/evidence/{evidenceId}", h.RelationshipEvidence)
 		r.Post("/{relationshipId}/corrections", h.CorrectRelationship)
+		r.Post("/{relationshipId}/assertions/{assertionId}/retract", h.RetractRelationshipAssertion)
 		r.Post("/{relationshipId}/conversation-corrections", h.CorrectConversationReview)
 		r.Post("/{relationshipId}/conversation-decisions", h.DecideConversationReview)
 		r.Post("/{relationshipId}/contradictions/{caseId}/resolve", h.ResolveContradiction)
@@ -80,7 +91,21 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Post("/{relationshipId}/conversation-deletion", h.RequestConversationDeletion)
 	})
 	r.Post("/v1/relationship-observations/batch", h.IngestRelationshipObservations)
+	r.Route("/v1/relationship-identity-candidates", func(r chi.Router) {
+		r.Get("/", h.ListIdentityCandidates)
+		r.Get("/{candidateId}", h.GetIdentityCandidate)
+		r.Post("/{candidateId}/decisions", h.DecideIdentityCandidate)
+	})
+	r.Route("/v1/relationship-attention", func(r chi.Router) {
+		r.Get("/", h.ListRelationshipAttention)
+		r.Post("/{attentionId}/decisions", h.DecideRelationshipAttention)
+	})
+	r.Get("/v1/relationship-sources", h.RelationshipSourceInventory)
 	r.Get("/v1/relationship-sources/status", h.RelationshipSourceStatuses)
+	r.Get("/v1/relationship-beta/diagnostics", h.BetaDiagnostics)
+	r.Post("/v1/relationship-sources/{source}/authorization", h.ReportSourceAuthorization)
+	r.Post("/v1/relationship-sources/{source}/resync", h.BeginSourceBackfill)
+	r.Post("/v1/relationship-sources/{source}/{sourceAccountId}/disconnect", h.DisconnectRelationshipSource)
 	r.Route("/v1/relationship-recommendations", func(r chi.Router) {
 		r.Post("/{recommendationId}/approve", h.ApproveRecommendation)
 		r.Post("/{recommendationId}/reject", h.RejectRecommendation)
@@ -134,51 +159,57 @@ func (h *Handler) workspaceDTO(ws *ent.RevenueWorkspace) workspaceDTO {
 }
 
 type relationshipDTO struct {
-	ID            string     `json:"id"`
-	Kind          string     `json:"kind"`
-	DisplayName   string     `json:"displayName"`
-	PrimaryEmail  string     `json:"primaryEmail,omitempty"`
-	AccountDomain string     `json:"accountDomain,omitempty"`
-	Summary       string     `json:"summary,omitempty"`
-	Status        string     `json:"status"`
-	LastTouchAt   *time.Time `json:"lastTouchAt,omitempty"`
-	NextActionAt  *time.Time `json:"nextActionAt,omitempty"`
-	OpenActions   int        `json:"openActions,omitempty"`
-	NextAction    string     `json:"nextAction,omitempty"`
-	Lifecycle     string     `json:"lifecycle"`
-	Engagement    string     `json:"engagement"`
-	Sentiment     string     `json:"sentiment"`
-	Health        string     `json:"health"`
-	StateReason   string     `json:"stateReason,omitempty"`
-	StateVersion  int        `json:"stateVersion"`
-	LastChangedAt *time.Time `json:"lastChangedAt,omitempty"`
-	Risks         []string   `json:"risks"`
-	Milestones    []string   `json:"milestones"`
-	ResourceRefs  []string   `json:"resourceRefs"`
+	ID               string     `json:"id"`
+	Kind             string     `json:"kind"`
+	DisplayName      string     `json:"displayName"`
+	PrimaryEmail     string     `json:"primaryEmail,omitempty"`
+	AccountDomain    string     `json:"accountDomain,omitempty"`
+	Summary          string     `json:"summary,omitempty"`
+	Status           string     `json:"status"`
+	LastTouchAt      *time.Time `json:"lastTouchAt,omitempty"`
+	NextActionAt     *time.Time `json:"nextActionAt,omitempty"`
+	OpenActions      int        `json:"openActions,omitempty"`
+	NextAction       string     `json:"nextAction,omitempty"`
+	Lifecycle        string     `json:"lifecycle"`
+	Engagement       string     `json:"engagement"`
+	Sentiment        string     `json:"sentiment"`
+	Health           string     `json:"health"`
+	StateReason      string     `json:"stateReason,omitempty"`
+	StateVersion     int        `json:"stateVersion"`
+	StateHash        string     `json:"stateHash,omitempty"`
+	ProjectorVersion int        `json:"projectorVersion"`
+	ProjectedAt      *time.Time `json:"projectedAt,omitempty"`
+	LastChangedAt    *time.Time `json:"lastChangedAt,omitempty"`
+	Risks            []string   `json:"risks"`
+	Milestones       []string   `json:"milestones"`
+	ResourceRefs     []string   `json:"resourceRefs"`
 }
 
 func relationshipToDTO(rel *ent.Relationship) relationshipDTO {
 	return relationshipDTO{
-		ID:            rel.ID.String(),
-		Kind:          rel.Kind,
-		DisplayName:   rel.DisplayName,
-		PrimaryEmail:  rel.PrimaryEmail,
-		AccountDomain: rel.AccountDomain,
-		Summary:       rel.Summary,
-		Status:        rel.Status,
-		LastTouchAt:   rel.LastTouchAt,
-		NextActionAt:  rel.NextActionAt,
-		NextAction:    rel.NextAction,
-		Lifecycle:     rel.Lifecycle,
-		Engagement:    rel.Engagement,
-		Sentiment:     rel.Sentiment,
-		Health:        rel.Health,
-		StateReason:   rel.StateReason,
-		StateVersion:  rel.StateVersion,
-		LastChangedAt: rel.LastChangedAt,
-		Risks:         rel.Risks,
-		Milestones:    rel.Milestones,
-		ResourceRefs:  rel.ResourceRefs,
+		ID:               rel.ID.String(),
+		Kind:             rel.Kind,
+		DisplayName:      rel.DisplayName,
+		PrimaryEmail:     rel.PrimaryEmail,
+		AccountDomain:    rel.AccountDomain,
+		Summary:          rel.Summary,
+		Status:           rel.Status,
+		LastTouchAt:      rel.LastTouchAt,
+		NextActionAt:     rel.NextActionAt,
+		NextAction:       rel.NextAction,
+		Lifecycle:        rel.Lifecycle,
+		Engagement:       rel.Engagement,
+		Sentiment:        rel.Sentiment,
+		Health:           rel.Health,
+		StateReason:      rel.StateReason,
+		StateVersion:     rel.StateVersion,
+		StateHash:        rel.StateHash,
+		ProjectorVersion: rel.ProjectorVersion,
+		ProjectedAt:      rel.ProjectedAt,
+		LastChangedAt:    rel.LastChangedAt,
+		Risks:            rel.Risks,
+		Milestones:       rel.Milestones,
+		ResourceRefs:     rel.ResourceRefs,
 	}
 }
 
@@ -354,9 +385,163 @@ type snapshotDTO struct {
 	ID                string         `json:"id"`
 	Version           int            `json:"version"`
 	State             map[string]any `json:"state"`
+	StateHash         string         `json:"stateHash"`
+	ProjectorVersion  int            `json:"projectorVersion"`
+	EvaluatedAt       time.Time      `json:"evaluatedAt"`
 	ChangedDimensions []string       `json:"changedDimensions"`
 	AssertionIDs      []string       `json:"assertionIds"`
 	CreatedAt         time.Time      `json:"createdAt"`
+}
+
+type identityDecisionDTO struct {
+	ID                    string     `json:"id"`
+	Decision              string     `json:"decision"`
+	CandidateVersion      int        `json:"candidateVersion"`
+	ActorID               string     `json:"actorId"`
+	Reason                string     `json:"reason,omitempty"`
+	DecidedAt             time.Time  `json:"decidedAt"`
+	CompensatesDecisionID *uuid.UUID `json:"compensatesDecisionId,omitempty"`
+}
+
+type identityLineageDTO struct {
+	ID                    string    `json:"id"`
+	Kind                  string    `json:"kind"`
+	ActorID               string    `json:"actorId"`
+	Reason                string    `json:"reason,omitempty"`
+	ObservationIDs        []string  `json:"observationIds"`
+	IdentityIDs           []string  `json:"identityIds"`
+	MovedObjectRefs       []string  `json:"movedObjectRefs"`
+	BeforeRelationshipIDs []string  `json:"beforeRelationshipIds"`
+	AfterRelationshipIDs  []string  `json:"afterRelationshipIds"`
+	OccurredAt            time.Time `json:"occurredAt"`
+}
+
+type identityCandidateDTO struct {
+	ID                       string                `json:"id"`
+	Status                   string                `json:"status"`
+	CandidateType            string                `json:"candidateType"`
+	Version                  int                   `json:"version"`
+	ProposedRelationship     relationshipDTO       `json:"proposedRelationship"`
+	ExistingRelationship     relationshipDTO       `json:"existingRelationship"`
+	AnchorKind               string                `json:"anchorKind"`
+	AnchorProvider           string                `json:"anchorProvider,omitempty"`
+	AnchorPreview            string                `json:"anchorPreview,omitempty"`
+	MatchingAnchors          []string              `json:"matchingAnchors"`
+	ConflictingAnchors       []string              `json:"conflictingAnchors"`
+	EvidenceRefs             []string              `json:"evidenceRefs"`
+	EvidenceCount            int                   `json:"evidenceCount"`
+	EvidenceFrom             *time.Time            `json:"evidenceFrom,omitempty"`
+	EvidenceTo               *time.Time            `json:"evidenceTo,omitempty"`
+	Impact                   map[string]any        `json:"impact"`
+	RecommendedDecision      string                `json:"recommendedDecision"`
+	RecommendationConfidence float64               `json:"recommendationConfidence"`
+	Decision                 string                `json:"decision,omitempty"`
+	DecisionReason           string                `json:"decisionReason,omitempty"`
+	DecisionActorID          *uuid.UUID            `json:"decisionActorId,omitempty"`
+	DecidedAt                *time.Time            `json:"decidedAt,omitempty"`
+	Decisions                []identityDecisionDTO `json:"decisions"`
+	Lineage                  []identityLineageDTO  `json:"lineage"`
+}
+
+type relationshipAttentionDTO struct {
+	ID                       string         `json:"id"`
+	Version                  int            `json:"version"`
+	RelationshipID           string         `json:"relationshipId"`
+	RelationshipName         string         `json:"relationshipName"`
+	ReasonCode               string         `json:"reasonCode"`
+	Explanation              string         `json:"explanation"`
+	TriggeringObjectRef      string         `json:"triggeringObjectRef"`
+	EvidenceRefs             []string       `json:"evidenceRefs"`
+	UrgencyBand              string         `json:"urgencyBand"`
+	RankScore                int            `json:"rankScore"`
+	RankFactors              map[string]int `json:"rankFactors"`
+	SourceRequirements       []string       `json:"sourceRequirements"`
+	RecommendationID         *uuid.UUID     `json:"recommendationId,omitempty"`
+	RecommendationRevision   int            `json:"recommendationRevision,omitempty"`
+	OwnerID                  *uuid.UUID     `json:"ownerId,omitempty"`
+	Status                   string         `json:"status"`
+	StateReason              string         `json:"stateReason,omitempty"`
+	SnoozedUntil             *time.Time     `json:"snoozedUntil,omitempty"`
+	ExpiresAt                *time.Time     `json:"expiresAt,omitempty"`
+	DetectorVersion          int            `json:"detectorVersion"`
+	ProjectorVersion         int            `json:"projectorVersion"`
+	RelationshipStateVersion int            `json:"relationshipStateVersion"`
+	AcknowledgedBy           *uuid.UUID     `json:"acknowledgedBy,omitempty"`
+	AcknowledgedAt           *time.Time     `json:"acknowledgedAt,omitempty"`
+	DismissedBy              *uuid.UUID     `json:"dismissedBy,omitempty"`
+	DismissedAt              *time.Time     `json:"dismissedAt,omitempty"`
+	CreatedAt                time.Time      `json:"createdAt"`
+	UpdatedAt                time.Time      `json:"updatedAt"`
+}
+
+func relationshipAttentionToDTO(item *ent.RelationshipAttentionItem) (relationshipAttentionDTO, error) {
+	rel, err := item.Edges.RelationshipOrErr()
+	if err != nil {
+		return relationshipAttentionDTO{}, err
+	}
+	factors := map[string]int{}
+	if err := json.Unmarshal([]byte(item.RankFactorsJSON), &factors); err != nil {
+		return relationshipAttentionDTO{}, err
+	}
+	return relationshipAttentionDTO{
+		ID: item.ID.String(), Version: item.Version, RelationshipID: rel.ID.String(), RelationshipName: rel.DisplayName,
+		ReasonCode: item.ReasonCode, Explanation: item.Explanation, TriggeringObjectRef: item.TriggeringObjectRef,
+		EvidenceRefs: item.EvidenceRefs, UrgencyBand: item.UrgencyBand, RankScore: item.RankScore, RankFactors: factors,
+		SourceRequirements: item.SourceRequirements, RecommendationID: item.RecommendationID,
+		RecommendationRevision: item.RecommendationRevision, OwnerID: item.OwnerID, Status: item.Status,
+		StateReason: item.StateReason, SnoozedUntil: item.SnoozedUntil, ExpiresAt: item.ExpiresAt,
+		DetectorVersion: item.DetectorVersion, ProjectorVersion: item.ProjectorVersion,
+		RelationshipStateVersion: item.RelationshipStateVersion, AcknowledgedBy: item.AcknowledgedBy,
+		AcknowledgedAt: item.AcknowledgedAt, DismissedBy: item.DismissedBy, DismissedAt: item.DismissedAt,
+		CreatedAt: item.CreatedAt, UpdatedAt: item.UpdatedAt,
+	}, nil
+}
+
+func identityCandidateToDTO(candidate *ent.RelationshipIdentityCandidate) (identityCandidateDTO, error) {
+	proposed, err := candidate.Edges.ProposedRelationshipOrErr()
+	if err != nil {
+		return identityCandidateDTO{}, err
+	}
+	existing, err := candidate.Edges.ExistingRelationshipOrErr()
+	if err != nil {
+		return identityCandidateDTO{}, err
+	}
+	impact := map[string]any{}
+	if err := json.Unmarshal([]byte(candidate.ImpactJSON), &impact); err != nil {
+		return identityCandidateDTO{}, err
+	}
+	dto := identityCandidateDTO{
+		ID: candidate.ID.String(), Status: candidate.Status, CandidateType: candidate.CandidateType,
+		Version: candidate.Version, ProposedRelationship: relationshipToDTO(proposed), ExistingRelationship: relationshipToDTO(existing),
+		AnchorKind: candidate.AnchorKind, AnchorProvider: candidate.AnchorProvider, AnchorPreview: candidate.AnchorPreview,
+		MatchingAnchors: candidate.MatchingAnchors, ConflictingAnchors: candidate.ConflictingAnchors,
+		EvidenceRefs: candidate.EvidenceRefs, EvidenceCount: candidate.EvidenceCount,
+		EvidenceFrom: candidate.EvidenceFrom, EvidenceTo: candidate.EvidenceTo, Impact: impact,
+		RecommendedDecision: candidate.RecommendedDecision, RecommendationConfidence: candidate.Confidence,
+		Decision: candidate.Decision, DecisionReason: candidate.DecisionReason,
+		DecisionActorID: candidate.DecisionActorID, DecidedAt: candidate.DecidedAt,
+		Decisions: []identityDecisionDTO{}, Lineage: []identityLineageDTO{},
+	}
+	if decisions, edgeErr := candidate.Edges.DecisionsOrErr(); edgeErr == nil {
+		for _, decision := range decisions {
+			dto.Decisions = append(dto.Decisions, identityDecisionDTO{
+				ID: decision.ID.String(), Decision: decision.Decision, CandidateVersion: decision.CandidateVersion,
+				ActorID: decision.ActorID.String(), Reason: decision.Reason, DecidedAt: decision.DecidedAt,
+				CompensatesDecisionID: decision.CompensatesDecisionID,
+			})
+		}
+	}
+	if lineage, edgeErr := candidate.Edges.LineageEventsOrErr(); edgeErr == nil {
+		for _, event := range lineage {
+			dto.Lineage = append(dto.Lineage, identityLineageDTO{
+				ID: event.ID.String(), Kind: event.Kind, ActorID: event.ActorID.String(), Reason: event.Reason,
+				ObservationIDs: event.ObservationIds, IdentityIDs: event.IdentityIds, MovedObjectRefs: event.MovedObjectRefs,
+				BeforeRelationshipIDs: event.BeforeRelationshipIds, AfterRelationshipIDs: event.AfterRelationshipIds,
+				OccurredAt: event.OccurredAt,
+			})
+		}
+	}
+	return dto, nil
 }
 
 func snapshotToDTO(snapshot *ent.RelationshipStateSnapshot) snapshotDTO {
@@ -366,6 +551,9 @@ func snapshotToDTO(snapshot *ent.RelationshipStateSnapshot) snapshotDTO {
 		ID:                snapshot.ID.String(),
 		Version:           snapshot.Version,
 		State:             state,
+		StateHash:         snapshot.StateHash,
+		ProjectorVersion:  snapshot.ProjectorVersion,
+		EvaluatedAt:       snapshot.EvaluatedAt,
 		ChangedDimensions: snapshot.ChangedDimensions,
 		AssertionIDs:      snapshot.AssertionIds,
 		CreatedAt:         snapshot.CreatedAt,
@@ -373,12 +561,55 @@ func snapshotToDTO(snapshot *ent.RelationshipStateSnapshot) snapshotDTO {
 }
 
 type sourceStatusDTO struct {
-	Source            string     `json:"source"`
-	SourceAccountID   string     `json:"sourceAccountId"`
-	Status            string     `json:"status"`
-	LastSuccessAt     *time.Time `json:"lastSuccessAt,omitempty"`
-	LastObservationAt *time.Time `json:"lastObservationAt,omitempty"`
-	LastError         string     `json:"lastError,omitempty"`
+	ConnectionID           string     `json:"connectionId"`
+	Source                 string     `json:"source"`
+	SourceAccountID        string     `json:"sourceAccountId"`
+	ConsentingActorID      *uuid.UUID `json:"consentingActorId,omitempty"`
+	Status                 string     `json:"status"`
+	BackfillPhase          string     `json:"backfillPhase"`
+	BackfillCompleted      int        `json:"backfillCompleted"`
+	BackfillTotal          int        `json:"backfillTotal"`
+	Completeness           string     `json:"completeness"`
+	ExpectedCadenceSeconds int64      `json:"expectedCadenceSeconds"`
+	LagSeconds             int64      `json:"lagSeconds"`
+	RequiredScopes         []string   `json:"requiredScopes"`
+	GrantedScopes          []string   `json:"grantedScopes"`
+	MissingScopes          []string   `json:"missingScopes"`
+	ErrorCode              string     `json:"errorCode,omitempty"`
+	RetryCount             int        `json:"retryCount"`
+	NextRetryAt            *time.Time `json:"nextRetryAt,omitempty"`
+	SyncStartedAt          *time.Time `json:"syncStartedAt,omitempty"`
+	AuthorizationStartedAt *time.Time `json:"authorizationStartedAt,omitempty"`
+	AuthorizedAt           *time.Time `json:"authorizedAt,omitempty"`
+	BackfillCompletedAt    *time.Time `json:"backfillCompletedAt,omitempty"`
+	LastFailedSyncAt       *time.Time `json:"lastFailedSyncAt,omitempty"`
+	DisconnectedAt         *time.Time `json:"disconnectedAt,omitempty"`
+	RevokedAt              *time.Time `json:"revokedAt,omitempty"`
+	LastSyncAt             *time.Time `json:"lastSyncAt,omitempty"`
+	LastSuccessAt          *time.Time `json:"lastSuccessAt,omitempty"`
+	LastObservationAt      *time.Time `json:"lastObservationAt,omitempty"`
+	LastProviderEventAt    *time.Time `json:"lastProviderEventAt,omitempty"`
+	LastError              string     `json:"lastError,omitempty"`
+}
+
+func sourceStatusToDTO(status *ent.RelationshipSourceStatus) sourceStatusDTO {
+	return sourceStatusDTO{
+		ConnectionID: status.ID.String(), Source: status.Source, SourceAccountID: status.SourceAccountID,
+		ConsentingActorID: status.ConsentingActorID, Status: status.Status,
+		BackfillPhase: status.BackfillPhase, BackfillCompleted: status.BackfillCompleted,
+		BackfillTotal: status.BackfillTotal, Completeness: status.Completeness,
+		ExpectedCadenceSeconds: status.ExpectedCadenceSeconds, LagSeconds: status.LagSeconds,
+		RequiredScopes: status.RequiredScopes, GrantedScopes: status.GrantedScopes,
+		MissingScopes: status.MissingScopes, ErrorCode: status.ErrorCode,
+		RetryCount: status.RetryCount, NextRetryAt: status.NextRetryAt,
+		SyncStartedAt: status.SyncStartedAt, AuthorizationStartedAt: status.AuthorizationStartedAt,
+		AuthorizedAt: status.AuthorizedAt, BackfillCompletedAt: status.BackfillCompletedAt,
+		LastFailedSyncAt: status.LastFailedSyncAt, DisconnectedAt: status.DisconnectedAt,
+		RevokedAt: status.RevokedAt, LastSyncAt: status.LastSyncAt,
+		LastSuccessAt: status.LastSuccessAt, LastObservationAt: status.LastObservationAt,
+		LastProviderEventAt: status.LastProviderEventAt,
+		LastError:           status.LastError,
+	}
 }
 
 // relationshipToDTOWithOpen is relationshipToDTO plus the open-loop count,
@@ -583,6 +814,18 @@ func (h *Handler) writeServiceError(w http.ResponseWriter, err error) {
 		httpx.Error(w, http.StatusNotFound, "not found", "not_found")
 	case errors.Is(err, ErrInvalidInput):
 		httpx.Error(w, http.StatusBadRequest, err.Error(), "invalid_input")
+	case errors.Is(err, ErrForbidden):
+		httpx.Error(w, http.StatusForbidden, "workspace role forbids this operation", "forbidden")
+	case errors.Is(err, ErrEvidenceEncryptionUnavailable):
+		httpx.Error(w, http.StatusServiceUnavailable, "tenant evidence encryption is unavailable", "evidence_encryption_unavailable")
+	case errors.Is(err, ErrEvidenceKeyDestroyed):
+		httpx.Error(w, http.StatusGone, "tenant evidence key has been destroyed", "evidence_key_destroyed")
+	case errors.Is(err, ErrCapabilityDisabled):
+		httpx.Error(w, http.StatusConflict, err.Error(), "capability_disabled")
+	case errors.Is(err, ErrIdentityUnresolved):
+		httpx.Error(w, http.StatusConflict, "action destination depends on unresolved identity", "identity_unresolved")
+	case errors.Is(err, ErrSourceIncomplete):
+		httpx.Error(w, http.StatusConflict, "required source evidence is incomplete or stale", "source_incomplete")
 	case errors.Is(err, ErrBlocked):
 		httpx.Error(w, http.StatusConflict, "action is blocked by policy", "blocked")
 	case errors.Is(err, ErrNoDecision):
@@ -647,6 +890,182 @@ func (h *Handler) LinkWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, h.workspaceDTO(ws))
+}
+
+type workspaceMemberDTO struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"userId"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+func workspaceMemberToDTO(member *ent.RevenueWorkspaceMember) workspaceMemberDTO {
+	dto := workspaceMemberDTO{
+		ID: member.ID.String(), Role: member.Role, Status: member.Status,
+		CreatedAt: member.CreatedAt, UpdatedAt: member.UpdatedAt,
+	}
+	if u, err := member.Edges.UserOrErr(); err == nil {
+		dto.UserID = u.ID.String()
+		dto.Email = u.Email
+	}
+	return dto
+}
+
+// ListWorkspaceMembers returns active tenant membership and role metadata.
+func (h *Handler) ListWorkspaceMembers(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	members, err := h.svc.ListWorkspaceMembers(r.Context(), u)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	out := make([]workspaceMemberDTO, 0, len(members))
+	for _, member := range members {
+		out = append(out, workspaceMemberToDTO(member))
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"members": out})
+}
+
+// UpsertWorkspaceMember creates or changes a tenant-scoped membership.
+func (h *Handler) UpsertWorkspaceMember(w http.ResponseWriter, r *http.Request) {
+	actor, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	targetID, ok := pathUUID(w, r, "userId")
+	if !ok {
+		return
+	}
+	var body struct {
+		Role string `json:"role"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	member, err := h.svc.UpsertWorkspaceMember(r.Context(), actor, targetID, body.Role)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	loaded, err := member.QueryUser().Only(r.Context())
+	if err == nil {
+		member.Edges.User = loaded
+	}
+	httpx.WriteJSON(w, http.StatusOK, workspaceMemberToDTO(member))
+}
+
+// RemoveWorkspaceMember deactivates a tenant membership by identifier.
+func (h *Handler) RemoveWorkspaceMember(w http.ResponseWriter, r *http.Request) {
+	actor, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	membershipID, ok := pathUUID(w, r, "membershipId")
+	if !ok {
+		return
+	}
+	member, err := h.svc.RemoveWorkspaceMember(r.Context(), actor, membershipID)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, workspaceMemberToDTO(member))
+}
+
+// TenantEvidenceKeyStatuses returns non-secret envelope-key lifecycle metadata.
+func (h *Handler) TenantEvidenceKeyStatuses(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	statuses, err := h.svc.TenantEvidenceKeyStatuses(r.Context(), u)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"keys": statuses})
+}
+
+// RotateTenantEvidenceKey creates the next wrapped tenant key version.
+func (h *Handler) RotateTenantEvidenceKey(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	status, err := h.svc.RotateTenantEvidenceKey(r.Context(), u)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, status)
+}
+
+// DestroyTenantEvidenceKeys performs owner-only cryptographic erasure.
+func (h *Handler) DestroyTenantEvidenceKeys(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Confirmation string `json:"confirmation"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	if body.Confirmation != "DESTROY EVIDENCE KEYS" {
+		h.writeServiceError(w, fmt.Errorf("%w: exact evidence-key destruction confirmation is required", ErrInvalidInput))
+		return
+	}
+	statuses, err := h.svc.DestroyTenantEvidenceKeys(r.Context(), u)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"keys": statuses})
+}
+
+// WorkspaceFeatureControls returns the tenant's explicit rollout controls.
+func (h *Handler) WorkspaceFeatureControls(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	controls, err := h.svc.WorkspaceFeatureControls(r.Context(), u)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"features": controls})
+}
+
+// SetWorkspaceFeatureControl applies one owner-managed rollout control.
+func (h *Handler) SetWorkspaceFeatureControl(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		Enabled      bool   `json:"enabled"`
+		RolloutStage string `json:"rolloutStage"`
+		ReasonCode   string `json:"reasonCode"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	control, err := h.svc.SetWorkspaceFeatureControl(
+		r.Context(), u, chi.URLParam(r, "capability"), body.Enabled, body.RolloutStage, body.ReasonCode,
+	)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, control)
 }
 
 // --- impact ------------------------------------------------------------------
@@ -912,23 +1331,22 @@ func (h *Handler) CreateRelationship(w http.ResponseWriter, r *http.Request) {
 
 // GetRelationship returns one relationship with its open loops.
 func (h *Handler) GetRelationship(w http.ResponseWriter, r *http.Request) {
-	if _, ok := h.viewer(w, r); !ok {
+	u, ok := h.viewer(w, r)
+	if !ok {
 		return
 	}
 	id, ok := pathUUID(w, r, "relationshipId")
 	if !ok {
 		return
 	}
-	rel, err := h.svc.GetRelationship(r.Context(), id)
+	missionControl, err := h.svc.MissionControl(r.Context(), u, id)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	intelligence, err := h.svc.RelationshipIntelligenceFor(r.Context(), rel)
-	if err != nil {
-		h.writeServiceError(w, err)
-		return
-	}
+	h.svc.recordMissionControlOpened(r.Context(), u, missionControl)
+	rel := missionControl.relationship
+	intelligence := *missionControl.intelligence
 	dto := relationshipToDTO(rel)
 	actions := make([]actionDTO, 0)
 	if list, err := rel.Edges.ActionsOrErr(); err == nil {
@@ -973,6 +1391,35 @@ func (h *Handler) GetRelationship(w http.ResponseWriter, r *http.Request) {
 		"commitments":            commitments,
 		"commitmentDependencies": dependencies,
 		"intelligence":           intelligence,
+		"missionControl":         missionControl,
+	})
+}
+
+// AcknowledgeMissionControl records a user's review of an exact state version.
+func (h *Handler) AcknowledgeMissionControl(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	var body struct {
+		StateVersion int    `json:"stateVersion"`
+		StateHash    string `json:"stateHash"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	ack, err := h.svc.AcknowledgeMissionControl(r.Context(), u, id, body.StateVersion, body.StateHash)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusCreated, map[string]any{
+		"id": ack.ID.String(), "stateVersion": ack.StateVersion,
+		"stateHash": ack.StateHash, "acknowledgedAt": ack.AcknowledgedAt,
 	})
 }
 
@@ -1424,6 +1871,178 @@ func (h *Handler) RequestConversationDeletion(w http.ResponseWriter, r *http.Req
 	httpx.WriteJSON(w, http.StatusAccepted, receipt)
 }
 
+// ListIdentityCandidates returns the workspace review inbox with bounded
+// filters and complete decision/lineage history.
+func (h *Handler) ListIdentityCandidates(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	filter := IdentityCandidateFilter{
+		Status: r.URL.Query().Get("status"),
+		Source: r.URL.Query().Get("source"),
+	}
+	if raw := r.URL.Query().Get("relationshipId"); raw != "" {
+		id, err := uuid.Parse(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid relationshipId", ErrInvalidInput))
+			return
+		}
+		filter.RelationshipID = id
+	}
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		limit, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid limit", ErrInvalidInput))
+			return
+		}
+		filter.Limit = limit
+	}
+	candidates, err := h.svc.ListIdentityCandidates(r.Context(), u, filter)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	out := make([]identityCandidateDTO, 0, len(candidates))
+	for _, candidate := range candidates {
+		dto, err := identityCandidateToDTO(candidate)
+		if err != nil {
+			h.writeServiceError(w, err)
+			return
+		}
+		out = append(out, dto)
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"candidates": out})
+}
+
+// GetIdentityCandidate returns one tenant-scoped identity ambiguity and lineage.
+func (h *Handler) GetIdentityCandidate(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "candidateId")
+	if !ok {
+		return
+	}
+	candidate, err := h.svc.GetIdentityCandidate(r.Context(), u, id)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	h.svc.recordIdentityCandidateViewed(r.Context(), u, candidate)
+	dto, err := identityCandidateToDTO(candidate)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, dto)
+}
+
+// DecideIdentityCandidate applies a version-bound human identity decision.
+func (h *Handler) DecideIdentityCandidate(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "candidateId")
+	if !ok {
+		return
+	}
+	var body struct {
+		Decision        string `json:"decision"`
+		Reason          string `json:"reason"`
+		ExpectedVersion int    `json:"expectedVersion"`
+		IdempotencyKey  string `json:"idempotencyKey"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	candidate, err := h.svc.DecideIdentityCandidate(r.Context(), u, id, IdentityDecisionInput{
+		Decision: body.Decision, Reason: body.Reason, ExpectedVersion: body.ExpectedVersion,
+		IdempotencyKey: body.IdempotencyKey,
+	})
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	dto, err := identityCandidateToDTO(candidate)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, dto)
+}
+
+// ListRelationshipAttention returns the durable portfolio review queue.
+func (h *Handler) ListRelationshipAttention(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	limit := 50
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid limit", ErrInvalidInput))
+			return
+		}
+		limit = value
+	}
+	items, err := h.svc.ListRelationshipAttention(r.Context(), u, r.URL.Query().Get("status"), limit)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	out := make([]relationshipAttentionDTO, 0, len(items))
+	for _, item := range items {
+		dto, err := relationshipAttentionToDTO(item)
+		if err != nil {
+			h.writeServiceError(w, err)
+			return
+		}
+		out = append(out, dto)
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{
+		"contractVersion": "relationship-attention.v1", "asOf": h.svc.now().UTC(), "items": out,
+	})
+}
+
+// DecideRelationshipAttention acknowledges, snoozes, or dismisses a queue item.
+func (h *Handler) DecideRelationshipAttention(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "attentionId")
+	if !ok {
+		return
+	}
+	var body struct {
+		Decision        string     `json:"decision"`
+		Reason          string     `json:"reason"`
+		ExpectedVersion int        `json:"expectedVersion"`
+		SnoozedUntil    *time.Time `json:"snoozedUntil"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	item, err := h.svc.DecideRelationshipAttention(r.Context(), u, id, AttentionDecisionInput{
+		Decision: body.Decision, Reason: body.Reason, ExpectedVersion: body.ExpectedVersion,
+		SnoozedUntil: body.SnoozedUntil,
+	})
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	dto, err := relationshipAttentionToDTO(item)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, dto)
+}
+
 // IngestRelationshipObservations is the shared adapter/desktop append-only
 // ingestion contract.
 func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.Request) {
@@ -1496,10 +2115,16 @@ func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.
 	}
 	out := make([]map[string]any, 0, len(results))
 	for _, result := range results {
+		projectionJobID := ""
+		if result.ProjectionJobID != uuid.Nil {
+			projectionJobID = result.ProjectionJobID.String()
+		}
 		out = append(out, map[string]any{
-			"observation":  observationToDTO(result.Observation),
-			"relationship": relationshipToDTO(result.Relationship),
-			"duplicate":    result.Duplicate,
+			"observation":      observationToDTO(result.Observation),
+			"relationship":     relationshipToDTO(result.Relationship),
+			"duplicate":        result.Duplicate,
+			"projectionStatus": result.ProjectionStatus,
+			"projectionJobId":  projectionJobID,
 		})
 	}
 	httpx.WriteJSON(w, http.StatusCreated, map[string]any{"results": out})
@@ -1596,10 +2221,11 @@ func (h *Handler) CorrectRelationship(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Dimension             string `json:"dimension"`
-		Value                 string `json:"value"`
-		Reason                string `json:"reason"`
-		SupersedesAssertionID string `json:"supersedesAssertionId"`
+		Dimension             string     `json:"dimension"`
+		Value                 string     `json:"value"`
+		Reason                string     `json:"reason"`
+		SupersedesAssertionID string     `json:"supersedesAssertionId"`
+		ValidTo               *time.Time `json:"validTo"`
 	}
 	if !httpx.DecodeJSON(w, r, maxBody, &body) {
 		return
@@ -1609,12 +2235,44 @@ func (h *Handler) CorrectRelationship(w http.ResponseWriter, r *http.Request) {
 		Value:                 body.Value,
 		Reason:                body.Reason,
 		SupersedesAssertionID: body.SupersedesAssertionID,
+		ValidTo:               body.ValidTo,
 	})
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
 	httpx.WriteJSON(w, http.StatusCreated, relationshipToDTO(rel))
+}
+
+// RetractRelationshipAssertion ends one user correction without rewriting its
+// immutable history and returns the resulting canonical relationship state.
+func (h *Handler) RetractRelationshipAssertion(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	relationshipID, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	assertionID, ok := pathUUID(w, r, "assertionId")
+	if !ok {
+		return
+	}
+	var body struct {
+		Reason string `json:"reason"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	rel, err := h.svc.RetractRelationshipAssertion(
+		r.Context(), u, relationshipID, assertionID, body.Reason,
+	)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, relationshipToDTO(rel))
 }
 
 // RelationshipSourceStatuses returns ingestion status for configured relationship sources.
@@ -1630,16 +2288,113 @@ func (h *Handler) RelationshipSourceStatuses(w http.ResponseWriter, r *http.Requ
 	}
 	out := make([]sourceStatusDTO, 0, len(statuses))
 	for _, status := range statuses {
-		out = append(out, sourceStatusDTO{
-			Source:            status.Source,
-			SourceAccountID:   status.SourceAccountID,
-			Status:            status.Status,
-			LastSuccessAt:     status.LastSuccessAt,
-			LastObservationAt: status.LastObservationAt,
-			LastError:         status.LastError,
-		})
+		out = append(out, sourceStatusToDTO(status))
 	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"sources": out})
+}
+
+// BetaDiagnostics exports tenant-scoped, content-free support diagnostics.
+func (h *Handler) BetaDiagnostics(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	diagnostics, err := h.svc.BetaDiagnostics(r.Context(), u)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, diagnostics)
+}
+
+// RelationshipSourceInventory returns guided connector and lifecycle cards.
+func (h *Handler) RelationshipSourceInventory(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	inventory, err := h.svc.RelationshipSourceInventory(r.Context(), u)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	type inventoryItem struct {
+		SourceDescriptor
+		Accounts []sourceStatusDTO `json:"accounts"`
+	}
+	out := make([]inventoryItem, 0, len(inventory))
+	for _, item := range inventory {
+		accounts := make([]sourceStatusDTO, 0, len(item.Accounts))
+		for _, account := range item.Accounts {
+			accounts = append(accounts, sourceStatusToDTO(account))
+		}
+		out = append(out, inventoryItem{SourceDescriptor: item.SourceDescriptor, Accounts: accounts})
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"sources": out})
+}
+
+// BeginSourceBackfill queues bounded work for an authorized provider account.
+func (h *Handler) BeginSourceBackfill(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		SourceAccountID string `json:"sourceAccountId"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	status, err := h.svc.BeginSourceBackfill(
+		r.Context(), u, chi.URLParam(r, "source"), body.SourceAccountID,
+	)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusAccepted, sourceStatusToDTO(status))
+}
+
+// ReportSourceAuthorization records a bounded provider-consent transition.
+func (h *Handler) ReportSourceAuthorization(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		SourceAccountID string   `json:"sourceAccountId"`
+		State           string   `json:"state"`
+		GrantedScopes   []string `json:"grantedScopes"`
+		ErrorCode       string   `json:"errorCode"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	status, err := h.svc.ReportSourceAuthorization(r.Context(), u, chi.URLParam(r, "source"), SourceAuthorizationInput{
+		SourceAccountID: body.SourceAccountID, State: body.State,
+		GrantedScopes: body.GrantedScopes, ErrorCode: body.ErrorCode,
+	})
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, sourceStatusToDTO(status))
+}
+
+// DisconnectRelationshipSource makes a tenant source disconnect explicit.
+func (h *Handler) DisconnectRelationshipSource(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	status, err := h.svc.MarkSourceDisconnected(
+		r.Context(), u, chi.URLParam(r, "source"), chi.URLParam(r, "sourceAccountId"),
+	)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, sourceStatusToDTO(status))
 }
 
 // --- action endpoints --------------------------------------------------------

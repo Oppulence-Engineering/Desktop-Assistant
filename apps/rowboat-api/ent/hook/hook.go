@@ -465,6 +465,18 @@ func (f RelationshipAssertionFunc) Mutate(ctx context.Context, m ent.Mutation) (
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipAssertionMutation", m)
 }
 
+// The RelationshipAttentionItemFunc type is an adapter to allow the use of ordinary
+// function as RelationshipAttentionItem mutator.
+type RelationshipAttentionItemFunc func(context.Context, *ent.RelationshipAttentionItemMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationshipAttentionItemFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelationshipAttentionItemMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipAttentionItemMutation", m)
+}
+
 // The RelationshipIdentityFunc type is an adapter to allow the use of ordinary
 // function as RelationshipIdentity mutator.
 type RelationshipIdentityFunc func(context.Context, *ent.RelationshipIdentityMutation) (ent.Value, error)
@@ -475,6 +487,42 @@ func (f RelationshipIdentityFunc) Mutate(ctx context.Context, m ent.Mutation) (e
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipIdentityMutation", m)
+}
+
+// The RelationshipIdentityCandidateFunc type is an adapter to allow the use of ordinary
+// function as RelationshipIdentityCandidate mutator.
+type RelationshipIdentityCandidateFunc func(context.Context, *ent.RelationshipIdentityCandidateMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationshipIdentityCandidateFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelationshipIdentityCandidateMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipIdentityCandidateMutation", m)
+}
+
+// The RelationshipIdentityDecisionFunc type is an adapter to allow the use of ordinary
+// function as RelationshipIdentityDecision mutator.
+type RelationshipIdentityDecisionFunc func(context.Context, *ent.RelationshipIdentityDecisionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationshipIdentityDecisionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelationshipIdentityDecisionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipIdentityDecisionMutation", m)
+}
+
+// The RelationshipLineageEventFunc type is an adapter to allow the use of ordinary
+// function as RelationshipLineageEvent mutator.
+type RelationshipLineageEventFunc func(context.Context, *ent.RelationshipLineageEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationshipLineageEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelationshipLineageEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipLineageEventMutation", m)
 }
 
 // The RelationshipObservationFunc type is an adapter to allow the use of ordinary
@@ -499,6 +547,30 @@ func (f RelationshipParticipantFunc) Mutate(ctx context.Context, m ent.Mutation)
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipParticipantMutation", m)
+}
+
+// The RelationshipProjectionJobFunc type is an adapter to allow the use of ordinary
+// function as RelationshipProjectionJob mutator.
+type RelationshipProjectionJobFunc func(context.Context, *ent.RelationshipProjectionJobMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationshipProjectionJobFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelationshipProjectionJobMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipProjectionJobMutation", m)
+}
+
+// The RelationshipReviewAcknowledgementFunc type is an adapter to allow the use of ordinary
+// function as RelationshipReviewAcknowledgement mutator.
+type RelationshipReviewAcknowledgementFunc func(context.Context, *ent.RelationshipReviewAcknowledgementMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationshipReviewAcknowledgementFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelationshipReviewAcknowledgementMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationshipReviewAcknowledgementMutation", m)
 }
 
 // The RelationshipSourceStatusFunc type is an adapter to allow the use of ordinary
@@ -585,6 +657,18 @@ func (f RevenueOutboxEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RevenueOutboxEventMutation", m)
 }
 
+// The RevenueTrustEventFunc type is an adapter to allow the use of ordinary
+// function as RevenueTrustEvent mutator.
+type RevenueTrustEventFunc func(context.Context, *ent.RevenueTrustEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RevenueTrustEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RevenueTrustEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RevenueTrustEventMutation", m)
+}
+
 // The RevenueWorkspaceFunc type is an adapter to allow the use of ordinary
 // function as RevenueWorkspace mutator.
 type RevenueWorkspaceFunc func(context.Context, *ent.RevenueWorkspaceMutation) (ent.Value, error)
@@ -633,6 +717,18 @@ func (f SubscriptionHistoryFunc) Mutate(ctx context.Context, m ent.Mutation) (en
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SubscriptionHistoryMutation", m)
 }
 
+// The TenantEvidenceKeyFunc type is an adapter to allow the use of ordinary
+// function as TenantEvidenceKey mutator.
+type TenantEvidenceKeyFunc func(context.Context, *ent.TenantEvidenceKeyMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TenantEvidenceKeyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TenantEvidenceKeyMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TenantEvidenceKeyMutation", m)
+}
+
 // The UserFunc type is an adapter to allow the use of ordinary
 // function as User mutator.
 type UserFunc func(context.Context, *ent.UserMutation) (ent.Value, error)
@@ -655,6 +751,18 @@ func (f UserHistoryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserHistoryMutation", m)
+}
+
+// The WorkspaceFeatureControlFunc type is an adapter to allow the use of ordinary
+// function as WorkspaceFeatureControl mutator.
+type WorkspaceFeatureControlFunc func(context.Context, *ent.WorkspaceFeatureControlMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f WorkspaceFeatureControlFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.WorkspaceFeatureControlMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.WorkspaceFeatureControlMutation", m)
 }
 
 // Condition is a hook condition function.

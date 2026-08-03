@@ -35,6 +35,9 @@ export interface Counterparty {
   /** Extra context from the knowledge index, when there is any. */
   organization?: string;
   role?: string;
+  /** Exact shared-model destination chosen by the user, when available. */
+  relationshipId?: string;
+  accountDomain?: string;
 }
 
 export interface CounterpartyResolution {

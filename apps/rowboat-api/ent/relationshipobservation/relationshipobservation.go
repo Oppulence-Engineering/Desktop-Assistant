@@ -41,6 +41,8 @@ const (
 	FieldContentHash = "content_hash"
 	// FieldPayloadCiphertext holds the string denoting the payload_ciphertext field in the database.
 	FieldPayloadCiphertext = "payload_ciphertext"
+	// FieldEncryptionKeyVersion holds the string denoting the encryption_key_version field in the database.
+	FieldEncryptionKeyVersion = "encryption_key_version"
 	// EdgeWorkspace holds the string denoting the workspace edge name in mutations.
 	EdgeWorkspace = "workspace"
 	// EdgeRelationship holds the string denoting the relationship edge name in mutations.
@@ -97,6 +99,7 @@ var Columns = []string{
 	FieldNormalizedFactsJSON,
 	FieldContentHash,
 	FieldPayloadCiphertext,
+	FieldEncryptionKeyVersion,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "relationship_observations"
@@ -141,6 +144,10 @@ var (
 	DefaultNormalizedFactsJSON string
 	// ContentHashValidator is a validator for the "content_hash" field. It is called by the builders before save.
 	ContentHashValidator func(string) error
+	// DefaultEncryptionKeyVersion holds the default value on creation for the "encryption_key_version" field.
+	DefaultEncryptionKeyVersion int
+	// EncryptionKeyVersionValidator is a validator for the "encryption_key_version" field. It is called by the builders before save.
+	EncryptionKeyVersionValidator func(int) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -211,6 +218,11 @@ func ByNormalizedFactsJSON(opts ...sql.OrderTermOption) OrderOption {
 // ByContentHash orders the results by the content_hash field.
 func ByContentHash(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldContentHash, opts...).ToFunc()
+}
+
+// ByEncryptionKeyVersion orders the results by the encryption_key_version field.
+func ByEncryptionKeyVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEncryptionKeyVersion, opts...).ToFunc()
 }
 
 // ByWorkspaceField orders the results by workspace field.

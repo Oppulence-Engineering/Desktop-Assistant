@@ -308,6 +308,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/background-tasks/first-party/ensure": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Ensure first-party workflows
+     * @description Idempotently provisions or upgrades the six Oppulence-managed relationship workflows for the authenticated user. User pause choices are preserved during definition upgrades. Replica races converge on the same per-user task slugs.
+     */
+    post: operations["ensureFirstPartyBackgroundTasks"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/background-tasks/{slug}": {
     parameters: {
       query?: never;
@@ -1056,6 +1076,126 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/relationship-attention": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List portfolio attention
+     * @description Returns deterministic relationship-native attention ordered by explicit factor contributions.
+     */
+    get: operations["listRelationshipAttention"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship-attention/{attentionId}/decisions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decide attention item
+     * @description Acknowledges, snoozes, or dismisses at the expected optimistic version. Materially new evidence reopens the item.
+     */
+    post: operations["decideRelationshipAttention"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship-beta/diagnostics": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Export redacted beta diagnostics
+     * @description Returns metadata-only rollout, source, queue, projection, uncertainty, and trust-funnel diagnostics for workspace administrators. Customer content, credentials, cursors, raw errors, and correlation identifiers are excluded.
+     */
+    get: operations["getRelationshipBetaDiagnostics"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship-identity-candidates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List identity review candidates
+     * @description Lists durable exact-anchor conflicts with bounded filters, impact preview, decision history, and lineage.
+     */
+    get: operations["listRelationshipIdentityCandidates"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship-identity-candidates/{candidateId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Inspect identity candidate
+     * @description Returns exact anchors, provider records, evidence range, impact, advisory confidence, immutable decisions, and lineage.
+     */
+    get: operations["getRelationshipIdentityCandidate"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship-identity-candidates/{candidateId}/decisions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decide identity candidate
+     * @description Applies merge, keep-separate, move-evidence, split, defer, or compensating undo once at the expected optimistic version.
+     */
+    post: operations["decideRelationshipIdentityCandidate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/relationship-observations/batch": {
     parameters: {
       query?: never;
@@ -1116,6 +1256,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/relationship-sources": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List guided source connections
+     * @description Returns Google, Slack, and HubSpot capability/scopes plus durable account lifecycle state. No token, secret, or raw cursor is exposed.
+     */
+    get: operations["getRelationshipSourceInventory"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/relationship-sources/status": {
     parameters: {
       query?: never;
@@ -1125,11 +1285,71 @@ export interface paths {
     };
     /**
      * Get source health
-     * @description Returns freshness and failure state for each relationship evidence source.
+     * @description Returns authorization, backfill, freshness, failure, repair, revocation, and disconnect state for each relationship evidence source.
      */
     get: operations["getRelationshipSourceStatuses"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship-sources/{source}/authorization": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Report source authorization lifecycle
+     * @description Records the bounded consent state, actor, granted read scopes, and safe categorical failure without exposing provider tokens or authorization codes.
+     */
+    post: operations["reportRelationshipSourceAuthorization"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship-sources/{source}/resync": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Resync a source
+     * @description Explicitly starts or resumes a durable source backfill and immediately marks relationship completeness rebuilding.
+     */
+    post: operations["resyncRelationshipSource"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship-sources/{source}/{sourceAccountId}/disconnect": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Disconnect relationship source
+     * @description Marks the relationship-facing source disconnected and immediately downgrades completeness. Credential revocation remains owned by the connector path shown on the source card.
+     */
+    post: operations["disconnectRelationshipSource"];
     delete?: never;
     options?: never;
     head?: never;
@@ -1160,6 +1380,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/relationships/graph": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the relationship graph
+     * @description Returns the shared versioned graph read model for an account or the authorized portfolio. Historical asOf reads exclude later evidence and proposed actions.
+     */
+    get: operations["getRelationshipGraph"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/relationships/{relationshipId}": {
     parameters: {
       query?: never;
@@ -1174,6 +1414,46 @@ export interface paths {
     get: operations["getRelationship"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/acknowledgements": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Acknowledge Mission Control state
+     * @description Records the exact state version and hash the actor reviewed. A stale acknowledgement fails with 409.
+     */
+    post: operations["acknowledgeMissionControl"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationships/{relationshipId}/assertions/{assertionId}/retract": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Retract a relationship correction
+     * @description Ends one active user correction without rewriting its immutable history, then reprojects at the same explicit evaluation time.
+     */
+    post: operations["retractRelationshipAssertion"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2698,10 +2978,42 @@ export interface components {
        */
       revision: number;
       /**
+       * @description Latest schedule reconciliation error, empty when healthy.
+       * @example
+       */
+      scheduleSyncError?: string | null;
+      /**
+       * @description Server-owned Temporal schedule reconciliation state.
+       * @example current
+       * @enum {string}
+       */
+      scheduleSyncState: "current" | "syncing" | "failed" | "paused";
+      /**
+       * Format: date-time
+       * @description Last successful schedule reconciliation timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      scheduleSyncedAt?: string | null;
+      /**
        * @description Stable per-user background task slug matching bg-tasks/<slug> locally.
        * @example daily-summary
        */
       slug: string;
+      /**
+       * @description Whether Oppulence owns and upgrades this definition. Managed tasks can be paused but not deleted or edited.
+       * @example false
+       */
+      systemManaged: boolean;
+      /**
+       * @description First-party template that owns this definition. Empty for user-authored tasks.
+       * @example relationship-refresh
+       */
+      templateSlug?: string | null;
+      /**
+       * @description Installed version of the owning first-party template. Zero for user-authored tasks.
+       * @example 1
+       */
+      templateVersion?: number;
       /**
        * @description Task trigger configuration mirrored from the desktop task.yaml. Common shapes include cron schedules, window schedules, or event subscriptions. Null clears the mirrored trigger config on PATCH.
        * @example {
@@ -3542,6 +3854,11 @@ export interface components {
        */
       executionTarget: "api" | "desktop";
       /**
+       * @description Whether the template is installed and maintained automatically by Oppulence.
+       * @example false
+       */
+      firstParty: boolean;
+      /**
        * @description Default task instructions.
        * @example Review recent important Gmail messages and produce a markdown digest.
        */
@@ -3583,6 +3900,11 @@ export interface components {
        *     }
        */
       triggers?: unknown;
+      /**
+       * @description Monotonic product definition version used for safe upgrades.
+       * @example 1
+       */
+      version: number;
     };
     /** @description Overrides applied while creating a task from a built-in template. Omitted fields use template defaults. */
     BackgroundTaskTemplateInstantiateRequest: {
@@ -3644,6 +3966,157 @@ export interface components {
        * @enum {string}
        */
       trigger?: "manual" | "cron" | "window" | "event";
+    };
+    /** @description Metadata-only support export. It excludes relationship names, addresses, evidence, action bodies, tokens, cursors, raw errors, and correlation identifiers. */
+    BetaDiagnostics: {
+      /** @description Release guardrail checks. */
+      checks: {
+        /**
+         * @description Stable check code.
+         * @example projection_dead_letter
+         */
+        code: string;
+        /**
+         * @description Affected objects.
+         * @example 0
+         */
+        count: number;
+        /**
+         * @description Content-free operator explanation.
+         * @example No relationship projection is dead-lettered.
+         */
+        explanation: string;
+        /**
+         * @description Check state.
+         * @example pass
+         * @enum {string}
+         */
+        status: "pass" | "attention";
+      }[];
+      /** @description Bounded operational counts keyed by stable category. */
+      counts: {
+        [key: string]: unknown;
+      };
+      /** @description Workspace rollout controls. */
+      features: {
+        /**
+         * @description Capability id.
+         * @example action_gmail
+         */
+        capability: string;
+        /**
+         * @description Whether enabled.
+         * @example false
+         */
+        enabled: boolean;
+        /**
+         * @description Categorical change reason.
+         * @example internal_canary
+         */
+        reasonCode?: string;
+        /**
+         * @description Rollout stage.
+         * @example internal_read_only
+         */
+        rolloutStage: string;
+      }[];
+      /**
+       * Format: date-time
+       * @description Generation time.
+       * @example 2026-08-01T15:00:00Z
+       */
+      generatedAt: string;
+      /**
+       * @description Diagnostics contract version.
+       * @example tfa-support-v1
+       */
+      schemaVersion: string;
+      /** @description Redacted connection lifecycle metadata. */
+      sources: {
+        /**
+         * @description Completed units.
+         * @example 20
+         */
+        backfillCompleted: number;
+        /**
+         * @description Backfill phase.
+         * @example failed
+         */
+        backfillPhase: string;
+        /**
+         * @description Total units.
+         * @example 100
+         */
+        backfillTotal: number;
+        /**
+         * @description Completeness state.
+         * @example stale
+         */
+        completeness: string;
+        /**
+         * @description One-way connection support reference.
+         * @example connection:sha256:ab12
+         */
+        connectionRef: string;
+        /**
+         * @description Safe categorical error.
+         * @example provider_outage
+         */
+        errorCode?: string;
+        /**
+         * @description Current lag.
+         * @example 900
+         */
+        lagSeconds: number;
+        /**
+         * @description Count only; scope values remain on the user-facing connection card.
+         * @example 0
+         */
+        missingScopeCount: number;
+        /**
+         * @description Retry attempts.
+         * @example 2
+         */
+        retryCount: number;
+        /**
+         * @description Provider.
+         * @example hubspot
+         */
+        source: string;
+        /**
+         * @description One-way provider account support reference.
+         * @example source-account:sha256:cd34
+         */
+        sourceAccountRef: string;
+        /**
+         * @description Lifecycle state.
+         * @example degraded
+         */
+        status: string;
+      }[];
+      /** @description Categorical trust funnel totals. */
+      trustFunnel: {
+        /**
+         * @description Total.
+         * @example 12
+         */
+        count: number;
+        /**
+         * @description Event category.
+         * @example mission_control_opened
+         */
+        eventName: string;
+        /**
+         * @description Outcome category.
+         * @example viewed
+         */
+        outcome: string;
+      }[];
+      /**
+       * @description One-way workspace support reference.
+       * @example workspace:sha256:ab12
+       */
+      workspaceRef: string;
     };
     /** @description Current plan, status, trial, and usage for the authenticated user. */
     BillingState: {
@@ -5676,6 +6149,85 @@ export interface components {
       /** @description User that owns this row. */
       user: components["schemas"]["User"];
     };
+    /** @description One server-owned, version-consistent answer to state, change, evidence, action, completeness, and control. */
+    MissionControlReadModel: {
+      /** @description Active revision-bound recommendation and factors. */
+      activeRecommendation?: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Stable hash of every material answer in this aggregate.
+       * @example sha256:cd34
+       */
+      aggregateHash: string;
+      /**
+       * Format: date-time
+       * @description Explicit response boundary.
+       * @example 2026-07-31T14:00:00Z
+       */
+      asOf: string;
+      /** @description Authorized operation links. */
+      capabilities: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Whether material state changed.
+       * @example true
+       */
+      changedSinceReview: boolean;
+      /** @description Dimension-level changes. */
+      changes: {
+        [key: string]: unknown;
+      }[];
+      /** @description Source coverage, missing dimensions, ambiguity, and external-action safety. */
+      completeness: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Read-contract version.
+       * @example tfa-2026-07-31
+       */
+      contractVersion: string;
+      /**
+       * @description Detector version.
+       * @example 1
+       */
+      detectorVersion: number;
+      /** @description Dimension-keyed winning assertions and evidence references. */
+      evidence: {
+        [key: string]: unknown;
+      };
+      /**
+       * Format: date-time
+       * @description Earliest source freshness boundary.
+       * @example 2026-07-31T14:30:00Z
+       */
+      freshnessBoundary?: string | null;
+      /** @description Pending correction, identity, approval, execution, and reconciliation counts. */
+      pending: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Last acknowledged version.
+       * @example 3
+       */
+      previousReviewedStateVersion: number;
+      /**
+       * @description Projector version.
+       * @example 1
+       */
+      projectorVersion: number;
+      /**
+       * @description Stable state hash.
+       * @example sha256:ab12
+       */
+      stateHash: string;
+      /**
+       * @description Relationship state version.
+       * @example 4
+       */
+      stateVersion: number;
+    };
     /** @description Long-lived third-party OAuth connection such as Google. Refresh tokens are sealed before storage. */
     OAuthConnection: {
       /**
@@ -5988,6 +6540,7 @@ export interface components {
       account_domain?: string;
       actions?: components["schemas"]["RevenueAction"][];
       assertions?: components["schemas"]["RelationshipAssertion"][];
+      attention_items?: components["schemas"]["RelationshipAttentionItem"][];
       commitment_dependencies?: components["schemas"]["CommitmentDependency"][];
       commitment_events?: components["schemas"]["CommitmentEvent"][];
       commitments?: components["schemas"]["Commitment"][];
@@ -6001,6 +6554,7 @@ export interface components {
       display_name: string;
       engagement: string;
       evidences?: components["schemas"]["RevenueEvidence"][];
+      existing_identity_candidates?: components["schemas"]["RelationshipIdentityCandidate"][];
       health: string;
       /**
        * Format: uuid
@@ -6025,10 +6579,17 @@ export interface components {
       outbound_lead_id?: string;
       participants?: components["schemas"]["RelationshipParticipant"][];
       primary_email?: string;
+      /** Format: date-time */
+      projected_at?: string;
+      projection_jobs?: components["schemas"]["RelationshipProjectionJob"][];
+      projector_version: number;
+      proposed_identity_candidates?: components["schemas"]["RelationshipIdentityCandidate"][];
       resource_refs: string[];
+      review_acknowledgements?: components["schemas"]["RelationshipReviewAcknowledgement"][];
       risks: string[];
       sentiment: string;
       snapshots?: components["schemas"]["RelationshipStateSnapshot"][];
+      state_hash?: string;
       state_reason?: string;
       state_version: number;
       /**
@@ -6037,6 +6598,7 @@ export interface components {
        */
       status: string;
       summary?: string;
+      trust_events?: components["schemas"]["RevenueTrustEvent"][];
       /**
        * Format: date-time
        * @description Last row update timestamp.
@@ -6057,6 +6619,7 @@ export interface components {
        */
       created_at: string;
       dimension: string;
+      extractor_version: string;
       /**
        * Format: uuid
        * @description Stable UUID primary key.
@@ -6064,6 +6627,7 @@ export interface components {
        */
       id: string;
       observation?: components["schemas"]["RelationshipObservation"];
+      projector_compat_version: number;
       /**
        * @description Reason code for the ledger entry.
        * @example llm_settle
@@ -6078,7 +6642,15 @@ export interface components {
         | "grant"
         | "refund";
       relationship: components["schemas"]["Relationship"];
+      /** Format: date-time */
+      retracted_at?: string;
+      retraction_reason?: string;
       source_type: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
       supersedes_assertion_id?: string;
       supporting_observation_ids: string[];
       /**
@@ -6091,8 +6663,160 @@ export interface components {
       user: components["schemas"]["User"];
       /** Format: date-time */
       valid_from: string;
+      /** Format: date-time */
+      valid_to?: string;
       value: string;
       workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description Versioned relationship-native reason for portfolio attention. */
+    RelationshipAttentionItem: {
+      /**
+       * Format: date-time
+       * @description Acknowledged time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      acknowledgedAt?: string | null;
+      /**
+       * Format: uuid
+       * @description Acknowledging actor.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      acknowledgedBy?: string;
+      /**
+       * Format: date-time
+       * @description Created time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      createdAt: string;
+      /**
+       * @description Detector version.
+       * @example 1
+       */
+      detectorVersion: number;
+      /**
+       * Format: date-time
+       * @description Dismissed time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      dismissedAt?: string | null;
+      /**
+       * Format: uuid
+       * @description Dismissing actor.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      dismissedBy?: string;
+      /** @description Evidence refs. */
+      evidenceRefs: string[];
+      /**
+       * Format: date-time
+       * @description Expiry time.
+       * @example 2026-08-07T14:00:00Z
+       */
+      expiresAt?: string | null;
+      /**
+       * @description Readable explanation.
+       * @example A confirmed commitment is overdue by two days.
+       */
+      explanation: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * Format: uuid
+       * @description Owner id.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      ownerId?: string;
+      /**
+       * @description Projector version.
+       * @example 1
+       */
+      projectorVersion: number;
+      /** @description Readable factor contributions. */
+      rankFactors: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Internal deterministic rank.
+       * @example 82
+       */
+      rankScore: number;
+      /**
+       * @description Detector reason.
+       * @example overdue_commitment
+       */
+      reasonCode: string;
+      /**
+       * Format: uuid
+       * @description Recommendation id.
+       * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      recommendationId?: string;
+      /**
+       * @description Recommendation revision.
+       * @example 2
+       */
+      recommendationRevision?: number;
+      /**
+       * Format: uuid
+       * @description Relationship id.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      relationshipId: string;
+      /**
+       * @description Relationship name.
+       * @example Acme
+       */
+      relationshipName: string;
+      /**
+       * @description Relationship version evaluated.
+       * @example 4
+       */
+      relationshipStateVersion: number;
+      /**
+       * Format: date-time
+       * @description Snooze time.
+       * @example 2026-08-07T14:00:00Z
+       */
+      snoozedUntil?: string | null;
+      /** @description Fresh sources required. */
+      sourceRequirements: string[];
+      /**
+       * @description Triage reason.
+       * @example Reviewed with account owner.
+       */
+      stateReason?: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       * @enum {string}
+       */
+      status: "open" | "acknowledged" | "snoozed" | "dismissed" | "superseded" | "resolved";
+      /**
+       * @description Triggering object.
+       * @example commitment:123
+       */
+      triggeringObjectRef: string;
+      /**
+       * Format: date-time
+       * @description Updated time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      updatedAt: string;
+      /**
+       * @description Urgency.
+       * @example high
+       * @enum {string}
+       */
+      urgencyBand: "low" | "normal" | "high" | "critical";
+      /**
+       * @description Optimistic version.
+       * @example 1
+       */
+      version: number;
     };
     /** @description An open or completed promise attached to the relationship. */
     RelationshipCommitment: {
@@ -6134,6 +6858,265 @@ export interface components {
        */
       userConfirmed: boolean;
     };
+    /** @description Shared read model for Account Graph and Portfolio Graph in web and desktop. Historical reads are bounded by asOf and every governed action remains permission-gated. */
+    RelationshipGraph: {
+      /**
+       * Format: date-time
+       * @description Historical evidence boundary.
+       * @example 2026-08-01T14:00:00Z
+       */
+      asOf: string;
+      /**
+       * @description Wire contract version.
+       * @example 2026-08-01
+       */
+      contractVersion: string;
+      /** @example 2 */
+      depth: number;
+      /** @description Typed directed edges. */
+      edges: components["schemas"]["RelationshipGraphEdge"][];
+      /**
+       * Format: date-time
+       * @description Projection generation time.
+       * @example 2026-08-01T14:00:00Z
+       */
+      generatedAt: string;
+      /**
+       * @description Whether the response is an historical projection.
+       * @example false
+       */
+      historical: boolean;
+      /** @description Typed nodes. */
+      nodes: components["schemas"]["RelationshipGraphNode"][];
+      /** @description Viewer capabilities for this projection. */
+      permissions: {
+        /**
+         * @description May approve current action revisions.
+         * @example false
+         */
+        canApprove: boolean;
+        /**
+         * @description May propose state or actions.
+         * @example true
+         */
+        canContribute: boolean;
+        /**
+         * @description May explicitly execute approved actions.
+         * @example false
+         */
+        canExecute: boolean;
+        /**
+         * @description May save graph views.
+         * @example true
+         */
+        canSaveViews: boolean;
+        /**
+         * @description May view.
+         * @example true
+         */
+        canView: boolean;
+      };
+      /**
+       * Format: uuid
+       * @description Relationship id for account scope.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      relationshipId?: string;
+      /**
+       * @description Graph scope.
+       * @example portfolio
+       * @enum {string}
+       */
+      scope: "portfolio" | "relationship";
+    };
+    /** @description A typed graph edge whose source-to-target direction is semantically meaningful. */
+    RelationshipGraphEdge: {
+      /** @example 0.88 */
+      confidence?: number;
+      /**
+       * @description Whether the source-to-target direction is meaningful.
+       * @example true
+       */
+      directed: boolean;
+      /** @description Evidence supporting the connection. */
+      evidenceRefs: string[];
+      /**
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Edge kind.
+       * @example requires
+       * @enum {string}
+       */
+      kind:
+        | "participant_of"
+        | "owns"
+        | "has_commitment"
+        | "blocks"
+        | "requires"
+        | "supersedes"
+        | "has_risk"
+        | "has_milestone"
+        | "recommended_for"
+        | "supports"
+        | "contradicts"
+        | "observed_from"
+        | "linked_note";
+      /**
+       * @description Human-readable edge label.
+       * @example requires
+       */
+      label: string;
+      /**
+       * @description Source node id.
+       * @example commitment:1
+       */
+      source: string;
+      /**
+       * @description Target node id.
+       * @example commitment:2
+       */
+      target: string;
+    };
+    /** @description A versioned, typed relationship graph node. Meaning is explicit so clients can render status without relying on color alone. */
+    RelationshipGraphNode: {
+      /**
+       * @description Action approval state.
+       * @example pending
+       */
+      approvalStatus?: string;
+      /** @description Changed state dimensions. */
+      changedDimensions: string[];
+      /**
+       * @description Whether this state is newer than the viewer's acknowledgement.
+       * @example true
+       */
+      changedSinceReview: boolean;
+      /** @example 0.88 */
+      confidence?: number;
+      /**
+       * Format: date-time
+       * @description Due time.
+       * @example 2026-08-12T14:00:00Z
+       */
+      dueAt?: string | null;
+      /**
+       * @description Engagement state.
+       * @example declining
+       */
+      engagement?: string;
+      /** @description Inspectable evidence ids. */
+      evidenceRefs: string[];
+      /**
+       * @description Action execution state.
+       * @example pending
+       */
+      executionStatus?: string;
+      /**
+       * @description Evidence freshness.
+       * @example current
+       * @enum {string}
+       */
+      freshness?: "current" | "aging" | "stale" | "unknown";
+      /**
+       * @description Health state.
+       * @example needs_attention
+       */
+      health?: string;
+      /**
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Node kind.
+       * @example relationship
+       * @enum {string}
+       */
+      kind:
+        | "relationship"
+        | "person"
+        | "commitment"
+        | "risk"
+        | "milestone"
+        | "action"
+        | "evidence"
+        | "source"
+        | "note";
+      /**
+       * @description Human-readable label.
+       * @example Northstar Labs
+       */
+      label: string;
+      /**
+       * @description Commercial lifecycle.
+       * @example renewal
+       */
+      lifecycle?: string;
+      /** @description Kind-specific bounded metadata. */
+      metadata: {
+        [key: string]: unknown;
+      };
+      /**
+       * Format: date-time
+       * @description Evidence occurrence time.
+       * @example 2026-08-01T14:00:00Z
+       */
+      occurredAt?: string | null;
+      /**
+       * @description Action policy state.
+       * @example passed
+       */
+      policyStatus?: string;
+      /** @example 82 */
+      priority?: number;
+      /**
+       * Format: uuid
+       * @description Primary relationship id when applicable.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      relationshipId?: string;
+      /** @description All associated relationships, including shared participants. */
+      relationshipIds: string[];
+      /**
+       * @description Underlying record id used by explicit Open actions.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      resourceRef?: string;
+      /**
+       * @description Participant role.
+       * @example champion
+       */
+      role?: string;
+      /**
+       * @description Sentiment state.
+       * @example mixed
+       */
+      sentiment?: string;
+      /**
+       * @description Evidence source.
+       * @example meeting
+       */
+      source?: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status?: string;
+      /**
+       * @description Evidence-backed summary.
+       * @example Security review is overdue.
+       */
+      summary?: string;
+      /**
+       * Format: date-time
+       * @description Last material update.
+       * @example 2026-08-01T14:00:00Z
+       */
+      updatedAt?: string | null;
+    };
     RelationshipIdentity: {
       /** Format: double */
       confidence: number;
@@ -6170,6 +7153,210 @@ export interface components {
       /** @description User that owns this row. */
       user: components["schemas"]["User"];
       workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description Durable, optimistic-versioned exact-anchor ambiguity review. */
+    RelationshipIdentityCandidate: {
+      /**
+       * @description Exact anchor kind.
+       * @example provider_resource
+       */
+      anchorKind: string;
+      /**
+       * @description Redacted anchor preview.
+       * @example contact …123
+       */
+      anchorPreview?: string;
+      /**
+       * @description Provider.
+       * @example hubspot
+       */
+      anchorProvider?: string;
+      /**
+       * @description Candidate kind.
+       * @example anchor_collision
+       */
+      candidateType: string;
+      /** @description Conflicting anchors. */
+      conflictingAnchors: string[];
+      /**
+       * Format: date-time
+       * @description Decision time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      decidedAt?: string | null;
+      /**
+       * @description Resolved decision.
+       * @example merge
+       */
+      decision?: string;
+      /**
+       * Format: uuid
+       * @description Actor.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      decisionActorId?: string;
+      /**
+       * @description Reason.
+       * @example Confirmed duplicate.
+       */
+      decisionReason?: string;
+      /** @description Decision history. */
+      decisions: components["schemas"]["RelationshipIdentityDecision"][];
+      /**
+       * @description Affected evidence count.
+       * @example 4
+       */
+      evidenceCount: number;
+      /**
+       * Format: date-time
+       * @description Earliest evidence.
+       * @example 2026-01-01T00:00:00Z
+       */
+      evidenceFrom?: string | null;
+      /** @description Evidence references. */
+      evidenceRefs: string[];
+      /**
+       * Format: date-time
+       * @description Latest evidence.
+       * @example 2026-07-31T00:00:00Z
+       */
+      evidenceTo?: string | null;
+      existingRelationship: components["schemas"]["RevenueRelationship"];
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /** @description Counts and history that would move. */
+      impact: {
+        [key: string]: unknown;
+      };
+      /** @description Lineage history. */
+      lineage: components["schemas"]["RelationshipIdentityLineage"][];
+      /** @description Matching exact anchors. */
+      matchingAnchors: string[];
+      proposedRelationship: components["schemas"]["RevenueRelationship"];
+      /**
+       * @description Advisory confidence.
+       * @example 0.92
+       */
+      recommendationConfidence: number;
+      /**
+       * @description Advisory decision.
+       * @example merge
+       */
+      recommendedDecision: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       * @enum {string}
+       */
+      status: "pending" | "deferred" | "resolving" | "resolved" | "undone";
+      /**
+       * @description Optimistic version.
+       * @example 1
+       */
+      version: number;
+    };
+    /** @description Immutable actor-bound identity decision. */
+    RelationshipIdentityDecision: {
+      /**
+       * Format: uuid
+       * @description Decision actor.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      actorId: string;
+      /**
+       * @description Candidate version decided.
+       * @example 1
+       */
+      candidateVersion: number;
+      /**
+       * Format: uuid
+       * @description Decision compensated by undo.
+       * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      compensatesDecisionId?: string;
+      /**
+       * Format: date-time
+       * @description Decision time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      decidedAt: string;
+      /**
+       * @description Decision kind.
+       * @example merge
+       */
+      decision: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description Reason code for the ledger entry.
+       * @example llm_settle
+       * @enum {string}
+       */
+      reason?:
+        | "llm_call"
+        | "llm_call_reserve"
+        | "llm_settle"
+        | "voice_tts"
+        | "exa_search"
+        | "grant"
+        | "refund";
+    };
+    /** @description Immutable graph lineage produced by an identity decision. */
+    RelationshipIdentityLineage: {
+      /**
+       * Format: uuid
+       * @description Actor.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      actorId: string;
+      /** @description Relationship ids after. */
+      afterRelationshipIds: string[];
+      /** @description Relationship ids before. */
+      beforeRelationshipIds: string[];
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /** @description Affected identity ids. */
+      identityIds: string[];
+      /**
+       * @description Lineage kind.
+       * @example merged
+       */
+      kind: string;
+      /** @description All moved graph objects. */
+      movedObjectRefs: string[];
+      /** @description Moved observation ids. */
+      observationIds: string[];
+      /**
+       * Format: date-time
+       * @description Event time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      occurredAt: string;
+      /**
+       * @description Reason code for the ledger entry.
+       * @example llm_settle
+       * @enum {string}
+       */
+      reason?:
+        | "llm_call"
+        | "llm_call_reserve"
+        | "llm_settle"
+        | "voice_tts"
+        | "exa_search"
+        | "grant"
+        | "refund";
     };
     /** @description Derived trust surface for a relationship: conversation claims, focused review, exact delta, governance, contradictions, and live cue cards. */
     RelationshipIntelligence: {
@@ -6213,6 +7400,53 @@ export interface components {
       }[];
       /** @description Only low-confidence review items. */
       reviewItems: components["schemas"]["ConversationReviewItem"][];
+    };
+    RelationshipLineageEvent: {
+      /** Format: uuid */
+      actor_id: string;
+      after_relationship_ids: string[];
+      before_relationship_ids: string[];
+      candidate: components["schemas"]["RelationshipIdentityCandidate"];
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      identity_ids: string[];
+      kind: string;
+      moved_object_refs: string[];
+      observation_ids: string[];
+      /** Format: date-time */
+      occurred_at: string;
+      /**
+       * @description Reason code for the ledger entry.
+       * @example llm_settle
+       * @enum {string}
+       */
+      reason?:
+        | "llm_call"
+        | "llm_call_reserve"
+        | "llm_settle"
+        | "voice_tts"
+        | "exa_search"
+        | "grant"
+        | "refund";
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
     };
     /** @description Immutable, idempotent provider evidence used to project relationship state. */
     RelationshipObservation: {
@@ -6310,40 +7544,298 @@ export interface components {
        */
       title?: string;
     };
-    /** @description Freshness and failure state for one relationship evidence source. */
+    RelationshipProjectionJob: {
+      attempts: number;
+      /** Format: date-time */
+      completed_at?: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /** Format: date-time */
+      evaluated_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      idempotency_key: string;
+      last_error?: string;
+      /** Format: date-time */
+      lease_expires_at?: string;
+      lease_owner?: string;
+      /** Format: date-time */
+      next_attempt_at?: string;
+      projector_version: number;
+      relationship: components["schemas"]["Relationship"];
+      result_state_hash?: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      trigger_refs: string[];
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    RelationshipReviewAcknowledgement: {
+      /** Format: date-time */
+      acknowledged_at: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      relationship: components["schemas"]["Relationship"];
+      state_hash?: string;
+      state_version: number;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description Guided source card with consent explanation, supported evidence/actions, and every connected account. */
+    RelationshipSourceInventoryItem: {
+      /** @description Provider accounts. */
+      accounts: components["schemas"]["RelationshipSourceStatus"][];
+      /** @description Approval-gated actions supported. */
+      actions: string[];
+      /**
+       * @description Managed connection entry path.
+       * @example /v1/google-oauth/start
+       */
+      connectPath: string;
+      /**
+       * @description Credential disconnect path.
+       * @example /v1/google-oauth
+       */
+      disconnectPath: string;
+      /**
+       * @description Provider display name.
+       * @example Google Gmail & Calendar
+       */
+      displayName: string;
+      /** @description Evidence contributed. */
+      evidence: string[];
+      /**
+       * @description Expected cadence.
+       * @example 900
+       */
+      expectedCadenceSeconds: number;
+      /** @description Progressive read scopes. */
+      readScopes: string[];
+      /**
+       * @description Why the scopes are requested.
+       * @example Read scopes build relationship history.
+       */
+      scopeExplanation: string;
+      /**
+       * @description Source provider.
+       * @example google
+       * @enum {string}
+       */
+      source: "google" | "slack" | "hubspot";
+      /**
+       * @description Whether reconnect is supported.
+       * @example true
+       */
+      supportsReconnect: boolean;
+      /**
+       * @description Whether resync is supported.
+       * @example true
+       */
+      supportsResync: boolean;
+      /** @description Progressive action scopes. */
+      writeScopes: string[];
+    };
+    /** @description User-facing authorization, backfill, freshness, repair, revocation, and disconnect state for one stable provider connection. Tokens and raw cursors are never returned. */
     RelationshipSourceStatus: {
       /**
-       * @description Bounded provider error.
-       * @example
+       * Format: date-time
+       * @description Authorization start.
+       * @example 2026-07-31T13:00:00Z
+       */
+      authorizationStartedAt?: string | null;
+      /**
+       * Format: date-time
+       * @description Authorization completion.
+       * @example 2026-07-31T13:01:00Z
+       */
+      authorizedAt?: string | null;
+      /**
+       * @description Accepted backfill records.
+       * @example 250
+       */
+      backfillCompleted: number;
+      /**
+       * Format: date-time
+       * @description Backfill completion.
+       * @example 2026-07-31T13:10:00Z
+       */
+      backfillCompletedAt?: string | null;
+      /**
+       * @description Backfill phase.
+       * @example live
+       * @enum {string}
+       */
+      backfillPhase: "idle" | "queued" | "running" | "live" | "paused" | "failed";
+      /**
+       * @description Known backfill total, zero when unknown.
+       * @example 1000
+       */
+      backfillTotal: number;
+      /**
+       * @description Impact on relationship completeness.
+       * @example partial
+       * @enum {string}
+       */
+      completeness: "complete" | "partial" | "stale" | "rebuilding" | "disconnected";
+      /**
+       * Format: uuid
+       * @description Stable source connection id.
+       * @example 6b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      connectionId: string;
+      /**
+       * Format: uuid
+       * @description Actor who initiated consent.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      consentingActorId?: string;
+      /**
+       * Format: date-time
+       * @description User disconnect time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      disconnectedAt?: string | null;
+      /**
+       * @description Categorical safe error code.
+       * @example rate_limited
+       */
+      errorCode?: string;
+      /**
+       * @description Expected live-sync cadence.
+       * @example 900
+       */
+      expectedCadenceSeconds: number;
+      /** @description Currently granted scopes. */
+      grantedScopes: string[];
+      /**
+       * @description Calculated sync lag.
+       * @example 42
+       */
+      lagSeconds: number;
+      /**
+       * @description Bounded, user-safe error summary.
+       * @example Provider synchronization is delayed.
        */
       lastError?: string;
       /**
        * Format: date-time
-       * @description Newest provider event seen.
-       * @example 2026-07-26T11:58:00Z
+       * @description Most recent failed sync.
+       * @example 2026-07-31T14:00:00Z
+       */
+      lastFailedSyncAt?: string | null;
+      /**
+       * Format: date-time
+       * @description Newest accepted observation.
+       * @example 2026-07-31T13:58:00Z
        */
       lastObservationAt?: string | null;
       /**
        * Format: date-time
-       * @description Last successful ingestion.
-       * @example 2026-07-26T12:00:00Z
+       * @description Newest provider event observed.
+       * @example 2026-07-31T13:58:00Z
+       */
+      lastProviderEventAt?: string | null;
+      /**
+       * Format: date-time
+       * @description Most recent successful sync.
+       * @example 2026-07-31T14:00:00Z
        */
       lastSuccessAt?: string | null;
       /**
-       * @description Source name.
-       * @example gmail
+       * Format: date-time
+       * @description Most recent sync attempt.
+       * @example 2026-07-31T14:00:00Z
        */
-      source: string;
+      lastSyncAt?: string | null;
+      /** @description Missing or revoked required scopes. */
+      missingScopes: string[];
       /**
-       * @description Provider account id.
+       * Format: date-time
+       * @description Next retry.
+       * @example 2026-07-31T14:05:00Z
+       */
+      nextRetryAt?: string | null;
+      /** @description Scopes required by enabled capabilities. */
+      requiredScopes: string[];
+      /**
+       * @description Bounded retry count.
+       * @example 2
+       */
+      retryCount: number;
+      /**
+       * Format: date-time
+       * @description Provider revocation time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      revokedAt?: string | null;
+      /**
+       * @description Source provider.
+       * @example google
+       * @enum {string}
+       */
+      source: "google" | "slack" | "hubspot";
+      /**
+       * @description Provider account or workspace id.
        * @example me@company.com
        */
       sourceAccountId: string;
       /**
        * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
        * @example active
+       * @enum {string}
        */
-      status: string;
+      status:
+        | "not_connected"
+        | "authorizing"
+        | "connected"
+        | "backfilling"
+        | "live"
+        | "degraded"
+        | "stale"
+        | "rebuilding"
+        | "reconnect_required"
+        | "disconnected";
+      /**
+       * Format: date-time
+       * @description Backfill start.
+       * @example 2026-07-31T13:01:00Z
+       */
+      syncStartedAt?: string | null;
     };
     /** @description Immutable projection snapshot created only when material relationship state changes. */
     RelationshipStateSnapshot: {
@@ -6358,11 +7850,22 @@ export interface components {
        */
       createdAt: string;
       /**
+       * Format: date-time
+       * @description Explicit evaluation time used by the projector.
+       * @example 2026-07-25T16:00:00Z
+       */
+      evaluatedAt: string;
+      /**
        * Format: uuid
        * @description Stable UUID primary key.
        * @example 123e4567-e89b-12d3-a456-426614174000
        */
       id: string;
+      /**
+       * @description Projector version used for this snapshot.
+       * @example 1
+       */
+      projectorVersion: number;
       /**
        * @description Opaque one-time OAuth state/session ticket.
        * @example state_abc123
@@ -6370,6 +7873,11 @@ export interface components {
       state: {
         [key: string]: unknown;
       };
+      /**
+       * @description Stable hash of canonical state and winning assertions.
+       * @example sha256:ab12cd34
+       */
+      stateHash: string;
       /**
        * @description Relationship state version.
        * @example 4
@@ -6797,6 +8305,7 @@ export interface components {
        * @example 2026-06-04T20:38:00Z
        */
       created_at: string;
+      encryption_key_version: number;
       excerpt?: string;
       external_evidence_refs: string[];
       /**
@@ -7216,6 +8725,17 @@ export interface components {
        * @example buyer@example.com
        */
       primaryEmail?: string;
+      /**
+       * Format: date-time
+       * @description Explicit evaluation time used by the projector.
+       * @example 2026-07-25T16:00:00Z
+       */
+      projectedAt?: string | null;
+      /**
+       * @description Deterministic projector version.
+       * @example 1
+       */
+      projectorVersion: number;
       /** @description Current relationship risks. */
       risks: string[];
       /**
@@ -7224,6 +8744,11 @@ export interface components {
        * @enum {string}
        */
       sentiment: "unknown" | "positive" | "mixed" | "negative";
+      /**
+       * @description Stable hash of canonical projected values and winning assertions.
+       * @example sha256:ab12cd34
+       */
+      stateHash?: string;
       /**
        * @description Evidence-backed explanation of the projected state.
        * @example Security review was promised, but no owner or meeting exists.
@@ -7245,6 +8770,42 @@ export interface components {
        * @example Asked for pricing in April; wants a follow-up in July.
        */
       summary?: string;
+    };
+    RevenueTrustEvent: {
+      action?: components["schemas"]["RevenueAction"];
+      channel?: string;
+      correlation_id?: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /** Format: int64 */
+      duration_ms?: number;
+      event_name: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /** Format: date-time */
+      occurred_at: string;
+      outcome: string;
+      reason_code?: string;
+      relationship?: components["schemas"]["Relationship"];
+      source?: string;
+      state_version?: number;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
     };
     /** @description Mapping between the Rowboat tenant and the canonical OutboundConsole workspace. Local mode has no link: observation and draft-only execution work while preflight and sends stay disabled. */
     RevenueWorkspace: {
@@ -7669,6 +9230,43 @@ export interface components {
        */
       updated_at: string;
     };
+    TenantEvidenceKey: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /** Format: date-time */
+      destroyed_at?: string;
+      erasure_proof?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      key_fingerprint: string;
+      /** Format: date-time */
+      rotated_at?: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      version: number;
+      workspace: components["schemas"]["RevenueWorkspace"];
+      /** Format: byte */
+      wrapped_key?: string;
+    };
     /** @description Upgrade instruction returned when a connector requires a higher plan. */
     Upsell: {
       /**
@@ -7742,9 +9340,15 @@ export interface components {
       oauth_connections?: components["schemas"]["OAuthConnection"][];
       policy_decision_snapshots?: components["schemas"]["PolicyDecisionSnapshot"][];
       relationship_assertions?: components["schemas"]["RelationshipAssertion"][];
+      relationship_attention_items?: components["schemas"]["RelationshipAttentionItem"][];
       relationship_identities?: components["schemas"]["RelationshipIdentity"][];
+      relationship_identity_candidates?: components["schemas"]["RelationshipIdentityCandidate"][];
+      relationship_identity_decisions?: components["schemas"]["RelationshipIdentityDecision"][];
+      relationship_lineage_events?: components["schemas"]["RelationshipLineageEvent"][];
       relationship_observations?: components["schemas"]["RelationshipObservation"][];
       relationship_participants?: components["schemas"]["RelationshipParticipant"][];
+      relationship_projection_jobs?: components["schemas"]["RelationshipProjectionJob"][];
+      relationship_review_acknowledgements?: components["schemas"]["RelationshipReviewAcknowledgement"][];
       relationship_source_statuses?: components["schemas"]["RelationshipSourceStatus"][];
       relationship_state_snapshots?: components["schemas"]["RelationshipStateSnapshot"][];
       relationships?: components["schemas"]["Relationship"][];
@@ -7753,10 +9357,12 @@ export interface components {
       revenue_evidences?: components["schemas"]["RevenueEvidence"][];
       revenue_leak_scans?: components["schemas"]["RevenueLeakScan"][];
       revenue_outbox_events?: components["schemas"]["RevenueOutboxEvent"][];
+      revenue_trust_events?: components["schemas"]["RevenueTrustEvent"][];
       revenue_workspace_members?: components["schemas"]["RevenueWorkspaceMember"][];
       revenue_workspaces?: components["schemas"]["RevenueWorkspace"][];
       /** @description The user's billing subscription. */
       subscription?: components["schemas"]["Subscription"];
+      tenant_evidence_keys?: components["schemas"]["TenantEvidenceKey"][];
       /**
        * Format: date-time
        * @description Last row update timestamp.
@@ -7773,6 +9379,7 @@ export interface components {
        * @example user_01HABCDEF
        */
       workos_user_id: string;
+      workspace_feature_controls?: components["schemas"]["WorkspaceFeatureControl"][];
     };
     /** @description Audit history for User rows, used for incident investigation. */
     UserHistory: {
@@ -7927,6 +9534,33 @@ export interface components {
        * @example user_01HABCDEF
        */
       user_id?: string | null;
+    };
+    WorkspaceFeatureControl: {
+      capability: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      enabled: boolean;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      reason_code?: string;
+      rollout_stage: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
     };
   };
   responses: {
@@ -8584,6 +10218,7 @@ export interface operations {
            *           "active": true,
            *           "description": "Summarize new priority email and produce a short follow-up plan.",
            *           "executionTarget": "api",
+           *           "firstParty": false,
            *           "instructions": "Review recent important Gmail messages and produce a markdown digest.",
            *           "model": "anthropic/claude-sonnet-4-5",
            *           "name": "Inbox Digest",
@@ -8601,7 +10236,8 @@ export interface operations {
            *           "triggers": {
            *             "cronExpr": "0 8 * * 1-5",
            *             "timezone": "America/New_York"
-           *           }
+           *           },
+           *           "version": 1
            *         }
            *       ]
            *     }
@@ -8636,6 +10272,7 @@ export interface operations {
            *       "active": true,
            *       "description": "Summarize new priority email and produce a short follow-up plan.",
            *       "executionTarget": "api",
+           *       "firstParty": false,
            *       "instructions": "Review recent important Gmail messages and produce a markdown digest.",
            *       "model": "anthropic/claude-sonnet-4-5",
            *       "name": "Inbox Digest",
@@ -8653,7 +10290,8 @@ export interface operations {
            *       "triggers": {
            *         "cronExpr": "0 8 * * 1-5",
            *         "timezone": "America/New_York"
-           *       }
+           *       },
+           *       "version": 1
            *     }
            */
           "application/json": components["schemas"]["BackgroundTaskTemplate"];
@@ -8709,7 +10347,13 @@ export interface operations {
            *       "name": "Daily Account Summary",
            *       "provider": "openai",
            *       "revision": 2,
+           *       "scheduleSyncError": "",
+           *       "scheduleSyncState": "current",
+           *       "scheduleSyncedAt": "2026-06-04T20:39:00Z",
            *       "slug": "daily-summary",
+           *       "systemManaged": false,
+           *       "templateSlug": "",
+           *       "templateVersion": 0,
            *       "triggers": {
            *         "cronExpr": "0 9 * * *",
            *         "timezone": "America/New_York"
@@ -8778,7 +10422,13 @@ export interface operations {
            *           "name": "Daily Account Summary",
            *           "provider": "openai",
            *           "revision": 2,
+           *           "scheduleSyncError": "",
+           *           "scheduleSyncState": "current",
+           *           "scheduleSyncedAt": "2026-06-04T20:39:00Z",
            *           "slug": "daily-summary",
+           *           "systemManaged": false,
+           *           "templateSlug": "",
+           *           "templateVersion": 0,
            *           "triggers": {
            *             "cronExpr": "0 9 * * *",
            *             "timezone": "America/New_York"
@@ -8846,7 +10496,13 @@ export interface operations {
            *       "name": "Daily Account Summary",
            *       "provider": "openai",
            *       "revision": 2,
+           *       "scheduleSyncError": "",
+           *       "scheduleSyncState": "current",
+           *       "scheduleSyncedAt": "2026-06-04T20:39:00Z",
            *       "slug": "daily-summary",
+           *       "systemManaged": false,
+           *       "templateSlug": "",
+           *       "templateVersion": 0,
            *       "triggers": {
            *         "cronExpr": "0 9 * * *",
            *         "timezone": "America/New_York"
@@ -8878,6 +10534,62 @@ export interface operations {
           "application/problem+json": components["schemas"]["ErrorEnvelope"];
         };
       };
+      500: components["responses"]["500"];
+    };
+  };
+  ensureFirstPartyBackgroundTasks: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Current managed workflow definitions. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "tasks": [
+           *         {
+           *           "active": true,
+           *           "createdAt": "2026-06-04T20:38:00Z",
+           *           "executionTarget": "desktop",
+           *           "id": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+           *           "instructions": "Summarize important account changes and draft follow-up notes.",
+           *           "lastAttemptAt": "2026-06-04T21:00:00Z",
+           *           "lastRunAt": "2026-06-04T21:02:00Z",
+           *           "lastRunError": "",
+           *           "lastRunId": "run-20260604-210000",
+           *           "lastRunSummary": "No high-priority account changes.",
+           *           "model": "openai/gpt-4.1-mini",
+           *           "name": "Daily Account Summary",
+           *           "provider": "openai",
+           *           "revision": 2,
+           *           "scheduleSyncError": "",
+           *           "scheduleSyncState": "current",
+           *           "scheduleSyncedAt": "2026-06-04T20:39:00Z",
+           *           "slug": "daily-summary",
+           *           "systemManaged": false,
+           *           "templateSlug": "",
+           *           "templateVersion": 0,
+           *           "triggers": {
+           *             "cronExpr": "0 9 * * *",
+           *             "timezone": "America/New_York"
+           *           },
+           *           "updatedAt": "2026-06-04T20:39:00Z"
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": components["schemas"]["BackgroundTaskListResponse"];
+        };
+      };
+      401: components["responses"]["401"];
       500: components["responses"]["500"];
     };
   };
@@ -8915,7 +10627,13 @@ export interface operations {
            *       "name": "Daily Account Summary",
            *       "provider": "openai",
            *       "revision": 2,
+           *       "scheduleSyncError": "",
+           *       "scheduleSyncState": "current",
+           *       "scheduleSyncedAt": "2026-06-04T20:39:00Z",
            *       "slug": "daily-summary",
+           *       "systemManaged": false,
+           *       "templateSlug": "",
+           *       "templateVersion": 0,
            *       "triggers": {
            *         "cronExpr": "0 9 * * *",
            *         "timezone": "America/New_York"
@@ -9027,7 +10745,13 @@ export interface operations {
            *       "name": "Daily Account Summary",
            *       "provider": "openai",
            *       "revision": 2,
+           *       "scheduleSyncError": "",
+           *       "scheduleSyncState": "current",
+           *       "scheduleSyncedAt": "2026-06-04T20:39:00Z",
            *       "slug": "daily-summary",
+           *       "systemManaged": false,
+           *       "templateSlug": "",
+           *       "templateVersion": 0,
            *       "triggers": {
            *         "cronExpr": "0 9 * * *",
            *         "timezone": "America/New_York"
@@ -11057,6 +12781,250 @@ export interface operations {
       404: components["responses"]["404"];
     };
   };
+  listRelationshipAttention: {
+    parameters: {
+      query?: {
+        status?:
+          | "open"
+          | "acknowledged"
+          | "snoozed"
+          | "dismissed"
+          | "superseded"
+          | "resolved"
+          | "all";
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Attention projection. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /**
+             * Format: date-time
+             * @description Read boundary.
+             * @example 2026-07-31T14:00:00Z
+             */
+            asOf: string;
+            /**
+             * @description Contract version.
+             * @example relationship-attention.v1
+             */
+            contractVersion: string;
+            /** @description Attention items. */
+            items: components["schemas"]["RelationshipAttentionItem"][];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+    };
+  };
+  decideRelationshipAttention: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Attention item id. */
+        attentionId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Attention decision. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "decision": "acknowledge",
+         *       "expectedVersion": 1
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Decision.
+           * @example acknowledge
+           * @enum {string}
+           */
+          decision: "acknowledge" | "snooze" | "dismiss";
+          /**
+           * @description Expected version.
+           * @example 1
+           */
+          expectedVersion: number;
+          /**
+           * @description Decision reason.
+           * @example Reviewed with the account owner.
+           */
+          reason?: string;
+          /**
+           * Format: date-time
+           * @description Bounded future wake time.
+           * @example 2026-08-07T14:00:00Z
+           */
+          snoozedUntil?: string | null;
+        };
+      };
+    };
+    responses: {
+      /** @description Updated attention item. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RelationshipAttentionItem"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+    };
+  };
+  getRelationshipBetaDiagnostics: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Support-safe diagnostic bundle. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BetaDiagnostics"];
+        };
+      };
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+    };
+  };
+  listRelationshipIdentityCandidates: {
+    parameters: {
+      query?: {
+        status?: "pending" | "deferred" | "resolving" | "resolved" | "undone";
+        source?: string;
+        relationshipId?: string;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Identity inbox. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Candidates. */
+            candidates: components["schemas"]["RelationshipIdentityCandidate"][];
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+    };
+  };
+  getRelationshipIdentityCandidate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Identity candidate id. */
+        candidateId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Identity candidate. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RelationshipIdentityCandidate"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  decideRelationshipIdentityCandidate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Identity candidate id. */
+        candidateId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Identity decision. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "decision": "merge",
+         *       "expectedVersion": 1,
+         *       "idempotencyKey": "identity-review:123"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Decision.
+           * @example merge
+           * @enum {string}
+           */
+          decision: "merge" | "keep_separate" | "move_evidence" | "split" | "defer" | "undo";
+          /**
+           * @description Expected candidate version.
+           * @example 1
+           */
+          expectedVersion: number;
+          /**
+           * @description Stable client idempotency key.
+           * @example identity-review:123
+           */
+          idempotencyKey: string;
+          /**
+           * @description Actor reason.
+           * @example Confirmed provider records are the same account.
+           */
+          reason?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Resolved candidate. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RelationshipIdentityCandidate"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+    };
+  };
   ingestRelationshipObservations: {
     parameters: {
       query?: never;
@@ -11252,6 +13220,30 @@ export interface operations {
       409: components["responses"]["409"];
     };
   };
+  getRelationshipSourceInventory: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Guided source inventory. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Source cards. */
+            sources: components["schemas"]["RelationshipSourceInventoryItem"][];
+          };
+        };
+      };
+      401: components["responses"]["401"];
+    };
+  };
   getRelationshipSourceStatuses: {
     parameters: {
       query?: never;
@@ -11274,6 +13266,136 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+    };
+  };
+  reportRelationshipSourceAuthorization: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Beta source provider. */
+        source: "google" | "slack" | "hubspot";
+      };
+      cookie?: never;
+    };
+    /** @description Authorization lifecycle transition. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "grantedScopes": [
+         *         "https://www.googleapis.com/auth/gmail.readonly",
+         *         "https://www.googleapis.com/auth/calendar.events.readonly"
+         *       ],
+         *       "sourceAccountId": "me@company.com",
+         *       "state": "completed"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Safe categorical error for failed transitions.
+           * @example invalid_grant
+           */
+          errorCode?: string;
+          /** @description Scopes returned by the provider. */
+          grantedScopes?: string[];
+          /**
+           * @description Provider account id when known; otherwise default.
+           * @example me@company.com
+           */
+          sourceAccountId?: string;
+          /**
+           * @description Consent transition.
+           * @example completed
+           * @enum {string}
+           */
+          state: "started" | "completed" | "canceled" | "failed";
+        };
+      };
+    };
+    responses: {
+      /** @description Updated authorization lifecycle. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RelationshipSourceStatus"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+    };
+  };
+  resyncRelationshipSource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Beta source provider. */
+        source: "google" | "slack" | "hubspot";
+      };
+      cookie?: never;
+    };
+    /** @description Source account. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "sourceAccountId": "me@company.com"
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Provider account id.
+           * @example me@company.com
+           */
+          sourceAccountId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Queued source lifecycle. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RelationshipSourceStatus"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+    };
+  };
+  disconnectRelationshipSource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Beta source provider. */
+        source: "google" | "slack" | "hubspot";
+        /** @description Provider account id. */
+        sourceAccountId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Disconnected lifecycle. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RelationshipSourceStatus"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
     };
   };
   listRelationships: {
@@ -11370,6 +13492,38 @@ export interface operations {
       401: components["responses"]["401"];
     };
   };
+  getRelationshipGraph: {
+    parameters: {
+      query?: {
+        /** @description Portfolio or one relationship. */
+        scope?: "portfolio" | "relationship";
+        /** @description Required when scope=relationship. */
+        relationshipId?: string;
+        /** @description Bounded graph expansion depth. */
+        depth?: number;
+        /** @description Historical evidence boundary; must not be in the future. */
+        asOf?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Authorized relationship graph. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RelationshipGraph"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
   getRelationship: {
     parameters: {
       query?: never;
@@ -11396,6 +13550,7 @@ export interface operations {
             /** @description Open and completed commitments. */
             commitments?: components["schemas"]["RelationshipCommitment"][];
             intelligence?: components["schemas"]["RelationshipIntelligence"];
+            missionControl?: components["schemas"]["MissionControlReadModel"];
             /** @description Relationship participants. */
             participants?: components["schemas"]["RelationshipParticipant"][];
             /** @description Governed recommendations. */
@@ -11406,6 +13561,123 @@ export interface operations {
       };
       401: components["responses"]["401"];
       404: components["responses"]["404"];
+    };
+  };
+  acknowledgeMissionControl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Review boundary. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "stateHash": "sha256:ab12",
+         *       "stateVersion": 4
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Reviewed state hash.
+           * @example sha256:ab12
+           */
+          stateHash: string;
+          /**
+           * @description Reviewed state version.
+           * @example 4
+           */
+          stateVersion: number;
+        };
+      };
+    };
+    responses: {
+      /** @description Acknowledgement. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /**
+             * Format: date-time
+             * @description Review time.
+             * @example 2026-07-31T14:00:00Z
+             */
+            acknowledgedAt: string;
+            /**
+             * Format: uuid
+             * @description Acknowledgement id.
+             * @example 6b8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            id: string;
+            /**
+             * @description Reviewed hash.
+             * @example sha256:ab12
+             */
+            stateHash: string;
+            /**
+             * @description Reviewed state version.
+             * @example 4
+             */
+            stateVersion: number;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+    };
+  };
+  retractRelationshipAssertion: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Relationship id. */
+        relationshipId: string;
+        /** @description User-correction assertion id. */
+        assertionId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Retraction. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "reason": "The correction was entered against the wrong customer call."
+         *     }
+         */
+        "application/json": {
+          /**
+           * @description Why the correction is being retracted.
+           * @example The correction was entered against the wrong customer call.
+           */
+          reason: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Reprojected relationship. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RevenueRelationship"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
     };
   };
   getRelationshipChanges: {
@@ -11970,6 +14242,18 @@ export interface operations {
            * @example The review happened yesterday.
            */
           reason: string;
+          /**
+           * Format: uuid
+           * @description Optional active assertion on the same relationship and dimension that this correction permanently replaces.
+           * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+           */
+          supersedesAssertionId?: string;
+          /**
+           * Format: date-time
+           * @description Optional exclusive expiry boundary for a temporary correction.
+           * @example 2026-08-31T17:00:00Z
+           */
+          validTo?: string | null;
           /**
            * @description Correct value.
            * @example healthy
