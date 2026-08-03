@@ -12,7 +12,6 @@ import {
   CaretUpDown,
   ChatsCircle,
   Clock,
-  CloudArrowUp,
   Cpu,
   DotsThree,
   Folder,
@@ -435,7 +434,10 @@ export function AppShellSidebar({
   onSelectResource,
   onNavigateChat,
   onNavigateRevenue,
-  onNavigateWorkflows,
+  onNavigateAgents,
+  onNavigateScheduled,
+  onNavigateRuns,
+  activeResourceGroup,
   view = "chat",
   settingsSection = "overview",
   onOpenSettings,
@@ -452,8 +454,11 @@ export function AppShellSidebar({
   onSelectResource?: SidebarSelect;
   onNavigateChat?: () => void;
   onNavigateRevenue?: () => void;
-  onNavigateWorkflows?: () => void;
-  view?: "chat" | "settings" | "revenue" | "workflows";
+  onNavigateAgents?: () => void;
+  onNavigateScheduled?: () => void;
+  onNavigateRuns?: () => void;
+  activeResourceGroup?: "agents" | "scheduled" | "runs";
+  view?: "chat" | "settings" | "revenue" | "workflows" | "agents";
   settingsSection?: SettingsSection;
   onOpenSettings?: (section: SettingsSection) => void;
   onCloseSettings?: () => void;
@@ -465,7 +470,12 @@ export function AppShellSidebar({
   const [agents, setAgents] = React.useState<string[]>([]);
   const [tasks, setTasks] = React.useState<{ label: string; value: string }[]>([]);
   const [taskRuns, setTaskRuns] = React.useState<{ label: string; value: string }[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [loadingGroups, setLoadingGroups] = React.useState({
+    agents: true,
+    scheduled: true,
+    runs: true,
+  });
+  const [groupErrors, setGroupErrors] = React.useState<Partial<Record<string, string>>>({});
   const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>({});
   const { theme, setTheme: handleTheme } = useThemePreference();
 
@@ -473,7 +483,7 @@ export function AppShellSidebar({
     const load = async () => {
       try {
         const res = await dashboardFetch("/api/rowboat/v1/agents");
-        if (!res.ok) return;
+        if (!res.ok) throw new Error(`Could not load agents (${res.status})`);
         const data = await res.json();
         const names = Array.isArray(data.agents)
           ? data.agents
@@ -485,8 +495,9 @@ export function AppShellSidebar({
         setAgents(names);
       } catch (error) {
         console.error("Failed to load Oppulence summary", error);
+        setGroupErrors((current) => ({ ...current, agents: "Could not load agents" }));
       } finally {
-        setLoading(false);
+        setLoadingGroups((current) => ({ ...current, agents: false }));
       }
     };
     load();
@@ -496,7 +507,7 @@ export function AppShellSidebar({
     const load = async () => {
       try {
         const res = await dashboardFetch("/api/rowboat/v1/background-tasks");
-        if (!res.ok) return;
+        if (!res.ok) throw new Error(`Could not load schedules (${res.status})`);
         const data = await res.json();
         if (Array.isArray(data?.tasks)) {
           setTasks(
@@ -509,7 +520,9 @@ export function AppShellSidebar({
           );
         }
       } catch {
-        /* background tasks are optional — the group just stays empty */
+        setGroupErrors((current) => ({ ...current, scheduled: "Could not load schedules" }));
+      } finally {
+        setLoadingGroups((current) => ({ ...current, scheduled: false }));
       }
     };
     load();
@@ -519,7 +532,7 @@ export function AppShellSidebar({
     const load = async () => {
       try {
         const res = await dashboardFetch("/api/rowboat/v1/background-task-runs");
-        if (!res.ok) return;
+        if (!res.ok) throw new Error(`Could not load runs (${res.status})`);
         const data = await res.json();
         if (Array.isArray(data?.runs)) {
           setTaskRuns(
@@ -536,15 +549,13 @@ export function AppShellSidebar({
           );
         }
       } catch {
-        /* runs are optional — the group just stays empty */
+        setGroupErrors((current) => ({ ...current, runs: "Could not load runs" }));
+      } finally {
+        setLoadingGroups((current) => ({ ...current, runs: false }));
       }
     };
     load();
   }, []);
-
-  const toggleGroup = (key: string) => {
-    setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
 
   const displayName = usePref("display-name") || user.name;
   const fallback = (displayName || user.email || "U").slice(0, 2).toUpperCase();
@@ -556,6 +567,9 @@ export function AppShellSidebar({
     kind?: ResourceKind;
     items: { label: string; value: string }[];
     empty: string;
+    loading?: boolean;
+    error?: string;
+    onNavigate?: () => void;
   }[] = [
     {
       key: "agents",
@@ -564,6 +578,9 @@ export function AppShellSidebar({
       kind: "agent",
       items: agents.map((name) => ({ label: name, value: name })),
       empty: "No agents found",
+      loading: loadingGroups.agents,
+      error: groupErrors.agents,
+      onNavigate: onNavigateAgents,
     },
     {
       key: "config",
@@ -571,7 +588,7 @@ export function AppShellSidebar({
       icon: Plugs,
       kind: "config",
       items: [],
-      empty: "No config files",
+      empty: "",
     },
     {
       key: "scheduled",
@@ -580,6 +597,9 @@ export function AppShellSidebar({
       kind: "task",
       items: tasks,
       empty: "Nothing scheduled",
+      loading: loadingGroups.scheduled,
+      error: groupErrors.scheduled,
+      onNavigate: onNavigateScheduled,
     },
     {
       key: "runs",
@@ -588,8 +608,10 @@ export function AppShellSidebar({
       kind: "taskrun",
       items: taskRuns,
       empty: "No runs yet",
+      loading: loadingGroups.runs,
+      error: groupErrors.runs,
+      onNavigate: onNavigateRuns,
     },
-    { key: "applets", label: "Applets", icon: Rocket, items: [], empty: "No applets yet" },
   ];
 
   return (
@@ -659,51 +681,60 @@ export function AppShellSidebar({
               label="Relationships"
               onClick={onNavigateRevenue}
             />
-            <SidebarNavItem
-              active={view === "workflows"}
-              icon={CloudArrowUp}
-              label="Cloud workflows"
-              onClick={onNavigateWorkflows}
-            />
-            {groups.map((group) => (
-              <Collapsible
-                key={group.key}
-                onOpenChange={() => toggleGroup(group.key)}
-                open={Boolean(openGroups[group.key])}
-              >
-                <CollapsibleTrigger asChild>
-                  <SidebarNavItem
-                    chevron
-                    chevronOpen={Boolean(openGroups[group.key])}
-                    count={group.items.length}
-                    icon={group.icon}
-                    label={group.label}
-                  />
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="flex flex-col gap-0.5 pb-1">
-                    {loading && group.key === "agents" ? (
-                      <SidebarEmptyHint>Loading…</SidebarEmptyHint>
-                    ) : group.items.length === 0 ? (
-                      <SidebarEmptyHint>{group.empty}</SidebarEmptyHint>
-                    ) : (
-                      group.items.map((item) => (
-                        <SidebarSubItem
-                          active={selected?.kind === group.kind && selected?.name === item.value}
-                          key={item.value}
-                          label={item.label}
-                          onClick={
-                            group.kind
-                              ? () => onSelectResource?.({ kind: group.kind!, name: item.value })
-                              : undefined
-                          }
-                        />
-                      ))
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            ))}
+            {groups.map((group) =>
+              group.key === "config" ? (
+                <SidebarNavItem
+                  icon={group.icon}
+                  key={group.key}
+                  label={group.label}
+                  onClick={() => onOpenSettings?.("overview")}
+                />
+              ) : (
+                <Collapsible
+                  key={group.key}
+                  onOpenChange={(nextOpen) =>
+                    setOpenGroups((current) => ({ ...current, [group.key]: nextOpen }))
+                  }
+                  open={Boolean(openGroups[group.key])}
+                >
+                  <CollapsibleTrigger asChild>
+                    <SidebarNavItem
+                      active={activeResourceGroup === group.key}
+                      chevron
+                      chevronOpen={Boolean(openGroups[group.key])}
+                      count={group.items.length}
+                      icon={group.icon}
+                      label={group.label}
+                      onClick={group.onNavigate}
+                    />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="flex flex-col gap-0.5 pb-1">
+                      {group.loading ? (
+                        <SidebarEmptyHint>Loading…</SidebarEmptyHint>
+                      ) : group.error ? (
+                        <SidebarEmptyHint>{group.error}</SidebarEmptyHint>
+                      ) : group.items.length === 0 ? (
+                        <SidebarEmptyHint>{group.empty}</SidebarEmptyHint>
+                      ) : (
+                        group.items.map((item) => (
+                          <SidebarSubItem
+                            active={selected?.kind === group.kind && selected?.name === item.value}
+                            key={item.value}
+                            label={item.label}
+                            onClick={
+                              group.kind
+                                ? () => onSelectResource?.({ kind: group.kind!, name: item.value })
+                                : undefined
+                            }
+                          />
+                        ))
+                      )}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              ),
+            )}
 
             <div className="flex items-center justify-between px-3 pt-4 pb-1">
               <p className="text-[11px] uppercase tracking-wider text-primary/50">Chat history</p>

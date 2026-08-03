@@ -137,7 +137,18 @@
 }
 
 .app-shell {
-  --radius: 2px;
+  --radius: 0;
+}
+
+/*
+ * The authenticated product uses a deliberately square visual language.
+ * Keep this stronger than component defaults, including portalled dialogs,
+ * popovers, and selects rendered outside the .app-shell subtree.
+ */
+.app-shell,
+.app-shell *,
+body:has([data-product-shell]) * {
+  border-radius: 0 !important;
 }
 
 /*

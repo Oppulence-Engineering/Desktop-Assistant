@@ -1181,12 +1181,12 @@
 
 /*
  * Authenticated console theme ("app shell"). Scoped overrides only — the
- * marketing pages keep their own look. Sharp 2px radii, hairline borders
+ * marketing pages keep their own look. Square corners and hairline borders
  * instead of shadows, workspace card floating on a tinted canvas, orange
  * as the single semantic accent (use text-oppulence-orange sparingly).
  */
 .app-shell {
-  --radius: 2px;
+  --radius: 0;
 }
 
 @layer base {

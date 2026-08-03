@@ -615,9 +615,11 @@ function RunInspector({
 }
 
 export function CloudWorkflowsView({
+  focus = "scheduled",
   initialRunId,
   initialSlug,
 }: {
+  focus?: "scheduled" | "runs";
   initialRunId?: string;
   initialSlug?: string;
 }) {
@@ -665,13 +667,19 @@ export function CloudWorkflowsView({
         if (!current)
           return initialRunId
             ? result.runs.find((run) => run.runId === initialRunId) || null
-            : null;
+            : focus === "runs"
+              ? result.runs[0] || null
+              : null;
         return result.runs.find((run) => run.runId === current.runId) || current;
       });
       setNextCursor(result.nextCursor);
     },
-    [executorFilter, initialRunId, statusFilter, triggerFilter],
+    [executorFilter, focus, initialRunId, statusFilter, triggerFilter],
   );
+
+  React.useEffect(() => {
+    if (selectedRunSlug) setSelectedSlug(selectedRunSlug);
+  }, [selectedRunSlug]);
 
   const loadDefinitions = React.useCallback(async () => {
     setError(null);
@@ -819,25 +827,34 @@ export function CloudWorkflowsView({
         <div>
           <div className="flex items-center gap-2">
             <Cloud className="size-5 text-oppulence-orange" weight="fill" />
-            <h1 className="text-sm font-medium">Cloud workflows</h1>
-            <Badge variant="secondary">{tasks.filter((task) => task.active).length} active</Badge>
+            <h1 className="text-sm font-medium">
+              {focus === "runs" ? "Workflow runs" : "Scheduled workflows"}
+            </h1>
+            <Badge variant="secondary">
+              {focus === "runs"
+                ? `${runs.length} recent`
+                : `${tasks.filter((task) => task.active).length} active`}
+            </Badge>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Always-on relationship intelligence with durable schedules, transcripts, retries, and
-            control.
+            {focus === "runs"
+              ? "Inspect execution status, progress, transcripts, failures, and retries."
+              : "Manage always-on relationship intelligence, schedules, and execution controls."}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button disabled={busy} onClick={() => void refresh()} size="sm" variant="outline">
             <ArrowClockwise className={cn("size-4", busy && "animate-spin")} /> Refresh
           </Button>
-          <CreateWorkflowDialog
-            onCreated={(task) => {
-              replaceTask(task);
-              void loadRuns();
-            }}
-            templates={templates}
-          />
+          {focus === "scheduled" ? (
+            <CreateWorkflowDialog
+              onCreated={(task) => {
+                replaceTask(task);
+                void loadRuns();
+              }}
+              templates={templates}
+            />
+          ) : null}
         </div>
       </div>
       {error ? (
