@@ -196,16 +196,16 @@ test("lays out horizontal and vertical Flow Bars inside the display work area", 
     height: 280,
   });
   assert.deepEqual(flowBarBounds("bottom", workArea, true), {
-    x: 626,
-    y: 822,
-    width: 188,
-    height: 54,
+    x: 654,
+    y: 834,
+    width: 132,
+    height: 42,
   });
   assert.deepEqual(flowBarBounds("left", workArea, true), {
     x: 24,
-    y: 374,
-    width: 72,
-    height: 152,
+    y: 392,
+    width: 58,
+    height: 116,
   });
 });
 

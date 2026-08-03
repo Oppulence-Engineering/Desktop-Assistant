@@ -14,7 +14,6 @@ import {
 } from "@/lib/icons";
 import { extractConferenceLink } from "@/lib/calendar-event";
 import { SettingsDialog } from "@/components/settings-dialog";
-import { DictationHistoryPanel } from "@/components/dictation-history-panel";
 import {
   HUBSPOT_BRAND_ICON,
   WISPR_FLOW_BRAND_ICON,
@@ -407,8 +406,6 @@ export function HomeView({
             <h1 className="text-[26px] font-semibold tracking-tight">{greeting()}</h1>
             <span className="text-sm text-muted-foreground">{todayLabel()}</span>
           </div>
-
-          <DictationHistoryPanel />
 
           {/* Up-next hero */}
           {nextEvent && (

@@ -31,49 +31,46 @@ html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 }
 .dictation-pill:active { cursor: grabbing; }
 .dictation-pill.idle {
-  height: 50px; gap: 6px; padding: 0 8px 0 5px; border-radius: 999px;
-  border-color: rgba(255, 255, 255, 0.18);
-  background: linear-gradient(180deg, rgba(35, 35, 40, 0.97), rgba(17, 17, 20, 0.97));
+  height: 38px; gap: 3px; padding: 0 5px 0 4px; border-radius: 999px;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(18, 18, 21, 0.82);
   box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.48),
-    0 2px 8px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    0 8px 22px rgba(0, 0, 0, 0.3),
+    0 1px 4px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  backdrop-filter: blur(20px) saturate(120%);
 }
 .dock-action {
-  display: inline-flex; min-width: 0; height: 40px; flex: 1;
-  align-items: center; justify-content: flex-start; gap: 9px;
-  padding: 0 7px 0 4px; border: 0; border-radius: 999px;
-  background: transparent; color: #fafafa;
+  display: inline-flex; min-width: 0; height: 32px; flex: 1;
+  align-items: center; justify-content: flex-start; gap: 7px;
+  padding: 0 5px 0 2px; border: 0; border-radius: 999px;
+  background: transparent; color: rgba(255, 255, 255, 0.78);
   font: inherit; cursor: pointer; -webkit-app-region: no-drag;
-  transition: background 140ms ease, transform 140ms ease;
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
 }
-.dock-action:hover { background: rgba(255, 255, 255, 0.07); }
+.dock-action:hover { background: rgba(255, 255, 255, 0.065); color: #fff; }
 .dock-action:active { transform: scale(.97); }
 .dock-action:focus-visible { outline: 2px solid #fb923c; outline-offset: 1px; }
 .mic-orb {
-  position: relative; display: inline-flex; width: 32px; height: 32px; flex: none;
+  position: relative; display: inline-flex; width: 26px; height: 26px; flex: none;
   align-items: center; justify-content: center; border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: linear-gradient(145deg, #ff9a3d, #f26022 72%);
-  color: #fff;
-  box-shadow:
-    0 5px 13px rgba(242, 96, 34, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  transition: transform 140ms ease, box-shadow 140ms ease;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.075);
+  color: rgba(255, 255, 255, 0.76);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
 }
 .dock-action:hover .mic-orb {
-  transform: scale(1.045);
-  box-shadow:
-    0 6px 17px rgba(242, 96, 34, 0.43),
-    inset 0 1px 0 rgba(255, 255, 255, 0.36);
+  background: rgba(255, 255, 255, 0.12); color: #fff; transform: scale(1.035);
 }
-.mic-orb svg { width: 16px; height: 16px; }
+.mic-orb svg { width: 13px; height: 13px; }
 .dock-label {
-  overflow: hidden; color: rgba(255, 255, 255, 0.94); font-size: 12.5px;
-  font-weight: 570; letter-spacing: -0.01em; text-overflow: ellipsis; white-space: nowrap;
+  overflow: hidden; color: inherit; font-size: 11.5px;
+  font-weight: 520; letter-spacing: -0.005em; text-overflow: ellipsis; white-space: nowrap;
 }
 .drag-grip {
-  display: inline-flex; min-width: 19px; min-height: 36px;
+  display: inline-flex; min-width: 14px; min-height: 28px;
   align-items: center; justify-content: center; border-radius: 999px;
   cursor: grab; -webkit-app-region: drag;
   transition: background 140ms ease;
@@ -81,9 +78,9 @@ html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 .drag-grip:hover { background: rgba(255, 255, 255, 0.06); }
 .drag-grip:active { cursor: grabbing; }
 .grip-dots {
-  width: 3px; height: 3px; border-radius: 50%;
-  background: rgba(255, 255, 255, 0.26);
-  box-shadow: 0 -5px 0 rgba(255, 255, 255, 0.26), 0 5px 0 rgba(255, 255, 255, 0.26);
+  width: 2px; height: 2px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 -4px 0 rgba(255, 255, 255, 0.18), 0 4px 0 rgba(255, 255, 255, 0.18);
 }
 .active-controls {
   display: inline-flex; flex: none; align-items: center; gap: 5px;
@@ -128,14 +125,14 @@ html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
 .dock-left .keys, .dock-right .keys { max-width: 100%; line-height: 1.35; overflow-wrap: anywhere; }
 .dock-left.idle, .dock-right.idle { padding: 7px 5px; gap: 4px; }
 .dock-left.idle .dock-action, .dock-right.idle .dock-action {
-  width: 56px; height: 104px; flex-direction: column; padding: 10px 5px;
+  width: 46px; height: 76px; flex-direction: column; padding: 8px 3px;
   line-height: 1.25; text-align: center;
 }
 .dock-left.idle .dock-label, .dock-right.idle .dock-label {
-  max-width: 48px; white-space: normal;
+  max-width: 42px; white-space: normal;
 }
 .dock-left.idle .drag-grip, .dock-right.idle .drag-grip {
-  width: 42px; min-height: 20px; transform: rotate(90deg);
+  width: 34px; min-height: 16px; transform: rotate(90deg);
 }
 .dock-left .active-controls, .dock-right .active-controls { flex-direction: column; }
 @keyframes pulse { 50% { transform: scale(.72); opacity: .55; } }
@@ -459,7 +456,7 @@ export function Dictation() {
                   <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M8.5 21h7" />
                 </svg>
               </span>
-              <span className="dock-label">Click to dictate</span>
+              <span className="dock-label">Dictate</span>
             </button>
             <span className="drag-grip" title="Drag to dock" aria-hidden="true">
               <span className="grip-dots" />

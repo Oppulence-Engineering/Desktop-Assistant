@@ -144,8 +144,8 @@ export interface FlowBarRectangle {
 
 export const BOTTOM_FLOW_BAR_SIZE = { width: 420, height: 56 } as const;
 export const SIDE_FLOW_BAR_SIZE = { width: 112, height: 280 } as const;
-export const BOTTOM_FLOW_BAR_IDLE_SIZE = { width: 188, height: 54 } as const;
-export const SIDE_FLOW_BAR_IDLE_SIZE = { width: 72, height: 152 } as const;
+export const BOTTOM_FLOW_BAR_IDLE_SIZE = { width: 132, height: 42 } as const;
+export const SIDE_FLOW_BAR_IDLE_SIZE = { width: 58, height: 116 } as const;
 const FLOW_BAR_EDGE_INSET = 24;
 
 /** Pick the supported edge closest to the center of a dropped Flow Bar. */

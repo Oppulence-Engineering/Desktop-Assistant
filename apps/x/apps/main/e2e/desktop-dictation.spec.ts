@@ -127,6 +127,9 @@ test("packaged desktop dictation helper and overlay are live", async () => {
     .windows()
     .find((candidate) => candidate.url().endsWith("/dictation.html"));
   expect(dictationWindow, "dictation overlay renderer was not created").toBeTruthy();
+  // A real modifier event can arrive while Playwright is attaching. Normalize
+  // the overlay before asserting its persistent idle footprint.
+  await mainWindow.evaluate(() => window.ipc.invoke("dictation:updateState", { state: "idle" }));
   await expect(dictationWindow!.getByRole("button", { name: "Start dictation" })).toBeVisible();
   await expect
     .poll(() =>
@@ -137,7 +140,7 @@ test("packaged desktop dictation helper and overlay are live", async () => {
         return { visible: overlay?.isVisible(), bounds: overlay?.getBounds() };
       }),
     )
-    .toMatchObject({ visible: true, bounds: { width: 188, height: 54 } });
+    .toMatchObject({ visible: true, bounds: { width: 132, height: 42 } });
   // Exercise the renderer/main state bridge without capturing the developer's mic.
   await mainWindow.evaluate(() =>
     window.ipc.invoke("dictation:updateState", {
@@ -212,7 +215,7 @@ test("packaged desktop dictation helper and overlay are live", async () => {
         return { visible: overlay?.isVisible(), bounds: overlay?.getBounds() };
       }),
     )
-    .toMatchObject({ visible: true, bounds: { width: 188, height: 54 } });
+    .toMatchObject({ visible: true, bounds: { width: 132, height: 42 } });
 
   await mainWindow.evaluate(async () => {
     const config = await window.ipc.invoke("transcription:getConfig", null);
@@ -246,7 +249,7 @@ test("packaged desktop dictation helper and overlay are live", async () => {
         return { visible: overlay?.isVisible(), bounds: overlay?.getBounds() };
       }),
     )
-    .toMatchObject({ visible: true, bounds: { width: 188, height: 54 } });
+    .toMatchObject({ visible: true, bounds: { width: 132, height: 42 } });
 });
 
 test("packaged dictation follows ranked microphones through failover and reconnection", async () => {
