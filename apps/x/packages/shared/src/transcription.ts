@@ -404,7 +404,7 @@ export const DictationSettings = z.object({
   /** Persisted edge for the draggable desktop dictation status bar. */
   flowBarDock: DictationFlowBarDock.default("bottom"),
   /** Keeps the compact click-to-dictate bubble visible between recordings. */
-  showFlowBar: z.boolean().default(true),
+  showFlowBar: z.boolean().default(false),
   /** Transform shortcuts stay unregistered until the user explicitly opts in. */
   transformsEnabled: z.boolean().default(false),
   transforms: z.array(DictationTransform).max(9).default(DEFAULT_DICTATION_TRANSFORMS),
@@ -431,7 +431,7 @@ export type DictationSettings = z.infer<typeof DictationSettings>;
 export const DEFAULT_DICTATION_SETTINGS: DictationSettings = {
   shortcut: "control-option",
   flowBarDock: "bottom",
-  showFlowBar: true,
+  showFlowBar: false,
   transformsEnabled: false,
   transforms: DEFAULT_DICTATION_TRANSFORMS,
   language: "auto",
