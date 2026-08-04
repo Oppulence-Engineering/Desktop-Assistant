@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import { transcribeSession } from "./transcribe.js";
+import { transcribeSession, transcriptionOrder } from "./transcribe.js";
 import {
   fakeTranscriber,
   SAMPLE_RATE,
@@ -242,6 +242,144 @@ describe("transcribeSession", () => {
   });
 });
 
+/**
+ * The regression this exists for: no language reached the engine, and the whisper runner
+ * turned that into `-l en`. Every meeting was transcribed as English whatever was spoken,
+ * and nothing in the note said so.
+ */
+describe("session language", () => {
+  const twoTracks = (over?: { micPeak?: number; systemPeak?: number }) =>
+    sessionMeta({
+      tracks: [
+        trackMeta({
+          file: "mic.wav",
+          speaker: "me",
+          frames: SAMPLE_RATE,
+          peak: over?.micPeak ?? 9000,
+        }),
+        trackMeta({
+          file: "system.wav",
+          speaker: "them",
+          frames: SAMPLE_RATE,
+          peak: over?.systemPeak ?? 20000,
+        }),
+      ],
+    });
+
+  it("passes an explicit language through to every window", async () => {
+    const dirPath = await session("lang-explicit");
+    await writeWav(path.join(dirPath, "mic.wav"), tone(1));
+    await writeWav(path.join(dirPath, "system.wav"), tone(1));
+
+    const transcriber = fakeTranscriber(
+      () => [{ start: 0, end: 1, text: "bonjour" }],
+      () => ({ language: "fr", multilingualModel: true }),
+    );
+    const transcript = await transcribeSession(
+      args({ dir: dirPath, transcriber, meta: twoTracks(), lang: "fr" }),
+    );
+
+    expect(transcriber.calls.map((c) => c.lang)).toEqual(["fr", "fr"]);
+    expect(transcript.language).toBe("fr");
+    expect(transcript.language_detected).toBe(false);
+  });
+
+  it("detects once on the loudest track and reuses it for the other", async () => {
+    const dirPath = await session("lang-auto");
+    await writeWav(path.join(dirPath, "mic.wav"), tone(1));
+    await writeWav(path.join(dirPath, "system.wav"), tone(1));
+
+    // Only the first call reports a language, as a real detection pass would.
+    const transcriber = fakeTranscriber(
+      () => [{ start: 0, end: 1, text: "hola" }],
+      (call) => (call === 0 ? { language: "es", multilingualModel: true } : {}),
+    );
+    const transcript = await transcribeSession(
+      args({
+        dir: dirPath,
+        transcriber,
+        // The system track carries more signal, so it is the one worth detecting on.
+        meta: twoTracks({ micPeak: 3000, systemPeak: 25000 }),
+        lang: "auto",
+      }),
+    );
+
+    // First window asks the engine to detect; every window after it is told the answer,
+    // so one quiet track cannot drag half the meeting into another language.
+    expect(transcriber.calls.map((c) => c.lang)).toEqual(["auto", "es"]);
+    expect(transcript.language).toBe("es");
+    expect(transcript.language_detected).toBe(true);
+  });
+
+  it("treats a missing language as detection, never as English", async () => {
+    const dirPath = await session("lang-absent");
+    await writeWav(path.join(dirPath, "mic.wav"), tone(1));
+
+    const transcriber = fakeTranscriber(
+      () => [{ start: 0, end: 1, text: "x" }],
+      () => ({ language: "de", multilingualModel: true }),
+    );
+    await transcribeSession(
+      args({
+        dir: dirPath,
+        transcriber,
+        meta: sessionMeta({ tracks: [trackMeta({ frames: SAMPLE_RATE })] }),
+        // No `lang` at all — the exact shape of the bug.
+      }),
+    );
+
+    expect(transcriber.calls[0].lang).toBe("auto");
+  });
+
+  it("records the effective language when an English-only model ignores the request", async () => {
+    const dirPath = await session("lang-mismatch");
+    await writeWav(path.join(dirPath, "mic.wav"), tone(1));
+
+    // What whisper.cpp actually does with `-l fr` on a `.en` model: warns, transcribes
+    // as English, and reports `en`.
+    const transcriber = fakeTranscriber(
+      () => [{ start: 0, end: 1, text: "the quick brown fox" }],
+      () => ({ language: "en", multilingualModel: false }),
+    );
+    const transcript = await transcribeSession(
+      args({
+        dir: dirPath,
+        transcriber,
+        meta: sessionMeta({ tracks: [trackMeta({ frames: SAMPLE_RATE })] }),
+        lang: "fr",
+      }),
+    );
+
+    // The transcript must not claim French when nothing French happened.
+    expect(transcript.language).toBe("en");
+    const log = await fs.readFile(path.join(dirPath, "transcribe.log"), "utf8");
+    expect(log).toContain("English-only");
+  });
+
+  // Also the normal Parakeet case: its sidecar reports no language at all, so a
+  // Parakeet session on auto cannot latch one and each window detects independently.
+  it("claims no language when the engine reports none", async () => {
+    const dirPath = await session("lang-undetected");
+    await writeWav(path.join(dirPath, "mic.wav"), tone(1));
+
+    const transcriber = fakeTranscriber(() => [{ start: 0, end: 1, text: "something" }]);
+    const transcript = await transcribeSession(
+      args({
+        dir: dirPath,
+        transcriber,
+        meta: sessionMeta({ tracks: [trackMeta({ frames: SAMPLE_RATE })] }),
+        lang: "auto",
+      }),
+    );
+
+    // Never fall back to claiming English — assuming a language is the original bug.
+    expect(transcript.language).toBeUndefined();
+    expect(transcript.language_detected).toBeUndefined();
+    const log = await fs.readFile(path.join(dirPath, "transcribe.log"), "utf8");
+    expect(log).toContain("the session language is unknown");
+  });
+});
+
 describe("non-speech filtering", () => {
   it("drops whisper's annotations for near-silence instead of attributing them to a speaker", async () => {
     const dirPath = await session("non-speech");
@@ -435,5 +573,43 @@ describe("total failure", () => {
     ).rejects.toThrow(/no track could be transcribed/);
 
     expect(await fs.readdir(dirPath)).not.toContain("mic.decoded.wav");
+  });
+});
+
+/**
+ * Exported for this: which track is transcribed first decides which one's audio the
+ * language is detected from, and the loudest is the one worth trusting.
+ */
+describe("transcriptionOrder", () => {
+  const track = (file: string, peak: number, silent = false) =>
+    trackMeta({ file, peak, silent });
+
+  it("puts the loudest track first", () => {
+    expect(transcriptionOrder([track("mic", 1), track("system", 9)])[0].file).toBe("system");
+  });
+
+  it("puts silent tracks last however loud they claim to be", () => {
+    // `silent` is the sidecar's own verdict and outranks the number next to it.
+    const order = transcriptionOrder([track("mic", 99, true), track("system", 1)]);
+    expect(order.map((t) => t.file)).toEqual(["system", "mic"]);
+  });
+
+  it("keeps the declared order when peaks are equal", () => {
+    // Stable, so a two-track session with matched levels still reads mic-first.
+    expect(transcriptionOrder([track("mic", 5), track("system", 5)])[0].file).toBe("mic");
+  });
+
+  it("does not mutate the caller's array", () => {
+    // `meta.tracks` is read again after transcription — for retention, for the note's
+    // capture-health fields — so reordering it in place would be felt elsewhere.
+    const tracks = [track("mic", 1), track("system", 9)];
+    const before = tracks.map((t) => t.file);
+    transcriptionOrder(tracks);
+    expect(tracks.map((t) => t.file)).toEqual(before);
+  });
+
+  it("handles empty and single-track sessions", () => {
+    expect(transcriptionOrder([])).toEqual([]);
+    expect(transcriptionOrder([track("only", 3)])).toHaveLength(1);
   });
 });
