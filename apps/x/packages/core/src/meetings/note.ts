@@ -29,6 +29,11 @@ export function meetingNotePath(args: {
   startedAt: Date;
   sessionId: string;
   calendarEvent?: MeetingCalendarEvent;
+  /**
+   * Appended before the extension when the plain path already belongs to a different
+   * session. See {@link resolveMeetingNotePath}.
+   */
+  suffix?: string;
 }): string {
   const dateFolder = args.startedAt.toISOString().split("T")[0];
   const summary = args.calendarEvent?.summary;
@@ -39,7 +44,92 @@ export function meetingNotePath(args: {
         .substring(0, 100)
         .trim()
     : `meeting-${args.sessionId}`;
-  return `knowledge/Meetings/solomon/${dateFolder}/${filename || `meeting-${args.sessionId}`}.md`;
+  const base = filename || `meeting-${args.sessionId}`;
+  const suffixed = args.suffix ? `${base}-${args.suffix}` : base;
+  return `knowledge/Meetings/solomon/${dateFolder}/${suffixed}.md`;
+}
+
+/**
+ * The time part of a session id (`2026.07.29-1430` → `1430`).
+ *
+ * Used to tell two same-titled meetings apart in the file tree. The date is already the
+ * containing folder, so repeating it in the filename would only make it longer.
+ */
+function sessionSuffix(sessionId: string): string {
+  const dash = sessionId.indexOf("-");
+  return dash === -1 ? sessionId : sessionId.slice(dash + 1);
+}
+
+/** The `session_id` a meeting note records in its frontmatter, if it has one. */
+function noteSessionId(content: string): string | undefined {
+  return /^session_id:\s*(.+)$/m.exec(content)?.[1]?.trim() || undefined;
+}
+
+/**
+ * Which note file belongs to this session.
+ *
+ * The plain path is derived from the meeting's title and date, so **two meetings with
+ * the same title on the same day derive the same path** — two "1:1"s, a standup that
+ * ran twice. The second session then wrote over the first one's note, and since the
+ * placeholder write happens at capture start, that landed before the second meeting had
+ * anything of its own to show: the first meeting's transcript was replaced by an empty
+ * one.
+ *
+ * Ownership is decided by the `session_id` the note records about itself, not by
+ * position, so this is also stable across a restart — a session resumed from disk
+ * re-derives the same answer and keeps writing to its own note.
+ *
+ * A note carrying *no* `session_id` is treated as ours. Those are notes from before the
+ * native path recorded one, and from the renderer engine, which does not; claiming them
+ * keeps "open note" and "delete note" working for old sessions. Only a note that names a
+ * **different** session is refused.
+ */
+export async function resolveMeetingNotePath(args: {
+  sessionId: string;
+  startedAt: Date;
+  calendarEvent?: MeetingCalendarEvent;
+  /** Injected so tests need no workspace on disk. */
+  readNote?: (relativePath: string) => Promise<string | null>;
+}): Promise<string> {
+  const read = args.readNote ?? readNoteFromDisk;
+  const candidates = [
+    undefined,
+    sessionSuffix(args.sessionId),
+    // The session id is unique by construction (`createSessionDir` claims its directory
+    // with a non-recursive mkdir and suffixes on collision), so this always terminates.
+    args.sessionId,
+  ];
+
+  for (const suffix of candidates) {
+    const relative = meetingNotePath({
+      startedAt: args.startedAt,
+      sessionId: args.sessionId,
+      calendarEvent: args.calendarEvent,
+      suffix,
+    });
+    const existing = await read(relative);
+    if (existing === null) return relative;
+    const owner = noteSessionId(existing);
+    if (owner === undefined || owner === args.sessionId) return relative;
+  }
+
+  // Every candidate is spoken for by another session. Fall back to a path that cannot
+  // collide rather than overwriting one of them.
+  return meetingNotePath({
+    startedAt: args.startedAt,
+    sessionId: args.sessionId,
+    calendarEvent: args.calendarEvent,
+    suffix: `${args.sessionId}-${Date.now()}`,
+  });
+}
+
+/** Reads a workspace note, or null when it is not there. */
+async function readNoteFromDisk(relativePath: string): Promise<string | null> {
+  try {
+    return await fs.readFile(path.join(WorkDir, relativePath), "utf8");
+  } catch {
+    return null;
+  }
 }
 
 export interface MeetingProvenance {
@@ -133,9 +223,12 @@ export async function existingNotePath(
   sessionId: string,
   meta: Pick<MeetingSessionMeta, "started" | "calendar_event">,
 ): Promise<string | undefined> {
-  const relative = meetingNotePath({
-    startedAt: new Date(meta.started),
+  // Resolved rather than derived: with two same-titled meetings on one day the plain
+  // path may hold the *other* session's note, and offering to open — or delete — that
+  // one is worse than offering nothing.
+  const relative = await resolveMeetingNotePath({
     sessionId,
+    startedAt: new Date(meta.started),
     calendarEvent: calendarEventFromMeta(meta),
   });
   try {
@@ -204,11 +297,21 @@ export interface WriteMeetingNoteArgs {
 export async function writeMeetingNote(args: WriteMeetingNoteArgs): Promise<string> {
   const notePath =
     args.notePath ??
-    meetingNotePath({
-      startedAt: new Date(args.startedAt),
+    (await resolveMeetingNotePath({
       sessionId: args.sessionId,
+      startedAt: new Date(args.startedAt),
       calendarEvent: args.calendarEvent,
-    });
+      readNote: args.read
+        ? async (relative) => {
+            try {
+              const result = await args.read!(relative, "utf8");
+              return typeof result.data === "string" ? result.data : null;
+            } catch {
+              return null;
+            }
+          }
+        : undefined,
+    }));
   const provenance = { ...args.provenance } as Record<string, string | boolean>;
   // An empty transcript block is ambiguous: it looks the same whether nothing was said
   // or capture silently failed. Say which, so the UI and the note pipeline can tell a

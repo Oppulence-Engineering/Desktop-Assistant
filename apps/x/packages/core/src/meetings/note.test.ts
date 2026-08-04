@@ -6,7 +6,12 @@ import {
   segmentsToEntries,
   type MeetingTranscriptSegment,
 } from "@x/shared/dist/meetings.js";
-import { meetingNotePath, nativeProvenance, writeMeetingNote } from "./note.js";
+import {
+  meetingNotePath,
+  nativeProvenance,
+  resolveMeetingNotePath,
+  writeMeetingNote,
+} from "./note.js";
 
 /**
  * Note shape is a compatibility surface, not an implementation detail:
@@ -285,6 +290,95 @@ describe("meetingNotePath", () => {
   });
 });
 
+/**
+ * Two meetings with the same title on the same day — two "1:1"s, a standup that ran
+ * twice — derive the same path. The second session used to write over the first one's
+ * note, and because the placeholder write happens at capture start it landed before the
+ * second meeting had anything of its own: the first meeting's transcript was replaced
+ * by an empty one.
+ */
+describe("resolveMeetingNotePath", () => {
+  const startedAt = new Date("2026-07-29T14:30:00.000Z");
+  const calendarEvent = { summary: "Standup" };
+  const noteOwnedBy = (sessionId: string) =>
+    ["---", "type: meeting", `session_id: ${sessionId}`, "---", "", "# Standup"].join("\n");
+
+  /** A fake workspace: a map of relative path → note contents. */
+  const workspace = (files: Record<string, string>) => async (relative: string) =>
+    files[relative] ?? null;
+
+  it("takes the plain path when nothing is there", async () => {
+    expect(
+      await resolveMeetingNotePath({
+        sessionId: "2026.07.29-1430",
+        startedAt,
+        calendarEvent,
+        readNote: workspace({}),
+      }),
+    ).toBe("knowledge/Meetings/solomon/2026-07-29/Standup.md");
+  });
+
+  it("keeps writing to its own note across the two writes and a restart", async () => {
+    // The second write, and any write after a relaunch, must re-derive the *same* path
+    // rather than treating its own note as someone else's and starting a new one.
+    const own = "knowledge/Meetings/solomon/2026-07-29/Standup.md";
+    expect(
+      await resolveMeetingNotePath({
+        sessionId: "2026.07.29-1430",
+        startedAt,
+        calendarEvent,
+        readNote: workspace({ [own]: noteOwnedBy("2026.07.29-1430") }),
+      }),
+    ).toBe(own);
+  });
+
+  it("steps aside when the plain path belongs to a different session", async () => {
+    expect(
+      await resolveMeetingNotePath({
+        sessionId: "2026.07.29-1600",
+        startedAt,
+        calendarEvent,
+        readNote: workspace({
+          "knowledge/Meetings/solomon/2026-07-29/Standup.md": noteOwnedBy("2026.07.29-1430"),
+        }),
+      }),
+      // Suffixed with the start time, which is the part a person can act on. The date is
+      // already the folder.
+    ).toBe("knowledge/Meetings/solomon/2026-07-29/Standup-1600.md");
+  });
+
+  it("claims a note that names no session, so old notes stay reachable", async () => {
+    // Notes from before the native path recorded a session id, and every note the
+    // renderer engine writes. Refusing them would break "open note" and "delete note"
+    // for those sessions.
+    const legacy = "knowledge/Meetings/solomon/2026-07-29/Standup.md";
+    expect(
+      await resolveMeetingNotePath({
+        sessionId: "2026.07.29-1430",
+        startedAt,
+        calendarEvent,
+        readNote: workspace({ [legacy]: "---\ntype: meeting\n---\n\n# Standup" }),
+      }),
+    ).toBe(legacy);
+  });
+
+  it("keeps stepping aside when the suffixed path is taken too", async () => {
+    const taken = {
+      "knowledge/Meetings/solomon/2026-07-29/Standup.md": noteOwnedBy("other-a"),
+      "knowledge/Meetings/solomon/2026-07-29/Standup-1430.md": noteOwnedBy("other-b"),
+    };
+    expect(
+      await resolveMeetingNotePath({
+        sessionId: "2026.07.29-1430",
+        startedAt,
+        calendarEvent,
+        readNote: workspace(taken),
+      }),
+      // The session id is unique by construction, so this candidate always terminates.
+    ).toBe("knowledge/Meetings/solomon/2026-07-29/Standup-2026.07.29-1430.md");
+  });
+});
+
 describe("writeMeetingNote", () => {
   const provenance = nativeProvenance({
     model: "base.en-q5_1",
@@ -397,6 +491,52 @@ describe("writeMeetingNote", () => {
       // The placeholder's no-speech flag is gone now that there is speech.
       expect(out).not.toContain("no_speech_detected");
       expect(out.trimEnd().endsWith("```")).toBe(true);
+    });
+
+    it("does not overwrite a same-titled meeting from earlier the same day", async () => {
+      // End-to-end version of the collision: meeting one finishes with a transcript and
+      // notes, then meeting two starts and writes its placeholder. Both derive the same
+      // path from the shared title.
+      const files: Record<string, string> = {};
+      const io = {
+        write: async (p: string, data: string) => {
+          files[p] = data;
+          return { success: true } as never;
+        },
+        read: async (p: string) => ({ data: files[p] ?? "" }) as never,
+      };
+      const calendarEvent = { summary: "Standup" };
+
+      const firstPath = await writeMeetingNote({
+        sessionId: "2026.07.29-1000",
+        startedAt: "2026-07-29T10:00:00.000Z",
+        segments: [segment({ text: "meeting one happened" })],
+        calendarEvent,
+        provenance: nativeProvenance({
+          model: "base.en-q5_1",
+          sessionId: "2026.07.29-1000",
+          systemAudioCaptured: true,
+        }),
+        ...io,
+      });
+      files[firstPath] = files[firstPath].replace("## Notes", "## Notes\n\nmy own note");
+
+      const secondPath = await writeMeetingNote({
+        sessionId: "2026.07.29-1430",
+        startedAt: "2026-07-29T14:30:00.000Z",
+        segments: [],
+        calendarEvent,
+        provenance: nativeProvenance({
+          model: "base.en-q5_1",
+          sessionId: "2026.07.29-1430",
+          systemAudioCaptured: true,
+        }),
+        ...io,
+      });
+
+      expect(secondPath).not.toBe(firstPath);
+      expect(files[firstPath]).toContain("meeting one happened");
+      expect(files[firstPath]).toContain("my own note");
     });
 
     it("writes a fresh note when the existing one cannot be read", async () => {
