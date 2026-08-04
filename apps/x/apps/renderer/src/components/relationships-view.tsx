@@ -172,8 +172,7 @@ function formatSourceLag(seconds?: number): string {
 function sourceConnectionGuidance(inventory: RelationshipSourceInventoryItem[]): string {
   const connected = inventory.filter((item) =>
     item.accounts.some(
-      (account) =>
-        account.status !== "disconnected" && account.status !== "reconnect_required",
+      (account) => account.status !== "disconnected" && account.status !== "reconnect_required",
     ),
   );
   const missing = inventory.filter((item) => item.accounts.length === 0);
@@ -208,15 +207,19 @@ function formatRelationshipChangeValue(value: unknown): string {
   return "Updated";
 }
 
+export type RelationshipSection = "accounts" | "attention";
+
 export function RelationshipsView({
   initialId,
   initialGraphState,
+  initialSection = "accounts",
   onStartMeeting,
   meetingCaptureBlocker,
   onChatContextChange,
 }: {
   initialId?: string | null;
   initialGraphState?: string | null;
+  initialSection?: RelationshipSection;
   onStartMeeting?: (target: MeetingRelationshipTarget) => Promise<void>;
   meetingCaptureBlocker?: MeetingDoctorCheck | null;
   onChatContextChange?: (context: { label: string; detail?: string } | null) => void;
@@ -240,16 +243,28 @@ export function RelationshipsView({
   const [surface, setSurface] = React.useState<"list" | "graph">(
     initialGraphState ? "graph" : "list",
   );
+  const [section, setSection] = React.useState<RelationshipSection>(initialSection);
+
+  React.useEffect(() => {
+    setSection(initialSection);
+  }, [initialSection]);
 
   React.useEffect(() => {
     if (surface !== "list") return;
+    if (section === "attention") {
+      onChatContextChange?.({
+        label: "Attention queue",
+        detail: `${attention.length} open items to review`,
+      });
+      return;
+    }
     const selected = rows.find((relationship) => relationship.id === detail);
     onChatContextChange?.(
       selected
         ? { label: selected.displayName, detail: "Open relationship record" }
         : { label: "Relationship Mission Control", detail: `${rows.length} accounts in view` },
     );
-  }, [detail, onChatContextChange, rows, surface]);
+  }, [attention.length, detail, onChatContextChange, rows, section, surface]);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -319,14 +334,17 @@ export function RelationshipsView({
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
-                Account mission control
+                {section === "attention" ? "Attention queue" : "Account mission control"}
               </p>
               <h1 className="mt-1 text-base font-semibold text-primary">
-                Which relationship needs action now?
+                {section === "attention"
+                  ? "What needs attention now?"
+                  : "Which relationship needs action now?"}
               </h1>
               <p className="mt-1 max-w-2xl text-xs text-primary/55">
-                One living state across email, meetings, Slack, CRM, and revenue evidence. Every
-                recommendation explains what changed and waits for approval.
+                {section === "attention"
+                  ? "Review risks, commitments, and next actions with the evidence and decision controls beside each item."
+                  : "One living state across email, meetings, Slack, CRM, and revenue evidence. Every recommendation explains what changed and waits for approval."}
               </p>
             </div>
             <div className="flex flex-col items-end gap-2">
@@ -337,7 +355,7 @@ export function RelationshipsView({
                   onClick={() => setSurface("list")}
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs ${surface === "list" ? "bg-primary text-background" : "text-primary/55 hover:bg-primary/5"}`}
                 >
-                  <ListBullets /> Accounts
+                  <ListBullets /> {section === "attention" ? "Attention" : "Accounts"}
                 </button>
                 <button
                   type="button"
@@ -370,6 +388,19 @@ export function RelationshipsView({
             onError={setError}
             onContextChange={onChatContextChange}
           />
+        ) : section === "attention" ? (
+          <div className="flex flex-col gap-4">
+            <PortfolioAttentionQueue
+              items={attention}
+              onOpenRelationship={setDetail}
+              onError={setError}
+              onChanged={() => void load()}
+              emptyState
+            />
+            <div data-tour-target="evidence">
+              <SemanticSearch onError={setError} />
+            </div>
+          </div>
         ) : (
           <div className="flex flex-col gap-4">
             <section aria-labelledby="relationship-accounts-heading" className="order-1 space-y-3">
@@ -382,45 +413,45 @@ export function RelationshipsView({
                 </h2>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <div className="relative min-w-0 flex-1">
-                <MagnifyingGlass className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-primary/40" />
-                <Input
-                  aria-label="Filter relationships"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Filter by account, domain, or contact"
-                  className="pl-8"
-                />
-              </div>
-              <Select value={health} onValueChange={setHealth}>
-                <SelectTrigger className="w-full sm:w-44" size="sm">
-                  <SelectValue placeholder="Health" />
-                </SelectTrigger>
-                <SelectContent className="app-shell rounded-[2px]">
-                  <SelectItem value="all">All health</SelectItem>
-                  {HEALTH_OPTIONS.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {humanize(value)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={lifecycle} onValueChange={setLifecycle}>
-                <SelectTrigger className="w-full sm:w-44" size="sm">
-                  <SelectValue placeholder="Lifecycle" />
-                </SelectTrigger>
-                <SelectContent className="app-shell rounded-[2px]">
-                  <SelectItem value="all">All lifecycle</SelectItem>
-                  {LIFECYCLE_OPTIONS.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {humanize(value)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button variant="outline" size="sm" onClick={() => setCreating(true)}>
-                <Plus /> New
-              </Button>
+                <div className="relative min-w-0 flex-1">
+                  <MagnifyingGlass className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-primary/40" />
+                  <Input
+                    aria-label="Filter relationships"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Filter by account, domain, or contact"
+                    className="pl-8"
+                  />
+                </div>
+                <Select value={health} onValueChange={setHealth}>
+                  <SelectTrigger className="w-full sm:w-44" size="sm">
+                    <SelectValue placeholder="Health" />
+                  </SelectTrigger>
+                  <SelectContent className="app-shell rounded-[2px]">
+                    <SelectItem value="all">All health</SelectItem>
+                    {HEALTH_OPTIONS.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {humanize(value)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={lifecycle} onValueChange={setLifecycle}>
+                  <SelectTrigger className="w-full sm:w-44" size="sm">
+                    <SelectValue placeholder="Lifecycle" />
+                  </SelectTrigger>
+                  <SelectContent className="app-shell rounded-[2px]">
+                    <SelectItem value="all">All lifecycle</SelectItem>
+                    {LIFECYCLE_OPTIONS.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {humanize(value)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="sm" onClick={() => setCreating(true)}>
+                  <Plus /> New
+                </Button>
               </div>
 
               <div className="flex items-center justify-between">
@@ -431,103 +462,101 @@ export function RelationshipsView({
               </div>
 
               {error ? (
-              <div className="flex gap-2 rounded-[2px] border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
-                <Warning className="mt-0.5 size-4 shrink-0" />
-                {error}
-              </div>
+                <div className="flex gap-2 rounded-[2px] border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+                  <Warning className="mt-0.5 size-4 shrink-0" />
+                  {error}
+                </div>
               ) : null}
 
               {loading ? (
-              <ListSkeleton />
-            ) : rows.length === 0 ? (
-              <EmptyBlock
-                icon={<AddressBook className="size-6" />}
-                title="No matching relationships"
-                body="Connect a source to build living relationship state, or add an account by hand."
-              >
-                <Button size="sm" onClick={() => setCreating(true)}>
-                  <Plus /> Add relationship
-                </Button>
-              </EmptyBlock>
-            ) : (
-              <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
-                {rows.map((relationship) => (
-                  <li key={relationship.id}>
-                    <button
-                      type="button"
-                      onClick={() => setDetail(relationship.id)}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-background-100/60 dark:hover:bg-background-100/40"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="truncate text-sm font-medium text-primary">
-                            {relationship.displayName}
-                          </span>
-                          <Badge variant="outline" className="rounded-[2px] font-normal capitalize">
-                            {humanize(relationship.lifecycle)}
-                          </Badge>
-                          <span
-                            className={`rounded-full border px-2 py-0.5 text-[11px] capitalize ${
-                              HEALTH_TONE[relationship.health] ?? HEALTH_TONE.unknown
-                            }`}
-                          >
-                            {humanize(relationship.health)}
-                          </span>
+                <ListSkeleton />
+              ) : rows.length === 0 ? (
+                <EmptyBlock
+                  icon={<AddressBook className="size-6" />}
+                  title="No matching relationships"
+                  body="Connect a source to build living relationship state, or add an account by hand."
+                >
+                  <Button size="sm" onClick={() => setCreating(true)}>
+                    <Plus /> Add relationship
+                  </Button>
+                </EmptyBlock>
+              ) : (
+                <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
+                  {rows.map((relationship) => (
+                    <li key={relationship.id}>
+                      <button
+                        type="button"
+                        onClick={() => setDetail(relationship.id)}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-background-100/60 dark:hover:bg-background-100/40"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="truncate text-sm font-medium text-primary">
+                              {relationship.displayName}
+                            </span>
+                            <Badge
+                              variant="outline"
+                              className="rounded-[2px] font-normal capitalize"
+                            >
+                              {humanize(relationship.lifecycle)}
+                            </Badge>
+                            <span
+                              className={`rounded-full border px-2 py-0.5 text-[11px] capitalize ${
+                                HEALTH_TONE[relationship.health] ?? HEALTH_TONE.unknown
+                              }`}
+                            >
+                              {humanize(relationship.health)}
+                            </span>
+                          </div>
+                          <p className="mt-1 truncate text-xs text-primary/55">
+                            {relationship.nextAction ||
+                              relationship.stateReason ||
+                              relationship.summary ||
+                              "Waiting for enough evidence to recommend a next action."}
+                          </p>
                         </div>
-                        <p className="mt-1 truncate text-xs text-primary/55">
-                          {relationship.nextAction ||
-                            relationship.stateReason ||
-                            relationship.summary ||
-                            "Waiting for enough evidence to recommend a next action."}
-                        </p>
-                      </div>
-                      <div className="hidden shrink-0 text-right md:block">
-                        <p className="text-xs capitalize text-primary/55">
-                          {humanize(relationship.engagement)}
-                        </p>
-                        <p className="text-[11px] text-primary/35">
-                          {relationship.lastChangedAt
-                            ? `changed ${relativeTime(relationship.lastChangedAt)}`
-                            : relationship.lastTouchAt
-                              ? `touched ${relativeTime(relationship.lastTouchAt)}`
-                              : `state v${relationship.stateVersion}`}
-                        </p>
-                      </div>
-                      {relationship.openActions ? (
-                        <Badge variant="secondary" className="shrink-0">
-                          {relationship.openActions} action
-                          {relationship.openActions === 1 ? "" : "s"}
-                        </Badge>
-                      ) : null}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                        <div className="hidden shrink-0 text-right md:block">
+                          <p className="text-xs capitalize text-primary/55">
+                            {humanize(relationship.engagement)}
+                          </p>
+                          <p className="text-[11px] text-primary/35">
+                            {relationship.lastChangedAt
+                              ? `changed ${relativeTime(relationship.lastChangedAt)}`
+                              : relationship.lastTouchAt
+                                ? `touched ${relativeTime(relationship.lastTouchAt)}`
+                                : `state v${relationship.stateVersion}`}
+                          </p>
+                        </div>
+                        {relationship.openActions ? (
+                          <Badge variant="secondary" className="shrink-0">
+                            {relationship.openActions} action
+                            {relationship.openActions === 1 ? "" : "s"}
+                          </Badge>
+                        ) : null}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
             </section>
 
             <div className="order-2">
-              <PortfolioAttentionQueue
-                items={attention}
-                onOpenRelationship={setDetail}
-                onError={setError}
-                onChanged={() => void load()}
-              />
+              <div data-tour-target="evidence">
+                <SemanticSearch onError={setError} />
+              </div>
             </div>
 
             <div className="order-3">
-              <SemanticSearch onError={setError} />
+              <div data-tour-target="relationship-correction">
+                <IdentityReviewInbox
+                  candidates={identityCandidates}
+                  onError={setError}
+                  onChanged={() => void load()}
+                />
+              </div>
             </div>
 
             <div className="order-4">
-              <IdentityReviewInbox
-                candidates={identityCandidates}
-                onError={setError}
-                onChanged={() => void load()}
-              />
-            </div>
-
-            <div className="order-5">
               <SourceConnectionCards
                 inventory={sourceInventory}
                 onError={setError}
@@ -568,15 +597,39 @@ function PortfolioAttentionQueue({
   onOpenRelationship,
   onChanged,
   onError,
+  emptyState = false,
 }: {
   items: RelationshipAttentionItem[];
   onOpenRelationship: (id: string) => void;
   onChanged: () => void;
   onError: (message: string | null) => void;
+  emptyState?: boolean;
 }) {
   const [busy, setBusy] = React.useState<string | null>(null);
   const [showAll, setShowAll] = React.useState(false);
-  if (items.length === 0) return null;
+  if (items.length === 0 && !emptyState) return null;
+
+  if (items.length === 0) {
+    return (
+      <section
+        aria-labelledby="portfolio-attention-heading"
+        className="space-y-2 border border-border p-4"
+        data-capability="attention-queue"
+        data-tour-target="attention-queue"
+      >
+        <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
+          Portfolio attention
+        </p>
+        <h2 id="portfolio-attention-heading" className="text-sm font-medium text-primary">
+          Nothing needs review right now
+        </h2>
+        <p className="text-xs text-primary/55">
+          New risks, commitments, and next actions will appear here when relationship evidence
+          changes.
+        </p>
+      </section>
+    );
+  }
 
   const customerItems = items.filter((item) => item.reasonCode !== "source_degradation");
   const maintenanceItems = items.filter((item) => item.reasonCode === "source_degradation");
@@ -617,6 +670,7 @@ function PortfolioAttentionQueue({
       aria-labelledby="portfolio-attention-heading"
       className="space-y-2"
       data-capability="attention-queue"
+      data-tour-target="attention-queue"
     >
       <div className="flex items-end justify-between gap-3">
         <div>
@@ -659,6 +713,7 @@ function PortfolioAttentionQueue({
                 <Button
                   type="button"
                   size="sm"
+                  data-tour-target="relationship-action"
                   onClick={() => onOpenRelationship(item.relationshipId)}
                 >
                   Open account
@@ -684,10 +739,16 @@ function PortfolioAttentionQueue({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="app-shell">
-                    <DropdownMenuItem disabled={busy !== null} onClick={() => void decide(item, "snooze")}>
+                    <DropdownMenuItem
+                      disabled={busy !== null}
+                      onClick={() => void decide(item, "snooze")}
+                    >
                       Snooze for one day
                     </DropdownMenuItem>
-                    <DropdownMenuItem disabled={busy !== null} onClick={() => void decide(item, "dismiss")}>
+                    <DropdownMenuItem
+                      disabled={busy !== null}
+                      onClick={() => void decide(item, "dismiss")}
+                    >
                       Dismiss…
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -699,7 +760,8 @@ function PortfolioAttentionQueue({
               <ul className="mt-1 list-disc space-y-1 pl-4">
                 {Object.entries(item.rankFactors).map(([factor, contribution]) => (
                   <li key={factor}>
-                    {relationshipLabel(factor)} {contribution >= 0 ? "raised" : "lowered"} the priority.
+                    {relationshipLabel(factor)} {contribution >= 0 ? "raised" : "lowered"} the
+                    priority.
                   </li>
                 ))}
                 {item.sourceRequirements.length > 0 ? (
@@ -711,14 +773,20 @@ function PortfolioAttentionQueue({
         ))}
       </ol>
       {customerItems.length > 3 ? (
-        <Button type="button" size="sm" variant="ghost" onClick={() => setShowAll((value) => !value)}>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => setShowAll((value) => !value)}
+        >
           {showAll ? "Show top three" : `Show all ${customerItems.length} customer actions`}
         </Button>
       ) : null}
       {maintenanceItems.length > 0 ? (
         <details className="rounded-[2px] border border-border p-3 text-xs">
           <summary className="cursor-pointer font-medium text-primary">
-            Data maintenance · {maintenanceItems.length} source issue{maintenanceItems.length === 1 ? "" : "s"}
+            Data maintenance · {maintenanceItems.length} source issue
+            {maintenanceItems.length === 1 ? "" : "s"}
           </summary>
           <div className="mt-2 space-y-2 text-primary/60">
             {maintenanceItems.map((item) => (
@@ -892,9 +960,7 @@ function SourceConnectionCards({
         <h2 id="source-connections-heading" className="text-sm font-medium text-primary">
           Evidence sources
         </h2>
-        <p className="mt-0.5 text-xs text-primary/55">
-          {sourceConnectionGuidance(inventory)}
-        </p>
+        <p className="mt-0.5 text-xs text-primary/55">{sourceConnectionGuidance(inventory)}</p>
       </div>
       <div className="grid gap-2 md:grid-cols-3">
         {needsAttention.map((item) => {
@@ -1974,7 +2040,7 @@ function RelationshipSheet({
               ) : null}
             </section>
 
-            <section data-capability="governed-actions">
+            <section data-capability="governed-actions" data-tour-target="relationship-action">
               <SectionTitle title={`Recommendations (${data.recommendations.length})`} />
               {data.recommendations.length === 0 ? (
                 <EmptyText>No action is currently recommended.</EmptyText>

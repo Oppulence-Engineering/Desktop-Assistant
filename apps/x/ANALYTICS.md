@@ -128,6 +128,25 @@ All in `apps/renderer/src/lib/analytics.ts`:
 - `note_exported` — `{ format }`
 - `feedback_submitted` — `{ category }` — fired on successful submit of the in-app feedback form (Settings → Help), which relays to Plain via `POST /v1/feedback`
 
+### Product tour
+
+All in `apps/renderer/src/lib/analytics.ts`, emitted by `apps/renderer/src/components/product-tour.tsx`.
+
+`variant` is one of `main | relationships | meetings | actions` — which surface the tour was launched
+from. `step` is **1-indexed** in the payload (the component's internal index is 0-based and is
+incremented at capture time), so funnels read naturally in PostHog.
+
+- `product_tour_started` — `{ variant }`
+- `product_tour_step_viewed` — `{ variant, step, target }` — fired once the step's `data-tour-target`
+  element is actually resolved in the DOM, not when the step is queued
+- `product_tour_skipped` — `{ variant, step }` — user clicked "Skip"
+- `product_tour_dismissed` / `product_tour_abandoned` — `{ variant, step }` — user closed the tour
+  (Esc / close button) before the last step. **Both fire together on the same path** — they are not
+  distinct outcomes, so don't sum them when measuring drop-off; pick one.
+- `product_tour_completed` — `{ variant, step_count }`
+- `product_tour_target_missing` — `{ variant, step, target }` — the step's target element never
+  appeared after the retry window; the signal that a tour step has drifted from the UI
+
 ## Person properties
 
 Persistent across sessions for the same user. Set via `posthog.people.set` or as the `properties` arg to `identify`.

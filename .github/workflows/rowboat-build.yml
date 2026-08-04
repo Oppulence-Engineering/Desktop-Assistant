@@ -2,6 +2,7 @@ name: Rowboat Build
 
 on:
   pull_request:
+  # Keep the build available for every develop-to-main promotion PR.
 
 jobs:
   build-rowboat-nextjs:

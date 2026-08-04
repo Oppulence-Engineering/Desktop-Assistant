@@ -18,6 +18,7 @@ import {
   Mail,
   MessageSquare,
   Settings,
+  Sparkles,
   Square,
   UsersRound,
   Video,
@@ -186,8 +187,9 @@ type SidebarContentPanelProps = {
   recentRuns?: { id: string; title?: string; createdAt: string }[];
   onOpenRun?: (runId: string) => void;
   onOpenEmail?: (threadId?: string) => void;
-  onOpenRelationships?: () => void;
+  onOpenRelationships?: (section?: "accounts" | "attention") => void;
   onOpenHome?: () => void;
+  onOpenTour?: () => void;
   onNewChat?: () => void;
   onToggleBrowser?: () => void;
   onVoiceNoteCreated?: (path: string) => void;
@@ -196,7 +198,8 @@ type SidebarContentPanelProps = {
   /** Which primary destination is currently active, for nav highlighting. */
   activeNav?:
     | "home"
-    | "relationships"
+    | "accounts"
+    | "attention"
     | "email"
     | "meetings"
     | "knowledge"
@@ -521,6 +524,7 @@ export function SidebarContentPanel({
   onOpenEmail,
   onOpenRelationships,
   onOpenHome,
+  onOpenTour,
   onNewChat,
   onToggleBrowser,
   onVoiceNoteCreated,
@@ -898,22 +902,43 @@ export function SidebarContentPanel({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton isActive={activeNav === "home"} onClick={onOpenHome}>
+                <SidebarMenuButton
+                  isActive={activeNav === "home"}
+                  onClick={onOpenHome}
+                  data-tour-target="home"
+                >
                   <Home className="size-4 shrink-0" />
                   <span className="flex-1 truncate">Home</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  isActive={activeNav === "relationships"}
-                  onClick={onOpenRelationships}
+                  isActive={activeNav === "accounts"}
+                  onClick={() => onOpenRelationships?.("accounts")}
                   className="h-auto py-1.5"
+                  data-tour-target="accounts"
                 >
                   <UsersRound className="size-4 shrink-0" />
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate">Relationships</span>
+                    <span className="truncate">Accounts</span>
                     <span className="truncate text-[11px] text-muted-foreground">
-                      Account mission control
+                      Relationship mission control
+                    </span>
+                  </div>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={activeNav === "attention"}
+                  onClick={() => onOpenRelationships?.("attention")}
+                  className="h-auto py-1.5"
+                  data-tour-target="attention-nav"
+                >
+                  <AlertTriangle className="size-4 shrink-0 text-muted-foreground" />
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate">Attention queue</span>
+                    <span className="truncate text-[11px] text-muted-foreground">
+                      Risks, commitments, next actions
                     </span>
                   </div>
                 </SidebarMenuButton>
@@ -923,10 +948,11 @@ export function SidebarContentPanel({
                   isActive={activeNav === "email"}
                   onClick={() => onOpenEmail?.()}
                   className={previewEmail ? "h-auto py-1.5" : undefined}
+                  data-tour-target="evidence-inbox"
                 >
                   <Mail className="size-4 shrink-0" />
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate">Email</span>
+                    <span className="truncate">Evidence inbox</span>
                     {previewEmail && (
                       <span className="truncate text-[11px] text-muted-foreground">
                         {formatEmailFrom(previewEmail.from)} · {previewEmail.subject}
@@ -945,6 +971,7 @@ export function SidebarContentPanel({
                   isActive={activeNav === "meetings"}
                   onClick={onOpenMeetings}
                   className={meetingSublabel ? "h-auto py-1.5" : undefined}
+                  data-tour-target="meetings"
                 >
                   <Mic className={cn("size-4 shrink-0", meetingIsRecording && "text-red-500")} />
                   <div className="flex min-w-0 flex-1 flex-col">
@@ -1042,10 +1069,11 @@ export function SidebarContentPanel({
                   isActive={activeNav === "knowledge"}
                   onClick={() => knowledgeActions.openKnowledgeView()}
                   className={knowledgeUpdatedLabel ? "h-auto py-1.5" : undefined}
+                  data-tour-target="evidence-nav"
                 >
                   <FileText className="size-4 shrink-0" />
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate">Knowledge</span>
+                    <span className="truncate">Evidence graph</span>
                     {knowledgeUpdatedLabel && (
                       <span className="truncate text-[11px] text-muted-foreground">
                         {knowledgeUpdatedLabel}
@@ -1064,10 +1092,11 @@ export function SidebarContentPanel({
                   isActive={activeNav === "agents"}
                   onClick={onOpenBgTasks}
                   className={bgAgentsLabel ? "h-auto py-1.5" : undefined}
+                  data-tour-target="actions"
                 >
                   <Workflow className="size-4 shrink-0 text-muted-foreground" />
                   <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-muted-foreground">Background tasks</span>
+                    <span className="truncate text-muted-foreground">Actions</span>
                     {bgAgentsLabel && (
                       <span
                         className={cn(
@@ -1094,7 +1123,7 @@ export function SidebarContentPanel({
                     <span className="truncate text-muted-foreground">Workspaces</span>
                     <span className="truncate text-[11px] text-muted-foreground">
                       {workspaceCount === 0
-                        ? "No workspaces"
+                        ? "Add investigation workspace"
                         : `${workspaceCount} workspace${workspaceCount === 1 ? "" : "s"}`}
                     </span>
                   </div>
@@ -1208,6 +1237,7 @@ export function SidebarContentPanel({
               onClick={() => setConnectionsSettingsOpen(true)}
               aria-label="Connect Accounts"
               title="Connect Accounts"
+              data-tour-target="connections"
               className={cn(
                 "flex items-center gap-2 rounded-lg py-1 text-xs text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 isCollapsed ? "size-8 justify-center px-0" : "w-full px-2",
@@ -1267,10 +1297,11 @@ export function SidebarContentPanel({
               </AlertDialog>
             )}
           </div>
-          <SettingsDialog>
+          <SettingsDialog onStartTour={onOpenTour}>
             <button
               aria-label="Settings"
               title="Settings"
+              data-tour-target="settings"
               className={cn(
                 "flex items-center gap-2 rounded-lg py-1 text-xs text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 isCollapsed ? "size-8 justify-center px-0" : "w-full px-2",
@@ -1280,6 +1311,22 @@ export function SidebarContentPanel({
               <span className={isCollapsed ? "sr-only" : undefined}>Settings</span>
             </button>
           </SettingsDialog>
+          {onOpenTour && (
+            <button
+              type="button"
+              aria-label="Take a tour"
+              title="Take a tour"
+              data-tour-target="tour-button"
+              onClick={onOpenTour}
+              className={cn(
+                "flex items-center gap-2 rounded-none py-1 text-xs text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                isCollapsed ? "size-8 justify-center px-0" : "w-full px-2",
+              )}
+            >
+              <Sparkles className="size-4" />
+              <span className={isCollapsed ? "sr-only" : undefined}>Take a tour</span>
+            </button>
+          )}
         </div>
       </div>
       <SettingsDialog

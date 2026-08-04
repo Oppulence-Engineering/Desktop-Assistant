@@ -2227,45 +2227,46 @@ function CloudRunsHistoryTab({ slug }: { slug: string }) {
   const [error, setError] = useState<string | null>(null);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
 
-  const load = useCallback(async (
-    cursor?: string,
-    mode: "replace" | "append" | "refresh" = "replace",
-  ) => {
-    if (mode === "append") {
-      setLoadingMore(true);
-    } else if (mode === "replace") {
-      setLoading(true);
-    }
-    try {
-      const result = await window.ipc.invoke("bg-task:listCloudRuns", {
-        slug,
-        executor: "api",
-        limit: 100,
-        ...(cursor ? { cursor } : {}),
-      });
-      if (result.success) {
-        setRows((current) => {
-          if (mode === "replace") return result.runs;
-          const ordered = mode === "append" ? [...current, ...result.runs] : [...result.runs, ...current];
-          return [...new Map(ordered.map((run) => [run.runId, run])).values()];
-        });
-        if (mode !== "refresh") {
-          setNextCursor(result.nextCursor ?? null);
-        }
-        setError(null);
-      } else {
-        setError(result.error ?? "Could not load API-worker runs.");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load API-worker runs.");
-    } finally {
+  const load = useCallback(
+    async (cursor?: string, mode: "replace" | "append" | "refresh" = "replace") => {
       if (mode === "append") {
-        setLoadingMore(false);
+        setLoadingMore(true);
       } else if (mode === "replace") {
-        setLoading(false);
+        setLoading(true);
       }
-    }
-  }, [slug]);
+      try {
+        const result = await window.ipc.invoke("bg-task:listCloudRuns", {
+          slug,
+          executor: "api",
+          limit: 100,
+          ...(cursor ? { cursor } : {}),
+        });
+        if (result.success) {
+          setRows((current) => {
+            if (mode === "replace") return result.runs;
+            const ordered =
+              mode === "append" ? [...current, ...result.runs] : [...result.runs, ...current];
+            return [...new Map(ordered.map((run) => [run.runId, run])).values()];
+          });
+          if (mode !== "refresh") {
+            setNextCursor(result.nextCursor ?? null);
+          }
+          setError(null);
+        } else {
+          setError(result.error ?? "Could not load API-worker runs.");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not load API-worker runs.");
+      } finally {
+        if (mode === "append") {
+          setLoadingMore(false);
+        } else if (mode === "replace") {
+          setLoading(false);
+        }
+      }
+    },
+    [slug],
+  );
 
   useEffect(() => {
     void load();
@@ -3443,56 +3444,57 @@ function GlobalCloudRunsView({
     runId: string;
   } | null>(null);
 
-  const load = useCallback(async (
-    cursor?: string,
-    mode: "replace" | "append" | "refresh" = "replace",
-  ) => {
-    if (mode === "append") {
-      setLoadingMore(true);
-    } else if (mode === "replace") {
-      setLoading(true);
-    }
-    try {
-      const sinceMs =
-        sinceFilter === "24h"
-          ? 24 * 3600_000
-          : sinceFilter === "7d"
-            ? 7 * 24 * 3600_000
-            : sinceFilter === "30d"
-              ? 30 * 24 * 3600_000
-              : null;
-      const result = await window.ipc.invoke("bg-task:listAllCloudRuns", {
-        executor: "api",
-        limit: 200,
-        ...(statusFilter !== "all" ? { status: statusFilter } : {}),
-        ...(triggerFilter !== "all" ? { trigger: triggerFilter } : {}),
-        ...(slugFilter !== "all" ? { slug: slugFilter } : {}),
-        ...(sinceMs ? { since: new Date(Date.now() - sinceMs).toISOString() } : {}),
-        ...(cursor ? { cursor } : {}),
-      });
-      if (result.success) {
-        setRows((current) => {
-          if (mode === "replace") return result.runs;
-          const ordered = mode === "append" ? [...current, ...result.runs] : [...result.runs, ...current];
-          return [...new Map(ordered.map((run) => [`${run.slug}:${run.runId}`, run])).values()];
-        });
-        if (mode !== "refresh") {
-          setNextCursor(result.nextCursor ?? null);
-        }
-        setError(null);
-      } else {
-        setError(result.error ?? "Could not load cloud runs.");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load cloud runs.");
-    } finally {
+  const load = useCallback(
+    async (cursor?: string, mode: "replace" | "append" | "refresh" = "replace") => {
       if (mode === "append") {
-        setLoadingMore(false);
+        setLoadingMore(true);
       } else if (mode === "replace") {
-        setLoading(false);
+        setLoading(true);
       }
-    }
-  }, [statusFilter, triggerFilter, slugFilter, sinceFilter]);
+      try {
+        const sinceMs =
+          sinceFilter === "24h"
+            ? 24 * 3600_000
+            : sinceFilter === "7d"
+              ? 7 * 24 * 3600_000
+              : sinceFilter === "30d"
+                ? 30 * 24 * 3600_000
+                : null;
+        const result = await window.ipc.invoke("bg-task:listAllCloudRuns", {
+          executor: "api",
+          limit: 200,
+          ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+          ...(triggerFilter !== "all" ? { trigger: triggerFilter } : {}),
+          ...(slugFilter !== "all" ? { slug: slugFilter } : {}),
+          ...(sinceMs ? { since: new Date(Date.now() - sinceMs).toISOString() } : {}),
+          ...(cursor ? { cursor } : {}),
+        });
+        if (result.success) {
+          setRows((current) => {
+            if (mode === "replace") return result.runs;
+            const ordered =
+              mode === "append" ? [...current, ...result.runs] : [...result.runs, ...current];
+            return [...new Map(ordered.map((run) => [`${run.slug}:${run.runId}`, run])).values()];
+          });
+          if (mode !== "refresh") {
+            setNextCursor(result.nextCursor ?? null);
+          }
+          setError(null);
+        } else {
+          setError(result.error ?? "Could not load cloud runs.");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not load cloud runs.");
+      } finally {
+        if (mode === "append") {
+          setLoadingMore(false);
+        } else if (mode === "replace") {
+          setLoading(false);
+        }
+      }
+    },
+    [statusFilter, triggerFilter, slugFilter, sinceFilter],
+  );
 
   useEffect(() => {
     void load();
@@ -3538,70 +3540,71 @@ function GlobalCloudRunsView({
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {rows.length > 0 || hasActiveFilters ? (
-      <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-border px-6 py-2.5">
-        {CLOUD_STATUS_FILTERS.map((f) => (
-          <FilterChip
-            key={f.value}
-            active={statusFilter === f.value}
-            onClick={() => setStatusFilter(f.value)}
-          >
-            {f.label}
-          </FilterChip>
-        ))}
-        <span className="mx-1 h-4 w-px bg-border" aria-hidden />
-        {CLOUD_TRIGGER_FILTERS.map((f) => (
-          <FilterChip
-            key={f.value}
-            active={triggerFilter === f.value}
-            onClick={() => setTriggerFilter(f.value)}
-          >
-            {f.label}
-          </FilterChip>
-        ))}
-        <span className="mx-1 h-4 w-px bg-border" aria-hidden />
-        {(["all", "24h", "7d", "30d"] as const).map((value) => (
-          <FilterChip
-            key={value}
-            active={sinceFilter === value}
-            onClick={() => setSinceFilter(value)}
-          >
-            {value === "all" ? "Any time" : value}
-          </FilterChip>
-        ))}
-        <span className="mx-1 h-4 w-px bg-border" aria-hidden />
-        <Select
-          value={slugFilter}
-          onValueChange={setSlugFilter}
-        >
-          <SelectTrigger
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-border px-6 py-2.5">
+          {CLOUD_STATUS_FILTERS.map((f) => (
+            <FilterChip
+              key={f.value}
+              active={statusFilter === f.value}
+              onClick={() => setStatusFilter(f.value)}
+            >
+              {f.label}
+            </FilterChip>
+          ))}
+          <span className="mx-1 h-4 w-px bg-border" aria-hidden />
+          {CLOUD_TRIGGER_FILTERS.map((f) => (
+            <FilterChip
+              key={f.value}
+              active={triggerFilter === f.value}
+              onClick={() => setTriggerFilter(f.value)}
+            >
+              {f.label}
+            </FilterChip>
+          ))}
+          <span className="mx-1 h-4 w-px bg-border" aria-hidden />
+          {(["all", "24h", "7d", "30d"] as const).map((value) => (
+            <FilterChip
+              key={value}
+              active={sinceFilter === value}
+              onClick={() => setSinceFilter(value)}
+            >
+              {value === "all" ? "Any time" : value}
+            </FilterChip>
+          ))}
+          <span className="mx-1 h-4 w-px bg-border" aria-hidden />
+          <Select value={slugFilter} onValueChange={setSlugFilter}>
+            <SelectTrigger
+              size="sm"
+              className="h-6 max-w-[180px] rounded-[2px] text-[11px]"
+              aria-label="Filter by task"
+            >
+              <SelectValue placeholder="All tasks" />
+            </SelectTrigger>
+            <SelectContent className="app-shell rounded-[2px]">
+              <SelectItem value="all">All tasks</SelectItem>
+              {[...taskNameBySlug.entries()].map(([slug, name]) => (
+                <SelectItem key={slug} value={slug}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="ml-auto" />
+          <Button
+            type="button"
             size="sm"
-            className="h-6 max-w-[180px] rounded-[2px] text-[11px]"
-            aria-label="Filter by task"
+            variant="outline"
+            onClick={() => void load(undefined, "replace")}
+            className="h-6 gap-1 rounded-[2px] px-2 text-[11px] text-muted-foreground"
+            title="Refresh"
           >
-            <SelectValue placeholder="All tasks" />
-          </SelectTrigger>
-          <SelectContent className="app-shell rounded-[2px]">
-            <SelectItem value="all">All tasks</SelectItem>
-            {[...taskNameBySlug.entries()].map(([slug, name]) => (
-              <SelectItem key={slug} value={slug}>
-                {name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <span className="ml-auto" />
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => void load(undefined, "replace")}
-          className="h-6 gap-1 rounded-[2px] px-2 text-[11px] text-muted-foreground"
-          title="Refresh"
-        >
-          {loading ? <Loader2 className="size-3 animate-spin" /> : <RotateCcw className="size-3" />}
-          Refresh
-        </Button>
-      </div>
+            {loading ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : (
+              <RotateCcw className="size-3" />
+            )}
+            Refresh
+          </Button>
+        </div>
       ) : null}
 
       <div className="flex-1 overflow-auto">
@@ -3618,17 +3621,21 @@ function GlobalCloudRunsView({
               {hasActiveFilters
                 ? "No cloud runs match these filters"
                 : taskNameBySlug.size === 0
-                  ? "No background tasks yet"
+                  ? "No relationship actions running yet"
                   : "No cloud runs yet"}
             </p>
             <p className="max-w-sm text-xs leading-5 text-muted-foreground">
               {hasActiveFilters
                 ? "Clear the filters to see every run."
                 : taskNameBySlug.size === 0
-                  ? "Create a task first; its cloud execution history will appear here."
+                  ? "Create a recurring relationship check or follow-up; its execution history will appear here."
                   : "Run a task in the cloud and its status, timeline, and output will appear here."}
             </p>
-            <Button size="sm" variant="outline" onClick={hasActiveFilters ? clearFilters : onShowTasks}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={hasActiveFilters ? clearFilters : onShowTasks}
+            >
               {hasActiveFilters ? "Clear filters" : "Open tasks"}
             </Button>
           </div>
@@ -3894,9 +3901,12 @@ export function BgTasksView({
               <div className="rounded-full bg-muted p-3">
                 <ListChecks className="size-6 text-muted-foreground" />
               </div>
-              <p className="text-sm font-medium text-foreground">Give recurring work a reliable owner</p>
+              <p className="text-sm font-medium text-foreground">
+                Give recurring work a reliable owner
+              </p>
               <p className="max-w-md text-xs leading-5 text-muted-foreground">
-                Background tasks can watch for changes, prepare drafts, and surface exceptions. External actions still follow your approval policy.
+                Background tasks can watch for changes, prepare drafts, and surface exceptions.
+                External actions still follow your approval policy.
               </p>
               <Button size="sm" onClick={() => setShowNewDialog(true)}>
                 <Plus className="size-3" /> Create your first task

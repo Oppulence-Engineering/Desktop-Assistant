@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  AlertTriangle,
   Workflow,
   Calendar,
   Clock,
@@ -10,14 +11,15 @@ import {
   Mic,
   Plug,
   Plus,
+  ShieldCheck,
+  Sparkles,
+  UsersRound,
   Video,
 } from "@/lib/icons";
+import type { Relationship, RelationshipAttentionItem } from "@x/shared/src/relationships.js";
 import { extractConferenceLink } from "@/lib/calendar-event";
 import { SettingsDialog } from "@/components/settings-dialog";
-import {
-  HUBSPOT_BRAND_ICON,
-  WISPR_FLOW_BRAND_ICON,
-} from "@/components/onboarding/brand-icons";
+import { HUBSPOT_BRAND_ICON, WISPR_FLOW_BRAND_ICON } from "@/components/onboarding/brand-icons";
 
 interface TreeNode {
   path: string;
@@ -48,6 +50,7 @@ type HomeViewProps = {
   onOpenRun: (runId: string) => void;
   onTakeMeetingNotes: () => void;
   onOpenChat?: () => void;
+  onOpenRelationships?: (relationshipId?: string) => void;
 };
 
 type CalEvent = {
@@ -229,6 +232,7 @@ export function HomeView({
   onOpenRun,
   onTakeMeetingNotes,
   onOpenChat,
+  onOpenRelationships,
 }: HomeViewProps) {
   const [events, setEvents] = useState<CalEvent[]>([]);
   const [emails, setEmails] = useState<EmailThread[]>([]);
@@ -239,6 +243,24 @@ export function HomeView({
   );
   const [toolkitLogosLoaded, setToolkitLogosLoaded] = useState(cachedToolkitLogosLoaded);
   const [connectionsSettingsOpen, setConnectionsSettingsOpen] = useState(false);
+  const [relationships, setRelationships] = useState<Relationship[]>([]);
+  const [attentionItems, setAttentionItems] = useState<RelationshipAttentionItem[]>([]);
+
+  const loadRelationshipPulse = useCallback(async () => {
+    try {
+      const [relationshipResult, attentionResult] = await Promise.all([
+        window.ipc.invoke("relationships:list", {}),
+        window.ipc.invoke("relationships:listAttention", { status: "open" }),
+      ]);
+      setRelationships(relationshipResult.relationships ?? []);
+      setAttentionItems(attentionResult.items ?? []);
+    } catch (err) {
+      // Home should remain useful when relationship services are unavailable.
+      console.error("Home: failed to load relationship pulse", err);
+      setRelationships([]);
+      setAttentionItems([]);
+    }
+  }, []);
 
   const loadEvents = useCallback(async () => {
     try {
@@ -317,7 +339,8 @@ export function HomeView({
     void loadEvents();
     void loadEmails();
     void loadConnectorLogos();
-  }, [loadEvents, loadEmails, loadConnectorLogos]);
+    void loadRelationshipPulse();
+  }, [loadEvents, loadEmails, loadConnectorLogos, loadRelationshipPulse]);
 
   // Upcoming (not-yet-ended) events, soonest first.
   const upcoming = useMemo(() => {
@@ -329,6 +352,15 @@ export function HomeView({
   }, [events]);
 
   const nextEvent = upcoming[0];
+
+  const relationshipPreview = useMemo(() => relationships.slice(0, 3), [relationships]);
+  const customerAttention = useMemo(
+    () => attentionItems.filter((item) => item.reasonCode !== "source_degradation").slice(0, 3),
+    [attentionItems],
+  );
+  const goldenPathTarget = customerAttention[0]
+    ? relationships.find((relationship) => relationship.id === customerAttention[0].relationshipId)
+    : relationshipPreview[0];
 
   const todaysEvents = useMemo(() => {
     const now = new Date();
@@ -406,6 +438,138 @@ export function HomeView({
             <h1 className="text-[26px] font-semibold tracking-tight">{greeting()}</h1>
             <span className="text-sm text-muted-foreground">{todayLabel()}</span>
           </div>
+
+          {/* Relationship-first front door */}
+          <section
+            className="rowboat-dev-card border-primary/20 bg-primary/[0.025] p-[18px]"
+            data-capability="relationship-home mission-control"
+            data-tour-target="home-accounts"
+          >
+            <div className="flex flex-wrap items-start gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-none border border-primary/20 bg-primary/5 text-primary">
+                <UsersRound className="size-[17px]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Account mission control
+                </div>
+                <h2 className="mt-0.5 text-[17px] font-medium">What needs your attention now?</h2>
+                <p className="mt-1 max-w-2xl text-[12.5px] leading-relaxed text-muted-foreground">
+                  Oppulence reconciles email, meetings, Slack, CRM, and notes into explainable
+                  relationship state. Review the evidence before anything is sent or changed.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenRelationships?.()}
+                className="inline-flex shrink-0 items-center gap-1 rounded-none border border-border px-3 py-2 text-[12px] font-medium transition-colors hover:bg-accent"
+              >
+                Open accounts
+                <ArrowRight className="size-3" />
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-2 md:grid-cols-3">
+              {customerAttention.length > 0 ? (
+                customerAttention.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onOpenRelationships?.(item.relationshipId)}
+                    className="border border-border bg-background/70 p-3 text-left transition-colors hover:bg-accent"
+                  >
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="size-3.5 text-amber-500" />
+                      <span className="truncate text-[12.5px] font-medium">
+                        {item.relationshipName}
+                      </span>
+                      <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {item.urgencyBand}
+                      </span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-[11.5px] text-muted-foreground">
+                      {item.explanation}
+                    </p>
+                  </button>
+                ))
+              ) : relationshipPreview.length > 0 ? (
+                relationshipPreview.map((relationship) => (
+                  <button
+                    key={relationship.id}
+                    type="button"
+                    onClick={() => onOpenRelationships?.(relationship.id)}
+                    className="border border-border bg-background/70 p-3 text-left transition-colors hover:bg-accent"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="size-3.5 text-emerald-500" />
+                      <span className="truncate text-[12.5px] font-medium">
+                        {relationship.displayName}
+                      </span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-[11.5px] text-muted-foreground">
+                      {relationship.nextAction ||
+                        relationship.summary ||
+                        "Relationship state is current."}
+                    </p>
+                  </button>
+                ))
+              ) : (
+                <div className="border border-dashed border-border p-3 text-[12px] text-muted-foreground md:col-span-3">
+                  Connect a source to build your first living relationship record.
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Golden path: signal → evidence → impact → recommendation → approval */}
+          <section
+            className="rowboat-dev-card p-4"
+            data-capability="relationship-golden-path"
+            data-tour-target="relationship-action"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-[15px] text-oppulence-orange" />
+              <span className="text-sm font-medium">From signal to approved action</span>
+              <span className="ml-auto text-[11px] text-muted-foreground">
+                {goldenPathTarget?.displayName ?? "Example account"}
+              </span>
+            </div>
+            <div className="mt-3 grid gap-2 md:grid-cols-5">
+              {[
+                [
+                  "01",
+                  "Signal",
+                  customerAttention[0]?.explanation ?? "A material change is detected",
+                ],
+                ["02", "Evidence", "Source-linked messages and events"],
+                [
+                  "03",
+                  "Impact",
+                  goldenPathTarget?.stateReason ?? "Relationship health is explained",
+                ],
+                [
+                  "04",
+                  "Recommendation",
+                  goldenPathTarget?.nextAction ?? "Review the recommended next step",
+                ],
+                ["05", "Approval", "You approve before any external write"],
+              ].map(([number, label, copy]) => (
+                <div key={label} className="border border-border p-2.5">
+                  <div className="text-[10px] font-mono text-muted-foreground">{number}</div>
+                  <div className="mt-1 text-[12px] font-medium">{label}</div>
+                  <div className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">{copy}</div>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpenRelationships?.(goldenPathTarget?.id)}
+              className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-primary hover:underline"
+            >
+              Review evidence and approval
+              <ArrowRight className="size-3" />
+            </button>
+          </section>
 
           {/* Up-next hero */}
           {nextEvent && (
@@ -521,7 +685,9 @@ export function HomeView({
                   </span>
                 </button>
               ) : (
-                <div className="py-1 text-[12.5px] text-muted-foreground">No tasks yet.</div>
+                <div className="py-1 text-[12.5px] text-muted-foreground">
+                  No relationship actions yet. Create one to keep a follow-up or risk check moving.
+                </div>
               )}
               <button
                 type="button"
@@ -622,7 +788,7 @@ export function HomeView({
           )}
 
           {/* Tool connections */}
-          <div className={CARD}>
+          <div className={CARD} data-tour-target="tools">
             <div className="flex items-start gap-3">
               <div className="flex size-8 shrink-0 items-center justify-center rounded-none border border-border bg-muted text-muted-foreground">
                 <Plug className="size-[14px]" />
@@ -669,10 +835,10 @@ export function HomeView({
                 <MessageSquare className="size-[15px]" />
               </div>
               <div className="min-w-0 flex-1 text-[13.5px] leading-snug">
-                <span className="font-medium">Ask anything</span>
+                <span className="font-medium">Resolve relationship work</span>
                 <span className="text-muted-foreground">
                   {" "}
-                  to create presentations, do research, or collaborate on docs.
+                  with evidence, drafts, research, and connected tools.
                 </span>
               </div>
               <span className="flex shrink-0 items-center gap-1 text-[12.5px] font-medium text-primary">

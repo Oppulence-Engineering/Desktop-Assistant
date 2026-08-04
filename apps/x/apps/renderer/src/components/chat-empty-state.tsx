@@ -42,22 +42,23 @@ const SUGGESTED_ACTIONS: {
   prompt: string;
 }[] = [
   {
-    icon: Mail,
-    title: "Draft a reply",
-    sub: "to an email",
-    prompt: "Let's draft a reply to [name]'s email",
-  },
-  {
-    icon: Workflow,
-    title: "Set up a background task",
-    sub: "that automates tasks",
-    prompt: "Set up a background task that automates [task]",
+    icon: Sparkles,
+    title: "Review account attention",
+    sub: "find the next relationship to act on",
+    prompt: "Which customer relationships need attention now? Explain the evidence and urgency.",
   },
   {
     icon: ScanSearch,
-    title: "Research a topic",
-    sub: "create a local wiki for me",
-    prompt: "Research [topic] and create a local wiki for me",
+    title: "Explain what changed",
+    sub: "with source-linked relationship evidence",
+    prompt: "What changed in my customer relationships recently? Cite the supporting evidence.",
+  },
+  {
+    icon: Mail,
+    title: "Draft the next action",
+    sub: "keep it reviewable and approval-gated",
+    prompt:
+      "Draft the highest-leverage next action for the account that needs attention. Do not send it.",
   },
 ];
 
