@@ -578,6 +578,7 @@ export function ChatSidebar({
     <div
       ref={paneRef}
       data-chat-sidebar-root
+      data-tour-target="assistant"
       onMouseDownCapture={onActivate}
       onFocusCapture={onActivate}
       className={cn(
@@ -605,6 +606,7 @@ export function ChatSidebar({
       {showContent && (
         <>
           <header
+            data-tour-target="chat-header"
             className="titlebar-drag-region flex h-10 shrink-0 items-stretch border-b border-border bg-background"
             style={{
               paddingRight: isMaximized ? 12 : undefined,
@@ -890,7 +892,10 @@ export function ChatSidebar({
                 })}
               </div>
 
-              <div className="sticky bottom-0 z-10 bg-background pb-12 pt-0">
+              <div
+                className="sticky bottom-0 z-10 bg-background pb-12 pt-0"
+                data-tour-target="chat-composer"
+              >
                 <div className="pointer-events-none absolute inset-x-0 -top-6 h-6 bg-linear-to-t from-background to-transparent" />
                 <div className="mx-auto w-full max-w-4xl px-3">
                   {chatTabs.map((tab) => {

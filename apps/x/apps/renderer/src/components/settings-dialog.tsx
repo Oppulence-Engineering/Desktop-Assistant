@@ -301,11 +301,13 @@ interface SettingsDialogProps {
   /** Controlled open state. When provided, the dialog is fully controlled. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Restart the guided product tour from Help. */
+  onStartTour?: () => void;
 }
 
 // --- Help & Support tab ---
 
-function HelpSettings() {
+function HelpSettings({ onStartTour }: { onStartTour?: () => void }) {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const { signedIn } = useSolomonAccount();
   const links = [
@@ -335,6 +337,24 @@ function HelpSettings() {
     <div className="space-y-6">
       <SettingsSection title="Get help" description="Reach the team or the community.">
         <div className="space-y-2">
+          {onStartTour ? (
+            <button
+              type="button"
+              onClick={onStartTour}
+              className="group flex w-full items-center gap-3 rounded-none border bg-card px-3.5 py-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40"
+            >
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-none bg-primary/10 text-primary">
+                <HelpCircle className="size-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13px] font-medium">Take product tour</span>
+                <span className="block text-xs text-muted-foreground">
+                  Walk through accounts, evidence, actions, and approvals
+                </span>
+              </span>
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+            </button>
+          ) : null}
           <button
             type="button"
             disabled={!signedIn}
@@ -1323,7 +1343,9 @@ function SettingsOverview({ onNavigate }: { onNavigate: (tab: ConfigTab) => void
       </div>
       <section className="settings-overview-group">
         <h2 className="settings-overview-label">
-          {normalizedQuery ? `${results.length} result${results.length === 1 ? "" : "s"}` : "Common tasks"}
+          {normalizedQuery
+            ? `${results.length} result${results.length === 1 ? "" : "s"}`
+            : "Common tasks"}
         </h2>
         {visibleCards.length ? (
           <div className="settings-card-grid">
@@ -1334,7 +1356,9 @@ function SettingsOverview({ onNavigate }: { onNavigate: (tab: ConfigTab) => void
                 onClick={() => onNavigate(tab.id)}
                 type="button"
               >
-                <span className="settings-card-icon"><tab.icon /></span>
+                <span className="settings-card-icon">
+                  <tab.icon />
+                </span>
                 <span className="settings-card-copy">
                   <span className="settings-card-title">{tab.label}</span>
                   <span className="settings-card-description">{tab.description}</span>
@@ -1351,8 +1375,8 @@ function SettingsOverview({ onNavigate }: { onNavigate: (tab: ConfigTab) => void
       </section>
       {!normalizedQuery ? (
         <p className="mt-6 max-w-xl text-xs leading-5 text-muted-foreground">
-          Every setting remains available in the navigation. Start here for the tasks people use most,
-          or search by what you want to change.
+          Every setting remains available in the navigation. Start here for the tasks people use
+          most, or search by what you want to change.
         </p>
       ) : null}
     </SettingsPage>
@@ -1687,6 +1711,7 @@ export function SettingsDialog({
   defaultTab = "overview",
   open: controlledOpen,
   onOpenChange,
+  onStartTour,
 }: SettingsDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
@@ -1909,7 +1934,12 @@ export function SettingsDialog({
                       </SettingsSection>
                     </div>
                   ) : activeTab === "help" ? (
-                    <HelpSettings />
+                    <HelpSettings
+                      onStartTour={() => {
+                        setOpen(false);
+                        onStartTour?.();
+                      }}
+                    />
                   ) : null}
                 </SettingsPage>
               )}

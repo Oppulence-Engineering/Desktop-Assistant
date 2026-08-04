@@ -164,3 +164,37 @@ export function noteExported(format: string) {
 export function feedbackSubmitted(category: string) {
   posthog.capture("feedback_submitted", { category });
 }
+
+export type ProductTourVariant = "main" | "relationships" | "meetings" | "actions";
+
+export function productTourStarted(variant: ProductTourVariant) {
+  posthog.capture("product_tour_started", { variant });
+}
+
+export function productTourStepViewed(variant: ProductTourVariant, step: number, target: string) {
+  posthog.capture("product_tour_step_viewed", { variant, step: step + 1, target });
+}
+
+export function productTourSkipped(variant: ProductTourVariant, step: number) {
+  posthog.capture("product_tour_skipped", { variant, step: step + 1 });
+}
+
+export function productTourDismissed(variant: ProductTourVariant, step: number) {
+  posthog.capture("product_tour_dismissed", { variant, step: step + 1 });
+}
+
+export function productTourAbandoned(variant: ProductTourVariant, step: number) {
+  posthog.capture("product_tour_abandoned", { variant, step: step + 1 });
+}
+
+export function productTourCompleted(variant: ProductTourVariant, stepCount: number) {
+  posthog.capture("product_tour_completed", { variant, step_count: stepCount });
+}
+
+export function productTourTargetMissing(
+  variant: ProductTourVariant,
+  step: number,
+  target: string,
+) {
+  posthog.capture("product_tour_target_missing", { variant, step: step + 1, target });
+}

@@ -204,6 +204,8 @@ console.log("preloadPath", preloadPath);
 const rendererPath = app.isPackaged
   ? path.join(__dirname, "../renderer/dist") // Production
   : path.join(__dirname, "../../../renderer/dist"); // Development
+const useBuiltRenderer =
+  app.isPackaged || process.env.ROWBOAT_USE_BUILT_RENDERER === "true";
 console.log("rendererPath", rendererPath);
 
 // Register custom protocol for serving built renderer files in production
@@ -384,7 +386,7 @@ function createWindow() {
   // The WebContentsView is created lazily on first `browser:setVisible`.
   browserViewManager.attach(win);
 
-  if (app.isPackaged) {
+  if (useBuiltRenderer) {
     win.loadURL("app://-/index.html");
   } else {
     win.loadURL("http://localhost:5173");
