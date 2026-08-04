@@ -576,6 +576,22 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
     meetingDoctor?.checks.filter((check) => check.status === "fail").length ?? 0;
 
   /**
+   * Switch to a model, fetching it first if it is not on disk.
+   *
+   * Selection is persisted *before* the download so a failed or cancelled fetch still
+   * leaves the user on the model they asked for — the model list then shows it as
+   * missing and offers the retry, rather than silently snapping back to an English-only
+   * model that cannot transcribe what they picked.
+   */
+  const applyModel = useCallback(
+    async (model: WhisperModelSummary) => {
+      await selectModel(model.id);
+      if (!model.installed) await download(model.id, model.sizeMb);
+    },
+    [selectModel, download],
+  );
+
+  /**
    * A non-English meeting language paired with a model that cannot honour it.
    *
    * whisper.cpp does not fail in this case — it prints a warning to stderr, quietly
@@ -594,7 +610,12 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
     const languageLabel =
       DICTATION_LANGUAGE_OPTIONS.find((option) => option.value === language)?.label ?? language;
 
-    if (meetings.transcriptionEngine === "parakeet") {
+    // Judge the engine that will actually run, not the one selected. Parakeet falls back
+    // to whisper whenever its models are not on disk, so warning about Parakeet there
+    // would describe a run that is not going to happen — and would hide the whisper
+    // model that is.
+    const parakeetEffective = meetings.transcriptionEngine === "parakeet" && fastModels?.ready;
+    if (parakeetEffective) {
       if (meetings.parakeetModel !== "v2") return null;
       return {
         title: `Parakeet v2 cannot transcribe ${languageLabel}`,
@@ -606,13 +627,34 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       };
     }
 
+    // The multilingual model of the smallest size class that can serve as a default.
+    const multilingual = (atLeast: number) =>
+      models.find((model) => model.english === false && model.sizeMb >= atLeast);
+
+    // `auto` is not a catalog entry, so it cannot be looked up — and it resolves to the
+    // recommended default, which is English-only. Left unhandled this was the one path
+    // that produced an English transcript with no warning at all.
+    if (activeModel === "auto") {
+      const sibling = multilingual(0);
+      return {
+        title: `Automatic model choice may not transcribe ${languageLabel}`,
+        detail: sibling
+          ? `It can pick an English-only model, which would return English regardless. ${sibling.label} always handles ${languageLabel}.`
+          : "It can pick an English-only model, which would return English regardless. Choose a multilingual model below.",
+        action: sibling
+          ? {
+              label: sibling.installed ? `Use ${sibling.label}` : `Get ${sibling.label}`,
+              run: () => void applyModel(sibling),
+            }
+          : undefined,
+      };
+    }
+
     const active = models.find((model) => model.id === activeModel);
     if (!active?.english) return null;
     // The multilingual sibling of the same family — same speed and size class, so this
     // is a swap rather than a downgrade.
-    const sibling = models.find(
-      (model) => model.english === false && model.sizeMb >= active.sizeMb,
-    );
+    const sibling = multilingual(active.sizeMb);
     return {
       title: `${active.label} cannot transcribe ${languageLabel}`,
       detail: sibling
@@ -621,16 +663,11 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       action: sibling
         ? {
             label: sibling.installed ? `Use ${sibling.label}` : `Get ${sibling.label}`,
-            run: () => {
-              void (async () => {
-                if (!sibling.installed) await download(sibling.id, sibling.sizeMb);
-                await selectModel(sibling.id);
-              })();
-            },
+            run: () => void applyModel(sibling),
           }
         : undefined,
     };
-  }, [meetings, models, activeModel, changeMeetings, download, selectModel]);
+  }, [meetings, models, activeModel, fastModels, changeMeetings, applyModel]);
 
   return (
     <div className="space-y-8">

@@ -362,6 +362,62 @@ describe("resolveMeetingNotePath", () => {
     ).toBe(legacy);
   });
 
+  it("ignores a session_id the user typed into their own notes", () => {
+    // Below the frontmatter is the user's section. A line beginning `session_id:` down
+    // there — pasted, dictated, or transcribed from someone reading one aloud — must not
+    // change which session owns the file.
+    const spoofed = [
+      "---",
+      "type: meeting",
+      "session_id: 2026.07.29-1430",
+      "---",
+      "",
+      "# Standup",
+      "",
+      "## Notes",
+      "",
+      "session_id: 2026.07.29-9999",
+    ].join("\n");
+    return expect(
+      resolveMeetingNotePath({
+        sessionId: "2026.07.29-1430",
+        startedAt,
+        calendarEvent,
+        readNote: workspace({ "knowledge/Meetings/solomon/2026-07-29/Standup.md": spoofed }),
+      }),
+    ).resolves.toBe("knowledge/Meetings/solomon/2026-07-29/Standup.md");
+  });
+
+  it("keeps its own note when the meeting holding the plain path is deleted", async () => {
+    // Deleting one meeting frees the plain path. Re-resolving to it would strand this
+    // session's existing note: a re-transcribe would write a second file beside it, and
+    // listing and deletion — which both resolve through here — would stop finding the
+    // first. An existing note we own outranks a free earlier candidate.
+    const own = "knowledge/Meetings/solomon/2026-07-29/Standup-1430.md";
+    expect(
+      await resolveMeetingNotePath({
+        sessionId: "2026.07.29-1430",
+        startedAt,
+        calendarEvent,
+        readNote: workspace({ [own]: noteOwnedBy("2026.07.29-1430") }),
+      }),
+    ).toBe(own);
+  });
+
+  it("gives a freed plain path to a session that does not already have a note", async () => {
+    expect(
+      await resolveMeetingNotePath({
+        sessionId: "2026.07.29-1600",
+        startedAt,
+        calendarEvent,
+        readNote: workspace({
+          "knowledge/Meetings/solomon/2026-07-29/Standup-1430.md":
+            noteOwnedBy("2026.07.29-1430"),
+        }),
+      }),
+    ).toBe("knowledge/Meetings/solomon/2026-07-29/Standup.md");
+  });
+
   it("keeps stepping aside when the suffixed path is taken too", async () => {
     const taken = {
       "knowledge/Meetings/solomon/2026-07-29/Standup.md": noteOwnedBy("other-a"),

@@ -540,6 +540,23 @@ export function attributionNotice(provenance?: Record<string, string | boolean>)
   return `> Speakers are separated by audio channel, not by voice — so all ${multiParty[1]} other participants appear as **Other**.`;
 }
 
+/**
+ * A calendar summary flattened to something safe to put on a frontmatter line.
+ *
+ * Meeting titles come from calendar invites, so anyone who can send the user one
+ * controls this string. A newline in it does not merely look wrong — it ends the
+ * `title:` line and everything after becomes *more frontmatter*, letting an invite
+ * forge fields the app trusts. `session_id` is the sharpest of those: notes are matched
+ * to their session by it, and an injected one sorts above the real one.
+ *
+ * Control characters go for the same reason: they have no meaning in a title and can
+ * confuse whatever reads the file next.
+ */
+function frontmatterSafeTitle(summary: string): string {
+  // eslint-disable-next-line no-control-regex
+  return summary.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
 export function formatMeetingNote(
   entries: MeetingNoteEntry[],
   date: string,
@@ -548,7 +565,7 @@ export function formatMeetingNote(
   /** Ties the block's timings to a recording so a click can seek into it. */
   sessionId?: string,
 ): string {
-  const noteTitle = calendarEvent?.summary || "Meeting Notes";
+  const noteTitle = frontmatterSafeTitle(calendarEvent?.summary ?? "") || "Meeting Notes";
   const lines = [
     "---",
     "type: meeting",

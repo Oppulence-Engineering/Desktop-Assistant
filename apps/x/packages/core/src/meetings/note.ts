@@ -60,9 +60,19 @@ function sessionSuffix(sessionId: string): string {
   return dash === -1 ? sessionId : sessionId.slice(dash + 1);
 }
 
-/** The `session_id` a meeting note records in its frontmatter, if it has one. */
+/**
+ * The `session_id` a meeting note records in its frontmatter, if it has one.
+ *
+ * Scoped to the frontmatter block rather than run over the whole file: below it sits the
+ * user's own section, and a note that happens to contain a line beginning `session_id:`
+ * — pasted, dictated, or transcribed — must not be able to change which session owns
+ * the file.
+ */
 function noteSessionId(content: string): string | undefined {
-  return /^session_id:\s*(.+)$/m.exec(content)?.[1]?.trim() || undefined;
+  if (!content.startsWith("---")) return undefined;
+  const end = content.indexOf("\n---", 3);
+  const frontmatter = end === -1 ? content : content.slice(0, end);
+  return /^session_id:\s*(.+)$/m.exec(frontmatter)?.[1]?.trim() || undefined;
 }
 
 /**
@@ -98,19 +108,29 @@ export async function resolveMeetingNotePath(args: {
     // The session id is unique by construction (`createSessionDir` claims its directory
     // with a non-recursive mkdir and suffixes on collision), so this always terminates.
     args.sessionId,
-  ];
-
-  for (const suffix of candidates) {
-    const relative = meetingNotePath({
+  ].map((suffix) =>
+    meetingNotePath({
       startedAt: args.startedAt,
       sessionId: args.sessionId,
       calendarEvent: args.calendarEvent,
       suffix,
-    });
-    const existing = await read(relative);
-    if (existing === null) return relative;
-    const owner = noteSessionId(existing);
-    if (owner === undefined || owner === args.sessionId) return relative;
+    }),
+  );
+
+  const notes = await Promise.all(candidates.map((relative) => read(relative)));
+
+  // A note this session already wrote wins over any earlier candidate, even a free one.
+  // Taking the first free path instead would strand our own note the moment the meeting
+  // that had been holding the plain path was deleted: this session would start writing
+  // a second file and the first would become unreachable, since listing and deletion
+  // both resolve through here.
+  for (const [index, existing] of notes.entries()) {
+    if (existing !== null && noteSessionId(existing) === args.sessionId) return candidates[index];
+  }
+
+  // Otherwise take the first path that is free, or holds a note claiming no session.
+  for (const [index, existing] of notes.entries()) {
+    if (existing === null || noteSessionId(existing) === undefined) return candidates[index];
   }
 
   // Every candidate is spoken for by another session. Fall back to a path that cannot
@@ -123,12 +143,43 @@ export async function resolveMeetingNotePath(args: {
   });
 }
 
-/** Reads a workspace note, or null when it is not there. */
+/**
+ * Bytes of a note read to find its `session_id`.
+ *
+ * The whole note is not read because resolution runs once per session in the sessions
+ * list, and a note carries its entire transcript inline — an hour-long meeting is well
+ * over 100 kB. Reading every one of them to look at a frontmatter field turned listing
+ * from a stat per session into tens of megabytes of I/O.
+ *
+ * `session_id` is part of the provenance block, which `formatMeetingNote` writes before
+ * `calendar_event` (the only frontmatter field that can get long), so it is always far
+ * inside this window.
+ */
+const NOTE_HEAD_BYTES = 8192;
+
+/**
+ * Enough of a workspace note to read its frontmatter, or null when it is not there.
+ *
+ * Falls back to the whole file only when the head does not contain the frontmatter
+ * terminator — otherwise a note with unusually long frontmatter could be misread as
+ * having no `session_id`, which would make a session disown its own note.
+ */
 async function readNoteFromDisk(relativePath: string): Promise<string | null> {
+  const absolute = path.join(WorkDir, relativePath);
+  let handle: fs.FileHandle | undefined;
   try {
-    return await fs.readFile(path.join(WorkDir, relativePath), "utf8");
+    handle = await fs.open(absolute, "r");
+    const buffer = Buffer.alloc(NOTE_HEAD_BYTES);
+    const { bytesRead } = await handle.read(buffer, 0, NOTE_HEAD_BYTES, 0);
+    const head = buffer.toString("utf8", 0, bytesRead);
+    // Complete frontmatter in hand (or a file shorter than the window): the head is as
+    // good as the whole file for this question.
+    if (bytesRead < NOTE_HEAD_BYTES || head.indexOf("\n---", 3) !== -1) return head;
+    return await fs.readFile(absolute, "utf8");
   } catch {
     return null;
+  } finally {
+    await handle?.close().catch(() => {});
   }
 }
 
