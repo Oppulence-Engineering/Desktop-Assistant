@@ -45,6 +45,14 @@ describe("formatMeetingNote", () => {
         "",
         "# Meeting Notes",
         "",
+        // The two headings bound the region this app rewrites. Everything between
+        // `## Notes` and the transcript block belongs to the user and is copied through
+        // by every later write, which is what stops a summary from eating notes typed
+        // during the call.
+        "## Meeting summary",
+        "",
+        "## Notes",
+        "",
         "```transcript",
         JSON.stringify({
           // Three newlines on a speaker change, not two: the renderer pushes a blank
@@ -95,11 +103,14 @@ describe("formatMeetingNote", () => {
     );
 
     expect(note).toContain("> Recorded and transcribed on this Mac.");
-    // Directly under the title, above anything a summary pass prepends.
-    const lines = note.split("\n");
-    expect(lines[lines.findIndex((l) => l.startsWith("# ")) + 1]).toBe("");
-    expect(lines[lines.findIndex((l) => l.startsWith("# ")) + 2]).toContain(
-      "The audio never left this device",
+    // Same intent as before — the notice sits above anything a summary pass writes — but
+    // the position is now expressed against the generated region that bounds both, since
+    // the summary lands inside that region rather than loose under the title.
+    expect(note.indexOf("## Meeting summary")).toBeLessThan(
+      note.indexOf("The audio never left this device"),
+    );
+    expect(note.indexOf("The audio never left this device")).toBeLessThan(
+      note.indexOf("## Notes"),
     );
   });
 
@@ -327,5 +338,84 @@ describe("writeMeetingNote", () => {
     });
     expect(path).toBe("knowledge/Meetings/solomon/2026-07-29/pinned.md");
     expect(result).toBe(path);
+  });
+
+  /**
+   * The regression this exists for. A session writes its note twice — an empty
+   * placeholder when recording starts, so there is something to open during the call,
+   * and again once the transcript lands. The second write used to render a fresh
+   * document and overwrite the file, so notes typed *during* the meeting were gone
+   * before the summarizer ever ran.
+   */
+  describe("the second write of a session", () => {
+    /** Runs the real two-write sequence against an in-memory file. */
+    async function captureSession(typedDuringCall: (placeholder: string) => string) {
+      let file = "";
+      const io = {
+        notePath: "knowledge/Meetings/solomon/2026-07-29/standup.md",
+        write: async (_p: string, data: string) => {
+          file = data;
+          return { success: true } as never;
+        },
+        read: async () => ({ data: file }) as never,
+      };
+
+      // 1. Recording starts: placeholder note, no transcript yet.
+      await writeMeetingNote({
+        sessionId: "2026.07.29-1000",
+        startedAt: "2026-07-29T10:00:00.000Z",
+        segments: [],
+        provenance,
+        ...io,
+      });
+
+      // 2. The user types into it while the meeting runs.
+      file = typedDuringCall(file);
+
+      // 3. Transcription finishes and the note is written again.
+      await writeMeetingNote({
+        sessionId: "2026.07.29-1000",
+        startedAt: "2026-07-29T10:00:00.000Z",
+        segments: [segment({ text: "We agreed on Friday." })],
+        provenance,
+        ...io,
+      });
+      return file;
+    }
+
+    it("keeps notes the user typed while the meeting was running", async () => {
+      const out = await captureSession((placeholder) =>
+        placeholder.replace("## Notes\n", "## Notes\n\n- ask about the contract renewal\n"),
+      );
+      expect(out).toContain("- ask about the contract renewal");
+      // And the transcript still arrived.
+      expect(out).toContain("We agreed on Friday.");
+    });
+
+    it("still refreshes the parts it owns", async () => {
+      const out = await captureSession((placeholder) => placeholder);
+      // The placeholder's no-speech flag is gone now that there is speech.
+      expect(out).not.toContain("no_speech_detected");
+      expect(out.trimEnd().endsWith("```")).toBe(true);
+    });
+
+    it("writes a fresh note when the existing one cannot be read", async () => {
+      let written = "";
+      await writeMeetingNote({
+        sessionId: "2026.07.29-1000",
+        startedAt: "2026-07-29T10:00:00.000Z",
+        segments: [segment({ text: "Hello." })],
+        provenance,
+        // A read failure is the first-write case, not a reason to lose the transcript.
+        read: async () => {
+          throw new Error("gone");
+        },
+        write: async (_p, data) => {
+          written = data;
+          return { success: true } as never;
+        },
+      });
+      expect(written).toContain("Hello.");
+    });
   });
 });

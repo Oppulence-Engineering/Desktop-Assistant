@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   AudioLines,
   Download,
@@ -575,6 +575,63 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const meetingIssueCount =
     meetingDoctor?.checks.filter((check) => check.status === "fail").length ?? 0;
 
+  /**
+   * A non-English meeting language paired with a model that cannot honour it.
+   *
+   * whisper.cpp does not fail in this case — it prints a warning to stderr, quietly
+   * ignores `--language`, and returns an English transcript. Parakeet v2 is the same
+   * story. Left unsaid, the user picks French, gets English back, and has nothing to
+   * explain it. The setting is still obeyed; this only says what will actually happen.
+   */
+  const meetingLanguageWarning = useMemo((): {
+    title: string;
+    detail: string;
+    action?: { label: string; run: () => void };
+  } | null => {
+    if (!meetings) return null;
+    const language = meetings.language;
+    if (language === "auto" || language === "en") return null;
+    const languageLabel =
+      DICTATION_LANGUAGE_OPTIONS.find((option) => option.value === language)?.label ?? language;
+
+    if (meetings.transcriptionEngine === "parakeet") {
+      if (meetings.parakeetModel !== "v2") return null;
+      return {
+        title: `Parakeet v2 cannot transcribe ${languageLabel}`,
+        detail: "v2 is English-only. v3 covers 28 European languages.",
+        action: {
+          label: "Use v3",
+          run: () => void changeMeetings({ parakeetModel: "v3" }),
+        },
+      };
+    }
+
+    const active = models.find((model) => model.id === activeModel);
+    if (!active?.english) return null;
+    // The multilingual sibling of the same family — same speed and size class, so this
+    // is a swap rather than a downgrade.
+    const sibling = models.find(
+      (model) => model.english === false && model.sizeMb >= active.sizeMb,
+    );
+    return {
+      title: `${active.label} cannot transcribe ${languageLabel}`,
+      detail: sibling
+        ? `It is an English-only model, so meetings will still come back in English. ${sibling.label} handles ${languageLabel}.`
+        : "It is an English-only model, so meetings will still come back in English. Choose a multilingual model below.",
+      action: sibling
+        ? {
+            label: sibling.installed ? `Use ${sibling.label}` : `Get ${sibling.label}`,
+            run: () => {
+              void (async () => {
+                if (!sibling.installed) await download(sibling.id, sibling.sizeMb);
+                await selectModel(sibling.id);
+              })();
+            },
+          }
+        : undefined,
+    };
+  }, [meetings, models, activeModel, changeMeetings, download, selectModel]);
+
   return (
     <div className="space-y-8">
       <SettingsSection title="Privacy" description="Controls whether speech can leave this device.">
@@ -664,7 +721,8 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                   </span>
                   <span className="block text-[11px] leading-5 text-muted-foreground">
                     Applies to the next capture immediately. Choosing one language improves
-                    accuracy.
+                    accuracy. Recorded meetings have their own language setting under Meeting
+                    recording.
                   </span>
                 </span>
                 <select
@@ -1366,6 +1424,55 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                 />
                 {resolvedEngine === "native" && meetings.captureEngine !== "renderer" && (
                   <>
+                    <label className="flex items-center justify-between gap-3 border border-border px-3.5 py-3">
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-foreground">
+                          Meeting language
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          Applies to the next meeting, and to re-transcribing an existing
+                          recording. Auto-detect resolves once per meeting and uses the same
+                          language for both sides of the call.
+                        </span>
+                      </span>
+                      <select
+                        value={meetings.language}
+                        onChange={(event) =>
+                          void changeMeetings({
+                            language: event.target.value as DictationLanguage,
+                          })
+                        }
+                        aria-label="Meeting transcription language"
+                        className="h-8 max-w-40 shrink-0 border bg-background px-2 text-xs text-foreground"
+                      >
+                        {DICTATION_LANGUAGE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {meetingLanguageWarning && (
+                      <div className="flex items-start justify-between gap-3 border border-amber-500/40 bg-amber-500/5 px-3.5 py-3">
+                        <span className="min-w-0 text-xs text-muted-foreground">
+                          <span className="block font-medium text-foreground">
+                            {meetingLanguageWarning.title}
+                          </span>
+                          {meetingLanguageWarning.detail}
+                        </span>
+                        {meetingLanguageWarning.action && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="shrink-0"
+                            onClick={meetingLanguageWarning.action.run}
+                          >
+                            {meetingLanguageWarning.action.label}
+                          </Button>
+                        )}
+                      </div>
+                    )}
                     <SettingToggle
                       title="Fast transcription"
                       hint={

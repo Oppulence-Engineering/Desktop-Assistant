@@ -1,6 +1,8 @@
 import {
+  applyGeneratedSection,
   formatMeetingNote,
   segmentsToEntries,
+  GENERATED_SECTION_HEADING,
   type MeetingCalendarEvent,
   type MeetingSessionMeta,
   type MeetingTranscript,
@@ -8,7 +10,7 @@ import {
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { WorkDir } from "../config/config.js";
-import { remove, writeFile } from "../workspace/workspace.js";
+import { readFile, remove, writeFile } from "../workspace/workspace.js";
 
 /**
  * The workspace note a finished session produces.
@@ -179,6 +181,11 @@ export interface WriteMeetingNoteArgs {
   notePath?: string;
   /** Injected so tests don't need a workspace on disk. */
   write?: typeof writeFile;
+  /**
+   * Injected alongside `write` for the same reason. Used to read the note this call is
+   * about to replace, so anything the user typed into it survives.
+   */
+  read?: typeof readFile;
 }
 
 /**
@@ -187,6 +194,12 @@ export interface WriteMeetingNoteArgs {
  * Called twice per session: once with no segments when recording starts, so there is
  * something to open immediately, and again with the transcript once it exists. Same
  * two-write shape as the renderer capture path.
+ *
+ * **The second write must not clobber the first.** The whole reason a note exists during
+ * the call is so the user can type into it, and this function used to render a fresh
+ * document and overwrite whatever was there — so every note taken *during* a meeting was
+ * destroyed the moment its transcript landed, before summarization even ran. It now
+ * rewrites only the generated region and copies the rest through.
  */
 export async function writeMeetingNote(args: WriteMeetingNoteArgs): Promise<string> {
   const notePath =
@@ -209,6 +222,67 @@ export async function writeMeetingNote(args: WriteMeetingNoteArgs): Promise<stri
     provenance,
     args.sessionId,
   );
-  await (args.write ?? writeFile)(notePath, content, { encoding: "utf8", mkdirp: true });
+
+  // A note that does not exist yet, or that cannot be read, is the first-write case —
+  // not an error. Falling back to the freshly rendered content keeps a broken read from
+  // costing the session its note entirely.
+  const existing = await readExistingNote(notePath, args.read);
+  const merged = existing ? mergeIntoExistingNote(existing, content) : content;
+
+  await (args.write ?? writeFile)(notePath, merged, { encoding: "utf8", mkdirp: true });
   return notePath;
+}
+
+async function readExistingNote(
+  notePath: string,
+  read: typeof readFile | undefined,
+): Promise<string | null> {
+  try {
+    const result = await (read ?? readFile)(notePath, "utf8");
+    const data = typeof result.data === "string" ? result.data : "";
+    return data.trim() ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fold a freshly rendered note into the one already on disk, keeping the user's text.
+ *
+ * Both sides come from `formatMeetingNote`, so the generated region and transcript block
+ * are lifted straight out of the new render — no re-derivation and nothing to drift.
+ */
+function mergeIntoExistingNote(existing: string, rendered: string): string {
+  const frontmatter = frontmatterOf(rendered);
+  const title = /^title:\s*(.+)$/m.exec(rendered)?.[1]?.trim() || "Meeting Notes";
+  return applyGeneratedSection(existing, {
+    frontmatter,
+    title,
+    generated: generatedSectionOf(rendered),
+    transcriptBlock: transcriptBlockOf(rendered),
+  });
+}
+
+function frontmatterOf(content: string): string | null {
+  if (!content.startsWith("---")) return null;
+  const end = content.indexOf("\n---", 3);
+  return end === -1 ? null : content.slice(0, end + 4);
+}
+
+function transcriptBlockOf(content: string): string {
+  return content.match(/(```transcript\n[\s\S]*?\n```)/)?.[1] ?? "";
+}
+
+/** The rendered note's generated region, minus its heading. */
+function generatedSectionOf(content: string): string {
+  const lines = content.split("\n");
+  const start = lines.findIndex((line) => line.trim() === GENERATED_SECTION_HEADING);
+  if (start === -1) return "";
+  const rest: string[] = [];
+  for (let i = start + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith("## ") || line.startsWith("# ") || line.startsWith("```transcript")) break;
+    rest.push(line);
+  }
+  return rest.join("\n").trim();
 }

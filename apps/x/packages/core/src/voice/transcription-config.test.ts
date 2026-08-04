@@ -414,6 +414,10 @@ describe("meetings settings block", () => {
       // whisper by default: parakeet is faster but needs a 600 MB download first.
       transcriptionEngine: "whisper",
       parakeetModel: "v3",
+      // Detect rather than assume. The old behaviour was no language at all, which the
+      // whisper runner turned into `-l en` — so a meeting held in any other language was
+      // transcribed as English with nothing to say it had happened.
+      language: "auto",
       transcribeOnStop: true,
       // Prompt, never silent: recording people is consent-shaped, and the notification
       // you can act on or ignore *is* the consent step. `always` has to be chosen.

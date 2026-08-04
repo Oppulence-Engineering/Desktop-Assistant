@@ -31,6 +31,10 @@ export interface TranscribeResult {
   segments: WhisperSegment[];
   rtf: number;
   durationMs: number;
+  /** Effective language of the run, when the engine reported one. */
+  language?: string;
+  /** False when the model is an `.en` build, which ignores the requested language. */
+  multilingualModel?: boolean;
 }
 
 export interface WhisperBenchmarkStore {
@@ -107,6 +111,7 @@ export class WhisperService {
         sizeMb: m.sizeMb,
         installed: m.installed,
         recommended: !!m.recommendedDefault,
+        english: m.english,
       }));
   }
 
@@ -198,6 +203,10 @@ export class WhisperService {
         .trim(),
       rtf: Math.min(you.rtf, other.rtf),
       durationMs: Math.max(you.durationMs, other.durationMs),
+      // Both halves ran the same model with the same requested language, so they agree
+      // except when one side was silent enough to report nothing.
+      language: you.language ?? other.language,
+      multilingualModel: you.multilingualModel ?? other.multilingualModel,
     };
   }
 

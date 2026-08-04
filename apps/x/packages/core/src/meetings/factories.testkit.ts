@@ -98,13 +98,25 @@ export function fakeTranscriber(
   segmentsFor: (call: number, pcm: Int16Array) => { start: number; end: number; text: string }[] = (
     call,
   ) => [{ start: 0, end: 1, text: `chunk ${call}` }],
-): MeetingTranscriber & { calls: { samples: number }[] } {
-  const calls: { samples: number }[] = [];
+  /**
+   * What the engine reports back about the run. Real engines report the *effective*
+   * language, which is not always the requested one — whisper.cpp ignores `--language`
+   * on an English-only model and answers `en` regardless.
+   */
+  report: (
+    call: number,
+    lang: string | undefined,
+  ) => { language?: string; multilingualModel?: boolean } = () => ({}),
+): MeetingTranscriber & { calls: { samples: number; lang?: string }[] } {
+  const calls: { samples: number; lang?: string }[] = [];
   return {
     calls,
-    async transcribe(pcm) {
-      calls.push({ samples: pcm.length });
-      return { segments: segmentsFor(calls.length - 1, pcm) };
+    async transcribe(pcm, opts) {
+      calls.push({ samples: pcm.length, lang: opts?.lang });
+      return {
+        segments: segmentsFor(calls.length - 1, pcm),
+        ...report(calls.length - 1, opts?.lang),
+      };
     },
   };
 }
