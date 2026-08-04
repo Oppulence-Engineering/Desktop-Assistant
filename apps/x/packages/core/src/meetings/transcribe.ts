@@ -43,7 +43,16 @@ export interface MeetingTranscriber {
     opts: { channels: 1; model?: string; lang?: string },
   ): Promise<{
     segments: { start: number; end: number; text: string }[];
-    /** The language the engine actually ran in, when it reports one. */
+    /**
+     * The language the engine actually ran in, when it reports one.
+     *
+     * whisper reports this (`result.language` in its `-oj` output). **Parakeet does
+     * not** — the sidecar's JSON carries only engine, model and segments — so a
+     * Parakeet session leaves this undefined and the once-per-session resolution below
+     * cannot latch. An explicit language still reaches Parakeet through `--language`;
+     * it is only `auto` that stays per-window there. Giving the sidecar a detected
+     * language to report would close that gap.
+     */
     language?: string;
     /** False for `.en` models, which ignore the requested language entirely. */
     multilingualModel?: boolean;
@@ -187,9 +196,14 @@ export async function transcribeSession(opts: TranscribeSessionOpts): Promise<Me
       `language: asked for ${language.requested} but the model is English-only — it transcribed as ${language.effective ?? "en"}. Switch to a multilingual model and re-transcribe.`,
     );
   } else if (language.autoDetect && !language.resolved && segments.length > 0) {
-    // Speech that produced segments but no reported language: the engine fell back to
-    // its own default rather than detecting. Say so instead of claiming a language.
-    await appendLog(dir, "language: detection reported nothing — the engine used its default");
+    // Speech, but the engine never named a language. whisper always does; Parakeet never
+    // does, so this is also the normal Parakeet-on-auto case — and there it means each
+    // window detected independently rather than the session resolving once. Either way
+    // the honest thing is to claim no language rather than guess one.
+    await appendLog(
+      dir,
+      "language: the engine reported none, so the session language is unknown and each window detected on its own",
+    );
   } else if (language.effective) {
     await appendLog(
       dir,

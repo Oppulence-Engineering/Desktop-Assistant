@@ -1431,8 +1431,10 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                         </span>
                         <span className="block text-xs text-muted-foreground">
                           Applies to the next meeting, and to re-transcribing an existing
-                          recording. Auto-detect resolves once per meeting and uses the same
-                          language for both sides of the call.
+                          recording.{" "}
+                          {meetings.transcriptionEngine === "parakeet"
+                            ? "With fast transcription, auto-detect runs per segment; naming the language keeps a meeting consistent."
+                            : "Auto-detect resolves once per meeting and uses the same language for both sides of the call."}
                         </span>
                       </span>
                       <select

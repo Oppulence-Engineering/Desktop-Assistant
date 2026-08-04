@@ -356,7 +356,9 @@ describe("session language", () => {
     expect(log).toContain("English-only");
   });
 
-  it("says so in the log when detection reports nothing", async () => {
+  // Also the normal Parakeet case: its sidecar reports no language at all, so a
+  // Parakeet session on auto cannot latch one and each window detects independently.
+  it("claims no language when the engine reports none", async () => {
     const dirPath = await session("lang-undetected");
     await writeWav(path.join(dirPath, "mic.wav"), tone(1));
 
@@ -370,9 +372,11 @@ describe("session language", () => {
       }),
     );
 
+    // Never fall back to claiming English — assuming a language is the original bug.
     expect(transcript.language).toBeUndefined();
+    expect(transcript.language_detected).toBeUndefined();
     const log = await fs.readFile(path.join(dirPath, "transcribe.log"), "utf8");
-    expect(log).toContain("detection reported nothing");
+    expect(log).toContain("the session language is unknown");
   });
 });
 
