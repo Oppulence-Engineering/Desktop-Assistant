@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import { transcribeSession } from "./transcribe.js";
+import { transcribeSession, transcriptionOrder } from "./transcribe.js";
 import {
   fakeTranscriber,
   SAMPLE_RATE,
@@ -573,5 +573,43 @@ describe("total failure", () => {
     ).rejects.toThrow(/no track could be transcribed/);
 
     expect(await fs.readdir(dirPath)).not.toContain("mic.decoded.wav");
+  });
+});
+
+/**
+ * Exported for this: which track is transcribed first decides which one's audio the
+ * language is detected from, and the loudest is the one worth trusting.
+ */
+describe("transcriptionOrder", () => {
+  const track = (file: string, peak: number, silent = false) =>
+    trackMeta({ file, peak, silent });
+
+  it("puts the loudest track first", () => {
+    expect(transcriptionOrder([track("mic", 1), track("system", 9)])[0].file).toBe("system");
+  });
+
+  it("puts silent tracks last however loud they claim to be", () => {
+    // `silent` is the sidecar's own verdict and outranks the number next to it.
+    const order = transcriptionOrder([track("mic", 99, true), track("system", 1)]);
+    expect(order.map((t) => t.file)).toEqual(["system", "mic"]);
+  });
+
+  it("keeps the declared order when peaks are equal", () => {
+    // Stable, so a two-track session with matched levels still reads mic-first.
+    expect(transcriptionOrder([track("mic", 5), track("system", 5)])[0].file).toBe("mic");
+  });
+
+  it("does not mutate the caller's array", () => {
+    // `meta.tracks` is read again after transcription — for retention, for the note's
+    // capture-health fields — so reordering it in place would be felt elsewhere.
+    const tracks = [track("mic", 1), track("system", 9)];
+    const before = tracks.map((t) => t.file);
+    transcriptionOrder(tracks);
+    expect(tracks.map((t) => t.file)).toEqual(before);
+  });
+
+  it("handles empty and single-track sessions", () => {
+    expect(transcriptionOrder([])).toEqual([]);
+    expect(transcriptionOrder([track("only", 3)])).toHaveLength(1);
   });
 });
