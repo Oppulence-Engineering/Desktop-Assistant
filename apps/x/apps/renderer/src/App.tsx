@@ -179,6 +179,7 @@ import { useMeetingTranscription, type CalendarEventMeta } from "@/hooks/useMeet
 import type { MeetingDoctorCheck, MeetingRelationshipTarget } from "@x/shared/dist/meetings.js";
 import { findMicrophoneBlocker } from "@/lib/meeting-readiness";
 import { useAnalyticsIdentity } from "@/hooks/useAnalyticsIdentity";
+import { useUpdatePrompt } from "@/hooks/use-update-prompt";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
 import { useBilling } from "@/hooks/useBilling";
 import * as analytics from "@/lib/analytics";
@@ -830,6 +831,9 @@ function App() {
   type MarkdownHistoryHandlers = { undo: () => boolean; redo: () => boolean };
 
   useAnalyticsIdentity();
+  // Prompts in-app once an update has finished downloading. Replaces the native
+  // OS dialog the updater used to raise.
+  useUpdatePrompt();
   const solomonAccount = useSolomonAccount();
   const {
     isLoading: solomonBillingLoading,

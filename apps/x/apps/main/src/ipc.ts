@@ -63,6 +63,7 @@ import {
   markOnboardingComplete,
 } from "@x/core/dist/config/note_creation_config.js";
 import { consumePendingDeepLink } from "./deeplink.js";
+import { checkForUpdates, getUpdateStatus, installUpdate } from "./update-manager.js";
 import { IAgentScheduleRepo } from "@x/core/dist/agent-schedule/repo.js";
 import { IAgentScheduleStateRepo } from "@x/core/dist/agent-schedule/state-repo.js";
 import {
@@ -386,11 +387,14 @@ function getVersions(): {
   chrome: string;
   node: string;
   electron: string;
+  app: string;
 } {
   return {
     chrome: process.versions.chrome,
     node: process.versions.node,
     electron: process.versions.electron,
+    // The version a user is actually asking about when they open Updates.
+    app: app.getVersion(),
   };
 }
 
@@ -1037,6 +1041,9 @@ export function setupIpcHandlers() {
     "app:consumePendingDeepLink": async () => {
       return { url: consumePendingDeepLink() };
     },
+    "app:getUpdateStatus": async () => getUpdateStatus(),
+    "app:checkForUpdates": async () => checkForUpdates(),
+    "app:installUpdate": async () => installUpdate(),
     "analytics:bootstrap": async () => {
       return {
         installationId: getInstallationId(),

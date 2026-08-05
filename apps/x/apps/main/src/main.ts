@@ -29,7 +29,7 @@ import { destroyDesktopDictation, initDesktopDictation } from "./desktop-dictati
 import { calendarNotifyHooks } from "./meeting-autostart.js";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
-import { updateElectronApp, UpdateSourceType } from "update-electron-app";
+import { initUpdates } from "./update-manager.js";
 import { init as initGmailSync } from "@x/core/dist/knowledge/sync_gmail.js";
 import { initEmailRelationshipEvidence } from "@x/core/dist/relationships/email-sync-bridge.js";
 import { initCalendarAttendance } from "@x/core/dist/relationships/calendar-attendance.js";
@@ -544,16 +544,10 @@ app.whenReady().then(async () => {
   // serves workspace files via app://workspace/<rel-path> for media previews.
   registerAppProtocol();
 
-  // Initialize auto-updater (only in production)
-  if (app.isPackaged) {
-    updateElectronApp({
-      updateSource: {
-        type: UpdateSourceType.ElectronPublicUpdateService,
-        repo: "Oppulence-Engineering/Desktop-Assistant",
-      },
-      notifyUser: true, // Shows native dialog when update is available
-    });
-  }
+  // Auto-updater. initUpdates decides for itself whether an update path exists
+  // (packaged, and a platform Squirrel serves) and reports "unsupported"
+  // otherwise, so the renderer always has a status to render.
+  initUpdates();
 
   // Initialize all config files before UI can access them
   await initConfigs();

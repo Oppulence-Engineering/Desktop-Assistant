@@ -169,6 +169,17 @@ const SlackReplyDraftSchema = z.object({
   text: z.string(),
 });
 
+/**
+ * Auto-update status shared by the push channel and the pull channel, so a
+ * late-opening window renders exactly what a live one was last told.
+ */
+const UpdateStatusSchema = z.object({
+  state: z.enum(["unsupported", "idle", "checking", "downloading", "ready", "error"]),
+  version: z.string().optional(),
+  detail: z.string().optional(),
+  lastCheckedAt: z.number().optional(),
+});
+
 const ipcSchemas = {
   "app:getVersions": {
     req: z.null(),
@@ -176,6 +187,7 @@ const ipcSchemas = {
       chrome: z.string(),
       node: z.string(),
       electron: z.string(),
+      app: z.string(),
     }),
   },
   "analytics:bootstrap": {
@@ -771,6 +783,28 @@ const ipcSchemas = {
     req: z.null(),
     res: z.object({
       url: z.string().nullable(),
+    }),
+  },
+  // Auto-update, surfaced in-app rather than through the OS dialog.
+  // `unsupported` is a normal resting state (dev build, Linux), not a failure.
+  "app:updateStatus": {
+    req: UpdateStatusSchema,
+    res: z.null(),
+  },
+  "app:getUpdateStatus": {
+    req: z.null(),
+    res: UpdateStatusSchema,
+  },
+  "app:checkForUpdates": {
+    req: z.null(),
+    res: UpdateStatusSchema,
+  },
+  "app:installUpdate": {
+    req: z.null(),
+    // A refusal is a result, not an error: the caller shows `reason` verbatim.
+    res: z.object({
+      installed: z.boolean(),
+      reason: z.string().optional(),
     }),
   },
   "granola:getConfig": {
