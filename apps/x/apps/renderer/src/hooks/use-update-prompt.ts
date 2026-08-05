@@ -20,8 +20,20 @@ export function useUpdateStatus(): UpdateStatus {
   const [status, setStatus] = useState<UpdateStatus>({ state: "idle" });
 
   useEffect(() => {
-    void window.ipc.invoke("app:getUpdateStatus", null).then(setStatus);
-    return window.ipc.on("app:updateStatus", (next) => setStatus(next as UpdateStatus));
+    // The pull exists because main broadcasts before any window is open, so a
+    // window that opens later would otherwise never learn a staged update
+    // exists. But the two can cross: if a push lands while the pull is still in
+    // flight, the pull's older answer must not overwrite it — that would drop a
+    // `ready` back to whatever was true a moment earlier.
+    let pushed = false;
+    const off = window.ipc.on("app:updateStatus", (next) => {
+      pushed = true;
+      setStatus(next);
+    });
+    void window.ipc.invoke("app:getUpdateStatus", null).then((initial) => {
+      if (!pushed) setStatus(initial);
+    });
+    return off;
   }, []);
 
   return status;
@@ -72,7 +84,13 @@ export function useUpdatePrompt(): UpdateStatus {
       duration: Infinity,
       action: {
         label: "Restart now",
-        onClick: () => {
+        onClick: (event) => {
+          // sonner removes the toast on action click unless the handler
+          // prevents it. Letting it close here would delete the only prompt the
+          // moment a restart is refused — a user recording a meeting would tap
+          // Restart, get told no, and have nothing left to tap afterwards. On
+          // success the app is quitting, so an un-dismissed toast costs nothing.
+          event.preventDefault();
           void window.ipc.invoke("app:installUpdate", null).then((result) => {
             // A refusal is a result, not an error — the main process declines
             // while a meeting is recording, and says so in `reason`.

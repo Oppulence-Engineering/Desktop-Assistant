@@ -1,11 +1,13 @@
 import { BrowserWindow, app, autoUpdater } from "electron";
 import { UpdateSourceType, updateElectronApp } from "update-electron-app";
 import {
+  applyUpdateEvent,
   decideInstall,
   shouldBroadcast,
   shouldCheck,
   unsupportedReason,
   type InstallDecision,
+  type UpdateEvent,
   type UpdateStatus,
 } from "@x/core/dist/updates/update-policy.js";
 import { peekMeetingController } from "./meeting-controller.js";
@@ -59,35 +61,44 @@ export function initUpdates(): void {
     return;
   }
 
-  autoUpdater.on("checking-for-update", () => {
-    setStatus({ state: "checking", lastCheckedAt: status.lastCheckedAt });
-  });
-  autoUpdater.on("update-not-available", () => {
-    setStatus({ state: "idle", lastCheckedAt: Date.now() });
-  });
-  autoUpdater.on("update-available", () => {
-    // Squirrel is downloading now. Nothing for the user to do yet, but settings
-    // says so rather than sitting on "checking" for minutes.
-    setStatus({ state: "downloading", lastCheckedAt: Date.now() });
-  });
-  autoUpdater.on("update-downloaded", (_event, _notes, releaseName) => {
-    setStatus({ state: "ready", version: releaseName, lastCheckedAt: Date.now() });
-  });
-  autoUpdater.on("error", (err) => {
+  // Every transition goes through applyUpdateEvent, which is what keeps a
+  // downloaded update from being walked back to `idle` by the next poll.
+  const apply = (event: UpdateEvent) => setStatus(applyUpdateEvent(status, event));
+
+  autoUpdater.on("checking-for-update", () => apply({ type: "checking" }));
+  autoUpdater.on("update-not-available", () => apply({ type: "not-available", at: Date.now() }));
+  // Squirrel is downloading now. Nothing for the user to do yet, but settings
+  // says so rather than sitting on "checking" for minutes.
+  autoUpdater.on("update-available", () => apply({ type: "available", at: Date.now() }));
+  autoUpdater.on("update-downloaded", (_event, _notes, releaseName) =>
+    apply({ type: "downloaded", at: Date.now(), version: releaseName }),
+  );
+  autoUpdater.on("error", (err) =>
     // A failed check is not worth interrupting anyone over — it retries on the
     // next tick. Recorded so settings can be honest when someone goes looking.
+    apply({
+      type: "error",
+      at: Date.now(),
+      detail: err instanceof Error ? err.message : String(err),
+    }),
+  );
+
+  try {
+    updateElectronApp({
+      updateSource: { type: UpdateSourceType.ElectronPublicUpdateService, repo: UPDATE_REPO },
+      // The whole point: no native dialog. The renderer prompt replaces it.
+      notifyUser: false,
+    });
+  } catch (err) {
+    // setFeedURL throws synchronously on a build macOS won't accept a signature
+    // for. This runs inside app.whenReady(), so letting it escape would take
+    // out startup over a feature nobody asked for yet.
     setStatus({
       state: "error",
       detail: err instanceof Error ? err.message : String(err),
       lastCheckedAt: Date.now(),
     });
-  });
-
-  updateElectronApp({
-    updateSource: { type: UpdateSourceType.ElectronPublicUpdateService, repo: UPDATE_REPO },
-    // The whole point: no native dialog. The renderer prompt replaces it.
-    notifyUser: false,
-  });
+  }
 }
 
 /** Manual check, for the button in settings. */
@@ -113,6 +124,17 @@ export function installUpdate(): InstallDecision {
     recording: controller?.recording ?? false,
     standingBy: controller?.standingBy ?? false,
   });
-  if (decision.installed) autoUpdater.quitAndInstall();
+  if (!decision.installed) return decision;
+  try {
+    autoUpdater.quitAndInstall();
+  } catch (err) {
+    // Throwing here would reject the IPC call, and the renderer only reads the
+    // resolved value — the user would press Restart and be told nothing at all.
+    // A failure to restart is just another refusal with a reason.
+    return {
+      installed: false,
+      reason: `Couldn't restart to update: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
   return decision;
 }

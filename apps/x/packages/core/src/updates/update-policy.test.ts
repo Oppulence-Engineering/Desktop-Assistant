@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyUpdateEvent,
   decideInstall,
   shouldBroadcast,
   shouldCheck,
@@ -57,6 +58,61 @@ describe("unsupportedReason", () => {
 
   it("declines in a dev build regardless of platform", () => {
     expect(unsupportedReason({ isPackaged: false, platform: "darwin" })).toMatch(/installed builds/i);
+  });
+});
+
+describe("applyUpdateEvent — a staged update survives later polls", () => {
+  const READY = { state: "ready" as const, version: "0.1.26", lastCheckedAt: 100 };
+
+  it("keeps ready through the next check", () => {
+    // update-electron-app polls on an unconditional setInterval that never
+    // stops after a download. This is the exact sequence that used to walk a
+    // downloaded update back to idle.
+    expect(applyUpdateEvent(READY, { type: "checking" })).toEqual(READY);
+  });
+
+  it("keeps ready when that poll reports nothing new", () => {
+    expect(applyUpdateEvent(READY, { type: "not-available", at: 200 })).toEqual(READY);
+  });
+
+  it("keeps ready when a later check errors", () => {
+    // A failed check does not un-stage a download that already landed.
+    expect(
+      applyUpdateEvent(READY, { type: "error", at: 200, detail: "network down" }),
+    ).toEqual(READY);
+  });
+
+  it("keeps ready when the same version is re-reported", () => {
+    expect(applyUpdateEvent(READY, { type: "downloaded", at: 200, version: "0.1.26" })).toEqual(
+      READY,
+    );
+  });
+
+  it("supersedes when a genuinely newer version downloads", () => {
+    expect(applyUpdateEvent(READY, { type: "downloaded", at: 200, version: "0.1.27" })).toEqual({
+      state: "ready",
+      version: "0.1.27",
+      lastCheckedAt: 200,
+    });
+  });
+
+  it("walks the normal path when nothing is staged", () => {
+    let s = applyUpdateEvent({ state: "idle" }, { type: "checking" });
+    expect(s.state).toBe("checking");
+    s = applyUpdateEvent(s, { type: "available", at: 10 });
+    expect(s.state).toBe("downloading");
+    s = applyUpdateEvent(s, { type: "downloaded", at: 20, version: "0.1.26" });
+    expect(s).toEqual({ state: "ready", version: "0.1.26", lastCheckedAt: 20 });
+  });
+
+  it("returns to idle from a plain check that finds nothing", () => {
+    const s = applyUpdateEvent({ state: "checking" }, { type: "not-available", at: 30 });
+    expect(s).toEqual({ state: "idle", lastCheckedAt: 30 });
+  });
+
+  it("does not backdate the last completed check while one is in flight", () => {
+    const s = applyUpdateEvent({ state: "idle", lastCheckedAt: 42 }, { type: "checking" });
+    expect(s.lastCheckedAt).toBe(42);
   });
 });
 
@@ -122,6 +178,12 @@ describe("shouldCheck", () => {
   it("does not re-check what is already downloaded or in flight", () => {
     expect(shouldCheck("ready")).toBe(false);
     expect(shouldCheck("checking")).toBe(false);
+  });
+
+  it("does not re-check mid-download, which could restart the transfer", () => {
+    // The settings button is disabled here; this enforces the same rule for a
+    // caller that reaches the channel directly.
+    expect(shouldCheck("downloading")).toBe(false);
   });
 
   it("never reaches the network where updates cannot apply", () => {

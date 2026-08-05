@@ -1387,7 +1387,7 @@ export function SidebarContentPanel({
                 {updateWaiting && (
                   <span
                     aria-hidden
-                    className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-sky-400 ring-2 ring-sidebar"
+                    className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-sky-500 ring-2 ring-sidebar"
                   />
                 )}
               </span>
