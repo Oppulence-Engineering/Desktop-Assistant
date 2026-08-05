@@ -7,6 +7,7 @@ import { IGranolaConfigRepo } from './repo.js';
 import { serviceLogger } from '../../services/service_logger.js';
 import { limitEventItems } from '../limit_event_items.js';
 import { getTranscriptionConfig } from '../../voice/voice.js';
+import { organizationDomain } from '@x/shared/dist/email-domain.js';
 import {
     enqueueRelationshipEvidence,
     flushRelationshipEvidence,
@@ -360,7 +361,7 @@ async function publishGranolaEvidence(doc: Document): Promise<void> {
     // creating an account from the document title would silently merge bad identity.
     if (attendees.length !== 1) return;
     const counterparty = attendees[0];
-    const domain = counterparty.email.split('@')[1];
+    const domain = organizationDomain(counterparty.email);
     const text = doc.notes_plain || doc.notes_markdown || convertProseMirrorToMarkdown(
         (doc.last_viewed_panel?.content && typeof doc.last_viewed_panel.content === 'object'
             ? doc.last_viewed_panel.content

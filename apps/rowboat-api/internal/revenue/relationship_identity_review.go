@@ -609,6 +609,16 @@ func moveRelationshipGraph(ctx context.Context, client *ent.Client, from, to *en
 				return moved, findErr
 			}
 			if duplicate {
+				// The target already has this person, so the row cannot move --
+				// but leaving it active on an archived relationship strands it,
+				// and the person's participation history silently loses a link.
+				// Deactivate instead, so the canonical person still reaches it.
+				if _, err = participant.Update().SetActive(false).Save(ctx); err != nil {
+					return moved, err
+				}
+				moved.ObjectRefs = append(
+					moved.ObjectRefs, "relationship-participant-deactivated:"+participant.ID.String(),
+				)
 				continue
 			}
 		}

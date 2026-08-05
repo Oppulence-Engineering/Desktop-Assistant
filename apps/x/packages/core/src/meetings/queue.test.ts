@@ -389,3 +389,43 @@ describe("summarization", () => {
     expect(announced!.notePath).toBe("note.md");
   });
 });
+
+/**
+ * The queue always had a `lang` resolver and forwarded it; the controller never supplied
+ * one, so it stayed undefined all the way down to the whisper runner's `-l en` default.
+ * These pin both halves of the seam.
+ */
+describe("language", () => {
+  it("forwards the resolver's language to the transcriber", async () => {
+    const dir = await finishedSession("lang-forward");
+    const transcriber = fakeTranscriber(() => [{ start: 0, end: 1, text: "hola" }]);
+    const { queue } = makeQueue({ transcriber, lang: () => "es" } as object);
+
+    queue.enqueue(dir);
+    await settle(queue);
+
+    expect(transcriber.calls.length).toBeGreaterThan(0);
+    expect(transcriber.calls.every((call) => call.lang === "es")).toBe(true);
+  });
+
+  it("reads the language at job time, so a settings change applies to the next job", async () => {
+    // Same contract as `model`: the thunk is called per job, not captured at
+    // construction, which is what makes changing the language and re-transcribing work.
+    const first = await finishedSession("lang-job-1");
+    const second = await finishedSession("lang-job-2");
+    const transcriber = fakeTranscriber(() => [{ start: 0, end: 1, text: "x" }]);
+    let language = "fr";
+    const { queue } = makeQueue({ transcriber, lang: () => language } as object);
+
+    queue.enqueue(first);
+    await settle(queue);
+    const afterFirst = transcriber.calls.length;
+
+    language = "de";
+    queue.enqueue(second);
+    await settle(queue);
+
+    expect(transcriber.calls.slice(0, afterFirst).every((c) => c.lang === "fr")).toBe(true);
+    expect(transcriber.calls.slice(afterFirst).every((c) => c.lang === "de")).toBe(true);
+  });
+});

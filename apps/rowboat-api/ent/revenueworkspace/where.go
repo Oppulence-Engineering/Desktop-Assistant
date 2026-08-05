@@ -1360,6 +1360,121 @@ func HasRelationshipSourceStatusesWith(preds ...predicate.RelationshipSourceStat
 	})
 }
 
+// HasRelationshipPersons applies the HasEdge predicate on the "relationship_persons" edge.
+func HasRelationshipPersons() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RelationshipPersonsTable, RelationshipPersonsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelationshipPersonsWith applies the HasEdge predicate on the "relationship_persons" edge with a given conditions (other predicates).
+func HasRelationshipPersonsWith(preds ...predicate.Person) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newRelationshipPersonsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPersonIdentities applies the HasEdge predicate on the "person_identities" edge.
+func HasPersonIdentities() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PersonIdentitiesTable, PersonIdentitiesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPersonIdentitiesWith applies the HasEdge predicate on the "person_identities" edge with a given conditions (other predicates).
+func HasPersonIdentitiesWith(preds ...predicate.PersonIdentity) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newPersonIdentitiesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPersonAttributes applies the HasEdge predicate on the "person_attributes" edge.
+func HasPersonAttributes() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PersonAttributesTable, PersonAttributesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPersonAttributesWith applies the HasEdge predicate on the "person_attributes" edge with a given conditions (other predicates).
+func HasPersonAttributesWith(preds ...predicate.PersonAttribute) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newPersonAttributesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPersonInteractionStats applies the HasEdge predicate on the "person_interaction_stats" edge.
+func HasPersonInteractionStats() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PersonInteractionStatsTable, PersonInteractionStatsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPersonInteractionStatsWith applies the HasEdge predicate on the "person_interaction_stats" edge with a given conditions (other predicates).
+func HasPersonInteractionStatsWith(preds ...predicate.PersonInteractionStat) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newPersonInteractionStatsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPersonMergeCandidates applies the HasEdge predicate on the "person_merge_candidates" edge.
+func HasPersonMergeCandidates() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PersonMergeCandidatesTable, PersonMergeCandidatesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPersonMergeCandidatesWith applies the HasEdge predicate on the "person_merge_candidates" edge with a given conditions (other predicates).
+func HasPersonMergeCandidatesWith(preds ...predicate.PersonMergeCandidate) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newPersonMergeCandidatesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.RevenueWorkspace) predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(sql.AndPredicates(predicates...))

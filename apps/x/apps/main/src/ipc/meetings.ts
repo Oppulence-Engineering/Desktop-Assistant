@@ -16,6 +16,9 @@ import { warmFastDictationEngine } from "../parakeet-dictation-runner.js";
 import { getMeetingController, type MeetingControllerDeps } from "../meeting-controller.js";
 import { getUiState, setUiState } from "@x/core/dist/config/ui_state.js";
 import { runMeetingPreflight } from "../meeting-preflight.js";
+import path from "node:path";
+import { recordingsRoot } from "@x/core/dist/meetings/session.js";
+import { readRelationshipCandidates } from "@x/core/dist/meetings/relationship-candidates.js";
 
 type IPCChannels = ipc.IPCChannels;
 
@@ -30,6 +33,7 @@ type MeetingCaptureHandlers = {
   "meeting:stopCapture": InvokeHandler<"meeting:stopCapture">;
   "meeting:publishRendererEvidence": InvokeHandler<"meeting:publishRendererEvidence">;
   "meeting:publishSessionEvidence": InvokeHandler<"meeting:publishSessionEvidence">;
+  "meeting:relationshipCandidates": InvokeHandler<"meeting:relationshipCandidates">;
   "meeting:captureStatus": InvokeHandler<"meeting:captureStatus">;
   "meeting:listSessions": InvokeHandler<"meeting:listSessions">;
   "meeting:retranscribe": InvokeHandler<"meeting:retranscribe">;
@@ -115,6 +119,18 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
     },
     "meeting:publishSessionEvidence": async (_event, args) => {
       return controller().publishSessionEvidence(args.sessionId, args.relationshipTarget);
+    },
+
+    "meeting:relationshipCandidates": async (_event, args) => {
+      const dir = path.join(recordingsRoot(), args.sessionId);
+      const stored = await readRelationshipCandidates(dir);
+      if (!stored) return { resolved: false, candidates: [] };
+      return {
+        resolved: !!stored.resolvedAt,
+        // Already answered: return nothing to render, so the prompt does not
+        // reappear every time the view is opened.
+        candidates: stored.resolvedAt ? [] : stored.candidates,
+      };
     },
 
     "meeting:captureStatus": async () => {

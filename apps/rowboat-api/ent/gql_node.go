@@ -40,6 +40,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -234,6 +239,31 @@ var oauthpendingImplementors = []string{"OAuthPending", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*OAuthPending) IsNode() {}
+
+var personImplementors = []string{"Person", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Person) IsNode() {}
+
+var personattributeImplementors = []string{"PersonAttribute", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*PersonAttribute) IsNode() {}
+
+var personidentityImplementors = []string{"PersonIdentity", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*PersonIdentity) IsNode() {}
+
+var personinteractionstatImplementors = []string{"PersonInteractionStat", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*PersonInteractionStat) IsNode() {}
+
+var personmergecandidateImplementors = []string{"PersonMergeCandidate", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*PersonMergeCandidate) IsNode() {}
 
 var policydecisionsnapshotImplementors = []string{"PolicyDecisionSnapshot", "Node"}
 
@@ -707,6 +737,51 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(oauthpending.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, oauthpendingImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case person.Table:
+		query := c.Person.Query().
+			Where(person.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, personImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case personattribute.Table:
+		query := c.PersonAttribute.Query().
+			Where(personattribute.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, personattributeImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case personidentity.Table:
+		query := c.PersonIdentity.Query().
+			Where(personidentity.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, personidentityImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case personinteractionstat.Table:
+		query := c.PersonInteractionStat.Query().
+			Where(personinteractionstat.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, personinteractionstatImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case personmergecandidate.Table:
+		query := c.PersonMergeCandidate.Query().
+			Where(personmergecandidate.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, personmergecandidateImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -1518,6 +1593,86 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.OAuthPending.Query().
 			Where(oauthpending.IDIn(ids...))
 		query, err := query.CollectFields(ctx, oauthpendingImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case person.Table:
+		query := c.Person.Query().
+			Where(person.IDIn(ids...))
+		query, err := query.CollectFields(ctx, personImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case personattribute.Table:
+		query := c.PersonAttribute.Query().
+			Where(personattribute.IDIn(ids...))
+		query, err := query.CollectFields(ctx, personattributeImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case personidentity.Table:
+		query := c.PersonIdentity.Query().
+			Where(personidentity.IDIn(ids...))
+		query, err := query.CollectFields(ctx, personidentityImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case personinteractionstat.Table:
+		query := c.PersonInteractionStat.Query().
+			Where(personinteractionstat.IDIn(ids...))
+		query, err := query.CollectFields(ctx, personinteractionstatImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case personmergecandidate.Table:
+		query := c.PersonMergeCandidate.Query().
+			Where(personmergecandidate.IDIn(ids...))
+		query, err := query.CollectFields(ctx, personmergecandidateImplementors...)
 		if err != nil {
 			return nil, err
 		}

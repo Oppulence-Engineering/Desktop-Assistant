@@ -3,6 +3,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { WorkDir } from "@x/core/dist/config/config.js";
 import type { MeetingCalendarEvent } from "@x/shared/dist/meetings.js";
+import { normalizeMeetingEvent } from "@x/shared/dist/meetings.js";
 import { peekMeetingController } from "./meeting-controller.js";
 import {
   DEEP_LINK_SCHEME,
@@ -167,7 +168,14 @@ async function handleRecordMeeting(eventId: string): Promise<void> {
   let event: MeetingCalendarEvent | undefined;
   try {
     const raw = await fs.readFile(path.join(WorkDir, "calendar_sync", `${eventId}.json`), "utf-8");
-    event = JSON.parse(raw) as MeetingCalendarEvent;
+    // Narrow rather than cast. calendar_sync holds the entire raw provider event,
+    // so the previous cast persisted the description, attachments and recurrence
+    // rules into the session's meta.json under a type that claimed none of them.
+    event = normalizeMeetingEvent(JSON.parse(raw), {
+      fallbackId: eventId,
+      calendarId: "primary",
+      source: "google",
+    });
   } catch (err) {
     // Start anyway: a recording with no calendar context still beats no recording.
     console.warn(`[deeplink] record-meeting: could not read event ${eventId}`, err);

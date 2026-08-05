@@ -414,6 +414,10 @@ describe("meetings settings block", () => {
       // whisper by default: parakeet is faster but needs a 600 MB download first.
       transcriptionEngine: "whisper",
       parakeetModel: "v3",
+      // Detect rather than assume. The old behaviour was no language at all, which the
+      // whisper runner turned into `-l en` — so a meeting held in any other language was
+      // transcribed as English with nothing to say it had happened.
+      language: "auto",
       transcribeOnStop: true,
       // Prompt, never silent: recording people is consent-shaped, and the notification
       // you can act on or ignore *is* the consent step. `always` has to be chosen.
@@ -447,6 +451,18 @@ describe("meetings settings block", () => {
     expect(cfg?.meetings.keepAudio).toBe("untilTranscribed");
   });
 
+  it("persists the meeting language and keeps it independent of dictation's", async () => {
+    // The two are separate on purpose: the language you dictate notes in and the one
+    // your meetings are held in are routinely different. A shared value would have made
+    // the meeting setting change under the user whenever they touched dictation.
+    await voice.setTranscriptionConfig({ meetings: { language: "fr" } });
+    await voice.setTranscriptionConfig({ dictation: { language: "de" } as never });
+
+    const cfg = await voice.readTranscriptionConfig();
+    expect(cfg?.meetings.language).toBe("fr");
+    expect(cfg?.meetings.captureEngine).toBe("auto");
+  });
+
   it("merges a partial meetings patch without clobbering its siblings", async () => {
     await voice.setTranscriptionConfig({ meetings: { keepAudio: "always" } });
     await voice.setTranscriptionConfig({ meetings: { micVoiceProcessing: true } });
@@ -478,5 +494,92 @@ describe("meetings settings block", () => {
 
     const cfg = await voice.readTranscriptionConfig();
     expect(cfg?.meetings.keepAudio).toBe("untilTranscribed");
+  });
+});
+
+describe("relationship evidence consent", () => {
+  async function writeConfig(config: unknown): Promise<void> {
+    await fs.mkdir(path.join(tmpDir, "config"), { recursive: true });
+    await fs.writeFile(
+      path.join(tmpDir, "config", "transcription.json"),
+      JSON.stringify(config),
+      "utf8",
+    );
+  }
+
+  it("defaults every disclosure to off", async () => {
+    const cfg = await voice.getTranscriptionConfig();
+    expect(cfg.relationships).toEqual({
+      meetingTranscripts: false,
+      meetingAttendance: false,
+      emailMetadata: false,
+      signatureEnrichment: false,
+      modelContactExtraction: false,
+    });
+  });
+
+  /**
+   * setTranscriptionConfig merges block by block. A missing `relationships:` line
+   * there would make every save of an unrelated setting silently revoke all five
+   * consent flags, because the schema re-defaults whatever the spread misses.
+   */
+  it("survives a save that touches an unrelated setting", async () => {
+    await voice.setTranscriptionConfig({
+      relationships: { meetingAttendance: true, emailMetadata: true },
+    });
+    await voice.setTranscriptionConfig({ meetings: { autoStart: "always" } });
+
+    const cfg = await voice.getTranscriptionConfig();
+    expect(cfg.meetings.autoStart).toBe("always");
+    expect(cfg.relationships.meetingAttendance).toBe(true);
+    expect(cfg.relationships.emailMetadata).toBe(true);
+  });
+
+  it("carries a prior transcript consent onto meetingTranscripts and nothing else", async () => {
+    await writeConfig({
+      $schemaVersion: 1,
+      meetings: { syncRelationshipEvidence: true },
+    });
+
+    const cfg = await voice.readTranscriptionConfig();
+    expect(cfg?.relationships.meetingTranscripts).toBe(true);
+    // Consent to sending transcripts is not consent to sending rosters or email.
+    expect(cfg?.relationships.meetingAttendance).toBe(false);
+    expect(cfg?.relationships.emailMetadata).toBe(false);
+    expect(cfg?.relationships.signatureEnrichment).toBe(false);
+    expect(cfg?.relationships.modelContactExtraction).toBe(false);
+  });
+
+  it("does not migrate a config that already answered", async () => {
+    // The user turned transcripts back off after the block existed. Re-migrating
+    // would silently re-enable publishing on every launch.
+    await writeConfig({
+      $schemaVersion: 1,
+      meetings: { syncRelationshipEvidence: true },
+      relationships: { meetingTranscripts: false, meetingAttendance: true },
+    });
+
+    const cfg = await voice.readTranscriptionConfig();
+    expect(cfg?.relationships.meetingTranscripts).toBe(false);
+    expect(cfg?.relationships.meetingAttendance).toBe(true);
+  });
+
+  it("leaves everything off when there was no prior consent", async () => {
+    await writeConfig({ $schemaVersion: 1, meetings: { syncRelationshipEvidence: false } });
+
+    const cfg = await voice.readTranscriptionConfig();
+    expect(cfg?.relationships.meetingTranscripts).toBe(false);
+  });
+
+  it("reads a config written before the relationships block existed", async () => {
+    // $schemaVersion is deliberately still 1: readTranscriptionConfig swallows a
+    // parse failure and returns null, so a bump would silently reset every setting
+    // the user has ever chosen.
+    await writeConfig({ $schemaVersion: 1, voiceProvider: "whisper-local" });
+
+    const cfg = await voice.readTranscriptionConfig();
+    expect(cfg).not.toBeNull();
+    expect(cfg?.voiceProvider).toBe("whisper-local");
+    expect(cfg?.relationships.meetingTranscripts).toBe(false);
   });
 });

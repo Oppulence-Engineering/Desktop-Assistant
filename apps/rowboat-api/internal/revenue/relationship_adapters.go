@@ -50,12 +50,14 @@ func adaptRelationshipEvent(source string, event AdapterEvent) (RelationshipObse
 	if err != nil {
 		return RelationshipObservationInput{}, err
 	}
-	domain := strings.ToLower(strings.TrimSpace(event.AccountDomain))
-	email := strings.ToLower(strings.TrimSpace(event.PrimaryEmail))
+	domain := normalizeDomain(event.AccountDomain)
+	email := normalizeEmail(event.PrimaryEmail)
 	if domain == "" {
-		if at := strings.LastIndex(email, "@"); at >= 0 {
-			domain = email[at+1:]
-		}
+		// accountDomain, not emailDomain: this becomes Relationship.account_domain
+		// and a domain identity anchor. Handing gmail.com to the engine here only
+		// failed to collapse unrelated people because the engine happened to
+		// re-check it downstream.
+		domain = accountDomain(email)
 	}
 	facts := make(map[string]any, len(event.Facts)+1)
 	for key, value := range event.Facts {

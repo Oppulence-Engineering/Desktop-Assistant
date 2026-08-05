@@ -96,6 +96,21 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Get("/{candidateId}", h.GetIdentityCandidate)
 		r.Post("/{candidateId}/decisions", h.DecideIdentityCandidate)
 	})
+	// The workspace-canonical person. Deliberately symmetric with the relationship
+	// surface above: corrections and retractions mirror /v1/relationships/{id}, and
+	// merge candidates mirror the identity-candidate review contract.
+	r.Route("/v1/relationship-persons", func(r chi.Router) {
+		r.Get("/", h.ListPersons)
+		r.Get("/{personId}", h.GetPerson)
+		r.Get("/{personId}/attributes", h.PersonAttributes)
+		r.Get("/{personId}/interactions", h.PersonInteractions)
+		r.Post("/{personId}/corrections", h.CorrectPerson)
+		r.Post("/{personId}/attributes/{attributeId}/retract", h.RetractPersonAttribute)
+	})
+	r.Route("/v1/relationship-person-merge-candidates", func(r chi.Router) {
+		r.Get("/", h.ListPersonMergeCandidates)
+		r.Post("/{candidateId}/decisions", h.DecidePersonMergeCandidate)
+	})
 	r.Route("/v1/relationship-attention", func(r chi.Router) {
 		r.Get("/", h.ListRelationshipAttention)
 		r.Post("/{attentionId}/decisions", h.DecideRelationshipAttention)
@@ -221,10 +236,117 @@ type participantDTO struct {
 	Title        string   `json:"title,omitempty"`
 	Active       bool     `json:"active"`
 	ExternalRefs []string `json:"externalRefs"`
+	// The canonical human behind this role. Absent for rows the person backfill
+	// has not reached yet, so clients must treat it as optional.
+	PersonID string     `json:"personId,omitempty"`
+	Person   *personDTO `json:"person,omitempty"`
+}
+
+// personDTO is the workspace-canonical human. Every enrichment field is projected
+// from PersonAttribute rows, so each has a source, a confidence and a timestamp
+// behind it — see GET /v1/relationship-persons/{id}/attributes.
+type personDTO struct {
+	ID                 string   `json:"id"`
+	DisplayName        string   `json:"displayName"`
+	Aliases            []string `json:"aliases"`
+	PrimaryEmail       string   `json:"primaryEmail,omitempty"`
+	Title              string   `json:"title,omitempty"`
+	OrgName            string   `json:"orgName,omitempty"`
+	OrgDomain          string   `json:"orgDomain,omitempty"`
+	Timezone           string   `json:"timezone,omitempty"`
+	Locale             string   `json:"locale,omitempty"`
+	Status             string   `json:"status"`
+	RelationshipCount  int      `json:"relationshipCount"`
+	FirstInteractionAt *string  `json:"firstInteractionAt,omitempty"`
+	LastInteractionAt  *string  `json:"lastInteractionAt,omitempty"`
+	AttributesVersion  int      `json:"attributesVersion"`
+	// Phone is deliberately absent: it is derived PII with no relationship
+	// dimension to land in, and it stays on the device that parsed it.
+}
+
+func personToDTO(p *ent.Person) *personDTO {
+	if p == nil {
+		return nil
+	}
+	dto := &personDTO{
+		ID:                p.ID.String(),
+		DisplayName:       p.DisplayName,
+		Aliases:           p.Aliases,
+		PrimaryEmail:      p.PrimaryEmail,
+		Title:             p.Title,
+		OrgName:           p.OrgName,
+		OrgDomain:         p.OrgDomain,
+		Timezone:          p.Timezone,
+		Locale:            p.Locale,
+		Status:            p.Status,
+		RelationshipCount: p.RelationshipCount,
+		AttributesVersion: p.AttributesVersion,
+	}
+	if dto.Aliases == nil {
+		dto.Aliases = []string{}
+	}
+	if p.FirstInteractionAt != nil {
+		value := p.FirstInteractionAt.UTC().Format(time.RFC3339)
+		dto.FirstInteractionAt = &value
+	}
+	if p.LastInteractionAt != nil {
+		value := p.LastInteractionAt.UTC().Format(time.RFC3339)
+		dto.LastInteractionAt = &value
+	}
+	return dto
+}
+
+type personAttributeDTO struct {
+	ID         string  `json:"id"`
+	Dimension  string  `json:"dimension"`
+	Value      string  `json:"value"`
+	SourceType string  `json:"sourceType"`
+	Source     string  `json:"source"`
+	Extractor  string  `json:"extractor"`
+	Status     string  `json:"status"`
+	Confidence float64 `json:"confidence"`
+	Reason     string  `json:"reason,omitempty"`
+	ObservedAt string  `json:"observedAt"`
+	ValidFrom  string  `json:"validFrom"`
+	ValidTo    *string `json:"validTo,omitempty"`
+}
+
+func personAttributeToDTO(attribute *ent.PersonAttribute) personAttributeDTO {
+	dto := personAttributeDTO{
+		ID:         attribute.ID.String(),
+		Dimension:  attribute.Dimension,
+		Value:      attribute.Value,
+		SourceType: attribute.SourceType,
+		Source:     attribute.Source,
+		Extractor:  attribute.Extractor,
+		Status:     attribute.Status,
+		Confidence: attribute.Confidence,
+		Reason:     attribute.Reason,
+		ObservedAt: attribute.ObservedAt.UTC().Format(time.RFC3339),
+		ValidFrom:  attribute.ValidFrom.UTC().Format(time.RFC3339),
+	}
+	if attribute.ValidTo != nil {
+		value := attribute.ValidTo.UTC().Format(time.RFC3339)
+		dto.ValidTo = &value
+	}
+	return dto
+}
+
+type personInteractionDTO struct {
+	RelationshipID     string         `json:"relationshipId"`
+	FirstInteractionAt string         `json:"firstInteractionAt"`
+	LastInteractionAt  string         `json:"lastInteractionAt"`
+	InteractionCount   int            `json:"interactionCount"`
+	InboundCount       int            `json:"inboundCount"`
+	OutboundCount      int            `json:"outboundCount"`
+	MeetingCount       int            `json:"meetingCount"`
+	ChannelCounts      map[string]int `json:"channelCounts"`
+	LastChannel        string         `json:"lastChannel,omitempty"`
+	LastDirection      string         `json:"lastDirection,omitempty"`
 }
 
 func participantToDTO(participant *ent.RelationshipParticipant) participantDTO {
-	return participantDTO{
+	dto := participantDTO{
 		ID:           participant.ID.String(),
 		DisplayName:  participant.DisplayName,
 		Email:        participant.Email,
@@ -233,6 +355,11 @@ func participantToDTO(participant *ent.RelationshipParticipant) participantDTO {
 		Active:       participant.Active,
 		ExternalRefs: participant.ExternalRefs,
 	}
+	if p, err := participant.Edges.PersonOrErr(); err == nil && p != nil {
+		dto.PersonID = p.ID.String()
+		dto.Person = personToDTO(p)
+	}
+	return dto
 }
 
 type commitmentDTO struct {
@@ -2069,6 +2196,8 @@ func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.
 			Payload         json.RawMessage                `json:"payload"`
 			Participants    []RelationshipParticipantInput `json:"participants"`
 			Assertions      []RelationshipAssertionInput   `json:"assertions"`
+			Channel         string                         `json:"channel"`
+			Direction       string                         `json:"direction"`
 		} `json:"observations"`
 	}
 	if !httpx.DecodeJSON(w, r, maxObservationBody, &body) {
@@ -2091,6 +2220,8 @@ func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.
 			Payload:         observation.Payload,
 			Participants:    observation.Participants,
 			Assertions:      observation.Assertions,
+			Channel:         observation.Channel,
+			Direction:       observation.Direction,
 		}
 		if observation.RelationshipID != "" {
 			id, err := uuid.Parse(observation.RelationshipID)

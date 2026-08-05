@@ -38,6 +38,10 @@ export interface RunResult {
   rtf: number;
   durationMs: number;
   engineLog?: string;
+  /** Effective language of the run, when the engine reported one. */
+  language?: string;
+  /** False when the model is an `.en` build, which ignores the requested language. */
+  multilingualModel?: boolean;
 }
 
 export interface PcmStats {
@@ -111,10 +115,24 @@ interface WhisperJsonSegment {
 }
 interface WhisperJson {
   transcription?: WhisperJsonSegment[];
+  /**
+   * The language the run actually used. Verified against the shipped binary: `-oj`
+   * emits `result.language`, and it reports the **effective** language, not the
+   * requested one — asking an English-only model for `fr` yields `en` here, with
+   * `main: WARNING: model is not multilingual` on stderr.
+   */
+  result?: { language?: string };
+  /** `model.multilingual` is false for the `.en` builds, which ignore `--language`. */
+  model?: { multilingual?: boolean };
 }
 
 /** Map `whisper-cli` JSON → trimmed segments + joined text. Pure → unit-testable. */
-export function parseWhisperJson(json: WhisperJson): { text: string; segments: Segment[] } {
+export function parseWhisperJson(json: WhisperJson): {
+  text: string;
+  segments: Segment[];
+  language?: string;
+  multilingualModel?: boolean;
+} {
   const segments: Segment[] = (json.transcription ?? [])
     .map((s) => ({
       start: (s.offsets?.from ?? 0) / 1000,
@@ -127,7 +145,12 @@ export function parseWhisperJson(json: WhisperJson): { text: string; segments: S
     .join(" ")
     .replace(/\s+/g, " ")
     .trim();
-  return { text, segments };
+  // Absent on older builds and on any JSON we did not write — callers treat an
+  // undefined language as "unknown", never as English.
+  const language = json.result?.language?.trim() || undefined;
+  const multilingualModel =
+    typeof json.model?.multilingual === "boolean" ? json.model.multilingual : undefined;
+  return { text, segments, language, multilingualModel };
 }
 
 /** Map a non-zero exit + stderr to a typed error code (Appendix Q). Pure. */
@@ -357,13 +380,15 @@ export async function run(wavPath: string, o: RunOpts): Promise<RunResult> {
       throw new WhisperError("engine_crashed", `no/invalid json: ${String(e)}`);
     }
 
-    const { text, segments } = parseWhisperJson(json);
+    const { text, segments, language, multilingualModel } = parseWhisperJson(json);
     return {
       text,
       segments,
       rtf: o.audioSeconds / (durationMs / 1000),
       durationMs,
       engineLog: stderr.slice(0, 2000),
+      language,
+      multilingualModel,
     };
   } finally {
     await fs.rm(outDir, { recursive: true, force: true }).catch(() => {});

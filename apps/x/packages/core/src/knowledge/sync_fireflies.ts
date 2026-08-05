@@ -5,6 +5,7 @@ import { FirefliesClientFactory } from './fireflies-client-factory.js';
 import { serviceLogger, type ServiceRunContext } from '../services/service_logger.js';
 import { limitEventItems } from './limit_event_items.js';
 import { getTranscriptionConfig } from '../voice/voice.js';
+import { organizationDomain } from '@x/shared/dist/email-domain.js';
 import {
     enqueueRelationshipEvidence,
     flushRelationshipEvidence,
@@ -131,7 +132,7 @@ async function firefliesRelationshipObservation(meeting: FirefliesMeetingData) {
     // available; never manufacture an account identity from a meeting title.
     if (external.length !== 1) return null;
     const counterparty = external[0];
-    const domain = counterparty.email.split('@')[1];
+    const domain = organizationDomain(counterparty.email);
     const occurredAt = meeting.dateString || meeting.date || new Date().toISOString();
     const sentences = meeting.sentences || meeting.transcript?.sentences || [];
     if (sentences.length === 0) return null;

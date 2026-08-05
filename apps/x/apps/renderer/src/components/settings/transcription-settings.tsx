@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   AudioLines,
   Download,
@@ -43,6 +43,7 @@ import type {
   DictationShortcut,
   DictationFlowBarDock,
   DictationLanguage,
+  RelationshipEvidenceSettings,
 } from "@x/shared/dist/transcription.js";
 import { DICTATION_LANGUAGE_OPTIONS } from "@x/shared/dist/transcription.js";
 import type {
@@ -145,6 +146,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const [localOnly, setLocalOnly] = useState(false);
   const [routing, setRouting] = useState<TranscriptionRouting | null>(null);
   const [meetings, setMeetings] = useState<MeetingsSettings | null>(null);
+  const [relationships, setRelationships] = useState<RelationshipEvidenceSettings | null>(null);
   // What a start would actually use, as opposed to what is configured — the
   // difference is the whole point of showing it.
   const [resolvedEngine, setResolvedEngine] = useState<MeetingResolvedEngine | null>(null);
@@ -231,6 +233,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
         setLocalOnly(cfg.privacy.localOnly);
         setActiveModel(cfg.whisper.model);
         setMeetings(cfg.meetings);
+        setRelationships(cfg.relationships);
         setDictationSettings(cfg.dictation);
       })
       .catch(() => {});
@@ -398,6 +401,21 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       }
     },
     [meetings, refreshRouting],
+  );
+
+  const changeRelationships = useCallback(
+    async (patch: Partial<RelationshipEvidenceSettings>) => {
+      const previous = relationships;
+      setRelationships((current) => (current ? { ...current, ...patch } : current));
+      try {
+        const cfg = await window.ipc.invoke("transcription:setConfig", { relationships: patch });
+        setRelationships(cfg.relationships);
+        window.dispatchEvent(new CustomEvent(TRANSCRIPTION_CONFIG_CHANGED_EVENT));
+      } catch {
+        setRelationships(previous);
+      }
+    },
+    [relationships],
   );
 
   const changeDictationSettings = useCallback(
@@ -575,6 +593,100 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const meetingIssueCount =
     meetingDoctor?.checks.filter((check) => check.status === "fail").length ?? 0;
 
+  /**
+   * Switch to a model, fetching it first if it is not on disk.
+   *
+   * Selection is persisted *before* the download so a failed or cancelled fetch still
+   * leaves the user on the model they asked for — the model list then shows it as
+   * missing and offers the retry, rather than silently snapping back to an English-only
+   * model that cannot transcribe what they picked.
+   */
+  const applyModel = useCallback(
+    async (model: WhisperModelSummary) => {
+      await selectModel(model.id);
+      if (!model.installed) await download(model.id, model.sizeMb);
+    },
+    [selectModel, download],
+  );
+
+  /**
+   * A non-English meeting language paired with a model that cannot honour it.
+   *
+   * whisper.cpp does not fail in this case — it prints a warning to stderr, quietly
+   * ignores `--language`, and returns an English transcript. Parakeet v2 is the same
+   * story. Left unsaid, the user picks French, gets English back, and has nothing to
+   * explain it. The setting is still obeyed; this only says what will actually happen.
+   */
+  const meetingLanguageWarning = useMemo((): {
+    title: string;
+    detail: string;
+    action?: { label: string; run: () => void };
+  } | null => {
+    if (!meetings) return null;
+    const language = meetings.language;
+    if (language === "auto" || language === "en") return null;
+    const languageLabel =
+      DICTATION_LANGUAGE_OPTIONS.find((option) => option.value === language)?.label ?? language;
+
+    // Judge the engine that will actually run, not the one selected. Parakeet falls back
+    // to whisper whenever its models are not on disk, so warning about Parakeet there
+    // would describe a run that is not going to happen — and would hide the whisper
+    // model that is.
+    const parakeetEffective = meetings.transcriptionEngine === "parakeet" && fastModels?.ready;
+    if (parakeetEffective) {
+      if (meetings.parakeetModel !== "v2") return null;
+      return {
+        title: `Parakeet v2 cannot transcribe ${languageLabel}`,
+        detail: "v2 is English-only. v3 covers 28 European languages.",
+        action: {
+          label: "Use v3",
+          run: () => void changeMeetings({ parakeetModel: "v3" }),
+        },
+      };
+    }
+
+    // The multilingual model of the smallest size class that can serve as a default.
+    const multilingual = (atLeast: number) =>
+      models.find((model) => model.english === false && model.sizeMb >= atLeast);
+
+    // `auto` is not a catalog entry, so it cannot be looked up — and it resolves to the
+    // recommended default, which is English-only. Left unhandled this was the one path
+    // that produced an English transcript with no warning at all.
+    if (activeModel === "auto") {
+      const sibling = multilingual(0);
+      return {
+        title: `Automatic model choice may not transcribe ${languageLabel}`,
+        detail: sibling
+          ? `It can pick an English-only model, which would return English regardless. ${sibling.label} always handles ${languageLabel}.`
+          : "It can pick an English-only model, which would return English regardless. Choose a multilingual model below.",
+        action: sibling
+          ? {
+              label: sibling.installed ? `Use ${sibling.label}` : `Get ${sibling.label}`,
+              run: () => void applyModel(sibling),
+            }
+          : undefined,
+      };
+    }
+
+    const active = models.find((model) => model.id === activeModel);
+    if (!active?.english) return null;
+    // The multilingual sibling of the same family — same speed and size class, so this
+    // is a swap rather than a downgrade.
+    const sibling = multilingual(active.sizeMb);
+    return {
+      title: `${active.label} cannot transcribe ${languageLabel}`,
+      detail: sibling
+        ? `It is an English-only model, so meetings will still come back in English. ${sibling.label} handles ${languageLabel}.`
+        : "It is an English-only model, so meetings will still come back in English. Choose a multilingual model below.",
+      action: sibling
+        ? {
+            label: sibling.installed ? `Use ${sibling.label}` : `Get ${sibling.label}`,
+            run: () => void applyModel(sibling),
+          }
+        : undefined,
+    };
+  }, [meetings, models, activeModel, fastModels, changeMeetings, applyModel]);
+
   return (
     <div className="space-y-8">
       <SettingsSection title="Privacy" description="Controls whether speech can leave this device.">
@@ -664,7 +776,8 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                   </span>
                   <span className="block text-[11px] leading-5 text-muted-foreground">
                     Applies to the next capture immediately. Choosing one language improves
-                    accuracy.
+                    accuracy. Recorded meetings have their own language setting under Meeting
+                    recording.
                   </span>
                 </span>
                 <select
@@ -1315,21 +1428,66 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
             )}
           </SettingsSection>
 
-          {meetings && (
+          {relationships && (
             <SettingsSection
               title="Relationship evidence"
-              description="Choose whether completed meeting text becomes shared, source-linked relationship evidence."
+              description="Each switch sends something different. Nothing here is on unless you turn it on, and turning one on never implies another."
             >
-              <SettingToggle
-                title="Sync meeting evidence"
-                hint={
-                  meetings.syncRelationshipEvidence
-                    ? "Resolved counterparty identity, finished 1:1 transcript text, and human-confirmed commitments are sent to Oppulence relationship state. Meeting audio and local file paths are never sent by this step."
-                    : "Off · transcripts and confirmed commitments remain in your local workspace"
-                }
-                value={meetings.syncRelationshipEvidence}
-                onChange={(next) => void changeMeetings({ syncRelationshipEvidence: next })}
-              />
+              <div className="space-y-2">
+                <SettingToggle
+                  title="Meeting transcripts"
+                  hint={
+                    relationships.meetingTranscripts
+                      ? "Resolved counterparty identity, finished 1:1 transcript text, and human-confirmed commitments are sent to Oppulence relationship state. Meeting audio and local file paths are never sent."
+                      : "Off · transcripts and confirmed commitments stay in your local workspace"
+                  }
+                  value={relationships.meetingTranscripts}
+                  onChange={(next) => void changeRelationships({ meetingTranscripts: next })}
+                />
+                <SettingToggle
+                  title="Meeting attendance"
+                  hint={
+                    relationships.meetingAttendance
+                      ? "Names and addresses of external invitees from the calendar are sent — for group meetings as well as 1:1s, and for meetings you did not record. No transcript text. People who declined, and meetings with only colleagues, are never sent."
+                      : "Off · who attended stays on this device, and group meetings publish nothing"
+                  }
+                  value={relationships.meetingAttendance}
+                  onChange={(next) => void changeRelationships({ meetingAttendance: next })}
+                />
+                <SettingToggle
+                  title="Email metadata"
+                  hint={
+                    relationships.emailMetadata
+                      ? "Who was on a thread, in which direction, how many messages and when. Subjects, bodies, and attachments are never sent. Newsletters and threads you never replied to are skipped."
+                      : "Off · no email information leaves this device"
+                  }
+                  value={relationships.emailMetadata}
+                  onChange={(next) => void changeRelationships({ emailMetadata: next })}
+                />
+                <SettingToggle
+                  title="Signature enrichment"
+                  hint={
+                    relationships.signatureEnrichment
+                      ? "Job titles and organizations parsed from senders' own signature blocks are attached to their contact record. Phone numbers are parsed but never sent."
+                      : "Off · contacts carry only the name and address you already had"
+                  }
+                  value={relationships.signatureEnrichment}
+                  onChange={(next) => void changeRelationships({ signatureEnrichment: next })}
+                />
+                <SettingToggle
+                  title="Model-assisted contacts"
+                  hint={
+                    !relationships.signatureEnrichment
+                      ? "Turn on signature enrichment first · this is the fallback for when it finds nothing"
+                      : relationships.modelContactExtraction
+                        ? "When signature parsing finds nothing, a model reads the message to infer a title or organization. Its answer never outranks a parsed signature."
+                        : "Off · only deterministic signature parsing is used"
+                  }
+                  value={relationships.modelContactExtraction}
+                  onChange={(next) => void changeRelationships({ modelContactExtraction: next })}
+                  disabled={!relationships.signatureEnrichment}
+                />
+              </div>
             </SettingsSection>
           )}
 
@@ -1366,6 +1524,57 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                 />
                 {resolvedEngine === "native" && meetings.captureEngine !== "renderer" && (
                   <>
+                    <label className="flex items-center justify-between gap-3 border border-border px-3.5 py-3">
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-foreground">
+                          Meeting language
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          Applies to the next meeting, and to re-transcribing an existing
+                          recording.{" "}
+                          {meetings.transcriptionEngine === "parakeet"
+                            ? "With fast transcription, auto-detect runs per segment; naming the language keeps a meeting consistent."
+                            : "Auto-detect resolves once per meeting and uses the same language for both sides of the call."}
+                        </span>
+                      </span>
+                      <select
+                        value={meetings.language}
+                        onChange={(event) =>
+                          void changeMeetings({
+                            language: event.target.value as DictationLanguage,
+                          })
+                        }
+                        aria-label="Meeting transcription language"
+                        className="h-8 max-w-40 shrink-0 border bg-background px-2 text-xs text-foreground"
+                      >
+                        {DICTATION_LANGUAGE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {meetingLanguageWarning && (
+                      <div className="flex items-start justify-between gap-3 border border-amber-500/40 bg-amber-500/5 px-3.5 py-3">
+                        <span className="min-w-0 text-xs text-muted-foreground">
+                          <span className="block font-medium text-foreground">
+                            {meetingLanguageWarning.title}
+                          </span>
+                          {meetingLanguageWarning.detail}
+                        </span>
+                        {meetingLanguageWarning.action && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="shrink-0"
+                            onClick={meetingLanguageWarning.action.run}
+                          >
+                            {meetingLanguageWarning.action.label}
+                          </Button>
+                        )}
+                      </div>
+                    )}
                     <SettingToggle
                       title="Fast transcription"
                       hint={

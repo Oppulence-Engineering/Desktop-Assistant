@@ -6399,6 +6399,248 @@ export interface components {
        */
       token_type?: string | null;
     };
+    Person: {
+      aliases: string[];
+      attributes?: components["schemas"]["PersonAttribute"][];
+      attributes_hash?: string;
+      attributes_version: number;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      display_name: string;
+      existing_merge_candidates?: components["schemas"]["PersonMergeCandidate"][];
+      /** Format: date-time */
+      first_interaction_at?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      identities?: components["schemas"]["PersonIdentity"][];
+      interaction_stats?: components["schemas"]["PersonInteractionStat"][];
+      /** Format: date-time */
+      last_interaction_at?: string;
+      locale?: string;
+      /** Format: date-time */
+      merged_at?: string;
+      /** Format: uuid */
+      merged_into_person_id?: string;
+      org_domain?: string;
+      org_name?: string;
+      participants?: components["schemas"]["RelationshipParticipant"][];
+      /** Format: date-time */
+      projected_at?: string;
+      projector_version: number;
+      proposed_merge_candidates?: components["schemas"]["PersonMergeCandidate"][];
+      relationship_count: number;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      timezone?: string;
+      title?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    PersonAttribute: {
+      /** Format: double */
+      confidence: number;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      dedupe_key: string;
+      dimension: string;
+      extractor: string;
+      extractor_version: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      observation?: components["schemas"]["RelationshipObservation"];
+      /** Format: date-time */
+      observed_at: string;
+      person: components["schemas"]["Person"];
+      /**
+       * @description Reason code for the ledger entry.
+       * @example llm_settle
+       * @enum {string}
+       */
+      reason?:
+        | "llm_call"
+        | "llm_call_reserve"
+        | "llm_settle"
+        | "voice_tts"
+        | "exa_search"
+        | "grant"
+        | "refund";
+      /** Format: date-time */
+      retracted_at?: string;
+      source: string;
+      source_type: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      supersedes_attribute_id?: string;
+      supporting_observation_ids: string[];
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      /** Format: date-time */
+      valid_from: string;
+      /** Format: date-time */
+      valid_to?: string;
+      value: string;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    PersonIdentity: {
+      /** Format: double */
+      confidence: number;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /** Format: date-time */
+      first_seen_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      kind: string;
+      /** Format: date-time */
+      last_seen_at: string;
+      person: components["schemas"]["Person"];
+      /**
+       * @description Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.
+       * @example openai
+       */
+      provider?: string;
+      source?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    PersonInteractionStat: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /** Format: date-time */
+      first_interaction_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      inbound_count: number;
+      interaction_count: number;
+      last_channel?: string;
+      last_direction?: string;
+      /** Format: date-time */
+      last_inbound_at?: string;
+      /** Format: date-time */
+      last_interaction_at: string;
+      /** Format: date-time */
+      last_outbound_at?: string;
+      meeting_count: number;
+      outbound_count: number;
+      person: components["schemas"]["Person"];
+      relationship: components["schemas"]["Relationship"];
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    PersonMergeCandidate: {
+      anchor_key_hash: string;
+      anchor_kind: string;
+      anchor_preview?: string;
+      anchor_provider?: string;
+      candidate_type: string;
+      /** Format: double */
+      confidence: number;
+      conflicting_anchors: string[];
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /** Format: date-time */
+      decided_at?: string;
+      decision?: string;
+      /** Format: uuid */
+      decision_actor_id?: string;
+      decision_reason?: string;
+      dedupe_key: string;
+      existing_person: components["schemas"]["Person"];
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      idempotency_key?: string;
+      impact_json: string;
+      matching_anchors: string[];
+      previous_state_json: string;
+      proposed_person: components["schemas"]["Person"];
+      recommended_decision: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      version: number;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
     PolicyDecisionSnapshot: {
       action: components["schemas"]["RevenueAction"];
       action_revision: number;
@@ -6578,6 +6820,7 @@ export interface components {
       outbound_account_ref?: string;
       outbound_lead_id?: string;
       participants?: components["schemas"]["RelationshipParticipant"][];
+      person_interaction_stats?: components["schemas"]["PersonInteractionStat"][];
       primary_email?: string;
       /** Format: date-time */
       projected_at?: string;
@@ -9338,6 +9581,9 @@ export interface components {
       meeting_minute_usages?: components["schemas"]["MeetingMinuteUsage"][];
       /** @description Third-party OAuth connections for the user. */
       oauth_connections?: components["schemas"]["OAuthConnection"][];
+      person_attributes?: components["schemas"]["PersonAttribute"][];
+      person_identities?: components["schemas"]["PersonIdentity"][];
+      person_merge_candidates?: components["schemas"]["PersonMergeCandidate"][];
       policy_decision_snapshots?: components["schemas"]["PolicyDecisionSnapshot"][];
       relationship_assertions?: components["schemas"]["RelationshipAssertion"][];
       relationship_attention_items?: components["schemas"]["RelationshipAttentionItem"][];
@@ -9347,6 +9593,7 @@ export interface components {
       relationship_lineage_events?: components["schemas"]["RelationshipLineageEvent"][];
       relationship_observations?: components["schemas"]["RelationshipObservation"][];
       relationship_participants?: components["schemas"]["RelationshipParticipant"][];
+      relationship_persons?: components["schemas"]["Person"][];
       relationship_projection_jobs?: components["schemas"]["RelationshipProjectionJob"][];
       relationship_review_acknowledgements?: components["schemas"]["RelationshipReviewAcknowledgement"][];
       relationship_source_statuses?: components["schemas"]["RelationshipSourceStatus"][];

@@ -891,6 +891,50 @@ async function saveAttachment(
 
 // --- Sync Logic ---
 
+/**
+ * Observer invoked once per freshly synced thread.
+ *
+ * A registered hook rather than a direct import so this module stays unaware of
+ * relationships: the mailbox sync is the system of record for the inbox, and it
+ * must not fail because an optional downstream consumer did.
+ */
+export type ThreadSyncedHook = (snapshot: GmailThreadSnapshot) => Promise<void>;
+
+let threadSyncedHook: ThreadSyncedHook | null = null;
+
+export function setThreadSyncedHook(hook: ThreadSyncedHook | null): void {
+  threadSyncedHook = hook;
+}
+
+/** Observer invoked when a full sync begins. */
+export type SyncRunStartedHook = () => Promise<void> | void;
+
+let syncRunStartedHook: SyncRunStartedHook | null = null;
+
+export function setSyncRunStartedHook(hook: SyncRunStartedHook | null): void {
+  syncRunStartedHook = hook;
+}
+
+async function onSyncRunStarted(): Promise<void> {
+  if (!syncRunStartedHook) return;
+  try {
+    await syncRunStartedHook();
+  } catch (err) {
+    console.warn("[Gmail] sync-run observer failed:", err);
+  }
+}
+
+async function onThreadSynced(snapshot: GmailThreadSnapshot): Promise<void> {
+  if (!threadSyncedHook) return;
+  try {
+    await threadSyncedHook(snapshot);
+  } catch (err) {
+    // Never fatal. The thread is already cached; evidence is a best-effort
+    // consumer of it and retries on the next sync.
+    console.warn(`[Gmail] thread-synced observer failed for ${snapshot.threadId}:`, err);
+  }
+}
+
 async function processThread(
   auth: OAuth2Client,
   threadId: string,
@@ -969,7 +1013,11 @@ async function processThread(
     // Also build + cache the rich snapshot for the inbox view.
     // Reuses the threads.get response — no extra API call.
     try {
-      await buildAndCacheSnapshot(threadId, thread, gmail, auth);
+      const snapshot = await buildAndCacheSnapshot(threadId, thread, gmail, auth);
+      // The snapshot was previously built and discarded. Relationship evidence
+      // rides on it rather than on a second Gmail traversal: normalizeGmailSnapshot
+      // is pure, so this costs no API calls and no second cursor.
+      if (snapshot) await onThreadSynced(snapshot);
     } catch (err) {
       console.warn(`[Gmail] Inbox snapshot build failed for ${threadId}:`, err);
     }
@@ -1432,6 +1480,12 @@ async function performSync() {
   const LOOKBACK_DAYS = 7; // Default to 1 week
   const ATTACHMENTS_DIR = path.join(SYNC_DIR, "attachments");
   const STATE_FILE = path.join(SYNC_DIR, "sync_state.json");
+
+  // Every run, not only a full one. Downstream per-run budgets are meant to bound
+  // one sync's output; anchoring the reset to full sync alone let a counter
+  // accumulate across the 30-second partial syncs until it wedged, and only a
+  // history-id expiry -- possibly weeks away -- would clear it.
+  await onSyncRunStarted();
 
   // Ensure directories exist
   if (!fs.existsSync(SYNC_DIR)) fs.mkdirSync(SYNC_DIR, { recursive: true });

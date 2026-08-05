@@ -57,6 +57,14 @@ import { ChatHistoryView } from "@/components/chat-history-view";
 import { HomeView } from "@/components/home-view";
 import { MeetingsView } from "@/components/meetings-view";
 import { RelationshipsView } from "@/components/relationships-view";
+import { ProductTour, type ProductTourVariant, type TourStep } from "@/components/product-tour";
+import { PRODUCT_TOUR_AUTOSTART, USE_PRODUCT_TOUR } from "@/lib/product-tour-config";
+import {
+  clearProductTourCompletion,
+  getProductTourStorage,
+  PRODUCT_TOUR_STORAGE_KEY,
+} from "@/lib/product-tour-state";
+import { productTourNavigationForTarget } from "@/lib/product-tour-navigation";
 import { SidebarSectionProvider } from "@/contexts/sidebar-context";
 import {
   Conversation,
@@ -88,12 +96,7 @@ import {
   ToolPermissionRequestEvent,
   AskHumanRequestEvent,
 } from "@x/shared/src/runs.js";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-  useSidebar,
-} from "@oppulence/ui/components/sidebar";
+import { SidebarInset, SidebarProvider } from "@oppulence/ui/components/sidebar";
 import {
   Tooltip,
   TooltipContent,
@@ -672,7 +675,7 @@ type ViewState =
   | { type: "live-notes" }
   | { type: "bg-tasks" }
   | { type: "email" }
-  | { type: "relationships"; id?: string; graphState?: string }
+  | { type: "relationships"; id?: string; graphState?: string; section?: "accounts" | "attention" }
   | { type: "workspace"; path?: string }
   | { type: "knowledge-view"; folderPath?: string }
   | { type: "chat-history" }
@@ -687,7 +690,11 @@ function viewStatesEqual(a: ViewState, b: ViewState): boolean {
   if (a.type === "knowledge-view" && b.type === "knowledge-view")
     return (a.folderPath ?? "") === (b.folderPath ?? "");
   if (a.type === "relationships" && b.type === "relationships")
-    return (a.id ?? "") === (b.id ?? "") && (a.graphState ?? "") === (b.graphState ?? "");
+    return (
+      (a.id ?? "") === (b.id ?? "") &&
+      (a.graphState ?? "") === (b.graphState ?? "") &&
+      (a.section ?? "accounts") === (b.section ?? "accounts")
+    );
   return true; // both graph
 }
 
@@ -777,22 +784,14 @@ function ContentHeader({
   canNavigateBack?: boolean;
   canNavigateForward?: boolean;
 }) {
-  const { state: sidebarState } = useSidebar();
-  const isSidebarCollapsed = sidebarState === "collapsed";
-
   return (
     <header
-      className="rowboat-titlebar titlebar-drag-region flex h-10 shrink-0 items-stretch overflow-hidden border-b border-border bg-background transition-[padding] duration-200 ease-linear"
+      className="rowboat-titlebar titlebar-drag-region flex h-10 shrink-0 items-stretch overflow-hidden border-b border-border bg-background"
       style={{
-        paddingLeft: isSidebarCollapsed ? 0 : 12,
+        paddingLeft: 12,
         paddingRight: 12,
       }}
     >
-      {isSidebarCollapsed ? (
-        <div className="titlebar-no-drag flex shrink-0 items-center pr-2">
-          <SidebarTrigger className="-ml-2 size-8 text-muted-foreground hover:bg-accent hover:text-foreground" />
-        </div>
-      ) : null}
       {onNavigateBack && onNavigateForward ? (
         <div className="titlebar-no-drag flex items-center gap-1 pr-2 shrink-0">
           <button
@@ -875,6 +874,9 @@ function App() {
   const [isBgTasksOpen, setIsBgTasksOpen] = useState(false);
   const [isEmailOpen, setIsEmailOpen] = useState(false);
   const [isRelationshipsOpen, setIsRelationshipsOpen] = useState(false);
+  const [activeRelationshipSection, setActiveRelationshipSection] = useState<
+    "accounts" | "attention"
+  >("accounts");
   const [relationshipInitialId, setRelationshipInitialId] = useState<string | null>(null);
   const [relationshipInitialGraphState, setRelationshipInitialGraphState] = useState<string | null>(
     null,
@@ -892,6 +894,9 @@ function App() {
   const [isChatHistoryOpen, setIsChatHistoryOpen] = useState(false);
   // Default landing view: Home with the chat docked according to appearance settings.
   const [isHomeOpen, setIsHomeOpen] = useState(true);
+  const [isProductTourOpen, setIsProductTourOpen] = useState(false);
+  const [productTourVariant, setProductTourVariant] = useState<ProductTourVariant>("main");
+  const [productTourForceStart, setProductTourForceStart] = useState(false);
   const [emailInitialThreadId, setEmailInitialThreadId] = useState<string | null>(null);
   const [emailThreadIdVersion, setEmailThreadIdVersion] = useState(0);
   const [expandedFrom, setExpandedFrom] = useState<{
@@ -4268,6 +4273,7 @@ function App() {
         type: "relationships",
         id: relationshipInitialId ?? undefined,
         graphState: relationshipInitialGraphState ?? undefined,
+        section: activeRelationshipSection,
       };
     if (isEmailOpen) return { type: "email" };
     if (isMeetingsOpen) return { type: "meetings" };
@@ -4292,6 +4298,7 @@ function App() {
     isRelationshipsOpen,
     relationshipInitialId,
     relationshipInitialGraphState,
+    activeRelationshipSection,
     isEmailOpen,
     isMeetingsOpen,
     isLiveNotesOpen,
@@ -4626,6 +4633,7 @@ function App() {
           setIsKnowledgeViewOpen(false);
           setIsChatHistoryOpen(false);
           setIsHomeOpen(false);
+          setActiveRelationshipSection(view.section ?? "accounts");
           setRelationshipInitialId(view.id ?? null);
           setRelationshipInitialGraphState(view.graphState ?? null);
           setIsRelationshipsOpen(true);
@@ -4942,6 +4950,66 @@ function App() {
       dismissBrowserOverlay,
     ],
   );
+
+  const startProductTour = useCallback((variant: ProductTourVariant = "main") => {
+    if (!USE_PRODUCT_TOUR) return;
+    clearProductTourCompletion(getProductTourStorage());
+    setProductTourVariant(variant);
+    setProductTourForceStart(true);
+    setIsProductTourOpen(true);
+  }, []);
+
+  const handleProductTourStepChange = useCallback(
+    (step: TourStep) => {
+      switch (productTourNavigationForTarget(step.target, productTourVariant)) {
+        case "home":
+          void navigateToView({ type: "home" });
+          break;
+        case "relationships":
+          {
+            const section = step.target === "attention-queue" ? "attention" : "accounts";
+            setActiveRelationshipSection(section);
+            void navigateToView({ type: "relationships", section });
+          }
+          break;
+        case "meetings":
+          openMeetingsView();
+          break;
+        case "actions":
+          setBgTaskInitialSlug(null);
+          setBgTaskSlugVersion((version) => version + 1);
+          openBgTasksView();
+          break;
+        case "chat":
+          setIsChatSidebarOpen(true);
+          break;
+        case "email":
+          openEmailView();
+          break;
+        case "knowledge":
+          void navigateToView({ type: "knowledge-view" });
+          break;
+        case "none":
+          break;
+      }
+    },
+    [navigateToView, openBgTasksView, openEmailView, openMeetingsView, productTourVariant],
+  );
+
+  useEffect(() => {
+    if (!USE_PRODUCT_TOUR || !PRODUCT_TOUR_AUTOSTART) return;
+    try {
+      if (getProductTourStorage()?.getItem(PRODUCT_TOUR_STORAGE_KEY) === "true") return;
+    } catch {
+      // Continue with the in-memory autostart when storage is unavailable.
+    }
+    const timer = window.setTimeout(() => {
+      setProductTourVariant("main");
+      setProductTourForceStart(false);
+      setIsProductTourOpen(true);
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   // Move the maximized/full-screen chat into the right side pane: restore the
   // view we expanded from (or fall back to Home) and dock the chat on the right.
@@ -6707,7 +6775,7 @@ function App() {
                 bgTaskSummaries={bgTaskSummaries}
                 activeNav={
                   isRelationshipsOpen
-                    ? "relationships"
+                    ? activeRelationshipSection
                     : isHomeOpen
                       ? "home"
                       : isEmailOpen
@@ -6738,8 +6806,12 @@ function App() {
                 recentRuns={runs}
                 onOpenRun={(rid) => void navigateToView({ type: "chat", runId: rid })}
                 onOpenEmail={(threadId) => openEmailView(threadId)}
-                onOpenRelationships={() => void navigateToView({ type: "relationships" })}
+                onOpenRelationships={(section = "accounts") => {
+                  setActiveRelationshipSection(section);
+                  void navigateToView({ type: "relationships", section });
+                }}
                 onOpenHome={() => void navigateToView({ type: "home" })}
+                onOpenTour={USE_PRODUCT_TOUR ? () => startProductTour("main") : undefined}
                 onNewChat={handleNewChatTab}
                 onToggleBrowser={handleToggleBrowser}
                 onVoiceNoteCreated={handleVoiceNoteCreated}
@@ -6997,6 +7069,14 @@ function App() {
                       onTakeMeetingNotes={() => {
                         void handleToggleMeeting();
                       }}
+                      onOpenRelationships={(relationshipId) => {
+                        setActiveRelationshipSection("accounts");
+                        void navigateToView({
+                          type: "relationships",
+                          id: relationshipId,
+                          section: "accounts",
+                        });
+                      }}
                       onOpenChat={handleNewChatTab}
                     />
                   </div>
@@ -7056,6 +7136,7 @@ function App() {
                     <RelationshipsView
                       initialId={relationshipInitialId}
                       initialGraphState={relationshipInitialGraphState}
+                      initialSection={activeRelationshipSection}
                       onStartMeeting={handleStartRelationshipMeeting}
                       meetingCaptureBlocker={meetingCaptureBlocker}
                       onChatContextChange={setRelationshipChatContext}
@@ -7824,6 +7905,19 @@ function App() {
         />
       </SidebarSectionProvider>
       <Toaster />
+      {USE_PRODUCT_TOUR ? (
+        <ProductTour
+          open={isProductTourOpen}
+          variant={productTourVariant}
+          forceStart={productTourForceStart}
+          onClose={() => {
+            setIsProductTourOpen(false);
+            setProductTourForceStart(false);
+          }}
+          onStepChange={handleProductTourStepChange}
+          onStartVariant={(variant) => startProductTour(variant)}
+        />
+      ) : null}
       <BillingErrorDialog
         open={billingErrorOpen}
         match={billingErrorMatch}

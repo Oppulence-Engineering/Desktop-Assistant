@@ -19,6 +19,12 @@ import { osSupportsNativeCapture } from "./meeting-capture.js";
 /** The slice of a calendar event `meta.json` stores and the note renders. */
 function toMeetingEvent(event: ResolvedCalendarEvent): MeetingCalendarEvent {
   return {
+    // The event id is what lets a finished recording be correlated back to its
+    // invite, and to any other evidence derived from the same invite. Dropping it
+    // meant a session and its calendar event could only ever be matched by
+    // guessing from the title and start time.
+    id: event.id,
+    calendarId: "primary",
     summary: event.summary,
     start: { dateTime: event.start.toISOString() },
     ...(event.end ? { end: { dateTime: event.end.toISOString() } } : {}),

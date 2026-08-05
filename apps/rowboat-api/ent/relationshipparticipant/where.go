@@ -530,6 +530,29 @@ func HasUserWith(preds ...predicate.User) predicate.RelationshipParticipant {
 	})
 }
 
+// HasPerson applies the HasEdge predicate on the "person" edge.
+func HasPerson() predicate.RelationshipParticipant {
+	return predicate.RelationshipParticipant(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, PersonTable, PersonColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPersonWith applies the HasEdge predicate on the "person" edge with a given conditions (other predicates).
+func HasPersonWith(preds ...predicate.Person) predicate.RelationshipParticipant {
+	return predicate.RelationshipParticipant(func(s *sql.Selector) {
+		step := newPersonStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.RelationshipParticipant) predicate.RelationshipParticipant {
 	return predicate.RelationshipParticipant(sql.AndPredicates(predicates...))

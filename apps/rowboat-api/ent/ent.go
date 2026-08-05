@@ -47,6 +47,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -170,6 +175,11 @@ func checkColumn(t, c string) error {
 			oauthconnection.Table:                   oauthconnection.ValidColumn,
 			oauthconnectionhistory.Table:            oauthconnectionhistory.ValidColumn,
 			oauthpending.Table:                      oauthpending.ValidColumn,
+			person.Table:                            person.ValidColumn,
+			personattribute.Table:                   personattribute.ValidColumn,
+			personidentity.Table:                    personidentity.ValidColumn,
+			personinteractionstat.Table:             personinteractionstat.ValidColumn,
+			personmergecandidate.Table:              personmergecandidate.ValidColumn,
 			policydecisionsnapshot.Table:            policydecisionsnapshot.ValidColumn,
 			relationship.Table:                      relationship.ValidColumn,
 			relationshipassertion.Table:             relationshipassertion.ValidColumn,

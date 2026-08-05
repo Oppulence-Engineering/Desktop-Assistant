@@ -31,6 +31,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
 import { updateElectronApp, UpdateSourceType } from "update-electron-app";
 import { init as initGmailSync } from "@x/core/dist/knowledge/sync_gmail.js";
+import { initEmailRelationshipEvidence } from "@x/core/dist/relationships/email-sync-bridge.js";
+import { initCalendarAttendance } from "@x/core/dist/relationships/calendar-attendance.js";
 import { init as initCalendarSync } from "@x/core/dist/knowledge/sync_calendar.js";
 import { init as initFirefliesSync } from "@x/core/dist/knowledge/sync_fireflies.js";
 import { init as initGranolaSync } from "@x/core/dist/knowledge/granola/sync.js";
@@ -204,6 +206,8 @@ console.log("preloadPath", preloadPath);
 const rendererPath = app.isPackaged
   ? path.join(__dirname, "../renderer/dist") // Production
   : path.join(__dirname, "../../../renderer/dist"); // Development
+const useBuiltRenderer =
+  app.isPackaged || process.env.ROWBOAT_USE_BUILT_RENDERER === "true";
 console.log("rendererPath", rendererPath);
 
 // Register custom protocol for serving built renderer files in production
@@ -384,7 +388,7 @@ function createWindow() {
   // The WebContentsView is created lazily on first `browser:setVisible`.
   browserViewManager.attach(win);
 
-  if (app.isPackaged) {
+  if (useBuiltRenderer) {
     win.loadURL("app://-/index.html");
   } else {
     win.loadURL("http://localhost:5173");
@@ -479,8 +483,17 @@ async function startBackgroundServices() {
   // any Google sync runs against the stale grant.
   await disconnectGoogleIfScopesStale();
 
+  // Register the relationship-evidence observer BEFORE the loop starts, so the
+  // first sync after launch is not silently skipped. It re-reads consent per
+  // thread and is a no-op until the user turns email evidence on.
+  initEmailRelationshipEvidence();
+
   // start gmail sync
   initGmailSync();
+
+  // Attendance for meetings that were never recorded. Registered before the loop
+  // for the same reason as the email observer.
+  initCalendarAttendance();
 
   // start calendar sync
   initCalendarSync();

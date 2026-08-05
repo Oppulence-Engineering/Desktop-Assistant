@@ -1008,6 +1008,29 @@ func HasAssertionsWith(preds ...predicate.RelationshipAssertion) predicate.Relat
 	})
 }
 
+// HasPersonAttributes applies the HasEdge predicate on the "person_attributes" edge.
+func HasPersonAttributes() predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PersonAttributesTable, PersonAttributesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPersonAttributesWith applies the HasEdge predicate on the "person_attributes" edge with a given conditions (other predicates).
+func HasPersonAttributesWith(preds ...predicate.PersonAttribute) predicate.RelationshipObservation {
+	return predicate.RelationshipObservation(func(s *sql.Selector) {
+		step := newPersonAttributesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.RelationshipObservation) predicate.RelationshipObservation {
 	return predicate.RelationshipObservation(sql.AndPredicates(predicates...))

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:dogfood": "tsc -b && vite build --mode dogfood",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "preview": "vite preview"

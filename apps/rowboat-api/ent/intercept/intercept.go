@@ -43,6 +43,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -1075,6 +1080,141 @@ func (f TraverseOAuthPending) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.OAuthPendingQuery", q)
 }
 
+// The PersonFunc type is an adapter to allow the use of ordinary function as a Querier.
+type PersonFunc func(context.Context, *ent.PersonQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f PersonFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.PersonQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.PersonQuery", q)
+}
+
+// The TraversePerson type is an adapter to allow the use of ordinary function as Traverser.
+type TraversePerson func(context.Context, *ent.PersonQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraversePerson) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraversePerson) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.PersonQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.PersonQuery", q)
+}
+
+// The PersonAttributeFunc type is an adapter to allow the use of ordinary function as a Querier.
+type PersonAttributeFunc func(context.Context, *ent.PersonAttributeQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f PersonAttributeFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.PersonAttributeQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.PersonAttributeQuery", q)
+}
+
+// The TraversePersonAttribute type is an adapter to allow the use of ordinary function as Traverser.
+type TraversePersonAttribute func(context.Context, *ent.PersonAttributeQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraversePersonAttribute) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraversePersonAttribute) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.PersonAttributeQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.PersonAttributeQuery", q)
+}
+
+// The PersonIdentityFunc type is an adapter to allow the use of ordinary function as a Querier.
+type PersonIdentityFunc func(context.Context, *ent.PersonIdentityQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f PersonIdentityFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.PersonIdentityQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.PersonIdentityQuery", q)
+}
+
+// The TraversePersonIdentity type is an adapter to allow the use of ordinary function as Traverser.
+type TraversePersonIdentity func(context.Context, *ent.PersonIdentityQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraversePersonIdentity) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraversePersonIdentity) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.PersonIdentityQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.PersonIdentityQuery", q)
+}
+
+// The PersonInteractionStatFunc type is an adapter to allow the use of ordinary function as a Querier.
+type PersonInteractionStatFunc func(context.Context, *ent.PersonInteractionStatQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f PersonInteractionStatFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.PersonInteractionStatQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.PersonInteractionStatQuery", q)
+}
+
+// The TraversePersonInteractionStat type is an adapter to allow the use of ordinary function as Traverser.
+type TraversePersonInteractionStat func(context.Context, *ent.PersonInteractionStatQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraversePersonInteractionStat) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraversePersonInteractionStat) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.PersonInteractionStatQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.PersonInteractionStatQuery", q)
+}
+
+// The PersonMergeCandidateFunc type is an adapter to allow the use of ordinary function as a Querier.
+type PersonMergeCandidateFunc func(context.Context, *ent.PersonMergeCandidateQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f PersonMergeCandidateFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.PersonMergeCandidateQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.PersonMergeCandidateQuery", q)
+}
+
+// The TraversePersonMergeCandidate type is an adapter to allow the use of ordinary function as Traverser.
+type TraversePersonMergeCandidate func(context.Context, *ent.PersonMergeCandidateQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraversePersonMergeCandidate) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraversePersonMergeCandidate) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.PersonMergeCandidateQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.PersonMergeCandidateQuery", q)
+}
+
 // The PolicyDecisionSnapshotFunc type is an adapter to allow the use of ordinary function as a Querier.
 type PolicyDecisionSnapshotFunc func(context.Context, *ent.PolicyDecisionSnapshotQuery) (ent.Value, error)
 
@@ -1904,6 +2044,16 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.OAuthConnectionHistoryQuery, predicate.OAuthConnectionHistory, oauthconnectionhistory.OrderOption]{typ: ent.TypeOAuthConnectionHistory, tq: q}, nil
 	case *ent.OAuthPendingQuery:
 		return &query[*ent.OAuthPendingQuery, predicate.OAuthPending, oauthpending.OrderOption]{typ: ent.TypeOAuthPending, tq: q}, nil
+	case *ent.PersonQuery:
+		return &query[*ent.PersonQuery, predicate.Person, person.OrderOption]{typ: ent.TypePerson, tq: q}, nil
+	case *ent.PersonAttributeQuery:
+		return &query[*ent.PersonAttributeQuery, predicate.PersonAttribute, personattribute.OrderOption]{typ: ent.TypePersonAttribute, tq: q}, nil
+	case *ent.PersonIdentityQuery:
+		return &query[*ent.PersonIdentityQuery, predicate.PersonIdentity, personidentity.OrderOption]{typ: ent.TypePersonIdentity, tq: q}, nil
+	case *ent.PersonInteractionStatQuery:
+		return &query[*ent.PersonInteractionStatQuery, predicate.PersonInteractionStat, personinteractionstat.OrderOption]{typ: ent.TypePersonInteractionStat, tq: q}, nil
+	case *ent.PersonMergeCandidateQuery:
+		return &query[*ent.PersonMergeCandidateQuery, predicate.PersonMergeCandidate, personmergecandidate.OrderOption]{typ: ent.TypePersonMergeCandidate, tq: q}, nil
 	case *ent.PolicyDecisionSnapshotQuery:
 		return &query[*ent.PolicyDecisionSnapshotQuery, predicate.PolicyDecisionSnapshot, policydecisionsnapshot.OrderOption]{typ: ent.TypePolicyDecisionSnapshot, tq: q}, nil
 	case *ent.RelationshipQuery:

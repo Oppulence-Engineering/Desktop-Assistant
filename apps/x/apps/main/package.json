@@ -8,6 +8,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "start": "electron .",
+    "start:dogfood": "export ROWBOAT_USE_BUILT_RENDERER=true; npm --prefix ../renderer run build:dogfood && npm run build && npm run start",
     "build": "rm -rf dist && tsc && node bundle.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",

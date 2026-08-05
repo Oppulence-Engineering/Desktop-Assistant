@@ -17,6 +17,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -622,6 +627,81 @@ func (_c *RevenueWorkspaceCreate) AddRelationshipSourceStatuses(v ...*Relationsh
 	return _c.AddRelationshipSourceStatusIDs(ids...)
 }
 
+// AddRelationshipPersonIDs adds the "relationship_persons" edge to the Person entity by IDs.
+func (_c *RevenueWorkspaceCreate) AddRelationshipPersonIDs(ids ...uuid.UUID) *RevenueWorkspaceCreate {
+	_c.mutation.AddRelationshipPersonIDs(ids...)
+	return _c
+}
+
+// AddRelationshipPersons adds the "relationship_persons" edges to the Person entity.
+func (_c *RevenueWorkspaceCreate) AddRelationshipPersons(v ...*Person) *RevenueWorkspaceCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRelationshipPersonIDs(ids...)
+}
+
+// AddPersonIdentityIDs adds the "person_identities" edge to the PersonIdentity entity by IDs.
+func (_c *RevenueWorkspaceCreate) AddPersonIdentityIDs(ids ...uuid.UUID) *RevenueWorkspaceCreate {
+	_c.mutation.AddPersonIdentityIDs(ids...)
+	return _c
+}
+
+// AddPersonIdentities adds the "person_identities" edges to the PersonIdentity entity.
+func (_c *RevenueWorkspaceCreate) AddPersonIdentities(v ...*PersonIdentity) *RevenueWorkspaceCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddPersonIdentityIDs(ids...)
+}
+
+// AddPersonAttributeIDs adds the "person_attributes" edge to the PersonAttribute entity by IDs.
+func (_c *RevenueWorkspaceCreate) AddPersonAttributeIDs(ids ...uuid.UUID) *RevenueWorkspaceCreate {
+	_c.mutation.AddPersonAttributeIDs(ids...)
+	return _c
+}
+
+// AddPersonAttributes adds the "person_attributes" edges to the PersonAttribute entity.
+func (_c *RevenueWorkspaceCreate) AddPersonAttributes(v ...*PersonAttribute) *RevenueWorkspaceCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddPersonAttributeIDs(ids...)
+}
+
+// AddPersonInteractionStatIDs adds the "person_interaction_stats" edge to the PersonInteractionStat entity by IDs.
+func (_c *RevenueWorkspaceCreate) AddPersonInteractionStatIDs(ids ...uuid.UUID) *RevenueWorkspaceCreate {
+	_c.mutation.AddPersonInteractionStatIDs(ids...)
+	return _c
+}
+
+// AddPersonInteractionStats adds the "person_interaction_stats" edges to the PersonInteractionStat entity.
+func (_c *RevenueWorkspaceCreate) AddPersonInteractionStats(v ...*PersonInteractionStat) *RevenueWorkspaceCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddPersonInteractionStatIDs(ids...)
+}
+
+// AddPersonMergeCandidateIDs adds the "person_merge_candidates" edge to the PersonMergeCandidate entity by IDs.
+func (_c *RevenueWorkspaceCreate) AddPersonMergeCandidateIDs(ids ...uuid.UUID) *RevenueWorkspaceCreate {
+	_c.mutation.AddPersonMergeCandidateIDs(ids...)
+	return _c
+}
+
+// AddPersonMergeCandidates adds the "person_merge_candidates" edges to the PersonMergeCandidate entity.
+func (_c *RevenueWorkspaceCreate) AddPersonMergeCandidates(v ...*PersonMergeCandidate) *RevenueWorkspaceCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddPersonMergeCandidateIDs(ids...)
+}
+
 // Mutation returns the RevenueWorkspaceMutation object of the builder.
 func (_c *RevenueWorkspaceCreate) Mutation() *RevenueWorkspaceMutation {
 	return _c.mutation
@@ -1224,6 +1304,86 @@ func (_c *RevenueWorkspaceCreate) createSpec() (*RevenueWorkspace, *sqlgraph.Cre
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipsourcestatus.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RelationshipPersonsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.RelationshipPersonsTable,
+			Columns: []string{revenueworkspace.RelationshipPersonsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PersonIdentitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonIdentitiesTable,
+			Columns: []string{revenueworkspace.PersonIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PersonAttributesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonAttributesTable,
+			Columns: []string{revenueworkspace.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PersonInteractionStatsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonInteractionStatsTable,
+			Columns: []string{revenueworkspace.PersonInteractionStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personinteractionstat.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PersonMergeCandidatesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonMergeCandidatesTable,
+			Columns: []string{revenueworkspace.PersonMergeCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

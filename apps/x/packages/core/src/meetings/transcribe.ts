@@ -41,7 +41,86 @@ export interface MeetingTranscriber {
   transcribe(
     pcm: Int16Array,
     opts: { channels: 1; model?: string; lang?: string },
-  ): Promise<{ segments: { start: number; end: number; text: string }[] }>;
+  ): Promise<{
+    segments: { start: number; end: number; text: string }[];
+    /**
+     * The language the engine actually ran in, when it reports one.
+     *
+     * whisper reports this (`result.language` in its `-oj` output). **Parakeet does
+     * not** — the sidecar's JSON carries only engine, model and segments — so a
+     * Parakeet session leaves this undefined and the once-per-session resolution below
+     * cannot latch. An explicit language still reaches Parakeet through `--language`;
+     * it is only `auto` that stays per-window there. Giving the sidecar a detected
+     * language to report would close that gap.
+     */
+    language?: string;
+    /** False for `.en` models, which ignore the requested language entirely. */
+    multilingualModel?: boolean;
+  }>;
+}
+
+/**
+ * The session's language, resolved once and then reused.
+ *
+ * `auto` is deliberately **not** passed to every window. Transcription runs in
+ * 10-minute chunks across two tracks, and the dual-track design guarantees one track is
+ * usually near-silent — which is exactly where detection misfires. Detecting per window
+ * lets a meeting come back half French and half Portuguese. So the first window that
+ * reports a language fixes it for every window after it, on both tracks.
+ */
+interface SessionLanguage {
+  /** True when the user asked for detection rather than naming a language. */
+  readonly autoDetect: boolean;
+  /** The explicit code the user chose, when they chose one. */
+  readonly requested?: string;
+  /** Set by the first window that reported one; reused from then on. */
+  resolved?: string;
+  /**
+   * What the engine actually used, which is not always what was asked for: whisper.cpp
+   * ignores `--language` on an English-only model and reports `en` regardless. Recording
+   * the request instead of the result would misreport precisely the broken case.
+   */
+  effective?: string;
+  /** Set when an English-only model silently discarded a non-English request. */
+  modelIgnoredLanguage?: boolean;
+}
+
+/** The language to hand the engine for the next window. */
+function nextRequest(language: SessionLanguage): string | undefined {
+  if (!language.autoDetect) return language.requested;
+  return language.resolved ?? "auto";
+}
+
+/** Fold one window's result back into the session's language state. */
+function observeLanguage(language: SessionLanguage, result: { language?: string; multilingualModel?: boolean }): void {
+  const reported = result.language?.trim();
+  if (reported) {
+    language.effective ??= reported;
+    if (language.autoDetect) language.resolved ??= reported;
+  }
+  if (
+    result.multilingualModel === false &&
+    language.requested &&
+    language.requested !== "en" &&
+    language.requested !== "auto"
+  ) {
+    language.modelIgnoredLanguage = true;
+  }
+}
+
+/**
+ * Track order for transcription.
+ *
+ * Only matters while the language is still being detected: the track carrying the most
+ * signal is the one whose detection is worth trusting, so it runs first and everything
+ * after it inherits the answer. Output ordering is unaffected — segments are sorted onto
+ * the shared clock at the end regardless of the order they were produced in.
+ */
+export function transcriptionOrder(tracks: MeetingTrackMeta[]): MeetingTrackMeta[] {
+  return [...tracks].sort((a, b) => {
+    if (a.silent !== b.silent) return a.silent ? 1 : -1;
+    return b.peak - a.peak;
+  });
 }
 
 export interface TranscribeSessionOpts {
@@ -69,7 +148,14 @@ export async function transcribeSession(opts: TranscribeSessionOpts): Promise<Me
   let failures = 0;
   const segments: MeetingTranscriptSegment[] = [];
 
-  for (const track of meta.tracks) {
+  // An unset language is detection, not English. The old behaviour — no `lang` reaching
+  // the runner, which then defaulted to `-l en` — is the bug this exists to close.
+  const language: SessionLanguage = {
+    autoDetect: !lang || lang === "auto",
+    requested: lang && lang !== "auto" ? lang : undefined,
+  };
+
+  for (const track of transcriptionOrder(meta.tracks)) {
     // One unreadable track must not cost us the other's transcript — a denied
     // system-audio grant is common, and your own half is still worth having.
     try {
@@ -77,7 +163,7 @@ export async function transcribeSession(opts: TranscribeSessionOpts): Promise<Me
         dir,
         track,
         transcriber,
-        lang,
+        language,
         codec: opts.codec,
         chunkSeconds: opts.chunkSeconds ?? CHUNK_SECONDS,
         onFrames: (frames) => {
@@ -104,11 +190,34 @@ export async function transcribeSession(opts: TranscribeSessionOpts): Promise<Me
 
   segments.sort((a, b) => a.start_ms - b.start_ms || a.end_ms - b.end_ms);
 
+  if (language.modelIgnoredLanguage) {
+    await appendLog(
+      dir,
+      `language: asked for ${language.requested} but the model is English-only — it transcribed as ${language.effective ?? "en"}. Switch to a multilingual model and re-transcribe.`,
+    );
+  } else if (language.autoDetect && !language.resolved && segments.length > 0) {
+    // Speech, but the engine never named a language. whisper always does; Parakeet never
+    // does, so this is also the normal Parakeet-on-auto case — and there it means each
+    // window detected independently rather than the session resolving once. Either way
+    // the honest thing is to claim no language rather than guess one.
+    await appendLog(
+      dir,
+      "language: the engine reported none, so the session language is unknown and each window detected on its own",
+    );
+  } else if (language.effective) {
+    await appendLog(
+      dir,
+      `language: ${language.effective}${language.autoDetect ? " (detected)" : ""}`,
+    );
+  }
+
   return {
     schema: 1,
     engine,
     model,
     created_at: now().toISOString(),
+    ...(language.effective ? { language: language.effective } : {}),
+    ...(language.effective ? { language_detected: language.autoDetect } : {}),
     segments,
   };
 }
@@ -117,12 +226,12 @@ async function transcribeTrack(args: {
   dir: string;
   track: MeetingTrackMeta;
   transcriber: MeetingTranscriber;
-  lang?: string;
+  language: SessionLanguage;
   codec?: AudioCodec;
   chunkSeconds: number;
   onFrames: (frames: number) => void;
 }): Promise<MeetingTranscriptSegment[]> {
-  const { dir, track, transcriber, lang, codec, chunkSeconds, onFrames } = args;
+  const { dir, track, transcriber, language, codec, chunkSeconds, onFrames } = args;
 
   // A track the sidecar already flagged silent has nothing to transcribe. This is
   // the failure mode that looks like success — correct duration, no signal — so it
@@ -154,7 +263,7 @@ async function transcribeTrack(args: {
       track,
       file,
       transcriber,
-      lang,
+      language,
       chunkSeconds,
       onFrames,
     });
@@ -168,11 +277,11 @@ async function transcribeDecodedTrack(args: {
   track: MeetingTrackMeta;
   file: string;
   transcriber: MeetingTranscriber;
-  lang?: string;
+  language: SessionLanguage;
   chunkSeconds: number;
   onFrames: (frames: number) => void;
 }): Promise<MeetingTranscriptSegment[]> {
-  const { dir, track, file, transcriber, lang, chunkSeconds, onFrames } = args;
+  const { dir, track, file, transcriber, language, chunkSeconds, onFrames } = args;
 
   // Repair a header the writer never finalized before reading, so the retained file
   // is also playable afterwards.
@@ -196,7 +305,8 @@ async function transcribeDecodedTrack(args: {
     const stats = pcmStats(pcm);
     if (stats.peak < SILENCE_PEAK_THRESHOLD) continue;
 
-    const result = await transcriber.transcribe(pcm, { channels: 1, lang });
+    const result = await transcriber.transcribe(pcm, { channels: 1, lang: nextRequest(language) });
+    observeLanguage(language, result);
     // Two shifts onto the shared clock: where this window starts inside the track,
     // and how late the track itself started relative to the earliest one.
     const baseMs = (startFrame / info.sampleRate) * 1000 + track.offset_ms;

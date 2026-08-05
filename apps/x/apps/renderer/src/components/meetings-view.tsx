@@ -1127,7 +1127,7 @@ export function MeetingsView({
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div className="shrink-0 border-b border-border px-6 py-5">
+      <div className="shrink-0 border-b border-border px-6 py-5" data-tour-target="meeting-notes">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Mic className="size-5 text-primary" />
@@ -1208,8 +1208,13 @@ export function MeetingsView({
               <p className="text-sm text-muted-foreground">
                 {microphoneBlocker
                   ? "Meeting capture will be available after the microphone check passes."
-                  : "No meeting notes yet. Use Take meeting notes to start one."}
+                  : "Turn a customer conversation into evidence, commitments, and next actions. Start your first meeting note when you are ready."}
               </p>
+              {!microphoneBlocker && (
+                <Button type="button" size="sm" variant="outline" onClick={onTakeMeetingNotes}>
+                  <Mic className="size-4" /> Take meeting notes
+                </Button>
+              )}
             </div>
           ) : (
             <div className="overflow-hidden rounded-none border border-border/60 bg-card">

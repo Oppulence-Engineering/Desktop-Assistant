@@ -68,13 +68,16 @@ type RelationshipObservationEdges struct {
 	User *User `json:"user,omitempty"`
 	// Assertions holds the value of the assertions edge.
 	Assertions []*RelationshipAssertion `json:"assertions,omitempty"`
+	// PersonAttributes holds the value of the person_attributes edge.
+	PersonAttributes []*PersonAttribute `json:"person_attributes,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 	// totalCount holds the count of the edges above.
-	totalCount [4]map[string]int
+	totalCount [5]map[string]int
 
-	namedAssertions map[string][]*RelationshipAssertion
+	namedAssertions       map[string][]*RelationshipAssertion
+	namedPersonAttributes map[string][]*PersonAttribute
 }
 
 // WorkspaceOrErr returns the Workspace value or an error if the edge
@@ -117,6 +120,15 @@ func (e RelationshipObservationEdges) AssertionsOrErr() ([]*RelationshipAssertio
 		return e.Assertions, nil
 	}
 	return nil, &NotLoadedError{edge: "assertions"}
+}
+
+// PersonAttributesOrErr returns the PersonAttributes value or an error if the edge
+// was not loaded in eager-loading.
+func (e RelationshipObservationEdges) PersonAttributesOrErr() ([]*PersonAttribute, error) {
+	if e.loadedTypes[4] {
+		return e.PersonAttributes, nil
+	}
+	return nil, &NotLoadedError{edge: "person_attributes"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -299,6 +311,11 @@ func (_m *RelationshipObservation) QueryAssertions() *RelationshipAssertionQuery
 	return NewRelationshipObservationClient(_m.config).QueryAssertions(_m)
 }
 
+// QueryPersonAttributes queries the "person_attributes" edge of the RelationshipObservation entity.
+func (_m *RelationshipObservation) QueryPersonAttributes() *PersonAttributeQuery {
+	return NewRelationshipObservationClient(_m.config).QueryPersonAttributes(_m)
+}
+
 // Update returns a builder for updating this RelationshipObservation.
 // Note that you need to call RelationshipObservation.Unwrap() before calling this method if this RelationshipObservation
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -385,6 +402,30 @@ func (_m *RelationshipObservation) appendNamedAssertions(name string, edges ...*
 		_m.Edges.namedAssertions[name] = []*RelationshipAssertion{}
 	} else {
 		_m.Edges.namedAssertions[name] = append(_m.Edges.namedAssertions[name], edges...)
+	}
+}
+
+// NamedPersonAttributes returns the PersonAttributes named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RelationshipObservation) NamedPersonAttributes(name string) ([]*PersonAttribute, error) {
+	if _m.Edges.namedPersonAttributes == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedPersonAttributes[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RelationshipObservation) appendNamedPersonAttributes(name string, edges ...*PersonAttribute) {
+	if _m.Edges.namedPersonAttributes == nil {
+		_m.Edges.namedPersonAttributes = make(map[string][]*PersonAttribute)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedPersonAttributes[name] = []*PersonAttribute{}
+	} else {
+		_m.Edges.namedPersonAttributes[name] = append(_m.Edges.namedPersonAttributes[name], edges...)
 	}
 }
 

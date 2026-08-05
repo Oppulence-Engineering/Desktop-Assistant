@@ -17,6 +17,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
@@ -536,6 +537,21 @@ func (_c *RelationshipCreate) AddIdentities(v ...*RelationshipIdentity) *Relatio
 		ids[i] = v[i].ID
 	}
 	return _c.AddIdentityIDs(ids...)
+}
+
+// AddPersonInteractionStatIDs adds the "person_interaction_stats" edge to the PersonInteractionStat entity by IDs.
+func (_c *RelationshipCreate) AddPersonInteractionStatIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddPersonInteractionStatIDs(ids...)
+	return _c
+}
+
+// AddPersonInteractionStats adds the "person_interaction_stats" edges to the PersonInteractionStat entity.
+func (_c *RelationshipCreate) AddPersonInteractionStats(v ...*PersonInteractionStat) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddPersonInteractionStatIDs(ids...)
 }
 
 // AddObservationIDs adds the "observations" edge to the RelationshipObservation entity by IDs.
@@ -1168,6 +1184,22 @@ func (_c *RelationshipCreate) createSpec() (*Relationship, *sqlgraph.CreateSpec)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PersonInteractionStatsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.PersonInteractionStatsTable,
+			Columns: []string{relationship.PersonInteractionStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personinteractionstat.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

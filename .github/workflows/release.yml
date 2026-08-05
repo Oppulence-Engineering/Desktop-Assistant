@@ -245,15 +245,29 @@ jobs:
             echo "No Developer ID Application identity in keychain" >&2
             exit 1
           fi
-          find out/make -name '*.dmg' -print0 | while IFS= read -r -d '' dmg; do
+          # `find | while` runs the body in a subshell, so zero matches means the
+          # loop simply never runs and the step exits 0. That is how a release
+          # shipped with no macOS artifact while every step still reported success.
+          # Count first, and treat "nothing to notarize" as the failure it is.
+          dmg_count=$(find out/make -name '*.dmg' -type f | wc -l | tr -d ' ')
+          if [ "$dmg_count" -eq 0 ]; then
+            echo "No .dmg was produced by maker-dmg — nothing to notarize" >&2
+            find out/make -maxdepth 3 -type f -print >&2 || true
+            exit 1
+          fi
+          echo "Notarizing $dmg_count disk image(s)"
+
+          while IFS= read -r dmg; do
             echo "::group::Notarizing $dmg"
             codesign --force --timestamp --keychain "$KEYCHAIN_PATH" --sign "$IDENTITY" "$dmg"
             xcrun notarytool submit "$dmg" \
               --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
             xcrun stapler staple "$dmg"
+            # Belt and braces: stapler can report success on an unnotarized image.
+            xcrun stapler validate "$dmg"
             spctl -a -t open --context context:primary-signature -vv "$dmg"
             echo "::endgroup::"
-          done
+          done < <(find out/make -name '*.dmg' -type f)
 
       - name: Cleanup keychain
         if: always()
@@ -280,6 +294,24 @@ jobs:
             echo "No distributables were produced in out/make" >&2
             exit 1
           fi
+
+          # "out/make is non-empty" is too weak a check to protect a release. A run
+          # where maker-dmg failed but maker-zip succeeded satisfies it, and the
+          # release publishes with no installer — which is how versions shipped
+          # without a macOS build while the workflow stayed green. A .zip cannot be
+          # installed past Gatekeeper, so the .dmg is the artifact that matters and
+          # its absence has to fail the job.
+          #
+          # Matched by architecture rather than product name: the app has already
+          # been renamed once (Solomon-AI → Oppulence) and a name-pinned check would
+          # have started silently passing on nothing.
+          for arch in arm64 x64; do
+            if ! grep -qE "darwin-${arch}.*\.dmg$" "$artifacts_file"; then
+              echo "No darwin-${arch} .dmg in out/make — refusing to publish a macOS-less release" >&2
+              cat "$artifacts_file" >&2
+              exit 1
+            fi
+          done
 
           while IFS= read -r artifact; do
             gh release upload "$RELEASE_TAG" "$artifact" --clobber

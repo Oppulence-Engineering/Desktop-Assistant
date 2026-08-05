@@ -110,6 +110,17 @@ function logStatus(): void {
 
 /**
  * Main entry point - runs as a service checking and running pre-built agents
+ *
+ * ⚠️ NOT REFERENCED. Nothing in `apps/main` or `apps/renderer` imports this module,
+ * so the pre-built agents — including the meeting-prep brief writer — have never run
+ * in production. Do not wire it as a side effect of another change: it starts an
+ * unreviewed background LLM loop on a timer, spending the user's tokens on work they
+ * did not ask for.
+ *
+ * Meeting preparation is served today by the on-demand `meeting-prep` skill, which
+ * reads the knowledge vault and shared relationship state when the user asks for it.
+ * If this service is ever revived it needs its own setting and its own consent copy;
+ * otherwise it should be deleted in a change of its own.
  */
 export async function init(): Promise<void> {
     console.log('[PreBuilt] Starting Pre-Built Agent Runner Service...');

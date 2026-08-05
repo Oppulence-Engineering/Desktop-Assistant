@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -272,6 +273,21 @@ func (_u *RelationshipObservationUpdate) AddAssertions(v ...*RelationshipAsserti
 	return _u.AddAssertionIDs(ids...)
 }
 
+// AddPersonAttributeIDs adds the "person_attributes" edge to the PersonAttribute entity by IDs.
+func (_u *RelationshipObservationUpdate) AddPersonAttributeIDs(ids ...uuid.UUID) *RelationshipObservationUpdate {
+	_u.mutation.AddPersonAttributeIDs(ids...)
+	return _u
+}
+
+// AddPersonAttributes adds the "person_attributes" edges to the PersonAttribute entity.
+func (_u *RelationshipObservationUpdate) AddPersonAttributes(v ...*PersonAttribute) *RelationshipObservationUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonAttributeIDs(ids...)
+}
+
 // Mutation returns the RelationshipObservationMutation object of the builder.
 func (_u *RelationshipObservationUpdate) Mutation() *RelationshipObservationMutation {
 	return _u.mutation
@@ -314,6 +330,27 @@ func (_u *RelationshipObservationUpdate) RemoveAssertions(v ...*RelationshipAsse
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAssertionIDs(ids...)
+}
+
+// ClearPersonAttributes clears all "person_attributes" edges to the PersonAttribute entity.
+func (_u *RelationshipObservationUpdate) ClearPersonAttributes() *RelationshipObservationUpdate {
+	_u.mutation.ClearPersonAttributes()
+	return _u
+}
+
+// RemovePersonAttributeIDs removes the "person_attributes" edge to PersonAttribute entities by IDs.
+func (_u *RelationshipObservationUpdate) RemovePersonAttributeIDs(ids ...uuid.UUID) *RelationshipObservationUpdate {
+	_u.mutation.RemovePersonAttributeIDs(ids...)
+	return _u
+}
+
+// RemovePersonAttributes removes "person_attributes" edges to PersonAttribute entities.
+func (_u *RelationshipObservationUpdate) RemovePersonAttributes(v ...*PersonAttribute) *RelationshipObservationUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonAttributeIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -586,6 +623,51 @@ func (_u *RelationshipObservationUpdate) sqlSave(ctx context.Context) (_node int
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.PersonAttributesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationshipobservation.PersonAttributesTable,
+			Columns: []string{relationshipobservation.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonAttributesIDs(); len(nodes) > 0 && !_u.mutation.PersonAttributesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationshipobservation.PersonAttributesTable,
+			Columns: []string{relationshipobservation.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonAttributesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationshipobservation.PersonAttributesTable,
+			Columns: []string{relationshipobservation.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{relationshipobservation.Label}
@@ -845,6 +927,21 @@ func (_u *RelationshipObservationUpdateOne) AddAssertions(v ...*RelationshipAsse
 	return _u.AddAssertionIDs(ids...)
 }
 
+// AddPersonAttributeIDs adds the "person_attributes" edge to the PersonAttribute entity by IDs.
+func (_u *RelationshipObservationUpdateOne) AddPersonAttributeIDs(ids ...uuid.UUID) *RelationshipObservationUpdateOne {
+	_u.mutation.AddPersonAttributeIDs(ids...)
+	return _u
+}
+
+// AddPersonAttributes adds the "person_attributes" edges to the PersonAttribute entity.
+func (_u *RelationshipObservationUpdateOne) AddPersonAttributes(v ...*PersonAttribute) *RelationshipObservationUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonAttributeIDs(ids...)
+}
+
 // Mutation returns the RelationshipObservationMutation object of the builder.
 func (_u *RelationshipObservationUpdateOne) Mutation() *RelationshipObservationMutation {
 	return _u.mutation
@@ -887,6 +984,27 @@ func (_u *RelationshipObservationUpdateOne) RemoveAssertions(v ...*RelationshipA
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveAssertionIDs(ids...)
+}
+
+// ClearPersonAttributes clears all "person_attributes" edges to the PersonAttribute entity.
+func (_u *RelationshipObservationUpdateOne) ClearPersonAttributes() *RelationshipObservationUpdateOne {
+	_u.mutation.ClearPersonAttributes()
+	return _u
+}
+
+// RemovePersonAttributeIDs removes the "person_attributes" edge to PersonAttribute entities by IDs.
+func (_u *RelationshipObservationUpdateOne) RemovePersonAttributeIDs(ids ...uuid.UUID) *RelationshipObservationUpdateOne {
+	_u.mutation.RemovePersonAttributeIDs(ids...)
+	return _u
+}
+
+// RemovePersonAttributes removes "person_attributes" edges to PersonAttribute entities.
+func (_u *RelationshipObservationUpdateOne) RemovePersonAttributes(v ...*PersonAttribute) *RelationshipObservationUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonAttributeIDs(ids...)
 }
 
 // Where appends a list predicates to the RelationshipObservationUpdate builder.
@@ -1182,6 +1300,51 @@ func (_u *RelationshipObservationUpdateOne) sqlSave(ctx context.Context) (_node 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipassertion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonAttributesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationshipobservation.PersonAttributesTable,
+			Columns: []string{relationshipobservation.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonAttributesIDs(); len(nodes) > 0 && !_u.mutation.PersonAttributesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationshipobservation.PersonAttributesTable,
+			Columns: []string{relationshipobservation.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonAttributesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationshipobservation.PersonAttributesTable,
+			Columns: []string{relationshipobservation.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

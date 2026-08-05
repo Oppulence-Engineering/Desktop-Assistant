@@ -49,6 +49,8 @@ func (RelationshipObservation) Edges() []ent.Edge {
 			Ref("relationship_observations").Unique().Required(),
 		edge.To("assertions", RelationshipAssertion.Type).
 			StorageKey(edge.Column("observation_id")),
+		edge.To("person_attributes", PersonAttribute.Type).
+			StorageKey(edge.Column("observation_id")),
 	}
 }
 

@@ -9,9 +9,11 @@ import {
   TranscriptionConfig,
   WhisperBenchmarkProfile as WhisperBenchmarkProfileSchema,
   isCloudProvider,
+  migrateRelationshipEvidenceConsent,
   type DiarizationSettings,
   type DictationSettings,
   type MeetingsSettings,
+  type RelationshipEvidenceSettings,
   type TranscriptionProvider,
   type VoicePrivacySettings,
   type WhisperBenchmarkProfile,
@@ -156,7 +158,8 @@ function parseWhisperBenchmarkProfiles(raw: unknown): WhisperBenchmarkProfile[] 
 export async function readTranscriptionConfig(): Promise<TranscriptionConfig | null> {
   try {
     const raw = await fs.readFile(transcriptionConfigPath(), "utf8");
-    return TranscriptionConfig.parse(JSON.parse(raw));
+    const parsed = JSON.parse(raw);
+    return migrateRelationshipEvidenceConsent(parsed, TranscriptionConfig.parse(parsed));
   } catch {
     return null;
   }
@@ -185,6 +188,8 @@ export interface TranscriptionConfigPatch {
   diarization?: Partial<DiarizationSettings>;
   /** Native dual-track meeting capture settings (partial). */
   meetings?: Partial<MeetingsSettings>;
+  /** What may leave the device as shared relationship evidence (partial). */
+  relationships?: Partial<RelationshipEvidenceSettings>;
 }
 
 /** Persist `transcription.json`, merging a partial update over the current config. */
@@ -208,6 +213,10 @@ export async function setTranscriptionConfig(
     },
     diarization: { ...current.diarization, ...(patch.diarization ?? {}) },
     meetings: { ...current.meetings, ...(patch.meetings ?? {}) },
+    // Every block must be carried explicitly. The schema re-defaults anything the
+    // spread of `current` does not reach, so omitting this line turns each save of
+    // an unrelated setting into a silent revocation of all five consent flags.
+    relationships: { ...current.relationships, ...(patch.relationships ?? {}) },
   });
   const configPath = transcriptionConfigPath();
   await fs.mkdir(path.dirname(configPath), { recursive: true });

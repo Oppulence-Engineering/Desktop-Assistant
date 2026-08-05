@@ -5884,6 +5884,544 @@
         "required": ["access_token", "expires_at"],
         "type": "object"
       },
+      "Person": {
+        "properties": {
+          "aliases": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "attributes": {
+            "items": {
+              "$ref": "#/components/schemas/PersonAttribute"
+            },
+            "type": "array"
+          },
+          "attributes_hash": {
+            "type": "string"
+          },
+          "attributes_version": {
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "existing_merge_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/PersonMergeCandidate"
+            },
+            "type": "array"
+          },
+          "first_interaction_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "identities": {
+            "items": {
+              "$ref": "#/components/schemas/PersonIdentity"
+            },
+            "type": "array"
+          },
+          "interaction_stats": {
+            "items": {
+              "$ref": "#/components/schemas/PersonInteractionStat"
+            },
+            "type": "array"
+          },
+          "last_interaction_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "merged_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "merged_into_person_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "org_domain": {
+            "type": "string"
+          },
+          "org_name": {
+            "type": "string"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/RelationshipParticipant"
+            },
+            "type": "array"
+          },
+          "projected_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "projector_version": {
+            "type": "integer"
+          },
+          "proposed_merge_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/PersonMergeCandidate"
+            },
+            "type": "array"
+          },
+          "relationship_count": {
+            "type": "integer"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "display_name",
+          "aliases",
+          "attributes_version",
+          "projector_version",
+          "status",
+          "relationship_count",
+          "workspace",
+          "user"
+        ],
+        "type": "object"
+      },
+      "PersonAttribute": {
+        "properties": {
+          "confidence": {
+            "format": "double",
+            "type": "number"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "dedupe_key": {
+            "type": "string"
+          },
+          "dimension": {
+            "type": "string"
+          },
+          "extractor": {
+            "type": "string"
+          },
+          "extractor_version": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "observation": {
+            "$ref": "#/components/schemas/RelationshipObservation"
+          },
+          "observed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "person": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "type": "string"
+          },
+          "retracted_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "source_type": {
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "supersedes_attribute_id": {
+            "type": "string"
+          },
+          "supporting_observation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "valid_from": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "valid_to": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "dimension",
+          "value",
+          "source_type",
+          "source",
+          "extractor",
+          "status",
+          "confidence",
+          "observed_at",
+          "valid_from",
+          "extractor_version",
+          "dedupe_key",
+          "supporting_observation_ids",
+          "workspace",
+          "person",
+          "user"
+        ],
+        "type": "object"
+      },
+      "PersonIdentity": {
+        "properties": {
+          "confidence": {
+            "format": "double",
+            "type": "number"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "first_seen_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "last_seen_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "person": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "provider": {
+            "description": "Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend.",
+            "example": "openai",
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "kind",
+          "confidence",
+          "first_seen_at",
+          "last_seen_at",
+          "workspace",
+          "person",
+          "user"
+        ],
+        "type": "object"
+      },
+      "PersonInteractionStat": {
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "first_interaction_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "inbound_count": {
+            "type": "integer"
+          },
+          "interaction_count": {
+            "type": "integer"
+          },
+          "last_channel": {
+            "type": "string"
+          },
+          "last_direction": {
+            "type": "string"
+          },
+          "last_inbound_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "last_interaction_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "last_outbound_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "meeting_count": {
+            "type": "integer"
+          },
+          "outbound_count": {
+            "type": "integer"
+          },
+          "person": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "relationship": {
+            "$ref": "#/components/schemas/Relationship"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "first_interaction_at",
+          "last_interaction_at",
+          "interaction_count",
+          "inbound_count",
+          "outbound_count",
+          "meeting_count",
+          "workspace",
+          "person",
+          "relationship"
+        ],
+        "type": "object"
+      },
+      "PersonMergeCandidate": {
+        "properties": {
+          "anchor_key_hash": {
+            "type": "string"
+          },
+          "anchor_kind": {
+            "type": "string"
+          },
+          "anchor_preview": {
+            "type": "string"
+          },
+          "anchor_provider": {
+            "type": "string"
+          },
+          "candidate_type": {
+            "type": "string"
+          },
+          "confidence": {
+            "format": "double",
+            "type": "number"
+          },
+          "conflicting_anchors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "decision": {
+            "type": "string"
+          },
+          "decision_actor_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "decision_reason": {
+            "type": "string"
+          },
+          "dedupe_key": {
+            "type": "string"
+          },
+          "existing_person": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "idempotency_key": {
+            "type": "string"
+          },
+          "impact_json": {
+            "type": "string"
+          },
+          "matching_anchors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "previous_state_json": {
+            "type": "string"
+          },
+          "proposed_person": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "recommended_decision": {
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "version": {
+            "type": "integer"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "dedupe_key",
+          "status",
+          "candidate_type",
+          "anchor_kind",
+          "anchor_key_hash",
+          "matching_anchors",
+          "conflicting_anchors",
+          "impact_json",
+          "recommended_decision",
+          "confidence",
+          "version",
+          "previous_state_json",
+          "workspace",
+          "proposed_person",
+          "existing_person",
+          "user"
+        ],
+        "type": "object"
+      },
       "PolicyDecisionSnapshot": {
         "properties": {
           "action": {
@@ -6232,6 +6770,12 @@
           "participants": {
             "items": {
               "$ref": "#/components/schemas/RelationshipParticipant"
+            },
+            "type": "array"
+          },
+          "person_interaction_stats": {
+            "items": {
+              "$ref": "#/components/schemas/PersonInteractionStat"
             },
             "type": "array"
           },
@@ -10410,6 +10954,24 @@
             },
             "type": "array"
           },
+          "person_attributes": {
+            "items": {
+              "$ref": "#/components/schemas/PersonAttribute"
+            },
+            "type": "array"
+          },
+          "person_identities": {
+            "items": {
+              "$ref": "#/components/schemas/PersonIdentity"
+            },
+            "type": "array"
+          },
+          "person_merge_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/PersonMergeCandidate"
+            },
+            "type": "array"
+          },
           "policy_decision_snapshots": {
             "items": {
               "$ref": "#/components/schemas/PolicyDecisionSnapshot"
@@ -10461,6 +11023,12 @@
           "relationship_participants": {
             "items": {
               "$ref": "#/components/schemas/RelationshipParticipant"
+            },
+            "type": "array"
+          },
+          "relationship_persons": {
+            "items": {
+              "$ref": "#/components/schemas/Person"
             },
             "type": "array"
           },
