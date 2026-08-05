@@ -29,11 +29,20 @@ export class TransientRefreshError extends Error {
   readonly status: number;
   /** Parsed Retry-After in milliseconds, when the response carried one. */
   readonly retryAfterMs?: number;
-  constructor(message: string, status: number, retryAfterMs?: number) {
+  /**
+   * Technical context for logs — provider names, endpoints, upstream text.
+   *
+   * Deliberately separate from `message`, which can surface in the UI. Keeping
+   * them apart is what lets the message stay human without losing the detail an
+   * on-call engineer needs.
+   */
+  readonly detail?: string;
+  constructor(message: string, status: number, retryAfterMs?: number, detail?: string) {
     super(message);
     this.name = "TransientRefreshError";
     this.status = status;
     this.retryAfterMs = retryAfterMs;
+    this.detail = detail;
   }
 }
 

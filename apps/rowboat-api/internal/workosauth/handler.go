@@ -135,7 +135,7 @@ func resolveProvider(requested string) string {
 // "authkit").
 func (h *Handler) LoginURL(w http.ResponseWriter, r *http.Request) {
 	if !h.configured() {
-		httpx.Error(w, http.StatusBadGateway, "workos not configured", "provider_unconfigured")
+		httpx.Error(w, http.StatusBadGateway, "Sign-in is not available right now.", "provider_unconfigured")
 		return
 	}
 	q := r.URL.Query()
@@ -168,7 +168,7 @@ func (h *Handler) LoginURL(w http.ResponseWriter, r *http.Request) {
 // authorization-code exchange with WorkOS using the server-held API key.
 func (h *Handler) Exchange(w http.ResponseWriter, r *http.Request) {
 	if !h.configured() {
-		httpx.Error(w, http.StatusBadGateway, "workos not configured", "provider_unconfigured")
+		httpx.Error(w, http.StatusBadGateway, "Sign-in is not available right now.", "provider_unconfigured")
 		return
 	}
 	var req struct {
@@ -207,7 +207,7 @@ const (
 // Refresh handles POST /v1/auth/workos/refresh.
 func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	if !h.configured() {
-		httpx.Error(w, http.StatusBadGateway, "workos not configured", "provider_unconfigured")
+		httpx.Error(w, http.StatusBadGateway, "Sign-in is not available right now.", "provider_unconfigured")
 		return
 	}
 	var req struct {
@@ -405,8 +405,13 @@ func (h *Handler) authenticate(w http.ResponseWriter, r *http.Request, payload m
 func (h *Handler) writeAuthError(w http.ResponseWriter, ae *authError) {
 	switch ae.kind {
 	case authErrInvalidGrant:
+		// This string is rendered verbatim to the user by the desktop. It must
+		// name neither the identity provider nor the OAuth error that produced
+		// it: "WorkOS reports invalid_grant" told people which vendor we use and
+		// nothing they could act on. The machine-readable code carries the
+		// meaning for clients; the prose carries it for humans.
 		httpx.ErrorWith(w, http.StatusConflict,
-			"WorkOS reports invalid_grant; sign in again.",
+			"Your session expired. Please sign in again.",
 			"reconnect_required",
 			map[string]any{"reconnectRequired": true})
 	case authErrInternal:
