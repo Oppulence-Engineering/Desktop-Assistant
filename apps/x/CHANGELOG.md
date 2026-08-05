@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.1.24](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.23...v0.1.24) (2026-08-05)
+
+
+### Features
+
+* canonical person, and relationship evidence from meetings and email ([0268364](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/02683643df29e6262353374b6ca215cffe8d6838))
+* **desktop:** add guided product tour ([a7e50e6](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/a7e50e63f674d50f768fbb75bed1d275e37565e8))
+* **desktop:** add guided product tour ([9eb90d8](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/9eb90d8862c3e9d102ba73cb9fe6b72671a967e4))
+* **x:** publish relationship evidence from meetings and email ([fea9179](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/fea917903ab546c05104c1eabe8bc2800dd332f5))
+
+
+### Bug Fixes
+
+* **desktop:** stop the collapsed sidebar spilling over the content header ([f5d1479](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/f5d14798acf0b6209296546a3a251ba5762cd72f))
+* **meetings:** correct language claims Parakeet cannot keep ([8c3ddfb](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/8c3ddfb136e653e1d2675bf1120f08099cdce50d))
+* **meetings:** four defects found by adversarial review of the note path work ([dd589f6](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/dd589f61482a58a935f34d77c9964430d20972b9))
+* **meetings:** stop a same-titled meeting overwriting an earlier one's note ([e26ea55](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/e26ea554c71c0c9f50ede836344f63fbe0094102))
+* **meetings:** transcribe in the language spoken, and stop deleting user notes ([d6b45cc](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/d6b45cc34044937aef97a231283fd7607b4c23f7))
+* **meetings:** transcribe in the language spoken, and stop deleting user notes ([06b356c](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/06b356cf3f79e114ae15c5cf89b0eba52b2d4936))
+
+
+### Documentation
+
+* **meetings:** record the note-ownership contract, and cover transcriptionOrder ([2835410](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/28354106338b332ff7f4fd07aecfc2196b27d0fe))
+
 ## [0.1.23](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.22...v0.1.23) (2026-08-01)
 
 
