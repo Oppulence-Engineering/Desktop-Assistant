@@ -66,19 +66,34 @@ func New(client *ent.Client, sealer *crypto.Sealer, sec *secrets.Store, log *zap
 
 		authorizeURL:   "https://accounts.google.com/o/oauth2/v2/auth",
 		deepLinkScheme: "rowboat",
-		scopes: []string{
-			"openid", "email", "profile",
-			"https://www.googleapis.com/auth/gmail.readonly",
-			// gmail.compose lets the agent create drafts (never send) on the user's
-			// behalf, gated behind a human approval (connector.write.gmail_draft).
-			"https://www.googleapis.com/auth/gmail.compose",
-			"https://www.googleapis.com/auth/gmail.send",
-			"https://www.googleapis.com/auth/calendar.events.readonly",
-			"https://www.googleapis.com/auth/calendar.events",
-			"https://www.googleapis.com/auth/drive.readonly",
-			"https://www.googleapis.com/auth/drive.file",
-		},
+		scopes:         defaultScopes,
 	}
+}
+
+// defaultScopes is what the managed Google connect flow requests.
+//
+// Package-level so scopes_test.go can assert the contract with the desktop
+// without reaching through a constructed Handler.
+var defaultScopes = []string{
+	"openid", "email", "profile",
+	// Kept alongside gmail.modify, not replaced by it. The desktop's sync
+	// loop gates on readonly by name (sync_gmail.ts REQUIRED_SCOPE), and a
+	// grant is matched scope-by-scope rather than by what one scope
+	// implies — dropping this would stop mailbox sync even though modify
+	// covers reading.
+	"https://www.googleapis.com/auth/gmail.readonly",
+	"https://www.googleapis.com/auth/gmail.modify",
+	// gmail.modify is what archive, trash and mark-read need
+	// (threads.modify / threads.trash). Without it those actions fail for
+	// every managed account. It does not permit permanent deletion.
+	// gmail.compose lets the agent create drafts (never send) on the user's
+	// behalf, gated behind a human approval (connector.write.gmail_draft).
+	"https://www.googleapis.com/auth/gmail.compose",
+	"https://www.googleapis.com/auth/gmail.send",
+	"https://www.googleapis.com/auth/calendar.events.readonly",
+	"https://www.googleapis.com/auth/calendar.events",
+	"https://www.googleapis.com/auth/drive.readonly",
+	"https://www.googleapis.com/auth/drive.file",
 }
 
 // SetOutboundPolicy applies the shared outbound vendor policy.
