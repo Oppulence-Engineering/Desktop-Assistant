@@ -71,6 +71,25 @@ export type MailboxSenderProfile = {
   isNewsletter: boolean;
   isColdEmail: boolean;
   unsubscribeUrl?: string;
+  /**
+   * Deterministically parsed from the sender's own signature block.
+   *
+   * Local only. `phone` in particular is never published as relationship evidence:
+   * it is PII with no relationship dimension to land in, and this record is the
+   * reason it does not need one.
+   */
+  signature?: {
+    title?: string;
+    organization?: string;
+    phone?: string;
+    confidence: number;
+    /** Distinct threads the same claim has appeared in. Repetition is the only
+     *  corroboration available without a vendor. */
+    seenInThreads: number;
+    updatedAt: number;
+  };
+  /** Last time this sender appeared in published relationship evidence. */
+  lastPublishedAt?: number;
 };
 
 export type MailboxCategory = {

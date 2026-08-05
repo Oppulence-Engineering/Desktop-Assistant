@@ -469,6 +469,8 @@ async function performSync(syncDir: string, lookbackDays: number) {
         console.log("Authorization successful. Starting sync...");
         await syncCalendarWindow(auth, syncDir, lookbackDays);
         console.log("Sync completed.");
+        // Observers run after the cache is current and never fail the sync.
+        await onCalendarSynced();
     } catch (error) {
         console.error("Error during sync:", error);
         // If 401, clear tokens to force re-auth next run
@@ -477,6 +479,29 @@ async function performSync(syncDir: string, lookbackDays: number) {
             console.log("401 Unauthorized, clearing cache");
             GoogleClientFactory.clearCache();
         }
+    }
+}
+
+/**
+ * Observer invoked after each successful calendar sync.
+ *
+ * A registered hook rather than a direct import, so this module stays unaware of
+ * relationships and cannot be broken by an optional downstream consumer.
+ */
+export type CalendarSyncedHook = () => Promise<void>;
+
+let calendarSyncedHook: CalendarSyncedHook | null = null;
+
+export function setCalendarSyncedHook(hook: CalendarSyncedHook | null): void {
+    calendarSyncedHook = hook;
+}
+
+async function onCalendarSynced(): Promise<void> {
+    if (!calendarSyncedHook) return;
+    try {
+        await calendarSyncedHook();
+    } catch (err) {
+        console.warn("[Calendar] post-sync observer failed:", err);
     }
 }
 

@@ -41,6 +41,10 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -746,6 +750,66 @@ func (_u *UserUpdate) AddRelationshipIdentities(v ...*RelationshipIdentity) *Use
 		ids[i] = v[i].ID
 	}
 	return _u.AddRelationshipIdentityIDs(ids...)
+}
+
+// AddRelationshipPersonIDs adds the "relationship_persons" edge to the Person entity by IDs.
+func (_u *UserUpdate) AddRelationshipPersonIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddRelationshipPersonIDs(ids...)
+	return _u
+}
+
+// AddRelationshipPersons adds the "relationship_persons" edges to the Person entity.
+func (_u *UserUpdate) AddRelationshipPersons(v ...*Person) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRelationshipPersonIDs(ids...)
+}
+
+// AddPersonIdentityIDs adds the "person_identities" edge to the PersonIdentity entity by IDs.
+func (_u *UserUpdate) AddPersonIdentityIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddPersonIdentityIDs(ids...)
+	return _u
+}
+
+// AddPersonIdentities adds the "person_identities" edges to the PersonIdentity entity.
+func (_u *UserUpdate) AddPersonIdentities(v ...*PersonIdentity) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonIdentityIDs(ids...)
+}
+
+// AddPersonAttributeIDs adds the "person_attributes" edge to the PersonAttribute entity by IDs.
+func (_u *UserUpdate) AddPersonAttributeIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddPersonAttributeIDs(ids...)
+	return _u
+}
+
+// AddPersonAttributes adds the "person_attributes" edges to the PersonAttribute entity.
+func (_u *UserUpdate) AddPersonAttributes(v ...*PersonAttribute) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonAttributeIDs(ids...)
+}
+
+// AddPersonMergeCandidateIDs adds the "person_merge_candidates" edge to the PersonMergeCandidate entity by IDs.
+func (_u *UserUpdate) AddPersonMergeCandidateIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddPersonMergeCandidateIDs(ids...)
+	return _u
+}
+
+// AddPersonMergeCandidates adds the "person_merge_candidates" edges to the PersonMergeCandidate entity.
+func (_u *UserUpdate) AddPersonMergeCandidates(v ...*PersonMergeCandidate) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonMergeCandidateIDs(ids...)
 }
 
 // AddRelationshipProjectionJobIDs adds the "relationship_projection_jobs" edge to the RelationshipProjectionJob entity by IDs.
@@ -1801,6 +1865,90 @@ func (_u *UserUpdate) RemoveRelationshipIdentities(v ...*RelationshipIdentity) *
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRelationshipIdentityIDs(ids...)
+}
+
+// ClearRelationshipPersons clears all "relationship_persons" edges to the Person entity.
+func (_u *UserUpdate) ClearRelationshipPersons() *UserUpdate {
+	_u.mutation.ClearRelationshipPersons()
+	return _u
+}
+
+// RemoveRelationshipPersonIDs removes the "relationship_persons" edge to Person entities by IDs.
+func (_u *UserUpdate) RemoveRelationshipPersonIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveRelationshipPersonIDs(ids...)
+	return _u
+}
+
+// RemoveRelationshipPersons removes "relationship_persons" edges to Person entities.
+func (_u *UserUpdate) RemoveRelationshipPersons(v ...*Person) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRelationshipPersonIDs(ids...)
+}
+
+// ClearPersonIdentities clears all "person_identities" edges to the PersonIdentity entity.
+func (_u *UserUpdate) ClearPersonIdentities() *UserUpdate {
+	_u.mutation.ClearPersonIdentities()
+	return _u
+}
+
+// RemovePersonIdentityIDs removes the "person_identities" edge to PersonIdentity entities by IDs.
+func (_u *UserUpdate) RemovePersonIdentityIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemovePersonIdentityIDs(ids...)
+	return _u
+}
+
+// RemovePersonIdentities removes "person_identities" edges to PersonIdentity entities.
+func (_u *UserUpdate) RemovePersonIdentities(v ...*PersonIdentity) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonIdentityIDs(ids...)
+}
+
+// ClearPersonAttributes clears all "person_attributes" edges to the PersonAttribute entity.
+func (_u *UserUpdate) ClearPersonAttributes() *UserUpdate {
+	_u.mutation.ClearPersonAttributes()
+	return _u
+}
+
+// RemovePersonAttributeIDs removes the "person_attributes" edge to PersonAttribute entities by IDs.
+func (_u *UserUpdate) RemovePersonAttributeIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemovePersonAttributeIDs(ids...)
+	return _u
+}
+
+// RemovePersonAttributes removes "person_attributes" edges to PersonAttribute entities.
+func (_u *UserUpdate) RemovePersonAttributes(v ...*PersonAttribute) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonAttributeIDs(ids...)
+}
+
+// ClearPersonMergeCandidates clears all "person_merge_candidates" edges to the PersonMergeCandidate entity.
+func (_u *UserUpdate) ClearPersonMergeCandidates() *UserUpdate {
+	_u.mutation.ClearPersonMergeCandidates()
+	return _u
+}
+
+// RemovePersonMergeCandidateIDs removes the "person_merge_candidates" edge to PersonMergeCandidate entities by IDs.
+func (_u *UserUpdate) RemovePersonMergeCandidateIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemovePersonMergeCandidateIDs(ids...)
+	return _u
+}
+
+// RemovePersonMergeCandidates removes "person_merge_candidates" edges to PersonMergeCandidate entities.
+func (_u *UserUpdate) RemovePersonMergeCandidates(v ...*PersonMergeCandidate) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonMergeCandidateIDs(ids...)
 }
 
 // ClearRelationshipProjectionJobs clears all "relationship_projection_jobs" edges to the RelationshipProjectionJob entity.
@@ -3978,6 +4126,186 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.RelationshipPersonsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipPersonsTable,
+			Columns: []string{user.RelationshipPersonsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRelationshipPersonsIDs(); len(nodes) > 0 && !_u.mutation.RelationshipPersonsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipPersonsTable,
+			Columns: []string{user.RelationshipPersonsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RelationshipPersonsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipPersonsTable,
+			Columns: []string{user.RelationshipPersonsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonIdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonIdentitiesTable,
+			Columns: []string{user.PersonIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonIdentitiesIDs(); len(nodes) > 0 && !_u.mutation.PersonIdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonIdentitiesTable,
+			Columns: []string{user.PersonIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonIdentitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonIdentitiesTable,
+			Columns: []string{user.PersonIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonAttributesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonAttributesTable,
+			Columns: []string{user.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonAttributesIDs(); len(nodes) > 0 && !_u.mutation.PersonAttributesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonAttributesTable,
+			Columns: []string{user.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonAttributesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonAttributesTable,
+			Columns: []string{user.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonMergeCandidatesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonMergeCandidatesTable,
+			Columns: []string{user.PersonMergeCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonMergeCandidatesIDs(); len(nodes) > 0 && !_u.mutation.PersonMergeCandidatesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonMergeCandidatesTable,
+			Columns: []string{user.PersonMergeCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonMergeCandidatesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonMergeCandidatesTable,
+			Columns: []string{user.PersonMergeCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.RelationshipProjectionJobsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -5337,6 +5665,66 @@ func (_u *UserUpdateOne) AddRelationshipIdentities(v ...*RelationshipIdentity) *
 	return _u.AddRelationshipIdentityIDs(ids...)
 }
 
+// AddRelationshipPersonIDs adds the "relationship_persons" edge to the Person entity by IDs.
+func (_u *UserUpdateOne) AddRelationshipPersonIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddRelationshipPersonIDs(ids...)
+	return _u
+}
+
+// AddRelationshipPersons adds the "relationship_persons" edges to the Person entity.
+func (_u *UserUpdateOne) AddRelationshipPersons(v ...*Person) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRelationshipPersonIDs(ids...)
+}
+
+// AddPersonIdentityIDs adds the "person_identities" edge to the PersonIdentity entity by IDs.
+func (_u *UserUpdateOne) AddPersonIdentityIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddPersonIdentityIDs(ids...)
+	return _u
+}
+
+// AddPersonIdentities adds the "person_identities" edges to the PersonIdentity entity.
+func (_u *UserUpdateOne) AddPersonIdentities(v ...*PersonIdentity) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonIdentityIDs(ids...)
+}
+
+// AddPersonAttributeIDs adds the "person_attributes" edge to the PersonAttribute entity by IDs.
+func (_u *UserUpdateOne) AddPersonAttributeIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddPersonAttributeIDs(ids...)
+	return _u
+}
+
+// AddPersonAttributes adds the "person_attributes" edges to the PersonAttribute entity.
+func (_u *UserUpdateOne) AddPersonAttributes(v ...*PersonAttribute) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonAttributeIDs(ids...)
+}
+
+// AddPersonMergeCandidateIDs adds the "person_merge_candidates" edge to the PersonMergeCandidate entity by IDs.
+func (_u *UserUpdateOne) AddPersonMergeCandidateIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddPersonMergeCandidateIDs(ids...)
+	return _u
+}
+
+// AddPersonMergeCandidates adds the "person_merge_candidates" edges to the PersonMergeCandidate entity.
+func (_u *UserUpdateOne) AddPersonMergeCandidates(v ...*PersonMergeCandidate) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonMergeCandidateIDs(ids...)
+}
+
 // AddRelationshipProjectionJobIDs adds the "relationship_projection_jobs" edge to the RelationshipProjectionJob entity by IDs.
 func (_u *UserUpdateOne) AddRelationshipProjectionJobIDs(ids ...uuid.UUID) *UserUpdateOne {
 	_u.mutation.AddRelationshipProjectionJobIDs(ids...)
@@ -6390,6 +6778,90 @@ func (_u *UserUpdateOne) RemoveRelationshipIdentities(v ...*RelationshipIdentity
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRelationshipIdentityIDs(ids...)
+}
+
+// ClearRelationshipPersons clears all "relationship_persons" edges to the Person entity.
+func (_u *UserUpdateOne) ClearRelationshipPersons() *UserUpdateOne {
+	_u.mutation.ClearRelationshipPersons()
+	return _u
+}
+
+// RemoveRelationshipPersonIDs removes the "relationship_persons" edge to Person entities by IDs.
+func (_u *UserUpdateOne) RemoveRelationshipPersonIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveRelationshipPersonIDs(ids...)
+	return _u
+}
+
+// RemoveRelationshipPersons removes "relationship_persons" edges to Person entities.
+func (_u *UserUpdateOne) RemoveRelationshipPersons(v ...*Person) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRelationshipPersonIDs(ids...)
+}
+
+// ClearPersonIdentities clears all "person_identities" edges to the PersonIdentity entity.
+func (_u *UserUpdateOne) ClearPersonIdentities() *UserUpdateOne {
+	_u.mutation.ClearPersonIdentities()
+	return _u
+}
+
+// RemovePersonIdentityIDs removes the "person_identities" edge to PersonIdentity entities by IDs.
+func (_u *UserUpdateOne) RemovePersonIdentityIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemovePersonIdentityIDs(ids...)
+	return _u
+}
+
+// RemovePersonIdentities removes "person_identities" edges to PersonIdentity entities.
+func (_u *UserUpdateOne) RemovePersonIdentities(v ...*PersonIdentity) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonIdentityIDs(ids...)
+}
+
+// ClearPersonAttributes clears all "person_attributes" edges to the PersonAttribute entity.
+func (_u *UserUpdateOne) ClearPersonAttributes() *UserUpdateOne {
+	_u.mutation.ClearPersonAttributes()
+	return _u
+}
+
+// RemovePersonAttributeIDs removes the "person_attributes" edge to PersonAttribute entities by IDs.
+func (_u *UserUpdateOne) RemovePersonAttributeIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemovePersonAttributeIDs(ids...)
+	return _u
+}
+
+// RemovePersonAttributes removes "person_attributes" edges to PersonAttribute entities.
+func (_u *UserUpdateOne) RemovePersonAttributes(v ...*PersonAttribute) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonAttributeIDs(ids...)
+}
+
+// ClearPersonMergeCandidates clears all "person_merge_candidates" edges to the PersonMergeCandidate entity.
+func (_u *UserUpdateOne) ClearPersonMergeCandidates() *UserUpdateOne {
+	_u.mutation.ClearPersonMergeCandidates()
+	return _u
+}
+
+// RemovePersonMergeCandidateIDs removes the "person_merge_candidates" edge to PersonMergeCandidate entities by IDs.
+func (_u *UserUpdateOne) RemovePersonMergeCandidateIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemovePersonMergeCandidateIDs(ids...)
+	return _u
+}
+
+// RemovePersonMergeCandidates removes "person_merge_candidates" edges to PersonMergeCandidate entities.
+func (_u *UserUpdateOne) RemovePersonMergeCandidates(v ...*PersonMergeCandidate) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonMergeCandidateIDs(ids...)
 }
 
 // ClearRelationshipProjectionJobs clears all "relationship_projection_jobs" edges to the RelationshipProjectionJob entity.
@@ -8590,6 +9062,186 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RelationshipPersonsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipPersonsTable,
+			Columns: []string{user.RelationshipPersonsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRelationshipPersonsIDs(); len(nodes) > 0 && !_u.mutation.RelationshipPersonsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipPersonsTable,
+			Columns: []string{user.RelationshipPersonsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RelationshipPersonsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RelationshipPersonsTable,
+			Columns: []string{user.RelationshipPersonsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonIdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonIdentitiesTable,
+			Columns: []string{user.PersonIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonIdentitiesIDs(); len(nodes) > 0 && !_u.mutation.PersonIdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonIdentitiesTable,
+			Columns: []string{user.PersonIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonIdentitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonIdentitiesTable,
+			Columns: []string{user.PersonIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonAttributesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonAttributesTable,
+			Columns: []string{user.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonAttributesIDs(); len(nodes) > 0 && !_u.mutation.PersonAttributesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonAttributesTable,
+			Columns: []string{user.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonAttributesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonAttributesTable,
+			Columns: []string{user.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonMergeCandidatesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonMergeCandidatesTable,
+			Columns: []string{user.PersonMergeCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonMergeCandidatesIDs(); len(nodes) > 0 && !_u.mutation.PersonMergeCandidatesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonMergeCandidatesTable,
+			Columns: []string{user.PersonMergeCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonMergeCandidatesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PersonMergeCandidatesTable,
+			Columns: []string{user.PersonMergeCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
@@ -29,6 +30,7 @@ type RelationshipParticipantQuery struct {
 	withWorkspace    *RevenueWorkspaceQuery
 	withRelationship *RelationshipQuery
 	withUser         *UserQuery
+	withPerson       *PersonQuery
 	withFKs          bool
 	modifiers        []func(*sql.Selector)
 	loadTotal        []func(context.Context, []*RelationshipParticipant) error
@@ -127,6 +129,28 @@ func (_q *RelationshipParticipantQuery) QueryUser() *UserQuery {
 			sqlgraph.From(relationshipparticipant.Table, relationshipparticipant.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, relationshipparticipant.UserTable, relationshipparticipant.UserColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPerson chains the current query on the "person" edge.
+func (_q *RelationshipParticipantQuery) QueryPerson() *PersonQuery {
+	query := (&PersonClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipparticipant.Table, relationshipparticipant.FieldID, selector),
+			sqlgraph.To(person.Table, person.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipparticipant.PersonTable, relationshipparticipant.PersonColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -329,6 +353,7 @@ func (_q *RelationshipParticipantQuery) Clone() *RelationshipParticipantQuery {
 		withWorkspace:    _q.withWorkspace.Clone(),
 		withRelationship: _q.withRelationship.Clone(),
 		withUser:         _q.withUser.Clone(),
+		withPerson:       _q.withPerson.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -365,6 +390,17 @@ func (_q *RelationshipParticipantQuery) WithUser(opts ...func(*UserQuery)) *Rela
 		opt(query)
 	}
 	_q.withUser = query
+	return _q
+}
+
+// WithPerson tells the query-builder to eager-load the nodes that are connected to
+// the "person" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipParticipantQuery) WithPerson(opts ...func(*PersonQuery)) *RelationshipParticipantQuery {
+	query := (&PersonClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPerson = query
 	return _q
 }
 
@@ -447,13 +483,14 @@ func (_q *RelationshipParticipantQuery) sqlAll(ctx context.Context, hooks ...que
 		nodes       = []*RelationshipParticipant{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			_q.withWorkspace != nil,
 			_q.withRelationship != nil,
 			_q.withUser != nil,
+			_q.withPerson != nil,
 		}
 	)
-	if _q.withWorkspace != nil || _q.withRelationship != nil || _q.withUser != nil {
+	if _q.withWorkspace != nil || _q.withRelationship != nil || _q.withUser != nil || _q.withPerson != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -495,6 +532,12 @@ func (_q *RelationshipParticipantQuery) sqlAll(ctx context.Context, hooks ...que
 	if query := _q.withUser; query != nil {
 		if err := _q.loadUser(ctx, query, nodes, nil,
 			func(n *RelationshipParticipant, e *User) { n.Edges.User = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withPerson; query != nil {
+		if err := _q.loadPerson(ctx, query, nodes, nil,
+			func(n *RelationshipParticipant, e *Person) { n.Edges.Person = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -595,6 +638,38 @@ func (_q *RelationshipParticipantQuery) loadUser(ctx context.Context, query *Use
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "user_relationship_participants" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *RelationshipParticipantQuery) loadPerson(ctx context.Context, query *PersonQuery, nodes []*RelationshipParticipant, init func(*RelationshipParticipant), assign func(*RelationshipParticipant, *Person)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*RelationshipParticipant)
+	for i := range nodes {
+		if nodes[i].person_id == nil {
+			continue
+		}
+		fk := *nodes[i].person_id
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(person.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "person_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

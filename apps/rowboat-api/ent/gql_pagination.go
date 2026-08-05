@@ -43,6 +43,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -8116,6 +8121,1251 @@ func (_m *OAuthPending) ToEdge(order *OAuthPendingOrder) *OAuthPendingEdge {
 		order = DefaultOAuthPendingOrder
 	}
 	return &OAuthPendingEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// PersonEdge is the edge representation of Person.
+type PersonEdge struct {
+	Node   *Person `json:"node"`
+	Cursor Cursor  `json:"cursor"`
+}
+
+// PersonConnection is the connection containing edges to Person.
+type PersonConnection struct {
+	Edges      []*PersonEdge `json:"edges"`
+	PageInfo   PageInfo      `json:"pageInfo"`
+	TotalCount int           `json:"totalCount"`
+}
+
+func (c *PersonConnection) build(nodes []*Person, pager *personPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *Person
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *Person {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *Person {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*PersonEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &PersonEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// PersonPaginateOption enables pagination customization.
+type PersonPaginateOption func(*personPager) error
+
+// WithPersonOrder configures pagination ordering.
+func WithPersonOrder(order *PersonOrder) PersonPaginateOption {
+	if order == nil {
+		order = DefaultPersonOrder
+	}
+	o := *order
+	return func(pager *personPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultPersonOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithPersonFilter configures pagination filter.
+func WithPersonFilter(filter func(*PersonQuery) (*PersonQuery, error)) PersonPaginateOption {
+	return func(pager *personPager) error {
+		if filter == nil {
+			return errors.New("PersonQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type personPager struct {
+	reverse bool
+	order   *PersonOrder
+	filter  func(*PersonQuery) (*PersonQuery, error)
+}
+
+func newPersonPager(opts []PersonPaginateOption, reverse bool) (*personPager, error) {
+	pager := &personPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultPersonOrder
+	}
+	return pager, nil
+}
+
+func (p *personPager) applyFilter(query *PersonQuery) (*PersonQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *personPager) toCursor(_m *Person) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *personPager) applyCursors(query *PersonQuery, after, before *Cursor) (*PersonQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultPersonOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *personPager) applyOrder(query *PersonQuery) *PersonQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultPersonOrder.Field {
+		query = query.Order(DefaultPersonOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *personPager) orderExpr(query *PersonQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultPersonOrder.Field {
+			b.Comma().Ident(DefaultPersonOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to Person.
+func (_m *PersonQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...PersonPaginateOption,
+) (*PersonConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newPersonPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &PersonConnection{Edges: []*PersonEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// PersonOrderField defines the ordering field of Person.
+type PersonOrderField struct {
+	// Value extracts the ordering value from the given Person.
+	Value    func(*Person) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) person.OrderOption
+	toCursor func(*Person) Cursor
+}
+
+// PersonOrder defines the ordering of Person.
+type PersonOrder struct {
+	Direction OrderDirection    `json:"direction"`
+	Field     *PersonOrderField `json:"field"`
+}
+
+// DefaultPersonOrder is the default ordering of Person.
+var DefaultPersonOrder = &PersonOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &PersonOrderField{
+		Value: func(_m *Person) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: person.FieldID,
+		toTerm: person.ByID,
+		toCursor: func(_m *Person) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts Person into PersonEdge.
+func (_m *Person) ToEdge(order *PersonOrder) *PersonEdge {
+	if order == nil {
+		order = DefaultPersonOrder
+	}
+	return &PersonEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// PersonAttributeEdge is the edge representation of PersonAttribute.
+type PersonAttributeEdge struct {
+	Node   *PersonAttribute `json:"node"`
+	Cursor Cursor           `json:"cursor"`
+}
+
+// PersonAttributeConnection is the connection containing edges to PersonAttribute.
+type PersonAttributeConnection struct {
+	Edges      []*PersonAttributeEdge `json:"edges"`
+	PageInfo   PageInfo               `json:"pageInfo"`
+	TotalCount int                    `json:"totalCount"`
+}
+
+func (c *PersonAttributeConnection) build(nodes []*PersonAttribute, pager *personattributePager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *PersonAttribute
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *PersonAttribute {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *PersonAttribute {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*PersonAttributeEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &PersonAttributeEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// PersonAttributePaginateOption enables pagination customization.
+type PersonAttributePaginateOption func(*personattributePager) error
+
+// WithPersonAttributeOrder configures pagination ordering.
+func WithPersonAttributeOrder(order *PersonAttributeOrder) PersonAttributePaginateOption {
+	if order == nil {
+		order = DefaultPersonAttributeOrder
+	}
+	o := *order
+	return func(pager *personattributePager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultPersonAttributeOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithPersonAttributeFilter configures pagination filter.
+func WithPersonAttributeFilter(filter func(*PersonAttributeQuery) (*PersonAttributeQuery, error)) PersonAttributePaginateOption {
+	return func(pager *personattributePager) error {
+		if filter == nil {
+			return errors.New("PersonAttributeQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type personattributePager struct {
+	reverse bool
+	order   *PersonAttributeOrder
+	filter  func(*PersonAttributeQuery) (*PersonAttributeQuery, error)
+}
+
+func newPersonAttributePager(opts []PersonAttributePaginateOption, reverse bool) (*personattributePager, error) {
+	pager := &personattributePager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultPersonAttributeOrder
+	}
+	return pager, nil
+}
+
+func (p *personattributePager) applyFilter(query *PersonAttributeQuery) (*PersonAttributeQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *personattributePager) toCursor(_m *PersonAttribute) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *personattributePager) applyCursors(query *PersonAttributeQuery, after, before *Cursor) (*PersonAttributeQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultPersonAttributeOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *personattributePager) applyOrder(query *PersonAttributeQuery) *PersonAttributeQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultPersonAttributeOrder.Field {
+		query = query.Order(DefaultPersonAttributeOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *personattributePager) orderExpr(query *PersonAttributeQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultPersonAttributeOrder.Field {
+			b.Comma().Ident(DefaultPersonAttributeOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to PersonAttribute.
+func (_m *PersonAttributeQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...PersonAttributePaginateOption,
+) (*PersonAttributeConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newPersonAttributePager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &PersonAttributeConnection{Edges: []*PersonAttributeEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// PersonAttributeOrderField defines the ordering field of PersonAttribute.
+type PersonAttributeOrderField struct {
+	// Value extracts the ordering value from the given PersonAttribute.
+	Value    func(*PersonAttribute) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) personattribute.OrderOption
+	toCursor func(*PersonAttribute) Cursor
+}
+
+// PersonAttributeOrder defines the ordering of PersonAttribute.
+type PersonAttributeOrder struct {
+	Direction OrderDirection             `json:"direction"`
+	Field     *PersonAttributeOrderField `json:"field"`
+}
+
+// DefaultPersonAttributeOrder is the default ordering of PersonAttribute.
+var DefaultPersonAttributeOrder = &PersonAttributeOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &PersonAttributeOrderField{
+		Value: func(_m *PersonAttribute) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: personattribute.FieldID,
+		toTerm: personattribute.ByID,
+		toCursor: func(_m *PersonAttribute) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts PersonAttribute into PersonAttributeEdge.
+func (_m *PersonAttribute) ToEdge(order *PersonAttributeOrder) *PersonAttributeEdge {
+	if order == nil {
+		order = DefaultPersonAttributeOrder
+	}
+	return &PersonAttributeEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// PersonIdentityEdge is the edge representation of PersonIdentity.
+type PersonIdentityEdge struct {
+	Node   *PersonIdentity `json:"node"`
+	Cursor Cursor          `json:"cursor"`
+}
+
+// PersonIdentityConnection is the connection containing edges to PersonIdentity.
+type PersonIdentityConnection struct {
+	Edges      []*PersonIdentityEdge `json:"edges"`
+	PageInfo   PageInfo              `json:"pageInfo"`
+	TotalCount int                   `json:"totalCount"`
+}
+
+func (c *PersonIdentityConnection) build(nodes []*PersonIdentity, pager *personidentityPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *PersonIdentity
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *PersonIdentity {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *PersonIdentity {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*PersonIdentityEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &PersonIdentityEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// PersonIdentityPaginateOption enables pagination customization.
+type PersonIdentityPaginateOption func(*personidentityPager) error
+
+// WithPersonIdentityOrder configures pagination ordering.
+func WithPersonIdentityOrder(order *PersonIdentityOrder) PersonIdentityPaginateOption {
+	if order == nil {
+		order = DefaultPersonIdentityOrder
+	}
+	o := *order
+	return func(pager *personidentityPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultPersonIdentityOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithPersonIdentityFilter configures pagination filter.
+func WithPersonIdentityFilter(filter func(*PersonIdentityQuery) (*PersonIdentityQuery, error)) PersonIdentityPaginateOption {
+	return func(pager *personidentityPager) error {
+		if filter == nil {
+			return errors.New("PersonIdentityQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type personidentityPager struct {
+	reverse bool
+	order   *PersonIdentityOrder
+	filter  func(*PersonIdentityQuery) (*PersonIdentityQuery, error)
+}
+
+func newPersonIdentityPager(opts []PersonIdentityPaginateOption, reverse bool) (*personidentityPager, error) {
+	pager := &personidentityPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultPersonIdentityOrder
+	}
+	return pager, nil
+}
+
+func (p *personidentityPager) applyFilter(query *PersonIdentityQuery) (*PersonIdentityQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *personidentityPager) toCursor(_m *PersonIdentity) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *personidentityPager) applyCursors(query *PersonIdentityQuery, after, before *Cursor) (*PersonIdentityQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultPersonIdentityOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *personidentityPager) applyOrder(query *PersonIdentityQuery) *PersonIdentityQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultPersonIdentityOrder.Field {
+		query = query.Order(DefaultPersonIdentityOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *personidentityPager) orderExpr(query *PersonIdentityQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultPersonIdentityOrder.Field {
+			b.Comma().Ident(DefaultPersonIdentityOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to PersonIdentity.
+func (_m *PersonIdentityQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...PersonIdentityPaginateOption,
+) (*PersonIdentityConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newPersonIdentityPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &PersonIdentityConnection{Edges: []*PersonIdentityEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// PersonIdentityOrderField defines the ordering field of PersonIdentity.
+type PersonIdentityOrderField struct {
+	// Value extracts the ordering value from the given PersonIdentity.
+	Value    func(*PersonIdentity) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) personidentity.OrderOption
+	toCursor func(*PersonIdentity) Cursor
+}
+
+// PersonIdentityOrder defines the ordering of PersonIdentity.
+type PersonIdentityOrder struct {
+	Direction OrderDirection            `json:"direction"`
+	Field     *PersonIdentityOrderField `json:"field"`
+}
+
+// DefaultPersonIdentityOrder is the default ordering of PersonIdentity.
+var DefaultPersonIdentityOrder = &PersonIdentityOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &PersonIdentityOrderField{
+		Value: func(_m *PersonIdentity) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: personidentity.FieldID,
+		toTerm: personidentity.ByID,
+		toCursor: func(_m *PersonIdentity) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts PersonIdentity into PersonIdentityEdge.
+func (_m *PersonIdentity) ToEdge(order *PersonIdentityOrder) *PersonIdentityEdge {
+	if order == nil {
+		order = DefaultPersonIdentityOrder
+	}
+	return &PersonIdentityEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// PersonInteractionStatEdge is the edge representation of PersonInteractionStat.
+type PersonInteractionStatEdge struct {
+	Node   *PersonInteractionStat `json:"node"`
+	Cursor Cursor                 `json:"cursor"`
+}
+
+// PersonInteractionStatConnection is the connection containing edges to PersonInteractionStat.
+type PersonInteractionStatConnection struct {
+	Edges      []*PersonInteractionStatEdge `json:"edges"`
+	PageInfo   PageInfo                     `json:"pageInfo"`
+	TotalCount int                          `json:"totalCount"`
+}
+
+func (c *PersonInteractionStatConnection) build(nodes []*PersonInteractionStat, pager *personinteractionstatPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *PersonInteractionStat
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *PersonInteractionStat {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *PersonInteractionStat {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*PersonInteractionStatEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &PersonInteractionStatEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// PersonInteractionStatPaginateOption enables pagination customization.
+type PersonInteractionStatPaginateOption func(*personinteractionstatPager) error
+
+// WithPersonInteractionStatOrder configures pagination ordering.
+func WithPersonInteractionStatOrder(order *PersonInteractionStatOrder) PersonInteractionStatPaginateOption {
+	if order == nil {
+		order = DefaultPersonInteractionStatOrder
+	}
+	o := *order
+	return func(pager *personinteractionstatPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultPersonInteractionStatOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithPersonInteractionStatFilter configures pagination filter.
+func WithPersonInteractionStatFilter(filter func(*PersonInteractionStatQuery) (*PersonInteractionStatQuery, error)) PersonInteractionStatPaginateOption {
+	return func(pager *personinteractionstatPager) error {
+		if filter == nil {
+			return errors.New("PersonInteractionStatQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type personinteractionstatPager struct {
+	reverse bool
+	order   *PersonInteractionStatOrder
+	filter  func(*PersonInteractionStatQuery) (*PersonInteractionStatQuery, error)
+}
+
+func newPersonInteractionStatPager(opts []PersonInteractionStatPaginateOption, reverse bool) (*personinteractionstatPager, error) {
+	pager := &personinteractionstatPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultPersonInteractionStatOrder
+	}
+	return pager, nil
+}
+
+func (p *personinteractionstatPager) applyFilter(query *PersonInteractionStatQuery) (*PersonInteractionStatQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *personinteractionstatPager) toCursor(_m *PersonInteractionStat) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *personinteractionstatPager) applyCursors(query *PersonInteractionStatQuery, after, before *Cursor) (*PersonInteractionStatQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultPersonInteractionStatOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *personinteractionstatPager) applyOrder(query *PersonInteractionStatQuery) *PersonInteractionStatQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultPersonInteractionStatOrder.Field {
+		query = query.Order(DefaultPersonInteractionStatOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *personinteractionstatPager) orderExpr(query *PersonInteractionStatQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultPersonInteractionStatOrder.Field {
+			b.Comma().Ident(DefaultPersonInteractionStatOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to PersonInteractionStat.
+func (_m *PersonInteractionStatQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...PersonInteractionStatPaginateOption,
+) (*PersonInteractionStatConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newPersonInteractionStatPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &PersonInteractionStatConnection{Edges: []*PersonInteractionStatEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// PersonInteractionStatOrderField defines the ordering field of PersonInteractionStat.
+type PersonInteractionStatOrderField struct {
+	// Value extracts the ordering value from the given PersonInteractionStat.
+	Value    func(*PersonInteractionStat) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) personinteractionstat.OrderOption
+	toCursor func(*PersonInteractionStat) Cursor
+}
+
+// PersonInteractionStatOrder defines the ordering of PersonInteractionStat.
+type PersonInteractionStatOrder struct {
+	Direction OrderDirection                   `json:"direction"`
+	Field     *PersonInteractionStatOrderField `json:"field"`
+}
+
+// DefaultPersonInteractionStatOrder is the default ordering of PersonInteractionStat.
+var DefaultPersonInteractionStatOrder = &PersonInteractionStatOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &PersonInteractionStatOrderField{
+		Value: func(_m *PersonInteractionStat) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: personinteractionstat.FieldID,
+		toTerm: personinteractionstat.ByID,
+		toCursor: func(_m *PersonInteractionStat) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts PersonInteractionStat into PersonInteractionStatEdge.
+func (_m *PersonInteractionStat) ToEdge(order *PersonInteractionStatOrder) *PersonInteractionStatEdge {
+	if order == nil {
+		order = DefaultPersonInteractionStatOrder
+	}
+	return &PersonInteractionStatEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// PersonMergeCandidateEdge is the edge representation of PersonMergeCandidate.
+type PersonMergeCandidateEdge struct {
+	Node   *PersonMergeCandidate `json:"node"`
+	Cursor Cursor                `json:"cursor"`
+}
+
+// PersonMergeCandidateConnection is the connection containing edges to PersonMergeCandidate.
+type PersonMergeCandidateConnection struct {
+	Edges      []*PersonMergeCandidateEdge `json:"edges"`
+	PageInfo   PageInfo                    `json:"pageInfo"`
+	TotalCount int                         `json:"totalCount"`
+}
+
+func (c *PersonMergeCandidateConnection) build(nodes []*PersonMergeCandidate, pager *personmergecandidatePager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *PersonMergeCandidate
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *PersonMergeCandidate {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *PersonMergeCandidate {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*PersonMergeCandidateEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &PersonMergeCandidateEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// PersonMergeCandidatePaginateOption enables pagination customization.
+type PersonMergeCandidatePaginateOption func(*personmergecandidatePager) error
+
+// WithPersonMergeCandidateOrder configures pagination ordering.
+func WithPersonMergeCandidateOrder(order *PersonMergeCandidateOrder) PersonMergeCandidatePaginateOption {
+	if order == nil {
+		order = DefaultPersonMergeCandidateOrder
+	}
+	o := *order
+	return func(pager *personmergecandidatePager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultPersonMergeCandidateOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithPersonMergeCandidateFilter configures pagination filter.
+func WithPersonMergeCandidateFilter(filter func(*PersonMergeCandidateQuery) (*PersonMergeCandidateQuery, error)) PersonMergeCandidatePaginateOption {
+	return func(pager *personmergecandidatePager) error {
+		if filter == nil {
+			return errors.New("PersonMergeCandidateQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type personmergecandidatePager struct {
+	reverse bool
+	order   *PersonMergeCandidateOrder
+	filter  func(*PersonMergeCandidateQuery) (*PersonMergeCandidateQuery, error)
+}
+
+func newPersonMergeCandidatePager(opts []PersonMergeCandidatePaginateOption, reverse bool) (*personmergecandidatePager, error) {
+	pager := &personmergecandidatePager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultPersonMergeCandidateOrder
+	}
+	return pager, nil
+}
+
+func (p *personmergecandidatePager) applyFilter(query *PersonMergeCandidateQuery) (*PersonMergeCandidateQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *personmergecandidatePager) toCursor(_m *PersonMergeCandidate) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *personmergecandidatePager) applyCursors(query *PersonMergeCandidateQuery, after, before *Cursor) (*PersonMergeCandidateQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultPersonMergeCandidateOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *personmergecandidatePager) applyOrder(query *PersonMergeCandidateQuery) *PersonMergeCandidateQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultPersonMergeCandidateOrder.Field {
+		query = query.Order(DefaultPersonMergeCandidateOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *personmergecandidatePager) orderExpr(query *PersonMergeCandidateQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultPersonMergeCandidateOrder.Field {
+			b.Comma().Ident(DefaultPersonMergeCandidateOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to PersonMergeCandidate.
+func (_m *PersonMergeCandidateQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...PersonMergeCandidatePaginateOption,
+) (*PersonMergeCandidateConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newPersonMergeCandidatePager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &PersonMergeCandidateConnection{Edges: []*PersonMergeCandidateEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// PersonMergeCandidateOrderField defines the ordering field of PersonMergeCandidate.
+type PersonMergeCandidateOrderField struct {
+	// Value extracts the ordering value from the given PersonMergeCandidate.
+	Value    func(*PersonMergeCandidate) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) personmergecandidate.OrderOption
+	toCursor func(*PersonMergeCandidate) Cursor
+}
+
+// PersonMergeCandidateOrder defines the ordering of PersonMergeCandidate.
+type PersonMergeCandidateOrder struct {
+	Direction OrderDirection                  `json:"direction"`
+	Field     *PersonMergeCandidateOrderField `json:"field"`
+}
+
+// DefaultPersonMergeCandidateOrder is the default ordering of PersonMergeCandidate.
+var DefaultPersonMergeCandidateOrder = &PersonMergeCandidateOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &PersonMergeCandidateOrderField{
+		Value: func(_m *PersonMergeCandidate) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: personmergecandidate.FieldID,
+		toTerm: personmergecandidate.ByID,
+		toCursor: func(_m *PersonMergeCandidate) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts PersonMergeCandidate into PersonMergeCandidateEdge.
+func (_m *PersonMergeCandidate) ToEdge(order *PersonMergeCandidateOrder) *PersonMergeCandidateEdge {
+	if order == nil {
+		order = DefaultPersonMergeCandidateOrder
+	}
+	return &PersonMergeCandidateEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

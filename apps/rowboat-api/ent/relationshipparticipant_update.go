@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
@@ -166,6 +167,25 @@ func (_u *RelationshipParticipantUpdate) SetUser(v *User) *RelationshipParticipa
 	return _u.SetUserID(v.ID)
 }
 
+// SetPersonID sets the "person" edge to the Person entity by ID.
+func (_u *RelationshipParticipantUpdate) SetPersonID(id uuid.UUID) *RelationshipParticipantUpdate {
+	_u.mutation.SetPersonID(id)
+	return _u
+}
+
+// SetNillablePersonID sets the "person" edge to the Person entity by ID if the given value is not nil.
+func (_u *RelationshipParticipantUpdate) SetNillablePersonID(id *uuid.UUID) *RelationshipParticipantUpdate {
+	if id != nil {
+		_u = _u.SetPersonID(*id)
+	}
+	return _u
+}
+
+// SetPerson sets the "person" edge to the Person entity.
+func (_u *RelationshipParticipantUpdate) SetPerson(v *Person) *RelationshipParticipantUpdate {
+	return _u.SetPersonID(v.ID)
+}
+
 // Mutation returns the RelationshipParticipantMutation object of the builder.
 func (_u *RelationshipParticipantUpdate) Mutation() *RelationshipParticipantMutation {
 	return _u.mutation
@@ -186,6 +206,12 @@ func (_u *RelationshipParticipantUpdate) ClearRelationship() *RelationshipPartic
 // ClearUser clears the "user" edge to the User entity.
 func (_u *RelationshipParticipantUpdate) ClearUser() *RelationshipParticipantUpdate {
 	_u.mutation.ClearUser()
+	return _u
+}
+
+// ClearPerson clears the "person" edge to the Person entity.
+func (_u *RelationshipParticipantUpdate) ClearPerson() *RelationshipParticipantUpdate {
+	_u.mutation.ClearPerson()
 	return _u
 }
 
@@ -380,6 +406,35 @@ func (_u *RelationshipParticipantUpdate) sqlSave(ctx context.Context) (_node int
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.PersonCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   relationshipparticipant.PersonTable,
+			Columns: []string{relationshipparticipant.PersonColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   relationshipparticipant.PersonTable,
+			Columns: []string{relationshipparticipant.PersonColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{relationshipparticipant.Label}
@@ -533,6 +588,25 @@ func (_u *RelationshipParticipantUpdateOne) SetUser(v *User) *RelationshipPartic
 	return _u.SetUserID(v.ID)
 }
 
+// SetPersonID sets the "person" edge to the Person entity by ID.
+func (_u *RelationshipParticipantUpdateOne) SetPersonID(id uuid.UUID) *RelationshipParticipantUpdateOne {
+	_u.mutation.SetPersonID(id)
+	return _u
+}
+
+// SetNillablePersonID sets the "person" edge to the Person entity by ID if the given value is not nil.
+func (_u *RelationshipParticipantUpdateOne) SetNillablePersonID(id *uuid.UUID) *RelationshipParticipantUpdateOne {
+	if id != nil {
+		_u = _u.SetPersonID(*id)
+	}
+	return _u
+}
+
+// SetPerson sets the "person" edge to the Person entity.
+func (_u *RelationshipParticipantUpdateOne) SetPerson(v *Person) *RelationshipParticipantUpdateOne {
+	return _u.SetPersonID(v.ID)
+}
+
 // Mutation returns the RelationshipParticipantMutation object of the builder.
 func (_u *RelationshipParticipantUpdateOne) Mutation() *RelationshipParticipantMutation {
 	return _u.mutation
@@ -553,6 +627,12 @@ func (_u *RelationshipParticipantUpdateOne) ClearRelationship() *RelationshipPar
 // ClearUser clears the "user" edge to the User entity.
 func (_u *RelationshipParticipantUpdateOne) ClearUser() *RelationshipParticipantUpdateOne {
 	_u.mutation.ClearUser()
+	return _u
+}
+
+// ClearPerson clears the "person" edge to the Person entity.
+func (_u *RelationshipParticipantUpdateOne) ClearPerson() *RelationshipParticipantUpdateOne {
+	_u.mutation.ClearPerson()
 	return _u
 }
 
@@ -770,6 +850,35 @@ func (_u *RelationshipParticipantUpdateOne) sqlSave(ctx context.Context) (_node 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   relationshipparticipant.PersonTable,
+			Columns: []string{relationshipparticipant.PersonColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   relationshipparticipant.PersonTable,
+			Columns: []string{relationshipparticipant.PersonColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

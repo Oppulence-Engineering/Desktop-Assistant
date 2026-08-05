@@ -42,6 +42,12 @@ func (RelationshipParticipant) Edges() []ent.Edge {
 			Ref("participants").Unique().Required(),
 		edge.From("user", User.Type).
 			Ref("relationship_participants").Unique().Required(),
+		// Deliberately NOT Required: every pre-existing row starts unlinked and is
+		// filled in by the person backfill. A participant is "this person, in this
+		// relationship, with this role" — the person carries the durable identity,
+		// this row carries the role assertion.
+		edge.From("person", Person.Type).
+			Ref("participants").Unique(),
 	}
 }
 

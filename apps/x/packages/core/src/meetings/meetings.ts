@@ -59,7 +59,17 @@ export type { MeetingProvenance, WriteMeetingNoteArgs } from "./note.js";
 
 export { listSessionSummaries, readTranscript } from "./list.js";
 
-export { resolveCounterparty } from "./attendees.js";
+export { resolveCounterparty, partitionAttendees } from "./attendees.js";
+export { backfillCalendarEventId, resolveCalendarEventId } from "./calendar-link.js";
+export { buildMeetingRoster, resolveRosterBinding } from "./roster.js";
+export type { MeetingRoster, RosterBinding, RosterParticipant, RosterSize } from "./roster.js";
+export {
+  readRelationshipCandidates,
+  resolveRelationshipCandidates,
+  writeRelationshipCandidates,
+  RELATIONSHIP_CANDIDATES_FILE,
+} from "./relationship-candidates.js";
+export type { RelationshipCandidate, RelationshipCandidates } from "./relationship-candidates.js";
 export {
   CommitmentExtraction,
   MIN_CONFIDENCE,
@@ -77,6 +87,8 @@ export {
   LedgerCommitment,
 } from "./commitment-ledger.js";
 export type {
+  AttendeePartition,
+  AttendeeRecord,
   AttendeeSource,
   Counterparty,
   CounterpartyResolution,

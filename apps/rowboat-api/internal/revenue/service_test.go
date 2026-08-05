@@ -3,6 +3,7 @@ package revenue
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -105,6 +106,12 @@ type fixture struct {
 	ctx    context.Context
 	facade *fakeFacade
 	exec   *fakeExecutor
+	// Distinct address per created relationship. Every call used to reuse one
+	// address, which quietly built several accounts around a single identity --
+	// harmless only while nothing enforced identity. Now that CreateRelationship
+	// binds anchors, that would raise a review candidate and correctly block the
+	// action queue, so each helper-made account gets its own counterparty.
+	relationshipSeq int
 }
 
 func newFixture(t *testing.T) *fixture {
@@ -131,9 +138,14 @@ func newFixture(t *testing.T) *fixture {
 
 func (f *fixture) relationship(t *testing.T) *ent.Relationship {
 	t.Helper()
+	f.relationshipSeq++
+	email := "buyer@example.com"
+	if f.relationshipSeq > 1 {
+		email = fmt.Sprintf("buyer%d@example.com", f.relationshipSeq)
+	}
 	rel, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{
 		Kind: "person", DisplayName: "Jordan Buyer",
-		PrimaryEmail: "buyer@example.com", AccountDomain: "example.com",
+		PrimaryEmail: email, AccountDomain: "example.com",
 	})
 	if err != nil {
 		t.Fatalf("relationship: %v", err)

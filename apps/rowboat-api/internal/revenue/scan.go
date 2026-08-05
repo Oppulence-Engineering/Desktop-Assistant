@@ -16,7 +16,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
@@ -315,26 +314,92 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 		return false, false, false, err
 	}
 
-	rel, err := s.client.Relationship.Query().
-		Where(
-			relationship.HasUserWith(user.IDEQ(u.ID)),
-			relationship.PrimaryEmailEQ(sum.Counterparty),
-		).
-		First(ctx)
-	if ent.IsNotFound(err) {
-		rel, err = s.client.Relationship.Create().
-			SetWorkspace(ws).
-			SetUser(u).
-			SetKind("person").
-			SetDisplayName(coalesce(sum.CounterpartyName, sum.Counterparty)).
-			SetPrimaryEmail(sum.Counterparty).
-			SetAccountDomain(domainOf(sum.Counterparty)).
-			SetLastTouchAt(sum.LastAt).
-			Save(ctx)
-		createdRel = err == nil
+	// Resolve through the shared identity engine rather than matching the
+	// primary_email column directly.
+	//
+	// The old lookup was `PrimaryEmailEQ(...).First()`, on a column with only a
+	// non-unique index: on a collision it picked an arbitrary row, and it wrote
+	// neither identity anchors nor participants. So the scanner's relationships were
+	// invisible to every other source, and two rows sharing an address stayed
+	// silently forked. Going through the engine means a collision now surfaces as a
+	// reviewable candidate instead of a coin flip.
+	resolution := RelationshipObservationInput{
+		DisplayName:   coalesce(sum.CounterpartyName, sum.Counterparty),
+		PrimaryEmail:  normalizeEmail(sum.Counterparty),
+		AccountDomain: accountDomain(sum.Counterparty),
+		// The engine defaults to "company", which is right for domain-anchored
+		// account evidence and wrong for one human's mail thread.
+		PreferredKind: "person",
+		Source:        "gmail",
+		OccurredAt:    sum.LastAt,
+		ReceivedAt:    sum.LastAt,
+		Channel:       "email",
+		Direction:     directionOf(sum.LastOutbound),
+		Participants: []RelationshipParticipantInput{{
+			DisplayName: coalesce(sum.CounterpartyName, sum.Counterparty),
+			Email:       normalizeEmail(sum.Counterparty),
+		}},
 	}
+
+	// Anchor binding plus candidate creation must be atomic: a crash between them
+	// would leave an anchor with no reviewable record of the collision it caused.
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return false, false, false, err
+	}
+	txc := tx.Client()
+	rel, created, err := resolveObservationRelationship(ctx, txc, ws, u, resolution)
+	if err != nil {
+		_ = tx.Rollback()
+		return false, false, false, err
+	}
+	createdRel = created
+	linkedPersons := map[string]*ent.Person{}
+	for _, participant := range resolution.Participants {
+		if err = upsertRelationshipParticipant(ctx, txc, ws, u, rel, participant); err != nil {
+			_ = tx.Rollback()
+			return false, createdRel, false, err
+		}
+		// Linking and attribute writes are idempotent, so they run on every scan.
+		// The interaction count is not, and is deferred until the evidence row
+		// below proves this thread state has not been seen before.
+		if linkedPersons[participant.Email], err = linkParticipantPerson(
+			ctx, txc, ws, u, rel, nil, resolution, participant,
+		); err != nil {
+			_ = tx.Rollback()
+			return false, createdRel, false, err
+		}
+	}
+	if rel.LastTouchAt == nil || sum.LastAt.After(rel.LastTouchAt.UTC()) {
+		if rel, err = rel.Update().SetLastTouchAt(sum.LastAt.UTC()).Save(ctx); err != nil {
+			_ = tx.Rollback()
+			return false, createdRel, false, err
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		return false, createdRel, false, err
+	}
+	// Entities returned inside a transaction carry that transaction's config, so
+	// using one after commit runs against a closed handle. Rebind them all.
+	rel = rel.Unwrap()
+	for email, person := range linkedPersons {
+		if person != nil {
+			linkedPersons[email] = person.Unwrap()
+		}
+	}
+
+	// An account whose identity is under review must not generate queue work: the
+	// user cannot act on an action attached to a relationship that may be merged
+	// away. ensureActionIdentityResolved already blocks approve and execute;
+	// declining to create keeps the queue honest rather than merely safe.
+	unresolved, err := s.relationshipHasUnresolvedIdentity(ctx, rel.ID)
 	if err != nil {
 		return false, createdRel, false, err
+	}
+	if unresolved {
+		s.log.Info("revenue: scan hit deferred pending identity review",
+			zap.String("relationship", rel.ID.String()))
+		return false, createdRel, false, nil
 	}
 
 	anchorHash := sha256.Sum256([]byte(hit.Anchor.ID + ":" + hit.Anchor.Snippet))
@@ -357,6 +422,20 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 		ev = nil // evidence already recorded on a prior run
 	default:
 		return false, createdRel, false, err
+	}
+
+	// The evidence row's (source, record, content hash) uniqueness is the scan's
+	// only real dedupe key, so it is what decides whether this thread state has
+	// been counted. Without this gate every periodic rescan re-counted the same
+	// conversation and the interaction totals measured scan frequency instead.
+	if createdEv {
+		for _, participant := range resolution.Participants {
+			if err = countParticipantInteraction(
+				ctx, s.client, ws, u, rel, linkedPersons[participant.Email], resolution, participant,
+			); err != nil {
+				return false, createdRel, createdEv, err
+			}
+		}
 	}
 
 	// Thread-scoped, NOT detector-scoped: a thread yields at most one queue
@@ -393,6 +472,16 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 		_ = s.client.RevenueAction.UpdateOneID(action.ID).AddEvidences(ev).Exec(ctx)
 	}
 	return createdAction, createdRel, createdEv, nil
+}
+
+// directionOf maps a thread's latest message onto the interaction direction the
+// person rollup records. Never guessed: summarizeThread already knows which side
+// sent last.
+func directionOf(lastOutbound bool) string {
+	if lastOutbound {
+		return "outbound"
+	}
+	return "inbound"
 }
 
 // --- deterministic detection -------------------------------------------------
@@ -643,20 +732,13 @@ func parseAddress(header string) (email, name string) {
 }
 
 func isNoReply(email string) bool {
-	local := email
-	if i := strings.IndexByte(email, '@'); i > 0 {
-		local = email[:i]
+	local := emailLocalPart(email)
+	if local == "" {
+		local = normalizeEmail(email)
 	}
 	local = strings.ReplaceAll(strings.ReplaceAll(local, "-", ""), "_", "")
 	return strings.Contains(local, "noreply") || strings.Contains(local, "donotreply") ||
 		strings.HasPrefix(local, "notifications") || strings.HasPrefix(local, "mailer")
-}
-
-func domainOf(email string) string {
-	if i := strings.IndexByte(email, '@'); i >= 0 && i+1 < len(email) {
-		return email[i+1:]
-	}
-	return ""
 }
 
 func firstName(sum *threadSummary) string {
@@ -666,8 +748,8 @@ func firstName(sum *threadSummary) string {
 	if fields := strings.Fields(sum.CounterpartyName); len(fields) > 0 {
 		return fields[0]
 	}
-	if i := strings.IndexByte(sum.Counterparty, '@'); i > 0 {
-		return sum.Counterparty[:i]
+	if local := emailLocalPart(sum.Counterparty); local != "" {
+		return local
 	}
 	return "there"
 }

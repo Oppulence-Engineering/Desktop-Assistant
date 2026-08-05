@@ -52,6 +52,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -157,6 +162,16 @@ type Client struct {
 	OAuthConnectionHistory *OAuthConnectionHistoryClient
 	// OAuthPending is the client for interacting with the OAuthPending builders.
 	OAuthPending *OAuthPendingClient
+	// Person is the client for interacting with the Person builders.
+	Person *PersonClient
+	// PersonAttribute is the client for interacting with the PersonAttribute builders.
+	PersonAttribute *PersonAttributeClient
+	// PersonIdentity is the client for interacting with the PersonIdentity builders.
+	PersonIdentity *PersonIdentityClient
+	// PersonInteractionStat is the client for interacting with the PersonInteractionStat builders.
+	PersonInteractionStat *PersonInteractionStatClient
+	// PersonMergeCandidate is the client for interacting with the PersonMergeCandidate builders.
+	PersonMergeCandidate *PersonMergeCandidateClient
 	// PolicyDecisionSnapshot is the client for interacting with the PolicyDecisionSnapshot builders.
 	PolicyDecisionSnapshot *PolicyDecisionSnapshotClient
 	// Relationship is the client for interacting with the Relationship builders.
@@ -264,6 +279,11 @@ func (c *Client) init() {
 	c.OAuthConnection = NewOAuthConnectionClient(c.config)
 	c.OAuthConnectionHistory = NewOAuthConnectionHistoryClient(c.config)
 	c.OAuthPending = NewOAuthPendingClient(c.config)
+	c.Person = NewPersonClient(c.config)
+	c.PersonAttribute = NewPersonAttributeClient(c.config)
+	c.PersonIdentity = NewPersonIdentityClient(c.config)
+	c.PersonInteractionStat = NewPersonInteractionStatClient(c.config)
+	c.PersonMergeCandidate = NewPersonMergeCandidateClient(c.config)
 	c.PolicyDecisionSnapshot = NewPolicyDecisionSnapshotClient(c.config)
 	c.Relationship = NewRelationshipClient(c.config)
 	c.RelationshipAssertion = NewRelationshipAssertionClient(c.config)
@@ -457,6 +477,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		OAuthConnection:                   NewOAuthConnectionClient(cfg),
 		OAuthConnectionHistory:            NewOAuthConnectionHistoryClient(cfg),
 		OAuthPending:                      NewOAuthPendingClient(cfg),
+		Person:                            NewPersonClient(cfg),
+		PersonAttribute:                   NewPersonAttributeClient(cfg),
+		PersonIdentity:                    NewPersonIdentityClient(cfg),
+		PersonInteractionStat:             NewPersonInteractionStatClient(cfg),
+		PersonMergeCandidate:              NewPersonMergeCandidateClient(cfg),
 		PolicyDecisionSnapshot:            NewPolicyDecisionSnapshotClient(cfg),
 		Relationship:                      NewRelationshipClient(cfg),
 		RelationshipAssertion:             NewRelationshipAssertionClient(cfg),
@@ -539,6 +564,11 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		OAuthConnection:                   NewOAuthConnectionClient(cfg),
 		OAuthConnectionHistory:            NewOAuthConnectionHistoryClient(cfg),
 		OAuthPending:                      NewOAuthPendingClient(cfg),
+		Person:                            NewPersonClient(cfg),
+		PersonAttribute:                   NewPersonAttributeClient(cfg),
+		PersonIdentity:                    NewPersonIdentityClient(cfg),
+		PersonInteractionStat:             NewPersonInteractionStatClient(cfg),
+		PersonMergeCandidate:              NewPersonMergeCandidateClient(cfg),
 		PolicyDecisionSnapshot:            NewPolicyDecisionSnapshotClient(cfg),
 		Relationship:                      NewRelationshipClient(cfg),
 		RelationshipAssertion:             NewRelationshipAssertionClient(cfg),
@@ -605,17 +635,19 @@ func (c *Client) Use(hooks ...Hook) {
 		c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
 		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
 		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
-		c.OAuthConnectionHistory, c.OAuthPending, c.PolicyDecisionSnapshot,
-		c.Relationship, c.RelationshipAssertion, c.RelationshipAttentionItem,
-		c.RelationshipIdentity, c.RelationshipIdentityCandidate,
-		c.RelationshipIdentityDecision, c.RelationshipLineageEvent,
-		c.RelationshipObservation, c.RelationshipParticipant,
-		c.RelationshipProjectionJob, c.RelationshipReviewAcknowledgement,
-		c.RelationshipSourceStatus, c.RelationshipStateSnapshot, c.RevenueAction,
-		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
-		c.RevenueOutboxEvent, c.RevenueTrustEvent, c.RevenueWorkspace,
-		c.RevenueWorkspaceMember, c.Subscription, c.SubscriptionHistory,
-		c.TenantEvidenceKey, c.User, c.UserHistory, c.WorkspaceFeatureControl,
+		c.OAuthConnectionHistory, c.OAuthPending, c.Person, c.PersonAttribute,
+		c.PersonIdentity, c.PersonInteractionStat, c.PersonMergeCandidate,
+		c.PolicyDecisionSnapshot, c.Relationship, c.RelationshipAssertion,
+		c.RelationshipAttentionItem, c.RelationshipIdentity,
+		c.RelationshipIdentityCandidate, c.RelationshipIdentityDecision,
+		c.RelationshipLineageEvent, c.RelationshipObservation,
+		c.RelationshipParticipant, c.RelationshipProjectionJob,
+		c.RelationshipReviewAcknowledgement, c.RelationshipSourceStatus,
+		c.RelationshipStateSnapshot, c.RevenueAction, c.RevenueActionRevision,
+		c.RevenueEvidence, c.RevenueLeakScan, c.RevenueOutboxEvent,
+		c.RevenueTrustEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
+		c.Subscription, c.SubscriptionHistory, c.TenantEvidenceKey, c.User,
+		c.UserHistory, c.WorkspaceFeatureControl,
 	} {
 		n.Use(hooks...)
 	}
@@ -634,17 +666,19 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
 		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
 		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
-		c.OAuthConnectionHistory, c.OAuthPending, c.PolicyDecisionSnapshot,
-		c.Relationship, c.RelationshipAssertion, c.RelationshipAttentionItem,
-		c.RelationshipIdentity, c.RelationshipIdentityCandidate,
-		c.RelationshipIdentityDecision, c.RelationshipLineageEvent,
-		c.RelationshipObservation, c.RelationshipParticipant,
-		c.RelationshipProjectionJob, c.RelationshipReviewAcknowledgement,
-		c.RelationshipSourceStatus, c.RelationshipStateSnapshot, c.RevenueAction,
-		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
-		c.RevenueOutboxEvent, c.RevenueTrustEvent, c.RevenueWorkspace,
-		c.RevenueWorkspaceMember, c.Subscription, c.SubscriptionHistory,
-		c.TenantEvidenceKey, c.User, c.UserHistory, c.WorkspaceFeatureControl,
+		c.OAuthConnectionHistory, c.OAuthPending, c.Person, c.PersonAttribute,
+		c.PersonIdentity, c.PersonInteractionStat, c.PersonMergeCandidate,
+		c.PolicyDecisionSnapshot, c.Relationship, c.RelationshipAssertion,
+		c.RelationshipAttentionItem, c.RelationshipIdentity,
+		c.RelationshipIdentityCandidate, c.RelationshipIdentityDecision,
+		c.RelationshipLineageEvent, c.RelationshipObservation,
+		c.RelationshipParticipant, c.RelationshipProjectionJob,
+		c.RelationshipReviewAcknowledgement, c.RelationshipSourceStatus,
+		c.RelationshipStateSnapshot, c.RevenueAction, c.RevenueActionRevision,
+		c.RevenueEvidence, c.RevenueLeakScan, c.RevenueOutboxEvent,
+		c.RevenueTrustEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
+		c.Subscription, c.SubscriptionHistory, c.TenantEvidenceKey, c.User,
+		c.UserHistory, c.WorkspaceFeatureControl,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -723,6 +757,16 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.OAuthConnectionHistory.mutate(ctx, m)
 	case *OAuthPendingMutation:
 		return c.OAuthPending.mutate(ctx, m)
+	case *PersonMutation:
+		return c.Person.mutate(ctx, m)
+	case *PersonAttributeMutation:
+		return c.PersonAttribute.mutate(ctx, m)
+	case *PersonIdentityMutation:
+		return c.PersonIdentity.mutate(ctx, m)
+	case *PersonInteractionStatMutation:
+		return c.PersonInteractionStat.mutate(ctx, m)
+	case *PersonMergeCandidateMutation:
+		return c.PersonMergeCandidate.mutate(ctx, m)
 	case *PolicyDecisionSnapshotMutation:
 		return c.PolicyDecisionSnapshot.mutate(ctx, m)
 	case *RelationshipMutation:
@@ -6623,6 +6667,1023 @@ func (c *OAuthPendingClient) mutate(ctx context.Context, m *OAuthPendingMutation
 	}
 }
 
+// PersonClient is a client for the Person schema.
+type PersonClient struct {
+	config
+}
+
+// NewPersonClient returns a client for the Person from the given config.
+func NewPersonClient(c config) *PersonClient {
+	return &PersonClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `person.Hooks(f(g(h())))`.
+func (c *PersonClient) Use(hooks ...Hook) {
+	c.hooks.Person = append(c.hooks.Person, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `person.Intercept(f(g(h())))`.
+func (c *PersonClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Person = append(c.inters.Person, interceptors...)
+}
+
+// Create returns a builder for creating a Person entity.
+func (c *PersonClient) Create() *PersonCreate {
+	mutation := newPersonMutation(c.config, OpCreate)
+	return &PersonCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Person entities.
+func (c *PersonClient) CreateBulk(builders ...*PersonCreate) *PersonCreateBulk {
+	return &PersonCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PersonClient) MapCreateBulk(slice any, setFunc func(*PersonCreate, int)) *PersonCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PersonCreateBulk{err: fmt.Errorf("calling to PersonClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PersonCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PersonCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Person.
+func (c *PersonClient) Update() *PersonUpdate {
+	mutation := newPersonMutation(c.config, OpUpdate)
+	return &PersonUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PersonClient) UpdateOne(_m *Person) *PersonUpdateOne {
+	mutation := newPersonMutation(c.config, OpUpdateOne, withPerson(_m))
+	return &PersonUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PersonClient) UpdateOneID(id uuid.UUID) *PersonUpdateOne {
+	mutation := newPersonMutation(c.config, OpUpdateOne, withPersonID(id))
+	return &PersonUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Person.
+func (c *PersonClient) Delete() *PersonDelete {
+	mutation := newPersonMutation(c.config, OpDelete)
+	return &PersonDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PersonClient) DeleteOne(_m *Person) *PersonDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PersonClient) DeleteOneID(id uuid.UUID) *PersonDeleteOne {
+	builder := c.Delete().Where(person.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PersonDeleteOne{builder}
+}
+
+// Query returns a query builder for Person.
+func (c *PersonClient) Query() *PersonQuery {
+	return &PersonQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePerson},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Person entity by its id.
+func (c *PersonClient) Get(ctx context.Context, id uuid.UUID) (*Person, error) {
+	return c.Query().Where(person.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PersonClient) GetX(ctx context.Context, id uuid.UUID) *Person {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a Person.
+func (c *PersonClient) QueryWorkspace(_m *Person) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(person.Table, person.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, person.WorkspaceTable, person.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a Person.
+func (c *PersonClient) QueryUser(_m *Person) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(person.Table, person.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, person.UserTable, person.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryIdentities queries the identities edge of a Person.
+func (c *PersonClient) QueryIdentities(_m *Person) *PersonIdentityQuery {
+	query := (&PersonIdentityClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(person.Table, person.FieldID, id),
+			sqlgraph.To(personidentity.Table, personidentity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, person.IdentitiesTable, person.IdentitiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAttributes queries the attributes edge of a Person.
+func (c *PersonClient) QueryAttributes(_m *Person) *PersonAttributeQuery {
+	query := (&PersonAttributeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(person.Table, person.FieldID, id),
+			sqlgraph.To(personattribute.Table, personattribute.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, person.AttributesTable, person.AttributesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryParticipants queries the participants edge of a Person.
+func (c *PersonClient) QueryParticipants(_m *Person) *RelationshipParticipantQuery {
+	query := (&RelationshipParticipantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(person.Table, person.FieldID, id),
+			sqlgraph.To(relationshipparticipant.Table, relationshipparticipant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, person.ParticipantsTable, person.ParticipantsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryInteractionStats queries the interaction_stats edge of a Person.
+func (c *PersonClient) QueryInteractionStats(_m *Person) *PersonInteractionStatQuery {
+	query := (&PersonInteractionStatClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(person.Table, person.FieldID, id),
+			sqlgraph.To(personinteractionstat.Table, personinteractionstat.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, person.InteractionStatsTable, person.InteractionStatsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProposedMergeCandidates queries the proposed_merge_candidates edge of a Person.
+func (c *PersonClient) QueryProposedMergeCandidates(_m *Person) *PersonMergeCandidateQuery {
+	query := (&PersonMergeCandidateClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(person.Table, person.FieldID, id),
+			sqlgraph.To(personmergecandidate.Table, personmergecandidate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, person.ProposedMergeCandidatesTable, person.ProposedMergeCandidatesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryExistingMergeCandidates queries the existing_merge_candidates edge of a Person.
+func (c *PersonClient) QueryExistingMergeCandidates(_m *Person) *PersonMergeCandidateQuery {
+	query := (&PersonMergeCandidateClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(person.Table, person.FieldID, id),
+			sqlgraph.To(personmergecandidate.Table, personmergecandidate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, person.ExistingMergeCandidatesTable, person.ExistingMergeCandidatesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PersonClient) Hooks() []Hook {
+	return c.hooks.Person
+}
+
+// Interceptors returns the client interceptors.
+func (c *PersonClient) Interceptors() []Interceptor {
+	return c.inters.Person
+}
+
+func (c *PersonClient) mutate(ctx context.Context, m *PersonMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PersonCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PersonUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PersonUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PersonDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Person mutation op: %q", m.Op())
+	}
+}
+
+// PersonAttributeClient is a client for the PersonAttribute schema.
+type PersonAttributeClient struct {
+	config
+}
+
+// NewPersonAttributeClient returns a client for the PersonAttribute from the given config.
+func NewPersonAttributeClient(c config) *PersonAttributeClient {
+	return &PersonAttributeClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `personattribute.Hooks(f(g(h())))`.
+func (c *PersonAttributeClient) Use(hooks ...Hook) {
+	c.hooks.PersonAttribute = append(c.hooks.PersonAttribute, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `personattribute.Intercept(f(g(h())))`.
+func (c *PersonAttributeClient) Intercept(interceptors ...Interceptor) {
+	c.inters.PersonAttribute = append(c.inters.PersonAttribute, interceptors...)
+}
+
+// Create returns a builder for creating a PersonAttribute entity.
+func (c *PersonAttributeClient) Create() *PersonAttributeCreate {
+	mutation := newPersonAttributeMutation(c.config, OpCreate)
+	return &PersonAttributeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of PersonAttribute entities.
+func (c *PersonAttributeClient) CreateBulk(builders ...*PersonAttributeCreate) *PersonAttributeCreateBulk {
+	return &PersonAttributeCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PersonAttributeClient) MapCreateBulk(slice any, setFunc func(*PersonAttributeCreate, int)) *PersonAttributeCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PersonAttributeCreateBulk{err: fmt.Errorf("calling to PersonAttributeClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PersonAttributeCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PersonAttributeCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for PersonAttribute.
+func (c *PersonAttributeClient) Update() *PersonAttributeUpdate {
+	mutation := newPersonAttributeMutation(c.config, OpUpdate)
+	return &PersonAttributeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PersonAttributeClient) UpdateOne(_m *PersonAttribute) *PersonAttributeUpdateOne {
+	mutation := newPersonAttributeMutation(c.config, OpUpdateOne, withPersonAttribute(_m))
+	return &PersonAttributeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PersonAttributeClient) UpdateOneID(id uuid.UUID) *PersonAttributeUpdateOne {
+	mutation := newPersonAttributeMutation(c.config, OpUpdateOne, withPersonAttributeID(id))
+	return &PersonAttributeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for PersonAttribute.
+func (c *PersonAttributeClient) Delete() *PersonAttributeDelete {
+	mutation := newPersonAttributeMutation(c.config, OpDelete)
+	return &PersonAttributeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PersonAttributeClient) DeleteOne(_m *PersonAttribute) *PersonAttributeDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PersonAttributeClient) DeleteOneID(id uuid.UUID) *PersonAttributeDeleteOne {
+	builder := c.Delete().Where(personattribute.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PersonAttributeDeleteOne{builder}
+}
+
+// Query returns a query builder for PersonAttribute.
+func (c *PersonAttributeClient) Query() *PersonAttributeQuery {
+	return &PersonAttributeQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePersonAttribute},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a PersonAttribute entity by its id.
+func (c *PersonAttributeClient) Get(ctx context.Context, id uuid.UUID) (*PersonAttribute, error) {
+	return c.Query().Where(personattribute.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PersonAttributeClient) GetX(ctx context.Context, id uuid.UUID) *PersonAttribute {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a PersonAttribute.
+func (c *PersonAttributeClient) QueryWorkspace(_m *PersonAttribute) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(personattribute.Table, personattribute.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, personattribute.WorkspaceTable, personattribute.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPerson queries the person edge of a PersonAttribute.
+func (c *PersonAttributeClient) QueryPerson(_m *PersonAttribute) *PersonQuery {
+	query := (&PersonClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(personattribute.Table, personattribute.FieldID, id),
+			sqlgraph.To(person.Table, person.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, personattribute.PersonTable, personattribute.PersonColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryObservation queries the observation edge of a PersonAttribute.
+func (c *PersonAttributeClient) QueryObservation(_m *PersonAttribute) *RelationshipObservationQuery {
+	query := (&RelationshipObservationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(personattribute.Table, personattribute.FieldID, id),
+			sqlgraph.To(relationshipobservation.Table, relationshipobservation.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, personattribute.ObservationTable, personattribute.ObservationColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a PersonAttribute.
+func (c *PersonAttributeClient) QueryUser(_m *PersonAttribute) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(personattribute.Table, personattribute.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, personattribute.UserTable, personattribute.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PersonAttributeClient) Hooks() []Hook {
+	return c.hooks.PersonAttribute
+}
+
+// Interceptors returns the client interceptors.
+func (c *PersonAttributeClient) Interceptors() []Interceptor {
+	return c.inters.PersonAttribute
+}
+
+func (c *PersonAttributeClient) mutate(ctx context.Context, m *PersonAttributeMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PersonAttributeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PersonAttributeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PersonAttributeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PersonAttributeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown PersonAttribute mutation op: %q", m.Op())
+	}
+}
+
+// PersonIdentityClient is a client for the PersonIdentity schema.
+type PersonIdentityClient struct {
+	config
+}
+
+// NewPersonIdentityClient returns a client for the PersonIdentity from the given config.
+func NewPersonIdentityClient(c config) *PersonIdentityClient {
+	return &PersonIdentityClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `personidentity.Hooks(f(g(h())))`.
+func (c *PersonIdentityClient) Use(hooks ...Hook) {
+	c.hooks.PersonIdentity = append(c.hooks.PersonIdentity, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `personidentity.Intercept(f(g(h())))`.
+func (c *PersonIdentityClient) Intercept(interceptors ...Interceptor) {
+	c.inters.PersonIdentity = append(c.inters.PersonIdentity, interceptors...)
+}
+
+// Create returns a builder for creating a PersonIdentity entity.
+func (c *PersonIdentityClient) Create() *PersonIdentityCreate {
+	mutation := newPersonIdentityMutation(c.config, OpCreate)
+	return &PersonIdentityCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of PersonIdentity entities.
+func (c *PersonIdentityClient) CreateBulk(builders ...*PersonIdentityCreate) *PersonIdentityCreateBulk {
+	return &PersonIdentityCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PersonIdentityClient) MapCreateBulk(slice any, setFunc func(*PersonIdentityCreate, int)) *PersonIdentityCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PersonIdentityCreateBulk{err: fmt.Errorf("calling to PersonIdentityClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PersonIdentityCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PersonIdentityCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for PersonIdentity.
+func (c *PersonIdentityClient) Update() *PersonIdentityUpdate {
+	mutation := newPersonIdentityMutation(c.config, OpUpdate)
+	return &PersonIdentityUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PersonIdentityClient) UpdateOne(_m *PersonIdentity) *PersonIdentityUpdateOne {
+	mutation := newPersonIdentityMutation(c.config, OpUpdateOne, withPersonIdentity(_m))
+	return &PersonIdentityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PersonIdentityClient) UpdateOneID(id uuid.UUID) *PersonIdentityUpdateOne {
+	mutation := newPersonIdentityMutation(c.config, OpUpdateOne, withPersonIdentityID(id))
+	return &PersonIdentityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for PersonIdentity.
+func (c *PersonIdentityClient) Delete() *PersonIdentityDelete {
+	mutation := newPersonIdentityMutation(c.config, OpDelete)
+	return &PersonIdentityDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PersonIdentityClient) DeleteOne(_m *PersonIdentity) *PersonIdentityDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PersonIdentityClient) DeleteOneID(id uuid.UUID) *PersonIdentityDeleteOne {
+	builder := c.Delete().Where(personidentity.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PersonIdentityDeleteOne{builder}
+}
+
+// Query returns a query builder for PersonIdentity.
+func (c *PersonIdentityClient) Query() *PersonIdentityQuery {
+	return &PersonIdentityQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePersonIdentity},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a PersonIdentity entity by its id.
+func (c *PersonIdentityClient) Get(ctx context.Context, id uuid.UUID) (*PersonIdentity, error) {
+	return c.Query().Where(personidentity.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PersonIdentityClient) GetX(ctx context.Context, id uuid.UUID) *PersonIdentity {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a PersonIdentity.
+func (c *PersonIdentityClient) QueryWorkspace(_m *PersonIdentity) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(personidentity.Table, personidentity.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, personidentity.WorkspaceTable, personidentity.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPerson queries the person edge of a PersonIdentity.
+func (c *PersonIdentityClient) QueryPerson(_m *PersonIdentity) *PersonQuery {
+	query := (&PersonClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(personidentity.Table, personidentity.FieldID, id),
+			sqlgraph.To(person.Table, person.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, personidentity.PersonTable, personidentity.PersonColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a PersonIdentity.
+func (c *PersonIdentityClient) QueryUser(_m *PersonIdentity) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(personidentity.Table, personidentity.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, personidentity.UserTable, personidentity.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PersonIdentityClient) Hooks() []Hook {
+	return c.hooks.PersonIdentity
+}
+
+// Interceptors returns the client interceptors.
+func (c *PersonIdentityClient) Interceptors() []Interceptor {
+	return c.inters.PersonIdentity
+}
+
+func (c *PersonIdentityClient) mutate(ctx context.Context, m *PersonIdentityMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PersonIdentityCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PersonIdentityUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PersonIdentityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PersonIdentityDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown PersonIdentity mutation op: %q", m.Op())
+	}
+}
+
+// PersonInteractionStatClient is a client for the PersonInteractionStat schema.
+type PersonInteractionStatClient struct {
+	config
+}
+
+// NewPersonInteractionStatClient returns a client for the PersonInteractionStat from the given config.
+func NewPersonInteractionStatClient(c config) *PersonInteractionStatClient {
+	return &PersonInteractionStatClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `personinteractionstat.Hooks(f(g(h())))`.
+func (c *PersonInteractionStatClient) Use(hooks ...Hook) {
+	c.hooks.PersonInteractionStat = append(c.hooks.PersonInteractionStat, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `personinteractionstat.Intercept(f(g(h())))`.
+func (c *PersonInteractionStatClient) Intercept(interceptors ...Interceptor) {
+	c.inters.PersonInteractionStat = append(c.inters.PersonInteractionStat, interceptors...)
+}
+
+// Create returns a builder for creating a PersonInteractionStat entity.
+func (c *PersonInteractionStatClient) Create() *PersonInteractionStatCreate {
+	mutation := newPersonInteractionStatMutation(c.config, OpCreate)
+	return &PersonInteractionStatCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of PersonInteractionStat entities.
+func (c *PersonInteractionStatClient) CreateBulk(builders ...*PersonInteractionStatCreate) *PersonInteractionStatCreateBulk {
+	return &PersonInteractionStatCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PersonInteractionStatClient) MapCreateBulk(slice any, setFunc func(*PersonInteractionStatCreate, int)) *PersonInteractionStatCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PersonInteractionStatCreateBulk{err: fmt.Errorf("calling to PersonInteractionStatClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PersonInteractionStatCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PersonInteractionStatCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for PersonInteractionStat.
+func (c *PersonInteractionStatClient) Update() *PersonInteractionStatUpdate {
+	mutation := newPersonInteractionStatMutation(c.config, OpUpdate)
+	return &PersonInteractionStatUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PersonInteractionStatClient) UpdateOne(_m *PersonInteractionStat) *PersonInteractionStatUpdateOne {
+	mutation := newPersonInteractionStatMutation(c.config, OpUpdateOne, withPersonInteractionStat(_m))
+	return &PersonInteractionStatUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PersonInteractionStatClient) UpdateOneID(id uuid.UUID) *PersonInteractionStatUpdateOne {
+	mutation := newPersonInteractionStatMutation(c.config, OpUpdateOne, withPersonInteractionStatID(id))
+	return &PersonInteractionStatUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for PersonInteractionStat.
+func (c *PersonInteractionStatClient) Delete() *PersonInteractionStatDelete {
+	mutation := newPersonInteractionStatMutation(c.config, OpDelete)
+	return &PersonInteractionStatDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PersonInteractionStatClient) DeleteOne(_m *PersonInteractionStat) *PersonInteractionStatDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PersonInteractionStatClient) DeleteOneID(id uuid.UUID) *PersonInteractionStatDeleteOne {
+	builder := c.Delete().Where(personinteractionstat.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PersonInteractionStatDeleteOne{builder}
+}
+
+// Query returns a query builder for PersonInteractionStat.
+func (c *PersonInteractionStatClient) Query() *PersonInteractionStatQuery {
+	return &PersonInteractionStatQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePersonInteractionStat},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a PersonInteractionStat entity by its id.
+func (c *PersonInteractionStatClient) Get(ctx context.Context, id uuid.UUID) (*PersonInteractionStat, error) {
+	return c.Query().Where(personinteractionstat.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PersonInteractionStatClient) GetX(ctx context.Context, id uuid.UUID) *PersonInteractionStat {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a PersonInteractionStat.
+func (c *PersonInteractionStatClient) QueryWorkspace(_m *PersonInteractionStat) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(personinteractionstat.Table, personinteractionstat.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, personinteractionstat.WorkspaceTable, personinteractionstat.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPerson queries the person edge of a PersonInteractionStat.
+func (c *PersonInteractionStatClient) QueryPerson(_m *PersonInteractionStat) *PersonQuery {
+	query := (&PersonClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(personinteractionstat.Table, personinteractionstat.FieldID, id),
+			sqlgraph.To(person.Table, person.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, personinteractionstat.PersonTable, personinteractionstat.PersonColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationship queries the relationship edge of a PersonInteractionStat.
+func (c *PersonInteractionStatClient) QueryRelationship(_m *PersonInteractionStat) *RelationshipQuery {
+	query := (&RelationshipClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(personinteractionstat.Table, personinteractionstat.FieldID, id),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, personinteractionstat.RelationshipTable, personinteractionstat.RelationshipColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PersonInteractionStatClient) Hooks() []Hook {
+	return c.hooks.PersonInteractionStat
+}
+
+// Interceptors returns the client interceptors.
+func (c *PersonInteractionStatClient) Interceptors() []Interceptor {
+	return c.inters.PersonInteractionStat
+}
+
+func (c *PersonInteractionStatClient) mutate(ctx context.Context, m *PersonInteractionStatMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PersonInteractionStatCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PersonInteractionStatUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PersonInteractionStatUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PersonInteractionStatDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown PersonInteractionStat mutation op: %q", m.Op())
+	}
+}
+
+// PersonMergeCandidateClient is a client for the PersonMergeCandidate schema.
+type PersonMergeCandidateClient struct {
+	config
+}
+
+// NewPersonMergeCandidateClient returns a client for the PersonMergeCandidate from the given config.
+func NewPersonMergeCandidateClient(c config) *PersonMergeCandidateClient {
+	return &PersonMergeCandidateClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `personmergecandidate.Hooks(f(g(h())))`.
+func (c *PersonMergeCandidateClient) Use(hooks ...Hook) {
+	c.hooks.PersonMergeCandidate = append(c.hooks.PersonMergeCandidate, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `personmergecandidate.Intercept(f(g(h())))`.
+func (c *PersonMergeCandidateClient) Intercept(interceptors ...Interceptor) {
+	c.inters.PersonMergeCandidate = append(c.inters.PersonMergeCandidate, interceptors...)
+}
+
+// Create returns a builder for creating a PersonMergeCandidate entity.
+func (c *PersonMergeCandidateClient) Create() *PersonMergeCandidateCreate {
+	mutation := newPersonMergeCandidateMutation(c.config, OpCreate)
+	return &PersonMergeCandidateCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of PersonMergeCandidate entities.
+func (c *PersonMergeCandidateClient) CreateBulk(builders ...*PersonMergeCandidateCreate) *PersonMergeCandidateCreateBulk {
+	return &PersonMergeCandidateCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PersonMergeCandidateClient) MapCreateBulk(slice any, setFunc func(*PersonMergeCandidateCreate, int)) *PersonMergeCandidateCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PersonMergeCandidateCreateBulk{err: fmt.Errorf("calling to PersonMergeCandidateClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PersonMergeCandidateCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PersonMergeCandidateCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for PersonMergeCandidate.
+func (c *PersonMergeCandidateClient) Update() *PersonMergeCandidateUpdate {
+	mutation := newPersonMergeCandidateMutation(c.config, OpUpdate)
+	return &PersonMergeCandidateUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PersonMergeCandidateClient) UpdateOne(_m *PersonMergeCandidate) *PersonMergeCandidateUpdateOne {
+	mutation := newPersonMergeCandidateMutation(c.config, OpUpdateOne, withPersonMergeCandidate(_m))
+	return &PersonMergeCandidateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PersonMergeCandidateClient) UpdateOneID(id uuid.UUID) *PersonMergeCandidateUpdateOne {
+	mutation := newPersonMergeCandidateMutation(c.config, OpUpdateOne, withPersonMergeCandidateID(id))
+	return &PersonMergeCandidateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for PersonMergeCandidate.
+func (c *PersonMergeCandidateClient) Delete() *PersonMergeCandidateDelete {
+	mutation := newPersonMergeCandidateMutation(c.config, OpDelete)
+	return &PersonMergeCandidateDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PersonMergeCandidateClient) DeleteOne(_m *PersonMergeCandidate) *PersonMergeCandidateDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PersonMergeCandidateClient) DeleteOneID(id uuid.UUID) *PersonMergeCandidateDeleteOne {
+	builder := c.Delete().Where(personmergecandidate.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PersonMergeCandidateDeleteOne{builder}
+}
+
+// Query returns a query builder for PersonMergeCandidate.
+func (c *PersonMergeCandidateClient) Query() *PersonMergeCandidateQuery {
+	return &PersonMergeCandidateQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePersonMergeCandidate},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a PersonMergeCandidate entity by its id.
+func (c *PersonMergeCandidateClient) Get(ctx context.Context, id uuid.UUID) (*PersonMergeCandidate, error) {
+	return c.Query().Where(personmergecandidate.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PersonMergeCandidateClient) GetX(ctx context.Context, id uuid.UUID) *PersonMergeCandidate {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a PersonMergeCandidate.
+func (c *PersonMergeCandidateClient) QueryWorkspace(_m *PersonMergeCandidate) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(personmergecandidate.Table, personmergecandidate.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, personmergecandidate.WorkspaceTable, personmergecandidate.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProposedPerson queries the proposed_person edge of a PersonMergeCandidate.
+func (c *PersonMergeCandidateClient) QueryProposedPerson(_m *PersonMergeCandidate) *PersonQuery {
+	query := (&PersonClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(personmergecandidate.Table, personmergecandidate.FieldID, id),
+			sqlgraph.To(person.Table, person.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, personmergecandidate.ProposedPersonTable, personmergecandidate.ProposedPersonColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryExistingPerson queries the existing_person edge of a PersonMergeCandidate.
+func (c *PersonMergeCandidateClient) QueryExistingPerson(_m *PersonMergeCandidate) *PersonQuery {
+	query := (&PersonClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(personmergecandidate.Table, personmergecandidate.FieldID, id),
+			sqlgraph.To(person.Table, person.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, personmergecandidate.ExistingPersonTable, personmergecandidate.ExistingPersonColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a PersonMergeCandidate.
+func (c *PersonMergeCandidateClient) QueryUser(_m *PersonMergeCandidate) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(personmergecandidate.Table, personmergecandidate.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, personmergecandidate.UserTable, personmergecandidate.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PersonMergeCandidateClient) Hooks() []Hook {
+	return c.hooks.PersonMergeCandidate
+}
+
+// Interceptors returns the client interceptors.
+func (c *PersonMergeCandidateClient) Interceptors() []Interceptor {
+	return c.inters.PersonMergeCandidate
+}
+
+func (c *PersonMergeCandidateClient) mutate(ctx context.Context, m *PersonMergeCandidateMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PersonMergeCandidateCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PersonMergeCandidateUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PersonMergeCandidateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PersonMergeCandidateDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown PersonMergeCandidate mutation op: %q", m.Op())
+	}
+}
+
 // PolicyDecisionSnapshotClient is a client for the PolicyDecisionSnapshot schema.
 type PolicyDecisionSnapshotClient struct {
 	config
@@ -7081,6 +8142,22 @@ func (c *RelationshipClient) QueryIdentities(_m *Relationship) *RelationshipIden
 			sqlgraph.From(relationship.Table, relationship.FieldID, id),
 			sqlgraph.To(relationshipidentity.Table, relationshipidentity.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, relationship.IdentitiesTable, relationship.IdentitiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPersonInteractionStats queries the person_interaction_stats edge of a Relationship.
+func (c *RelationshipClient) QueryPersonInteractionStats(_m *Relationship) *PersonInteractionStatQuery {
+	query := (&PersonInteractionStatClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, id),
+			sqlgraph.To(personinteractionstat.Table, personinteractionstat.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.PersonInteractionStatsTable, relationship.PersonInteractionStatsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -8579,6 +9656,22 @@ func (c *RelationshipObservationClient) QueryAssertions(_m *RelationshipObservat
 	return query
 }
 
+// QueryPersonAttributes queries the person_attributes edge of a RelationshipObservation.
+func (c *RelationshipObservationClient) QueryPersonAttributes(_m *RelationshipObservation) *PersonAttributeQuery {
+	query := (&PersonAttributeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipobservation.Table, relationshipobservation.FieldID, id),
+			sqlgraph.To(personattribute.Table, personattribute.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationshipobservation.PersonAttributesTable, relationshipobservation.PersonAttributesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *RelationshipObservationClient) Hooks() []Hook {
 	return c.hooks.RelationshipObservation
@@ -8753,6 +9846,22 @@ func (c *RelationshipParticipantClient) QueryUser(_m *RelationshipParticipant) *
 			sqlgraph.From(relationshipparticipant.Table, relationshipparticipant.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, relationshipparticipant.UserTable, relationshipparticipant.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPerson queries the person edge of a RelationshipParticipant.
+func (c *RelationshipParticipantClient) QueryPerson(_m *RelationshipParticipant) *PersonQuery {
+	query := (&PersonClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipparticipant.Table, relationshipparticipant.FieldID, id),
+			sqlgraph.To(person.Table, person.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, relationshipparticipant.PersonTable, relationshipparticipant.PersonColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -11215,6 +12324,86 @@ func (c *RevenueWorkspaceClient) QueryRelationshipSourceStatuses(_m *RevenueWork
 	return query
 }
 
+// QueryRelationshipPersons queries the relationship_persons edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryRelationshipPersons(_m *RevenueWorkspace) *PersonQuery {
+	query := (&PersonClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(person.Table, person.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.RelationshipPersonsTable, revenueworkspace.RelationshipPersonsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPersonIdentities queries the person_identities edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryPersonIdentities(_m *RevenueWorkspace) *PersonIdentityQuery {
+	query := (&PersonIdentityClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(personidentity.Table, personidentity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.PersonIdentitiesTable, revenueworkspace.PersonIdentitiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPersonAttributes queries the person_attributes edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryPersonAttributes(_m *RevenueWorkspace) *PersonAttributeQuery {
+	query := (&PersonAttributeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(personattribute.Table, personattribute.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.PersonAttributesTable, revenueworkspace.PersonAttributesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPersonInteractionStats queries the person_interaction_stats edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryPersonInteractionStats(_m *RevenueWorkspace) *PersonInteractionStatQuery {
+	query := (&PersonInteractionStatClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(personinteractionstat.Table, personinteractionstat.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.PersonInteractionStatsTable, revenueworkspace.PersonInteractionStatsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPersonMergeCandidates queries the person_merge_candidates edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryPersonMergeCandidates(_m *RevenueWorkspace) *PersonMergeCandidateQuery {
+	query := (&PersonMergeCandidateClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(personmergecandidate.Table, personmergecandidate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.PersonMergeCandidatesTable, revenueworkspace.PersonMergeCandidatesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *RevenueWorkspaceClient) Hooks() []Hook {
 	return c.hooks.RevenueWorkspace
@@ -12600,6 +13789,70 @@ func (c *UserClient) QueryRelationshipIdentities(_m *User) *RelationshipIdentity
 	return query
 }
 
+// QueryRelationshipPersons queries the relationship_persons edge of a User.
+func (c *UserClient) QueryRelationshipPersons(_m *User) *PersonQuery {
+	query := (&PersonClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(person.Table, person.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RelationshipPersonsTable, user.RelationshipPersonsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPersonIdentities queries the person_identities edge of a User.
+func (c *UserClient) QueryPersonIdentities(_m *User) *PersonIdentityQuery {
+	query := (&PersonIdentityClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(personidentity.Table, personidentity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.PersonIdentitiesTable, user.PersonIdentitiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPersonAttributes queries the person_attributes edge of a User.
+func (c *UserClient) QueryPersonAttributes(_m *User) *PersonAttributeQuery {
+	query := (&PersonAttributeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(personattribute.Table, personattribute.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.PersonAttributesTable, user.PersonAttributesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPersonMergeCandidates queries the person_merge_candidates edge of a User.
+func (c *UserClient) QueryPersonMergeCandidates(_m *User) *PersonMergeCandidateQuery {
+	query := (&PersonMergeCandidateClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(personmergecandidate.Table, personmergecandidate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.PersonMergeCandidatesTable, user.PersonMergeCandidatesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryRelationshipProjectionJobs queries the relationship_projection_jobs edge of a User.
 func (c *UserClient) QueryRelationshipProjectionJobs(_m *User) *RelationshipProjectionJobQuery {
 	query := (&RelationshipProjectionJobClient{config: c.config}).Query()
@@ -13174,16 +14427,17 @@ type (
 		CommitmentEvent, ConversationIntelligenceArtifact, CreditLedger, GoogleWatch,
 		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
 		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot, Relationship,
-		RelationshipAssertion, RelationshipAttentionItem, RelationshipIdentity,
-		RelationshipIdentityCandidate, RelationshipIdentityDecision,
-		RelationshipLineageEvent, RelationshipObservation, RelationshipParticipant,
-		RelationshipProjectionJob, RelationshipReviewAcknowledgement,
-		RelationshipSourceStatus, RelationshipStateSnapshot, RevenueAction,
-		RevenueActionRevision, RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent,
-		RevenueTrustEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
-		SubscriptionHistory, TenantEvidenceKey, User, UserHistory,
-		WorkspaceFeatureControl []ent.Hook
+		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
+		PersonInteractionStat, PersonMergeCandidate, PolicyDecisionSnapshot,
+		Relationship, RelationshipAssertion, RelationshipAttentionItem,
+		RelationshipIdentity, RelationshipIdentityCandidate,
+		RelationshipIdentityDecision, RelationshipLineageEvent,
+		RelationshipObservation, RelationshipParticipant, RelationshipProjectionJob,
+		RelationshipReviewAcknowledgement, RelationshipSourceStatus,
+		RelationshipStateSnapshot, RevenueAction, RevenueActionRevision,
+		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueTrustEvent,
+		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
+		TenantEvidenceKey, User, UserHistory, WorkspaceFeatureControl []ent.Hook
 	}
 	inters struct {
 		ActionOutcome, ActionProposal, AgentApproval, AgentDefinition,
@@ -13194,15 +14448,16 @@ type (
 		CommitmentEvent, ConversationIntelligenceArtifact, CreditLedger, GoogleWatch,
 		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
 		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, PolicyDecisionSnapshot, Relationship,
-		RelationshipAssertion, RelationshipAttentionItem, RelationshipIdentity,
-		RelationshipIdentityCandidate, RelationshipIdentityDecision,
-		RelationshipLineageEvent, RelationshipObservation, RelationshipParticipant,
-		RelationshipProjectionJob, RelationshipReviewAcknowledgement,
-		RelationshipSourceStatus, RelationshipStateSnapshot, RevenueAction,
-		RevenueActionRevision, RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent,
-		RevenueTrustEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
-		SubscriptionHistory, TenantEvidenceKey, User, UserHistory,
-		WorkspaceFeatureControl []ent.Interceptor
+		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
+		PersonInteractionStat, PersonMergeCandidate, PolicyDecisionSnapshot,
+		Relationship, RelationshipAssertion, RelationshipAttentionItem,
+		RelationshipIdentity, RelationshipIdentityCandidate,
+		RelationshipIdentityDecision, RelationshipLineageEvent,
+		RelationshipObservation, RelationshipParticipant, RelationshipProjectionJob,
+		RelationshipReviewAcknowledgement, RelationshipSourceStatus,
+		RelationshipStateSnapshot, RevenueAction, RevenueActionRevision,
+		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueTrustEvent,
+		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
+		TenantEvidenceKey, User, UserHistory, WorkspaceFeatureControl []ent.Interceptor
 	}
 )

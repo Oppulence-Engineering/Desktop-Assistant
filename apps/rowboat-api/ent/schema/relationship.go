@@ -90,6 +90,8 @@ func (Relationship) Edges() []ent.Edge {
 			StorageKey(edge.Column("relationship_id")),
 		edge.To("identities", RelationshipIdentity.Type).
 			StorageKey(edge.Column("relationship_id")),
+		edge.To("person_interaction_stats", PersonInteractionStat.Type).
+			StorageKey(edge.Column("relationship_id")),
 		edge.To("observations", RelationshipObservation.Type).
 			StorageKey(edge.Column("relationship_id")),
 		edge.To("assertions", RelationshipAssertion.Type).

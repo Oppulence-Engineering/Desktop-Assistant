@@ -51,6 +51,8 @@ const (
 	EdgeUser = "user"
 	// EdgeAssertions holds the string denoting the assertions edge name in mutations.
 	EdgeAssertions = "assertions"
+	// EdgePersonAttributes holds the string denoting the person_attributes edge name in mutations.
+	EdgePersonAttributes = "person_attributes"
 	// Table holds the table name of the relationshipobservation in the database.
 	Table = "relationship_observations"
 	// WorkspaceTable is the table that holds the workspace relation/edge.
@@ -81,6 +83,13 @@ const (
 	AssertionsInverseTable = "relationship_assertions"
 	// AssertionsColumn is the table column denoting the assertions relation/edge.
 	AssertionsColumn = "observation_id"
+	// PersonAttributesTable is the table that holds the person_attributes relation/edge.
+	PersonAttributesTable = "person_attributes"
+	// PersonAttributesInverseTable is the table name for the PersonAttribute entity.
+	// It exists in this package in order to avoid circular dependency with the "personattribute" package.
+	PersonAttributesInverseTable = "person_attributes"
+	// PersonAttributesColumn is the table column denoting the person_attributes relation/edge.
+	PersonAttributesColumn = "observation_id"
 )
 
 // Columns holds all SQL columns for relationshipobservation fields.
@@ -259,6 +268,20 @@ func ByAssertions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newAssertionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByPersonAttributesCount orders the results by person_attributes count.
+func ByPersonAttributesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPersonAttributesStep(), opts...)
+	}
+}
+
+// ByPersonAttributes orders the results by person_attributes terms.
+func ByPersonAttributes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPersonAttributesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newWorkspaceStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -285,5 +308,12 @@ func newAssertionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(AssertionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, AssertionsTable, AssertionsColumn),
+	)
+}
+func newPersonAttributesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PersonAttributesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, PersonAttributesTable, PersonAttributesColumn),
 	)
 }

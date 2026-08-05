@@ -36,6 +36,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -128,6 +133,10 @@ var tenantUserColumns = map[string]string{
 	ent.TypeTenantEvidenceKey:                 tenantevidencekey.UserColumn,
 	ent.TypeWorkspaceFeatureControl:           workspacefeaturecontrol.UserColumn,
 	ent.TypeRevenueTrustEvent:                 revenuetrustevent.UserColumn,
+	ent.TypePerson:                            person.UserColumn,
+	ent.TypePersonIdentity:                    personidentity.UserColumn,
+	ent.TypePersonAttribute:                   personattribute.UserColumn,
+	ent.TypePersonMergeCandidate:              personmergecandidate.UserColumn,
 }
 
 // workspaceTenantColumns identifies revenue entities whose authorization is
@@ -162,6 +171,12 @@ var workspaceTenantColumns = map[string]string{
 	ent.TypeTenantEvidenceKey:                 tenantevidencekey.WorkspaceColumn,
 	ent.TypeWorkspaceFeatureControl:           workspacefeaturecontrol.WorkspaceColumn,
 	ent.TypeRevenueTrustEvent:                 revenuetrustevent.WorkspaceColumn,
+	ent.TypePerson:                            person.WorkspaceColumn,
+	ent.TypePersonIdentity:                    personidentity.WorkspaceColumn,
+	ent.TypePersonAttribute:                   personattribute.WorkspaceColumn,
+	// No user edge: a rollup is derived, owned by the workspace, never authored.
+	ent.TypePersonInteractionStat: personinteractionstat.WorkspaceColumn,
+	ent.TypePersonMergeCandidate:  personmergecandidate.WorkspaceColumn,
 }
 
 // ErrNoViewer is returned when a per-user entity is queried with neither an
@@ -396,6 +411,45 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.RelationshipIdentityQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(relationshipidentity.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	// The canonical person and everything derived from it. Reads and writes are
+	// scoped independently because Ent interceptors never run on mutations, so a
+	// type registered only in tenantUserColumns would still be readable across
+	// tenants.
+	client.Person.Intercept(intercept.TraversePerson(
+		func(ctx context.Context, q *ent.PersonQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(person.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.PersonIdentity.Intercept(intercept.TraversePersonIdentity(
+		func(ctx context.Context, q *ent.PersonIdentityQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(personidentity.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.PersonAttribute.Intercept(intercept.TraversePersonAttribute(
+		func(ctx context.Context, q *ent.PersonAttributeQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(personattribute.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.PersonInteractionStat.Intercept(intercept.TraversePersonInteractionStat(
+		func(ctx context.Context, q *ent.PersonInteractionStatQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(personinteractionstat.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.PersonMergeCandidate.Intercept(intercept.TraversePersonMergeCandidate(
+		func(ctx context.Context, q *ent.PersonMergeCandidateQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(personmergecandidate.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 

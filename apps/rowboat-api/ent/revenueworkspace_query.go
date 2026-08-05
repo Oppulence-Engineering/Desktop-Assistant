@@ -17,6 +17,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -80,6 +85,11 @@ type RevenueWorkspaceQuery struct {
 	withRelationshipAssertions                  *RelationshipAssertionQuery
 	withRelationshipStateSnapshots              *RelationshipStateSnapshotQuery
 	withRelationshipSourceStatuses              *RelationshipSourceStatusQuery
+	withRelationshipPersons                     *PersonQuery
+	withPersonIdentities                        *PersonIdentityQuery
+	withPersonAttributes                        *PersonAttributeQuery
+	withPersonInteractionStats                  *PersonInteractionStatQuery
+	withPersonMergeCandidates                   *PersonMergeCandidateQuery
 	withFKs                                     bool
 	modifiers                                   []func(*sql.Selector)
 	loadTotal                                   []func(context.Context, []*RevenueWorkspace) error
@@ -110,6 +120,11 @@ type RevenueWorkspaceQuery struct {
 	withNamedRelationshipAssertions             map[string]*RelationshipAssertionQuery
 	withNamedRelationshipStateSnapshots         map[string]*RelationshipStateSnapshotQuery
 	withNamedRelationshipSourceStatuses         map[string]*RelationshipSourceStatusQuery
+	withNamedRelationshipPersons                map[string]*PersonQuery
+	withNamedPersonIdentities                   map[string]*PersonIdentityQuery
+	withNamedPersonAttributes                   map[string]*PersonAttributeQuery
+	withNamedPersonInteractionStats             map[string]*PersonInteractionStatQuery
+	withNamedPersonMergeCandidates              map[string]*PersonMergeCandidateQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -762,6 +777,116 @@ func (_q *RevenueWorkspaceQuery) QueryRelationshipSourceStatuses() *Relationship
 	return query
 }
 
+// QueryRelationshipPersons chains the current query on the "relationship_persons" edge.
+func (_q *RevenueWorkspaceQuery) QueryRelationshipPersons() *PersonQuery {
+	query := (&PersonClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(person.Table, person.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.RelationshipPersonsTable, revenueworkspace.RelationshipPersonsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPersonIdentities chains the current query on the "person_identities" edge.
+func (_q *RevenueWorkspaceQuery) QueryPersonIdentities() *PersonIdentityQuery {
+	query := (&PersonIdentityClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(personidentity.Table, personidentity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.PersonIdentitiesTable, revenueworkspace.PersonIdentitiesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPersonAttributes chains the current query on the "person_attributes" edge.
+func (_q *RevenueWorkspaceQuery) QueryPersonAttributes() *PersonAttributeQuery {
+	query := (&PersonAttributeClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(personattribute.Table, personattribute.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.PersonAttributesTable, revenueworkspace.PersonAttributesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPersonInteractionStats chains the current query on the "person_interaction_stats" edge.
+func (_q *RevenueWorkspaceQuery) QueryPersonInteractionStats() *PersonInteractionStatQuery {
+	query := (&PersonInteractionStatClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(personinteractionstat.Table, personinteractionstat.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.PersonInteractionStatsTable, revenueworkspace.PersonInteractionStatsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPersonMergeCandidates chains the current query on the "person_merge_candidates" edge.
+func (_q *RevenueWorkspaceQuery) QueryPersonMergeCandidates() *PersonMergeCandidateQuery {
+	query := (&PersonMergeCandidateClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(personmergecandidate.Table, personmergecandidate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.PersonMergeCandidatesTable, revenueworkspace.PersonMergeCandidatesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first RevenueWorkspace entity from the query.
 // Returns a *NotFoundError when no RevenueWorkspace was found.
 func (_q *RevenueWorkspaceQuery) First(ctx context.Context) (*RevenueWorkspace, error) {
@@ -982,6 +1107,11 @@ func (_q *RevenueWorkspaceQuery) Clone() *RevenueWorkspaceQuery {
 		withRelationshipAssertions:             _q.withRelationshipAssertions.Clone(),
 		withRelationshipStateSnapshots:         _q.withRelationshipStateSnapshots.Clone(),
 		withRelationshipSourceStatuses:         _q.withRelationshipSourceStatuses.Clone(),
+		withRelationshipPersons:                _q.withRelationshipPersons.Clone(),
+		withPersonIdentities:                   _q.withPersonIdentities.Clone(),
+		withPersonAttributes:                   _q.withPersonAttributes.Clone(),
+		withPersonInteractionStats:             _q.withPersonInteractionStats.Clone(),
+		withPersonMergeCandidates:              _q.withPersonMergeCandidates.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -1296,6 +1426,61 @@ func (_q *RevenueWorkspaceQuery) WithRelationshipSourceStatuses(opts ...func(*Re
 	return _q
 }
 
+// WithRelationshipPersons tells the query-builder to eager-load the nodes that are connected to
+// the "relationship_persons" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithRelationshipPersons(opts ...func(*PersonQuery)) *RevenueWorkspaceQuery {
+	query := (&PersonClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRelationshipPersons = query
+	return _q
+}
+
+// WithPersonIdentities tells the query-builder to eager-load the nodes that are connected to
+// the "person_identities" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithPersonIdentities(opts ...func(*PersonIdentityQuery)) *RevenueWorkspaceQuery {
+	query := (&PersonIdentityClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPersonIdentities = query
+	return _q
+}
+
+// WithPersonAttributes tells the query-builder to eager-load the nodes that are connected to
+// the "person_attributes" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithPersonAttributes(opts ...func(*PersonAttributeQuery)) *RevenueWorkspaceQuery {
+	query := (&PersonAttributeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPersonAttributes = query
+	return _q
+}
+
+// WithPersonInteractionStats tells the query-builder to eager-load the nodes that are connected to
+// the "person_interaction_stats" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithPersonInteractionStats(opts ...func(*PersonInteractionStatQuery)) *RevenueWorkspaceQuery {
+	query := (&PersonInteractionStatClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPersonInteractionStats = query
+	return _q
+}
+
+// WithPersonMergeCandidates tells the query-builder to eager-load the nodes that are connected to
+// the "person_merge_candidates" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithPersonMergeCandidates(opts ...func(*PersonMergeCandidateQuery)) *RevenueWorkspaceQuery {
+	query := (&PersonMergeCandidateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPersonMergeCandidates = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -1375,7 +1560,7 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		nodes       = []*RevenueWorkspace{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [28]bool{
+		loadedTypes = [33]bool{
 			_q.withUser != nil,
 			_q.withMembers != nil,
 			_q.withRelationships != nil,
@@ -1404,6 +1589,11 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			_q.withRelationshipAssertions != nil,
 			_q.withRelationshipStateSnapshots != nil,
 			_q.withRelationshipSourceStatuses != nil,
+			_q.withRelationshipPersons != nil,
+			_q.withPersonIdentities != nil,
+			_q.withPersonAttributes != nil,
+			_q.withPersonInteractionStats != nil,
+			_q.withPersonMergeCandidates != nil,
 		}
 	)
 	if _q.withUser != nil {
@@ -1668,6 +1858,51 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			return nil, err
 		}
 	}
+	if query := _q.withRelationshipPersons; query != nil {
+		if err := _q.loadRelationshipPersons(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.RelationshipPersons = []*Person{} },
+			func(n *RevenueWorkspace, e *Person) {
+				n.Edges.RelationshipPersons = append(n.Edges.RelationshipPersons, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withPersonIdentities; query != nil {
+		if err := _q.loadPersonIdentities(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.PersonIdentities = []*PersonIdentity{} },
+			func(n *RevenueWorkspace, e *PersonIdentity) {
+				n.Edges.PersonIdentities = append(n.Edges.PersonIdentities, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withPersonAttributes; query != nil {
+		if err := _q.loadPersonAttributes(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.PersonAttributes = []*PersonAttribute{} },
+			func(n *RevenueWorkspace, e *PersonAttribute) {
+				n.Edges.PersonAttributes = append(n.Edges.PersonAttributes, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withPersonInteractionStats; query != nil {
+		if err := _q.loadPersonInteractionStats(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.PersonInteractionStats = []*PersonInteractionStat{} },
+			func(n *RevenueWorkspace, e *PersonInteractionStat) {
+				n.Edges.PersonInteractionStats = append(n.Edges.PersonInteractionStats, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withPersonMergeCandidates; query != nil {
+		if err := _q.loadPersonMergeCandidates(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.PersonMergeCandidates = []*PersonMergeCandidate{} },
+			func(n *RevenueWorkspace, e *PersonMergeCandidate) {
+				n.Edges.PersonMergeCandidates = append(n.Edges.PersonMergeCandidates, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedMembers {
 		if err := _q.loadMembers(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.appendNamedMembers(name) },
@@ -1870,6 +2105,41 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			func(n *RevenueWorkspace, e *RelationshipSourceStatus) {
 				n.appendNamedRelationshipSourceStatuses(name, e)
 			}); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRelationshipPersons {
+		if err := _q.loadRelationshipPersons(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedRelationshipPersons(name) },
+			func(n *RevenueWorkspace, e *Person) { n.appendNamedRelationshipPersons(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedPersonIdentities {
+		if err := _q.loadPersonIdentities(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedPersonIdentities(name) },
+			func(n *RevenueWorkspace, e *PersonIdentity) { n.appendNamedPersonIdentities(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedPersonAttributes {
+		if err := _q.loadPersonAttributes(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedPersonAttributes(name) },
+			func(n *RevenueWorkspace, e *PersonAttribute) { n.appendNamedPersonAttributes(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedPersonInteractionStats {
+		if err := _q.loadPersonInteractionStats(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedPersonInteractionStats(name) },
+			func(n *RevenueWorkspace, e *PersonInteractionStat) { n.appendNamedPersonInteractionStats(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedPersonMergeCandidates {
+		if err := _q.loadPersonMergeCandidates(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedPersonMergeCandidates(name) },
+			func(n *RevenueWorkspace, e *PersonMergeCandidate) { n.appendNamedPersonMergeCandidates(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -2750,6 +3020,161 @@ func (_q *RevenueWorkspaceQuery) loadRelationshipSourceStatuses(ctx context.Cont
 	}
 	return nil
 }
+func (_q *RevenueWorkspaceQuery) loadRelationshipPersons(ctx context.Context, query *PersonQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *Person)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.RelationshipPersonsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadPersonIdentities(ctx context.Context, query *PersonIdentityQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *PersonIdentity)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PersonIdentity(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.PersonIdentitiesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadPersonAttributes(ctx context.Context, query *PersonAttributeQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *PersonAttribute)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PersonAttribute(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.PersonAttributesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadPersonInteractionStats(ctx context.Context, query *PersonInteractionStatQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *PersonInteractionStat)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PersonInteractionStat(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.PersonInteractionStatsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadPersonMergeCandidates(ctx context.Context, query *PersonMergeCandidateQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *PersonMergeCandidate)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PersonMergeCandidate(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.PersonMergeCandidatesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *RevenueWorkspaceQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -3210,6 +3635,76 @@ func (_q *RevenueWorkspaceQuery) WithNamedRelationshipSourceStatuses(name string
 		_q.withNamedRelationshipSourceStatuses = make(map[string]*RelationshipSourceStatusQuery)
 	}
 	_q.withNamedRelationshipSourceStatuses[name] = query
+	return _q
+}
+
+// WithNamedRelationshipPersons tells the query-builder to eager-load the nodes that are connected to the "relationship_persons"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedRelationshipPersons(name string, opts ...func(*PersonQuery)) *RevenueWorkspaceQuery {
+	query := (&PersonClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRelationshipPersons == nil {
+		_q.withNamedRelationshipPersons = make(map[string]*PersonQuery)
+	}
+	_q.withNamedRelationshipPersons[name] = query
+	return _q
+}
+
+// WithNamedPersonIdentities tells the query-builder to eager-load the nodes that are connected to the "person_identities"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedPersonIdentities(name string, opts ...func(*PersonIdentityQuery)) *RevenueWorkspaceQuery {
+	query := (&PersonIdentityClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedPersonIdentities == nil {
+		_q.withNamedPersonIdentities = make(map[string]*PersonIdentityQuery)
+	}
+	_q.withNamedPersonIdentities[name] = query
+	return _q
+}
+
+// WithNamedPersonAttributes tells the query-builder to eager-load the nodes that are connected to the "person_attributes"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedPersonAttributes(name string, opts ...func(*PersonAttributeQuery)) *RevenueWorkspaceQuery {
+	query := (&PersonAttributeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedPersonAttributes == nil {
+		_q.withNamedPersonAttributes = make(map[string]*PersonAttributeQuery)
+	}
+	_q.withNamedPersonAttributes[name] = query
+	return _q
+}
+
+// WithNamedPersonInteractionStats tells the query-builder to eager-load the nodes that are connected to the "person_interaction_stats"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedPersonInteractionStats(name string, opts ...func(*PersonInteractionStatQuery)) *RevenueWorkspaceQuery {
+	query := (&PersonInteractionStatClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedPersonInteractionStats == nil {
+		_q.withNamedPersonInteractionStats = make(map[string]*PersonInteractionStatQuery)
+	}
+	_q.withNamedPersonInteractionStats[name] = query
+	return _q
+}
+
+// WithNamedPersonMergeCandidates tells the query-builder to eager-load the nodes that are connected to the "person_merge_candidates"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedPersonMergeCandidates(name string, opts ...func(*PersonMergeCandidateQuery)) *RevenueWorkspaceQuery {
+	query := (&PersonMergeCandidateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedPersonMergeCandidates == nil {
+		_q.withNamedPersonMergeCandidates = make(map[string]*PersonMergeCandidateQuery)
+	}
+	_q.withNamedPersonMergeCandidates[name] = query
 	return _q
 }
 

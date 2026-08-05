@@ -429,6 +429,66 @@ func (f OAuthPendingFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OAuthPendingMutation", m)
 }
 
+// The PersonFunc type is an adapter to allow the use of ordinary
+// function as Person mutator.
+type PersonFunc func(context.Context, *ent.PersonMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PersonFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PersonMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PersonMutation", m)
+}
+
+// The PersonAttributeFunc type is an adapter to allow the use of ordinary
+// function as PersonAttribute mutator.
+type PersonAttributeFunc func(context.Context, *ent.PersonAttributeMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PersonAttributeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PersonAttributeMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PersonAttributeMutation", m)
+}
+
+// The PersonIdentityFunc type is an adapter to allow the use of ordinary
+// function as PersonIdentity mutator.
+type PersonIdentityFunc func(context.Context, *ent.PersonIdentityMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PersonIdentityFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PersonIdentityMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PersonIdentityMutation", m)
+}
+
+// The PersonInteractionStatFunc type is an adapter to allow the use of ordinary
+// function as PersonInteractionStat mutator.
+type PersonInteractionStatFunc func(context.Context, *ent.PersonInteractionStatMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PersonInteractionStatFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PersonInteractionStatMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PersonInteractionStatMutation", m)
+}
+
+// The PersonMergeCandidateFunc type is an adapter to allow the use of ordinary
+// function as PersonMergeCandidate mutator.
+type PersonMergeCandidateFunc func(context.Context, *ent.PersonMergeCandidateMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PersonMergeCandidateFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PersonMergeCandidateMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PersonMergeCandidateMutation", m)
+}
+
 // The PolicyDecisionSnapshotFunc type is an adapter to allow the use of ordinary
 // function as PolicyDecisionSnapshot mutator.
 type PolicyDecisionSnapshotFunc func(context.Context, *ent.PolicyDecisionSnapshotMutation) (ent.Value, error)

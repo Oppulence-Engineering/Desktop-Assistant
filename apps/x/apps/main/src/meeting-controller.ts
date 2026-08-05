@@ -58,6 +58,7 @@ import { buildKnowledgeIndex } from "@x/core/dist/knowledge/knowledge_index.js";
 import type { MeetingTranscriber } from "@x/core/dist/meetings/meetings.js";
 import type { WhisperService } from "@x/core/dist/voice/whisper/index.js";
 import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
+import { anyRelationshipEvidenceConsent } from "@x/shared/dist/transcription.js";
 import { summarizeMeeting } from "@x/core/dist/knowledge/summarize_meeting.js";
 import {
   MeetingCaptureSidecar,
@@ -79,8 +80,16 @@ import {
 import {
   confirmedCommitmentObservation,
   commitmentStatusObservation,
+  meetingAttendanceObservation,
   meetingTranscriptObservationWithExtraction,
 } from "@x/core/dist/relationships/meeting-evidence.js";
+import { buildMeetingRoster, resolveRosterBinding } from "@x/core/dist/meetings/roster.js";
+import {
+  resolveRelationshipCandidates,
+  writeRelationshipCandidates,
+} from "@x/core/dist/meetings/relationship-candidates.js";
+import { backfillCalendarEventId } from "@x/core/dist/meetings/calendar-link.js";
+import { getAccountEmail } from "@x/core/dist/knowledge/sync_gmail.js";
 import { getRelationship, listRelationships } from "@x/core/dist/relationships/client.js";
 import { MeetingCaptureGuardian } from "@x/core/dist/meetings/capture-guardian.js";
 import {
@@ -723,6 +732,7 @@ export class MeetingController {
    * only so the two or three reads within one finished meeting collapse into one scan.
    */
   private peopleCache: { at: number; people: KnownPerson[] } | null = null;
+  private selfEmailCache: { at: number; emails: string[] } | null = null;
 
   private knownPeople(): {
     name: string;
@@ -744,6 +754,32 @@ export class MeetingController {
       this.peopleCache = { at: now, people: [] };
       return [];
     }
+  }
+
+  /**
+   * Addresses that identify the local user on an invite.
+   *
+   * Google usually marks the user's own attendee entry with `self: true`, and the
+   * attribution path relies on that alone. A roster cannot: an invite synced from a
+   * secondary calendar, or forwarded, may carry no `self` flag at all, and without
+   * these addresses the user would be published as a participant in their own meeting.
+   */
+  private async selfEmails(): Promise<string[]> {
+    const now = Date.now();
+    if (this.selfEmailCache && now - this.selfEmailCache.at < PEOPLE_CACHE_MS) {
+      return this.selfEmailCache.emails;
+    }
+    let emails: string[] = [];
+    try {
+      const account = await getAccountEmail();
+      if (account) emails = [account];
+    } catch {
+      // No connected mailbox is a normal state; `self: true` still covers the
+      // common case, and a roster with one extra participant beats no roster.
+      emails = [];
+    }
+    this.selfEmailCache = { at: now, emails };
+    return emails;
   }
 
   /** Start the live pass if the user asked for one. */
@@ -978,7 +1014,7 @@ export class MeetingController {
       counterpartyLabel: stored?.counterparty,
     });
     const settings = await getTranscriptionConfig();
-    if (settings.meetings.syncRelationshipEvidence) {
+    if (settings.relationships.meetingTranscripts) {
       try {
         const meta = await readMeta(dir);
         if (meta) {
@@ -1017,7 +1053,7 @@ export class MeetingController {
     segments: { speaker: string; text: string }[];
   }): Promise<{ queued: boolean; reason?: string }> {
     const settings = await getTranscriptionConfig();
-    if (!settings.meetings.syncRelationshipEvidence) {
+    if (!settings.relationships.meetingTranscripts) {
       return { queued: false, reason: "relationship evidence sync is off" };
     }
     if (args.segments.length === 0) return { queued: false, reason: "transcript is empty" };
@@ -1119,7 +1155,11 @@ export class MeetingController {
     reason?: string;
   }> {
     const settings = await getTranscriptionConfig();
-    if (!settings.meetings.syncRelationshipEvidence) {
+    const consent = settings.relationships;
+    // Either consent is enough to answer the account question. This is the path a
+    // multi-organization meeting takes, and its whole purpose is to publish
+    // attendance — which does not require transcript consent.
+    if (!consent.meetingTranscripts && !consent.meetingAttendance) {
       return { queued: false, reason: "relationship evidence sync is off" };
     }
     const dir = await this.sessionPath(sessionId);
@@ -1130,7 +1170,9 @@ export class MeetingController {
       getRelationship(requested.relationshipId),
     ]);
     if (!meta) return { queued: false, reason: "recording is not finalized" };
-    if (!transcript) return { queued: false, reason: "transcript is not ready" };
+    if (!transcript && consent.meetingTranscripts && !consent.meetingAttendance) {
+      return { queued: false, reason: "transcript is not ready" };
+    }
     if (
       meta.relationship_target &&
       meta.relationship_target.relationshipId !== requested.relationshipId
@@ -1152,20 +1194,51 @@ export class MeetingController {
     };
     const persisted = await patchMeta(dir, { relationship_target: target });
     if (!persisted) return { queued: false, reason: "could not persist relationship selection" };
-    const { counterparty } = this.resolveMeetingCounterparty(
-      calendarEventFromMeta(persisted),
-      target,
-    );
-    if (!counterparty) return { queued: false, reason: "relationship is unresolved" };
-    const observation = await meetingTranscriptObservationWithExtraction({
-      sessionId,
-      meta: persisted,
-      transcript,
-      counterparty,
-      settings: settings.meetings,
-    });
-    const evidenceKey = relationshipObservationKey(observation);
-    await enqueueRelationshipEvidence(observation);
+
+    // The account question is now answered, and the prompt must not come back.
+    await resolveRelationshipCandidates(dir).catch(() => undefined);
+
+    const calendarEvent = calendarEventFromMeta(persisted);
+    let evidenceKey: string | undefined;
+
+    if (consent.meetingAttendance) {
+      const roster = buildMeetingRoster(calendarEvent, {
+        selfEmails: await this.selfEmails(),
+        people: this.knownPeople(),
+      });
+      if (roster) {
+        const calendarEventId = await backfillCalendarEventId(dir).catch(() => undefined);
+        const attendance = meetingAttendanceObservation({
+          sessionId,
+          ...(calendarEventId ? { calendarEventId } : {}),
+          meta: persisted,
+          roster,
+          binding: { kind: "explicit", target },
+          settings: settings.meetings,
+        });
+        evidenceKey = relationshipObservationKey(attendance);
+        await enqueueRelationshipEvidence(attendance);
+      }
+    }
+
+    if (consent.meetingTranscripts && transcript) {
+      const { counterparty } = this.resolveMeetingCounterparty(calendarEvent, target);
+      if (counterparty) {
+        const observation = await meetingTranscriptObservationWithExtraction({
+          sessionId,
+          meta: persisted,
+          transcript,
+          counterparty,
+          settings: settings.meetings,
+        });
+        // The transcript is the richer artifact, so its confirmation is the one
+        // reported back when both were queued.
+        evidenceKey = relationshipObservationKey(observation);
+        await enqueueRelationshipEvidence(observation);
+      }
+    }
+
+    if (!evidenceKey) return { queued: false, reason: "nothing to publish for this recording" };
     const flush = await this.flushRelationshipEvidence();
     const confirmation = flush?.confirmations?.find((item) => item.key === evidenceKey);
     return {
@@ -1201,7 +1274,7 @@ export class MeetingController {
     if (!updated) return false;
     try {
       const settings = await getTranscriptionConfig();
-      if (!settings.meetings.syncRelationshipEvidence) return true;
+      if (!settings.relationships.meetingTranscripts) return true;
       const entry = (await readLedger()).find((commitment) => commitment.id === id);
       if (!entry) return true;
       const dir = await this.sessionPath(entry.session_id);
@@ -1417,26 +1490,80 @@ export class MeetingController {
           console.warn("[meeting] local transcribed event could not be published:", err);
         }
         const settings = await getTranscriptionConfig();
-        if (!settings.meetings.syncRelationshipEvidence) return;
-        const { counterparty } = this.resolveMeetingCounterparty(
-          calendarEventFromMeta(meta),
-          meta.relationship_target,
-        );
-        if (!counterparty) return;
-        try {
-          await enqueueRelationshipEvidence(
-            await meetingTranscriptObservationWithExtraction({
-              sessionId,
-              meta,
-              transcript,
-              counterparty,
-              settings: settings.meetings,
-            }),
+        const consent = settings.relationships;
+        if (!consent.meetingTranscripts && !consent.meetingAttendance) return;
+
+        const calendarEvent = calendarEventFromMeta(meta);
+        const roster = buildMeetingRoster(calendarEvent, {
+          selfEmails: await this.selfEmails(),
+          people: this.knownPeople(),
+        });
+        const binding = roster
+          ? resolveRosterBinding(roster, {
+              ...(meta.relationship_target ? { relationshipTarget: meta.relationship_target } : {}),
+              people: this.knownPeople(),
+            })
+          : ({ kind: "unresolvable", reason: "no calendar event" } as const);
+
+        // Two organizations on one invite. Record the choice locally and let the user
+        // make it; guessing here would bind a durable anchor to the wrong account.
+        if (binding.kind === "ambiguous") {
+          await writeRelationshipCandidates(dir, binding.candidates, roster!).catch((err) =>
+            console.warn("[meeting] could not record account candidates:", err),
           );
-          await this.flushRelationshipEvidence();
-        } catch (err) {
-          console.warn("[meeting] shared relationship evidence could not be queued:", err);
         }
+
+        // Attendance and transcript are separate disclosures with separate consent,
+        // and separate failure modes. A group meeting has no resolvable counterparty
+        // and so publishes no transcript — but the invite still says who was there.
+        if (
+          consent.meetingAttendance &&
+          roster &&
+          (binding.kind === "explicit" || binding.kind === "single_domain")
+        ) {
+          try {
+            const calendarEventId = await backfillCalendarEventId(dir).catch(() => undefined);
+            await enqueueRelationshipEvidence(
+              meetingAttendanceObservation({
+                sessionId,
+                ...(calendarEventId ? { calendarEventId } : {}),
+                meta,
+                roster,
+                binding,
+                settings: settings.meetings,
+              }),
+            );
+          } catch (err) {
+            console.warn("[meeting] meeting attendance could not be queued:", err);
+          }
+        }
+
+        if (consent.meetingTranscripts) {
+          // Unchanged: transcript text still requires a counterparty resolved from a
+          // 1:1, because that is what makes "them" a name rather than a guess.
+          const { counterparty } = this.resolveMeetingCounterparty(
+            calendarEvent,
+            meta.relationship_target,
+          );
+          if (counterparty) {
+            try {
+              await enqueueRelationshipEvidence(
+                await meetingTranscriptObservationWithExtraction({
+                  sessionId,
+                  meta,
+                  transcript,
+                  counterparty,
+                  ...(roster ? { roster } : {}),
+                  settings: settings.meetings,
+                }),
+              );
+            } catch (err) {
+              console.warn("[meeting] shared relationship evidence could not be queued:", err);
+            }
+          }
+        }
+
+        await this.flushRelationshipEvidence();
       },
       onProgress: (progress) => {
         this.lastProgress = progress;
@@ -1474,11 +1601,30 @@ export class MeetingController {
       // launch, so a cached setting can remain false after restart. Re-read the durable
       // consent immediately before every network drain.
       const config = await getTranscriptionConfig();
-      if (!config.meetings.syncRelationshipEvidence) return undefined;
+      // Any consent at all, not transcripts specifically: an attendance-only user
+      // still has a queue, and gating the drain on transcripts would leave it to
+      // grow forever while looking like nothing was ever enqueued.
+      if (!anyRelationshipEvidenceConsent(config)) return undefined;
       const result = await flushRelationshipEvidence();
-      if (result.error) {
+      if (result.quarantined > 0) {
+        // Held, not dropped. Silence here is what let a permanently rejected
+        // item look identical to an empty queue.
         console.warn(
-          `[meeting] ${result.pending} relationship evidence item(s) pending: ${result.error}`,
+          `[meeting] ${result.quarantined} relationship evidence item(s) held after ` +
+            `repeated rejection and will not be retried`,
+        );
+      }
+      if (result.error) {
+        // Name the blocked source. A failure is now scoped to one source rather
+        // than to the whole queue, and saying which one is the difference between
+        // "sync is broken" and "email evidence is not entitled yet".
+        const blocked = Object.entries(result.bySource)
+          .filter(([, group]) => group.error)
+          .map(([source, group]) => `${source} (${group.pending} pending)`)
+          .join(", ");
+        console.warn(
+          `[meeting] ${result.pending} relationship evidence item(s) pending` +
+            `${blocked ? `; blocked: ${blocked}` : ""}: ${result.error}`,
         );
       } else if (result.sent > 0) {
         console.log(`[meeting] synced ${result.sent} relationship evidence item(s)`);
@@ -1527,7 +1673,7 @@ export class MeetingController {
         ? `parakeet-tdt-0.6b-${this.parakeetModel}-coreml`
         : (config.whisper?.model ?? this.modelId);
     this.keepAudio = config.meetings?.keepAudio ?? this.keepAudio;
-    if (config.meetings?.syncRelationshipEvidence) void this.flushRelationshipEvidence();
+    if (anyRelationshipEvidenceConsent(config)) void this.flushRelationshipEvidence();
   }
 
   get transcriptionProgress(): MeetingTranscriptionProgress | null {

@@ -50,6 +50,9 @@ type RelationshipParticipantInput struct {
 	Role         string   `json:"role"`
 	Title        string   `json:"title"`
 	ExternalRefs []string `json:"externalRefs"`
+	// Per-participant override. One meeting observation can hold both directions:
+	// the organizer is outbound while the attendees are inbound.
+	Direction string `json:"direction,omitempty"`
 }
 
 // RelationshipAssertionInput describes a sourced candidate value for canonical state.
@@ -88,6 +91,15 @@ type RelationshipObservationInput struct {
 	Payload         json.RawMessage
 	Participants    []RelationshipParticipantInput
 	Assertions      []RelationshipAssertionInput
+	// Channel and Direction feed the per-person interaction rollup. Both are
+	// optional and both fall back rather than guess: an unknown direction
+	// increments the interaction total without touching inbound/outbound.
+	Channel   string
+	Direction string
+	// PreferredKind lets a first-party detector state what it is looking at.
+	// resolveObservationRelationship defaults to "company", which is right for
+	// domain-anchored account evidence and wrong for a thread with one human.
+	PreferredKind string
 }
 
 // RelationshipObservationResult reports the stored observation and projected relationship.
@@ -308,7 +320,7 @@ func (s *Service) ingestRelationshipObservation(
 		return RelationshipObservationResult{}, err
 	}
 
-	rel, err := resolveObservationRelationship(ctx, client, ws, u, input)
+	rel, _, err := resolveObservationRelationship(ctx, client, ws, u, input)
 	if err != nil {
 		return RelationshipObservationResult{}, err
 	}
@@ -355,6 +367,21 @@ func (s *Service) ingestRelationshipObservation(
 		}
 		return RelationshipObservationResult{}, err
 	}
+	// last_touch_at is derived, not authored. Bump it monotonically here so the
+	// quiet_account detector sees fresh evidence inside this same transaction; the
+	// projector recomputes it from the observation set so deletion and merge
+	// converge on the truth rather than on a high-water mark.
+	//
+	// Before this it was written at exactly one site -- relationship creation in
+	// scan.go -- and never again, so every account's "no recorded interaction for N
+	// days" was measured from the day the account was created, forever.
+	if rel.LastTouchAt == nil || input.OccurredAt.After(rel.LastTouchAt.UTC()) {
+		bumped, touchErr := rel.Update().SetLastTouchAt(input.OccurredAt.UTC()).Save(ctx)
+		if touchErr != nil {
+			return RelationshipObservationResult{}, touchErr
+		}
+		rel = bumped
+	}
 	if err := attachObservationToIdentityCandidates(ctx, client, rel, observation); err != nil {
 		return RelationshipObservationResult{}, err
 	}
@@ -364,6 +391,19 @@ func (s *Service) ingestRelationshipObservation(
 
 	for _, participant := range input.Participants {
 		if err := upsertRelationshipParticipant(ctx, client, ws, u, rel, participant); err != nil {
+			return RelationshipObservationResult{}, err
+		}
+		// This path is reached once per observation -- a duplicate returns before
+		// the participant loop -- so counting here is safe.
+		person, err := linkParticipantPerson(
+			ctx, client, ws, u, rel, observation, input, participant,
+		)
+		if err != nil {
+			return RelationshipObservationResult{}, err
+		}
+		if err := countParticipantInteraction(
+			ctx, client, ws, u, rel, person, input, participant,
+		); err != nil {
 			return RelationshipObservationResult{}, err
 		}
 	}
@@ -671,49 +711,53 @@ func (s *Service) createConfirmedCommitmentAction(
 	return s.snapshotRevision(ctx, client, action, u)
 }
 
+// resolveObservationRelationship finds or creates the relationship an observation
+// belongs to. The bool reports whether a NEW relationship was created -- callers
+// need it for their own counters, and inferring it from timestamps is unreliable
+// because created_at and updated_at are stamped from separate clock reads.
 func resolveObservationRelationship(
 	ctx context.Context,
 	client *ent.Client,
 	ws *ent.RevenueWorkspace,
 	u *ent.User,
 	input RelationshipObservationInput,
-) (*ent.Relationship, error) {
+) (*ent.Relationship, bool, error) {
 	refs, err := normalizeResourceRefs(input.ResourceRefs)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+		return nil, false, fmt.Errorf("%w: %v", ErrInvalidInput, err)
 	}
 	signals := observationIdentitySignals(input, refs)
 	if input.RelationshipID != uuid.Nil {
 		rel, err := client.Relationship.Get(ctx, input.RelationshipID)
 		if ent.IsNotFound(err) {
-			return nil, fmt.Errorf("%w: relationship", ErrNotFound)
+			return nil, false, fmt.Errorf("%w: relationship", ErrNotFound)
 		}
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		allSignals := dedupeRelationshipIdentitySignals(append(signals, relationshipIdentitySignals(rel)...))
 		safe, conflicts, err := classifyRelationshipIdentitySignals(ctx, client, ws, rel, allSignals)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		for _, conflict := range conflicts {
 			if _, err := createIdentityCandidate(ctx, client, ws, u, rel, conflict.owner, conflict.signal, "anchor_collision", input.ReceivedAt); err != nil {
-				return nil, err
+				return nil, false, err
 			}
 		}
 		sanitized := removeConflictingIdentityFields(input, conflicts)
 		sanitizedRefs, err := normalizeResourceRefs(sanitized.ResourceRefs)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+			return nil, false, fmt.Errorf("%w: %v", ErrInvalidInput, err)
 		}
 		rel, err = mergeRelationshipIdentityFields(ctx, rel, sanitized, sanitizedRefs)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		if err := bindRelationshipIdentities(ctx, client, ws, u, rel, safe, input.Source, input.ReceivedAt); err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return rel, nil
+		return rel, false, nil
 	}
 
 	domain := strings.ToLower(strings.TrimSpace(input.AccountDomain))
@@ -732,12 +776,12 @@ func resolveObservationRelationship(
 			WithRelationship().
 			All(ctx)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		for _, identity := range identities {
 			rel, edgeErr := identity.Edges.RelationshipOrErr()
 			if edgeErr != nil {
-				return nil, edgeErr
+				return nil, false, edgeErr
 			}
 			matches[rel.ID] = rel
 		}
@@ -766,7 +810,7 @@ func resolveObservationRelationship(
 		apply(q)
 		rows, err := q.All(ctx)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		for _, row := range rows {
 			matches[row.ID] = row
@@ -777,7 +821,7 @@ func resolveObservationRelationship(
 		// relationship and each exact collision becomes independently reviewable.
 		proposed, err := createProposedRelationship(ctx, client, ws, u, input)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		created := map[uuid.UUID]bool{}
 		for _, signal := range signals {
@@ -790,17 +834,17 @@ func resolveObservationRelationship(
 				if ent.IsNotFound(lookupErr) {
 					continue
 				}
-				return nil, lookupErr
+				return nil, false, lookupErr
 			}
 			owner, edgeErr := identity.Edges.RelationshipOrErr()
 			if edgeErr != nil {
-				return nil, edgeErr
+				return nil, false, edgeErr
 			}
 			if created[owner.ID] {
 				continue
 			}
 			if _, err := createIdentityCandidate(ctx, client, ws, u, proposed, owner, signal, "multi_match", input.ReceivedAt); err != nil {
-				return nil, err
+				return nil, false, err
 			}
 			created[owner.ID] = true
 		}
@@ -815,20 +859,20 @@ func resolveObservationRelationship(
 				signal = newRelationshipIdentitySignal("domain", "", domain, 0.9)
 			}
 			if _, err := createIdentityCandidate(ctx, client, ws, u, proposed, owner, signal, "multi_match", input.ReceivedAt); err != nil {
-				return nil, err
+				return nil, false, err
 			}
 		}
-		return proposed, nil
+		return proposed, true, nil
 	}
 	for _, rel := range matches {
 		rel, err = mergeRelationshipIdentityFields(ctx, rel, input, refs)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		if err := bindRelationshipIdentities(ctx, client, ws, u, rel, append(signals, relationshipIdentitySignals(rel)...), input.Source, input.ReceivedAt); err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return rel, nil
+		return rel, false, nil
 	}
 
 	displayName := strings.TrimSpace(input.DisplayName)
@@ -839,14 +883,20 @@ func resolveObservationRelationship(
 		displayName = email
 	}
 	if displayName == "" {
-		return nil, fmt.Errorf(
+		return nil, false, fmt.Errorf(
 			"%w: relationshipId or account identity is required", ErrInvalidInput,
 		)
+	}
+	// A domain-anchored account observation is a company; a first-party detector
+	// looking at one human's mail thread can say so instead.
+	kind := strings.TrimSpace(input.PreferredKind)
+	if kind == "" {
+		kind = "company"
 	}
 	create := client.Relationship.Create().
 		SetWorkspace(ws).
 		SetUser(u).
-		SetKind("company").
+		SetKind(kind).
 		SetDisplayName(displayName)
 	if domain != "" {
 		create.SetAccountDomain(domain)
@@ -859,12 +909,12 @@ func resolveObservationRelationship(
 	}
 	rel, err := create.Save(ctx)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if err := bindRelationshipIdentities(ctx, client, ws, u, rel, signals, input.Source, input.ReceivedAt); err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return rel, nil
+	return rel, true, nil
 }
 
 type relationshipIdentityConflict struct {
@@ -937,9 +987,12 @@ func createProposedRelationship(ctx context.Context, client *ent.Client, ws *ent
 	if displayName == "" {
 		displayName = "Identity review required"
 	}
-	kind := "company"
-	if strings.TrimSpace(input.PrimaryEmail) != "" && (strings.TrimSpace(input.AccountDomain) == "" || isPublicMailboxDomain(input.AccountDomain)) {
-		kind = "person"
+	kind := strings.TrimSpace(input.PreferredKind)
+	if kind == "" {
+		kind = "company"
+		if strings.TrimSpace(input.PrimaryEmail) != "" && (strings.TrimSpace(input.AccountDomain) == "" || isPublicMailboxDomain(input.AccountDomain)) {
+			kind = "person"
+		}
 	}
 	return client.Relationship.Create().SetWorkspace(ws).SetUser(u).SetKind(kind).SetDisplayName(displayName).Save(ctx)
 }
@@ -1133,15 +1186,6 @@ func mergeRelationshipIdentityFields(
 	return update.Save(ctx)
 }
 
-func isPublicMailboxDomain(domain string) bool {
-	_, public := map[string]struct{}{
-		"gmail.com": {}, "googlemail.com": {}, "outlook.com": {}, "hotmail.com": {},
-		"live.com": {}, "icloud.com": {}, "me.com": {}, "mac.com": {},
-		"yahoo.com": {}, "aol.com": {}, "proton.me": {}, "protonmail.com": {},
-	}[strings.ToLower(strings.TrimSpace(domain))]
-	return public
-}
-
 func normalizeResourceRefs(refs []string) ([]string, error) {
 	seen := make(map[string]struct{}, len(refs))
 	out := make([]string, 0, len(refs))
@@ -1189,17 +1233,41 @@ func upsertRelationshipParticipant(
 		return nil
 	}
 	matches := map[uuid.UUID]*ent.RelationshipParticipant{}
+	// Rows that are the same human recorded twice under one email. Folded into the
+	// canonical pick below rather than counted as separate identities.
+	duplicates := map[uuid.UUID]struct{}{}
 	if email != "" {
+		// .All, not .Only: (relationship_id, email) is not a unique index, and
+		// duplicates are reachable through the backfill a few lines down, which
+		// sets an email on a row whose address another row already holds. .Only
+		// returns NotSingularError, which is not ent.IsNotFound, so this branch
+		// used to return it -- and every later observation for this relationship
+		// failed permanently, with no way to recover short of editing the table.
+		//
+		// Duplicates are one person recorded twice, not an identity conflict.
+		// Collapse to the oldest so the choice is stable across retries, and leave
+		// the >1 check below for the real conflict it was written for: an email
+		// and a provider ref pointing at genuinely different people. Collapsing
+		// the rows themselves belongs to the participant backfill, not here.
 		existing, queryErr := client.RelationshipParticipant.Query().
 			Where(
 				relationshipparticipant.HasRelationshipWith(relationship.IDEQ(rel.ID)),
 				relationshipparticipant.EmailEQ(email),
 			).
-			Only(ctx)
-		if queryErr == nil {
-			matches[existing.ID] = existing
-		} else if !ent.IsNotFound(queryErr) {
+			Order(
+				ent.Asc(relationshipparticipant.FieldCreatedAt),
+				ent.Asc(relationshipparticipant.FieldID),
+			).
+			All(ctx)
+		if queryErr != nil {
 			return queryErr
+		}
+		for index, participant := range existing {
+			if index == 0 {
+				matches[participant.ID] = participant
+				continue
+			}
+			duplicates[participant.ID] = struct{}{}
 		}
 	}
 	if len(refs) > 0 {
@@ -1214,6 +1282,12 @@ func upsertRelationshipParticipant(
 			wanted[ref] = struct{}{}
 		}
 		for _, participant := range participants {
+			// A ref that lands on a folded duplicate resolves to the same person
+			// the email already matched; counting it would resurrect the false
+			// conflict this fix exists to remove.
+			if _, dup := duplicates[participant.ID]; dup {
+				continue
+			}
 			for _, ref := range participant.ExternalRefs {
 				if _, ok := wanted[ref]; ok {
 					matches[participant.ID] = participant
@@ -1470,6 +1544,10 @@ func projectRelationshipStateAt(
 	evaluatedAt time.Time,
 ) (*ent.Relationship, error) {
 	evaluatedAt = evaluatedAt.UTC()
+	rel, err := reconcileRelationshipLastTouch(ctx, client, rel)
+	if err != nil {
+		return nil, err
+	}
 	assertions, err := client.RelationshipAssertion.Query().
 		Where(relationshipassertion.HasRelationshipWith(relationship.IDEQ(rel.ID))).
 		All(ctx)
@@ -2071,4 +2149,41 @@ func (s *Service) RelationshipSourceStatuses(
 		applySourceFreshness(status, now)
 	}
 	return statuses, nil
+}
+
+// reconcileRelationshipLastTouch recomputes last_touch_at from the observation set.
+//
+// The ingest path bumps it monotonically for freshness; this makes it converge. A
+// high-water mark alone would be wrong after conversation deletion removes
+// observations, or after a merge re-parents them onto another relationship: the
+// account would keep claiming a touch that no evidence supports.
+//
+// Deliberately NOT part of relationshipProjectionHash. It is an evidence-freshness
+// fact, not a projected state dimension, and including it would bump state_version
+// and write a "state changed" snapshot on every single observation.
+func reconcileRelationshipLastTouch(
+	ctx context.Context,
+	client *ent.Client,
+	rel *ent.Relationship,
+) (*ent.Relationship, error) {
+	latest, err := client.RelationshipObservation.Query().
+		Where(relationshipobservation.HasRelationshipWith(relationship.IDEQ(rel.ID))).
+		Order(ent.Desc(relationshipobservation.FieldOccurredAt)).
+		First(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
+	}
+	if ent.IsNotFound(err) {
+		// No evidence left. Clearing is the honest answer; leaving a stale value
+		// would let a deleted conversation keep an account looking recently active.
+		if rel.LastTouchAt == nil {
+			return rel, nil
+		}
+		return rel.Update().ClearLastTouchAt().Save(ctx)
+	}
+	truth := latest.OccurredAt.UTC()
+	if rel.LastTouchAt != nil && rel.LastTouchAt.UTC().Equal(truth) {
+		return rel, nil
+	}
+	return rel.Update().SetLastTouchAt(truth).Save(ctx)
 }

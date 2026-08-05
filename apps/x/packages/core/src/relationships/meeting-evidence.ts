@@ -5,7 +5,13 @@ import type {
   MeetingTranscriptSegment,
 } from "@x/shared/dist/meetings.js";
 import type { RelationshipObservationInput } from "@x/shared/dist/relationships.js";
-import type { Counterparty, LedgerCommitment } from "../meetings/meetings.js";
+import { organizationDomain } from "@x/shared/dist/email-domain.js";
+import type {
+  Counterparty,
+  LedgerCommitment,
+  MeetingRoster,
+  RosterBinding,
+} from "../meetings/meetings.js";
 import {
   canonicalTranscriptObservation,
   attachConversationExtraction,
@@ -16,28 +22,25 @@ import type { ConversationExtractor } from "./conversation-extractor.js";
 import { HybridConversationExtractor } from "./conversation-extractor.js";
 
 const MAX_TRANSCRIPT_PAYLOAD_CHARS = 250_000;
-const PERSONAL_EMAIL_DOMAINS = new Set([
-  "gmail.com",
-  "googlemail.com",
-  "outlook.com",
-  "hotmail.com",
-  "icloud.com",
-  "me.com",
-  "yahoo.com",
-  "proton.me",
-  "protonmail.com",
-]);
 
-function emailDomain(email: string | undefined): string | undefined {
-  const normalized = email?.trim().toLowerCase();
-  const at = normalized?.lastIndexOf("@") ?? -1;
-  if (!normalized || at < 1 || at === normalized.length - 1) return undefined;
-  const domain = normalized.slice(at + 1);
-  return PERSONAL_EMAIL_DOMAINS.has(domain) ? undefined : domain;
+/**
+ * The invite's participants, as relationship participant inputs.
+ *
+ * `role` is uniformly "contact", matching the backend default. The calendar's
+ * organizer flag deliberately does not become a role: organizing a meeting is a
+ * calendar fact, not a position in a relationship, and writing it as one would put a
+ * guess into a field the user is expected to trust. It travels in normalizedFacts.
+ */
+function rosterParticipants(roster: MeetingRoster) {
+  return roster.external.map((participant) => ({
+    displayName: participant.displayName,
+    ...(participant.email ? { email: participant.email } : {}),
+    role: "contact",
+  }));
 }
 
-function relationshipIdentity(counterparty: Counterparty) {
-  const domain = counterparty.accountDomain || emailDomain(counterparty.email);
+function relationshipIdentity(counterparty: Counterparty, roster?: MeetingRoster) {
+  const domain = counterparty.accountDomain || organizationDomain(counterparty.email);
   return {
     ...(counterparty.relationshipId ? { relationshipId: counterparty.relationshipId } : {}),
     displayName: counterparty.relationshipId
@@ -45,14 +48,19 @@ function relationshipIdentity(counterparty: Counterparty) {
       : counterparty.organization || domain || counterparty.label,
     ...(counterparty.email ? { primaryEmail: counterparty.email } : {}),
     ...(domain ? { accountDomain: domain } : {}),
-    participants: [
-      {
-        displayName: counterparty.label,
-        ...(counterparty.email ? { email: counterparty.email } : {}),
-        role: counterparty.role || "contact",
-        ...(counterparty.role ? { title: counterparty.role } : {}),
-      },
-    ],
+    // A widening, not a change: the ingest envelope has always accepted an array and
+    // the backend has always looped over it. Only one participant was ever sent.
+    participants:
+      roster && roster.external.length > 0
+        ? rosterParticipants(roster)
+        : [
+            {
+              displayName: counterparty.label,
+              ...(counterparty.email ? { email: counterparty.email } : {}),
+              role: counterparty.role || "contact",
+              ...(counterparty.role ? { title: counterparty.role } : {}),
+            },
+          ],
   };
 }
 
@@ -95,13 +103,15 @@ export function meetingTranscriptObservation(args: {
   meta: MeetingSessionMeta;
   transcript: MeetingTranscript;
   counterparty: Counterparty;
+  /** The full invite roster, when one could be built. Widens `participants[]`. */
+  roster?: MeetingRoster;
   settings?: Pick<MeetingsSettings, "keepAudio" | "syncRelationshipEvidence">;
   capturePolicy?: string;
   participantDisclosure?: string;
 }): RelationshipObservationInput {
   const bounded = boundedSegments(args.transcript.segments);
   const title = meetingTitle(args.meta);
-  const identity = relationshipIdentity(args.counterparty);
+  const identity = relationshipIdentity(args.counterparty, args.roster);
   const remoteSpeakerIsAggregate = bounded.segments.some((segment) => segment.speaker === "them");
   const counterpartySpeakerId = `meeting-participant:${conversationFingerprint(
     `${args.sessionId}:${
@@ -133,6 +143,7 @@ export function meetingTranscriptObservation(args: {
               "remote speaker was resolved from the 1:1 calendar attendee; the system track may still contain other voices and no persistent voiceprint was created",
             ]
           : []),
+        ...(args.roster?.caveats ?? []),
       ],
       governance: {
         receiptId: `governance:${receiptSeed}`,
@@ -171,6 +182,82 @@ export function meetingTranscriptObservation(args: {
         silent: track.silent,
         peak: track.peak,
       })),
+    },
+  };
+}
+
+/**
+ * Attendance as its own immutable fact, independent of whether anything was said.
+ *
+ * A group meeting publishes nothing today, because the publication gate asks the
+ * *attribution* resolver a *participation* question and it correctly refuses to answer.
+ * The invite already answers participation outright. This carries only that answer:
+ * no segments, no transcript text, no payload.
+ *
+ * `source` is "meeting" rather than "calendar" for one decisive reason: conversation
+ * deletion removes evidence by `source IN ("meeting", …)`, so filing attendance under
+ * "meeting" means deleting a recording also deletes who was on it. Under "calendar" it
+ * would survive the deletion of the thing it describes. It also reuses the desktop
+ * publish capability instead of requiring a new entitlement.
+ */
+export function meetingAttendanceObservation(args: {
+  sessionId: string;
+  calendarEventId?: string;
+  meta: MeetingSessionMeta;
+  roster: MeetingRoster;
+  binding: Extract<RosterBinding, { kind: "explicit" | "single_domain" }>;
+  settings?: Pick<MeetingsSettings, "keepAudio">;
+}): RelationshipObservationInput {
+  const title = meetingTitle(args.meta);
+  const identity =
+    args.binding.kind === "explicit"
+      ? {
+          relationshipId: args.binding.target.relationshipId,
+          displayName: args.binding.target.displayName,
+          ...(args.binding.target.primaryEmail
+            ? { primaryEmail: args.binding.target.primaryEmail }
+            : {}),
+          ...(args.binding.target.accountDomain
+            ? { accountDomain: args.binding.target.accountDomain }
+            : {}),
+        }
+      : {
+          displayName: args.binding.displayName,
+          accountDomain: args.binding.accountDomain,
+        };
+
+  return {
+    ...identity,
+    source: "meeting",
+    // A namespace of its own, so attendance and the transcript for one session can
+    // never dedupe each other away. Preferring the calendar id means a re-recorded or
+    // resumed session of the same invite resolves to the same evidence.
+    externalId: `meeting-attendance:${args.calendarEventId ?? args.sessionId}`,
+    // An unchanged invite republishes idempotently; adding an attendee is a new version.
+    sourceVersion: args.roster.fingerprint,
+    eventType: "meeting_attendance_recorded",
+    occurredAt: args.meta.started,
+    summary: `${args.roster.external.length} external participant(s) on "${title}"`,
+    participants: rosterParticipants(args.roster),
+    // No payload: payload is the sealed, evidence-key-encrypted channel that carries
+    // transcript text. Attendance has nothing that needs sealing, and omitting it keeps
+    // this path clear of evidence-key infrastructure entirely.
+    normalizedFacts: {
+      session_id: args.sessionId,
+      meeting_title: title,
+      ...(args.calendarEventId ? { calendar_event_id: args.calendarEventId } : {}),
+      attendance_source: "calendar_invite",
+      meeting_size: args.roster.size,
+      invitee_count: args.roster.people.length,
+      external_count: args.roster.external.length,
+      declined_count: args.roster.declined.length,
+      external_domains: args.roster.externalDomains,
+      ...(args.roster.organizerEmail ? { organizer_email: args.roster.organizerEmail } : {}),
+      attendance_confidence: Object.fromEntries(
+        args.roster.external.map((p) => [p.email ?? p.displayName, p.attendanceConfidence]),
+      ),
+      capture_caveats: args.roster.caveats,
+      audio_retention: args.settings?.keepAudio ?? "untilTranscribed",
     },
   };
 }

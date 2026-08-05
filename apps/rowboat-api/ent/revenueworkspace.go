@@ -104,11 +104,21 @@ type RevenueWorkspaceEdges struct {
 	RelationshipStateSnapshots []*RelationshipStateSnapshot `json:"relationship_state_snapshots,omitempty"`
 	// RelationshipSourceStatuses holds the value of the relationship_source_statuses edge.
 	RelationshipSourceStatuses []*RelationshipSourceStatus `json:"relationship_source_statuses,omitempty"`
+	// RelationshipPersons holds the value of the relationship_persons edge.
+	RelationshipPersons []*Person `json:"relationship_persons,omitempty"`
+	// PersonIdentities holds the value of the person_identities edge.
+	PersonIdentities []*PersonIdentity `json:"person_identities,omitempty"`
+	// PersonAttributes holds the value of the person_attributes edge.
+	PersonAttributes []*PersonAttribute `json:"person_attributes,omitempty"`
+	// PersonInteractionStats holds the value of the person_interaction_stats edge.
+	PersonInteractionStats []*PersonInteractionStat `json:"person_interaction_stats,omitempty"`
+	// PersonMergeCandidates holds the value of the person_merge_candidates edge.
+	PersonMergeCandidates []*PersonMergeCandidate `json:"person_merge_candidates,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [28]bool
+	loadedTypes [33]bool
 	// totalCount holds the count of the edges above.
-	totalCount [28]map[string]int
+	totalCount [33]map[string]int
 
 	namedMembers                            map[string][]*RevenueWorkspaceMember
 	namedRelationships                      map[string][]*Relationship
@@ -137,6 +147,11 @@ type RevenueWorkspaceEdges struct {
 	namedRelationshipAssertions             map[string][]*RelationshipAssertion
 	namedRelationshipStateSnapshots         map[string][]*RelationshipStateSnapshot
 	namedRelationshipSourceStatuses         map[string][]*RelationshipSourceStatus
+	namedRelationshipPersons                map[string][]*Person
+	namedPersonIdentities                   map[string][]*PersonIdentity
+	namedPersonAttributes                   map[string][]*PersonAttribute
+	namedPersonInteractionStats             map[string][]*PersonInteractionStat
+	namedPersonMergeCandidates              map[string][]*PersonMergeCandidate
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -391,6 +406,51 @@ func (e RevenueWorkspaceEdges) RelationshipSourceStatusesOrErr() ([]*Relationshi
 		return e.RelationshipSourceStatuses, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_source_statuses"}
+}
+
+// RelationshipPersonsOrErr returns the RelationshipPersons value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) RelationshipPersonsOrErr() ([]*Person, error) {
+	if e.loadedTypes[28] {
+		return e.RelationshipPersons, nil
+	}
+	return nil, &NotLoadedError{edge: "relationship_persons"}
+}
+
+// PersonIdentitiesOrErr returns the PersonIdentities value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) PersonIdentitiesOrErr() ([]*PersonIdentity, error) {
+	if e.loadedTypes[29] {
+		return e.PersonIdentities, nil
+	}
+	return nil, &NotLoadedError{edge: "person_identities"}
+}
+
+// PersonAttributesOrErr returns the PersonAttributes value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) PersonAttributesOrErr() ([]*PersonAttribute, error) {
+	if e.loadedTypes[30] {
+		return e.PersonAttributes, nil
+	}
+	return nil, &NotLoadedError{edge: "person_attributes"}
+}
+
+// PersonInteractionStatsOrErr returns the PersonInteractionStats value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) PersonInteractionStatsOrErr() ([]*PersonInteractionStat, error) {
+	if e.loadedTypes[31] {
+		return e.PersonInteractionStats, nil
+	}
+	return nil, &NotLoadedError{edge: "person_interaction_stats"}
+}
+
+// PersonMergeCandidatesOrErr returns the PersonMergeCandidates value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) PersonMergeCandidatesOrErr() ([]*PersonMergeCandidate, error) {
+	if e.loadedTypes[32] {
+		return e.PersonMergeCandidates, nil
+	}
+	return nil, &NotLoadedError{edge: "person_merge_candidates"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -648,6 +708,31 @@ func (_m *RevenueWorkspace) QueryRelationshipStateSnapshots() *RelationshipState
 // QueryRelationshipSourceStatuses queries the "relationship_source_statuses" edge of the RevenueWorkspace entity.
 func (_m *RevenueWorkspace) QueryRelationshipSourceStatuses() *RelationshipSourceStatusQuery {
 	return NewRevenueWorkspaceClient(_m.config).QueryRelationshipSourceStatuses(_m)
+}
+
+// QueryRelationshipPersons queries the "relationship_persons" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryRelationshipPersons() *PersonQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryRelationshipPersons(_m)
+}
+
+// QueryPersonIdentities queries the "person_identities" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryPersonIdentities() *PersonIdentityQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryPersonIdentities(_m)
+}
+
+// QueryPersonAttributes queries the "person_attributes" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryPersonAttributes() *PersonAttributeQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryPersonAttributes(_m)
+}
+
+// QueryPersonInteractionStats queries the "person_interaction_stats" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryPersonInteractionStats() *PersonInteractionStatQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryPersonInteractionStats(_m)
+}
+
+// QueryPersonMergeCandidates queries the "person_merge_candidates" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryPersonMergeCandidates() *PersonMergeCandidateQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryPersonMergeCandidates(_m)
 }
 
 // Update returns a builder for updating this RevenueWorkspace.
@@ -1357,6 +1442,126 @@ func (_m *RevenueWorkspace) appendNamedRelationshipSourceStatuses(name string, e
 		_m.Edges.namedRelationshipSourceStatuses[name] = []*RelationshipSourceStatus{}
 	} else {
 		_m.Edges.namedRelationshipSourceStatuses[name] = append(_m.Edges.namedRelationshipSourceStatuses[name], edges...)
+	}
+}
+
+// NamedRelationshipPersons returns the RelationshipPersons named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedRelationshipPersons(name string) ([]*Person, error) {
+	if _m.Edges.namedRelationshipPersons == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedRelationshipPersons[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedRelationshipPersons(name string, edges ...*Person) {
+	if _m.Edges.namedRelationshipPersons == nil {
+		_m.Edges.namedRelationshipPersons = make(map[string][]*Person)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedRelationshipPersons[name] = []*Person{}
+	} else {
+		_m.Edges.namedRelationshipPersons[name] = append(_m.Edges.namedRelationshipPersons[name], edges...)
+	}
+}
+
+// NamedPersonIdentities returns the PersonIdentities named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedPersonIdentities(name string) ([]*PersonIdentity, error) {
+	if _m.Edges.namedPersonIdentities == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedPersonIdentities[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedPersonIdentities(name string, edges ...*PersonIdentity) {
+	if _m.Edges.namedPersonIdentities == nil {
+		_m.Edges.namedPersonIdentities = make(map[string][]*PersonIdentity)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedPersonIdentities[name] = []*PersonIdentity{}
+	} else {
+		_m.Edges.namedPersonIdentities[name] = append(_m.Edges.namedPersonIdentities[name], edges...)
+	}
+}
+
+// NamedPersonAttributes returns the PersonAttributes named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedPersonAttributes(name string) ([]*PersonAttribute, error) {
+	if _m.Edges.namedPersonAttributes == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedPersonAttributes[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedPersonAttributes(name string, edges ...*PersonAttribute) {
+	if _m.Edges.namedPersonAttributes == nil {
+		_m.Edges.namedPersonAttributes = make(map[string][]*PersonAttribute)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedPersonAttributes[name] = []*PersonAttribute{}
+	} else {
+		_m.Edges.namedPersonAttributes[name] = append(_m.Edges.namedPersonAttributes[name], edges...)
+	}
+}
+
+// NamedPersonInteractionStats returns the PersonInteractionStats named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedPersonInteractionStats(name string) ([]*PersonInteractionStat, error) {
+	if _m.Edges.namedPersonInteractionStats == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedPersonInteractionStats[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedPersonInteractionStats(name string, edges ...*PersonInteractionStat) {
+	if _m.Edges.namedPersonInteractionStats == nil {
+		_m.Edges.namedPersonInteractionStats = make(map[string][]*PersonInteractionStat)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedPersonInteractionStats[name] = []*PersonInteractionStat{}
+	} else {
+		_m.Edges.namedPersonInteractionStats[name] = append(_m.Edges.namedPersonInteractionStats[name], edges...)
+	}
+}
+
+// NamedPersonMergeCandidates returns the PersonMergeCandidates named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedPersonMergeCandidates(name string) ([]*PersonMergeCandidate, error) {
+	if _m.Edges.namedPersonMergeCandidates == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedPersonMergeCandidates[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedPersonMergeCandidates(name string, edges ...*PersonMergeCandidate) {
+	if _m.Edges.namedPersonMergeCandidates == nil {
+		_m.Edges.namedPersonMergeCandidates = make(map[string][]*PersonMergeCandidate)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedPersonMergeCandidates[name] = []*PersonMergeCandidate{}
+	} else {
+		_m.Edges.namedPersonMergeCandidates[name] = append(_m.Edges.namedPersonMergeCandidates[name], edges...)
 	}
 }
 

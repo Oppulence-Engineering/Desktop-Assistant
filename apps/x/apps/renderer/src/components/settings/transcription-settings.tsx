@@ -43,6 +43,7 @@ import type {
   DictationShortcut,
   DictationFlowBarDock,
   DictationLanguage,
+  RelationshipEvidenceSettings,
 } from "@x/shared/dist/transcription.js";
 import { DICTATION_LANGUAGE_OPTIONS } from "@x/shared/dist/transcription.js";
 import type {
@@ -145,6 +146,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const [localOnly, setLocalOnly] = useState(false);
   const [routing, setRouting] = useState<TranscriptionRouting | null>(null);
   const [meetings, setMeetings] = useState<MeetingsSettings | null>(null);
+  const [relationships, setRelationships] = useState<RelationshipEvidenceSettings | null>(null);
   // What a start would actually use, as opposed to what is configured — the
   // difference is the whole point of showing it.
   const [resolvedEngine, setResolvedEngine] = useState<MeetingResolvedEngine | null>(null);
@@ -231,6 +233,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
         setLocalOnly(cfg.privacy.localOnly);
         setActiveModel(cfg.whisper.model);
         setMeetings(cfg.meetings);
+        setRelationships(cfg.relationships);
         setDictationSettings(cfg.dictation);
       })
       .catch(() => {});
@@ -398,6 +401,21 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       }
     },
     [meetings, refreshRouting],
+  );
+
+  const changeRelationships = useCallback(
+    async (patch: Partial<RelationshipEvidenceSettings>) => {
+      const previous = relationships;
+      setRelationships((current) => (current ? { ...current, ...patch } : current));
+      try {
+        const cfg = await window.ipc.invoke("transcription:setConfig", { relationships: patch });
+        setRelationships(cfg.relationships);
+        window.dispatchEvent(new CustomEvent(TRANSCRIPTION_CONFIG_CHANGED_EVENT));
+      } catch {
+        setRelationships(previous);
+      }
+    },
+    [relationships],
   );
 
   const changeDictationSettings = useCallback(
@@ -1410,21 +1428,66 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
             )}
           </SettingsSection>
 
-          {meetings && (
+          {relationships && (
             <SettingsSection
               title="Relationship evidence"
-              description="Choose whether completed meeting text becomes shared, source-linked relationship evidence."
+              description="Each switch sends something different. Nothing here is on unless you turn it on, and turning one on never implies another."
             >
-              <SettingToggle
-                title="Sync meeting evidence"
-                hint={
-                  meetings.syncRelationshipEvidence
-                    ? "Resolved counterparty identity, finished 1:1 transcript text, and human-confirmed commitments are sent to Oppulence relationship state. Meeting audio and local file paths are never sent by this step."
-                    : "Off · transcripts and confirmed commitments remain in your local workspace"
-                }
-                value={meetings.syncRelationshipEvidence}
-                onChange={(next) => void changeMeetings({ syncRelationshipEvidence: next })}
-              />
+              <div className="space-y-2">
+                <SettingToggle
+                  title="Meeting transcripts"
+                  hint={
+                    relationships.meetingTranscripts
+                      ? "Resolved counterparty identity, finished 1:1 transcript text, and human-confirmed commitments are sent to Oppulence relationship state. Meeting audio and local file paths are never sent."
+                      : "Off · transcripts and confirmed commitments stay in your local workspace"
+                  }
+                  value={relationships.meetingTranscripts}
+                  onChange={(next) => void changeRelationships({ meetingTranscripts: next })}
+                />
+                <SettingToggle
+                  title="Meeting attendance"
+                  hint={
+                    relationships.meetingAttendance
+                      ? "Names and addresses of external invitees from the calendar are sent — for group meetings as well as 1:1s, and for meetings you did not record. No transcript text. People who declined, and meetings with only colleagues, are never sent."
+                      : "Off · who attended stays on this device, and group meetings publish nothing"
+                  }
+                  value={relationships.meetingAttendance}
+                  onChange={(next) => void changeRelationships({ meetingAttendance: next })}
+                />
+                <SettingToggle
+                  title="Email metadata"
+                  hint={
+                    relationships.emailMetadata
+                      ? "Who was on a thread, in which direction, how many messages and when. Subjects, bodies, and attachments are never sent. Newsletters and threads you never replied to are skipped."
+                      : "Off · no email information leaves this device"
+                  }
+                  value={relationships.emailMetadata}
+                  onChange={(next) => void changeRelationships({ emailMetadata: next })}
+                />
+                <SettingToggle
+                  title="Signature enrichment"
+                  hint={
+                    relationships.signatureEnrichment
+                      ? "Job titles and organizations parsed from senders' own signature blocks are attached to their contact record. Phone numbers are parsed but never sent."
+                      : "Off · contacts carry only the name and address you already had"
+                  }
+                  value={relationships.signatureEnrichment}
+                  onChange={(next) => void changeRelationships({ signatureEnrichment: next })}
+                />
+                <SettingToggle
+                  title="Model-assisted contacts"
+                  hint={
+                    !relationships.signatureEnrichment
+                      ? "Turn on signature enrichment first · this is the fallback for when it finds nothing"
+                      : relationships.modelContactExtraction
+                        ? "When signature parsing finds nothing, a model reads the message to infer a title or organization. Its answer never outranks a parsed signature."
+                        : "Off · only deterministic signature parsing is used"
+                  }
+                  value={relationships.modelContactExtraction}
+                  onChange={(next) => void changeRelationships({ modelContactExtraction: next })}
+                  disabled={!relationships.signatureEnrichment}
+                />
+              </div>
             </SettingsSection>
           )}
 

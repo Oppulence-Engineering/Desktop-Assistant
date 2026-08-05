@@ -37,6 +37,8 @@ const (
 	EdgeRelationship = "relationship"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
+	// EdgePerson holds the string denoting the person edge name in mutations.
+	EdgePerson = "person"
 	// Table holds the table name of the relationshipparticipant in the database.
 	Table = "relationship_participants"
 	// WorkspaceTable is the table that holds the workspace relation/edge.
@@ -60,6 +62,13 @@ const (
 	UserInverseTable = "users"
 	// UserColumn is the table column denoting the user relation/edge.
 	UserColumn = "user_relationship_participants"
+	// PersonTable is the table that holds the person relation/edge.
+	PersonTable = "relationship_participants"
+	// PersonInverseTable is the table name for the Person entity.
+	// It exists in this package in order to avoid circular dependency with the "person" package.
+	PersonInverseTable = "relationship_persons"
+	// PersonColumn is the table column denoting the person relation/edge.
+	PersonColumn = "person_id"
 )
 
 // Columns holds all SQL columns for relationshipparticipant fields.
@@ -78,6 +87,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "relationship_participants"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
+	"person_id",
 	"relationship_id",
 	"revenue_workspace_id",
 	"user_relationship_participants",
@@ -182,6 +192,13 @@ func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newUserStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByPersonField orders the results by person field.
+func ByPersonField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPersonStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newWorkspaceStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -201,5 +218,12 @@ func newUserStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UserInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
+	)
+}
+func newPersonStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PersonInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, PersonTable, PersonColumn),
 	)
 }

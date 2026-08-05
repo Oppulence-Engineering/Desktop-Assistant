@@ -52,6 +52,7 @@ import { isSignedIn } from "../../account/account.js";
 import { getAccessToken } from "../../auth/tokens.js";
 import { API_URL } from "../../config/env.js";
 import { getConnectorMCPTokenViaBackend, listConnectorsViaBackend, searchHubSpotViaBackend } from "../../connectors/connectors-backend.js";
+import { getRelationship, getRelationshipTimeline, listRelationships } from "../../relationships/client.js";
 import {
     buildSlackReplyDraft,
     buildSlackThreadReadRequest,
@@ -1505,6 +1506,63 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
             try {
                 const result = await searchHubSpotViaBackend(input);
                 return { success: true, ...result, count: result.results.length };
+            } catch (error) {
+                return { success: false, error: error instanceof Error ? error.message : String(error) };
+            }
+        },
+        isAvailable: async () => isSignedIn(),
+    },
+    'relationship-lookup': {
+        description: 'Look up an account in shared relationship state and read its recent evidence timeline and people. Use this when preparing for a meeting or answering "what is going on with X" — it returns what has actually been published (meetings, email, commitments), which the local knowledge notes do not contain. Read-only.',
+        inputSchema: z.object({
+            query: z.string().min(1).describe('Company name, account domain, or contact email.'),
+            includeTimeline: z.boolean().optional().describe('Include the recent evidence timeline. Defaults to true.'),
+        }),
+        execute: async (input: { query: string; includeTimeline?: boolean }) => {
+            try {
+                const { relationships } = await listRelationships({ q: input.query });
+                if (relationships.length === 0) {
+                    return { success: true, found: false, message: `No account matches "${input.query}".` };
+                }
+                const match = relationships[0];
+                const detail = await getRelationship(match.id);
+                const people = detail.participants.map((participant) => ({
+                    name: participant.displayName,
+                    email: participant.email,
+                    role: participant.role,
+                    title: participant.title,
+                }));
+                const base = {
+                    success: true,
+                    found: true,
+                    account: {
+                        id: match.id,
+                        displayName: match.displayName,
+                        accountDomain: match.accountDomain,
+                        lifecycle: match.lifecycle,
+                        health: match.health,
+                        engagement: match.engagement,
+                        summary: match.summary,
+                        lastTouchAt: match.lastTouchAt,
+                        risks: match.risks,
+                        milestones: match.milestones,
+                    },
+                    people,
+                    // Other candidates, so the agent can say it picked one rather
+                    // than presenting a guess as the answer.
+                    otherMatches: relationships.slice(1, 4).map((item) => item.displayName),
+                };
+                if (input.includeTimeline === false) return base;
+                const { observations } = await getRelationshipTimeline(match.id, 20);
+                return {
+                    ...base,
+                    timeline: observations.map((observation) => ({
+                        occurredAt: observation.occurredAt,
+                        source: observation.source,
+                        eventType: observation.eventType,
+                        summary: observation.summary,
+                    })),
+                };
             } catch (error) {
                 return { success: false, error: error instanceof Error ? error.message : String(error) };
             }

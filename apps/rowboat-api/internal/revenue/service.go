@@ -523,10 +523,22 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 		create.SetResourceRefs(refs)
 	}
 	rel, err := create.Save(ctx)
-	if err != nil && isValidationError(err) {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+	if err != nil {
+		if isValidationError(err) {
+			return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+		}
+		return nil, err
 	}
-	return rel, err
+	// Bind anchors here too. A hand-created relationship that skipped this stayed
+	// invisible to the identity engine, so the next observation for the same address
+	// resolved to nothing and forked a second relationship for the same account.
+	// A collision surfaces as a reviewable candidate, exactly as it does on ingest.
+	if err := bindRelationshipIdentities(
+		ctx, s.client, ws, u, rel, relationshipIdentitySignals(rel), "user", rel.CreatedAt,
+	); err != nil {
+		return nil, err
+	}
+	return rel, nil
 }
 
 // relationshipListLimit bounds the relationships listing (the queue, not the
@@ -592,7 +604,11 @@ func (s *Service) GetRelationship(ctx context.Context, id uuid.UUID) (*ent.Relat
 	rel, err := s.client.Relationship.Query().
 		Where(relationship.IDEQ(id)).
 		WithCommitments().
-		WithParticipants().
+		// The canonical person travels with the participant so the detail view can
+		// show one enriched human rather than a bare name and address.
+		WithParticipants(func(q *ent.RelationshipParticipantQuery) {
+			q.WithPerson()
+		}).
 		WithActions(func(q *ent.RevenueActionQuery) {
 			q.WithEvidences().Order(
 				ent.Desc(revenueaction.FieldPriorityScore),

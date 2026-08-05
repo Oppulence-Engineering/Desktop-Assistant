@@ -24,6 +24,33 @@ import type {
   RelationshipGraph,
 } from "@x/shared/dist/relationships.js";
 
+/**
+ * A non-2xx response from the relationship API, carrying the status.
+ *
+ * The status is the difference between "the network is down, try again" and "this
+ * payload will never be accepted". Without it, a permanently rejected observation
+ * is retried forever and blocks everything queued behind it.
+ */
+export class RelationshipApiError extends Error {
+  constructor(
+    readonly status: number,
+    detail: string,
+  ) {
+    super(detail);
+    this.name = "RelationshipApiError";
+  }
+
+  /** Retrying will not change the answer. */
+  get permanent(): boolean {
+    return (
+      this.status === 400 ||
+      this.status === 403 ||
+      this.status === 409 ||
+      this.status === 422
+    );
+  }
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const accessToken = await getAccessToken();
   const response = await fetch(`${API_URL}${path}`, {
@@ -43,7 +70,9 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // Preserve the status-based message for non-JSON errors.
     }
-    throw new Error(detail);
+    // Message text is unchanged from the previous bare Error so existing log
+    // output and any string matching on it keep working.
+    throw new RelationshipApiError(response.status, detail);
   }
   return (await response.json()) as T;
 }

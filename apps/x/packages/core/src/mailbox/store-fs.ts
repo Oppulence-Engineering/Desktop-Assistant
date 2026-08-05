@@ -92,3 +92,17 @@ function normalizeState(state: Partial<MailboxStoreState>): MailboxStoreState {
     proposals: state.proposals ?? [],
   };
 }
+
+/**
+ * The process-wide persistent mailbox store.
+ *
+ * A singleton because the store owns a debounced write to one file: two instances
+ * would race that write and silently lose whichever save landed first. Everything
+ * that reads or writes sender profiles goes through here.
+ */
+let sharedStore: PersistentMailboxStore | null = null;
+
+export function getMailboxStore(): PersistentMailboxStore {
+  sharedStore ??= new PersistentMailboxStore();
+  return sharedStore;
+}

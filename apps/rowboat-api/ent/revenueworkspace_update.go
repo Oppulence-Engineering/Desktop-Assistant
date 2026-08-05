@@ -16,6 +16,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -627,6 +632,81 @@ func (_u *RevenueWorkspaceUpdate) AddRelationshipSourceStatuses(v ...*Relationsh
 	return _u.AddRelationshipSourceStatusIDs(ids...)
 }
 
+// AddRelationshipPersonIDs adds the "relationship_persons" edge to the Person entity by IDs.
+func (_u *RevenueWorkspaceUpdate) AddRelationshipPersonIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.AddRelationshipPersonIDs(ids...)
+	return _u
+}
+
+// AddRelationshipPersons adds the "relationship_persons" edges to the Person entity.
+func (_u *RevenueWorkspaceUpdate) AddRelationshipPersons(v ...*Person) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRelationshipPersonIDs(ids...)
+}
+
+// AddPersonIdentityIDs adds the "person_identities" edge to the PersonIdentity entity by IDs.
+func (_u *RevenueWorkspaceUpdate) AddPersonIdentityIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.AddPersonIdentityIDs(ids...)
+	return _u
+}
+
+// AddPersonIdentities adds the "person_identities" edges to the PersonIdentity entity.
+func (_u *RevenueWorkspaceUpdate) AddPersonIdentities(v ...*PersonIdentity) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonIdentityIDs(ids...)
+}
+
+// AddPersonAttributeIDs adds the "person_attributes" edge to the PersonAttribute entity by IDs.
+func (_u *RevenueWorkspaceUpdate) AddPersonAttributeIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.AddPersonAttributeIDs(ids...)
+	return _u
+}
+
+// AddPersonAttributes adds the "person_attributes" edges to the PersonAttribute entity.
+func (_u *RevenueWorkspaceUpdate) AddPersonAttributes(v ...*PersonAttribute) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonAttributeIDs(ids...)
+}
+
+// AddPersonInteractionStatIDs adds the "person_interaction_stats" edge to the PersonInteractionStat entity by IDs.
+func (_u *RevenueWorkspaceUpdate) AddPersonInteractionStatIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.AddPersonInteractionStatIDs(ids...)
+	return _u
+}
+
+// AddPersonInteractionStats adds the "person_interaction_stats" edges to the PersonInteractionStat entity.
+func (_u *RevenueWorkspaceUpdate) AddPersonInteractionStats(v ...*PersonInteractionStat) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonInteractionStatIDs(ids...)
+}
+
+// AddPersonMergeCandidateIDs adds the "person_merge_candidates" edge to the PersonMergeCandidate entity by IDs.
+func (_u *RevenueWorkspaceUpdate) AddPersonMergeCandidateIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.AddPersonMergeCandidateIDs(ids...)
+	return _u
+}
+
+// AddPersonMergeCandidates adds the "person_merge_candidates" edges to the PersonMergeCandidate entity.
+func (_u *RevenueWorkspaceUpdate) AddPersonMergeCandidates(v ...*PersonMergeCandidate) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonMergeCandidateIDs(ids...)
+}
+
 // Mutation returns the RevenueWorkspaceMutation object of the builder.
 func (_u *RevenueWorkspaceUpdate) Mutation() *RevenueWorkspaceMutation {
 	return _u.mutation
@@ -1203,6 +1283,111 @@ func (_u *RevenueWorkspaceUpdate) RemoveRelationshipSourceStatuses(v ...*Relatio
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRelationshipSourceStatusIDs(ids...)
+}
+
+// ClearRelationshipPersons clears all "relationship_persons" edges to the Person entity.
+func (_u *RevenueWorkspaceUpdate) ClearRelationshipPersons() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearRelationshipPersons()
+	return _u
+}
+
+// RemoveRelationshipPersonIDs removes the "relationship_persons" edge to Person entities by IDs.
+func (_u *RevenueWorkspaceUpdate) RemoveRelationshipPersonIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.RemoveRelationshipPersonIDs(ids...)
+	return _u
+}
+
+// RemoveRelationshipPersons removes "relationship_persons" edges to Person entities.
+func (_u *RevenueWorkspaceUpdate) RemoveRelationshipPersons(v ...*Person) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRelationshipPersonIDs(ids...)
+}
+
+// ClearPersonIdentities clears all "person_identities" edges to the PersonIdentity entity.
+func (_u *RevenueWorkspaceUpdate) ClearPersonIdentities() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearPersonIdentities()
+	return _u
+}
+
+// RemovePersonIdentityIDs removes the "person_identities" edge to PersonIdentity entities by IDs.
+func (_u *RevenueWorkspaceUpdate) RemovePersonIdentityIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.RemovePersonIdentityIDs(ids...)
+	return _u
+}
+
+// RemovePersonIdentities removes "person_identities" edges to PersonIdentity entities.
+func (_u *RevenueWorkspaceUpdate) RemovePersonIdentities(v ...*PersonIdentity) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonIdentityIDs(ids...)
+}
+
+// ClearPersonAttributes clears all "person_attributes" edges to the PersonAttribute entity.
+func (_u *RevenueWorkspaceUpdate) ClearPersonAttributes() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearPersonAttributes()
+	return _u
+}
+
+// RemovePersonAttributeIDs removes the "person_attributes" edge to PersonAttribute entities by IDs.
+func (_u *RevenueWorkspaceUpdate) RemovePersonAttributeIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.RemovePersonAttributeIDs(ids...)
+	return _u
+}
+
+// RemovePersonAttributes removes "person_attributes" edges to PersonAttribute entities.
+func (_u *RevenueWorkspaceUpdate) RemovePersonAttributes(v ...*PersonAttribute) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonAttributeIDs(ids...)
+}
+
+// ClearPersonInteractionStats clears all "person_interaction_stats" edges to the PersonInteractionStat entity.
+func (_u *RevenueWorkspaceUpdate) ClearPersonInteractionStats() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearPersonInteractionStats()
+	return _u
+}
+
+// RemovePersonInteractionStatIDs removes the "person_interaction_stats" edge to PersonInteractionStat entities by IDs.
+func (_u *RevenueWorkspaceUpdate) RemovePersonInteractionStatIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.RemovePersonInteractionStatIDs(ids...)
+	return _u
+}
+
+// RemovePersonInteractionStats removes "person_interaction_stats" edges to PersonInteractionStat entities.
+func (_u *RevenueWorkspaceUpdate) RemovePersonInteractionStats(v ...*PersonInteractionStat) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonInteractionStatIDs(ids...)
+}
+
+// ClearPersonMergeCandidates clears all "person_merge_candidates" edges to the PersonMergeCandidate entity.
+func (_u *RevenueWorkspaceUpdate) ClearPersonMergeCandidates() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearPersonMergeCandidates()
+	return _u
+}
+
+// RemovePersonMergeCandidateIDs removes the "person_merge_candidates" edge to PersonMergeCandidate entities by IDs.
+func (_u *RevenueWorkspaceUpdate) RemovePersonMergeCandidateIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.RemovePersonMergeCandidateIDs(ids...)
+	return _u
+}
+
+// RemovePersonMergeCandidates removes "person_merge_candidates" edges to PersonMergeCandidate entities.
+func (_u *RevenueWorkspaceUpdate) RemovePersonMergeCandidates(v ...*PersonMergeCandidate) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonMergeCandidateIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -2560,6 +2745,231 @@ func (_u *RevenueWorkspaceUpdate) sqlSave(ctx context.Context) (_node int, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.RelationshipPersonsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.RelationshipPersonsTable,
+			Columns: []string{revenueworkspace.RelationshipPersonsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRelationshipPersonsIDs(); len(nodes) > 0 && !_u.mutation.RelationshipPersonsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.RelationshipPersonsTable,
+			Columns: []string{revenueworkspace.RelationshipPersonsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RelationshipPersonsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.RelationshipPersonsTable,
+			Columns: []string{revenueworkspace.RelationshipPersonsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonIdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonIdentitiesTable,
+			Columns: []string{revenueworkspace.PersonIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonIdentitiesIDs(); len(nodes) > 0 && !_u.mutation.PersonIdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonIdentitiesTable,
+			Columns: []string{revenueworkspace.PersonIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonIdentitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonIdentitiesTable,
+			Columns: []string{revenueworkspace.PersonIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonAttributesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonAttributesTable,
+			Columns: []string{revenueworkspace.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonAttributesIDs(); len(nodes) > 0 && !_u.mutation.PersonAttributesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonAttributesTable,
+			Columns: []string{revenueworkspace.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonAttributesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonAttributesTable,
+			Columns: []string{revenueworkspace.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonInteractionStatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonInteractionStatsTable,
+			Columns: []string{revenueworkspace.PersonInteractionStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personinteractionstat.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonInteractionStatsIDs(); len(nodes) > 0 && !_u.mutation.PersonInteractionStatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonInteractionStatsTable,
+			Columns: []string{revenueworkspace.PersonInteractionStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personinteractionstat.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonInteractionStatsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonInteractionStatsTable,
+			Columns: []string{revenueworkspace.PersonInteractionStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personinteractionstat.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonMergeCandidatesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonMergeCandidatesTable,
+			Columns: []string{revenueworkspace.PersonMergeCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonMergeCandidatesIDs(); len(nodes) > 0 && !_u.mutation.PersonMergeCandidatesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonMergeCandidatesTable,
+			Columns: []string{revenueworkspace.PersonMergeCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonMergeCandidatesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonMergeCandidatesTable,
+			Columns: []string{revenueworkspace.PersonMergeCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{revenueworkspace.Label}
@@ -3150,6 +3560,81 @@ func (_u *RevenueWorkspaceUpdateOne) AddRelationshipSourceStatuses(v ...*Relatio
 	return _u.AddRelationshipSourceStatusIDs(ids...)
 }
 
+// AddRelationshipPersonIDs adds the "relationship_persons" edge to the Person entity by IDs.
+func (_u *RevenueWorkspaceUpdateOne) AddRelationshipPersonIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.AddRelationshipPersonIDs(ids...)
+	return _u
+}
+
+// AddRelationshipPersons adds the "relationship_persons" edges to the Person entity.
+func (_u *RevenueWorkspaceUpdateOne) AddRelationshipPersons(v ...*Person) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRelationshipPersonIDs(ids...)
+}
+
+// AddPersonIdentityIDs adds the "person_identities" edge to the PersonIdentity entity by IDs.
+func (_u *RevenueWorkspaceUpdateOne) AddPersonIdentityIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.AddPersonIdentityIDs(ids...)
+	return _u
+}
+
+// AddPersonIdentities adds the "person_identities" edges to the PersonIdentity entity.
+func (_u *RevenueWorkspaceUpdateOne) AddPersonIdentities(v ...*PersonIdentity) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonIdentityIDs(ids...)
+}
+
+// AddPersonAttributeIDs adds the "person_attributes" edge to the PersonAttribute entity by IDs.
+func (_u *RevenueWorkspaceUpdateOne) AddPersonAttributeIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.AddPersonAttributeIDs(ids...)
+	return _u
+}
+
+// AddPersonAttributes adds the "person_attributes" edges to the PersonAttribute entity.
+func (_u *RevenueWorkspaceUpdateOne) AddPersonAttributes(v ...*PersonAttribute) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonAttributeIDs(ids...)
+}
+
+// AddPersonInteractionStatIDs adds the "person_interaction_stats" edge to the PersonInteractionStat entity by IDs.
+func (_u *RevenueWorkspaceUpdateOne) AddPersonInteractionStatIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.AddPersonInteractionStatIDs(ids...)
+	return _u
+}
+
+// AddPersonInteractionStats adds the "person_interaction_stats" edges to the PersonInteractionStat entity.
+func (_u *RevenueWorkspaceUpdateOne) AddPersonInteractionStats(v ...*PersonInteractionStat) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonInteractionStatIDs(ids...)
+}
+
+// AddPersonMergeCandidateIDs adds the "person_merge_candidates" edge to the PersonMergeCandidate entity by IDs.
+func (_u *RevenueWorkspaceUpdateOne) AddPersonMergeCandidateIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.AddPersonMergeCandidateIDs(ids...)
+	return _u
+}
+
+// AddPersonMergeCandidates adds the "person_merge_candidates" edges to the PersonMergeCandidate entity.
+func (_u *RevenueWorkspaceUpdateOne) AddPersonMergeCandidates(v ...*PersonMergeCandidate) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonMergeCandidateIDs(ids...)
+}
+
 // Mutation returns the RevenueWorkspaceMutation object of the builder.
 func (_u *RevenueWorkspaceUpdateOne) Mutation() *RevenueWorkspaceMutation {
 	return _u.mutation
@@ -3726,6 +4211,111 @@ func (_u *RevenueWorkspaceUpdateOne) RemoveRelationshipSourceStatuses(v ...*Rela
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRelationshipSourceStatusIDs(ids...)
+}
+
+// ClearRelationshipPersons clears all "relationship_persons" edges to the Person entity.
+func (_u *RevenueWorkspaceUpdateOne) ClearRelationshipPersons() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearRelationshipPersons()
+	return _u
+}
+
+// RemoveRelationshipPersonIDs removes the "relationship_persons" edge to Person entities by IDs.
+func (_u *RevenueWorkspaceUpdateOne) RemoveRelationshipPersonIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.RemoveRelationshipPersonIDs(ids...)
+	return _u
+}
+
+// RemoveRelationshipPersons removes "relationship_persons" edges to Person entities.
+func (_u *RevenueWorkspaceUpdateOne) RemoveRelationshipPersons(v ...*Person) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRelationshipPersonIDs(ids...)
+}
+
+// ClearPersonIdentities clears all "person_identities" edges to the PersonIdentity entity.
+func (_u *RevenueWorkspaceUpdateOne) ClearPersonIdentities() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearPersonIdentities()
+	return _u
+}
+
+// RemovePersonIdentityIDs removes the "person_identities" edge to PersonIdentity entities by IDs.
+func (_u *RevenueWorkspaceUpdateOne) RemovePersonIdentityIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.RemovePersonIdentityIDs(ids...)
+	return _u
+}
+
+// RemovePersonIdentities removes "person_identities" edges to PersonIdentity entities.
+func (_u *RevenueWorkspaceUpdateOne) RemovePersonIdentities(v ...*PersonIdentity) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonIdentityIDs(ids...)
+}
+
+// ClearPersonAttributes clears all "person_attributes" edges to the PersonAttribute entity.
+func (_u *RevenueWorkspaceUpdateOne) ClearPersonAttributes() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearPersonAttributes()
+	return _u
+}
+
+// RemovePersonAttributeIDs removes the "person_attributes" edge to PersonAttribute entities by IDs.
+func (_u *RevenueWorkspaceUpdateOne) RemovePersonAttributeIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.RemovePersonAttributeIDs(ids...)
+	return _u
+}
+
+// RemovePersonAttributes removes "person_attributes" edges to PersonAttribute entities.
+func (_u *RevenueWorkspaceUpdateOne) RemovePersonAttributes(v ...*PersonAttribute) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonAttributeIDs(ids...)
+}
+
+// ClearPersonInteractionStats clears all "person_interaction_stats" edges to the PersonInteractionStat entity.
+func (_u *RevenueWorkspaceUpdateOne) ClearPersonInteractionStats() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearPersonInteractionStats()
+	return _u
+}
+
+// RemovePersonInteractionStatIDs removes the "person_interaction_stats" edge to PersonInteractionStat entities by IDs.
+func (_u *RevenueWorkspaceUpdateOne) RemovePersonInteractionStatIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.RemovePersonInteractionStatIDs(ids...)
+	return _u
+}
+
+// RemovePersonInteractionStats removes "person_interaction_stats" edges to PersonInteractionStat entities.
+func (_u *RevenueWorkspaceUpdateOne) RemovePersonInteractionStats(v ...*PersonInteractionStat) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonInteractionStatIDs(ids...)
+}
+
+// ClearPersonMergeCandidates clears all "person_merge_candidates" edges to the PersonMergeCandidate entity.
+func (_u *RevenueWorkspaceUpdateOne) ClearPersonMergeCandidates() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearPersonMergeCandidates()
+	return _u
+}
+
+// RemovePersonMergeCandidateIDs removes the "person_merge_candidates" edge to PersonMergeCandidate entities by IDs.
+func (_u *RevenueWorkspaceUpdateOne) RemovePersonMergeCandidateIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.RemovePersonMergeCandidateIDs(ids...)
+	return _u
+}
+
+// RemovePersonMergeCandidates removes "person_merge_candidates" edges to PersonMergeCandidate entities.
+func (_u *RevenueWorkspaceUpdateOne) RemovePersonMergeCandidates(v ...*PersonMergeCandidate) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonMergeCandidateIDs(ids...)
 }
 
 // Where appends a list predicates to the RevenueWorkspaceUpdate builder.
@@ -5106,6 +5696,231 @@ func (_u *RevenueWorkspaceUpdateOne) sqlSave(ctx context.Context) (_node *Revenu
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipsourcestatus.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RelationshipPersonsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.RelationshipPersonsTable,
+			Columns: []string{revenueworkspace.RelationshipPersonsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRelationshipPersonsIDs(); len(nodes) > 0 && !_u.mutation.RelationshipPersonsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.RelationshipPersonsTable,
+			Columns: []string{revenueworkspace.RelationshipPersonsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RelationshipPersonsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.RelationshipPersonsTable,
+			Columns: []string{revenueworkspace.RelationshipPersonsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonIdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonIdentitiesTable,
+			Columns: []string{revenueworkspace.PersonIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonIdentitiesIDs(); len(nodes) > 0 && !_u.mutation.PersonIdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonIdentitiesTable,
+			Columns: []string{revenueworkspace.PersonIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonIdentitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonIdentitiesTable,
+			Columns: []string{revenueworkspace.PersonIdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonAttributesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonAttributesTable,
+			Columns: []string{revenueworkspace.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonAttributesIDs(); len(nodes) > 0 && !_u.mutation.PersonAttributesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonAttributesTable,
+			Columns: []string{revenueworkspace.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonAttributesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonAttributesTable,
+			Columns: []string{revenueworkspace.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonInteractionStatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonInteractionStatsTable,
+			Columns: []string{revenueworkspace.PersonInteractionStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personinteractionstat.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonInteractionStatsIDs(); len(nodes) > 0 && !_u.mutation.PersonInteractionStatsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonInteractionStatsTable,
+			Columns: []string{revenueworkspace.PersonInteractionStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personinteractionstat.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonInteractionStatsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonInteractionStatsTable,
+			Columns: []string{revenueworkspace.PersonInteractionStatsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personinteractionstat.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonMergeCandidatesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonMergeCandidatesTable,
+			Columns: []string{revenueworkspace.PersonMergeCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonMergeCandidatesIDs(); len(nodes) > 0 && !_u.mutation.PersonMergeCandidatesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonMergeCandidatesTable,
+			Columns: []string{revenueworkspace.PersonMergeCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonMergeCandidatesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonMergeCandidatesTable,
+			Columns: []string{revenueworkspace.PersonMergeCandidatesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

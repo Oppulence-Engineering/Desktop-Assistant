@@ -42,6 +42,10 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -119,6 +123,10 @@ type UserQuery struct {
 	withMailSignals                             *MailSignalQuery
 	withRelationshipParticipants                *RelationshipParticipantQuery
 	withRelationshipIdentities                  *RelationshipIdentityQuery
+	withRelationshipPersons                     *PersonQuery
+	withPersonIdentities                        *PersonIdentityQuery
+	withPersonAttributes                        *PersonAttributeQuery
+	withPersonMergeCandidates                   *PersonMergeCandidateQuery
 	withRelationshipProjectionJobs              *RelationshipProjectionJobQuery
 	withTenantEvidenceKeys                      *TenantEvidenceKeyQuery
 	withWorkspaceFeatureControls                *WorkspaceFeatureControlQuery
@@ -175,6 +183,10 @@ type UserQuery struct {
 	withNamedMailSignals                        map[string]*MailSignalQuery
 	withNamedRelationshipParticipants           map[string]*RelationshipParticipantQuery
 	withNamedRelationshipIdentities             map[string]*RelationshipIdentityQuery
+	withNamedRelationshipPersons                map[string]*PersonQuery
+	withNamedPersonIdentities                   map[string]*PersonIdentityQuery
+	withNamedPersonAttributes                   map[string]*PersonAttributeQuery
+	withNamedPersonMergeCandidates              map[string]*PersonMergeCandidateQuery
 	withNamedRelationshipProjectionJobs         map[string]*RelationshipProjectionJobQuery
 	withNamedTenantEvidenceKeys                 map[string]*TenantEvidenceKeyQuery
 	withNamedWorkspaceFeatureControls           map[string]*WorkspaceFeatureControlQuery
@@ -1106,6 +1118,94 @@ func (_q *UserQuery) QueryRelationshipIdentities() *RelationshipIdentityQuery {
 	return query
 }
 
+// QueryRelationshipPersons chains the current query on the "relationship_persons" edge.
+func (_q *UserQuery) QueryRelationshipPersons() *PersonQuery {
+	query := (&PersonClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(person.Table, person.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RelationshipPersonsTable, user.RelationshipPersonsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPersonIdentities chains the current query on the "person_identities" edge.
+func (_q *UserQuery) QueryPersonIdentities() *PersonIdentityQuery {
+	query := (&PersonIdentityClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(personidentity.Table, personidentity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.PersonIdentitiesTable, user.PersonIdentitiesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPersonAttributes chains the current query on the "person_attributes" edge.
+func (_q *UserQuery) QueryPersonAttributes() *PersonAttributeQuery {
+	query := (&PersonAttributeClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(personattribute.Table, personattribute.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.PersonAttributesTable, user.PersonAttributesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPersonMergeCandidates chains the current query on the "person_merge_candidates" edge.
+func (_q *UserQuery) QueryPersonMergeCandidates() *PersonMergeCandidateQuery {
+	query := (&PersonMergeCandidateClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(personmergecandidate.Table, personmergecandidate.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.PersonMergeCandidatesTable, user.PersonMergeCandidatesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryRelationshipProjectionJobs chains the current query on the "relationship_projection_jobs" edge.
 func (_q *UserQuery) QueryRelationshipProjectionJobs() *RelationshipProjectionJobQuery {
 	query := (&RelationshipProjectionJobClient{config: _q.config}).Query()
@@ -1668,6 +1768,10 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withMailSignals:                        _q.withMailSignals.Clone(),
 		withRelationshipParticipants:           _q.withRelationshipParticipants.Clone(),
 		withRelationshipIdentities:             _q.withRelationshipIdentities.Clone(),
+		withRelationshipPersons:                _q.withRelationshipPersons.Clone(),
+		withPersonIdentities:                   _q.withPersonIdentities.Clone(),
+		withPersonAttributes:                   _q.withPersonAttributes.Clone(),
+		withPersonMergeCandidates:              _q.withPersonMergeCandidates.Clone(),
 		withRelationshipProjectionJobs:         _q.withRelationshipProjectionJobs.Clone(),
 		withTenantEvidenceKeys:                 _q.withTenantEvidenceKeys.Clone(),
 		withWorkspaceFeatureControls:           _q.withWorkspaceFeatureControls.Clone(),
@@ -2129,6 +2233,50 @@ func (_q *UserQuery) WithRelationshipIdentities(opts ...func(*RelationshipIdenti
 	return _q
 }
 
+// WithRelationshipPersons tells the query-builder to eager-load the nodes that are connected to
+// the "relationship_persons" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRelationshipPersons(opts ...func(*PersonQuery)) *UserQuery {
+	query := (&PersonClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRelationshipPersons = query
+	return _q
+}
+
+// WithPersonIdentities tells the query-builder to eager-load the nodes that are connected to
+// the "person_identities" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithPersonIdentities(opts ...func(*PersonIdentityQuery)) *UserQuery {
+	query := (&PersonIdentityClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPersonIdentities = query
+	return _q
+}
+
+// WithPersonAttributes tells the query-builder to eager-load the nodes that are connected to
+// the "person_attributes" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithPersonAttributes(opts ...func(*PersonAttributeQuery)) *UserQuery {
+	query := (&PersonAttributeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPersonAttributes = query
+	return _q
+}
+
+// WithPersonMergeCandidates tells the query-builder to eager-load the nodes that are connected to
+// the "person_merge_candidates" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithPersonMergeCandidates(opts ...func(*PersonMergeCandidateQuery)) *UserQuery {
+	query := (&PersonMergeCandidateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPersonMergeCandidates = query
+	return _q
+}
+
 // WithRelationshipProjectionJobs tells the query-builder to eager-load the nodes that are connected to
 // the "relationship_projection_jobs" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithRelationshipProjectionJobs(opts ...func(*RelationshipProjectionJobQuery)) *UserQuery {
@@ -2372,7 +2520,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [55]bool{
+		loadedTypes = [59]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -2413,6 +2561,10 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withMailSignals != nil,
 			_q.withRelationshipParticipants != nil,
 			_q.withRelationshipIdentities != nil,
+			_q.withRelationshipPersons != nil,
+			_q.withPersonIdentities != nil,
+			_q.withPersonAttributes != nil,
+			_q.withPersonMergeCandidates != nil,
 			_q.withRelationshipProjectionJobs != nil,
 			_q.withTenantEvidenceKeys != nil,
 			_q.withWorkspaceFeatureControls != nil,
@@ -2756,6 +2908,36 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			func(n *User) { n.Edges.RelationshipIdentities = []*RelationshipIdentity{} },
 			func(n *User, e *RelationshipIdentity) {
 				n.Edges.RelationshipIdentities = append(n.Edges.RelationshipIdentities, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRelationshipPersons; query != nil {
+		if err := _q.loadRelationshipPersons(ctx, query, nodes,
+			func(n *User) { n.Edges.RelationshipPersons = []*Person{} },
+			func(n *User, e *Person) { n.Edges.RelationshipPersons = append(n.Edges.RelationshipPersons, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withPersonIdentities; query != nil {
+		if err := _q.loadPersonIdentities(ctx, query, nodes,
+			func(n *User) { n.Edges.PersonIdentities = []*PersonIdentity{} },
+			func(n *User, e *PersonIdentity) { n.Edges.PersonIdentities = append(n.Edges.PersonIdentities, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withPersonAttributes; query != nil {
+		if err := _q.loadPersonAttributes(ctx, query, nodes,
+			func(n *User) { n.Edges.PersonAttributes = []*PersonAttribute{} },
+			func(n *User, e *PersonAttribute) { n.Edges.PersonAttributes = append(n.Edges.PersonAttributes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withPersonMergeCandidates; query != nil {
+		if err := _q.loadPersonMergeCandidates(ctx, query, nodes,
+			func(n *User) { n.Edges.PersonMergeCandidates = []*PersonMergeCandidate{} },
+			func(n *User, e *PersonMergeCandidate) {
+				n.Edges.PersonMergeCandidates = append(n.Edges.PersonMergeCandidates, e)
 			}); err != nil {
 			return nil, err
 		}
@@ -3163,6 +3345,34 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadRelationshipIdentities(ctx, query, nodes,
 			func(n *User) { n.appendNamedRelationshipIdentities(name) },
 			func(n *User, e *RelationshipIdentity) { n.appendNamedRelationshipIdentities(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedRelationshipPersons {
+		if err := _q.loadRelationshipPersons(ctx, query, nodes,
+			func(n *User) { n.appendNamedRelationshipPersons(name) },
+			func(n *User, e *Person) { n.appendNamedRelationshipPersons(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedPersonIdentities {
+		if err := _q.loadPersonIdentities(ctx, query, nodes,
+			func(n *User) { n.appendNamedPersonIdentities(name) },
+			func(n *User, e *PersonIdentity) { n.appendNamedPersonIdentities(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedPersonAttributes {
+		if err := _q.loadPersonAttributes(ctx, query, nodes,
+			func(n *User) { n.appendNamedPersonAttributes(name) },
+			func(n *User, e *PersonAttribute) { n.appendNamedPersonAttributes(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedPersonMergeCandidates {
+		if err := _q.loadPersonMergeCandidates(ctx, query, nodes,
+			func(n *User) { n.appendNamedPersonMergeCandidates(name) },
+			func(n *User, e *PersonMergeCandidate) { n.appendNamedPersonMergeCandidates(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -4518,6 +4728,130 @@ func (_q *UserQuery) loadRelationshipIdentities(ctx context.Context, query *Rela
 	}
 	return nil
 }
+func (_q *UserQuery) loadRelationshipPersons(ctx context.Context, query *PersonQuery, nodes []*User, init func(*User), assign func(*User, *Person)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Person(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RelationshipPersonsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_relationship_persons
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_relationship_persons" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_relationship_persons" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadPersonIdentities(ctx context.Context, query *PersonIdentityQuery, nodes []*User, init func(*User), assign func(*User, *PersonIdentity)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PersonIdentity(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.PersonIdentitiesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_person_identities
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_person_identities" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_person_identities" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadPersonAttributes(ctx context.Context, query *PersonAttributeQuery, nodes []*User, init func(*User), assign func(*User, *PersonAttribute)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PersonAttribute(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.PersonAttributesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_person_attributes
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_person_attributes" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_person_attributes" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadPersonMergeCandidates(ctx context.Context, query *PersonMergeCandidateQuery, nodes []*User, init func(*User), assign func(*User, *PersonMergeCandidate)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PersonMergeCandidate(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.PersonMergeCandidatesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_person_merge_candidates
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_person_merge_candidates" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_person_merge_candidates" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (_q *UserQuery) loadRelationshipProjectionJobs(ctx context.Context, query *RelationshipProjectionJobQuery, nodes []*User, init func(*User), assign func(*User, *RelationshipProjectionJob)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*User)
@@ -5611,6 +5945,62 @@ func (_q *UserQuery) WithNamedRelationshipIdentities(name string, opts ...func(*
 		_q.withNamedRelationshipIdentities = make(map[string]*RelationshipIdentityQuery)
 	}
 	_q.withNamedRelationshipIdentities[name] = query
+	return _q
+}
+
+// WithNamedRelationshipPersons tells the query-builder to eager-load the nodes that are connected to the "relationship_persons"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedRelationshipPersons(name string, opts ...func(*PersonQuery)) *UserQuery {
+	query := (&PersonClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedRelationshipPersons == nil {
+		_q.withNamedRelationshipPersons = make(map[string]*PersonQuery)
+	}
+	_q.withNamedRelationshipPersons[name] = query
+	return _q
+}
+
+// WithNamedPersonIdentities tells the query-builder to eager-load the nodes that are connected to the "person_identities"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedPersonIdentities(name string, opts ...func(*PersonIdentityQuery)) *UserQuery {
+	query := (&PersonIdentityClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedPersonIdentities == nil {
+		_q.withNamedPersonIdentities = make(map[string]*PersonIdentityQuery)
+	}
+	_q.withNamedPersonIdentities[name] = query
+	return _q
+}
+
+// WithNamedPersonAttributes tells the query-builder to eager-load the nodes that are connected to the "person_attributes"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedPersonAttributes(name string, opts ...func(*PersonAttributeQuery)) *UserQuery {
+	query := (&PersonAttributeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedPersonAttributes == nil {
+		_q.withNamedPersonAttributes = make(map[string]*PersonAttributeQuery)
+	}
+	_q.withNamedPersonAttributes[name] = query
+	return _q
+}
+
+// WithNamedPersonMergeCandidates tells the query-builder to eager-load the nodes that are connected to the "person_merge_candidates"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedPersonMergeCandidates(name string, opts ...func(*PersonMergeCandidateQuery)) *UserQuery {
+	query := (&PersonMergeCandidateClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedPersonMergeCandidates == nil {
+		_q.withNamedPersonMergeCandidates = make(map[string]*PersonMergeCandidateQuery)
+	}
+	_q.withNamedPersonMergeCandidates[name] = query
 	return _q
 }
 
