@@ -6,20 +6,10 @@
  * about, and whether restarting right now is safe — live here.
  */
 
-export type UpdateStatusName =
-  | "unsupported"
-  | "idle"
-  | "checking"
-  | "downloading"
-  | "ready"
-  | "error";
+import type { UpdateStatus, UpdateStatusName } from "@x/shared/dist/updates.js";
 
-export interface UpdateStatus {
-  state: UpdateStatusName;
-  version?: string;
-  detail?: string;
-  lastCheckedAt?: number;
-}
+export type { UpdateStatus, UpdateStatusName };
+export { updatePending, updateReady } from "@x/shared/dist/updates.js";
 
 /**
  * Why updates can't apply here, or null when they can.

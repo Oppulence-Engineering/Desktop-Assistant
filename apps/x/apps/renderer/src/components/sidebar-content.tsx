@@ -50,6 +50,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@oppulence/ui/component
 import { Tooltip, TooltipContent, TooltipTrigger } from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from "@/components/settings-dialog";
+import { updatePending, useUpdateStatus } from "@/hooks/use-update-prompt";
 import { extractConferenceLink } from "@/lib/calendar-event";
 import { useBilling } from "@/hooks/useBilling";
 import { useVoiceMode } from "@/hooks/useVoiceMode";
@@ -578,6 +579,8 @@ export function SidebarContentPanel({
   const [hasOauthError, setHasOauthError] = useState(false);
   const [showOauthAlert, setShowOauthAlert] = useState(true);
   const [connectionsSettingsOpen, setConnectionsSettingsOpen] = useState(false);
+  // Read-only: the prompting hook is mounted once at the app root.
+  const updateWaiting = updatePending(useUpdateStatus());
   const [openConnectionsAfterClose, setOpenConnectionsAfterClose] = useState(false);
   const connectorsButtonRef = useRef<HTMLButtonElement | null>(null);
   const [isSolomonConnected, setIsSolomonConnected] = useState(false);
@@ -1369,15 +1372,25 @@ export function SidebarContentPanel({
           </div>
           <SettingsDialog onStartTour={onOpenTour}>
             <button
-              aria-label="Settings"
-              title="Settings"
+              aria-label={updateWaiting ? "Settings — update available" : "Settings"}
+              title={updateWaiting ? "Settings — update available" : "Settings"}
               data-tour-target="settings"
               className={cn(
                 "flex items-center gap-2 rounded-lg py-1 text-xs text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 isCollapsed ? "size-8 justify-center px-0" : "w-full px-2",
               )}
             >
-              <Settings className="size-4" />
+              <span className="relative flex shrink-0">
+                <Settings className="size-4" />
+                {/* Outlives the toast: dismissing the prompt shouldn't be the
+                    same as never being told an update exists. */}
+                {updateWaiting && (
+                  <span
+                    aria-hidden
+                    className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-sky-400 ring-2 ring-sidebar"
+                  />
+                )}
+              </span>
               <span className={isCollapsed ? "sr-only" : undefined}>Settings</span>
             </button>
           </SettingsDialog>

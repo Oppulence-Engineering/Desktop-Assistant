@@ -1,51 +1,73 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-export type UpdateStatusName =
-  | "unsupported"
-  | "idle"
-  | "checking"
-  | "downloading"
-  | "ready"
-  | "error";
+import type { UpdateStatus, UpdateStatusName } from "@x/shared/dist/updates.js";
+import { updatePending } from "@x/shared/dist/updates.js";
 
-export interface UpdateStatus {
-  state: UpdateStatusName;
-  version?: string;
-  detail?: string;
-  lastCheckedAt?: number;
-}
+export type { UpdateStatus, UpdateStatusName };
+export { updatePending };
 
-const TOAST_ID = "app-update-ready";
+const READY_TOAST_ID = "app-update-ready";
+const AVAILABLE_TOAST_ID = "app-update-available";
 
 /**
- * Tracks update status and prompts once an update is downloaded and waiting.
+ * Subscribe to update status without announcing anything.
  *
- * Only `ready` prompts. Earlier states are real but not actionable — asking
- * someone to restart for a download that hasn't finished just makes them wait
- * with the dialog open. Settings shows the in-between states; this doesn't.
- *
- * Declining is remembered for that version, so dismissing doesn't buy a few
- * minutes of quiet before the same prompt returns. A genuinely newer version
- * prompts again, because that's new information.
+ * Separate from useUpdatePrompt so passive indicators (the dot on Settings) can
+ * read the same status without a second copy of the toasts firing.
  */
-export function useUpdatePrompt(): UpdateStatus {
+export function useUpdateStatus(): UpdateStatus {
   const [status, setStatus] = useState<UpdateStatus>({ state: "idle" });
-  const dismissedVersion = useRef<string | null>(null);
 
   useEffect(() => {
     void window.ipc.invoke("app:getUpdateStatus", null).then(setStatus);
     return window.ipc.on("app:updateStatus", (next) => setStatus(next as UpdateStatus));
   }, []);
 
+  return status;
+}
+
+/**
+ * Announces updates. Call once, at the app root.
+ *
+ * Two different messages, because they answer different questions:
+ *
+ *   downloading → "a new version exists" — worth knowing, nothing to do yet, so
+ *     it auto-dismisses and never asks for a decision. Electron's
+ *     `update-available` carries no version number, hence no version in the copy.
+ *   ready → "you can have it now" — actionable, so it persists until answered.
+ *
+ * Skipping the first message would mean nobody learns an update exists until
+ * the download happens to finish, which on a slow link or a failed download is
+ * never. The dot on Settings outlives both toasts.
+ */
+export function useUpdatePrompt(): UpdateStatus {
+  const status = useUpdateStatus();
+  const dismissedVersion = useRef<string | null>(null);
+  const announcedAvailable = useRef(false);
+
   useEffect(() => {
+    if (status.state === "downloading" && !announcedAvailable.current) {
+      // Once per run: this fires again on every relaunch until the update is
+      // installed, which is the reminder, without repeating within a session.
+      announcedAvailable.current = true;
+      toast("A new version is available", {
+        id: AVAILABLE_TOAST_ID,
+        description: "Downloading now — you'll be asked to restart when it's ready.",
+      });
+      return;
+    }
+
     if (status.state !== "ready") return;
     const version = status.version ?? "";
     if (dismissedVersion.current === version) return;
 
+    // Supersede the "downloading" notice rather than stacking on top of it.
+    toast.dismiss(AVAILABLE_TOAST_ID);
+
     const label = status.version ? `Version ${status.version} is ready` : "An update is ready";
     toast(label, {
-      id: TOAST_ID,
+      id: READY_TOAST_ID,
       description: "Restart to finish installing.",
       duration: Infinity,
       action: {

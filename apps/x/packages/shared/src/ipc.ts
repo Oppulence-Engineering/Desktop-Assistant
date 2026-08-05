@@ -12,6 +12,7 @@ import {
   RemoveOptions,
 } from "./workspace.js";
 import { ListToolsResponse } from "./mcp.js";
+import { UpdateStatusSchema } from "./updates.js";
 import {
   AskHumanResponsePayload,
   CreateRunOptions,
@@ -167,17 +168,6 @@ const SlackReplyDraftSchema = z.object({
   channel: z.string(),
   threadTs: z.string(),
   text: z.string(),
-});
-
-/**
- * Auto-update status shared by the push channel and the pull channel, so a
- * late-opening window renders exactly what a live one was last told.
- */
-const UpdateStatusSchema = z.object({
-  state: z.enum(["unsupported", "idle", "checking", "downloading", "ready", "error"]),
-  version: z.string().optional(),
-  detail: z.string().optional(),
-  lastCheckedAt: z.number().optional(),
 });
 
 const ipcSchemas = {

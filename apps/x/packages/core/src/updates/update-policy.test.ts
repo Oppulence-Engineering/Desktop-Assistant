@@ -4,7 +4,42 @@ import {
   shouldBroadcast,
   shouldCheck,
   unsupportedReason,
+  updatePending,
+  updateReady,
 } from "./update-policy.js";
+
+describe("updatePending — when a user should know a new version exists", () => {
+  it("is true while still downloading, not only once installable", () => {
+    // The point of the distinction: waiting for `ready` means a slow link or a
+    // download that never finishes tells the user nothing at all.
+    expect(updatePending({ state: "downloading" })).toBe(true);
+  });
+
+  it("is true when ready", () => {
+    expect(updatePending({ state: "ready" })).toBe(true);
+  });
+
+  it("reads correctly before any version number is known", () => {
+    // Electron's `update-available` carries no version, so anything driven by
+    // this must not depend on one being present.
+    expect(updatePending({ state: "downloading" })).toBe(true);
+    expect(updateReady({ state: "downloading" })).toBe(false);
+  });
+
+  it("is false for every state where nothing new exists", () => {
+    for (const state of ["idle", "checking", "error", "unsupported"] as const) {
+      expect(updatePending({ state })).toBe(false);
+    }
+  });
+
+  it("separates knowing from acting", () => {
+    // `downloading` is information; `ready` is a decision. Both surface, but
+    // only one should interrupt.
+    expect(updatePending({ state: "downloading" })).toBe(true);
+    expect(updateReady({ state: "downloading" })).toBe(false);
+    expect(updateReady({ state: "ready" })).toBe(true);
+  });
+});
 
 describe("unsupportedReason", () => {
   it("allows updates for a packaged mac build", () => {
