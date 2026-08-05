@@ -94,11 +94,37 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # forge.config.cjs's appleSigningConfigured gate requires all FOUR of
+          # APPLE_ID/PASSWORD/TEAM_ID/CERTIFICATE. Without the certificate the gate
+          # is false, osxSign and osxNotarize are silently dropped, and this job
+          # publishes an ad-hoc-signed app that Gatekeeper refuses to open — a
+          # worse outcome than shipping no macOS asset at all, and a silent one.
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-forge publish --arch=arm64,x64 --platform=darwin
         working-directory: apps/x/apps/main
+
+      # forge signs and notarizes the .app, not the disk image around it. Verify the
+      # produced DMGs really are notarized before they reach a user — an ad-hoc
+      # build fails here loudly instead of shipping quietly.
+      - name: Verify macOS artifacts are signed and notarized
+        working-directory: apps/x/apps/main
+        run: |
+          set -euo pipefail
+          dmg_count=$(find out/make -name '*.dmg' -type f | wc -l | tr -d ' ')
+          if [ "$dmg_count" -eq 0 ]; then
+            echo "No .dmg was produced — nothing to verify" >&2
+            find out/make -maxdepth 3 -type f -print >&2 || true
+            exit 1
+          fi
+          while IFS= read -r dmg; do
+            echo "::group::Verifying $dmg"
+            spctl -a -t open --context context:primary-signature -vv "$dmg"
+            echo "::endgroup::"
+          done < <(find out/make -name '*.dmg' -type f)
 
       - name: Cleanup keychain
         if: always()
