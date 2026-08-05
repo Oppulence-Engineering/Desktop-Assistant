@@ -16,7 +16,45 @@ import {
 } from "./refresh-errors.js";
 import { OAuthTokens } from "./types.js";
 
-/** Ask rowboat-api for the WorkOS AuthKit authorize URL to open in the browser. */
+/**
+ * A sign-in failure phrased for the person looking at it.
+ *
+ * These messages are rendered verbatim in the sign-in panel, so they must not
+ * name the identity provider or echo an HTTP status. "WorkOS login-url failed:
+ * 503" told the user which vendor we use and nothing they could act on — and it
+ * appeared for a server-side outage that had nothing to do with their account.
+ *
+ * The technical detail is kept on the error, not in the message, so logs and
+ * diagnostics stay precise while the UI stays human.
+ */
+export class AuthRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    /** Provider/endpoint context. For logs only — never displayed. */
+    readonly detail: string,
+  ) {
+    super(message);
+    this.name = "AuthRequestError";
+  }
+}
+
+/**
+ * Map a failed auth response to what the user should be told.
+ *
+ * The distinction that matters is retryable vs not. A 5xx or 429 is our problem
+ * and clears on its own, so telling someone to try again shortly is true and
+ * useful; anything else means the attempt itself did not succeed.
+ */
+function authFailure(status: number, detail: string): AuthRequestError {
+  const message =
+    status === 429 || status >= 500
+      ? "Can't reach the sign-in service right now. Please try again in a moment."
+      : "Failed to authenticate. Please try again.";
+  return new AuthRequestError(message, status, detail);
+}
+
+/** Ask rowboat-api for the AuthKit authorize URL to open in the browser. */
 export async function getWorkosLoginUrl(
   redirectUri: string,
   state: string,
@@ -26,10 +64,21 @@ export async function getWorkosLoginUrl(
   u.searchParams.set("redirect_uri", redirectUri);
   u.searchParams.set("state", state);
   u.searchParams.set("code_challenge", codeChallenge);
-  const res = await fetch(u.toString());
-  if (!res.ok) throw new Error(`WorkOS login-url failed: ${res.status}`);
+
+  let res: Response;
+  try {
+    res = await fetch(u.toString());
+  } catch (err) {
+    // Offline or DNS failure: same shape as a 5xx from the user's point of view.
+    throw new AuthRequestError(
+      "Can't reach the sign-in service right now. Please check your connection and try again.",
+      0,
+      `login-url network error: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  if (!res.ok) throw authFailure(res.status, `login-url returned ${res.status}`);
   const data = (await res.json()) as { url?: string };
-  if (!data.url) throw new Error("WorkOS login-url response missing url");
+  if (!data.url) throw authFailure(502, "login-url response missing url");
   return data.url;
 }
 
@@ -38,7 +87,7 @@ function toTokens(b: {
   refresh_token?: string;
   expires_at?: number;
 }): OAuthTokens {
-  if (!b.access_token) throw new Error("WorkOS broker response missing access_token");
+  if (!b.access_token) throw authFailure(502, "broker response missing access_token");
   return {
     access_token: b.access_token,
     refresh_token: b.refresh_token ?? null,
@@ -47,14 +96,23 @@ function toTokens(b: {
   };
 }
 
-/** Exchange a WorkOS authorization code for tokens via the broker. */
+/** Exchange an authorization code for tokens via the broker. */
 export async function exchangeWorkosCode(code: string, codeVerifier: string): Promise<OAuthTokens> {
-  const res = await fetch(`${API_URL}/v1/auth/workos/exchange`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ code, codeVerifier }),
-  });
-  if (!res.ok) throw new Error(`WorkOS code exchange failed: ${res.status}`);
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/v1/auth/workos/exchange`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code, codeVerifier }),
+    });
+  } catch (err) {
+    throw new AuthRequestError(
+      "Can't reach the sign-in service right now. Please check your connection and try again.",
+      0,
+      `code exchange network error: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  if (!res.ok) throw authFailure(res.status, `code exchange returned ${res.status}`);
   return toTokens(await res.json());
 }
 
@@ -79,8 +137,10 @@ export async function refreshWorkosTokens(refreshToken: string): Promise<OAuthTo
     });
   } catch (err) {
     throw new TransientRefreshError(
-      `WorkOS token refresh failed: ${err instanceof Error ? err.message : String(err)}`,
+      "Can't reach the sign-in service right now. Retrying shortly.",
       0,
+      undefined,
+      `token refresh network error: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
   if (res.status === 409) {
@@ -89,17 +149,21 @@ export async function refreshWorkosTokens(refreshToken: string): Promise<OAuthTo
       reconnectRequired?: boolean;
     };
     if (body.reconnectRequired) {
-      throw new ReconnectRequiredError(body.detail ?? "WorkOS session expired; sign in again.");
+      // Own the wording here rather than echoing `body.detail`. The server's
+      // copy is fixed too, but a client that renders whatever a response hands
+      // it will leak the next unguarded string someone adds upstream.
+      throw new ReconnectRequiredError("Your session expired. Please sign in again.");
     }
-    throw new Error(`WorkOS token refresh failed: 409 ${body.detail ?? ""}`.trim());
+    throw authFailure(409, `token refresh returned 409 ${body.detail ?? ""}`.trim());
   }
   if (res.status === 429 || res.status >= 500) {
     throw new TransientRefreshError(
-      `WorkOS token refresh failed: ${res.status}`,
+      "Can't reach the sign-in service right now. Retrying shortly.",
       res.status,
       parseRetryAfterMs(res.headers.get("retry-after")),
+      `token refresh returned ${res.status}`,
     );
   }
-  if (!res.ok) throw new Error(`WorkOS token refresh failed: ${res.status}`);
+  if (!res.ok) throw authFailure(res.status, `token refresh returned ${res.status}`);
   return toTokens(await res.json());
 }
