@@ -26,7 +26,26 @@ const CACHE_DIR = path.join(WorkDir, "inbox_lists");
   }
 })();
 const SYNC_INTERVAL_MS = 30 * 1000; // Check every 30 seconds
-const REQUIRED_SCOPE = "https://www.googleapis.com/auth/gmail.modify";
+/**
+ * What the sync loop needs: it reads threads, messages and history and writes
+ * only to local files.
+ *
+ * This used to demand `gmail.modify` — a write scope — which meant a mailbox
+ * connected through the managed flow never synced at all. That flow requests
+ * readonly/compose/send and no `modify`, so the check could not pass, and the
+ * loop logged "missing required Gmail scope" every 30 seconds forever while
+ * calendar (whose required scope *is* granted) synced normally beside it.
+ *
+ * A read loop gated on write access is wrong regardless of which scopes the
+ * server happens to request, so the gate now asks for what it actually uses.
+ */
+const REQUIRED_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+/**
+ * What the thread actions below need — archive, trash and mark-read all call
+ * `threads.modify`/`threads.trash`. Checked at the point of use so a missing
+ * write grant costs the user those buttons, not their whole mailbox sync.
+ */
+const WRITE_SCOPE = "https://www.googleapis.com/auth/gmail.modify";
 const MAX_THREADS_IN_DIGEST = 10;
 const RECENT_BACKFILL_INTERVAL_MS = 15 * 60 * 1000;
 const nhm = new NodeHtmlMarkdown();
@@ -118,7 +137,23 @@ export interface ThreadActionResult {
   error?: string;
 }
 
+/**
+ * Refuse a write we know the grant does not cover.
+ *
+ * Without this the call reaches Google and comes back as a bare 403 with
+ * "Request had insufficient authentication scopes", which reads like a bug in
+ * the app rather than a permission the user was never asked for.
+ */
+async function writeScopeError(): Promise<string | null> {
+  const granted = await GoogleClientFactory.hasValidCredentials(WRITE_SCOPE);
+  return granted
+    ? null
+    : "Gmail write access wasn't granted for this account, so this action isn't available. Reconnect Google to grant it.";
+}
+
 export async function archiveThread(threadId: string): Promise<ThreadActionResult> {
+  const denied = await writeScopeError();
+  if (denied) return { ok: false, error: denied };
   try {
     const gmailClient = await getGmailClientOrThrow();
     await gmailClient.users.threads.modify({
@@ -134,6 +169,8 @@ export async function archiveThread(threadId: string): Promise<ThreadActionResul
 }
 
 export async function trashThread(threadId: string): Promise<ThreadActionResult> {
+  const denied = await writeScopeError();
+  if (denied) return { ok: false, error: denied };
   try {
     const gmailClient = await getGmailClientOrThrow();
     await gmailClient.users.threads.trash({ userId: "me", id: threadId });
@@ -145,6 +182,8 @@ export async function trashThread(threadId: string): Promise<ThreadActionResult>
 }
 
 export async function markThreadRead(threadId: string): Promise<ThreadActionResult> {
+  const denied = await writeScopeError();
+  if (denied) return { ok: false, error: denied };
   try {
     const gmailClient = await getGmailClientOrThrow();
     await gmailClient.users.threads.modify({
