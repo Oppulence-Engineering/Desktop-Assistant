@@ -147,7 +147,7 @@ func resolvePerson(
 	if len(matches) > 1 {
 		// Never pick a winner. Accept the evidence on an isolated person and make
 		// each collision independently reviewable.
-		proposed, err := createProposedPerson(ctx, client, ws, u, displayName, email, observedAt)
+		proposed, err := createProposedPerson(ctx, client, ws, u, displayName, email)
 		if err != nil {
 			return nil, err
 		}
@@ -214,7 +214,6 @@ func createProposedPerson(
 	ws *ent.RevenueWorkspace,
 	u *ent.User,
 	displayName, email string,
-	observedAt time.Time,
 ) (*ent.Person, error) {
 	if displayName == "" {
 		displayName = email
@@ -394,38 +393,4 @@ func createPersonMergeCandidate(
 		SetConfidence(signal.Confidence).
 		SetCreatedAt(seenAt.UTC()).
 		Save(ctx)
-}
-
-// personsMatchingEmail is a helper for the API layer and the backfill.
-func personsMatchingEmail(
-	ctx context.Context,
-	client *ent.Client,
-	ws *ent.RevenueWorkspace,
-	email string,
-) ([]*ent.Person, error) {
-	normalized := normalizeEmail(email)
-	if normalized == "" {
-		return nil, nil
-	}
-	signal := newRelationshipIdentitySignal("email", "", normalized, 1)
-	identities, err := client.PersonIdentity.Query().
-		Where(
-			personidentity.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
-			personidentity.KeyHashEQ(signal.KeyHash),
-		).WithPerson().All(ctx)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]*ent.Person, 0, len(identities))
-	for _, identity := range identities {
-		owner, edgeErr := identity.Edges.PersonOrErr()
-		if edgeErr != nil {
-			return nil, edgeErr
-		}
-		if owner.Status == "merged" {
-			continue
-		}
-		out = append(out, owner)
-	}
-	return out, nil
 }

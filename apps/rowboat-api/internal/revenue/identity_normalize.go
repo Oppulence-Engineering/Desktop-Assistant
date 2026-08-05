@@ -43,9 +43,9 @@ func normalizeEmail(raw string) string {
 	if trimmed == "" {
 		return ""
 	}
-	if close := strings.LastIndexByte(trimmed, '>'); close == len(trimmed)-1 {
-		if open := strings.LastIndexByte(trimmed[:close], '<'); open >= 0 {
-			trimmed = strings.TrimSpace(trimmed[open+1 : close])
+	if closeAngle := strings.LastIndexByte(trimmed, '>'); closeAngle == len(trimmed)-1 {
+		if openAngle := strings.LastIndexByte(trimmed[:closeAngle], '<'); openAngle >= 0 {
+			trimmed = strings.TrimSpace(trimmed[openAngle+1 : closeAngle])
 		}
 	}
 	return strings.ToLower(trimmed)

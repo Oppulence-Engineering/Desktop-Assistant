@@ -29,11 +29,6 @@ import (
 
 const personProjectorVersion = 1
 
-/** Dimensions that hold exactly one value. */
-var personSingleValuedDimensions = [...]string{
-	"display_name", "title", "org_name", "org_domain", "phone", "timezone", "locale",
-}
-
 /** Dimensions that accumulate every active value. */
 var personMultiValuedDimensions = [...]string{"alias", "handle"}
 
