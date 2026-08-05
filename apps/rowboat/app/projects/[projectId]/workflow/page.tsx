@@ -20,6 +20,7 @@ import { IListRecurringJobRulesController } from "@/src/interface-adapters/contr
 import { IListIntegrationTriggerDeploymentsController } from "@/src/interface-adapters/controllers/integration-trigger-deployments/list-integration-trigger-deployments.controller";
 import { z } from "zod";
 import { transformTriggersForCopilot, DEFAULT_TRIGGER_FETCH_LIMIT } from "./trigger-transform";
+import SectionErrorBoundary from "@/app/components/section-error-boundary";
 
 const fetchProjectController = container.resolve<IFetchProjectController>("fetchProjectController");
 const listDataSourcesController = container.resolve<IListDataSourcesController>(
@@ -42,7 +43,17 @@ export const metadata: Metadata = {
   title: "Workflow",
 };
 
-export default async function Page(props: { params: Promise<{ projectId: string }> }) {
+export default function Page(props: { params: Promise<{ projectId: string }> }) {
+  // The data work lives in a child so the catchError boundary can catch its
+  // failures and retry() can re-render just this server subtree in place.
+  return (
+    <SectionErrorBoundary title="Failed to load workflow">
+      <WorkflowContent params={props.params} />
+    </SectionErrorBoundary>
+  );
+}
+
+async function WorkflowContent(props: { params: Promise<{ projectId: string }> }) {
   const params = await props.params;
   const user = await requireAuth();
   const customer = await requireActiveBillingSubscription();
