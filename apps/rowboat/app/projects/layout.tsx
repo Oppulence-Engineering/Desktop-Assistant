@@ -1,16 +1,12 @@
-import { USE_AUTH, USE_BILLING } from "../lib/feature_flags";
-import AppLayout from './layout/components/app-layout';
+import AppLayout from "./layout/components/app-layout";
 
-export const dynamic = 'force-dynamic';
-
+// This layout is prerendered into every /projects/* route shell, so it must
+// not read feature flags directly — that would bake the build machine's env
+// into the shell. AppLayout resolves them at request time via getAppFlags().
 export default function Layout({
-    children,
+  children,
 }: Readonly<{
-    children: React.ReactNode;
+  children: React.ReactNode;
 }>) {
-    return (
-        <AppLayout useAuth={USE_AUTH} useBilling={USE_BILLING}>
-            {children}
-        </AppLayout>
-    );
+  return <AppLayout>{children}</AppLayout>;
 }

@@ -19,7 +19,7 @@ import {
   reset as analyticsReset,
 } from "@x/core/dist/analytics/posthog.js";
 import { isSignedIn } from "@x/core/dist/account/account.js";
-import { getWebappUrl } from "@x/core/dist/config/remote-config.js";
+import { startGoogleConnectViaBackend } from "@x/core/dist/auth/google-backend-oauth.js";
 import { invalidateCopilotInstructionsCache } from "@x/core/dist/application/assistant/instructions.js";
 import { claimTokensViaBackend } from "@x/core/dist/auth/google-backend-oauth.js";
 import {
@@ -465,17 +465,21 @@ export async function connectProvider(
         // Otherwise it's BYOK with missing creds → error.
         if (await isSignedIn()) {
           try {
-            const webappUrl = await getWebappUrl();
-            await shell.openExternal(`${webappUrl}/oauth/google/start`);
-            console.log(
-              "[OAuth] Started Solomon AI-managed Google connect (browser opened to webapp)",
-            );
+            // Ask the api for the authorize URL rather than guessing a path.
+            // This previously opened `<webapp>/oauth/google/start`, which the
+            // webapp has never served since the flow moved to the api — the
+            // browser landed on a 404 while this returned success, so the app
+            // reported a connect it had not started.
+            const authorizeUrl = await startGoogleConnectViaBackend();
+            await shell.openExternal(authorizeUrl);
+            console.log("[OAuth] Started Oppulence-managed Google connect (browser opened)");
             return { success: true };
           } catch (error) {
-            console.error("[OAuth] Failed to start Solomon AI-managed Google connect:", error);
+            console.error("[OAuth] Failed to start Oppulence-managed Google connect:", error);
             return {
               success: false,
-              error: error instanceof Error ? error.message : "Failed to open browser",
+              error:
+                error instanceof Error ? error.message : "Couldn't start Google setup.",
             };
           }
         }

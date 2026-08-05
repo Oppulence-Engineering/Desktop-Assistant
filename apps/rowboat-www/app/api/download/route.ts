@@ -22,9 +22,6 @@
 
 import { type NextRequest, NextResponse, userAgent } from "next/server";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 const REPO = process.env.DESKTOP_RELEASES_REPO ?? "Oppulence-Engineering/Desktop-Assistant";
 const RELEASES_API = `https://api.github.com/repos/${REPO}/releases?per_page=20`;
 const RELEASES_PAGE = `https://github.com/${REPO}/releases/latest`;

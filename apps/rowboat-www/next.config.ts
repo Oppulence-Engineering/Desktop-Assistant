@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
+  // Instant Navigations (Next 16.3): prefetchable loading shells + partial
+  // prefetching for instant page transitions.
+  cacheComponents: true,
+  partialPrefetching: true,
   outputFileTracingRoot: path.join(__dirname, "../.."),
   transpilePackages: ["@oppulence/ui"],
   images: {

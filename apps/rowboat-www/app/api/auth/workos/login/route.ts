@@ -5,9 +5,6 @@ import { setPKCECookie } from "@/lib/auth/cookies";
 import { createPKCECookie, safeReturnTo } from "@/lib/auth/pkce";
 import { getWorkOSLoginURL } from "@/lib/auth/rowboat-api";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 export async function GET(request: NextRequest) {
   const returnTo = safeReturnTo(request.nextUrl.searchParams.get("return_to"));
   const pkce = createPKCECookie(returnTo);

@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 
 import { publicRowboatApiBaseURL, publicRowboatApiURL } from "@/lib/rowboat-public-api";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 const ROWBOAT_API_DESCRIPTION =
   "Rowboat's API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, Composio proxying, internal webhooks, and admin GraphQL. The documented paths below are the routes mounted by cmd/server/wire.go.";
 

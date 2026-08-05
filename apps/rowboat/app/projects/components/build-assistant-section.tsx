@@ -34,15 +34,13 @@ import {
   getAssistantTemplate,
 } from "@/app/actions/assistant-templates.actions";
 
-const SHOW_PREBUILT_CARDS =
-  process.env.NEXT_PUBLIC_SHOW_PREBUILT_CARDS !== "false";
+const SHOW_PREBUILT_CARDS = process.env.NEXT_PUBLIC_SHOW_PREBUILT_CARDS !== "false";
 
 const ITEMS_PER_PAGE = 10;
 
 const copilotPrompts = {
   "Blog assistant": {
-    prompt:
-      "Build an assistant to help with writing a blog post and updating it on google docs",
+    prompt: "Build an assistant to help with writing a blog post and updating it on google docs",
     emoji: "📝",
   },
   "Meeting prep workflow": {
@@ -56,8 +54,7 @@ const copilotPrompts = {
     emoji: "✅",
   },
   "Reddit & HN assistant": {
-    prompt:
-      "Build an assistant that helps me with browsing Reddit and Hacker News",
+    prompt: "Build an assistant that helps me with browsing Reddit and Hacker News",
     emoji: "🔍",
   },
 };
@@ -76,11 +73,8 @@ export function BuildAssistantSection() {
 
   // Community templates (paginated)
   const [communityTemplates, setCommunityTemplates] = useState<any[]>([]);
-  const [communityTemplatesLoading, setCommunityTemplatesLoading] =
-    useState(false);
-  const [communityTemplatesError, setCommunityTemplatesError] = useState<
-    string | null
-  >(null);
+  const [communityTemplatesLoading, setCommunityTemplatesLoading] = useState(false);
+  const [communityTemplatesError, setCommunityTemplatesError] = useState<string | null>(null);
   const [communityCursor, setCommunityCursor] = useState<string | null>(null);
   const [projects, setProjects] = useState<z.infer<typeof Project>[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
@@ -90,9 +84,7 @@ export function BuildAssistantSection() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [autoCreateLoading, setAutoCreateLoading] = useState(false);
-  const [loadingTemplateId, setLoadingTemplateId] = useState<string | null>(
-    null,
-  );
+  const [loadingTemplateId, setLoadingTemplateId] = useState<string | null>(null);
 
   const totalPages = Math.ceil(projects.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -111,10 +103,7 @@ export function BuildAssistantSection() {
           name: tool.name,
           isIntegration: tool.isIntegration,
           isLibrary: tool.isLibrary,
-          logo:
-            tool.isIntegration && tool.integrationData?.logo
-              ? tool.integrationData.logo
-              : null,
+          logo: tool.isIntegration && tool.integrationData?.logo ? tool.integrationData.logo : null,
         };
 
         uniqueToolsMap.set(tool.name, toolData);
@@ -140,34 +129,20 @@ export function BuildAssistantSection() {
   // Clean, single loader: load pages for 'library' or 'community' until target count
   const loadTemplatesToCount = useCallback(
     async (source: "library" | "community", targetCount: number) => {
-      const setLoading =
-        source === "library"
-          ? setTemplatesLoading
-          : setCommunityTemplatesLoading;
-      const setError =
-        source === "library" ? setTemplatesError : setCommunityTemplatesError;
-      const getItems = () =>
-        source === "library" ? templates : communityTemplates;
-      const setItems =
-        source === "library" ? setTemplates : setCommunityTemplates;
-      const getCursor = () =>
-        source === "library" ? templatesCursor : communityCursor;
-      const setCursor =
-        source === "library" ? setTemplatesCursor : setCommunityCursor;
+      const setLoading = source === "library" ? setTemplatesLoading : setCommunityTemplatesLoading;
+      const setError = source === "library" ? setTemplatesError : setCommunityTemplatesError;
+      const getItems = () => (source === "library" ? templates : communityTemplates);
+      const setItems = source === "library" ? setTemplates : setCommunityTemplates;
+      const getCursor = () => (source === "library" ? templatesCursor : communityCursor);
+      const setCursor = source === "library" ? setTemplatesCursor : setCommunityCursor;
 
       setLoading(true);
       setError(null);
       try {
         let items = getItems();
         let cursor = getCursor();
-        while (
-          items.length < targetCount &&
-          (cursor !== null || items.length === 0)
-        ) {
-          const pageSize = Math.min(
-            Math.max(targetCount - items.length, 12),
-            30,
-          );
+        while (items.length < targetCount && (cursor !== null || items.length === 0)) {
+          const pageSize = Math.min(Math.max(targetCount - items.length, 12), 30);
           const data = await listAssistantTemplates({
             source,
             limit: pageSize,
@@ -180,20 +155,13 @@ export function BuildAssistantSection() {
           if (!cursor) break;
         }
       } catch (error) {
-        const msg =
-          error instanceof Error ? error.message : "Failed to load templates";
+        const msg = error instanceof Error ? error.message : "Failed to load templates";
         setError(msg);
       } finally {
         setLoading(false);
       }
     },
-    [
-      templates,
-      communityTemplates,
-      templatesCursor,
-      communityCursor,
-      appendUniqueById,
-    ],
+    [templates, communityTemplates, templatesCursor, communityCursor, appendUniqueById],
   );
 
   // Adapter used by UI: map 'prebuilt' to 'library'
@@ -231,10 +199,7 @@ export function BuildAssistantSection() {
             router.push(`/projects/${projectId}/workflow`);
           },
           onError: (error) => {
-            console.error(
-              "Error creating project from community template:",
-              error,
-            );
+            console.error("Error creating project from community template:", error);
             setLoadingTemplateId(null);
           },
         });
@@ -254,9 +219,7 @@ export function BuildAssistantSection() {
       if (template.type === "community") {
         setCommunityTemplates((prev) =>
           prev.map((t) =>
-            t.id === template.id
-              ? { ...t, likeCount: data.likeCount, isLiked: data.liked }
-              : t,
+            t.id === template.id ? { ...t, likeCount: data.likeCount, isLiked: data.liked } : t,
           ),
         );
       } else {
@@ -310,9 +273,7 @@ export function BuildAssistantSection() {
 
       // Fetch workflow for the template and create a shared snapshot via server action
       const data = await getAssistantTemplate(template.id);
-      const { id } = await createSharedWorkflowFromJson(
-        JSON.stringify(data.workflow),
-      );
+      const { id } = await createSharedWorkflowFromJson(JSON.stringify(data.workflow));
       const url = `${window.location.origin}/projects?shared=${id}`;
       const copied = await copyTextToClipboard(url);
       if (!copied) {
@@ -336,8 +297,7 @@ export function BuildAssistantSection() {
     try {
       const projectsList = await listProjects();
       const sortedProjects = [...projectsList].sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
       setProjects(sortedProjects);
     } catch (error) {
@@ -368,10 +328,7 @@ export function BuildAssistantSection() {
             workflowJson: JSON.stringify(workflowObj),
             router,
             onError: (error) => {
-              console.error(
-                "Error creating project from shared workflow:",
-                error,
-              );
+              console.error("Error creating project from shared workflow:", error);
               setAutoCreateLoading(false);
             },
           });
@@ -385,8 +342,7 @@ export function BuildAssistantSection() {
       if (urlPrompt || urlTemplate) {
         setAutoCreateLoading(true);
         try {
-          const isMongoId =
-            !!urlTemplate && /^[a-f0-9]{24}$/i.test(urlTemplate);
+          const isMongoId = !!urlTemplate && /^[a-f0-9]{24}$/i.test(urlTemplate);
           if (urlTemplate && isMongoId) {
             // New-style share: template is an assistant-templates id
             const data = await getAssistantTemplate(urlTemplate);
@@ -394,10 +350,7 @@ export function BuildAssistantSection() {
               workflowJson: JSON.stringify(data.workflow),
               router,
               onError: (error) => {
-                console.error(
-                  "Error auto-creating project from template id:",
-                  error,
-                );
+                console.error("Error auto-creating project from template id:", error);
                 setAutoCreateLoading(false);
               },
             });
@@ -464,9 +417,7 @@ export function BuildAssistantSection() {
       const text = await file.text();
       let parsed = Workflow.safeParse(JSON.parse(text));
       if (!parsed.success) {
-        setImportError(
-          "Invalid workflow JSON: " + JSON.stringify(parsed.error.issues),
-        );
+        setImportError("Invalid workflow JSON: " + JSON.stringify(parsed.error.issues));
         setImportLoading(false);
         return;
       }
@@ -476,15 +427,11 @@ export function BuildAssistantSection() {
         workflowJson: text,
         router,
         onError: (error) => {
-          setImportError(
-            error instanceof Error ? error.message : String(error),
-          );
+          setImportError(error instanceof Error ? error.message : String(error));
         },
       });
     } catch (err) {
-      setImportError(
-        "Invalid JSON: " + (err instanceof Error ? err.message : String(err)),
-      );
+      setImportError("Invalid JSON: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setImportLoading(false);
     }
@@ -502,9 +449,7 @@ export function BuildAssistantSection() {
       {autoCreateLoading && (
         <div className="flex flex-col items-center justify-center min-h-screen">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">
-            Creating your assistant...
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">Creating your assistant...</p>
         </div>
       )}
       {!autoCreateLoading && (
@@ -571,8 +516,7 @@ export function BuildAssistantSection() {
                                   "focus:shadow-inner focus:ring-2 focus:ring-indigo-500/20 dark:focus:ring-indigo-400/20",
                                   "placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-200",
                                   "text-base text-gray-900 dark:text-gray-100 min-h-32",
-                                  promptError &&
-                                    "border-red-500 focus:ring-red-500/20",
+                                  promptError && "border-red-500 focus:ring-red-500/20",
                                   !userPrompt &&
                                     "animate-pulse border-2 border-indigo-500/40 dark:border-indigo-400/40 shadow-lg shadow-indigo-500/20 dark:shadow-indigo-400/20",
                                 )}
@@ -581,18 +525,14 @@ export function BuildAssistantSection() {
                                 autoResize
                               />
                               {promptError && (
-                                <p className="text-sm text-red-500 m-0 mt-2">
-                                  {promptError}
-                                </p>
+                                <p className="text-sm text-red-500 m-0 mt-2">{promptError}</p>
                               )}
                             </div>
 
                             {/* Removed separation line and secondary action per request */}
 
                             {importError && (
-                              <p className="text-sm text-red-500 mt-2">
-                                {importError}
-                              </p>
+                              <p className="text-sm text-red-500 mt-2">{importError}</p>
                             )}
                           </div>
                         </div>
@@ -601,22 +541,18 @@ export function BuildAssistantSection() {
                       {/* Predefined Prompt Cards */}
                       <div className="mt-8">
                         <div className="flex flex-wrap gap-3 justify-center">
-                          {Object.entries(copilotPrompts).map(
-                            ([name, config]) => (
-                              <button
-                                key={name}
-                                onClick={() =>
-                                  handlePromptSelect(config.prompt)
-                                }
-                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-sm"
-                              >
-                                <span className="w-4 h-4 flex items-center justify-center">
-                                  {config.emoji}
-                                </span>
-                                {name}
-                              </button>
-                            ),
-                          )}
+                          {Object.entries(copilotPrompts).map(([name, config]) => (
+                            <button
+                              key={name}
+                              onClick={() => handlePromptSelect(config.prompt)}
+                              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 hover:shadow-sm"
+                            >
+                              <span className="w-4 h-4 flex items-center justify-center">
+                                {config.emoji}
+                              </span>
+                              {name}
+                            </button>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -630,8 +566,7 @@ export function BuildAssistantSection() {
                           </div>
                         ) : projects.length === 0 ? (
                           <div className="flex items-center justify-center h-full text-sm text-gray-500 dark:text-gray-400">
-                            No assistants found. Create your first assistant to
-                            get started!
+                            No assistants found. Create your first assistant to get started!
                           </div>
                         ) : (
                           <>
@@ -640,6 +575,7 @@ export function BuildAssistantSection() {
                                 {currentProjects.map((project) => (
                                   <Link
                                     key={project.id}
+                                    prefetch
                                     href={`/projects/${project.id}/workflow`}
                                     className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-none hover:border-blue-300 dark:hover:border-blue-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all group hover:shadow-sm"
                                   >
@@ -652,9 +588,7 @@ export function BuildAssistantSection() {
                                           </div>
                                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                             Created{" "}
-                                            {new Date(
-                                              project.createdAt,
-                                            ).toLocaleDateString()}
+                                            {new Date(project.createdAt).toLocaleDateString()}
                                             {project.lastUpdatedAt &&
                                               `• Last updated ${new Date(project.lastUpdatedAt).toLocaleDateString()}`}
                                           </div>
@@ -674,9 +608,7 @@ export function BuildAssistantSection() {
                             {totalPages > 1 && (
                               <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
                                 <button
-                                  onClick={() =>
-                                    setCurrentPage((p) => Math.max(1, p - 1))
-                                  }
+                                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                                   disabled={currentPage === 1}
                                   className={clsx(
                                     "p-2 rounded-none transition-colors",
@@ -688,15 +620,10 @@ export function BuildAssistantSection() {
                                   <ChevronLeftIcon className="w-5 h-5" />
                                 </button>
                                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                                  Page {currentPage} of {totalPages} (
-                                  {projects.length} assistants)
+                                  Page {currentPage} of {totalPages} ({projects.length} assistants)
                                 </span>
                                 <button
-                                  onClick={() =>
-                                    setCurrentPage((p) =>
-                                      Math.min(totalPages, p + 1),
-                                    )
-                                  }
+                                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                                   disabled={currentPage === totalPages}
                                   className={clsx(
                                     "p-2 rounded-none transition-colors",
@@ -759,9 +686,7 @@ export function BuildAssistantSection() {
                   onDelete={async (item) => {
                     try {
                       await deleteAssistantTemplate(item.id);
-                      setCommunityTemplates((prev) =>
-                        prev.filter((t) => t.id !== item.id),
-                      );
+                      setCommunityTemplates((prev) => prev.filter((t) => t.id !== item.id));
                     } catch (e) {
                       console.error(e);
                       // Optional: surface non-blocking feedback; keeping console error for now

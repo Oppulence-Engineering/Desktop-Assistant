@@ -16,11 +16,7 @@ interface ProjectListProps {
 
 const ITEMS_PER_PAGE = 10;
 
-export function ProjectList({
-  projects,
-  isLoading,
-  searchQuery,
-}: ProjectListProps) {
+export function ProjectList({ projects, isLoading, searchQuery }: ProjectListProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
   const totalPages = Math.ceil(projects.length / ITEMS_PER_PAGE);
@@ -29,19 +25,13 @@ export function ProjectList({
   const currentProjects = projects.slice(startIndex, endIndex);
 
   if (isLoading) {
-    return (
-      <div className="px-4 py-6 text-center text-sm text-gray-500">
-        Loading projects...
-      </div>
-    );
+    return <div className="px-4 py-6 text-center text-sm text-gray-500">Loading projects...</div>;
   }
 
   if (projects.length === 0) {
     return (
       <div className="px-4 py-6 text-center text-sm text-gray-500">
-        {searchQuery
-          ? "No projects match your search"
-          : "You haven't created any projects yet"}
+        {searchQuery ? "No projects match your search" : "You haven't created any projects yet"}
       </div>
     );
   }
@@ -49,14 +39,12 @@ export function ProjectList({
   return (
     <div className="flex flex-col h-full">
       {/* Scrollable project list */}
-      <div
-        className="flex-1 overflow-y-auto"
-        style={{ maxHeight: "calc(100vh - 400px)" }}
-      >
+      <div className="flex-1 overflow-y-auto" style={{ maxHeight: "calc(100vh - 400px)" }}>
         {currentProjects.map((project) => (
           <Link
             key={project.id}
-            href={`/projects/${project.id}`}
+            prefetch
+            href={`/projects/${project.id}/workflow`}
             className={clsx(
               "block px-4 py-3",
               tokens.transitions.default,
