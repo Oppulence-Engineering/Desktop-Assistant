@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.26](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.25...v0.1.26) (2026-08-05)
+
+
+### Features
+
+* **desktop:** in-app update prompt ([#201](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/201)) ([c4e3da4](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/c4e3da4a2f21c8c5df706051f5c683a9aa659511))
+
 ## [0.1.25](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.24...v0.1.25) (2026-08-05)
 
 
