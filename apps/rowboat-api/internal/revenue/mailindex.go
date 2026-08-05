@@ -50,7 +50,10 @@ func (s *Service) indexThread(ctx context.Context, u *ent.User, sum *threadSumma
 			SetProvider("gmail").
 			SetProviderThreadID(sum.ThreadID).
 			SetSubject(sum.Subject).
-			SetAccountDomain(domainOf(sum.Counterparty)).
+			// emailDomain, not accountDomain: a thread's domain is thread-level
+			// metadata, so gmail.com is the correct value here. Only an account
+			// claim needs the public-mailbox filter.
+			SetAccountDomain(emailDomain(sum.Counterparty)).
 			SetLabels([]string{}).
 			SetReplyState(replyState).
 			SetLastDirection(lastDir).

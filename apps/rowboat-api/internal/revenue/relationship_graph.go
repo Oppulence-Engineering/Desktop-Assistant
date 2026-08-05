@@ -101,7 +101,11 @@ func (s *Service) RelationshipGraph(
 			relationship.CreatedAtLTE(filter.AsOf),
 		).
 		WithParticipants(func(q *ent.RelationshipParticipantQuery) {
-			q.Where(relationshipparticipant.CreatedAtLTE(filter.AsOf)).Order(ent.Asc(relationshipparticipant.FieldDisplayName))
+			q.Where(relationshipparticipant.CreatedAtLTE(filter.AsOf)).
+				// The canonical person is what makes one human one node across
+				// accounts, instead of one node per email string.
+				WithPerson().
+				Order(ent.Asc(relationshipparticipant.FieldDisplayName))
 		}).
 		WithCommitments(func(q *ent.CommitmentQuery) {
 			q.Where(commitment.CreatedAtLTE(filter.AsOf)).
@@ -396,8 +400,15 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 		participantRefs := make(map[string]string)
 		participants, _ := rel.Edges.ParticipantsOrErr()
 		for _, participant := range participants {
+			// Prefer the canonical person id. Keying on the email string forked one
+			// human into N nodes whenever an address was missing (falling back to
+			// the participant UUID) and silently merged two people who shared a
+			// role address. The person layer resolves both cases properly; the
+			// string key remains only for rows the backfill has not reached.
 			identity := participant.ID.String()
-			if strings.TrimSpace(participant.Email) != "" {
+			if linked, err := participant.Edges.PersonOrErr(); err == nil && linked != nil {
+				identity = "person-id:" + linked.ID.String()
+			} else if strings.TrimSpace(participant.Email) != "" {
 				identity = participant.Email
 			}
 			personNodeID := "person:" + graphStableID(identity)
