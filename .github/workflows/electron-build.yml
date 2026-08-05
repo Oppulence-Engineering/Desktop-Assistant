@@ -92,7 +92,7 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: apps/x
 
-      - name: Build and publish electron app
+      - name: Build electron distributables
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
@@ -107,27 +107,63 @@ jobs:
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
           VITE_PUBLIC_POSTHOG_HOST: ${{ secrets.VITE_PUBLIC_POSTHOG_HOST }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-forge publish --arch=arm64,x64 --platform=darwin
+        # `make`, not `publish`. publish uploads straight to the release, so a bad
+        # artifact is public before anything can inspect it — which is exactly what
+        # happened on the v0.1.19 backfill: unsigned DMGs were attached, and the
+        # verification step could only report the problem after users could
+        # already download it. Build locally, prove it is good, then upload.
+        run: npx electron-forge make --arch=arm64,x64 --platform=darwin
         working-directory: apps/x/apps/main
 
-      # forge signs and notarizes the .app, not the disk image around it. Verify the
-      # produced DMGs really are notarized before they reach a user — an ad-hoc
-      # build fails here loudly instead of shipping quietly.
-      - name: Verify macOS artifacts are signed and notarized
+      # forge's osxSign/osxNotarize cover the .app INSIDE the disk image. The .dmg
+      # itself is produced afterwards by maker-dmg and is never signed by forge, so
+      # `spctl` on it reports "no usable signature" no matter how healthy the
+      # certificate is. release.yml has always had this step; this workflow did not,
+      # which is why it could never produce an installable macOS build.
+      - name: Sign + notarize + staple DMGs
         working-directory: apps/x/apps/main
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -euo pipefail
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
+            | awk '/Developer ID Application/ { print $2; exit }')
+          if [ -z "$IDENTITY" ]; then
+            echo "No Developer ID Application identity in keychain" >&2
+            exit 1
+          fi
           dmg_count=$(find out/make -name '*.dmg' -type f | wc -l | tr -d ' ')
           if [ "$dmg_count" -eq 0 ]; then
-            echo "No .dmg was produced — nothing to verify" >&2
+            echo "No .dmg was produced by maker-dmg — nothing to notarize" >&2
             find out/make -maxdepth 3 -type f -print >&2 || true
             exit 1
           fi
           while IFS= read -r dmg; do
-            echo "::group::Verifying $dmg"
+            echo "::group::Notarizing $dmg"
+            codesign --force --timestamp --keychain "$KEYCHAIN_PATH" --sign "$IDENTITY" "$dmg"
+            xcrun notarytool submit "$dmg" \
+              --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
+            xcrun stapler staple "$dmg"
+            xcrun stapler validate "$dmg"
             spctl -a -t open --context context:primary-signature -vv "$dmg"
             echo "::endgroup::"
           done < <(find out/make -name '*.dmg' -type f)
+
+      # Only now, with every disk image proven notarized, does anything become
+      # publicly downloadable.
+      - name: Attach release assets
+        working-directory: apps/x/apps/main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          find out/make -type f -print0 | while IFS= read -r -d '' artifact; do
+            gh release upload "$RELEASE_TAG" "$artifact" --clobber
+          done
 
       - name: Cleanup keychain
         if: always()
