@@ -1,13 +1,9 @@
-import AppLayout from '../projects/layout/components/app-layout';
+import AppLayout from "../projects/layout/components/app-layout";
 
 export default function Layout({
-    children,
+  children,
 }: Readonly<{
-    children: React.ReactNode;
+  children: React.ReactNode;
 }>) {
-    return (
-        <AppLayout useAuth={true} useBilling={true}>
-            {children}
-        </AppLayout>
-    );
+  return <AppLayout>{children}</AppLayout>;
 }
