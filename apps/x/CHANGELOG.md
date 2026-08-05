@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.25](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.24...v0.1.25) (2026-08-05)
+
+
+### Features
+
+* Google connect fix and Next.js 16.3 migration ([#199](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/199)) ([daf26b3](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/daf26b3ec022a9dc50a50855a58304ebb3aedc8a))
+
+
+### Bug Fixes
+
+* honest sign-in errors and a manual build that cannot ship unsigned ([#195](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/195)) ([dc75a09](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/dc75a09cd41f2ce36b40ec208e8e1a0569f92d93))
+
 ## [0.1.24](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.23...v0.1.24) (2026-08-05)
 
 
