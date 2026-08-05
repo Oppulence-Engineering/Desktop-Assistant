@@ -4,9 +4,6 @@ import { publicOrigin } from "@/lib/auth/origin";
 import { clearAuthCookies } from "@/lib/auth/cookies";
 import { safeReturnTo } from "@/lib/auth/pkce";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 function logoutResponse(request: NextRequest) {
   // Clear the local session and return to our own site. We intentionally do
   // NOT route through WorkOS's hosted logout: its post-logout redirect is

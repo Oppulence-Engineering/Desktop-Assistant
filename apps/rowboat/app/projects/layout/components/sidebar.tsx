@@ -1,11 +1,19 @@
-'use client';
-import { useEffect, useState } from 'react';
+"use client";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import logo from '@/public/logo.png';
-import logoOnly from '@/public/logo-only.png';
+import logo from "@/public/logo.png";
+import logoOnly from "@/public/logo-only.png";
 import { usePathname } from "next/navigation";
-import { Tooltip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
+import {
+  Tooltip,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
+} from "@heroui/react";
 import { UserButton } from "@/app/lib/components/user_button";
 import {
   SettingsIcon,
@@ -19,13 +27,13 @@ import {
   MessageSquareIcon,
   LogsIcon,
   Clock,
-  ZapIcon
+  ZapIcon,
 } from "lucide-react";
 import { fetchProject } from "@/app/actions/project.actions";
 import { createProjectWithOptions } from "../../lib/project-creation-utils";
 import { useTheme } from "@/app/providers/theme-provider";
-import { USE_PRODUCT_TOUR } from '@/app/lib/feature_flags';
-import { SHOW_DARK_MODE_TOGGLE } from '@/app/lib/feature_flags';
+import { USE_PRODUCT_TOUR } from "@/app/lib/feature_flags";
+import { SHOW_DARK_MODE_TOGGLE } from "@/app/lib/feature_flags";
 import { useHelpModal } from "@/app/providers/help-modal-provider";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -42,17 +50,27 @@ interface SidebarProps {
 const EXPANDED_ICON_SIZE = 20;
 const COLLAPSED_ICON_SIZE = 20; // DO NOT CHANGE THIS
 
-export default function Sidebar({ projectId, useAuth, collapsed = false, onToggleCollapse, useBilling }: SidebarProps) {
+export default function Sidebar({
+  projectId,
+  useAuth,
+  collapsed = false,
+  onToggleCollapse,
+  useBilling,
+}: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [projectName, setProjectName] = useState<string>("Select Project");
   const [assistantName, setAssistantName] = useState("");
   const [assistantPrompt, setAssistantPrompt] = useState("");
   const [isCreatingAssistant, setIsCreatingAssistant] = useState(false);
-  const isProjectsRoute = pathname === '/projects';
+  const isProjectsRoute = pathname === "/projects";
   const { theme, toggleTheme } = useTheme();
   const { showHelpModal } = useHelpModal();
-  const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
+  const {
+    isOpen: isCreateModalOpen,
+    onOpen: onCreateModalOpen,
+    onClose: onCreateModalClose,
+  } = useDisclosure();
 
   useEffect(() => {
     async function fetchProjectName() {
@@ -61,15 +79,13 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
           const project = await fetchProject(projectId);
           setProjectName(project.name);
         } catch (error) {
-          console.error('Failed to fetch project name:', error);
+          console.error("Failed to fetch project name:", error);
           setProjectName("Select Project");
         }
       }
     }
     fetchProjectName();
   }, [projectId, isProjectsRoute]);
-
-
 
   const handleCreateAssistant = async () => {
     if (!assistantPrompt.trim()) return;
@@ -83,8 +99,8 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
           onCreateModalClose();
         },
         onError: (error) => {
-          console.error('Error creating assistant:', error);
-        }
+          console.error("Error creating assistant:", error);
+        },
       });
     } finally {
       setIsCreatingAssistant(false);
@@ -99,30 +115,30 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
 
   const navItems = [
     {
-      href: 'workflow',
-      label: 'Build',
+      href: "workflow",
+      label: "Build",
       icon: WorkflowIcon,
     },
     {
-      href: 'manage-triggers',
-      label: 'Triggers',
+      href: "manage-triggers",
+      label: "Triggers",
       icon: ZapIcon,
     },
     {
-      href: 'conversations',
-      label: 'Conversations',
+      href: "conversations",
+      label: "Conversations",
       icon: MessageSquareIcon,
     },
     {
-      href: 'jobs',
-      label: 'Jobs',
+      href: "jobs",
+      label: "Jobs",
       icon: LogsIcon,
     },
     {
-      href: 'config',
-      label: 'Settings',
+      href: "config",
+      label: "Settings",
       icon: SettingsIcon,
-    }
+    },
   ];
 
   const projectsNavItems: Array<{
@@ -133,13 +149,15 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
   }> = [];
 
   const handleStartTour = () => {
-    localStorage.removeItem('user_product_tour_completed');
+    localStorage.removeItem("user_product_tour_completed");
     window.location.reload();
   };
 
   return (
     <>
-      <aside className={`${collapsed ? 'w-16' : 'w-60'} bg-transparent flex flex-col h-full transition-all duration-300`}>
+      <aside
+        className={`${collapsed ? "w-16" : "w-60"} bg-transparent flex flex-col h-full transition-all duration-300`}
+      >
         <div className="flex flex-col grow">
           {/* Rowboat Logo */}
           <div className="p-3 border-b border-zinc-100 dark:border-zinc-800">
@@ -148,117 +166,120 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
                 href="/projects"
                 className={`
                   w-full flex items-center justify-center rounded-none hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-all
-                  ${collapsed ? 'py-3' : 'gap-3 px-4 py-2.5 justify-start'}
+                  ${collapsed ? "py-3" : "gap-3 px-4 py-2.5 justify-start"}
                 `}
               >
-                {collapsed && <Image
-                  src={logoOnly}
-                  alt="Rowboat"
-                  width={32}
-                  height={32}
-                />}
-                {!collapsed && <Image
-                  src={logo}
-                  alt="Rowboat"
-                  height={32}
-                />}
+                {collapsed && <Image src={logoOnly} alt="Rowboat" width={32} height={32} />}
+                {!collapsed && <Image src={logo} alt="Rowboat" height={32} />}
               </Link>
             </Tooltip>
           </div>
 
           {/* Navigation Items */}
           <nav className="p-3 space-y-4">
-            {!isProjectsRoute && projectId && (
+            {!isProjectsRoute &&
+              projectId &&
               // Project-specific navigation
               navItems.map((item) => {
                 const Icon = item.icon;
                 const fullPath = `/projects/${projectId}/${item.href}`;
                 const isActive = pathname.startsWith(fullPath);
 
-                return <>
-                  {collapsed && <Tooltip
-                    key={item.href}
-                    content={collapsed ? item.label : ""}
-                    showArrow
-                    placement="right"
-                  >
-                    <Link
-                      href={fullPath}
-                      className={`
+                return (
+                  <>
+                    {collapsed && (
+                      <Tooltip
+                        key={item.href}
+                        content={collapsed ? item.label : ""}
+                        showArrow
+                        placement="right"
+                      >
+                        <Link
+                          prefetch
+                          href={fullPath}
+                          className={`
                         relative w-full rounded-none flex items-center
                         text-[15px] font-medium transition-all duration-200
                         px-2.5 py-3 gap-2.5
-                        ${isActive
-                          ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-l-2 border-indigo-600 dark:border-indigo-400'
-                          : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-300'
+                        ${
+                          isActive
+                            ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-l-2 border-indigo-600 dark:border-indigo-400"
+                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-300"
                         }
                       `}
-                      data-tour-target={
-                        item.href === 'config'
-                          ? 'settings'
-                          : item.href === 'sources'
-                            ? 'entity-data-sources'
-                            : item.href === 'manage-triggers'
-                              ? 'triggers'
-                              : item.href === 'jobs'
-                                ? 'jobs'
-                                : item.href === 'conversations'
-                                  ? 'conversations'
-                                  : undefined
-                      }
-                    >
-                      <Icon
-                        size={COLLAPSED_ICON_SIZE}
-                        className={`
+                          data-tour-target={
+                            item.href === "config"
+                              ? "settings"
+                              : item.href === "sources"
+                                ? "entity-data-sources"
+                                : item.href === "manage-triggers"
+                                  ? "triggers"
+                                  : item.href === "jobs"
+                                    ? "jobs"
+                                    : item.href === "conversations"
+                                      ? "conversations"
+                                      : undefined
+                          }
+                        >
+                          <Icon
+                            size={COLLAPSED_ICON_SIZE}
+                            className={`
                           transition-all duration-200
-                          ${isActive
-                            ? 'text-indigo-600 dark:text-indigo-400'
-                            : 'text-zinc-500 dark:text-zinc-400'
+                          ${
+                            isActive
+                              ? "text-indigo-600 dark:text-indigo-400"
+                              : "text-zinc-500 dark:text-zinc-400"
                           }
                         `}
-                      />
-                    </Link>
-                  </Tooltip>}
-                  {!collapsed && <Link
-                    href={fullPath}
-                    className={`
+                          />
+                        </Link>
+                      </Tooltip>
+                    )}
+                    {!collapsed && (
+                      <Link
+                        prefetch
+                        href={fullPath}
+                        className={`
                         relative w-full rounded-none flex items-center
                         text-[15px] font-medium transition-all duration-200
                         px-2.5 py-3 gap-2.5
-                        ${isActive
-                        ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-l-2 border-indigo-600 dark:border-indigo-400'
-                        : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-300'
-                      }
-                      `}
-                    data-tour-target={
-                      item.href === 'config'
-                        ? 'settings'
-                        : item.href === 'sources'
-                          ? 'entity-data-sources'
-                          : item.href === 'manage-triggers'
-                            ? 'triggers'
-                            : item.href === 'jobs'
-                              ? 'jobs'
-                              : item.href === 'conversations'
-                                ? 'conversations'
-                                : undefined
-                    }
-                  >
-                    <Icon
-                      size={EXPANDED_ICON_SIZE}
-                      className={`
-                          transition-all duration-200
-                          ${isActive
-                          ? 'text-indigo-600 dark:text-indigo-400'
-                          : 'text-zinc-500 dark:text-zinc-400'
+                        ${
+                          isActive
+                            ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-l-2 border-indigo-600 dark:border-indigo-400"
+                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-300"
                         }
+                      `}
+                        data-tour-target={
+                          item.href === "config"
+                            ? "settings"
+                            : item.href === "sources"
+                              ? "entity-data-sources"
+                              : item.href === "manage-triggers"
+                                ? "triggers"
+                                : item.href === "jobs"
+                                  ? "jobs"
+                                  : item.href === "conversations"
+                                    ? "conversations"
+                                    : undefined
+                        }
+                      >
+                        <Icon
+                          size={EXPANDED_ICON_SIZE}
+                          className={`
+                          transition-all duration-200
+                          ${
+                            isActive
+                              ? "text-indigo-600 dark:text-indigo-400"
+                              : "text-zinc-500 dark:text-zinc-400"
+                          }
                         `}
-                    />
-                    <span>{item.label}</span>
-                  </Link>}
-                </>
-              })
-            )}
+                        />
+                        <span>{item.label}</span>
+                      </Link>
+                    )}
+                  </>
+                );
+              })}
           </nav>
         </div>
 
@@ -283,15 +304,19 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
             {/* Help button - always visible, but behavior depends on feature flag */}
             <Tooltip content={collapsed ? "Help" : ""} showArrow placement="right">
               <button
-                onClick={USE_PRODUCT_TOUR ? showHelpModal : () => {
-                  // Basic help behavior when tour is disabled
-                  // You can customize this to show a different help modal or redirect
-                  window.open('https://discord.com/invite/rxB8pzHxaS', '_blank');
-                }}
+                onClick={
+                  USE_PRODUCT_TOUR
+                    ? showHelpModal
+                    : () => {
+                        // Basic help behavior when tour is disabled
+                        // You can customize this to show a different help modal or redirect
+                        window.open("https://discord.com/invite/rxB8pzHxaS", "_blank");
+                      }
+                }
                 className={`
                   w-full rounded-none flex items-center
                   text-[15px] font-medium transition-all duration-200
-                  ${collapsed ? 'justify-center py-4' : 'px-4 py-4 gap-3'}
+                  ${collapsed ? "justify-center py-4" : "px-4 py-4 gap-3"}
                   hover:bg-zinc-100 dark:hover:bg-zinc-800/50
                   text-zinc-600 dark:text-zinc-400
                 `}
@@ -309,38 +334,39 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
                   className={`
                     w-full rounded-none flex items-center
                     text-[15px] font-medium transition-all duration-200
-                    ${collapsed ? 'justify-center py-4' : 'px-4 py-4 gap-3'}
+                    ${collapsed ? "justify-center py-4" : "px-4 py-4 gap-3"}
                     hover:bg-zinc-100 dark:hover:bg-zinc-800/50
                     text-zinc-600 dark:text-zinc-400
                   `}
                 >
-                  {theme == "light" ? <Moon size={COLLAPSED_ICON_SIZE} /> : <Sun size={COLLAPSED_ICON_SIZE} />}
+                  {theme == "light" ? (
+                    <Moon size={COLLAPSED_ICON_SIZE} />
+                  ) : (
+                    <Sun size={COLLAPSED_ICON_SIZE} />
+                  )}
                   {!collapsed && <span>Appearance</span>}
                 </button>
               </Tooltip>
             )}
 
-            {useAuth && <>
-              {collapsed && <Tooltip content="Account" showArrow placement="right">
-                <UserButton useBilling={useBilling} collapsed={collapsed} />
-              </Tooltip>}
-              {!collapsed && <UserButton useBilling={useBilling} collapsed={collapsed} />}
-            </>}
+            {useAuth && (
+              <>
+                {collapsed && (
+                  <Tooltip content="Account" showArrow placement="right">
+                    <UserButton useBilling={useBilling} collapsed={collapsed} />
+                  </Tooltip>
+                )}
+                {!collapsed && <UserButton useBilling={useBilling} collapsed={collapsed} />}
+              </>
+            )}
           </div>
         </div>
       </aside>
 
-
       {/* Create Assistant Modal */}
-      <Modal
-        isOpen={isCreateModalOpen}
-        onClose={handleCreateModalClose}
-        size="2xl"
-      >
+      <Modal isOpen={isCreateModalOpen} onClose={handleCreateModalClose} size="2xl">
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            Create New Assistant
-          </ModalHeader>
+          <ModalHeader className="flex flex-col gap-1">Create New Assistant</ModalHeader>
           <ModalBody>
             <div className="space-y-4">
               {/* Assistant Name Input */}
@@ -374,7 +400,8 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
               </div>
 
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                In the next step, our AI copilot will create agents for you, complete with mock-tools.
+                In the next step, our AI copilot will create agents for you, complete with
+                mock-tools.
               </div>
             </div>
           </ModalBody>
@@ -396,7 +423,6 @@ export default function Sidebar({ projectId, useAuth, collapsed = false, onToggl
           </ModalFooter>
         </ModalContent>
       </Modal>
-
     </>
   );
-} 
+}

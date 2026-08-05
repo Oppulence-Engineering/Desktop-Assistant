@@ -2,9 +2,6 @@ import { NextResponse } from "next/server";
 
 import { publicRowboatApiURL } from "@/lib/rowboat-public-api";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 const EMBEDDED_OPENAPI_PATH = "/api/openapi?source=scalar";
 const HTML_HEADERS = {
   "Cache-Control": "no-store",

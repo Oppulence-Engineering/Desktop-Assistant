@@ -4,9 +4,6 @@ import { publicOrigin } from "@/lib/auth/origin";
 import { clearPKCECookie, readPKCECookie, setSessionCookie } from "@/lib/auth/cookies";
 import { exchangeWorkOSCode, sessionFromTokenBundle } from "@/lib/auth/rowboat-api";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 function signInRedirect(request: NextRequest, error: string) {
   const url = new URL("/sign-in", publicOrigin(request));
   url.searchParams.set("error", error);

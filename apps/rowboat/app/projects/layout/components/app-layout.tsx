@@ -3,29 +3,34 @@ import { ReactNode, useEffect, useState } from "react";
 import Sidebar from "./sidebar";
 import { usePathname } from "next/navigation";
 import { getCustomer } from "../../../actions/billing.actions";
+import { getAppFlags } from "../../../actions/feature-flags.actions";
 import { Button } from "@heroui/react";
 import { useRouter } from "next/navigation";
 
 interface AppLayoutProps {
   children: ReactNode;
-  useAuth?: boolean;
-  useBilling?: boolean;
 }
 
-export default function AppLayout({
-  children,
-  useAuth = false,
-  useBilling = false,
-}: AppLayoutProps) {
+export default function AppLayout({ children }: AppLayoutProps) {
   const router = useRouter();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [billingPastDue, setBillingPastDue] = useState(false);
+  // Flags resolve at request time via a server action: this component is part
+  // of the prerendered shell, so build-time flag reads would be baked in.
+  const [{ useAuth, useBilling }, setFlags] = useState({
+    useAuth: false,
+    useBilling: false,
+  });
   const pathname = usePathname();
 
   let projectId: string | null = null;
   if (pathname.startsWith("/projects")) {
     projectId = pathname.split("/")[2];
   }
+
+  useEffect(() => {
+    getAppFlags().then(setFlags);
+  }, []);
 
   useEffect(() => {
     async function checkBillingPastDue() {
@@ -62,8 +67,8 @@ export default function AppLayout({
           <div className="shrink-0 mb-2">
             <div className="bg-red-50 text-red-500 px-2 py-1 text-sm rounded-none flex items-center gap-2">
               <span>
-                Your subscription is past due. Please update your payment
-                information to avoid losing access to your projects.
+                Your subscription is past due. Please update your payment information to avoid
+                losing access to your projects.
               </span>
               <Button
                 variant="flat"

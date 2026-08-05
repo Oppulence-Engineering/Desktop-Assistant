@@ -13,7 +13,9 @@
     "rag-worker": "tsx app/scripts/rag-worker.ts",
     "jobs-worker": "tsx app/scripts/jobs-worker.ts",
     "mongodb-drop-indexes": "tsx app/scripts/mongodb-drop-indexes.ts",
-    "mongodb-ensure-indexes": "tsx app/scripts/mongodb-ensure-indexes.ts"
+    "mongodb-ensure-indexes": "tsx app/scripts/mongodb-ensure-indexes.ts",
+    "typecheck": "tsgo --noEmit",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.65",
@@ -51,7 +53,7 @@
     "mermaid": "^11.9.0",
     "mongodb": "^6.8.0",
     "nanoid": "^5.1.5",
-    "next": "16.2.6",
+    "next": "^16.3.0",
     "posthog-js": "^1.260.1",
     "quill": "2.0.2",
     "quill-mention": "^6.0.2",
@@ -68,21 +70,19 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@next/playwright": "^16.3.0",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.1.10",
     "@types/node": "^20",
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "@types/redis": "^4.0.11",
+    "@typescript/native-preview": "^7.0.0-dev.20260707.2",
     "eslint": "^9",
-    "eslint-config-next": "16.2.6",
+    "eslint-config-next": "^16.3.0",
     "postcss": "8.5.15",
     "tailwindcss": "^4.1.10",
     "tsx": "^4.19.1",
-    "typescript": "^5"
-  },
-  "overrides": {
-    "@types/react": "19.2.15",
-    "@types/react-dom": "19.2.3",
-    "postcss": "8.5.15"
+    "typescript": "^5.9.3"
   }
 }
