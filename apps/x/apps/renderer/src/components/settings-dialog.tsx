@@ -53,6 +53,7 @@ import { Separator } from "@oppulence/ui/components/separator";
 import { Switch } from "@oppulence/ui/components/switch";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import type { UpdateStatus } from "@/hooks/use-update-prompt";
 import { AccountSettings } from "@/components/settings/account-settings";
 import { ConnectedAccountsSettings } from "@/components/settings/connected-accounts-settings";
 import { TranscriptionSettings } from "@/components/settings/transcription-settings";
@@ -1580,71 +1581,96 @@ function DesktopEnvironmentSettings() {
   );
 }
 
+/**
+ * Update status, reported rather than simulated.
+ *
+ * This pane used to be a mock: "Check now" flipped a label to "Up to date"
+ * without checking anything, and two switches wrote to localStorage and were
+ * read by nothing. Everything here now reflects the real updater — including
+ * the states where there is nothing it can do, which is the honest answer on a
+ * dev build and on Linux.
+ */
 function DesktopUpdatesSettings() {
-  const [automatic, setAutomatic] = useStoredBoolean("settings-update-checks", true);
-  const [download, setDownload] = useStoredBoolean("settings-update-downloads", false);
+  const [status, setStatus] = useState<UpdateStatus>({ state: "idle" });
   const [versions, setVersions] = useState<{
     chrome: string;
     node: string;
     electron: string;
+    app?: string;
   } | null>(null);
-  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     void window.ipc.invoke("app:getVersions", null).then(setVersions);
+    void window.ipc.invoke("app:getUpdateStatus", null).then(setStatus);
+    return window.ipc.on("app:updateStatus", (next) => setStatus(next as UpdateStatus));
   }, []);
+
+  const busy = status.state === "checking" || status.state === "downloading";
+
+  const summary = (): string => {
+    switch (status.state) {
+      case "unsupported":
+        return status.detail ?? "Updates aren't available for this build.";
+      case "checking":
+        return "Checking for updates…";
+      case "downloading":
+        return "Downloading the new version…";
+      case "ready":
+        return status.version
+          ? `Version ${status.version} is ready — restart to install.`
+          : "An update is ready — restart to install.";
+      case "error":
+        // The reason belongs here, where someone went looking, not in a toast.
+        return `Last check failed: ${status.detail ?? "unknown error"}`;
+      default:
+        return status.lastCheckedAt
+          ? `Up to date · checked ${new Date(status.lastCheckedAt).toLocaleTimeString()}`
+          : "Up to date";
+    }
+  };
 
   return (
     <div className="settings-panel">
       <div className="settings-row">
         <div className="settings-row-copy">
-          <p className="settings-row-label">Current desktop runtime</p>
-          <p className="settings-row-description">
-            Electron {versions?.electron || "…"} · Stable channel
+          <p className="settings-row-label">
+            Oppulence {versions?.app ?? ""} · Electron {versions?.electron || "…"}
           </p>
+          <p className="settings-row-description">{summary()}</p>
         </div>
-        <button className="settings-button" onClick={() => setChecked(true)} type="button">
-          {checked ? "Up to date" : "Check now"}
-        </button>
+        {status.state === "ready" ? (
+          <button
+            className="settings-button"
+            onClick={() => {
+              void window.ipc.invoke("app:installUpdate", null).then((result) => {
+                if (!result.installed && result.reason) toast.error(result.reason);
+              });
+            }}
+            type="button"
+          >
+            Restart now
+          </button>
+        ) : (
+          <button
+            className="settings-button"
+            disabled={busy || status.state === "unsupported"}
+            onClick={() => {
+              void window.ipc.invoke("app:checkForUpdates", null).then(setStatus);
+            }}
+            type="button"
+          >
+            {busy ? "Checking…" : "Check now"}
+          </button>
+        )}
       </div>
       <div className="settings-row">
         <div className="settings-row-copy">
-          <p className="settings-row-label">Release channel</p>
-          <p className="settings-row-description">Stable releases are recommended.</p>
+          <p className="settings-row-label">Automatic updates</p>
+          <p className="settings-row-description">
+            New versions download in the background. Nothing installs until you restart.
+          </p>
         </div>
-        <select className="settings-select w-32" defaultValue="stable">
-          <option value="stable">Stable</option>
-        </select>
       </div>
-      {[
-        {
-          value: automatic,
-          setValue: setAutomatic,
-          label: "Check automatically",
-          description: "Look for new desktop releases in the background.",
-        },
-        {
-          value: download,
-          setValue: setDownload,
-          label: "Download automatically",
-          description: "Download new releases and ask before restarting.",
-        },
-      ].map((option) => (
-        <div className="settings-row" key={option.label}>
-          <div className="settings-row-copy">
-            <p className="settings-row-label">{option.label}</p>
-            <p className="settings-row-description">{option.description}</p>
-          </div>
-          <button
-            aria-checked={option.value}
-            aria-label={option.label}
-            className="settings-switch"
-            onClick={() => option.setValue(!option.value)}
-            role="switch"
-            type="button"
-          />
-        </div>
-      ))}
     </div>
   );
 }
