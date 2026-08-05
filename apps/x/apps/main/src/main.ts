@@ -171,16 +171,38 @@ if (app.isPackaged && !app.requestSingleInstanceLock()) {
   process.exit(0);
 }
 
-// Register as the OS handler for solomon-ai:// URLs.
-// In dev, point at the right argv so the OS can re-invoke us correctly.
-for (const scheme of [DEEP_LINK_SCHEME, LEGACY_DEEP_LINK_SCHEME, OLDEST_DEEP_LINK_SCHEME]) {
-  if (process.defaultApp) {
-    if (process.argv.length >= 2) {
-      app.setAsDefaultProtocolClient(scheme, process.execPath, [path.resolve(process.argv[1])]);
+// Register as the OS handler for our deep-link schemes.
+//
+// Not from an unpackaged build on macOS. setAsDefaultProtocolClient's `path`
+// and `args` are Windows-only — macOS ignores them and registers whichever app
+// bundle is running, which in dev is the bare Electron.app inside node_modules.
+// That registration is both useless and destructive: useless because Electron
+// launched without an app path just shows its welcome window, and destructive
+// because it is a system-wide LaunchServices claim that outlives the dev
+// process and steals the scheme from the user's installed app.
+//
+// The symptom is an OAuth reconnect that lands on Electron's welcome screen
+// instead of completing, on a machine where someone once ran `npm run dev` —
+// long after, and with nothing pointing back at the cause.
+//
+// Windows and Linux keep dev registration: there the path/args are honoured, so
+// the OS can re-invoke the dev build correctly rather than hijacking anything.
+const devOnMac = process.defaultApp && process.platform === "darwin";
+if (!devOnMac) {
+  for (const scheme of [DEEP_LINK_SCHEME, LEGACY_DEEP_LINK_SCHEME, OLDEST_DEEP_LINK_SCHEME]) {
+    if (process.defaultApp) {
+      if (process.argv.length >= 2) {
+        app.setAsDefaultProtocolClient(scheme, process.execPath, [path.resolve(process.argv[1])]);
+      }
+    } else {
+      app.setAsDefaultProtocolClient(scheme);
     }
-  } else {
-    app.setAsDefaultProtocolClient(scheme);
   }
+} else {
+  console.log(
+    "[Main] Dev build on macOS: not claiming deep-link schemes " +
+      "(would steal them from the installed app). Deep links will open the installed app.",
+  );
 }
 
 // First-launch URL on Windows/Linux comes through argv.
