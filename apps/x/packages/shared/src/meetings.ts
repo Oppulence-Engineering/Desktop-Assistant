@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DictationLanguage } from "./language.js";
 
 /**
  * Native dual-track meeting capture — types shared by core, main, and the renderer.
@@ -72,6 +73,19 @@ export const MeetingsSettings = z.object({
   compressRetainedAudio: z.boolean().default(true),
   transcriptionEngine: MeetingTranscriptionEngine.default("whisper"),
   parakeetModel: ParakeetModel.default("v3"),
+  /**
+   * The spoken language of recorded meetings.
+   *
+   * `auto` is resolved **once per session** rather than per transcription window: the
+   * two-track design guarantees one track is usually near-silent, and a near-silent
+   * window is exactly where language detection misfires. Resolving once from the track
+   * with the most signal and reusing that code everywhere keeps both sides of a call in
+   * the same language.
+   *
+   * Separate from `dictation.language` on purpose — the language you dictate notes in
+   * and the language your meetings are held in are routinely different.
+   */
+  language: DictationLanguage.default("auto"),
   /** Queue a session for transcription the moment it stops. */
   transcribeOnStop: z.boolean().default(true),
   /**
@@ -148,6 +162,7 @@ export const DEFAULT_MEETINGS_SETTINGS: MeetingsSettings = {
   compressRetainedAudio: true,
   transcriptionEngine: "whisper",
   parakeetModel: "v3",
+  language: "auto",
   transcribeOnStop: true,
   autoStart: "prompt",
   autoStartSilentOrganizers: [],
@@ -254,6 +269,17 @@ export const MeetingTranscript = z.object({
   engine: z.string(),
   model: z.string(),
   created_at: z.string(),
+  /**
+   * The language the engine actually transcribed in — the *effective* one, not the
+   * requested one. whisper.cpp silently ignores `--language` on an English-only model
+   * and reports `en` regardless, so recording what was asked for would be a lie in
+   * exactly the case a reader needs the truth.
+   *
+   * Optional: transcripts written before this existed stay valid at `schema: 1`.
+   */
+  language: z.string().optional(),
+  /** Whether {@link language} was detected by the engine or set by the user. */
+  language_detected: z.boolean().optional(),
   segments: z.array(MeetingTranscriptSegment),
 });
 export type MeetingTranscript = z.infer<typeof MeetingTranscript>;
@@ -613,6 +639,23 @@ export function attributionNotice(provenance?: Record<string, string | boolean>)
   return `> Speakers are separated by audio channel, not by voice — so all ${multiParty[1]} other participants appear as **Other**.`;
 }
 
+/**
+ * A calendar summary flattened to something safe to put on a frontmatter line.
+ *
+ * Meeting titles come from calendar invites, so anyone who can send the user one
+ * controls this string. A newline in it does not merely look wrong — it ends the
+ * `title:` line and everything after becomes *more frontmatter*, letting an invite
+ * forge fields the app trusts. `session_id` is the sharpest of those: notes are matched
+ * to their session by it, and an injected one sorts above the real one.
+ *
+ * Control characters go for the same reason: they have no meaning in a title and can
+ * confuse whatever reads the file next.
+ */
+function frontmatterSafeTitle(summary: string): string {
+  // eslint-disable-next-line no-control-regex
+  return summary.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
 export function formatMeetingNote(
   entries: MeetingNoteEntry[],
   date: string,
@@ -621,7 +664,7 @@ export function formatMeetingNote(
   /** Ties the block's timings to a recording so a click can seek into it. */
   sessionId?: string,
 ): string {
-  const noteTitle = calendarEvent?.summary || "Meeting Notes";
+  const noteTitle = frontmatterSafeTitle(calendarEvent?.summary ?? "") || "Meeting Notes";
   const lines = [
     "---",
     "type: meeting",
@@ -651,10 +694,17 @@ export function formatMeetingNote(
     lines.push(`calendar_event: '${JSON.stringify(eventObj).replace(/'/g, "''")}'`);
   }
   lines.push("---", "", `# ${noteTitle}`, "");
+  // The notices open the generated region rather than floating under the title, so the
+  // one rule "this app owns the region and nothing else" covers them too. A summary is
+  // appended into the same region later by `mergeSummaryIntoNote`.
+  lines.push(GENERATED_SECTION_HEADING, "");
   const notice = localCaptureNotice(provenance);
   if (notice) lines.push(notice, "");
   const attribution = attributionNotice(provenance);
   if (attribution) lines.push(attribution, "");
+  // Closes the generated region. Everything from here to the transcript belongs to the
+  // user and is copied through untouched by every later write.
+  lines.push(USER_SECTION_HEADING, "");
 
   const transcriptLines: string[] = [];
   for (let i = 0; i < entries.length; i++) {
@@ -688,6 +738,142 @@ export function formatMeetingNote(
 }
 
 /**
+ * The heading that opens the generated region of a meeting note.
+ *
+ * **Why a heading and not an HTML comment.** The obvious delimiter is
+ * `<!-- generated:start -->`, and it does not work here. The note editor serializes its
+ * body from the ProseMirror document (`markdown-editor.tsx`, `serializeBlocksToMarkdown`),
+ * whose node list has no comment node, and ProseMirror's DOM parser discards comment
+ * nodes outright. The markers would survive on disk right up until the user edited the
+ * note in the app — which is the exact moment this whole mechanism exists to protect.
+ * A heading is a first-class editor node and round-trips unharmed.
+ */
+export const GENERATED_SECTION_HEADING = "## Meeting summary";
+
+/**
+ * The heading that closes the generated region and opens the user's.
+ *
+ * Without an explicit end the region runs to the transcript block, which quietly makes
+ * every line a user types under the summary part of "ours" — and deleted on the next
+ * write. That is the same bug in a new place. This heading bounds the region and, just
+ * as usefully, gives the user a labelled place to type.
+ */
+export const USER_SECTION_HEADING = "## Notes";
+
+/**
+ * Everything from {@link GENERATED_SECTION_HEADING} to the next `## ` heading or the
+ * transcript block, whichever comes first.
+ *
+ * Returns `null` when the note has no generated region — a note written before this
+ * existed, or one whose heading the user renamed. Callers must treat that as "all of
+ * this is the user's" and add a region rather than guessing which prose was ours.
+ */
+function findGeneratedRegion(body: string): { start: number; end: number } | null {
+  const lines = body.split("\n");
+  const start = lines.findIndex((line) => line.trim() === GENERATED_SECTION_HEADING);
+  if (start === -1) return null;
+  let end = lines.length;
+  let closed = false;
+  for (let i = start + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith("## ") || line.startsWith("# ")) {
+      end = i;
+      closed = true;
+      break;
+    }
+    if (line.startsWith("```transcript")) {
+      end = i;
+      break;
+    }
+  }
+  // An *unclosed* region — the user deleted the heading that ended it — is not safe to
+  // replace. Anything they typed under the summary is now inside these bounds and
+  // indistinguishable from it, so the caller must fall back to preserving the lot.
+  // Treating it as ours would delete their text, which is the bug this file exists to
+  // stop, one layer further in.
+  return closed ? { start, end } : null;
+}
+
+/** The fenced transcript block, which is an editor node and always sorts last. */
+function findTranscriptBlock(body: string): string {
+  return body.match(/(```transcript\n[\s\S]*?\n```)/)?.[1] ?? "";
+}
+
+/**
+ * Rewrite only the parts of a meeting note this app owns, leaving the user's alone.
+ *
+ * Meeting notes are opened and typed into *while the meeting is still running* — that is
+ * the point of writing the note at capture start. Both of the writers that run afterwards
+ * used to rebuild the body from scratch, so a note that said anything the user put there
+ * came back empty. Nothing here deletes text it did not write.
+ *
+ * The three cases, and why each resolves the way it does:
+ *
+ * - **Region present** — replace it in place. Everything above and below, and the
+ *   transcript block, is copied through untouched.
+ * - **No region (a note from before this change, or one whose heading was edited)** —
+ *   treat the entire body as the user's, and insert the region under the title. An
+ *   already-summarized note keeps its old summary and gains the new one; two summaries
+ *   is a thing the user can fix in a second, and a deleted paragraph is not.
+ * - **No note yet** — write the whole thing.
+ *
+ * Every ambiguity above resolves toward keeping text. That direction is the feature.
+ */
+export function applyGeneratedSection(
+  existing: string | null | undefined,
+  args: { frontmatter: string | null; title: string; generated: string; transcriptBlock: string },
+): string {
+  const section = [GENERATED_SECTION_HEADING, "", args.generated.trim()].join("\n").trimEnd();
+
+  if (!existing || !existing.trim()) {
+    const parts = [`# ${args.title}`, "", section];
+    if (args.transcriptBlock) parts.push("", args.transcriptBlock);
+    const body = parts.join("\n");
+    return args.frontmatter ? `${args.frontmatter}\n${body}` : body;
+  }
+
+  const { raw, body } = splitFrontmatter(existing);
+  // Frontmatter is regenerated (provenance changes between the placeholder write and the
+  // transcribed one); the body is the part that belongs to the user.
+  const frontmatter = args.frontmatter ?? raw;
+  const transcriptBlock = args.transcriptBlock || findTranscriptBlock(body);
+
+  // The transcript block is rebuilt from the transcript every time, so drop the old copy
+  // wherever it sits and re-append it last.
+  const withoutTranscript = body.replace(/```transcript\n[\s\S]*?\n```/g, "").trimEnd();
+
+  const lines = withoutTranscript.split("\n");
+  const region = findGeneratedRegion(withoutTranscript);
+
+  let merged: string;
+  if (region) {
+    merged = [...lines.slice(0, region.start), section, ...lines.slice(region.end)].join("\n");
+  } else {
+    // Insert directly under the H1 so the summary still reads first, and keep every
+    // other line — including any previous summary — exactly where the user last saw it.
+    let insertAt = 0;
+    while (insertAt < lines.length && lines[insertAt].trim() === "") insertAt++;
+    if (lines[insertAt]?.startsWith("# ")) insertAt++;
+    const rest = lines.slice(insertAt);
+    const restText = rest.join("\n").trim();
+    // The carried-over body needs a heading in front of it, or the region we just
+    // inserted would run straight into it and absorb it on the next write. The content
+    // itself is not moved or reordered — a heading line is added above it.
+    const restNeedsHeading = restText !== "" && !restText.startsWith("## ");
+    merged = [
+      ...lines.slice(0, insertAt),
+      "",
+      section,
+      ...(restText ? ["", ...(restNeedsHeading ? [USER_SECTION_HEADING, ""] : []), ...rest] : []),
+    ].join("\n");
+  }
+
+  merged = merged.replace(/\n{3,}/g, "\n\n").trimEnd();
+  if (transcriptBlock) merged += `\n\n${transcriptBlock}`;
+  return frontmatter ? `${frontmatter}\n${merged}` : merged;
+}
+
+/**
  * Split a note into its raw frontmatter and body, preserving the frontmatter text
  * exactly. Re-parsing and re-serializing it would reorder keys and reformat the
  * one-line JSON in `calendar_event`.
@@ -716,14 +902,18 @@ export function mergeSummaryIntoNote(noteContent: string, summary: string): stri
   const titleMatch = noteContent.match(/^title:\s*(.+)$/m);
   const noteTitle = titleMatch?.[1]?.trim() || "Meeting Notes";
   const cleaned = summary.replace(/^#{1,2}\s+.+\n+/, "");
-  const transcriptBlock = body.match(/(```transcript\n[\s\S]*?\n```)/)?.[1] ?? "";
 
-  const newBody =
-    `# ${noteTitle}\n\n` +
-    notices(body) +
-    cleaned +
-    (transcriptBlock ? "\n\n" + transcriptBlock : "");
-  return raw ? `${raw}\n${newBody}` : newBody;
+  // The notices are ours, so they belong inside the generated region and are re-derived
+  // rather than scavenged back out of the previous body.
+  const existingNotices = notices(body).trim();
+  const generated = [existingNotices, cleaned.trim()].filter(Boolean).join("\n\n");
+
+  return applyGeneratedSection(noteContent, {
+    frontmatter: raw,
+    title: noteTitle,
+    generated,
+    transcriptBlock: findTranscriptBlock(body),
+  });
 }
 
 /**
@@ -742,23 +932,35 @@ export function mergeSummaryIntoNote(noteContent: string, summary: string): stri
  */
 function notices(body: string): string {
   const lines = body.split("\n");
+  const region = findGeneratedRegion(body);
+  // Once a note has a generated region the notices live inside it, directly under the
+  // heading. Only a note written before that existed still has them under the title.
+  if (region) return leadingQuotes(lines, region.start + 1);
+
   let index = 0;
   // Blank lines first: `splitFrontmatter` leaves one in front of the title.
   while (index < lines.length && lines[index].trim() === "") index++;
   if (lines[index]?.startsWith("# ")) index++;
+  return leadingQuotes(lines, index);
+}
 
-  // Blank lines are skipped rather than treated as the end of the run: the formatter
-  // separates each notice with one, so stopping at the first blank kept only the
-  // privacy line and still dropped the speaker-attribution caveat. The run ends at the
-  // first line that is neither blank nor a quote — which is where the summary starts.
+/**
+ * The run of blockquote lines starting at `from`.
+ *
+ * Blank lines are skipped rather than treated as the end of the run: the formatter
+ * separates each notice with one, so stopping at the first blank kept only the privacy
+ * line and still dropped the speaker-attribution caveat. The run ends at the first line
+ * that is neither blank nor a quote — which is where the summary starts.
+ */
+function leadingQuotes(lines: string[], from: number): string {
   const kept: string[] = [];
-  for (; index < lines.length; index++) {
+  for (let index = from; index < lines.length; index++) {
     const line = lines[index];
     if (line.trim() === "") continue;
     if (!line.startsWith(">")) break;
     kept.push(line);
   }
-  return kept.length > 0 ? `${kept.join("\n\n")}\n\n` : "";
+  return kept.length > 0 ? kept.join("\n\n") : "";
 }
 
 /** The transcript text a summarizer should be given, or "" when there is none yet. */

@@ -96,12 +96,7 @@ import {
   ToolPermissionRequestEvent,
   AskHumanRequestEvent,
 } from "@x/shared/src/runs.js";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-  useSidebar,
-} from "@oppulence/ui/components/sidebar";
+import { SidebarInset, SidebarProvider } from "@oppulence/ui/components/sidebar";
 import {
   Tooltip,
   TooltipContent,
@@ -789,22 +784,14 @@ function ContentHeader({
   canNavigateBack?: boolean;
   canNavigateForward?: boolean;
 }) {
-  const { state: sidebarState } = useSidebar();
-  const isSidebarCollapsed = sidebarState === "collapsed";
-
   return (
     <header
-      className="rowboat-titlebar titlebar-drag-region flex h-10 shrink-0 items-stretch overflow-hidden border-b border-border bg-background transition-[padding] duration-200 ease-linear"
+      className="rowboat-titlebar titlebar-drag-region flex h-10 shrink-0 items-stretch overflow-hidden border-b border-border bg-background"
       style={{
-        paddingLeft: isSidebarCollapsed ? 0 : 12,
+        paddingLeft: 12,
         paddingRight: 12,
       }}
     >
-      {isSidebarCollapsed ? (
-        <div className="titlebar-no-drag flex shrink-0 items-center pr-2">
-          <SidebarTrigger className="-ml-2 size-8 text-muted-foreground hover:bg-accent hover:text-foreground" />
-        </div>
-      ) : null}
       {onNavigateBack && onNavigateForward ? (
         <div className="titlebar-no-drag flex items-center gap-1 pr-2 shrink-0">
           <button

@@ -79,6 +79,41 @@ describe("parseWhisperJson", () => {
     expect(segments).toEqual([]);
     expect(text).toBe("");
   });
+
+  /**
+   * Shape confirmed against the shipped `whisper-cli` binary rather than assumed: `-oj`
+   * writes `result.language` and `model.multilingual` alongside `transcription`.
+   */
+  it("reads the effective language and whether the model is multilingual", () => {
+    const parsed = parseWhisperJson({
+      transcription: [{ offsets: { from: 0, to: 100 }, text: "Bonjour." }],
+      result: { language: "fr" },
+      model: { multilingual: true },
+    });
+    expect(parsed.language).toBe("fr");
+    expect(parsed.multilingualModel).toBe(true);
+  });
+
+  it("reports the language the model actually used, not the one requested", () => {
+    // An `.en` model asked for French: whisper warns, transcribes English, reports `en`.
+    // Surfacing the request instead would misreport exactly the case that went wrong.
+    const parsed = parseWhisperJson({
+      transcription: [{ offsets: { from: 0, to: 100 }, text: "The quick brown fox." }],
+      result: { language: "en" },
+      model: { multilingual: false },
+    });
+    expect(parsed.language).toBe("en");
+    expect(parsed.multilingualModel).toBe(false);
+  });
+
+  it("leaves the language undefined when the engine did not report one", () => {
+    // Undefined must not collapse to "en" — that assumption is the original bug.
+    const parsed = parseWhisperJson({
+      transcription: [{ offsets: { from: 0, to: 100 }, text: "Hi." }],
+    });
+    expect(parsed.language).toBeUndefined();
+    expect(parsed.multilingualModel).toBeUndefined();
+  });
 });
 
 describe("classify", () => {

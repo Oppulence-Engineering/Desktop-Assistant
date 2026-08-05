@@ -52,7 +52,7 @@ oppulence-audiocap                ├─▶ note.ts ─▶ knowledge/Meetings/so
                             → meta.json
 ```
 
-**Two invariants worth keeping:**
+**Three invariants worth keeping:**
 
 1. **The filesystem is the state.** A session directory with `meta.json` and no
    `transcript.json` is pending work. There is no index, no in-memory job list, and
@@ -61,6 +61,10 @@ oppulence-audiocap                ├─▶ note.ts ─▶ knowledge/Meetings/so
    capture engines call it, because the note shape is a compatibility surface:
    `meeting:summarize` prepends above the fenced `transcript` block, the editor renders
    that block as a node, and note listing filters on `source: solomon`.
+3. **The app owns one region of a note; the user owns the rest.** See
+   [Note ownership](#note-ownership). A session writes its note twice and summarizes it
+   afterwards, and the note is open for typing the whole time — so no writer may rebuild
+   the body.
 
 ## Technical flows
 
@@ -175,17 +179,82 @@ Schemas: `packages/shared/src/ipc.ts` (`meeting:*` block). Payload types:
 `packages/shared/src/meetings.ts`. Handlers: `apps/main/src/ipc/meetings.ts`, spread
 into `registerIpcHandlers` in `apps/main/src/ipc.ts`.
 
+## Note ownership
+
+A meeting note is written **twice** — a placeholder at capture start, so there is
+something to open during the call, and again once the transcript lands — and summarized
+after that. It is open for typing the whole time. Every one of those writers used to
+rebuild the body, so notes taken _during_ a meeting were destroyed the moment the
+transcript arrived.
+
+The body is therefore split by two headings:
+
+```text
+# <title>
+
+## Meeting summary        <- the app owns everything down to the next heading
+> capture notices
+<summary, once one exists>
+
+## Notes                  <- the user owns everything from here to the transcript
+<whatever the user typed>
+
+<the fenced transcript block, always last>
+```
+
+```
+
+`applyGeneratedSection` (`@x/shared/meetings`) replaces only the first region;
+`writeMeetingNote` and `mergeSummaryIntoNote` both go through it, and the transcript
+block is re-appended last.
+
+**Headings, not HTML comments.** `<!-- generated:start -->` is the obvious delimiter and
+does not work: the editor serializes note bodies from the ProseMirror document
+(`serializeBlocksToMarkdown` in `markdown-editor.tsx`), whose node list has no comment
+node, and ProseMirror's DOM parser discards comments. The markers would survive on disk
+right up until the user edited the note in the app — the exact moment they are needed.
+Headings are first-class editor nodes.
+
+**Every ambiguity resolves toward keeping text**, because two summaries is a second of
+tidying and a deleted paragraph is not:
+
+- A note with no `## Meeting summary` — written before this existed — has its whole body
+  treated as the user's, and the region is inserted above it.
+- A region with no closing heading, because the user deleted `## Notes`, is *unclosed*:
+  the text under the summary cannot be told from the summary, so the region is treated as
+  unowned and kept whole.
+
+### Which file a session owns
+
+The path is derived from the meeting's title and date, so two meetings with the same
+title on one day derive the same one. `resolveMeetingNotePath` decides ownership from the
+`session_id` in a note's frontmatter, not position: a note this session already wrote
+wins over any free earlier candidate — otherwise deleting the meeting holding the plain
+path would strand the other one's note — and a note naming a *different* session is
+stepped around, to `<title>-<HHmm>.md` and then to the session id.
+
+A note naming **no** session is claimed rather than refused. Those are notes from before
+the native path recorded one, and every note the renderer engine writes; refusing them
+would break "open note" and "delete note" for those sessions.
+
+Only the frontmatter block is searched for `session_id`, and calendar titles are
+flattened onto one line before they reach it. Titles come from invites, so anyone who
+can send the user one controls that string — a newline in it would otherwise end the
+`title:` line and let an invite forge the field that decides which session owns a file.
+
 ## Session directory
 
 ```
+
 <WorkDir>/recordings/2026.07.29-1430/
-  mic.wav          your side — 16 kHz mono 16-bit PCM
-  system.wav       everything the Mac played — same format
-  meta.json        timings, per-track offset_ms, peak, silent flag, warnings
-  transcript.json  canonical: engine, model, timed speaker-tagged segments
-  transcript.md    the same transcript rendered for reading
-  transcribe.log   per-session progress and failures
-```
+mic.wav your side — 16 kHz mono 16-bit PCM
+system.wav everything the Mac played — same format
+meta.json timings, per-track offset_ms, peak, silent flag, warnings
+transcript.json canonical: engine, model, language, timed speaker-tagged segments
+transcript.md the same transcript rendered for reading
+transcribe.log per-session progress and failures
+
+````
 
 **16 kHz mono** because that is exactly what whisper.cpp consumes and there is no audio
 decoder anywhere in the repo. A higher-fidelity archive would buy nothing for
@@ -206,6 +275,31 @@ Transcription → **Meeting recording**.
 | `micVoiceProcessing` | `false`                | Echo cancellation. On with speakers, off with headphones |
 | `keepAudio`          | `untilTranscribed`     | `always` \| `untilTranscribed`                           |
 | `transcribeOnStop`   | `true`                 |                                                          |
+| `language`           | `auto`                 | Spoken language; see **Language** below                  |
+
+### Language
+
+Resolved **once per session**, not per transcription window. Transcription runs in
+10-minute chunks across two tracks, and the two-track design guarantees one track is
+usually near-silent — which is exactly where detection misfires. Detecting per window
+lets one meeting come back half French and half Portuguese. So the track with the most
+signal (`meta.tracks[].peak`, skipping `silent`) is transcribed first with `-l auto`, and
+whatever it reports is passed explicitly to every window after it, on both tracks.
+
+The queue reads this at job time like `model`, so changing the language and
+re-transcribing an existing recording applies it with no further plumbing.
+
+`transcript.json` records the **effective** language, not the requested one.
+whisper.cpp ignores `--language` on an English-only model and reports `en` regardless
+(`main: WARNING: model is not multilingual` on stderr), so recording the request would
+misreport exactly the case that went wrong. Settings warns before that happens and
+offers the multilingual sibling.
+
+**Parakeet cannot resolve `auto`.** Its sidecar reports no language at all — the JSON
+carries engine, model and segments — so a Parakeet session on `auto` leaves
+`transcript.language` unset and each window detects independently. An explicit language
+still reaches it via `--language`. Closing the gap means having the sidecar report a
+detected language.
 
 **Deletion always requires a transcript.** `untilTranscribed` keeps the audio when
 transcription failed, so a retry is possible — deleting it there would throw the meeting
@@ -253,7 +347,7 @@ for (const file of process.argv.slice(1)) {
 ./out/oppulence-audiocap record --out /tmp/s2 &
 sleep 5; kill -9 %1
 # both files still decode; the header says 0 bytes and core repairs it
-```
+````
 
 In a packaged app: start from the Meetings view, **talk over the other party
 deliberately**, stop. Assert both live meters rise and the note has interleaved
@@ -284,6 +378,8 @@ real input device.
 | Orphaned-session recovery          | `packages/core/src/meetings/recover.ts`                                                                       |
 | Whisper non-speech filter          | `packages/core/src/voice/whisper/non-speech.ts`                                                               |
 | Note writing + provenance          | `packages/core/src/meetings/note.ts`                                                                          |
+| Which note file a session owns     | `packages/core/src/meetings/note.ts` (`resolveMeetingNotePath`)                                               |
+| Generated-vs-user note regions     | `packages/shared/src/meetings.ts` (`applyGeneratedSection`)                                                   |
 | Engine fallback                    | `packages/core/src/meetings/fallback.ts`                                                                      |
 | Parakeet + codec sidecar clients   | `apps/main/src/meeting-engines.ts`                                                                            |
 | Audio retention + compression      | `packages/core/src/meetings/retention.ts`                                                                     |
@@ -298,6 +394,21 @@ real input device.
 
 - **The system tap is global.** Notification sounds and music land in `system.wav`.
   There is no per-process picker.
+- **No writer may rebuild a note's body.** The note is open for typing from capture start,
+  so `writeMeetingNote` and `mergeSummaryIntoNote` both replace only the generated region
+  (see [Note ownership](#note-ownership)). Rendering a fresh document and writing it is
+  what destroyed every note taken during a meeting.
+- **A calendar title is attacker-controlled.** It comes from an invite. It is flattened
+  onto one line before reaching frontmatter, because a newline in it ends the `title:`
+  line and turns the rest into frontmatter the app trusts — including `session_id`, which
+  decides which note belongs to which recording.
+- **Two meetings with the same title on one day derive the same note path.** Ownership is
+  resolved from the note's own `session_id`, never from position. If you add a caller that
+  derives a path with `meetingNotePath` directly instead of `resolveMeetingNotePath`, it
+  will overwrite the other meeting's note.
+- **The renderer capture path still derives note paths by title alone**
+  (`useMeetingTranscription.ts`), so two renderer meetings sharing a title on one day
+  still collide. It writes notes directly rather than through core.
 - **TCC follows the responsible app.** A command-line run can create the process tap
   successfully yet receive only zero samples when its terminal parent lacks the system
   audio usage description. Treat a zero track from a terminal run as inconclusive until

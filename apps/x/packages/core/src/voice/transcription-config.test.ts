@@ -414,6 +414,10 @@ describe("meetings settings block", () => {
       // whisper by default: parakeet is faster but needs a 600 MB download first.
       transcriptionEngine: "whisper",
       parakeetModel: "v3",
+      // Detect rather than assume. The old behaviour was no language at all, which the
+      // whisper runner turned into `-l en` — so a meeting held in any other language was
+      // transcribed as English with nothing to say it had happened.
+      language: "auto",
       transcribeOnStop: true,
       // Prompt, never silent: recording people is consent-shaped, and the notification
       // you can act on or ignore *is* the consent step. `always` has to be chosen.
@@ -445,6 +449,18 @@ describe("meetings settings block", () => {
     expect(cfg?.meetings.transcriptionEngine).toBe("parakeet");
     expect(cfg?.meetings.captureEngine).toBe("auto");
     expect(cfg?.meetings.keepAudio).toBe("untilTranscribed");
+  });
+
+  it("persists the meeting language and keeps it independent of dictation's", async () => {
+    // The two are separate on purpose: the language you dictate notes in and the one
+    // your meetings are held in are routinely different. A shared value would have made
+    // the meeting setting change under the user whenever they touched dictation.
+    await voice.setTranscriptionConfig({ meetings: { language: "fr" } });
+    await voice.setTranscriptionConfig({ dictation: { language: "de" } as never });
+
+    const cfg = await voice.readTranscriptionConfig();
+    expect(cfg?.meetings.language).toBe("fr");
+    expect(cfg?.meetings.captureEngine).toBe("auto");
   });
 
   it("merges a partial meetings patch without clobbering its siblings", async () => {

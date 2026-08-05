@@ -17,6 +17,7 @@ import type {
   MeetingTranscript,
   MeetingTranscriptSegment,
 } from "@x/shared/dist/meetings.js";
+import type { DictationLanguage } from "@x/shared/dist/language.js";
 import type { RelationshipLiveCue } from "@x/shared/dist/relationships.js";
 import {
   calendarEventFromMeta,
@@ -1398,6 +1399,11 @@ export class MeetingController {
       // Read at job time, not construction time, so switching models in settings
       // applies to the next session without a restart.
       model: () => this.modelId,
+      // Read at job time like `model`, so changing the language and re-transcribing an
+      // existing recording picks it up with no extra plumbing. Without this thunk the
+      // queue's `lang` stayed undefined and the whisper runner fell through to `-l en`,
+      // transcribing every meeting as English whatever was actually spoken.
+      lang: () => this.language,
       keepAudio: () => this.keepAudio,
       // Absent when the sidecar did not ship: retention then keeps the plain WAV
       // rather than failing to compress it.
@@ -1586,6 +1592,7 @@ export class MeetingController {
   private keepAudio: MeetingKeepAudio = "untilTranscribed";
   private transcriptionEngine: MeetingTranscriptionEngine = "whisper";
   private parakeetModel: ParakeetModel = "v3";
+  private language: DictationLanguage = "auto";
   private compressRetainedAudio = true;
 
   private async flushRelationshipEvidence(): Promise<RelationshipEvidenceFlushResult | undefined> {
@@ -1658,6 +1665,7 @@ export class MeetingController {
     const config = await getTranscriptionConfig();
     this.transcriptionEngine = config.meetings?.transcriptionEngine ?? this.transcriptionEngine;
     this.parakeetModel = config.meetings?.parakeetModel ?? this.parakeetModel;
+    this.language = config.meetings?.language ?? this.language;
     this.compressRetainedAudio =
       config.meetings?.compressRetainedAudio ?? this.compressRetainedAudio;
     this.modelId =

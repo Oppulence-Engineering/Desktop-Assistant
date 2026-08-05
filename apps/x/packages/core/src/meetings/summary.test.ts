@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { mergeSummaryIntoNote, transcriptTextFromNote } from "@x/shared/dist/meetings.js";
+import {
+  GENERATED_SECTION_HEADING,
+  USER_SECTION_HEADING,
+  mergeSummaryIntoNote,
+  transcriptTextFromNote,
+} from "@x/shared/dist/meetings.js";
 import { summarizeMeetingNote } from "./summary.js";
 import { sessionMeta } from "./factories.testkit.js";
 
@@ -101,7 +106,7 @@ describe("summarizeMeetingNote", () => {
 describe("mergeSummaryIntoNote", () => {
   it("strips the model's own heading, since the note already has a title", () => {
     const out = mergeSummaryIntoNote(NOTE, "# Quarterly review\n\n- point one");
-    expect(out).toContain("# Quarterly review\n\n- point one");
+    expect(out).toContain(`${GENERATED_SECTION_HEADING}\n\n- point one`);
     expect(out.match(/# Quarterly review/g)).toHaveLength(1);
   });
 
@@ -109,6 +114,109 @@ describe("mergeSummaryIntoNote", () => {
     const out = mergeSummaryIntoNote("---\ntitle: X\n---\n\n# X\n", "- a point");
     expect(out).toContain("- a point");
     expect(out).toContain("title: X");
+  });
+
+  /**
+   * The regression this half of the change exists for. `mergeSummaryIntoNote` used to
+   * rebuild the body from the title, the leading notices and the transcript block,
+   * throwing away everything in between — which is where anything the user typed lived.
+   */
+  describe("user-authored text", () => {
+    // The shape a note has during the call: generated region, then the user's section.
+    const withUserNotes = NOTE.replace(
+      "# Quarterly review\n",
+      [
+        "# Quarterly review",
+        "",
+        GENERATED_SECTION_HEADING,
+        "",
+        "> a notice",
+        "",
+        USER_SECTION_HEADING,
+        "",
+        "My own note.",
+        "",
+      ].join("\n"),
+    );
+
+    it("keeps text the user typed below the generated section", () => {
+      const out = mergeSummaryIntoNote(withUserNotes, "- We agreed on Friday.");
+      expect(out).toContain("My own note.");
+      expect(out).toContain("We agreed on Friday.");
+    });
+
+    it("keeps it across repeated summarization", () => {
+      let out = mergeSummaryIntoNote(withUserNotes, "- first pass");
+      out = mergeSummaryIntoNote(out, "- second pass");
+      expect(out).toContain("My own note.");
+      // Only the generated region is replaced, so the stale summary is gone.
+      expect(out).toContain("second pass");
+      expect(out).not.toContain("first pass");
+      // Exactly one generated region, no matter how many times this runs.
+      expect(out.match(new RegExp(GENERATED_SECTION_HEADING, "g"))).toHaveLength(1);
+    });
+
+    it("preserves the notice inside the region rather than dropping it", () => {
+      const out = mergeSummaryIntoNote(withUserNotes, "- a point");
+      expect(out).toContain("> a notice");
+    });
+
+    it("is idempotent — re-running with the same summary changes nothing", () => {
+      const once = mergeSummaryIntoNote(withUserNotes, "- a point");
+      expect(mergeSummaryIntoNote(once, "- a point")).toBe(once);
+    });
+
+    it("preserves the user's text when they deleted the heading that closes the region", () => {
+      // Without its closing heading the region runs to the transcript, so anything typed
+      // under the summary sits inside it and is indistinguishable from it. Replacing the
+      // region there would delete their text — the exact bug, one layer in — so an
+      // unclosed region is treated as unowned and kept whole.
+      const unclosed = withUserNotes.replace(`${USER_SECTION_HEADING}\n\n`, "");
+      const out = mergeSummaryIntoNote(unclosed, "- a point");
+      expect(out).toContain("My own note.");
+      expect(out).toContain("- a point");
+      // And it settles rather than growing on every pass.
+      const again = mergeSummaryIntoNote(out, "- a later point");
+      expect(again).toContain("My own note.");
+      expect(again).toContain("- a later point");
+    });
+
+    it("does not touch headings the user wrote themselves", () => {
+      const withOwnHeading = withUserNotes.replace(
+        "My own note.",
+        "## My agenda\n\nfirst point",
+      );
+      const out = mergeSummaryIntoNote(withOwnHeading, "- a point");
+      expect(out).toContain("## My agenda");
+      expect(out).toContain("first point");
+    });
+
+    it("keeps the transcript block last and unduplicated in every case", () => {
+      for (const note of [
+        withUserNotes,
+        withUserNotes.replace(`${USER_SECTION_HEADING}\n\n`, ""),
+        NOTE,
+      ]) {
+        const out = mergeSummaryIntoNote(note, "- a point");
+        expect(out.trimEnd().endsWith("```")).toBe(true);
+        expect(out.match(/```transcript/g)).toHaveLength(1);
+      }
+    });
+
+    it("loses nothing from a legacy note that has no generated section", () => {
+      // A note written before this change: summary and user text intermixed, no heading.
+      const legacy = NOTE.replace(
+        "# Quarterly review\n",
+        "# Quarterly review\n\n> a notice\n\nOld summary text.\n\nMy own note.\n",
+      );
+      const out = mergeSummaryIntoNote(legacy, "- brand new summary");
+      // Nothing is deleted — the old body is ambiguous, so it is all treated as the
+      // user's. Two summaries is recoverable; a deleted paragraph is not.
+      expect(out).toContain("Old summary text.");
+      expect(out).toContain("My own note.");
+      expect(out).toContain("brand new summary");
+      expect(out.trimEnd().endsWith("```")).toBe(true);
+    });
   });
 });
 
@@ -166,18 +274,46 @@ describe("mergeSummaryIntoNote keeps what the note claims about itself", () => {
     expect(merged.indexOf("> Two.")).toBeLessThan(merged.indexOf("Notes."));
   });
 
-  it("does not carry a previous summary forward", () => {
-    // Only the leading quotes are notices; prose below them is the old summary, which is
-    // precisely what a re-summarize is replacing.
-    const note = noteWith("> A notice.\n\nAn older summary that must not survive.");
+  it("replaces the previous summary when the note has a generated section", () => {
+    // The original intent of this test — a re-summarize replaces the old summary — still
+    // holds, and now holds precisely, because the boundary is explicit rather than
+    // guessed from where the blockquotes stop.
+    const note = noteWith(
+      [
+        GENERATED_SECTION_HEADING,
+        "",
+        "> A notice.",
+        "",
+        "An older summary that must not survive.",
+        "",
+        // The closing heading is what makes the region safe to replace.
+        USER_SECTION_HEADING,
+      ].join("\n"),
+    );
     const merged = mergeSummaryIntoNote(note, "The new summary.");
     expect(merged).toContain("> A notice.");
+    expect(merged).toContain("The new summary.");
     expect(merged).not.toContain("older summary");
   });
 
-  it("is unchanged for a note with no notices", () => {
+  it("keeps a previous summary in a legacy note, because it cannot tell it from the user's text", () => {
+    // Deliberate change of behaviour. A note written before generated sections existed
+    // has no boundary in it, so the old heuristic — "prose under the quotes is the
+    // summary" — was guessing, and it deleted anything the user had typed there. Keeping
+    // both is recoverable in a second; deleting a paragraph is not.
+    const note = noteWith("> A notice.\n\nAn older summary, indistinguishable from a user note.");
+    const merged = mergeSummaryIntoNote(note, "The new summary.");
+    expect(merged).toContain("> A notice.");
+    expect(merged).toContain("older summary");
+    expect(merged).toContain("The new summary.");
+  });
+
+  it("adds the generated section to a note that has none, without discarding its body", () => {
     const note = noteWith("Just a summary.");
     const merged = mergeSummaryIntoNote(note, "New summary.");
-    expect(merged).toContain("# Weekly sync\n\nNew summary.");
+    expect(merged).toContain(`# Weekly sync\n\n${GENERATED_SECTION_HEADING}\n\nNew summary.`);
+    expect(merged).toContain("Just a summary.");
+    // The carried body gets a heading in front of it so the next write cannot absorb it.
+    expect(merged).toContain(USER_SECTION_HEADING);
   });
 });

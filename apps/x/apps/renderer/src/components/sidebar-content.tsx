@@ -227,7 +227,7 @@ function formatSourceLag(seconds: number): string {
   return `${Math.floor(hours / 24)}d behind`;
 }
 
-function SyncStatusBar() {
+function SyncStatusBar({ voiceRecording }: { voiceRecording?: VoiceNoteStatus | null }) {
   const { state } = useSidebar();
   const [activeServices, setActiveServices] = useState<Map<string, string>>(new Map());
   const [serviceErrors, setServiceErrors] = useState<Map<string, string>>(new Map());
@@ -383,131 +383,171 @@ function SyncStatusBar() {
             : "Connect evidence sources";
 
   return (
-    <>
-      {isCollapsed && (isSyncing || hasSourceAttention || hasServiceErrors) && (
-        <div
-          className="fixed bottom-4 z-40 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background shadow-sm"
-          style={{ left: "0.5rem" }}
-          aria-label={statusLabel}
-        >
-          {isSyncing ? (
-            <LoaderIcon className="h-4 w-4 animate-spin text-muted-foreground" />
-          ) : (
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
+    <SidebarFooter className="border-t border-sidebar-border px-2 py-2">
+      {/* Collapsed-rail status stack. The quick-action row (and with it the mic
+            button) is hidden in the icon rail, so an in-flight recording surfaces
+            here — and stays stoppable — without expanding the sidebar. Laid out in
+            flow rather than as a fixed overlay: the rail's footer column is only
+            66px wide, so anything pinned to bottom-left covers the buttons already
+            sitting there ("Take a tour", and the status trigger below). */}
+      {isCollapsed && (voiceRecording || isSyncing || hasSourceAttention || hasServiceErrors) && (
+        <div className="flex flex-col items-center gap-2 pb-1" data-slot="sidebar-rail-status">
+          {voiceRecording?.phase === "recording" && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={voiceRecording.stop}
+                  aria-label="Stop recording"
+                  className="flex h-8 w-8 items-center justify-center border border-border bg-background hover:bg-sidebar-accent"
+                >
+                  <Square className="h-3.5 w-3.5 animate-pulse fill-red-500 text-red-500" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Stop recording</TooltipContent>
+            </Tooltip>
+          )}
+          {voiceRecording?.phase === "transcribing" && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {/* A mic rather than a spinner, so it is not mistaken for the sync
+                    pill directly below it. Not a button — the audio is already
+                    submitted, so there is nothing left to cancel. */}
+                <div
+                  role="status"
+                  aria-label="Transcribing voice note"
+                  className="flex h-8 w-8 items-center justify-center border border-border bg-background"
+                >
+                  <Mic className="h-4 w-4 animate-pulse text-red-500" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">Transcribing…</TooltipContent>
+            </Tooltip>
+          )}
+          {(isSyncing || hasSourceAttention || hasServiceErrors) && (
+            <div
+              role="status"
+              aria-label={statusLabel}
+              className="flex h-8 w-8 items-center justify-center border border-border bg-background"
+            >
+              {isSyncing ? (
+                <LoaderIcon className="h-4 w-4 animate-spin text-muted-foreground" />
+              ) : (
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+              )}
+            </div>
           )}
         </div>
       )}
-      <SidebarFooter className="border-t border-sidebar-border px-2 py-2">
-        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className={cn(
-                "flex w-full items-center justify-between rounded-none px-2 py-1 text-xs hover:bg-sidebar-accent",
-                (hasSourceAttention || hasServiceErrors) && !isSyncing
-                  ? "text-amber-700 dark:text-amber-400"
-                  : "text-muted-foreground",
-              )}
-            >
-              <span className="flex items-center gap-2 min-w-0">
-                {isSyncing ? (
-                  <LoaderIcon className="h-3 w-3 shrink-0 animate-spin" />
-                ) : hasSourceAttention || hasServiceErrors ? (
-                  <AlertTriangle className="h-3 w-3 shrink-0" />
-                ) : (
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/60" />
-                )}
-                <span className="truncate">{statusLabel}</span>
-              </span>
-              <ChevronRight className="h-3 w-3 shrink-0" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent side="right" align="end" sideOffset={4} className="w-96 p-0">
-            <div className="p-3 border-b">
-              <h4 className="font-semibold text-sm">Data health</h4>
-              <p className="text-xs text-muted-foreground mt-0.5">{statusLabel}</p>
-            </div>
-            <div className="max-h-80 overflow-y-auto p-2">
-              {relationshipSources.length > 0 ? (
-                <div className="mb-2 space-y-1" aria-label="Evidence source health">
-                  {relationshipSources.map((source) => (
-                    <div
-                      key={`${source.source}:${source.sourceAccountId}`}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-border px-2.5 py-2"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-xs font-medium capitalize">{source.source}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {relationshipSourceStatusLabel(source)} ·{" "}
-                          {formatSourceLag(source.lagSeconds)}
-                        </p>
-                      </div>
-                      {source.missingScopes.length > 0 ? (
-                        <span className="shrink-0 text-xs text-amber-700 dark:text-amber-400">
-                          Permission needed
-                        </span>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-              {logLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <LoaderIcon className="h-4 w-4 animate-spin text-muted-foreground" />
-                </div>
-              ) : visibleLogEvents.length === 0 ? (
-                <div className="py-4 text-center text-xs text-muted-foreground">
-                  {relationshipSources.length === 0
-                    ? "Connect Google, Slack, or HubSpot to build relationship evidence."
-                    : "No recent source activity."}
-                </div>
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              "flex w-full items-center justify-between rounded-none px-2 py-1 text-xs hover:bg-sidebar-accent",
+              (hasSourceAttention || hasServiceErrors) && !isSyncing
+                ? "text-amber-700 dark:text-amber-400"
+                : "text-muted-foreground",
+            )}
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              {isSyncing ? (
+                <LoaderIcon className="h-3 w-3 shrink-0 animate-spin" />
+              ) : hasSourceAttention || hasServiceErrors ? (
+                <AlertTriangle className="h-3 w-3 shrink-0" />
               ) : (
-                <div className="space-y-0.5 border-t border-border pt-2">
-                  <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">
-                    Recent source activity
-                  </p>
-                  {visibleLogEvents.slice(0, 20).map((event, idx) => (
-                    <div
-                      key={`${event.runId}-${event.ts}-${idx}`}
-                      className="flex items-start gap-2 rounded-none px-2 py-1 text-xs hover:bg-accent"
-                    >
-                      <span className="shrink-0 text-[10px] leading-4 text-muted-foreground/70">
-                        {formatEventTime(event.ts)}
-                      </span>
-                      <span className="shrink-0">
-                        <span
-                          className={cn(
-                            "inline-block rounded-md px-1 py-0.5 text-[10px] font-medium leading-none",
-                            event.level === "error"
-                              ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                              : event.level === "warn"
-                                ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                                : "bg-muted text-muted-foreground",
-                          )}
-                        >
-                          {SERVICE_LABELS[event.service]?.split(" ").slice(-1)[0] || event.service}
-                        </span>
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="leading-4 text-foreground/80">{event.message}</p>
-                        {event.type === "error" && (
-                          <p
-                            className="truncate text-[11px] leading-4 text-red-600/90 dark:text-red-400/90"
-                            title={event.error}
-                          >
-                            {summarizeServiceError(event.error)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/60" />
               )}
-            </div>
-          </PopoverContent>
-        </Popover>
-      </SidebarFooter>
-    </>
+              <span className="truncate">{statusLabel}</span>
+            </span>
+            <ChevronRight className="h-3 w-3 shrink-0" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent side="right" align="end" sideOffset={4} className="w-96 p-0">
+          <div className="p-3 border-b">
+            <h4 className="font-semibold text-sm">Data health</h4>
+            <p className="text-xs text-muted-foreground mt-0.5">{statusLabel}</p>
+          </div>
+          <div className="max-h-80 overflow-y-auto p-2">
+            {relationshipSources.length > 0 ? (
+              <div className="mb-2 space-y-1" aria-label="Evidence source health">
+                {relationshipSources.map((source) => (
+                  <div
+                    key={`${source.source}:${source.sourceAccountId}`}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-border px-2.5 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium capitalize">{source.source}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {relationshipSourceStatusLabel(source)} ·{" "}
+                        {formatSourceLag(source.lagSeconds)}
+                      </p>
+                    </div>
+                    {source.missingScopes.length > 0 ? (
+                      <span className="shrink-0 text-xs text-amber-700 dark:text-amber-400">
+                        Permission needed
+                      </span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {logLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <LoaderIcon className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            ) : visibleLogEvents.length === 0 ? (
+              <div className="py-4 text-center text-xs text-muted-foreground">
+                {relationshipSources.length === 0
+                  ? "Connect Google, Slack, or HubSpot to build relationship evidence."
+                  : "No recent source activity."}
+              </div>
+            ) : (
+              <div className="space-y-0.5 border-t border-border pt-2">
+                <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">
+                  Recent source activity
+                </p>
+                {visibleLogEvents.slice(0, 20).map((event, idx) => (
+                  <div
+                    key={`${event.runId}-${event.ts}-${idx}`}
+                    className="flex items-start gap-2 rounded-none px-2 py-1 text-xs hover:bg-accent"
+                  >
+                    <span className="shrink-0 text-[10px] leading-4 text-muted-foreground/70">
+                      {formatEventTime(event.ts)}
+                    </span>
+                    <span className="shrink-0">
+                      <span
+                        className={cn(
+                          "inline-block rounded-md px-1 py-0.5 text-[10px] font-medium leading-none",
+                          event.level === "error"
+                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                            : event.level === "warn"
+                              ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                              : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {SERVICE_LABELS[event.service]?.split(" ").slice(-1)[0] || event.service}
+                      </span>
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="leading-4 text-foreground/80">{event.message}</p>
+                      {event.type === "error" && (
+                        <p
+                          className="truncate text-[11px] leading-4 text-red-600/90 dark:text-red-400/90"
+                          title={event.error}
+                        >
+                          {summarizeServiceError(event.error)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </SidebarFooter>
   );
 }
 
@@ -546,6 +586,7 @@ export function SidebarContentPanel({
   const { billing } = useBilling(isSolomonConnected);
   const { state: sidebarState } = useSidebar();
   const isCollapsed = sidebarState === "collapsed";
+  const [voiceRecording, setVoiceRecording] = useState<VoiceNoteStatus | null>(null);
 
   // Nav previews: unread important emails + next upcoming meetings (top 2 each).
   const [unreadEmailCount, setUnreadEmailCount] = useState(0);
@@ -879,17 +920,38 @@ export function SidebarContentPanel({
   return (
     <Sidebar className="rowboat-sidebar border-r-0" variant="inset" collapsible="icon" {...props}>
       <SidebarHeader className="titlebar-drag-region shrink-0 p-0">
-        {/* Keep the sidebar toggle and quick actions in one compact chrome row. */}
-        <div className="titlebar-no-drag flex h-10 items-center gap-2 pr-2">
-          <SidebarTrigger className="-ml-2 size-8 shrink-0 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" />
-          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+        {/* Keep the sidebar toggle and quick actions in one compact chrome row.
+            The icon rail leaves ~50px of content box — the actions cannot fit and
+            would spill out over the content header — so only the toggle survives
+            there, centered. overflow-hidden is the structural guard. */}
+        <div
+          className={cn(
+            "titlebar-no-drag flex h-10 items-center overflow-hidden",
+            isCollapsed ? "justify-center" : "gap-2 pr-2",
+          )}
+        >
+          <SidebarTrigger
+            className={cn(
+              "size-8 shrink-0 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              !isCollapsed && "-ml-2",
+            )}
+          />
+          {/* Hidden, not unmounted: VoiceNoteButton cancels any in-flight recording
+              in its unmount cleanup, so tearing this down on collapse would discard
+              the audio and strand the note at "Recording in progress". display:none
+              contributes no width, so the row still cannot overflow the rail. */}
+          <div className={cn("flex min-w-0 flex-1 items-center gap-1.5", isCollapsed && "hidden")}>
             {onNewChat && <ActionButton icon={SquarePen} label="New chat" onClick={onNewChat} />}
             <ActionButton
               icon={FilePlus}
               label="New note"
               onClick={() => knowledgeActions.createNote()}
             />
-            <VoiceNoteButton onNoteCreated={onVoiceNoteCreated} variant="action" />
+            <VoiceNoteButton
+              onNoteCreated={onVoiceNoteCreated}
+              variant="action"
+              onRecordingChange={setVoiceRecording}
+            />
             {onToggleBrowser && (
               <ActionButton icon={Globe} label="Run browser task" onClick={onToggleBrowser} />
             )}
@@ -904,6 +966,7 @@ export function SidebarContentPanel({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={activeNav === "home"}
+                  tooltip="Home"
                   onClick={onOpenHome}
                   data-tour-target="home"
                 >
@@ -914,6 +977,7 @@ export function SidebarContentPanel({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={activeNav === "accounts"}
+                  tooltip="Accounts"
                   onClick={() => onOpenRelationships?.("accounts")}
                   className="h-auto py-1.5"
                   data-tour-target="accounts"
@@ -930,6 +994,7 @@ export function SidebarContentPanel({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={activeNav === "attention"}
+                  tooltip="Attention queue"
                   onClick={() => onOpenRelationships?.("attention")}
                   className="h-auto py-1.5"
                   data-tour-target="attention-nav"
@@ -946,6 +1011,7 @@ export function SidebarContentPanel({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={activeNav === "email"}
+                  tooltip="Evidence inbox"
                   onClick={() => onOpenEmail?.()}
                   className={previewEmail ? "h-auto py-1.5" : undefined}
                   data-tour-target="evidence-inbox"
@@ -969,6 +1035,7 @@ export function SidebarContentPanel({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={activeNav === "meetings"}
+                  tooltip="Meetings"
                   onClick={onOpenMeetings}
                   className={meetingSublabel ? "h-auto py-1.5" : undefined}
                   data-tour-target="meetings"
@@ -1067,6 +1134,7 @@ export function SidebarContentPanel({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={activeNav === "knowledge"}
+                  tooltip="Evidence graph"
                   onClick={() => knowledgeActions.openKnowledgeView()}
                   className={knowledgeUpdatedLabel ? "h-auto py-1.5" : undefined}
                   data-tour-target="evidence-nav"
@@ -1090,6 +1158,7 @@ export function SidebarContentPanel({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={activeNav === "agents"}
+                  tooltip="Actions"
                   onClick={onOpenBgTasks}
                   className={bgAgentsLabel ? "h-auto py-1.5" : undefined}
                   data-tour-target="actions"
@@ -1115,6 +1184,7 @@ export function SidebarContentPanel({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={activeNav === "workspaces"}
+                  tooltip="Workspaces"
                   onClick={() => knowledgeActions.openWorkspaceAt()}
                   className="h-auto py-1.5"
                 >
@@ -1334,23 +1404,39 @@ export function SidebarContentPanel({
         open={connectionsSettingsOpen}
         onOpenChange={setConnectionsSettingsOpen}
       />
-      <SyncStatusBar />
+      <SyncStatusBar voiceRecording={voiceRecording} />
       <SidebarRail />
     </Sidebar>
   );
 }
 
+/**
+ * Live phase of a voice note. `stop` is present only while recording — once the
+ * audio is submitted there is nothing left to cancel, so the surface showing it
+ * must render a non-interactive indicator instead.
+ */
+export type VoiceNoteStatus = { phase: "recording"; stop: () => void } | { phase: "transcribing" };
+
 // Voice Note Recording Button
 export function VoiceNoteButton({
   onNoteCreated,
   variant = "icon",
+  onRecordingChange,
 }: {
   onNoteCreated?: (path: string) => void;
   variant?: "icon" | "action";
+  /**
+   * Published whenever the voice-note phase changes, carrying a stop handler
+   * only while a recording is live. Lets a surface that stays visible when this
+   * button is hidden (the collapsed rail's status pill) mirror the phase and end
+   * the recording.
+   */
+  onRecordingChange?: (status: VoiceNoteStatus | null) => void;
 }) {
   const voice = useVoiceMode();
   const [isRecording, setIsRecording] = React.useState(false);
   const [available, setAvailable] = React.useState(false);
+  const isTranscribing = voice.state === "transcribing";
   const notePathRef = React.useRef<string | null>(null);
   const relativePathRef = React.useRef<string | null>(null);
   const recordedAtRef = React.useRef<string | null>(null);
@@ -1360,6 +1446,21 @@ export function VoiceNoteButton({
   React.useEffect(() => {
     onNoteCreatedRef.current = onNoteCreated;
   }, [onNoteCreated]);
+  const onRecordingChangeRef = React.useRef(onRecordingChange);
+  React.useEffect(() => {
+    onRecordingChangeRef.current = onRecordingChange;
+  }, [onRecordingChange]);
+  const stopRecordingRef = React.useRef<(() => void) | null>(null);
+  const stoppingRef = React.useRef(false);
+  // The mount effect's cleanup needs the recording state and note writer as they
+  // are at unmount, not as they were on mount.
+  const isRecordingRef = React.useRef(false);
+  React.useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
+  const writeCurrentNoteRef = React.useRef<
+    ((body: string, provider?: TranscriptionProvider) => Promise<void>) | null
+  >(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -1380,6 +1481,17 @@ export function VoiceNoteButton({
     return () => {
       cancelled = true;
       window.removeEventListener("transcription-config-changed", onConfigChanged);
+      // Unmounting mid-recording discards the audio (voice.cancel clears the PCM
+      // buffer). Without this the note stays at "*Recording in progress...*"
+      // forever with no hint anything went wrong. Reached by navigating away from
+      // the Knowledge view, whose copy of this button unmounts with it. The IPC
+      // write is fire-and-forget but survives — it is handled in the main process.
+      if (isRecordingRef.current) {
+        void writeCurrentNoteRef.current?.(
+          "*Recording was interrupted before it could be transcribed.*",
+          "none",
+        );
+      }
       voice.cancel();
     };
   }, [voice.cancel, voice.warmup]);
@@ -1502,10 +1614,43 @@ ${body}
     }
   };
 
+  // Publish the live recording handle so the collapsed rail's status pill can
+  // show it and stop it while this button is hidden. The published closure reads
+  // stopRecordingRef at click time, so it never calls a stale handler; the
+  // unmount clear stops one outliving this button.
+  React.useEffect(() => {
+    stopRecordingRef.current = stopRecording;
+    writeCurrentNoteRef.current = writeCurrentNote;
+  });
+  React.useEffect(() => {
+    if (isRecording) {
+      // stoppingRef makes the published handler idempotent. The button guards
+      // re-entry with `disabled` once voice.state flips to "transcribing", but
+      // that lags a frame — without this, a double-click on the pill submits
+      // twice and the second (empty) submit overwrites the transcript with a
+      // failure message.
+      stoppingRef.current = false;
+      onRecordingChangeRef.current?.({
+        phase: "recording",
+        stop: () => {
+          if (stoppingRef.current) return;
+          stoppingRef.current = true;
+          void stopRecordingRef.current?.();
+        },
+      });
+      return;
+    }
+    // Transcription runs for seconds after the audio stops. Keep publishing so
+    // the rail keeps showing the voice note is still working, with no stop
+    // handler — there is nothing left to cancel at that point.
+    onRecordingChangeRef.current?.(isTranscribing ? { phase: "transcribing" } : null);
+  }, [isRecording, isTranscribing]);
+  React.useEffect(() => () => onRecordingChangeRef.current?.(null), []);
+
   if (!available) return null;
 
   const actionClass =
-    "flex h-9 flex-1 items-center justify-center rounded-none border border-sidebar-border text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors";
+    "flex h-9 min-w-0 flex-1 items-center justify-center rounded-none border border-sidebar-border text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors";
   const iconClass =
     "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent rounded-none p-1.5 transition-colors";
 
@@ -1559,7 +1704,7 @@ function ActionButton({
           type="button"
           onClick={onClick}
           aria-label={label}
-          className="flex h-9 flex-1 items-center justify-center rounded-none border border-sidebar-border text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+          className="flex h-9 min-w-0 flex-1 items-center justify-center rounded-none border border-sidebar-border text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
         >
           <Icon className="size-4" />
         </button>
