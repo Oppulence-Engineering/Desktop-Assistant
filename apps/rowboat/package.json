@@ -13,7 +13,8 @@
     "rag-worker": "tsx app/scripts/rag-worker.ts",
     "jobs-worker": "tsx app/scripts/jobs-worker.ts",
     "mongodb-drop-indexes": "tsx app/scripts/mongodb-drop-indexes.ts",
-    "mongodb-ensure-indexes": "tsx app/scripts/mongodb-ensure-indexes.ts"
+    "mongodb-ensure-indexes": "tsx app/scripts/mongodb-ensure-indexes.ts",
+    "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.65",
@@ -73,16 +74,12 @@
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "@types/redis": "^4.0.11",
+    "@typescript/native-preview": "^7.0.0-dev.20260707.2",
     "eslint": "^9",
     "eslint-config-next": "^16.3.0",
     "postcss": "8.5.15",
     "tailwindcss": "^4.1.10",
     "tsx": "^4.19.1",
-    "typescript": "^5"
-  },
-  "overrides": {
-    "@types/react": "19.2.15",
-    "@types/react-dom": "19.2.3",
-    "postcss": "8.5.15"
+    "typescript": "^5.9.3"
   }
 }

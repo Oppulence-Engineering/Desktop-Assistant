@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { CurrentYear } from "./current-year";
+
 /**
  * One legal section: a heading followed by body blocks. A string block is a
  * paragraph; a string[] block renders as a bullet list.
@@ -82,7 +84,9 @@ export function LegalDocument({
 
       <footer className="border-t">
         <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-muted-foreground sm:flex-row">
-          <span className="font-mono text-xs">© {new Date().getFullYear()} Oppulence</span>
+          <span className="font-mono text-xs">
+            © <CurrentYear /> Oppulence
+          </span>
           <div className="flex items-center gap-5">
             <Link
               className="underline-offset-4 hover:text-foreground hover:underline"

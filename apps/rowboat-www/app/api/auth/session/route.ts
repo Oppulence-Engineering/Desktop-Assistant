@@ -3,9 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { clearAuthCookies, readSessionCookie, setSessionCookie } from "@/lib/auth/cookies";
 import { fetchViewer, refreshWorkOSSession, shouldRefreshSession } from "@/lib/auth/rowboat-api";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 export async function GET(request: NextRequest) {
   let session = readSessionCookie(request);
   if (!session) {
