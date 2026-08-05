@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
@@ -41,6 +42,7 @@ type RelationshipParticipant struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RelationshipParticipantQuery when eager-loading is set.
 	Edges                          RelationshipParticipantEdges `json:"edges"`
+	person_id                      *uuid.UUID
 	relationship_id                *uuid.UUID
 	revenue_workspace_id           *uuid.UUID
 	user_relationship_participants *uuid.UUID
@@ -55,11 +57,13 @@ type RelationshipParticipantEdges struct {
 	Relationship *Relationship `json:"relationship,omitempty"`
 	// User holds the value of the user edge.
 	User *User `json:"user,omitempty"`
+	// Person holds the value of the person edge.
+	Person *Person `json:"person,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 	// totalCount holds the count of the edges above.
-	totalCount [3]map[string]int
+	totalCount [4]map[string]int
 }
 
 // WorkspaceOrErr returns the Workspace value or an error if the edge
@@ -95,6 +99,17 @@ func (e RelationshipParticipantEdges) UserOrErr() (*User, error) {
 	return nil, &NotLoadedError{edge: "user"}
 }
 
+// PersonOrErr returns the Person value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e RelationshipParticipantEdges) PersonOrErr() (*Person, error) {
+	if e.Person != nil {
+		return e.Person, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: person.Label}
+	}
+	return nil, &NotLoadedError{edge: "person"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*RelationshipParticipant) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -110,11 +125,13 @@ func (*RelationshipParticipant) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullTime)
 		case relationshipparticipant.FieldID:
 			values[i] = new(uuid.UUID)
-		case relationshipparticipant.ForeignKeys[0]: // relationship_id
+		case relationshipparticipant.ForeignKeys[0]: // person_id
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case relationshipparticipant.ForeignKeys[1]: // revenue_workspace_id
+		case relationshipparticipant.ForeignKeys[1]: // relationship_id
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case relationshipparticipant.ForeignKeys[2]: // user_relationship_participants
+		case relationshipparticipant.ForeignKeys[2]: // revenue_workspace_id
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case relationshipparticipant.ForeignKeys[3]: // user_relationship_participants
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -189,19 +206,26 @@ func (_m *RelationshipParticipant) assignValues(columns []string, values []any) 
 			}
 		case relationshipparticipant.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field person_id", values[i])
+			} else if value.Valid {
+				_m.person_id = new(uuid.UUID)
+				*_m.person_id = *value.S.(*uuid.UUID)
+			}
+		case relationshipparticipant.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field relationship_id", values[i])
 			} else if value.Valid {
 				_m.relationship_id = new(uuid.UUID)
 				*_m.relationship_id = *value.S.(*uuid.UUID)
 			}
-		case relationshipparticipant.ForeignKeys[1]:
+		case relationshipparticipant.ForeignKeys[2]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field revenue_workspace_id", values[i])
 			} else if value.Valid {
 				_m.revenue_workspace_id = new(uuid.UUID)
 				*_m.revenue_workspace_id = *value.S.(*uuid.UUID)
 			}
-		case relationshipparticipant.ForeignKeys[2]:
+		case relationshipparticipant.ForeignKeys[3]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field user_relationship_participants", values[i])
 			} else if value.Valid {
@@ -234,6 +258,11 @@ func (_m *RelationshipParticipant) QueryRelationship() *RelationshipQuery {
 // QueryUser queries the "user" edge of the RelationshipParticipant entity.
 func (_m *RelationshipParticipant) QueryUser() *UserQuery {
 	return NewRelationshipParticipantClient(_m.config).QueryUser(_m)
+}
+
+// QueryPerson queries the "person" edge of the RelationshipParticipant entity.
+func (_m *RelationshipParticipant) QueryPerson() *PersonQuery {
+	return NewRelationshipParticipantClient(_m.config).QueryPerson(_m)
 }
 
 // Update returns a builder for updating this RelationshipParticipant.

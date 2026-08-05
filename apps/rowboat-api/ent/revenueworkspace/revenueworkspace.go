@@ -91,6 +91,16 @@ const (
 	EdgeRelationshipStateSnapshots = "relationship_state_snapshots"
 	// EdgeRelationshipSourceStatuses holds the string denoting the relationship_source_statuses edge name in mutations.
 	EdgeRelationshipSourceStatuses = "relationship_source_statuses"
+	// EdgeRelationshipPersons holds the string denoting the relationship_persons edge name in mutations.
+	EdgeRelationshipPersons = "relationship_persons"
+	// EdgePersonIdentities holds the string denoting the person_identities edge name in mutations.
+	EdgePersonIdentities = "person_identities"
+	// EdgePersonAttributes holds the string denoting the person_attributes edge name in mutations.
+	EdgePersonAttributes = "person_attributes"
+	// EdgePersonInteractionStats holds the string denoting the person_interaction_stats edge name in mutations.
+	EdgePersonInteractionStats = "person_interaction_stats"
+	// EdgePersonMergeCandidates holds the string denoting the person_merge_candidates edge name in mutations.
+	EdgePersonMergeCandidates = "person_merge_candidates"
 	// Table holds the table name of the revenueworkspace in the database.
 	Table = "revenue_workspaces"
 	// UserTable is the table that holds the user relation/edge.
@@ -289,6 +299,41 @@ const (
 	RelationshipSourceStatusesInverseTable = "relationship_source_status"
 	// RelationshipSourceStatusesColumn is the table column denoting the relationship_source_statuses relation/edge.
 	RelationshipSourceStatusesColumn = "revenue_workspace_id"
+	// RelationshipPersonsTable is the table that holds the relationship_persons relation/edge.
+	RelationshipPersonsTable = "relationship_persons"
+	// RelationshipPersonsInverseTable is the table name for the Person entity.
+	// It exists in this package in order to avoid circular dependency with the "person" package.
+	RelationshipPersonsInverseTable = "relationship_persons"
+	// RelationshipPersonsColumn is the table column denoting the relationship_persons relation/edge.
+	RelationshipPersonsColumn = "revenue_workspace_id"
+	// PersonIdentitiesTable is the table that holds the person_identities relation/edge.
+	PersonIdentitiesTable = "person_identities"
+	// PersonIdentitiesInverseTable is the table name for the PersonIdentity entity.
+	// It exists in this package in order to avoid circular dependency with the "personidentity" package.
+	PersonIdentitiesInverseTable = "person_identities"
+	// PersonIdentitiesColumn is the table column denoting the person_identities relation/edge.
+	PersonIdentitiesColumn = "revenue_workspace_id"
+	// PersonAttributesTable is the table that holds the person_attributes relation/edge.
+	PersonAttributesTable = "person_attributes"
+	// PersonAttributesInverseTable is the table name for the PersonAttribute entity.
+	// It exists in this package in order to avoid circular dependency with the "personattribute" package.
+	PersonAttributesInverseTable = "person_attributes"
+	// PersonAttributesColumn is the table column denoting the person_attributes relation/edge.
+	PersonAttributesColumn = "revenue_workspace_id"
+	// PersonInteractionStatsTable is the table that holds the person_interaction_stats relation/edge.
+	PersonInteractionStatsTable = "person_interaction_stats"
+	// PersonInteractionStatsInverseTable is the table name for the PersonInteractionStat entity.
+	// It exists in this package in order to avoid circular dependency with the "personinteractionstat" package.
+	PersonInteractionStatsInverseTable = "person_interaction_stats"
+	// PersonInteractionStatsColumn is the table column denoting the person_interaction_stats relation/edge.
+	PersonInteractionStatsColumn = "revenue_workspace_id"
+	// PersonMergeCandidatesTable is the table that holds the person_merge_candidates relation/edge.
+	PersonMergeCandidatesTable = "person_merge_candidates"
+	// PersonMergeCandidatesInverseTable is the table name for the PersonMergeCandidate entity.
+	// It exists in this package in order to avoid circular dependency with the "personmergecandidate" package.
+	PersonMergeCandidatesInverseTable = "person_merge_candidates"
+	// PersonMergeCandidatesColumn is the table column denoting the person_merge_candidates relation/edge.
+	PersonMergeCandidatesColumn = "revenue_workspace_id"
 )
 
 // Columns holds all SQL columns for revenueworkspace fields.
@@ -788,6 +833,76 @@ func ByRelationshipSourceStatuses(term sql.OrderTerm, terms ...sql.OrderTerm) Or
 		sqlgraph.OrderByNeighborTerms(s, newRelationshipSourceStatusesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByRelationshipPersonsCount orders the results by relationship_persons count.
+func ByRelationshipPersonsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipPersonsStep(), opts...)
+	}
+}
+
+// ByRelationshipPersons orders the results by relationship_persons terms.
+func ByRelationshipPersons(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipPersonsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByPersonIdentitiesCount orders the results by person_identities count.
+func ByPersonIdentitiesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPersonIdentitiesStep(), opts...)
+	}
+}
+
+// ByPersonIdentities orders the results by person_identities terms.
+func ByPersonIdentities(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPersonIdentitiesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByPersonAttributesCount orders the results by person_attributes count.
+func ByPersonAttributesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPersonAttributesStep(), opts...)
+	}
+}
+
+// ByPersonAttributes orders the results by person_attributes terms.
+func ByPersonAttributes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPersonAttributesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByPersonInteractionStatsCount orders the results by person_interaction_stats count.
+func ByPersonInteractionStatsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPersonInteractionStatsStep(), opts...)
+	}
+}
+
+// ByPersonInteractionStats orders the results by person_interaction_stats terms.
+func ByPersonInteractionStats(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPersonInteractionStatsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByPersonMergeCandidatesCount orders the results by person_merge_candidates count.
+func ByPersonMergeCandidatesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPersonMergeCandidatesStep(), opts...)
+	}
+}
+
+// ByPersonMergeCandidates orders the results by person_merge_candidates terms.
+func ByPersonMergeCandidates(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPersonMergeCandidatesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -982,5 +1097,40 @@ func newRelationshipSourceStatusesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RelationshipSourceStatusesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipSourceStatusesTable, RelationshipSourceStatusesColumn),
+	)
+}
+func newRelationshipPersonsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipPersonsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipPersonsTable, RelationshipPersonsColumn),
+	)
+}
+func newPersonIdentitiesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PersonIdentitiesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, PersonIdentitiesTable, PersonIdentitiesColumn),
+	)
+}
+func newPersonAttributesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PersonAttributesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, PersonAttributesTable, PersonAttributesColumn),
+	)
+}
+func newPersonInteractionStatsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PersonInteractionStatsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, PersonInteractionStatsTable, PersonInteractionStatsColumn),
+	)
+}
+func newPersonMergeCandidatesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PersonMergeCandidatesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, PersonMergeCandidatesTable, PersonMergeCandidatesColumn),
 	)
 }

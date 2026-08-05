@@ -111,6 +111,21 @@ type OAuthConnectionHistory func(*sql.Selector)
 // OAuthPending is the predicate function for oauthpending builders.
 type OAuthPending func(*sql.Selector)
 
+// Person is the predicate function for person builders.
+type Person func(*sql.Selector)
+
+// PersonAttribute is the predicate function for personattribute builders.
+type PersonAttribute func(*sql.Selector)
+
+// PersonIdentity is the predicate function for personidentity builders.
+type PersonIdentity func(*sql.Selector)
+
+// PersonInteractionStat is the predicate function for personinteractionstat builders.
+type PersonInteractionStat func(*sql.Selector)
+
+// PersonMergeCandidate is the predicate function for personmergecandidate builders.
+type PersonMergeCandidate func(*sql.Selector)
+
 // PolicyDecisionSnapshot is the predicate function for policydecisionsnapshot builders.
 type PolicyDecisionSnapshot func(*sql.Selector)
 

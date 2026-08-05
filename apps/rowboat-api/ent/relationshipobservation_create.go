@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
@@ -228,6 +229,21 @@ func (_c *RelationshipObservationCreate) AddAssertions(v ...*RelationshipAsserti
 		ids[i] = v[i].ID
 	}
 	return _c.AddAssertionIDs(ids...)
+}
+
+// AddPersonAttributeIDs adds the "person_attributes" edge to the PersonAttribute entity by IDs.
+func (_c *RelationshipObservationCreate) AddPersonAttributeIDs(ids ...uuid.UUID) *RelationshipObservationCreate {
+	_c.mutation.AddPersonAttributeIDs(ids...)
+	return _c
+}
+
+// AddPersonAttributes adds the "person_attributes" edges to the PersonAttribute entity.
+func (_c *RelationshipObservationCreate) AddPersonAttributes(v ...*PersonAttribute) *RelationshipObservationCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddPersonAttributeIDs(ids...)
 }
 
 // Mutation returns the RelationshipObservationMutation object of the builder.
@@ -512,6 +528,22 @@ func (_c *RelationshipObservationCreate) createSpec() (*RelationshipObservation,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipassertion.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PersonAttributesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationshipobservation.PersonAttributesTable,
+			Columns: []string{relationshipobservation.PersonAttributesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personattribute.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -24,18 +25,20 @@ import (
 // RelationshipObservationQuery is the builder for querying RelationshipObservation entities.
 type RelationshipObservationQuery struct {
 	config
-	ctx                 *QueryContext
-	order               []relationshipobservation.OrderOption
-	inters              []Interceptor
-	predicates          []predicate.RelationshipObservation
-	withWorkspace       *RevenueWorkspaceQuery
-	withRelationship    *RelationshipQuery
-	withUser            *UserQuery
-	withAssertions      *RelationshipAssertionQuery
-	withFKs             bool
-	modifiers           []func(*sql.Selector)
-	loadTotal           []func(context.Context, []*RelationshipObservation) error
-	withNamedAssertions map[string]*RelationshipAssertionQuery
+	ctx                       *QueryContext
+	order                     []relationshipobservation.OrderOption
+	inters                    []Interceptor
+	predicates                []predicate.RelationshipObservation
+	withWorkspace             *RevenueWorkspaceQuery
+	withRelationship          *RelationshipQuery
+	withUser                  *UserQuery
+	withAssertions            *RelationshipAssertionQuery
+	withPersonAttributes      *PersonAttributeQuery
+	withFKs                   bool
+	modifiers                 []func(*sql.Selector)
+	loadTotal                 []func(context.Context, []*RelationshipObservation) error
+	withNamedAssertions       map[string]*RelationshipAssertionQuery
+	withNamedPersonAttributes map[string]*PersonAttributeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -153,6 +156,28 @@ func (_q *RelationshipObservationQuery) QueryAssertions() *RelationshipAssertion
 			sqlgraph.From(relationshipobservation.Table, relationshipobservation.FieldID, selector),
 			sqlgraph.To(relationshipassertion.Table, relationshipassertion.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, relationshipobservation.AssertionsTable, relationshipobservation.AssertionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPersonAttributes chains the current query on the "person_attributes" edge.
+func (_q *RelationshipObservationQuery) QueryPersonAttributes() *PersonAttributeQuery {
+	query := (&PersonAttributeClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationshipobservation.Table, relationshipobservation.FieldID, selector),
+			sqlgraph.To(personattribute.Table, personattribute.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationshipobservation.PersonAttributesTable, relationshipobservation.PersonAttributesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -347,15 +372,16 @@ func (_q *RelationshipObservationQuery) Clone() *RelationshipObservationQuery {
 		return nil
 	}
 	return &RelationshipObservationQuery{
-		config:           _q.config,
-		ctx:              _q.ctx.Clone(),
-		order:            append([]relationshipobservation.OrderOption{}, _q.order...),
-		inters:           append([]Interceptor{}, _q.inters...),
-		predicates:       append([]predicate.RelationshipObservation{}, _q.predicates...),
-		withWorkspace:    _q.withWorkspace.Clone(),
-		withRelationship: _q.withRelationship.Clone(),
-		withUser:         _q.withUser.Clone(),
-		withAssertions:   _q.withAssertions.Clone(),
+		config:               _q.config,
+		ctx:                  _q.ctx.Clone(),
+		order:                append([]relationshipobservation.OrderOption{}, _q.order...),
+		inters:               append([]Interceptor{}, _q.inters...),
+		predicates:           append([]predicate.RelationshipObservation{}, _q.predicates...),
+		withWorkspace:        _q.withWorkspace.Clone(),
+		withRelationship:     _q.withRelationship.Clone(),
+		withUser:             _q.withUser.Clone(),
+		withAssertions:       _q.withAssertions.Clone(),
+		withPersonAttributes: _q.withPersonAttributes.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -403,6 +429,17 @@ func (_q *RelationshipObservationQuery) WithAssertions(opts ...func(*Relationshi
 		opt(query)
 	}
 	_q.withAssertions = query
+	return _q
+}
+
+// WithPersonAttributes tells the query-builder to eager-load the nodes that are connected to
+// the "person_attributes" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipObservationQuery) WithPersonAttributes(opts ...func(*PersonAttributeQuery)) *RelationshipObservationQuery {
+	query := (&PersonAttributeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPersonAttributes = query
 	return _q
 }
 
@@ -485,11 +522,12 @@ func (_q *RelationshipObservationQuery) sqlAll(ctx context.Context, hooks ...que
 		nodes       = []*RelationshipObservation{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			_q.withWorkspace != nil,
 			_q.withRelationship != nil,
 			_q.withUser != nil,
 			_q.withAssertions != nil,
+			_q.withPersonAttributes != nil,
 		}
 	)
 	if _q.withWorkspace != nil || _q.withRelationship != nil || _q.withUser != nil {
@@ -546,10 +584,26 @@ func (_q *RelationshipObservationQuery) sqlAll(ctx context.Context, hooks ...que
 			return nil, err
 		}
 	}
+	if query := _q.withPersonAttributes; query != nil {
+		if err := _q.loadPersonAttributes(ctx, query, nodes,
+			func(n *RelationshipObservation) { n.Edges.PersonAttributes = []*PersonAttribute{} },
+			func(n *RelationshipObservation, e *PersonAttribute) {
+				n.Edges.PersonAttributes = append(n.Edges.PersonAttributes, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedAssertions {
 		if err := _q.loadAssertions(ctx, query, nodes,
 			func(n *RelationshipObservation) { n.appendNamedAssertions(name) },
 			func(n *RelationshipObservation, e *RelationshipAssertion) { n.appendNamedAssertions(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedPersonAttributes {
+		if err := _q.loadPersonAttributes(ctx, query, nodes,
+			func(n *RelationshipObservation) { n.appendNamedPersonAttributes(name) },
+			func(n *RelationshipObservation, e *PersonAttribute) { n.appendNamedPersonAttributes(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -688,6 +742,37 @@ func (_q *RelationshipObservationQuery) loadAssertions(ctx context.Context, quer
 	}
 	return nil
 }
+func (_q *RelationshipObservationQuery) loadPersonAttributes(ctx context.Context, query *PersonAttributeQuery, nodes []*RelationshipObservation, init func(*RelationshipObservation), assign func(*RelationshipObservation, *PersonAttribute)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RelationshipObservation)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PersonAttribute(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(relationshipobservation.PersonAttributesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.observation_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "observation_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "observation_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *RelationshipObservationQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -784,6 +869,20 @@ func (_q *RelationshipObservationQuery) WithNamedAssertions(name string, opts ..
 		_q.withNamedAssertions = make(map[string]*RelationshipAssertionQuery)
 	}
 	_q.withNamedAssertions[name] = query
+	return _q
+}
+
+// WithNamedPersonAttributes tells the query-builder to eager-load the nodes that are connected to the "person_attributes"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipObservationQuery) WithNamedPersonAttributes(name string, opts ...func(*PersonAttributeQuery)) *RelationshipObservationQuery {
+	query := (&PersonAttributeClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedPersonAttributes == nil {
+		_q.withNamedPersonAttributes = make(map[string]*PersonAttributeQuery)
+	}
+	_q.withNamedPersonAttributes[name] = query
 	return _q
 }
 

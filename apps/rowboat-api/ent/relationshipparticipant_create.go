@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
@@ -168,6 +169,25 @@ func (_c *RelationshipParticipantCreate) SetUserID(id uuid.UUID) *RelationshipPa
 // SetUser sets the "user" edge to the User entity.
 func (_c *RelationshipParticipantCreate) SetUser(v *User) *RelationshipParticipantCreate {
 	return _c.SetUserID(v.ID)
+}
+
+// SetPersonID sets the "person" edge to the Person entity by ID.
+func (_c *RelationshipParticipantCreate) SetPersonID(id uuid.UUID) *RelationshipParticipantCreate {
+	_c.mutation.SetPersonID(id)
+	return _c
+}
+
+// SetNillablePersonID sets the "person" edge to the Person entity by ID if the given value is not nil.
+func (_c *RelationshipParticipantCreate) SetNillablePersonID(id *uuid.UUID) *RelationshipParticipantCreate {
+	if id != nil {
+		_c = _c.SetPersonID(*id)
+	}
+	return _c
+}
+
+// SetPerson sets the "person" edge to the Person entity.
+func (_c *RelationshipParticipantCreate) SetPerson(v *Person) *RelationshipParticipantCreate {
+	return _c.SetPersonID(v.ID)
 }
 
 // Mutation returns the RelationshipParticipantMutation object of the builder.
@@ -387,6 +407,23 @@ func (_c *RelationshipParticipantCreate) createSpec() (*RelationshipParticipant,
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.user_relationship_participants = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PersonIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   relationshipparticipant.PersonTable,
+			Columns: []string{relationshipparticipant.PersonColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.person_id = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

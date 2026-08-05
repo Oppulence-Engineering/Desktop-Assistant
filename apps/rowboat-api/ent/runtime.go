@@ -40,6 +40,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnectionhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -1464,6 +1469,341 @@ func init() {
 	oauthpendingDescID := oauthpendingMixinFields0[0].Descriptor()
 	// oauthpending.DefaultID holds the default value on creation for the id field.
 	oauthpending.DefaultID = oauthpendingDescID.Default.(func() uuid.UUID)
+	personMixin := schema.Person{}.Mixin()
+	personMixinFields0 := personMixin[0].Fields()
+	_ = personMixinFields0
+	personFields := schema.Person{}.Fields()
+	_ = personFields
+	// personDescCreatedAt is the schema descriptor for created_at field.
+	personDescCreatedAt := personMixinFields0[1].Descriptor()
+	// person.DefaultCreatedAt holds the default value on creation for the created_at field.
+	person.DefaultCreatedAt = personDescCreatedAt.Default.(func() time.Time)
+	// personDescUpdatedAt is the schema descriptor for updated_at field.
+	personDescUpdatedAt := personMixinFields0[2].Descriptor()
+	// person.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	person.DefaultUpdatedAt = personDescUpdatedAt.Default.(func() time.Time)
+	// person.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	person.UpdateDefaultUpdatedAt = personDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// personDescDisplayName is the schema descriptor for display_name field.
+	personDescDisplayName := personFields[0].Descriptor()
+	// person.DisplayNameValidator is a validator for the "display_name" field. It is called by the builders before save.
+	person.DisplayNameValidator = personDescDisplayName.Validators[0].(func(string) error)
+	// personDescAliases is the schema descriptor for aliases field.
+	personDescAliases := personFields[1].Descriptor()
+	// person.DefaultAliases holds the default value on creation for the aliases field.
+	person.DefaultAliases = personDescAliases.Default.([]string)
+	// personDescAttributesVersion is the schema descriptor for attributes_version field.
+	personDescAttributesVersion := personFields[9].Descriptor()
+	// person.DefaultAttributesVersion holds the default value on creation for the attributes_version field.
+	person.DefaultAttributesVersion = personDescAttributesVersion.Default.(int)
+	// person.AttributesVersionValidator is a validator for the "attributes_version" field. It is called by the builders before save.
+	person.AttributesVersionValidator = personDescAttributesVersion.Validators[0].(func(int) error)
+	// personDescProjectorVersion is the schema descriptor for projector_version field.
+	personDescProjectorVersion := personFields[11].Descriptor()
+	// person.DefaultProjectorVersion holds the default value on creation for the projector_version field.
+	person.DefaultProjectorVersion = personDescProjectorVersion.Default.(int)
+	// person.ProjectorVersionValidator is a validator for the "projector_version" field. It is called by the builders before save.
+	person.ProjectorVersionValidator = personDescProjectorVersion.Validators[0].(func(int) error)
+	// personDescStatus is the schema descriptor for status field.
+	personDescStatus := personFields[13].Descriptor()
+	// person.DefaultStatus holds the default value on creation for the status field.
+	person.DefaultStatus = personDescStatus.Default.(string)
+	// person.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	person.StatusValidator = personDescStatus.Validators[0].(func(string) error)
+	// personDescRelationshipCount is the schema descriptor for relationship_count field.
+	personDescRelationshipCount := personFields[18].Descriptor()
+	// person.DefaultRelationshipCount holds the default value on creation for the relationship_count field.
+	person.DefaultRelationshipCount = personDescRelationshipCount.Default.(int)
+	// person.RelationshipCountValidator is a validator for the "relationship_count" field. It is called by the builders before save.
+	person.RelationshipCountValidator = personDescRelationshipCount.Validators[0].(func(int) error)
+	// personDescID is the schema descriptor for id field.
+	personDescID := personMixinFields0[0].Descriptor()
+	// person.DefaultID holds the default value on creation for the id field.
+	person.DefaultID = personDescID.Default.(func() uuid.UUID)
+	personattributeMixin := schema.PersonAttribute{}.Mixin()
+	personattributeMixinFields0 := personattributeMixin[0].Fields()
+	_ = personattributeMixinFields0
+	personattributeFields := schema.PersonAttribute{}.Fields()
+	_ = personattributeFields
+	// personattributeDescCreatedAt is the schema descriptor for created_at field.
+	personattributeDescCreatedAt := personattributeMixinFields0[1].Descriptor()
+	// personattribute.DefaultCreatedAt holds the default value on creation for the created_at field.
+	personattribute.DefaultCreatedAt = personattributeDescCreatedAt.Default.(func() time.Time)
+	// personattributeDescUpdatedAt is the schema descriptor for updated_at field.
+	personattributeDescUpdatedAt := personattributeMixinFields0[2].Descriptor()
+	// personattribute.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	personattribute.DefaultUpdatedAt = personattributeDescUpdatedAt.Default.(func() time.Time)
+	// personattribute.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	personattribute.UpdateDefaultUpdatedAt = personattributeDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// personattributeDescDimension is the schema descriptor for dimension field.
+	personattributeDescDimension := personattributeFields[0].Descriptor()
+	// personattribute.DimensionValidator is a validator for the "dimension" field. It is called by the builders before save.
+	personattribute.DimensionValidator = personattributeDescDimension.Validators[0].(func(string) error)
+	// personattributeDescValue is the schema descriptor for value field.
+	personattributeDescValue := personattributeFields[1].Descriptor()
+	// personattribute.ValueValidator is a validator for the "value" field. It is called by the builders before save.
+	personattribute.ValueValidator = personattributeDescValue.Validators[0].(func(string) error)
+	// personattributeDescSourceType is the schema descriptor for source_type field.
+	personattributeDescSourceType := personattributeFields[2].Descriptor()
+	// personattribute.SourceTypeValidator is a validator for the "source_type" field. It is called by the builders before save.
+	personattribute.SourceTypeValidator = personattributeDescSourceType.Validators[0].(func(string) error)
+	// personattributeDescSource is the schema descriptor for source field.
+	personattributeDescSource := personattributeFields[3].Descriptor()
+	// personattribute.SourceValidator is a validator for the "source" field. It is called by the builders before save.
+	personattribute.SourceValidator = personattributeDescSource.Validators[0].(func(string) error)
+	// personattributeDescExtractor is the schema descriptor for extractor field.
+	personattributeDescExtractor := personattributeFields[4].Descriptor()
+	// personattribute.DefaultExtractor holds the default value on creation for the extractor field.
+	personattribute.DefaultExtractor = personattributeDescExtractor.Default.(string)
+	// personattribute.ExtractorValidator is a validator for the "extractor" field. It is called by the builders before save.
+	personattribute.ExtractorValidator = personattributeDescExtractor.Validators[0].(func(string) error)
+	// personattributeDescStatus is the schema descriptor for status field.
+	personattributeDescStatus := personattributeFields[5].Descriptor()
+	// personattribute.DefaultStatus holds the default value on creation for the status field.
+	personattribute.DefaultStatus = personattributeDescStatus.Default.(string)
+	// personattribute.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	personattribute.StatusValidator = personattributeDescStatus.Validators[0].(func(string) error)
+	// personattributeDescConfidence is the schema descriptor for confidence field.
+	personattributeDescConfidence := personattributeFields[6].Descriptor()
+	// personattribute.DefaultConfidence holds the default value on creation for the confidence field.
+	personattribute.DefaultConfidence = personattributeDescConfidence.Default.(float64)
+	// personattribute.ConfidenceValidator is a validator for the "confidence" field. It is called by the builders before save.
+	personattribute.ConfidenceValidator = func() func(float64) error {
+		validators := personattributeDescConfidence.Validators
+		fns := [...]func(float64) error{
+			validators[0].(func(float64) error),
+			validators[1].(func(float64) error),
+		}
+		return func(confidence float64) error {
+			for _, fn := range fns {
+				if err := fn(confidence); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// personattributeDescExtractorVersion is the schema descriptor for extractor_version field.
+	personattributeDescExtractorVersion := personattributeFields[13].Descriptor()
+	// personattribute.DefaultExtractorVersion holds the default value on creation for the extractor_version field.
+	personattribute.DefaultExtractorVersion = personattributeDescExtractorVersion.Default.(string)
+	// personattributeDescDedupeKey is the schema descriptor for dedupe_key field.
+	personattributeDescDedupeKey := personattributeFields[14].Descriptor()
+	// personattribute.DedupeKeyValidator is a validator for the "dedupe_key" field. It is called by the builders before save.
+	personattribute.DedupeKeyValidator = personattributeDescDedupeKey.Validators[0].(func(string) error)
+	// personattributeDescSupportingObservationIds is the schema descriptor for supporting_observation_ids field.
+	personattributeDescSupportingObservationIds := personattributeFields[15].Descriptor()
+	// personattribute.DefaultSupportingObservationIds holds the default value on creation for the supporting_observation_ids field.
+	personattribute.DefaultSupportingObservationIds = personattributeDescSupportingObservationIds.Default.([]string)
+	// personattributeDescID is the schema descriptor for id field.
+	personattributeDescID := personattributeMixinFields0[0].Descriptor()
+	// personattribute.DefaultID holds the default value on creation for the id field.
+	personattribute.DefaultID = personattributeDescID.Default.(func() uuid.UUID)
+	personidentityMixin := schema.PersonIdentity{}.Mixin()
+	personidentityMixinFields0 := personidentityMixin[0].Fields()
+	_ = personidentityMixinFields0
+	personidentityFields := schema.PersonIdentity{}.Fields()
+	_ = personidentityFields
+	// personidentityDescCreatedAt is the schema descriptor for created_at field.
+	personidentityDescCreatedAt := personidentityMixinFields0[1].Descriptor()
+	// personidentity.DefaultCreatedAt holds the default value on creation for the created_at field.
+	personidentity.DefaultCreatedAt = personidentityDescCreatedAt.Default.(func() time.Time)
+	// personidentityDescUpdatedAt is the schema descriptor for updated_at field.
+	personidentityDescUpdatedAt := personidentityMixinFields0[2].Descriptor()
+	// personidentity.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	personidentity.DefaultUpdatedAt = personidentityDescUpdatedAt.Default.(func() time.Time)
+	// personidentity.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	personidentity.UpdateDefaultUpdatedAt = personidentityDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// personidentityDescKind is the schema descriptor for kind field.
+	personidentityDescKind := personidentityFields[0].Descriptor()
+	// personidentity.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	personidentity.KindValidator = personidentityDescKind.Validators[0].(func(string) error)
+	// personidentityDescKeyHash is the schema descriptor for key_hash field.
+	personidentityDescKeyHash := personidentityFields[2].Descriptor()
+	// personidentity.KeyHashValidator is a validator for the "key_hash" field. It is called by the builders before save.
+	personidentity.KeyHashValidator = personidentityDescKeyHash.Validators[0].(func(string) error)
+	// personidentityDescNormalizedValue is the schema descriptor for normalized_value field.
+	personidentityDescNormalizedValue := personidentityFields[3].Descriptor()
+	// personidentity.NormalizedValueValidator is a validator for the "normalized_value" field. It is called by the builders before save.
+	personidentity.NormalizedValueValidator = personidentityDescNormalizedValue.Validators[0].(func(string) error)
+	// personidentityDescConfidence is the schema descriptor for confidence field.
+	personidentityDescConfidence := personidentityFields[5].Descriptor()
+	// personidentity.DefaultConfidence holds the default value on creation for the confidence field.
+	personidentity.DefaultConfidence = personidentityDescConfidence.Default.(float64)
+	// personidentity.ConfidenceValidator is a validator for the "confidence" field. It is called by the builders before save.
+	personidentity.ConfidenceValidator = func() func(float64) error {
+		validators := personidentityDescConfidence.Validators
+		fns := [...]func(float64) error{
+			validators[0].(func(float64) error),
+			validators[1].(func(float64) error),
+		}
+		return func(confidence float64) error {
+			for _, fn := range fns {
+				if err := fn(confidence); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// personidentityDescID is the schema descriptor for id field.
+	personidentityDescID := personidentityMixinFields0[0].Descriptor()
+	// personidentity.DefaultID holds the default value on creation for the id field.
+	personidentity.DefaultID = personidentityDescID.Default.(func() uuid.UUID)
+	personinteractionstatMixin := schema.PersonInteractionStat{}.Mixin()
+	personinteractionstatMixinFields0 := personinteractionstatMixin[0].Fields()
+	_ = personinteractionstatMixinFields0
+	personinteractionstatFields := schema.PersonInteractionStat{}.Fields()
+	_ = personinteractionstatFields
+	// personinteractionstatDescCreatedAt is the schema descriptor for created_at field.
+	personinteractionstatDescCreatedAt := personinteractionstatMixinFields0[1].Descriptor()
+	// personinteractionstat.DefaultCreatedAt holds the default value on creation for the created_at field.
+	personinteractionstat.DefaultCreatedAt = personinteractionstatDescCreatedAt.Default.(func() time.Time)
+	// personinteractionstatDescUpdatedAt is the schema descriptor for updated_at field.
+	personinteractionstatDescUpdatedAt := personinteractionstatMixinFields0[2].Descriptor()
+	// personinteractionstat.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	personinteractionstat.DefaultUpdatedAt = personinteractionstatDescUpdatedAt.Default.(func() time.Time)
+	// personinteractionstat.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	personinteractionstat.UpdateDefaultUpdatedAt = personinteractionstatDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// personinteractionstatDescInteractionCount is the schema descriptor for interaction_count field.
+	personinteractionstatDescInteractionCount := personinteractionstatFields[4].Descriptor()
+	// personinteractionstat.DefaultInteractionCount holds the default value on creation for the interaction_count field.
+	personinteractionstat.DefaultInteractionCount = personinteractionstatDescInteractionCount.Default.(int)
+	// personinteractionstat.InteractionCountValidator is a validator for the "interaction_count" field. It is called by the builders before save.
+	personinteractionstat.InteractionCountValidator = personinteractionstatDescInteractionCount.Validators[0].(func(int) error)
+	// personinteractionstatDescInboundCount is the schema descriptor for inbound_count field.
+	personinteractionstatDescInboundCount := personinteractionstatFields[5].Descriptor()
+	// personinteractionstat.DefaultInboundCount holds the default value on creation for the inbound_count field.
+	personinteractionstat.DefaultInboundCount = personinteractionstatDescInboundCount.Default.(int)
+	// personinteractionstat.InboundCountValidator is a validator for the "inbound_count" field. It is called by the builders before save.
+	personinteractionstat.InboundCountValidator = personinteractionstatDescInboundCount.Validators[0].(func(int) error)
+	// personinteractionstatDescOutboundCount is the schema descriptor for outbound_count field.
+	personinteractionstatDescOutboundCount := personinteractionstatFields[6].Descriptor()
+	// personinteractionstat.DefaultOutboundCount holds the default value on creation for the outbound_count field.
+	personinteractionstat.DefaultOutboundCount = personinteractionstatDescOutboundCount.Default.(int)
+	// personinteractionstat.OutboundCountValidator is a validator for the "outbound_count" field. It is called by the builders before save.
+	personinteractionstat.OutboundCountValidator = personinteractionstatDescOutboundCount.Validators[0].(func(int) error)
+	// personinteractionstatDescMeetingCount is the schema descriptor for meeting_count field.
+	personinteractionstatDescMeetingCount := personinteractionstatFields[7].Descriptor()
+	// personinteractionstat.DefaultMeetingCount holds the default value on creation for the meeting_count field.
+	personinteractionstat.DefaultMeetingCount = personinteractionstatDescMeetingCount.Default.(int)
+	// personinteractionstat.MeetingCountValidator is a validator for the "meeting_count" field. It is called by the builders before save.
+	personinteractionstat.MeetingCountValidator = personinteractionstatDescMeetingCount.Validators[0].(func(int) error)
+	// personinteractionstatDescChannelCounts is the schema descriptor for channel_counts field.
+	personinteractionstatDescChannelCounts := personinteractionstatFields[8].Descriptor()
+	// personinteractionstat.DefaultChannelCounts holds the default value on creation for the channel_counts field.
+	personinteractionstat.DefaultChannelCounts = personinteractionstatDescChannelCounts.Default.(map[string]int)
+	// personinteractionstatDescSourceCounts is the schema descriptor for source_counts field.
+	personinteractionstatDescSourceCounts := personinteractionstatFields[9].Descriptor()
+	// personinteractionstat.DefaultSourceCounts holds the default value on creation for the source_counts field.
+	personinteractionstat.DefaultSourceCounts = personinteractionstatDescSourceCounts.Default.(map[string]int)
+	// personinteractionstatDescLastChannel is the schema descriptor for last_channel field.
+	personinteractionstatDescLastChannel := personinteractionstatFields[10].Descriptor()
+	// personinteractionstat.LastChannelValidator is a validator for the "last_channel" field. It is called by the builders before save.
+	personinteractionstat.LastChannelValidator = personinteractionstatDescLastChannel.Validators[0].(func(string) error)
+	// personinteractionstatDescLastDirection is the schema descriptor for last_direction field.
+	personinteractionstatDescLastDirection := personinteractionstatFields[11].Descriptor()
+	// personinteractionstat.LastDirectionValidator is a validator for the "last_direction" field. It is called by the builders before save.
+	personinteractionstat.LastDirectionValidator = personinteractionstatDescLastDirection.Validators[0].(func(string) error)
+	// personinteractionstatDescID is the schema descriptor for id field.
+	personinteractionstatDescID := personinteractionstatMixinFields0[0].Descriptor()
+	// personinteractionstat.DefaultID holds the default value on creation for the id field.
+	personinteractionstat.DefaultID = personinteractionstatDescID.Default.(func() uuid.UUID)
+	personmergecandidateMixin := schema.PersonMergeCandidate{}.Mixin()
+	personmergecandidateMixinFields0 := personmergecandidateMixin[0].Fields()
+	_ = personmergecandidateMixinFields0
+	personmergecandidateFields := schema.PersonMergeCandidate{}.Fields()
+	_ = personmergecandidateFields
+	// personmergecandidateDescCreatedAt is the schema descriptor for created_at field.
+	personmergecandidateDescCreatedAt := personmergecandidateMixinFields0[1].Descriptor()
+	// personmergecandidate.DefaultCreatedAt holds the default value on creation for the created_at field.
+	personmergecandidate.DefaultCreatedAt = personmergecandidateDescCreatedAt.Default.(func() time.Time)
+	// personmergecandidateDescUpdatedAt is the schema descriptor for updated_at field.
+	personmergecandidateDescUpdatedAt := personmergecandidateMixinFields0[2].Descriptor()
+	// personmergecandidate.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	personmergecandidate.DefaultUpdatedAt = personmergecandidateDescUpdatedAt.Default.(func() time.Time)
+	// personmergecandidate.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	personmergecandidate.UpdateDefaultUpdatedAt = personmergecandidateDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// personmergecandidateDescDedupeKey is the schema descriptor for dedupe_key field.
+	personmergecandidateDescDedupeKey := personmergecandidateFields[0].Descriptor()
+	// personmergecandidate.DedupeKeyValidator is a validator for the "dedupe_key" field. It is called by the builders before save.
+	personmergecandidate.DedupeKeyValidator = personmergecandidateDescDedupeKey.Validators[0].(func(string) error)
+	// personmergecandidateDescStatus is the schema descriptor for status field.
+	personmergecandidateDescStatus := personmergecandidateFields[1].Descriptor()
+	// personmergecandidate.DefaultStatus holds the default value on creation for the status field.
+	personmergecandidate.DefaultStatus = personmergecandidateDescStatus.Default.(string)
+	// personmergecandidate.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	personmergecandidate.StatusValidator = personmergecandidateDescStatus.Validators[0].(func(string) error)
+	// personmergecandidateDescCandidateType is the schema descriptor for candidate_type field.
+	personmergecandidateDescCandidateType := personmergecandidateFields[2].Descriptor()
+	// personmergecandidate.DefaultCandidateType holds the default value on creation for the candidate_type field.
+	personmergecandidate.DefaultCandidateType = personmergecandidateDescCandidateType.Default.(string)
+	// personmergecandidate.CandidateTypeValidator is a validator for the "candidate_type" field. It is called by the builders before save.
+	personmergecandidate.CandidateTypeValidator = personmergecandidateDescCandidateType.Validators[0].(func(string) error)
+	// personmergecandidateDescAnchorKind is the schema descriptor for anchor_kind field.
+	personmergecandidateDescAnchorKind := personmergecandidateFields[3].Descriptor()
+	// personmergecandidate.AnchorKindValidator is a validator for the "anchor_kind" field. It is called by the builders before save.
+	personmergecandidate.AnchorKindValidator = personmergecandidateDescAnchorKind.Validators[0].(func(string) error)
+	// personmergecandidateDescAnchorKeyHash is the schema descriptor for anchor_key_hash field.
+	personmergecandidateDescAnchorKeyHash := personmergecandidateFields[5].Descriptor()
+	// personmergecandidate.AnchorKeyHashValidator is a validator for the "anchor_key_hash" field. It is called by the builders before save.
+	personmergecandidate.AnchorKeyHashValidator = personmergecandidateDescAnchorKeyHash.Validators[0].(func(string) error)
+	// personmergecandidateDescMatchingAnchors is the schema descriptor for matching_anchors field.
+	personmergecandidateDescMatchingAnchors := personmergecandidateFields[7].Descriptor()
+	// personmergecandidate.DefaultMatchingAnchors holds the default value on creation for the matching_anchors field.
+	personmergecandidate.DefaultMatchingAnchors = personmergecandidateDescMatchingAnchors.Default.([]string)
+	// personmergecandidateDescConflictingAnchors is the schema descriptor for conflicting_anchors field.
+	personmergecandidateDescConflictingAnchors := personmergecandidateFields[8].Descriptor()
+	// personmergecandidate.DefaultConflictingAnchors holds the default value on creation for the conflicting_anchors field.
+	personmergecandidate.DefaultConflictingAnchors = personmergecandidateDescConflictingAnchors.Default.([]string)
+	// personmergecandidateDescImpactJSON is the schema descriptor for impact_json field.
+	personmergecandidateDescImpactJSON := personmergecandidateFields[9].Descriptor()
+	// personmergecandidate.DefaultImpactJSON holds the default value on creation for the impact_json field.
+	personmergecandidate.DefaultImpactJSON = personmergecandidateDescImpactJSON.Default.(string)
+	// personmergecandidateDescRecommendedDecision is the schema descriptor for recommended_decision field.
+	personmergecandidateDescRecommendedDecision := personmergecandidateFields[10].Descriptor()
+	// personmergecandidate.DefaultRecommendedDecision holds the default value on creation for the recommended_decision field.
+	personmergecandidate.DefaultRecommendedDecision = personmergecandidateDescRecommendedDecision.Default.(string)
+	// personmergecandidate.RecommendedDecisionValidator is a validator for the "recommended_decision" field. It is called by the builders before save.
+	personmergecandidate.RecommendedDecisionValidator = personmergecandidateDescRecommendedDecision.Validators[0].(func(string) error)
+	// personmergecandidateDescConfidence is the schema descriptor for confidence field.
+	personmergecandidateDescConfidence := personmergecandidateFields[11].Descriptor()
+	// personmergecandidate.DefaultConfidence holds the default value on creation for the confidence field.
+	personmergecandidate.DefaultConfidence = personmergecandidateDescConfidence.Default.(float64)
+	// personmergecandidate.ConfidenceValidator is a validator for the "confidence" field. It is called by the builders before save.
+	personmergecandidate.ConfidenceValidator = func() func(float64) error {
+		validators := personmergecandidateDescConfidence.Validators
+		fns := [...]func(float64) error{
+			validators[0].(func(float64) error),
+			validators[1].(func(float64) error),
+		}
+		return func(confidence float64) error {
+			for _, fn := range fns {
+				if err := fn(confidence); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// personmergecandidateDescVersion is the schema descriptor for version field.
+	personmergecandidateDescVersion := personmergecandidateFields[12].Descriptor()
+	// personmergecandidate.DefaultVersion holds the default value on creation for the version field.
+	personmergecandidate.DefaultVersion = personmergecandidateDescVersion.Default.(int)
+	// personmergecandidate.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	personmergecandidate.VersionValidator = personmergecandidateDescVersion.Validators[0].(func(int) error)
+	// personmergecandidateDescDecision is the schema descriptor for decision field.
+	personmergecandidateDescDecision := personmergecandidateFields[13].Descriptor()
+	// personmergecandidate.DecisionValidator is a validator for the "decision" field. It is called by the builders before save.
+	personmergecandidate.DecisionValidator = personmergecandidateDescDecision.Validators[0].(func(string) error)
+	// personmergecandidateDescPreviousStateJSON is the schema descriptor for previous_state_json field.
+	personmergecandidateDescPreviousStateJSON := personmergecandidateFields[18].Descriptor()
+	// personmergecandidate.DefaultPreviousStateJSON holds the default value on creation for the previous_state_json field.
+	personmergecandidate.DefaultPreviousStateJSON = personmergecandidateDescPreviousStateJSON.Default.(string)
+	// personmergecandidateDescID is the schema descriptor for id field.
+	personmergecandidateDescID := personmergecandidateMixinFields0[0].Descriptor()
+	// personmergecandidate.DefaultID holds the default value on creation for the id field.
+	personmergecandidate.DefaultID = personmergecandidateDescID.Default.(func() uuid.UUID)
 	policydecisionsnapshotMixin := schema.PolicyDecisionSnapshot{}.Mixin()
 	policydecisionsnapshotMixinFields0 := policydecisionsnapshotMixin[0].Fields()
 	_ = policydecisionsnapshotMixinFields0

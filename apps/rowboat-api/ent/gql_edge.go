@@ -660,6 +660,206 @@ func (_m *OAuthConnection) User(ctx context.Context) (*User, error) {
 	return result, err
 }
 
+func (_m *Person) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *Person) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *Person) Identities(ctx context.Context) (result []*PersonIdentity, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedIdentities(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.IdentitiesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryIdentities().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Person) Attributes(ctx context.Context) (result []*PersonAttribute, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedAttributes(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.AttributesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAttributes().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Person) Participants(ctx context.Context) (result []*RelationshipParticipant, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedParticipants(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ParticipantsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryParticipants().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Person) InteractionStats(ctx context.Context) (result []*PersonInteractionStat, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedInteractionStats(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.InteractionStatsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryInteractionStats().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Person) ProposedMergeCandidates(ctx context.Context) (result []*PersonMergeCandidate, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedProposedMergeCandidates(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ProposedMergeCandidatesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryProposedMergeCandidates().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Person) ExistingMergeCandidates(ctx context.Context) (result []*PersonMergeCandidate, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedExistingMergeCandidates(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ExistingMergeCandidatesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryExistingMergeCandidates().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *PersonAttribute) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PersonAttribute) Person(ctx context.Context) (*Person, error) {
+	result, err := _m.Edges.PersonOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPerson().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PersonAttribute) Observation(ctx context.Context) (*RelationshipObservation, error) {
+	result, err := _m.Edges.ObservationOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryObservation().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *PersonAttribute) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PersonIdentity) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PersonIdentity) Person(ctx context.Context) (*Person, error) {
+	result, err := _m.Edges.PersonOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPerson().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PersonIdentity) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PersonInteractionStat) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PersonInteractionStat) Person(ctx context.Context) (*Person, error) {
+	result, err := _m.Edges.PersonOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPerson().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PersonInteractionStat) Relationship(ctx context.Context) (*Relationship, error) {
+	result, err := _m.Edges.RelationshipOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationship().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PersonMergeCandidate) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PersonMergeCandidate) ProposedPerson(ctx context.Context) (*Person, error) {
+	result, err := _m.Edges.ProposedPersonOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryProposedPerson().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PersonMergeCandidate) ExistingPerson(ctx context.Context) (*Person, error) {
+	result, err := _m.Edges.ExistingPersonOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryExistingPerson().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PersonMergeCandidate) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *PolicyDecisionSnapshot) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
 	result, err := _m.Edges.WorkspaceOrErr()
 	if IsNotLoaded(err) {
@@ -804,6 +1004,18 @@ func (_m *Relationship) Identities(ctx context.Context) (result []*RelationshipI
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryIdentities().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Relationship) PersonInteractionStats(ctx context.Context) (result []*PersonInteractionStat, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedPersonInteractionStats(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.PersonInteractionStatsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPersonInteractionStats().All(ctx)
 	}
 	return result, err
 }
@@ -1136,6 +1348,18 @@ func (_m *RelationshipObservation) Assertions(ctx context.Context) (result []*Re
 	return result, err
 }
 
+func (_m *RelationshipObservation) PersonAttributes(ctx context.Context) (result []*PersonAttribute, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedPersonAttributes(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.PersonAttributesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPersonAttributes().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *RelationshipParticipant) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
 	result, err := _m.Edges.WorkspaceOrErr()
 	if IsNotLoaded(err) {
@@ -1158,6 +1382,14 @@ func (_m *RelationshipParticipant) User(ctx context.Context) (*User, error) {
 		result, err = _m.QueryUser().Only(ctx)
 	}
 	return result, err
+}
+
+func (_m *RelationshipParticipant) Person(ctx context.Context) (*Person, error) {
+	result, err := _m.Edges.PersonOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPerson().Only(ctx)
+	}
+	return result, MaskNotFound(err)
 }
 
 func (_m *RelationshipProjectionJob) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
@@ -1796,6 +2028,66 @@ func (_m *RevenueWorkspace) RelationshipSourceStatuses(ctx context.Context) (res
 	return result, err
 }
 
+func (_m *RevenueWorkspace) RelationshipPersons(ctx context.Context) (result []*Person, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationshipPersons(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipPersonsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationshipPersons().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) PersonIdentities(ctx context.Context) (result []*PersonIdentity, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedPersonIdentities(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.PersonIdentitiesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPersonIdentities().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) PersonAttributes(ctx context.Context) (result []*PersonAttribute, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedPersonAttributes(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.PersonAttributesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPersonAttributes().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) PersonInteractionStats(ctx context.Context) (result []*PersonInteractionStat, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedPersonInteractionStats(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.PersonInteractionStatsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPersonInteractionStats().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) PersonMergeCandidates(ctx context.Context) (result []*PersonMergeCandidate, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedPersonMergeCandidates(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.PersonMergeCandidatesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPersonMergeCandidates().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *RevenueWorkspaceMember) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
 	result, err := _m.Edges.WorkspaceOrErr()
 	if IsNotLoaded(err) {
@@ -2308,6 +2600,54 @@ func (_m *User) RelationshipIdentities(ctx context.Context) (result []*Relations
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryRelationshipIdentities().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) RelationshipPersons(ctx context.Context) (result []*Person, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedRelationshipPersons(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.RelationshipPersonsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationshipPersons().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) PersonIdentities(ctx context.Context) (result []*PersonIdentity, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedPersonIdentities(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.PersonIdentitiesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPersonIdentities().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) PersonAttributes(ctx context.Context) (result []*PersonAttribute, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedPersonAttributes(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.PersonAttributesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPersonAttributes().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) PersonMergeCandidates(ctx context.Context) (result []*PersonMergeCandidate, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedPersonMergeCandidates(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.PersonMergeCandidatesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPersonMergeCandidates().All(ctx)
 	}
 	return result, err
 }

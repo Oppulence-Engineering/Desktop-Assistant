@@ -1616,6 +1616,332 @@ var (
 			},
 		},
 	}
+	// RelationshipPersonsColumns holds the columns for the "relationship_persons" table.
+	RelationshipPersonsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "display_name", Type: field.TypeString},
+		{Name: "aliases", Type: field.TypeJSON},
+		{Name: "primary_email", Type: field.TypeString, Nullable: true},
+		{Name: "title", Type: field.TypeString, Nullable: true},
+		{Name: "org_name", Type: field.TypeString, Nullable: true},
+		{Name: "org_domain", Type: field.TypeString, Nullable: true},
+		{Name: "phone", Type: field.TypeString, Nullable: true},
+		{Name: "timezone", Type: field.TypeString, Nullable: true},
+		{Name: "locale", Type: field.TypeString, Nullable: true},
+		{Name: "attributes_version", Type: field.TypeInt, Default: 0},
+		{Name: "attributes_hash", Type: field.TypeString, Nullable: true},
+		{Name: "projector_version", Type: field.TypeInt, Default: 1},
+		{Name: "projected_at", Type: field.TypeTime, Nullable: true},
+		{Name: "status", Type: field.TypeString, Default: "active"},
+		{Name: "merged_into_person_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "merged_at", Type: field.TypeTime, Nullable: true},
+		{Name: "first_interaction_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_interaction_at", Type: field.TypeTime, Nullable: true},
+		{Name: "relationship_count", Type: field.TypeInt, Default: 0},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_relationship_persons", Type: field.TypeUUID},
+	}
+	// RelationshipPersonsTable holds the schema information for the "relationship_persons" table.
+	RelationshipPersonsTable = &schema.Table{
+		Name:       "relationship_persons",
+		Columns:    RelationshipPersonsColumns,
+		PrimaryKey: []*schema.Column{RelationshipPersonsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relationship_persons_revenue_workspaces_relationship_persons",
+				Columns:    []*schema.Column{RelationshipPersonsColumns[22]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relationship_persons_users_relationship_persons",
+				Columns:    []*schema.Column{RelationshipPersonsColumns[23]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "person_status_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{RelationshipPersonsColumns[16], RelationshipPersonsColumns[22]},
+			},
+			{
+				Name:    "person_last_interaction_at_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{RelationshipPersonsColumns[20], RelationshipPersonsColumns[22]},
+			},
+			{
+				Name:    "person_primary_email_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{RelationshipPersonsColumns[5], RelationshipPersonsColumns[22]},
+			},
+		},
+	}
+	// PersonAttributesColumns holds the columns for the "person_attributes" table.
+	PersonAttributesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "dimension", Type: field.TypeString},
+		{Name: "value", Type: field.TypeString, Size: 2147483647},
+		{Name: "source_type", Type: field.TypeString},
+		{Name: "source", Type: field.TypeString},
+		{Name: "extractor", Type: field.TypeString, Default: "unknown"},
+		{Name: "status", Type: field.TypeString, Default: "active"},
+		{Name: "confidence", Type: field.TypeFloat64, Default: 0.5},
+		{Name: "reason", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "observed_at", Type: field.TypeTime},
+		{Name: "valid_from", Type: field.TypeTime},
+		{Name: "valid_to", Type: field.TypeTime, Nullable: true},
+		{Name: "retracted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "supersedes_attribute_id", Type: field.TypeString, Nullable: true},
+		{Name: "extractor_version", Type: field.TypeString, Default: "unknown-v1"},
+		{Name: "dedupe_key", Type: field.TypeString},
+		{Name: "supporting_observation_ids", Type: field.TypeJSON},
+		{Name: "person_id", Type: field.TypeUUID},
+		{Name: "observation_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_person_attributes", Type: field.TypeUUID},
+	}
+	// PersonAttributesTable holds the schema information for the "person_attributes" table.
+	PersonAttributesTable = &schema.Table{
+		Name:       "person_attributes",
+		Columns:    PersonAttributesColumns,
+		PrimaryKey: []*schema.Column{PersonAttributesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "person_attributes_relationship_persons_attributes",
+				Columns:    []*schema.Column{PersonAttributesColumns[19]},
+				RefColumns: []*schema.Column{RelationshipPersonsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "person_attributes_relationship_observations_person_attributes",
+				Columns:    []*schema.Column{PersonAttributesColumns[20]},
+				RefColumns: []*schema.Column{RelationshipObservationsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "person_attributes_revenue_workspaces_person_attributes",
+				Columns:    []*schema.Column{PersonAttributesColumns[21]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "person_attributes_users_person_attributes",
+				Columns:    []*schema.Column{PersonAttributesColumns[22]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "personattribute_dimension_valid_from_person_id",
+				Unique:  false,
+				Columns: []*schema.Column{PersonAttributesColumns[3], PersonAttributesColumns[12], PersonAttributesColumns[19]},
+			},
+			{
+				Name:    "personattribute_status_valid_to_person_id",
+				Unique:  false,
+				Columns: []*schema.Column{PersonAttributesColumns[8], PersonAttributesColumns[13], PersonAttributesColumns[19]},
+			},
+			{
+				Name:    "personattribute_dedupe_key_revenue_workspace_id",
+				Unique:  true,
+				Columns: []*schema.Column{PersonAttributesColumns[17], PersonAttributesColumns[21]},
+			},
+		},
+	}
+	// PersonIdentitiesColumns holds the columns for the "person_identities" table.
+	PersonIdentitiesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "provider", Type: field.TypeString, Nullable: true},
+		{Name: "key_hash", Type: field.TypeString},
+		{Name: "normalized_value", Type: field.TypeString},
+		{Name: "source", Type: field.TypeString, Nullable: true},
+		{Name: "confidence", Type: field.TypeFloat64, Default: 1},
+		{Name: "first_seen_at", Type: field.TypeTime},
+		{Name: "last_seen_at", Type: field.TypeTime},
+		{Name: "person_id", Type: field.TypeUUID},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_person_identities", Type: field.TypeUUID},
+	}
+	// PersonIdentitiesTable holds the schema information for the "person_identities" table.
+	PersonIdentitiesTable = &schema.Table{
+		Name:       "person_identities",
+		Columns:    PersonIdentitiesColumns,
+		PrimaryKey: []*schema.Column{PersonIdentitiesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "person_identities_relationship_persons_identities",
+				Columns:    []*schema.Column{PersonIdentitiesColumns[11]},
+				RefColumns: []*schema.Column{RelationshipPersonsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "person_identities_revenue_workspaces_person_identities",
+				Columns:    []*schema.Column{PersonIdentitiesColumns[12]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "person_identities_users_person_identities",
+				Columns:    []*schema.Column{PersonIdentitiesColumns[13]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "personidentity_key_hash_revenue_workspace_id",
+				Unique:  true,
+				Columns: []*schema.Column{PersonIdentitiesColumns[5], PersonIdentitiesColumns[12]},
+			},
+			{
+				Name:    "personidentity_kind_person_id",
+				Unique:  false,
+				Columns: []*schema.Column{PersonIdentitiesColumns[3], PersonIdentitiesColumns[11]},
+			},
+		},
+	}
+	// PersonInteractionStatsColumns holds the columns for the "person_interaction_stats" table.
+	PersonInteractionStatsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "first_interaction_at", Type: field.TypeTime},
+		{Name: "last_interaction_at", Type: field.TypeTime},
+		{Name: "last_inbound_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_outbound_at", Type: field.TypeTime, Nullable: true},
+		{Name: "interaction_count", Type: field.TypeInt, Default: 0},
+		{Name: "inbound_count", Type: field.TypeInt, Default: 0},
+		{Name: "outbound_count", Type: field.TypeInt, Default: 0},
+		{Name: "meeting_count", Type: field.TypeInt, Default: 0},
+		{Name: "channel_counts", Type: field.TypeJSON},
+		{Name: "source_counts", Type: field.TypeJSON},
+		{Name: "last_channel", Type: field.TypeString, Nullable: true},
+		{Name: "last_direction", Type: field.TypeString, Nullable: true},
+		{Name: "person_id", Type: field.TypeUUID},
+		{Name: "relationship_id", Type: field.TypeUUID},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+	}
+	// PersonInteractionStatsTable holds the schema information for the "person_interaction_stats" table.
+	PersonInteractionStatsTable = &schema.Table{
+		Name:       "person_interaction_stats",
+		Columns:    PersonInteractionStatsColumns,
+		PrimaryKey: []*schema.Column{PersonInteractionStatsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "person_interaction_stats_relationship_persons_interaction_stats",
+				Columns:    []*schema.Column{PersonInteractionStatsColumns[15]},
+				RefColumns: []*schema.Column{RelationshipPersonsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "person_interaction_stats_relationships_person_interaction_stats",
+				Columns:    []*schema.Column{PersonInteractionStatsColumns[16]},
+				RefColumns: []*schema.Column{RelationshipsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "person_interaction_stats_revenue_workspaces_person_interaction_stats",
+				Columns:    []*schema.Column{PersonInteractionStatsColumns[17]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "personinteractionstat_person_id_relationship_id",
+				Unique:  true,
+				Columns: []*schema.Column{PersonInteractionStatsColumns[15], PersonInteractionStatsColumns[16]},
+			},
+			{
+				Name:    "personinteractionstat_last_interaction_at_relationship_id",
+				Unique:  false,
+				Columns: []*schema.Column{PersonInteractionStatsColumns[4], PersonInteractionStatsColumns[16]},
+			},
+		},
+	}
+	// PersonMergeCandidatesColumns holds the columns for the "person_merge_candidates" table.
+	PersonMergeCandidatesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "dedupe_key", Type: field.TypeString},
+		{Name: "status", Type: field.TypeString, Default: "pending"},
+		{Name: "candidate_type", Type: field.TypeString, Default: "anchor_collision"},
+		{Name: "anchor_kind", Type: field.TypeString},
+		{Name: "anchor_provider", Type: field.TypeString, Nullable: true},
+		{Name: "anchor_key_hash", Type: field.TypeString},
+		{Name: "anchor_preview", Type: field.TypeString, Nullable: true},
+		{Name: "matching_anchors", Type: field.TypeJSON},
+		{Name: "conflicting_anchors", Type: field.TypeJSON},
+		{Name: "impact_json", Type: field.TypeString, Size: 2147483647, Default: "{}"},
+		{Name: "recommended_decision", Type: field.TypeString, Default: "defer"},
+		{Name: "confidence", Type: field.TypeFloat64, Default: 0},
+		{Name: "version", Type: field.TypeInt, Default: 1},
+		{Name: "decision", Type: field.TypeString, Nullable: true},
+		{Name: "decision_reason", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "decision_actor_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "decided_at", Type: field.TypeTime, Nullable: true},
+		{Name: "idempotency_key", Type: field.TypeString, Nullable: true},
+		{Name: "previous_state_json", Type: field.TypeString, Size: 2147483647, Default: "{}"},
+		{Name: "proposed_person_id", Type: field.TypeUUID},
+		{Name: "existing_person_id", Type: field.TypeUUID},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_person_merge_candidates", Type: field.TypeUUID},
+	}
+	// PersonMergeCandidatesTable holds the schema information for the "person_merge_candidates" table.
+	PersonMergeCandidatesTable = &schema.Table{
+		Name:       "person_merge_candidates",
+		Columns:    PersonMergeCandidatesColumns,
+		PrimaryKey: []*schema.Column{PersonMergeCandidatesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "person_merge_candidates_relationship_persons_proposed_merge_candidates",
+				Columns:    []*schema.Column{PersonMergeCandidatesColumns[22]},
+				RefColumns: []*schema.Column{RelationshipPersonsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "person_merge_candidates_relationship_persons_existing_merge_candidates",
+				Columns:    []*schema.Column{PersonMergeCandidatesColumns[23]},
+				RefColumns: []*schema.Column{RelationshipPersonsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "person_merge_candidates_revenue_workspaces_person_merge_candidates",
+				Columns:    []*schema.Column{PersonMergeCandidatesColumns[24]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "person_merge_candidates_users_person_merge_candidates",
+				Columns:    []*schema.Column{PersonMergeCandidatesColumns[25]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "personmergecandidate_dedupe_key_revenue_workspace_id",
+				Unique:  true,
+				Columns: []*schema.Column{PersonMergeCandidatesColumns[3], PersonMergeCandidatesColumns[24]},
+			},
+			{
+				Name:    "personmergecandidate_status_created_at_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{PersonMergeCandidatesColumns[4], PersonMergeCandidatesColumns[1], PersonMergeCandidatesColumns[24]},
+			},
+		},
+	}
 	// PolicyDecisionSnapshotsColumns holds the columns for the "policy_decision_snapshots" table.
 	PolicyDecisionSnapshotsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -2185,6 +2511,7 @@ var (
 		{Name: "title", Type: field.TypeString, Nullable: true},
 		{Name: "active", Type: field.TypeBool, Default: true},
 		{Name: "external_refs", Type: field.TypeJSON},
+		{Name: "person_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "relationship_id", Type: field.TypeUUID},
 		{Name: "revenue_workspace_id", Type: field.TypeUUID},
 		{Name: "user_relationship_participants", Type: field.TypeUUID},
@@ -2196,20 +2523,26 @@ var (
 		PrimaryKey: []*schema.Column{RelationshipParticipantsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "relationship_participants_relationships_participants",
+				Symbol:     "relationship_participants_relationship_persons_participants",
 				Columns:    []*schema.Column{RelationshipParticipantsColumns[9]},
+				RefColumns: []*schema.Column{RelationshipPersonsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "relationship_participants_relationships_participants",
+				Columns:    []*schema.Column{RelationshipParticipantsColumns[10]},
 				RefColumns: []*schema.Column{RelationshipsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "relationship_participants_revenue_workspaces_relationship_participants",
-				Columns:    []*schema.Column{RelationshipParticipantsColumns[10]},
+				Columns:    []*schema.Column{RelationshipParticipantsColumns[11]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "relationship_participants_users_relationship_participants",
-				Columns:    []*schema.Column{RelationshipParticipantsColumns[11]},
+				Columns:    []*schema.Column{RelationshipParticipantsColumns[12]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -2218,12 +2551,12 @@ var (
 			{
 				Name:    "relationshipparticipant_email_relationship_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipParticipantsColumns[4], RelationshipParticipantsColumns[9]},
+				Columns: []*schema.Column{RelationshipParticipantsColumns[4], RelationshipParticipantsColumns[10]},
 			},
 			{
 				Name:    "relationshipparticipant_email_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipParticipantsColumns[4], RelationshipParticipantsColumns[10]},
+				Columns: []*schema.Column{RelationshipParticipantsColumns[4], RelationshipParticipantsColumns[11]},
 			},
 		},
 	}
@@ -3153,6 +3486,11 @@ var (
 		OauthConnectionsTable,
 		OauthConnectionHistoriesTable,
 		OauthPendingsTable,
+		RelationshipPersonsTable,
+		PersonAttributesTable,
+		PersonIdentitiesTable,
+		PersonInteractionStatsTable,
+		PersonMergeCandidatesTable,
 		PolicyDecisionSnapshotsTable,
 		RelationshipsTable,
 		RelationshipAssertionsTable,
@@ -3248,6 +3586,25 @@ func init() {
 	MailThreadsTable.ForeignKeys[1].RefTable = UsersTable
 	MeetingMinuteUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	OauthConnectionsTable.ForeignKeys[0].RefTable = UsersTable
+	RelationshipPersonsTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
+	RelationshipPersonsTable.ForeignKeys[1].RefTable = UsersTable
+	RelationshipPersonsTable.Annotation = &entsql.Annotation{
+		Table: "relationship_persons",
+	}
+	PersonAttributesTable.ForeignKeys[0].RefTable = RelationshipPersonsTable
+	PersonAttributesTable.ForeignKeys[1].RefTable = RelationshipObservationsTable
+	PersonAttributesTable.ForeignKeys[2].RefTable = RevenueWorkspacesTable
+	PersonAttributesTable.ForeignKeys[3].RefTable = UsersTable
+	PersonIdentitiesTable.ForeignKeys[0].RefTable = RelationshipPersonsTable
+	PersonIdentitiesTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
+	PersonIdentitiesTable.ForeignKeys[2].RefTable = UsersTable
+	PersonInteractionStatsTable.ForeignKeys[0].RefTable = RelationshipPersonsTable
+	PersonInteractionStatsTable.ForeignKeys[1].RefTable = RelationshipsTable
+	PersonInteractionStatsTable.ForeignKeys[2].RefTable = RevenueWorkspacesTable
+	PersonMergeCandidatesTable.ForeignKeys[0].RefTable = RelationshipPersonsTable
+	PersonMergeCandidatesTable.ForeignKeys[1].RefTable = RelationshipPersonsTable
+	PersonMergeCandidatesTable.ForeignKeys[2].RefTable = RevenueWorkspacesTable
+	PersonMergeCandidatesTable.ForeignKeys[3].RefTable = UsersTable
 	PolicyDecisionSnapshotsTable.ForeignKeys[0].RefTable = RevenueActionsTable
 	PolicyDecisionSnapshotsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
 	PolicyDecisionSnapshotsTable.ForeignKeys[2].RefTable = UsersTable
@@ -3276,9 +3633,10 @@ func init() {
 	RelationshipObservationsTable.ForeignKeys[0].RefTable = RelationshipsTable
 	RelationshipObservationsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
 	RelationshipObservationsTable.ForeignKeys[2].RefTable = UsersTable
-	RelationshipParticipantsTable.ForeignKeys[0].RefTable = RelationshipsTable
-	RelationshipParticipantsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
-	RelationshipParticipantsTable.ForeignKeys[2].RefTable = UsersTable
+	RelationshipParticipantsTable.ForeignKeys[0].RefTable = RelationshipPersonsTable
+	RelationshipParticipantsTable.ForeignKeys[1].RefTable = RelationshipsTable
+	RelationshipParticipantsTable.ForeignKeys[2].RefTable = RevenueWorkspacesTable
+	RelationshipParticipantsTable.ForeignKeys[3].RefTable = UsersTable
 	RelationshipProjectionJobsTable.ForeignKeys[0].RefTable = RelationshipsTable
 	RelationshipProjectionJobsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
 	RelationshipProjectionJobsTable.ForeignKeys[2].RefTable = UsersTable

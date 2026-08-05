@@ -82,6 +82,16 @@ type Tx struct {
 	OAuthConnectionHistory *OAuthConnectionHistoryClient
 	// OAuthPending is the client for interacting with the OAuthPending builders.
 	OAuthPending *OAuthPendingClient
+	// Person is the client for interacting with the Person builders.
+	Person *PersonClient
+	// PersonAttribute is the client for interacting with the PersonAttribute builders.
+	PersonAttribute *PersonAttributeClient
+	// PersonIdentity is the client for interacting with the PersonIdentity builders.
+	PersonIdentity *PersonIdentityClient
+	// PersonInteractionStat is the client for interacting with the PersonInteractionStat builders.
+	PersonInteractionStat *PersonInteractionStatClient
+	// PersonMergeCandidate is the client for interacting with the PersonMergeCandidate builders.
+	PersonMergeCandidate *PersonMergeCandidateClient
 	// PolicyDecisionSnapshot is the client for interacting with the PolicyDecisionSnapshot builders.
 	PolicyDecisionSnapshot *PolicyDecisionSnapshotClient
 	// Relationship is the client for interacting with the Relationship builders.
@@ -304,6 +314,11 @@ func (tx *Tx) init() {
 	tx.OAuthConnection = NewOAuthConnectionClient(tx.config)
 	tx.OAuthConnectionHistory = NewOAuthConnectionHistoryClient(tx.config)
 	tx.OAuthPending = NewOAuthPendingClient(tx.config)
+	tx.Person = NewPersonClient(tx.config)
+	tx.PersonAttribute = NewPersonAttributeClient(tx.config)
+	tx.PersonIdentity = NewPersonIdentityClient(tx.config)
+	tx.PersonInteractionStat = NewPersonInteractionStatClient(tx.config)
+	tx.PersonMergeCandidate = NewPersonMergeCandidateClient(tx.config)
 	tx.PolicyDecisionSnapshot = NewPolicyDecisionSnapshotClient(tx.config)
 	tx.Relationship = NewRelationshipClient(tx.config)
 	tx.RelationshipAssertion = NewRelationshipAssertionClient(tx.config)
