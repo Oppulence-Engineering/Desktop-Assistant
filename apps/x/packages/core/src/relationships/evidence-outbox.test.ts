@@ -7,6 +7,7 @@ import type {
   RelationshipObservationInput,
 } from "@x/shared/dist/relationships.js";
 import { RelationshipEvidenceOutbox } from "./evidence-outbox.js";
+import { RelationshipApiError } from "./client.js";
 
 const dirs: string[] = [];
 
@@ -30,6 +31,16 @@ function observation(id: string): RelationshipObservationInput {
   };
 }
 
+/** Same shape, different source — gmail maps to a different workspace capability. */
+function gmailObservation(id: string): RelationshipObservationInput {
+  return {
+    ...observation(id),
+    source: "gmail",
+    eventType: "email_exchanged",
+    normalizedFacts: { thread_id: id },
+  };
+}
+
 afterEach(async () => {
   await Promise.all(dirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
 });
@@ -44,10 +55,10 @@ describe("RelationshipEvidenceOutbox", () => {
     await outbox.enqueue(observation("meeting-1"));
     await outbox.enqueue(observation("meeting-1"));
     await outbox.enqueue(observation("meeting-2"));
-    expect(await outbox.flush()).toEqual({ sent: 2, pending: 0 });
+    expect(await outbox.flush()).toMatchObject({ sent: 2, pending: 0, quarantined: 0 });
     expect(batches).toHaveLength(1);
     expect(batches[0].map((item) => item.externalId)).toEqual(["meeting-1", "meeting-2"]);
-    expect(await outbox.flush()).toEqual({ sent: 0, pending: 0 });
+    expect(await outbox.flush()).toMatchObject({ sent: 0, pending: 0, quarantined: 0 });
   });
 
   it("keeps evidence for a later retry when the cloud is unavailable", async () => {
@@ -59,7 +70,7 @@ describe("RelationshipEvidenceOutbox", () => {
     await outbox.enqueue(observation("meeting-1"));
     expect(await outbox.flush()).toMatchObject({ sent: 0, pending: 1, error: "offline" });
     available = true;
-    expect(await outbox.flush()).toEqual({ sent: 1, pending: 0 });
+    expect(await outbox.flush()).toMatchObject({ sent: 1, pending: 0, quarantined: 0 });
   });
 
   it("stores queued transcript evidence with owner-only permissions", async () => {
@@ -130,7 +141,7 @@ describe("RelationshipEvidenceOutbox", () => {
       await outbox.enqueue(observation(`meeting-${String(index).padStart(3, "0")}`));
     }
 
-    expect(await outbox.flush()).toEqual({ sent: 205, pending: 0 });
+    expect(await outbox.flush()).toMatchObject({ sent: 205, pending: 0, quarantined: 0 });
     expect(sizes).toEqual([100, 100, 5]);
   });
 
@@ -144,5 +155,96 @@ describe("RelationshipEvidenceOutbox", () => {
       /relationship evidence outbox|JSON/,
     );
     expect(await fs.readFile(file, "utf8")).toBe(malformed);
+  });
+
+  /**
+   * The API rejects an entire batch when any one observation's source lacks a
+   * workspace capability, and gmail and meeting sit on different capabilities.
+   * Before per-source partitioning, one un-entitled email observation blocked
+   * every meeting transcript behind it — forever, and silently.
+   */
+  it("does not let a rejected source block a healthy one", async () => {
+    const seen: string[][] = [];
+    const outbox = new RelationshipEvidenceOutbox(await tempFile(), async (items) => {
+      seen.push(items.map((item) => item.externalId));
+      if (items.some((item) => item.source === "gmail")) {
+        throw new RelationshipApiError(403, "source capability disabled: source_google");
+      }
+    });
+
+    await outbox.enqueue(gmailObservation("thread-1"));
+    await outbox.enqueue(observation("meeting-1"));
+    await outbox.enqueue(gmailObservation("thread-2"));
+    await outbox.enqueue(observation("meeting-2"));
+
+    const result = await outbox.flush();
+
+    expect(result.sent).toBe(2);
+    expect(result.bySource.meeting).toEqual({ sent: 2, pending: 0 });
+    expect(result.bySource.gmail.sent).toBe(0);
+    expect(result.bySource.gmail.error).toMatch(/source_google/);
+    // 403 is permanent: held immediately rather than retried five times.
+    expect(result.quarantined).toBe(2);
+    expect(result.pending).toBe(0);
+
+    // No batch ever mixed the two sources.
+    for (const batch of seen) {
+      const sources = new Set(batch.map((id) => (id.startsWith("thread") ? "gmail" : "meeting")));
+      expect(sources.size).toBe(1);
+    }
+
+    // A later flush neither retries the held entries nor loses them.
+    seen.length = 0;
+    const second = await outbox.flush();
+    expect(seen).toEqual([]);
+    expect(second).toMatchObject({ sent: 0, pending: 0, quarantined: 2 });
+  });
+
+  it("quarantines after repeated transient failures instead of retrying forever", async () => {
+    let attempts = 0;
+    const outbox = new RelationshipEvidenceOutbox(await tempFile(), async () => {
+      attempts += 1;
+      throw new Error("offline");
+    });
+    await outbox.enqueue(observation("meeting-1"));
+
+    for (let flushes = 0; flushes < 4; flushes++) {
+      const result = await outbox.flush();
+      expect(result).toMatchObject({ sent: 0, pending: 1, quarantined: 0 });
+    }
+    // The fifth attempt trips the limit.
+    expect(await outbox.flush()).toMatchObject({ sent: 0, pending: 0, quarantined: 1 });
+    expect(attempts).toBe(5);
+
+    // Held, not retried, not dropped.
+    expect(await outbox.flush()).toMatchObject({ quarantined: 1 });
+    expect(attempts).toBe(5);
+  });
+
+  it("reads an outbox written before quarantine fields existed", async () => {
+    const file = await tempFile();
+    await fs.writeFile(
+      file,
+      JSON.stringify({
+        schema: 1,
+        entries: [
+          {
+            key: "meeting:legacy-1:1",
+            observation: observation("legacy-1"),
+            queuedAt: "2026-07-31T12:00:00.000Z",
+            attempts: 2,
+          },
+        ],
+      }),
+      "utf8",
+    );
+
+    const sent: string[] = [];
+    const outbox = new RelationshipEvidenceOutbox(file, async (items) => {
+      sent.push(...items.map((item) => item.externalId));
+    });
+
+    expect(await outbox.flush()).toMatchObject({ sent: 1, pending: 0, quarantined: 0 });
+    expect(sent).toEqual(["legacy-1"]);
   });
 });

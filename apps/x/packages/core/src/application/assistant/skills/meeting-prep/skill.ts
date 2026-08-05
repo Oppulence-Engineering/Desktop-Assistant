@@ -62,9 +62,30 @@ Read the calendar event to extract:
 - Attendees (names and emails)
 - Description/agenda if available
 
+### Step 3a: Check shared relationship state FIRST
+
+The local knowledge notes only contain what the graph builder has distilled. Anything
+published as relationship evidence — finished meetings, email exchanges, confirmed
+commitments, open risks — lives in shared relationship state and is NOT in those notes.
+Look there first, so the brief reflects what actually happened rather than what was
+written down:
+
+\`\`\`
+relationship-lookup({ query: "company_domain_or_name" })
+\`\`\`
+
+Use what it returns:
+- \`account.lifecycle\`, \`account.health\`, \`account.summary\` — where the account stands
+- \`account.risks\`, \`account.milestones\` — what is open
+- \`people\` — who is involved and in what role
+- \`timeline\` — the recent evidence, newest first
+
+If it returns \`found: false\`, say nothing about it and continue with the notes below.
+If \`otherMatches\` is non-empty, say which account you used.
+
 ### Step 3: Gather Context from Knowledge Base
 
-For each attendee, search the knowledge base (path MUST be \`knowledge/\`):
+Then, for each attendee, search the knowledge base (path MUST be \`knowledge/\`):
 
 **Search People notes:**
 \`\`\`

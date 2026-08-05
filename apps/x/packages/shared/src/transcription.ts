@@ -574,6 +574,68 @@ export const DEFAULT_DIARIZATION_SETTINGS: DiarizationSettings = {
  * process synthesizes defaults from the legacy cloud config + sign-in state
  * (back-compat, §36) — see `getTranscriptionConfig` in core.
  */
+/**
+ * What may leave the device as shared relationship evidence.
+ *
+ * One switch per disclosure, because these are genuinely different disclosures and
+ * the copy next to each switch is the consent. Widening what an existing flag sends
+ * without changing its sentence is the one thing that must not happen here: the
+ * single `meetings.syncRelationshipEvidence` toggle promised "resolved counterparty
+ * identity, finished 1:1 transcript text, and human-confirmed commitments", and
+ * attendance rosters and email metadata are neither of those things.
+ *
+ * Everything defaults off. Nothing here is inferred from another flag.
+ */
+export const RelationshipEvidenceSettings = z.object({
+  /**
+   * Finished meeting transcript text and human-confirmed commitments.
+   * Migrated from `meetings.syncRelationshipEvidence`.
+   */
+  meetingTranscripts: z.boolean().default(false),
+  /**
+   * Who was on the invite: names and addresses, no transcript text.
+   *
+   * Separate from transcripts because it discloses different people. A transcript
+   * sends what you and one other person said; a roster sends who *else* was
+   * invited — colleagues and third parties who are not on the recording.
+   */
+  meetingAttendance: z.boolean().default(false),
+  /** Email participants, direction, counts and timing. Never subjects or bodies. */
+  emailMetadata: z.boolean().default(false),
+  /** Titles and organizations parsed from senders' own signature blocks. */
+  signatureEnrichment: z.boolean().default(false),
+  /** Model-assisted contact extraction. Falls back to signature parsing. */
+  modelContactExtraction: z.boolean().default(false),
+});
+export type RelationshipEvidenceSettings = z.infer<typeof RelationshipEvidenceSettings>;
+
+/**
+ * Whether anything at all may be published.
+ *
+ * Use this to gate the outbox drain and other shared machinery; use the individual
+ * flags to gate what actually gets enqueued. Draining only when transcripts are on
+ * would strand an attendance-only user's queue.
+ */
+export function anyRelationshipEvidenceConsent(config: {
+  relationships?: Partial<RelationshipEvidenceSettings>;
+}): boolean {
+  const consent = config.relationships;
+  return (
+    !!consent &&
+    (consent.meetingTranscripts === true ||
+      consent.meetingAttendance === true ||
+      consent.emailMetadata === true)
+  );
+}
+
+export const DEFAULT_RELATIONSHIP_EVIDENCE_SETTINGS: RelationshipEvidenceSettings = {
+  meetingTranscripts: false,
+  meetingAttendance: false,
+  emailMetadata: false,
+  signatureEnrichment: false,
+  modelContactExtraction: false,
+};
+
 export const TranscriptionConfig = z.object({
   $schemaVersion: z.literal(1).default(1),
   voiceProvider: TranscriptionProvider.default("whisper-local"),
@@ -591,8 +653,42 @@ export const TranscriptionConfig = z.object({
   diarization: DiarizationSettings.default(DEFAULT_DIARIZATION_SETTINGS),
   // Native dual-track meeting capture: engine choice, echo cancellation, retention.
   meetings: MeetingsSettings.default(DEFAULT_MEETINGS_SETTINGS),
+  // What may leave the device as shared relationship evidence. Migrated from
+  // meetings.syncRelationshipEvidence by migrateRelationshipEvidenceConsent.
+  relationships: RelationshipEvidenceSettings.default(DEFAULT_RELATIONSHIP_EVIDENCE_SETTINGS),
 });
 export type TranscriptionConfig = z.infer<typeof TranscriptionConfig>;
+
+/**
+ * Carry a pre-existing `meetings.syncRelationshipEvidence` answer onto the new
+ * per-disclosure flags.
+ *
+ * Only `meetingTranscripts` is inherited, and only when the file predates the
+ * `relationships` block entirely. Consent to sending transcripts is not consent to
+ * sending attendance rosters or email metadata, so the other four stay off and the
+ * user opts in to each deliberately.
+ *
+ * Takes the raw parsed JSON because the schema defaults `relationships` in, which
+ * makes "absent" and "present but all false" indistinguishable after parsing —
+ * and re-migrating a user who deliberately turned transcripts back off would
+ * silently re-enable them on every launch.
+ */
+export function migrateRelationshipEvidenceConsent(
+  raw: unknown,
+  parsed: TranscriptionConfig,
+): TranscriptionConfig {
+  const hadBlock =
+    typeof raw === "object" &&
+    raw !== null &&
+    typeof (raw as { relationships?: unknown }).relationships === "object" &&
+    (raw as { relationships?: unknown }).relationships !== null;
+  if (hadBlock) return parsed;
+  if (parsed.meetings.syncRelationshipEvidence !== true) return parsed;
+  return {
+    ...parsed,
+    relationships: { ...parsed.relationships, meetingTranscripts: true },
+  };
+}
 
 /**
  * Remote, A/B-able fleet defaults carried on the per-user account payload

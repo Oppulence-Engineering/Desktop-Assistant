@@ -40,7 +40,7 @@ import {
 import { createGmailBridge } from "./provider-gmail-bridge.js";
 import type { GmailBridge } from "./provider-gmail.js";
 import { MailboxSyncController } from "./sync-controller.js";
-import { PersistentMailboxStore } from "./store-fs.js";
+import { getMailboxStore } from "./store-fs.js";
 import type { MailboxProposal, MailboxStore } from "./store.js";
 import { LlmAiMatcher, LlmDraftGenerator, LlmReplyClassifier } from "./ai.js";
 import { capabilitiesFromScopes } from "./capabilities.js";
@@ -174,6 +174,18 @@ export class MailboxService {
   /**
    * One background tick: ensure the account, sync it into the local store, run
    * due scheduled actions, and materialize any due follow-up nudges.
+   *
+   * ⚠️ NOT WIRED, and deliberately so. `sync_gmail.ts` is the live Gmail loop;
+   * calling this on a timer would start a *second* independent traversal of the
+   * same mailbox with its own cursor — double the quota, and two loops that
+   * disagree about what is new. It would also start `scheduler.runDue`, which
+   * reaches an LLM draft generator, so wiring it turns on background reply
+   * drafting as a side effect.
+   *
+   * It is kept because the provider-neutral sync path it exercises is what the
+   * second provider (Outlook) will need, and it is covered by
+   * `sync-controller.test.ts`. Enrichment reads Gmail through
+   * `normalizeGmailSnapshot`, which is pure and makes no API calls.
    */
   async onSyncTick(): Promise<void> {
     const account = await this.ensureGmailAccount();
@@ -466,7 +478,7 @@ export class MailboxService {
 export function createDefaultMailboxService(
   overrides?: Partial<MailboxServiceDeps>,
 ): MailboxService {
-  const store = overrides?.store ?? new PersistentMailboxStore();
+  const store = overrides?.store ?? getMailboxStore();
   const gmailBridge = overrides?.gmailBridge ?? createGmailBridge();
   const providers =
     overrides?.providers ?? new DefaultMailboxProviderRegistry({ store, gmailBridge });

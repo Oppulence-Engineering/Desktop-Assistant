@@ -176,6 +176,8 @@ export const RelationshipObservationParticipantInputSchema = z.object({
   role: z.string().optional(),
   title: z.string().optional(),
   externalRefs: z.array(z.string()).optional(),
+  /** Per-participant override: one meeting can hold both directions at once. */
+  direction: z.enum(["inbound", "outbound", "internal"]).optional(),
 });
 
 /**
@@ -200,6 +202,14 @@ export const RelationshipObservationInputSchema = z.object({
   payload: z.unknown().optional(),
   participants: z.array(RelationshipObservationParticipantInputSchema).optional(),
   assertions: z.array(RelationshipObservationAssertionInputSchema).optional(),
+  /**
+   * Feed the per-person interaction rollup. Both fall back rather than guess: an
+   * unknown direction increments the interaction total without touching the
+   * inbound/outbound split, because a wrong split silently corrupts every
+   * reciprocity signal built on top of it.
+   */
+  channel: z.enum(["email", "meeting", "call", "chat", "note", "crm"]).optional(),
+  direction: z.enum(["inbound", "outbound", "internal"]).optional(),
 });
 
 export const RelationshipObservationIngestResultSchema = z.object({

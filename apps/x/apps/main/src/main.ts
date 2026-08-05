@@ -31,6 +31,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
 import { updateElectronApp, UpdateSourceType } from "update-electron-app";
 import { init as initGmailSync } from "@x/core/dist/knowledge/sync_gmail.js";
+import { initEmailRelationshipEvidence } from "@x/core/dist/relationships/email-sync-bridge.js";
+import { initCalendarAttendance } from "@x/core/dist/relationships/calendar-attendance.js";
 import { init as initCalendarSync } from "@x/core/dist/knowledge/sync_calendar.js";
 import { init as initFirefliesSync } from "@x/core/dist/knowledge/sync_fireflies.js";
 import { init as initGranolaSync } from "@x/core/dist/knowledge/granola/sync.js";
@@ -481,8 +483,17 @@ async function startBackgroundServices() {
   // any Google sync runs against the stale grant.
   await disconnectGoogleIfScopesStale();
 
+  // Register the relationship-evidence observer BEFORE the loop starts, so the
+  // first sync after launch is not silently skipped. It re-reads consent per
+  // thread and is a no-op until the user turns email evidence on.
+  initEmailRelationshipEvidence();
+
   // start gmail sync
   initGmailSync();
+
+  // Attendance for meetings that were never recorded. Registered before the loop
+  // for the same reason as the email observer.
+  initCalendarAttendance();
 
   // start calendar sync
   initCalendarSync();

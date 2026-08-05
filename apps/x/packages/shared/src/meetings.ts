@@ -131,6 +131,11 @@ export const MeetingsSettings = z.object({
    *
    * Off by default because this sends transcript text to the Oppulence API even when
    * speech-to-text itself ran locally. The settings copy is the consent surface.
+   *
+   * @deprecated Superseded by `relationships.meetingTranscripts`, which sits beside
+   * the other per-disclosure switches. Retained and still migrated so that
+   * downgrading one release does not lose the user's answer; nothing reads it as
+   * consent any more. Remove after one release.
    */
   syncRelationshipEvidence: z.boolean().default(false),
 });
@@ -394,6 +399,16 @@ export type MeetingTranscriptionProgress = z.infer<typeof MeetingTranscriptionPr
 // ---------------------------------------------------------------------------
 
 export interface MeetingCalendarEvent {
+  /**
+   * The provider's event id — the only stable handle tying a recording to the invite
+   * it came from, and to any other observation derived from that invite.
+   *
+   * Optional, and it must stay optional: sessions recorded before this was preserved
+   * have no id, and a manual capture has no invite at all. Never assume it is present.
+   */
+  id?: string;
+  /** Which calendar it came from. "primary" today — sync_calendar hardcodes it. */
+  calendarId?: string;
   summary?: string;
   start?: { dateTime?: string; date?: string };
   end?: { dateTime?: string; date?: string };
@@ -412,9 +427,93 @@ export interface MeetingCalendarEvent {
     displayName?: string;
     self?: boolean;
     resource?: boolean;
+    optional?: boolean;
     responseStatus?: string;
   }[];
   organizer?: { email?: string; displayName?: string };
+}
+
+function str(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function bool(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function timestamp(value: unknown): { dateTime?: string; date?: string } | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const dateTime = str((value as { dateTime?: unknown }).dateTime);
+  const date = str((value as { date?: unknown }).date);
+  if (!dateTime && !date) return undefined;
+  return { ...(dateTime ? { dateTime } : {}), ...(date ? { date } : {}) };
+}
+
+/**
+ * Narrow a raw provider event down to the slice `meta.json` stores.
+ *
+ * Both writers go through this. The autostart path used to drop the event id, and the
+ * deeplink path used to cast the *entire* raw Google event — description, attachments,
+ * recurrence and all — straight into a typed field, so whatever the provider happened
+ * to return ended up persisted in the session directory.
+ *
+ * Returns undefined when there is nothing worth keeping, so callers can treat "no
+ * calendar context" as one case rather than two.
+ */
+export function normalizeMeetingEvent(
+  raw: unknown,
+  opts: { fallbackId?: string; calendarId?: string; source?: string } = {},
+): MeetingCalendarEvent | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const event = raw as Record<string, unknown>;
+
+  const id = str(event.id) ?? str(opts.fallbackId);
+  const start = timestamp(event.start);
+  const end = timestamp(event.end);
+  const organizerRaw = event.organizer;
+  const organizer =
+    typeof organizerRaw === "object" && organizerRaw !== null
+      ? {
+          ...(str((organizerRaw as { email?: unknown }).email)
+            ? { email: str((organizerRaw as { email?: unknown }).email)! }
+            : {}),
+          ...(str((organizerRaw as { displayName?: unknown }).displayName)
+            ? { displayName: str((organizerRaw as { displayName?: unknown }).displayName)! }
+            : {}),
+        }
+      : undefined;
+
+  const attendees = Array.isArray(event.attendees)
+    ? event.attendees
+        // One malformed entry must not discard the rest of the roster.
+        .filter((entry): entry is Record<string, unknown> => typeof entry === "object" && entry !== null)
+        .map((entry) => ({
+          ...(str(entry.email) ? { email: str(entry.email)! } : {}),
+          ...(str(entry.displayName) ? { displayName: str(entry.displayName)! } : {}),
+          ...(bool(entry.self) !== undefined ? { self: bool(entry.self)! } : {}),
+          ...(bool(entry.resource) !== undefined ? { resource: bool(entry.resource)! } : {}),
+          ...(bool(entry.optional) !== undefined ? { optional: bool(entry.optional)! } : {}),
+          ...(str(entry.responseStatus) ? { responseStatus: str(entry.responseStatus)! } : {}),
+        }))
+    : undefined;
+
+  const normalized: MeetingCalendarEvent = {
+    ...(id ? { id } : {}),
+    ...(str(opts.calendarId) ? { calendarId: str(opts.calendarId)! } : {}),
+    ...(str(event.summary) ? { summary: str(event.summary)! } : {}),
+    ...(start ? { start } : {}),
+    ...(end ? { end } : {}),
+    ...(str(event.location) ? { location: str(event.location)! } : {}),
+    ...(str(event.htmlLink) ? { htmlLink: str(event.htmlLink)! } : {}),
+    ...(str(event.conferenceLink) ? { conferenceLink: str(event.conferenceLink)! } : {}),
+    ...(attendees && attendees.length > 0 ? { attendees } : {}),
+    ...(organizer && Object.keys(organizer).length > 0 ? { organizer } : {}),
+    ...(str(opts.source) ?? str(event.source)
+      ? { source: (str(opts.source) ?? str(event.source))! }
+      : {}),
+  };
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
 export interface MeetingNoteEntry {

@@ -52,6 +52,14 @@ interface RowState {
 
 const DEFAULT_ROW: RowState = { retrying: false, deleting: false };
 
+/** One organization a multi-org meeting could belong to. */
+type AccountCandidate = {
+  accountDomain: string;
+  displayName: string;
+  participantCount: number;
+  participants: { displayName: string; email?: string }[];
+};
+
 export function MeetingRecordings({ onOpenNote }: { onOpenNote?: (path: string) => void }) {
   const [sessions, setSessions] = useState<MeetingSessionSummary[]>([]);
   const [busy, setBusy] = useState<Record<string, RowState>>({});
@@ -60,16 +68,86 @@ export function MeetingRecordings({ onOpenNote }: { onOpenNote?: (path: string) 
   // be sticky from a previous deletion.
   const [alsoDeleteNote, setAlsoDeleteNote] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Meetings whose invite spanned two organizations. The app deliberately refuses
+   * to guess which account they belong to, so nothing was published and the
+   * question is asked here instead.
+   */
+  const [accountQuestions, setAccountQuestions] = useState<Record<string, AccountCandidate[]>>({});
+  const [answering, setAnswering] = useState<Record<string, boolean>>({});
 
   const refresh = useCallback(async () => {
     try {
       const { sessions: list } = await window.ipc.invoke("meeting:listSessions", null);
       setSessions(list);
+      const questions: Record<string, AccountCandidate[]> = {};
+      await Promise.all(
+        list.map(async (session) => {
+          try {
+            const result = await window.ipc.invoke("meeting:relationshipCandidates", {
+              sessionId: session.id,
+            });
+            if (!result.resolved && result.candidates.length > 0) {
+              questions[session.id] = result.candidates;
+            }
+          } catch {
+            // A missing candidates file is the normal case, not an error.
+          }
+        }),
+      );
+      setAccountQuestions(questions);
     } catch {
       // Native capture unavailable — there is nothing to list, which is not an error.
       setSessions([]);
     }
   }, []);
+
+  /**
+   * Attach a recording to the account the user picked.
+   *
+   * Resolves the domain to a real relationship first: the publish path takes a
+   * relationship id, and binding by domain alone is exactly the guess this prompt
+   * exists to avoid.
+   */
+  const answerAccount = useCallback(
+    async (sessionId: string, candidate: AccountCandidate) => {
+      setAnswering((current) => ({ ...current, [sessionId]: true }));
+      setError(null);
+      try {
+        const { relationships } = await window.ipc.invoke("relationships:list", {
+          q: candidate.accountDomain,
+        });
+        const match =
+          relationships.find((item) => item.accountDomain === candidate.accountDomain) ??
+          relationships[0];
+        if (!match) {
+          setError(
+            `No account matches ${candidate.accountDomain} yet. Create it in Relationships, then attach this recording.`,
+          );
+          return;
+        }
+        const result = await window.ipc.invoke("meeting:publishSessionEvidence", {
+          sessionId,
+          relationshipTarget: {
+            relationshipId: match.id,
+            displayName: match.displayName,
+            ...(match.primaryEmail ? { primaryEmail: match.primaryEmail } : {}),
+            ...(match.accountDomain ? { accountDomain: match.accountDomain } : {}),
+          },
+        });
+        if (!result.queued) {
+          setError(result.reason ?? "The recording could not be attached.");
+          return;
+        }
+        await refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "The recording could not be attached.");
+      } finally {
+        setAnswering((current) => ({ ...current, [sessionId]: false }));
+      }
+    },
+    [refresh],
+  );
 
   useEffect(() => {
     void refresh();
@@ -167,14 +245,13 @@ export function MeetingRecordings({ onOpenNote }: { onOpenNote?: (path: string) 
         {sessions.map((session, index) => {
           const row = busy[session.id];
           const silentTracks = session.tracks.filter((track) => track.silent);
+          const question = accountQuestions[session.id];
           return (
             <div
               key={session.id}
-              className={cn(
-                "flex items-center gap-3 px-4 py-2.5 text-sm",
-                index > 0 && "border-t border-border/60",
-              )}
+              className={cn(index > 0 && "border-t border-border/60")}
             >
+            <div className="flex items-center gap-3 px-4 py-2.5 text-sm">
               <Mic className="size-4 shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -236,6 +313,41 @@ export function MeetingRecordings({ onOpenNote }: { onOpenNote?: (path: string) 
                   <Trash2 className="size-3" />
                 )}
               </Button>
+            </div>
+
+            {question && (
+              <div className="border-t border-dashed border-border/60 bg-muted/30 px-4 py-2.5">
+                <p className="text-xs text-muted-foreground">
+                  People from{" "}
+                  <span className="font-medium text-foreground">
+                    {question.map((candidate) => candidate.accountDomain).join(" and ")}
+                  </span>{" "}
+                  were on this call. Which account is it? Nothing was published until
+                  you say.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {question.map((candidate) => (
+                    <Button
+                      key={candidate.accountDomain}
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs"
+                      disabled={answering[session.id]}
+                      onClick={() => void answerAccount(session.id, candidate)}
+                    >
+                      {answering[session.id] && (
+                        <Loader2 className="mr-1 size-3 animate-spin" />
+                      )}
+                      {candidate.displayName}
+                      <span className="ml-1 text-muted-foreground">
+                        ({candidate.participantCount})
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
             </div>
           );
         })}

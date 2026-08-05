@@ -105,6 +105,7 @@ import {
   DictationHistoryEngine,
   DiarizationSettings,
   TranscriptionRouting,
+  RelationshipEvidenceSettings,
 } from "./transcription.js";
 import * as meetings from "./meetings.js";
 
@@ -1388,6 +1389,8 @@ const ipcSchemas = {
       diarization: DiarizationSettings.partial().optional(),
       // Native dual-track capture: engine, echo cancellation, audio retention.
       meetings: meetings.MeetingsSettings.partial().optional(),
+      // What may leave the device as shared relationship evidence.
+      relationships: RelationshipEvidenceSettings.partial().optional(),
     }),
     res: TranscriptionConfig,
   },
@@ -1489,6 +1492,29 @@ const ipcSchemas = {
       relationshipStateVersion: z.number().int().nonnegative().optional(),
       relationshipStateHash: z.string().optional(),
       reason: z.string().optional(),
+    }),
+  },
+  /**
+   * The unanswered account question a multi-organization meeting left behind.
+   *
+   * When an invite spans two organizations there is no honest way to infer which
+   * account it belongs to, so nothing is published and the candidates are recorded
+   * beside the recording. This is how the user gets asked.
+   */
+  "meeting:relationshipCandidates": {
+    req: z.object({ sessionId: z.string() }),
+    res: z.object({
+      resolved: z.boolean(),
+      candidates: z.array(
+        z.object({
+          accountDomain: z.string(),
+          displayName: z.string(),
+          participantCount: z.number().int().nonnegative(),
+          participants: z.array(
+            z.object({ displayName: z.string(), email: z.string().optional() }),
+          ),
+        }),
+      ),
     }),
   },
   "meeting:captureStatus": {

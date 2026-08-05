@@ -2,16 +2,42 @@
  * Structurally typed rather than tied to `MeetingCalendarEvent`, so this works on both
  * the slice stored in `meta.json` and a raw provider event straight off disk.
  */
+export interface AttendeeRecord {
+  email?: string;
+  displayName?: string;
+  self?: boolean;
+  resource?: boolean;
+  optional?: boolean;
+  responseStatus?: string;
+}
+
 export interface AttendeeSource {
-  attendees?: {
-    email?: string;
-    displayName?: string;
-    self?: boolean;
-    resource?: boolean;
-    responseStatus?: string;
-  }[];
+  attendees?: AttendeeRecord[];
   organizer?: { email?: string; displayName?: string };
 }
+
+/** Why an invitee is not counted as a participant in the conversation. */
+export type AttendeeExclusion = "self" | "resource" | "room" | "bot";
+
+export interface AttendeePartition {
+  /** The local user, as the invite identifies them. */
+  self: AttendeeRecord[];
+  /** Everyone else who is a person. */
+  others: AttendeeRecord[];
+  excluded: { attendee: AttendeeRecord; why: AttendeeExclusion }[];
+}
+
+/**
+ * Invitees that are attendees to the calendar but not to the conversation.
+ *
+ * Only consulted when a caller explicitly opts in. See the warning on
+ * {@link partitionAttendees} for why this must never apply to attribution.
+ */
+const BOT_ATTENDEE_PATTERNS: readonly RegExp[] = [
+  /^(no-?reply|notetaker|notes|recorder|meeting-?bot|calendar)[-.@]/i,
+  /@(fireflies\.ai|otter\.ai|read\.ai|fathom\.video|granola\.(ai|so)|avoma\.com|chorus\.ai|gong\.io)$/i,
+  /@(group|resource)\.calendar\.google\.com$/i,
+];
 
 /**
  * Who "Other" actually is.
@@ -62,22 +88,52 @@ function normalizeEmail(value: string | undefined): string | undefined {
   return trimmed || undefined;
 }
 
-/** Real people, excluding the local user and anything that looks like a room or a bot. */
-function humanAttendees(
+/**
+ * Split an invite into the local user, the other humans, and everything that is an
+ * attendee to the calendar but not to the conversation.
+ *
+ * ⚠️ `opts.excludeBots` is OFF by default and must stay off for attribution. Bot
+ * filtering can only ever *reduce* the other-attendee count, and reducing it from two
+ * to one is exactly how {@link resolveCounterparty} would start naming someone it
+ * should have declined to name. A roster may turn it on, because dropping a notetaker
+ * from "who was in the meeting" cannot mislabel a sentence.
+ */
+export function partitionAttendees(
   event: AttendeeSource,
   selfEmails: Set<string>,
-): { email?: string; displayName?: string; responseStatus?: string }[] {
-  return (event.attendees ?? []).filter((attendee) => {
-    if (attendee.self) return false;
-    if (attendee.resource) return false;
+  opts: { excludeBots?: boolean } = {},
+): AttendeePartition {
+  const partition: AttendeePartition = { self: [], others: [], excluded: [] };
+  for (const attendee of event.attendees ?? []) {
     const email = normalizeEmail(attendee.email);
-    if (email && selfEmails.has(email)) return false;
-    // Conference-room and notetaker-bot invitees are attendees to the calendar and not
-    // to the conversation; counting them turns a 1:1 into a "group call" and silently
+    if (attendee.self || (email && selfEmails.has(email))) {
+      partition.self.push(attendee);
+      partition.excluded.push({ attendee, why: "self" });
+      continue;
+    }
+    if (attendee.resource) {
+      partition.excluded.push({ attendee, why: "resource" });
+      continue;
+    }
+    // Conference-room invitees are attendees to the calendar and not to the
+    // conversation; counting them turns a 1:1 into a "group call" and silently
     // suppresses naming.
-    if (email && /^(room|rooms|resource)[-.]|@resource\./.test(email)) return false;
-    return true;
-  });
+    if (email && /^(room|rooms|resource)[-.]|@resource\./.test(email)) {
+      partition.excluded.push({ attendee, why: "room" });
+      continue;
+    }
+    if (opts.excludeBots && email && BOT_ATTENDEE_PATTERNS.some((re) => re.test(email))) {
+      partition.excluded.push({ attendee, why: "bot" });
+      continue;
+    }
+    partition.others.push(attendee);
+  }
+  return partition;
+}
+
+/** Real people, excluding the local user and anything that looks like a room. */
+function humanAttendees(event: AttendeeSource, selfEmails: Set<string>): AttendeeRecord[] {
+  return partitionAttendees(event, selfEmails).others;
 }
 
 function lookup(people: KnownPerson[], email?: string, displayName?: string): KnownPerson | null {
