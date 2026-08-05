@@ -14,7 +14,8 @@
     "jobs-worker": "tsx app/scripts/jobs-worker.ts",
     "mongodb-drop-indexes": "tsx app/scripts/mongodb-drop-indexes.ts",
     "mongodb-ensure-indexes": "tsx app/scripts/mongodb-ensure-indexes.ts",
-    "typecheck": "tsgo --noEmit"
+    "typecheck": "tsgo --noEmit",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.65",
@@ -69,6 +70,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@next/playwright": "^16.3.0",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.1.10",
     "@types/node": "^20",
     "@types/react": "19.2.15",

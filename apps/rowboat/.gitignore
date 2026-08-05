@@ -40,3 +40,5 @@ chunked.jsonl
 crawled.jsonl
 embeddings.jsonl
 rewritten.jsonl
+test-results/
+playwright-report/
