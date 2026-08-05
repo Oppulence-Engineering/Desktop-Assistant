@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.27](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.26...v0.1.27) (2026-08-05)
+
+
+### Bug Fixes
+
+* **gmail:** mailbox sync and Google write scopes ([#204](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/204)) ([3832c8c](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/3832c8c46ea288616c008ee68565f81994b6a4dc))
+
 ## [0.1.26](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.25...v0.1.26) (2026-08-05)
 
 
