@@ -3,7 +3,7 @@
   "productName": "Oppulence",
   "description": "Relationship intelligence for customer-facing teams",
   "type": "module",
-  "version": "0.1.25",
+  "version": "0.1.26",
   "main": ".package/dist/main.cjs",
   "license": "Apache-2.0",
   "scripts": {
