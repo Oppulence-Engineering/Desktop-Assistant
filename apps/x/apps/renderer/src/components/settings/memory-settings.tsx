@@ -194,6 +194,8 @@ export function MemorySettings({ dialogOpen }: { dialogOpen: boolean }) {
         </SettingsRow>
       </SettingsSection>
 
+      <MemorySearchPanel />
+
       <SettingsSection
         title="Advanced"
         description="Changing the model or dimensions rebuilds the index."
@@ -229,5 +231,97 @@ export function MemorySettings({ dialogOpen }: { dialogOpen: boolean }) {
         </Button>
       </div>
     </div>
+  );
+}
+
+type SearchHit = {
+  path: string;
+  headingAnchor: string;
+  snippet: string;
+  score: number;
+};
+
+/**
+ * Search the index from the pane that configures it.
+ *
+ * `memory:search` had a handler and a schema and no caller — the semantic index
+ * could be built, tuned and rebuilt, but never queried from the UI. That also
+ * left every switch above this unverifiable: there was no way to tell whether
+ * turning on query expansion or moving the recency weight did anything.
+ *
+ * The returned `mode` is shown because it is the one thing a user cannot infer.
+ * "lexical_fallback" means the vector index is unavailable and results are
+ * plain text matching — the retrieval settings above are doing nothing, and
+ * silently degrading looks identical to working.
+ */
+function MemorySearchPanel() {
+  const [query, setQuery] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [mode, setMode] = useState<string | null>(null);
+  const [hits, setHits] = useState<SearchHit[] | null>(null);
+
+  const run = useCallback(async () => {
+    const q = query.trim();
+    if (!q || busy) return;
+    setBusy(true);
+    try {
+      const res = await window.ipc.invoke("memory:search", { query: q, k: 10 });
+      setMode(res.mode);
+      setHits(res.results);
+    } catch {
+      toast.error("Search failed. The index may still be building.");
+      setHits(null);
+      setMode(null);
+    } finally {
+      setBusy(false);
+    }
+  }, [query, busy]);
+
+  return (
+    <SettingsSection
+      title="Try a search"
+      description="Query the index with the settings above, and see which retrieval mode answered."
+    >
+      <div className="flex gap-2">
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void run();
+          }}
+          placeholder="Search your notes and meetings…"
+          aria-label="Memory search query"
+        />
+        <Button onClick={() => void run()} disabled={busy || query.trim() === ""}>
+          {busy ? <Loader2 className="size-4 animate-spin" /> : "Search"}
+        </Button>
+      </div>
+
+      {mode !== null && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          {mode === "lexical_fallback"
+            ? "Answered by plain text matching — the vector index is unavailable, so the retrieval settings above are not in play."
+            : `Answered by ${mode.replace("_", " ")} retrieval.`}
+        </p>
+      )}
+
+      {hits !== null && hits.length === 0 && (
+        <p className="mt-3 text-xs text-muted-foreground">No matches.</p>
+      )}
+
+      {hits !== null && hits.length > 0 && (
+        <ul className="mt-3 space-y-2">
+          {hits.map((hit) => (
+            <li
+              key={`${hit.path}${hit.headingAnchor}`}
+              className="rounded-lg border border-border/60 p-3"
+            >
+              <p className="settings-row-label truncate text-xs">{hit.path}</p>
+              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{hit.snippet}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </SettingsSection>
   );
 }

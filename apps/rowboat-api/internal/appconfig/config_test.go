@@ -468,3 +468,41 @@ func TestValidateCloudRuntimeSandboxBackend(t *testing.T) {
 		t.Fatal("unknown sandbox backend must be rejected")
 	}
 }
+
+// The LLM gateway limits must be generous enough for agentic traffic. The
+// desktop turns one user action ("label these 15 emails") into ~16 round trips
+// and runs several such actions at once, so the old 60/min ceiling was hit by
+// users doing exactly what the product asks of them.
+//
+// These bound burst and abuse, not spend: credits are reserved per call and
+// DAILY_CREDIT_LIMIT / MONTHLY_CREDIT_LIMIT cap cost independently.
+func TestLLMRateLimitsFitAgenticTraffic(t *testing.T) {
+	t.Setenv("INFISICAL_ENABLED", "false")
+	t.Setenv("OPENROUTER_API_KEY", "test")
+	cfg := Load()
+
+	// One labeling batch is ~16 calls; three run concurrently. A ceiling below
+	// that means a single ordinary run cannot finish without being throttled.
+	const oneBatch = 16
+	const concurrentBatches = 3
+	if cfg.LLMRateLimitPerUserBurst < oneBatch*concurrentBatches {
+		t.Errorf("burst limit %d cannot absorb %d concurrent labeling batches (%d calls)",
+			cfg.LLMRateLimitPerUserBurst, concurrentBatches, oneBatch*concurrentBatches)
+	}
+	if cfg.LLMRateLimitPerUserPerMin < cfg.LLMRateLimitPerUserBurst {
+		t.Errorf("per-minute limit %d is below the 10s burst allowance %d, so the burst can never be spent",
+			cfg.LLMRateLimitPerUserPerMin, cfg.LLMRateLimitPerUserBurst)
+	}
+}
+
+func TestLLMRateLimitsAreOverridable(t *testing.T) {
+	t.Setenv("INFISICAL_ENABLED", "false")
+	t.Setenv("OPENROUTER_API_KEY", "test")
+	t.Setenv("LLM_RATE_LIMIT_PER_USER_PER_MINUTE", "999")
+	t.Setenv("LLM_RATE_LIMIT_PER_USER_BURST_PER_10S", "77")
+	cfg := Load()
+	if cfg.LLMRateLimitPerUserPerMin != 999 || cfg.LLMRateLimitPerUserBurst != 77 {
+		t.Errorf("env overrides ignored: got %d/min, %d burst",
+			cfg.LLMRateLimitPerUserPerMin, cfg.LLMRateLimitPerUserBurst)
+	}
+}

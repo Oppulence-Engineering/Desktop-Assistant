@@ -41,6 +41,7 @@
     "node-html-markdown": "^2.0.0",
     "ollama-ai-provider-v2": "^1.5.4",
     "openid-client": "^6.8.1",
+    "p-queue": "^9.3.3",
     "papaparse": "^5.5.3",
     "pdf-parse": "^2.4.5",
     "posthog-node": "^5.35.0",

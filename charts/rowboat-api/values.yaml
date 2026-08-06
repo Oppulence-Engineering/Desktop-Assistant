@@ -213,6 +213,13 @@ config:
   VENDOR_RESPONSE_HEADER_TIMEOUT: 15s
   VENDOR_MAX_CONCURRENT: "64"
   LLM_MAX_CONCURRENT: "32"
+  # Per-user LLM gateway limits. Sized for agentic traffic: one user action can
+  # be ~16 round trips (labeling a batch of emails), and several run at once.
+  # These bound burst and abuse, not cost — spend is capped by
+  # DAILY_CREDIT_LIMIT / MONTHLY_CREDIT_LIMIT and per-call credit reservation,
+  # and LLM_MAX_CONCURRENT bounds what actually reaches the provider.
+  LLM_RATE_LIMIT_PER_USER_PER_MINUTE: "600"
+  LLM_RATE_LIMIT_PER_USER_BURST_PER_10S: "100"
   UPSTREAM_RESPONSE_MAX_BYTES: "67108864"
   DAILY_CREDIT_LIMIT: "100000"
   MONTHLY_CREDIT_LIMIT: "2000000"

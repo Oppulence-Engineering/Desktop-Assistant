@@ -2182,13 +2182,22 @@ function RelationshipSheet({
                       <p className="font-medium capitalize text-primary">
                         {humanize(plan.status)} · revision {plan.currentRevision.version}
                       </p>
-                      <ul className="mt-1 list-disc pl-4 text-primary/60">
-                        {plan.currentRevision.items.map((item) => (
-                          <li key={item.itemId}>
-                            {item.title} · {item.ownerParticipantRef}
-                          </li>
-                        ))}
-                      </ul>
+                      <PlanItemEditor
+                        planId={plan.planId}
+                        relationshipId={id}
+                        items={plan.currentRevision.items}
+                        editable={plan.status === "draft" || plan.status === "revised"}
+                        busy={Boolean(busy)}
+                        onRevise={(items) =>
+                          act(`revise-plan:${plan.planId}`, () =>
+                            window.ipc.invoke("relationships:reviseMutualActionPlan", {
+                              relationshipId: id,
+                              planId: plan.planId,
+                              items,
+                            }),
+                          )
+                        }
+                      />
                       <div className="mt-2 flex gap-1.5">
                         {plan.status === "draft" || plan.status === "revised" ? (
                           <Button
@@ -3200,5 +3209,158 @@ function CreateRelationshipDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+type PlanItem = {
+  itemId: string;
+  commitmentId?: string;
+  milestoneRef?: string;
+  title: string;
+  ownerParticipantRef: string;
+  dependencyItemIds: string[];
+  dueAt?: string;
+  status: "open" | "blocked" | "completed" | "cancelled";
+  evidenceRefs: string[];
+};
+
+const PLAN_ITEM_STATUSES = ["open", "blocked", "completed", "cancelled"] as const;
+
+/**
+ * Edit a mutual action plan before approving it.
+ *
+ * `relationships:reviseMutualActionPlan` had a handler and no caller: the plan
+ * could be created, approved and shared, but never changed. A plan assembled
+ * from accepted commitments was take-it-or-leave-it, and the only way to fix a
+ * wrong owner or a stale due date was to not approve it at all.
+ *
+ * Two deliberate limits. Items can be edited and dropped but not invented,
+ * because every item carries `evidenceRefs` tying it to something that actually
+ * happened — a hand-typed row would be an assertion with no evidence behind it,
+ * which is the one thing this whole model refuses to do. And the last item
+ * cannot be removed: the API requires at least one, and an empty plan is a
+ * deletion wearing a revision's clothes.
+ */
+function PlanItemEditor({
+  items,
+  editable,
+  busy,
+  onRevise,
+}: {
+  planId: string;
+  relationshipId: string;
+  items: PlanItem[];
+  editable: boolean;
+  busy: boolean;
+  onRevise: (items: PlanItem[]) => Promise<boolean>;
+}) {
+  const [draft, setDraft] = React.useState<PlanItem[] | null>(null);
+
+  const edit = (index: number, patch: Partial<PlanItem>) => {
+    setDraft((current) =>
+      (current ?? items).map((item, i) => (i === index ? { ...item, ...patch } : item)),
+    );
+  };
+
+  const drop = (index: number) => {
+    setDraft((current) => {
+      const next = (current ?? items).filter((_, i) => i !== index);
+      return next.length === 0 ? (current ?? items) : next;
+    });
+  };
+
+  if (!editable || draft === null) {
+    return (
+      <>
+        <ul className="mt-1 list-disc pl-4 text-primary/60">
+          {items.map((item) => (
+            <li key={item.itemId}>
+              {item.title} · {item.ownerParticipantRef}
+              {item.status !== "open" ? ` · ${item.status}` : ""}
+            </li>
+          ))}
+        </ul>
+        {editable ? (
+          <button
+            type="button"
+            className="mt-1 text-[11px] underline underline-offset-2 text-primary/60 hover:text-primary"
+            onClick={() => setDraft(items)}
+          >
+            Revise items
+          </button>
+        ) : null}
+      </>
+    );
+  }
+
+  return (
+    <div className="mt-2 space-y-2">
+      {draft.map((item, index) => (
+        <div key={item.itemId} className="border border-border/60 p-2">
+          <input
+            value={item.title}
+            onChange={(e) => edit(index, { title: e.target.value })}
+            className="w-full bg-transparent text-xs outline-none"
+            aria-label="Item title"
+          />
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <input
+              value={item.ownerParticipantRef}
+              onChange={(e) => edit(index, { ownerParticipantRef: e.target.value })}
+              className="min-w-0 flex-1 border border-border/60 bg-transparent px-1.5 py-0.5 text-[11px] outline-none"
+              aria-label="Item owner"
+            />
+            <select
+              value={item.status}
+              onChange={(e) => edit(index, { status: e.target.value as PlanItem["status"] })}
+              className="border border-border/60 bg-transparent px-1 py-0.5 text-[11px]"
+              aria-label="Item status"
+            >
+              {PLAN_ITEM_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            <input
+              type="date"
+              value={item.dueAt ? item.dueAt.slice(0, 10) : ""}
+              onChange={(e) =>
+                edit(index, {
+                  dueAt: e.target.value ? new Date(e.target.value).toISOString() : undefined,
+                })
+              }
+              className="border border-border/60 bg-transparent px-1 py-0.5 text-[11px]"
+              aria-label="Item due date"
+            />
+            <button
+              type="button"
+              className="text-[11px] text-primary/50 underline underline-offset-2 hover:text-destructive disabled:opacity-40"
+              disabled={draft.length === 1}
+              title={draft.length === 1 ? "A plan needs at least one item" : "Remove this item"}
+              onClick={() => drop(index)}
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      ))}
+      <div className="flex gap-1.5">
+        <Button
+          size="sm"
+          disabled={busy}
+          onClick={() => {
+            void onRevise(draft).then((ok) => {
+              if (ok) setDraft(null);
+            });
+          }}
+        >
+          Save revision
+        </Button>
+        <Button size="sm" variant="ghost" disabled={busy} onClick={() => setDraft(null)}>
+          Cancel
+        </Button>
+      </div>
+    </div>
   );
 }

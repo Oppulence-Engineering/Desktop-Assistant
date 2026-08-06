@@ -73,3 +73,37 @@ describe("default OpenAI model ids", () => {
     }
   });
 });
+
+describe("signed-in gateway defaults", () => {
+  const source = read("apps/x/packages/core/src/models/defaults.ts");
+
+  function constant(name: string): string {
+    const m = source.match(new RegExp(`const ${name} = "([^"]+)"`));
+    expect(m, `${name} not found`).not.toBeNull();
+    return m![1];
+  }
+
+  const SIGNED_IN = [
+    "SIGNED_IN_DEFAULT_MODEL",
+    "SIGNED_IN_KG_MODEL",
+    "SIGNED_IN_LIVE_NOTE_AGENT_MODEL",
+    "SIGNED_IN_AUTO_PERMISSION_DECISION_MODEL",
+  ];
+
+  it("all point at the same model", () => {
+    // These moved together off openai/* when that leg started returning 502,
+    // and they must move back together. A partial revert leaves chat on one
+    // provider and labeling on another, so a provider outage takes out half the
+    // product and looks like a feature bug rather than an outage.
+    const values = SIGNED_IN.map(constant);
+    expect(new Set(values).size, `mixed providers: ${values.join(", ")}`).toBe(1);
+  });
+
+  it("use a gateway-namespaced id", () => {
+    // honorGatewayModel() treats an id without "/" as non-gateway and
+    // substitutes the default — a bare id here would silently self-reference.
+    for (const name of SIGNED_IN) {
+      expect(constant(name)).toContain("/");
+    }
+  });
+});

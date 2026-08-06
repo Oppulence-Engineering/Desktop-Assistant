@@ -12,7 +12,51 @@ let client: PostHog | null = null;
 let initAttempted = false;
 let identifiedUserId: string | null = null;
 
+/**
+ * Whether the user has consented to product analytics.
+ *
+ * Starts false and is set from `privacy.json` during startup
+ * (config/privacy.ts `applyPrivacyConfig`). Fail-closed on purpose: this gates
+ * data leaving the machine, so the failure mode for a broken wiring path should
+ * be "we sent nothing", not "we sent everything". The previous version of this
+ * setting lived in renderer localStorage that nothing read, and analytics ran
+ * regardless of what the switch said.
+ */
+let analyticsEnabled = false;
+
+/**
+ * Apply the consent decision. Called at startup and whenever the user changes
+ * the setting, so opting out takes effect immediately rather than next launch.
+ */
+export function setAnalyticsEnabled(enabled: boolean): void {
+  if (analyticsEnabled === enabled) return;
+  analyticsEnabled = enabled;
+  if (enabled) return;
+
+  // Opting out: stop the client rather than leaving it idle. Dropping the
+  // reference alone would leave its flush timer running and still shipping the
+  // queue. shutdown() drains what was already captured — under the previous
+  // consent — and then nothing further is captured because every entry point
+  // below checks the flag first.
+  const stopping = client;
+  client = null;
+  identifiedUserId = null;
+  if (stopping) {
+    void Promise.resolve(stopping.shutdown()).catch(() => {
+      // Best effort; the point is that no new events are captured.
+    });
+  }
+}
+
+/** Whether analytics is currently permitted (diagnostics and tests). */
+export function isAnalyticsEnabled(): boolean {
+  return analyticsEnabled;
+}
+
 function getClient(): PostHog | null {
+  // Checked before init, not just before capture: constructing the client
+  // sends an identify() call of its own.
+  if (!analyticsEnabled) return null;
   if (initAttempted) return client;
   initAttempted = true;
   if (!POSTHOG_KEY) {

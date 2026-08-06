@@ -30,6 +30,7 @@ import { calendarNotifyHooks } from "./meeting-autostart.js";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
 import { initUpdates } from "./update-manager.js";
+import { clearBackgroundQueue } from "@x/core/dist/models/gateway-budget.js";
 import { init as initGmailSync } from "@x/core/dist/knowledge/sync_gmail.js";
 import { initEmailRelationshipEvidence } from "@x/core/dist/relationships/email-sync-bridge.js";
 import { initCalendarAttendance } from "@x/core/dist/relationships/calendar-attendance.js";
@@ -63,6 +64,7 @@ import { shutdown as shutdownAnalytics, captureException } from "@x/core/dist/an
 import { identifyIfSignedIn } from "@x/core/dist/analytics/identify.js";
 
 import { initConfigs } from "@x/core/dist/config/initConfigs.js";
+import { applyPrivacyConfig } from "@x/core/dist/config/privacy.js";
 import { resolveWorkspacePath } from "@x/core/dist/workspace/workspace.js";
 import started from "electron-squirrel-startup";
 import { init as initChromeSync } from "@x/core/dist/knowledge/chrome-extension/server/server.js";
@@ -574,6 +576,10 @@ app.whenReady().then(async () => {
   // Initialize all config files before UI can access them
   await initConfigs();
 
+  // Before anything can capture: analytics is fail-closed until the stored
+  // consent is read, so this has to run early or legitimate events are dropped.
+  await applyPrivacyConfig();
+
   registerBrowserControlService(new ElectronBrowserControlService());
   registerNotificationService(notificationService);
 
@@ -731,6 +737,10 @@ function runQuitCleanup(): void {
   stopWorkspaceWatcher();
   stopRunsWatcher();
   stopServicesWatcher();
+  // Drop paced background LLM work. A labeling run can leave hundreds of
+  // requests queued; without this they keep firing while everything else is
+  // being torn down.
+  clearBackgroundQueue();
   // Tear down any live ACP coding-agent adapter processes so they don't outlive the app.
   try {
     container.resolve<CodeModeManager>("codeModeManager").disposeAll();
