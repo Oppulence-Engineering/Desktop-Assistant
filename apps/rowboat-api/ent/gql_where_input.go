@@ -23083,6 +23083,21 @@ type PersonWhereInput struct {
 	LocaleEqualFold    *string  `json:"localeEqualFold,omitempty"`
 	LocaleContainsFold *string  `json:"localeContainsFold,omitempty"`
 
+	// "employment_status" field predicates.
+	EmploymentStatus             *string  `json:"employmentStatus,omitempty"`
+	EmploymentStatusNEQ          *string  `json:"employmentStatusNEQ,omitempty"`
+	EmploymentStatusIn           []string `json:"employmentStatusIn,omitempty"`
+	EmploymentStatusNotIn        []string `json:"employmentStatusNotIn,omitempty"`
+	EmploymentStatusGT           *string  `json:"employmentStatusGT,omitempty"`
+	EmploymentStatusGTE          *string  `json:"employmentStatusGTE,omitempty"`
+	EmploymentStatusLT           *string  `json:"employmentStatusLT,omitempty"`
+	EmploymentStatusLTE          *string  `json:"employmentStatusLTE,omitempty"`
+	EmploymentStatusContains     *string  `json:"employmentStatusContains,omitempty"`
+	EmploymentStatusHasPrefix    *string  `json:"employmentStatusHasPrefix,omitempty"`
+	EmploymentStatusHasSuffix    *string  `json:"employmentStatusHasSuffix,omitempty"`
+	EmploymentStatusEqualFold    *string  `json:"employmentStatusEqualFold,omitempty"`
+	EmploymentStatusContainsFold *string  `json:"employmentStatusContainsFold,omitempty"`
+
 	// "attributes_version" field predicates.
 	AttributesVersion      *int  `json:"attributesVersion,omitempty"`
 	AttributesVersionNEQ   *int  `json:"attributesVersionNEQ,omitempty"`
@@ -23734,6 +23749,45 @@ func (i *PersonWhereInput) P() (predicate.Person, error) {
 	}
 	if i.LocaleContainsFold != nil {
 		predicates = append(predicates, person.LocaleContainsFold(*i.LocaleContainsFold))
+	}
+	if i.EmploymentStatus != nil {
+		predicates = append(predicates, person.EmploymentStatusEQ(*i.EmploymentStatus))
+	}
+	if i.EmploymentStatusNEQ != nil {
+		predicates = append(predicates, person.EmploymentStatusNEQ(*i.EmploymentStatusNEQ))
+	}
+	if len(i.EmploymentStatusIn) > 0 {
+		predicates = append(predicates, person.EmploymentStatusIn(i.EmploymentStatusIn...))
+	}
+	if len(i.EmploymentStatusNotIn) > 0 {
+		predicates = append(predicates, person.EmploymentStatusNotIn(i.EmploymentStatusNotIn...))
+	}
+	if i.EmploymentStatusGT != nil {
+		predicates = append(predicates, person.EmploymentStatusGT(*i.EmploymentStatusGT))
+	}
+	if i.EmploymentStatusGTE != nil {
+		predicates = append(predicates, person.EmploymentStatusGTE(*i.EmploymentStatusGTE))
+	}
+	if i.EmploymentStatusLT != nil {
+		predicates = append(predicates, person.EmploymentStatusLT(*i.EmploymentStatusLT))
+	}
+	if i.EmploymentStatusLTE != nil {
+		predicates = append(predicates, person.EmploymentStatusLTE(*i.EmploymentStatusLTE))
+	}
+	if i.EmploymentStatusContains != nil {
+		predicates = append(predicates, person.EmploymentStatusContains(*i.EmploymentStatusContains))
+	}
+	if i.EmploymentStatusHasPrefix != nil {
+		predicates = append(predicates, person.EmploymentStatusHasPrefix(*i.EmploymentStatusHasPrefix))
+	}
+	if i.EmploymentStatusHasSuffix != nil {
+		predicates = append(predicates, person.EmploymentStatusHasSuffix(*i.EmploymentStatusHasSuffix))
+	}
+	if i.EmploymentStatusEqualFold != nil {
+		predicates = append(predicates, person.EmploymentStatusEqualFold(*i.EmploymentStatusEqualFold))
+	}
+	if i.EmploymentStatusContainsFold != nil {
+		predicates = append(predicates, person.EmploymentStatusContainsFold(*i.EmploymentStatusContainsFold))
 	}
 	if i.AttributesVersion != nil {
 		predicates = append(predicates, person.AttributesVersionEQ(*i.AttributesVersion))

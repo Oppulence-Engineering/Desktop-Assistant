@@ -42635,6 +42635,7 @@ type PersonMutation struct {
 	phone                            *string
 	timezone                         *string
 	locale                           *string
+	employment_status                *string
 	attributes_version               *int
 	addattributes_version            *int
 	attributes_hash                  *string
@@ -43280,6 +43281,42 @@ func (m *PersonMutation) LocaleCleared() bool {
 func (m *PersonMutation) ResetLocale() {
 	m.locale = nil
 	delete(m.clearedFields, person.FieldLocale)
+}
+
+// SetEmploymentStatus sets the "employment_status" field.
+func (m *PersonMutation) SetEmploymentStatus(s string) {
+	m.employment_status = &s
+}
+
+// EmploymentStatus returns the value of the "employment_status" field in the mutation.
+func (m *PersonMutation) EmploymentStatus() (r string, exists bool) {
+	v := m.employment_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEmploymentStatus returns the old "employment_status" field's value of the Person entity.
+// If the Person object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PersonMutation) OldEmploymentStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEmploymentStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEmploymentStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEmploymentStatus: %w", err)
+	}
+	return oldValue.EmploymentStatus, nil
+}
+
+// ResetEmploymentStatus resets all changes to the "employment_status" field.
+func (m *PersonMutation) ResetEmploymentStatus() {
+	m.employment_status = nil
 }
 
 // SetAttributesVersion sets the "attributes_version" field.
@@ -44216,7 +44253,7 @@ func (m *PersonMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PersonMutation) Fields() []string {
-	fields := make([]string, 0, 21)
+	fields := make([]string, 0, 22)
 	if m.created_at != nil {
 		fields = append(fields, person.FieldCreatedAt)
 	}
@@ -44249,6 +44286,9 @@ func (m *PersonMutation) Fields() []string {
 	}
 	if m.locale != nil {
 		fields = append(fields, person.FieldLocale)
+	}
+	if m.employment_status != nil {
+		fields = append(fields, person.FieldEmploymentStatus)
 	}
 	if m.attributes_version != nil {
 		fields = append(fields, person.FieldAttributesVersion)
@@ -44310,6 +44350,8 @@ func (m *PersonMutation) Field(name string) (ent.Value, bool) {
 		return m.Timezone()
 	case person.FieldLocale:
 		return m.Locale()
+	case person.FieldEmploymentStatus:
+		return m.EmploymentStatus()
 	case person.FieldAttributesVersion:
 		return m.AttributesVersion()
 	case person.FieldAttributesHash:
@@ -44361,6 +44403,8 @@ func (m *PersonMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldTimezone(ctx)
 	case person.FieldLocale:
 		return m.OldLocale(ctx)
+	case person.FieldEmploymentStatus:
+		return m.OldEmploymentStatus(ctx)
 	case person.FieldAttributesVersion:
 		return m.OldAttributesVersion(ctx)
 	case person.FieldAttributesHash:
@@ -44466,6 +44510,13 @@ func (m *PersonMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetLocale(v)
+		return nil
+	case person.FieldEmploymentStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEmploymentStatus(v)
 		return nil
 	case person.FieldAttributesVersion:
 		v, ok := value.(int)
@@ -44738,6 +44789,9 @@ func (m *PersonMutation) ResetField(name string) error {
 		return nil
 	case person.FieldLocale:
 		m.ResetLocale()
+		return nil
+	case person.FieldEmploymentStatus:
+		m.ResetEmploymentStatus()
 		return nil
 	case person.FieldAttributesVersion:
 		m.ResetAttributesVersion()

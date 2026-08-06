@@ -4895,6 +4895,11 @@ func (_q *PersonQuery) collectField(ctx context.Context, oneNode bool, opCtx *gr
 				selectedFields = append(selectedFields, person.FieldLocale)
 				fieldSeen[person.FieldLocale] = struct{}{}
 			}
+		case "employmentStatus":
+			if _, ok := fieldSeen[person.FieldEmploymentStatus]; !ok {
+				selectedFields = append(selectedFields, person.FieldEmploymentStatus)
+				fieldSeen[person.FieldEmploymentStatus] = struct{}{}
+			}
 		case "attributesVersion":
 			if _, ok := fieldSeen[person.FieldAttributesVersion]; !ok {
 				selectedFields = append(selectedFields, person.FieldAttributesVersion)

@@ -6357,6 +6357,9 @@
           "display_name": {
             "type": "string"
           },
+          "employment_status": {
+            "type": "string"
+          },
           "existing_merge_candidates": {
             "items": {
               "$ref": "#/components/schemas/PersonMergeCandidate"
@@ -6459,6 +6462,7 @@
           "updated_at",
           "display_name",
           "aliases",
+          "employment_status",
           "attributes_version",
           "projector_version",
           "status",

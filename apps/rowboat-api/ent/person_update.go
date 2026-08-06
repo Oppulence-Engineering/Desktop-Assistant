@@ -209,6 +209,20 @@ func (_u *PersonUpdate) ClearLocale() *PersonUpdate {
 	return _u
 }
 
+// SetEmploymentStatus sets the "employment_status" field.
+func (_u *PersonUpdate) SetEmploymentStatus(v string) *PersonUpdate {
+	_u.mutation.SetEmploymentStatus(v)
+	return _u
+}
+
+// SetNillableEmploymentStatus sets the "employment_status" field if the given value is not nil.
+func (_u *PersonUpdate) SetNillableEmploymentStatus(v *string) *PersonUpdate {
+	if v != nil {
+		_u.SetEmploymentStatus(*v)
+	}
+	return _u
+}
+
 // SetAttributesVersion sets the "attributes_version" field.
 func (_u *PersonUpdate) SetAttributesVersion(v int) *PersonUpdate {
 	_u.mutation.ResetAttributesVersion()
@@ -704,6 +718,11 @@ func (_u *PersonUpdate) check() error {
 			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "Person.display_name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.EmploymentStatus(); ok {
+		if err := person.EmploymentStatusValidator(v); err != nil {
+			return &ValidationError{Name: "employment_status", err: fmt.Errorf(`ent: validator failed for field "Person.employment_status": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.AttributesVersion(); ok {
 		if err := person.AttributesVersionValidator(v); err != nil {
 			return &ValidationError{Name: "attributes_version", err: fmt.Errorf(`ent: validator failed for field "Person.attributes_version": %w`, err)}
@@ -800,6 +819,9 @@ func (_u *PersonUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.LocaleCleared() {
 		_spec.ClearField(person.FieldLocale, field.TypeString)
+	}
+	if value, ok := _u.mutation.EmploymentStatus(); ok {
+		_spec.SetField(person.FieldEmploymentStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.AttributesVersion(); ok {
 		_spec.SetField(person.FieldAttributesVersion, field.TypeInt, value)
@@ -1378,6 +1400,20 @@ func (_u *PersonUpdateOne) ClearLocale() *PersonUpdateOne {
 	return _u
 }
 
+// SetEmploymentStatus sets the "employment_status" field.
+func (_u *PersonUpdateOne) SetEmploymentStatus(v string) *PersonUpdateOne {
+	_u.mutation.SetEmploymentStatus(v)
+	return _u
+}
+
+// SetNillableEmploymentStatus sets the "employment_status" field if the given value is not nil.
+func (_u *PersonUpdateOne) SetNillableEmploymentStatus(v *string) *PersonUpdateOne {
+	if v != nil {
+		_u.SetEmploymentStatus(*v)
+	}
+	return _u
+}
+
 // SetAttributesVersion sets the "attributes_version" field.
 func (_u *PersonUpdateOne) SetAttributesVersion(v int) *PersonUpdateOne {
 	_u.mutation.ResetAttributesVersion()
@@ -1886,6 +1922,11 @@ func (_u *PersonUpdateOne) check() error {
 			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "Person.display_name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.EmploymentStatus(); ok {
+		if err := person.EmploymentStatusValidator(v); err != nil {
+			return &ValidationError{Name: "employment_status", err: fmt.Errorf(`ent: validator failed for field "Person.employment_status": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.AttributesVersion(); ok {
 		if err := person.AttributesVersionValidator(v); err != nil {
 			return &ValidationError{Name: "attributes_version", err: fmt.Errorf(`ent: validator failed for field "Person.attributes_version": %w`, err)}
@@ -1999,6 +2040,9 @@ func (_u *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err erro
 	}
 	if _u.mutation.LocaleCleared() {
 		_spec.ClearField(person.FieldLocale, field.TypeString)
+	}
+	if value, ok := _u.mutation.EmploymentStatus(); ok {
+		_spec.SetField(person.FieldEmploymentStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.AttributesVersion(); ok {
 		_spec.SetField(person.FieldAttributesVersion, field.TypeInt, value)

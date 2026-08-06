@@ -1630,6 +1630,7 @@ var (
 		{Name: "phone", Type: field.TypeString, Nullable: true},
 		{Name: "timezone", Type: field.TypeString, Nullable: true},
 		{Name: "locale", Type: field.TypeString, Nullable: true},
+		{Name: "employment_status", Type: field.TypeString, Default: "unknown"},
 		{Name: "attributes_version", Type: field.TypeInt, Default: 0},
 		{Name: "attributes_hash", Type: field.TypeString, Nullable: true},
 		{Name: "projector_version", Type: field.TypeInt, Default: 1},
@@ -1651,13 +1652,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "relationship_persons_revenue_workspaces_relationship_persons",
-				Columns:    []*schema.Column{RelationshipPersonsColumns[22]},
+				Columns:    []*schema.Column{RelationshipPersonsColumns[23]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "relationship_persons_users_relationship_persons",
-				Columns:    []*schema.Column{RelationshipPersonsColumns[23]},
+				Columns:    []*schema.Column{RelationshipPersonsColumns[24]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1666,17 +1667,17 @@ var (
 			{
 				Name:    "person_status_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipPersonsColumns[16], RelationshipPersonsColumns[22]},
+				Columns: []*schema.Column{RelationshipPersonsColumns[17], RelationshipPersonsColumns[23]},
 			},
 			{
 				Name:    "person_last_interaction_at_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipPersonsColumns[20], RelationshipPersonsColumns[22]},
+				Columns: []*schema.Column{RelationshipPersonsColumns[21], RelationshipPersonsColumns[23]},
 			},
 			{
 				Name:    "person_primary_email_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipPersonsColumns[5], RelationshipPersonsColumns[22]},
+				Columns: []*schema.Column{RelationshipPersonsColumns[5], RelationshipPersonsColumns[23]},
 			},
 		},
 	}

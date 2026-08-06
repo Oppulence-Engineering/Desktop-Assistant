@@ -7,7 +7,7 @@ import { updateSenderProfiles, hasPriorContact, senderSignatureTitle } from "../
 import { getMailboxStore } from "../mailbox/store-fs.js";
 import { getTranscriptionConfig } from "../voice/voice.js";
 import { enqueueRelationshipEvidence } from "./evidence-outbox.js";
-import { emailThreadObservation } from "./email-evidence.js";
+import { departureObservation, emailThreadObservation } from "./email-evidence.js";
 import { HybridContactExtractor } from "../mailbox/contact-extractor.js";
 
 /**
@@ -82,7 +82,7 @@ export async function publishEmailThreadEvidence(args: {
   const selfEmails = new Set([account.email]);
   const store = getMailboxStore();
 
-  await updateSenderProfiles({
+  const { departures } = await updateSenderProfiles({
     store,
     accountId: account.id,
     selfEmails,
@@ -90,6 +90,16 @@ export async function publishEmailThreadEvidence(args: {
   });
 
   if (!consent.emailMetadata) return;
+
+  // Departures publish before the thread-level cap and before the thread's own
+  // skip rules, because they are rare, they never repeat for the same address, and
+  // they are the one email signal whose whole value is that the user stops being
+  // told to chase someone who is gone. Dropping one to a budget meant for a
+  // 7-day backfill of ordinary threads would be the wrong trade.
+  for (const departure of departures) {
+    const observation = departureObservation({ departure, sourceAccountId: account.email });
+    if (observation) await enqueueRelationshipEvidence(observation);
+  }
   if (pendingEmailEstimate >= MAX_PENDING_EMAIL) {
     droppedThisRun += 1;
     return;

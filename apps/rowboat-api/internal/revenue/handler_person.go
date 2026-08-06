@@ -229,3 +229,47 @@ func (h *Handler) DecidePersonMergeCandidate(w http.ResponseWriter, r *http.Requ
 		"version":  candidate.Version,
 	})
 }
+
+// DeletePerson removes a canonical person and every row derived from them, and
+// suppresses the identity so ingest cannot recreate it.
+//
+// The remedy this exposes did not exist: conversation_deletion.go never touched
+// Person, every person foreign key is ON DELETE NO ACTION, and no route offered a
+// DELETE. So a counterparty who asked to be removed could not be — and even a
+// manual row delete came back on the next sync, because resolvePerson re-derives
+// people from message headers.
+//
+// `reason` distinguishes a subject asking to be forgotten from an account holder
+// tidying their graph. Only the first is a promise to someone who is not the user,
+// and a system that cannot tell them apart cannot honour that difference later.
+func (h *Handler) DeletePerson(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	id, ok := pathUUID(w, r, "personId")
+	if !ok {
+		return
+	}
+	// Optional body: a bare DELETE is a user tidying up.
+	var body struct {
+		Reason string `json:"reason"`
+		Note   string `json:"note"`
+	}
+	if r.ContentLength > 0 && !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	ws, err := h.svc.CurrentWorkspace(r.Context(), u)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	receipt, err := h.svc.DeletePerson(r.Context(), u, ws.ID, id, body.Reason, body.Note)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	// A receipt rather than 204: deletion of someone else's data should be
+	// evidenced, not merely acknowledged.
+	httpx.WriteJSON(w, http.StatusOK, receipt)
+}

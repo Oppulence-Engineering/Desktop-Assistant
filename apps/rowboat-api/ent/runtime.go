@@ -1493,26 +1493,32 @@ func init() {
 	personDescAliases := personFields[1].Descriptor()
 	// person.DefaultAliases holds the default value on creation for the aliases field.
 	person.DefaultAliases = personDescAliases.Default.([]string)
+	// personDescEmploymentStatus is the schema descriptor for employment_status field.
+	personDescEmploymentStatus := personFields[9].Descriptor()
+	// person.DefaultEmploymentStatus holds the default value on creation for the employment_status field.
+	person.DefaultEmploymentStatus = personDescEmploymentStatus.Default.(string)
+	// person.EmploymentStatusValidator is a validator for the "employment_status" field. It is called by the builders before save.
+	person.EmploymentStatusValidator = personDescEmploymentStatus.Validators[0].(func(string) error)
 	// personDescAttributesVersion is the schema descriptor for attributes_version field.
-	personDescAttributesVersion := personFields[9].Descriptor()
+	personDescAttributesVersion := personFields[10].Descriptor()
 	// person.DefaultAttributesVersion holds the default value on creation for the attributes_version field.
 	person.DefaultAttributesVersion = personDescAttributesVersion.Default.(int)
 	// person.AttributesVersionValidator is a validator for the "attributes_version" field. It is called by the builders before save.
 	person.AttributesVersionValidator = personDescAttributesVersion.Validators[0].(func(int) error)
 	// personDescProjectorVersion is the schema descriptor for projector_version field.
-	personDescProjectorVersion := personFields[11].Descriptor()
+	personDescProjectorVersion := personFields[12].Descriptor()
 	// person.DefaultProjectorVersion holds the default value on creation for the projector_version field.
 	person.DefaultProjectorVersion = personDescProjectorVersion.Default.(int)
 	// person.ProjectorVersionValidator is a validator for the "projector_version" field. It is called by the builders before save.
 	person.ProjectorVersionValidator = personDescProjectorVersion.Validators[0].(func(int) error)
 	// personDescStatus is the schema descriptor for status field.
-	personDescStatus := personFields[13].Descriptor()
+	personDescStatus := personFields[14].Descriptor()
 	// person.DefaultStatus holds the default value on creation for the status field.
 	person.DefaultStatus = personDescStatus.Default.(string)
 	// person.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	person.StatusValidator = personDescStatus.Validators[0].(func(string) error)
 	// personDescRelationshipCount is the schema descriptor for relationship_count field.
-	personDescRelationshipCount := personFields[18].Descriptor()
+	personDescRelationshipCount := personFields[19].Descriptor()
 	// person.DefaultRelationshipCount holds the default value on creation for the relationship_count field.
 	person.DefaultRelationshipCount = personDescRelationshipCount.Default.(int)
 	// person.RelationshipCountValidator is a validator for the "relationship_count" field. It is called by the builders before save.

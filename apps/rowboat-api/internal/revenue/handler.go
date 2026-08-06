@@ -106,6 +106,7 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Get("/{personId}/interactions", h.PersonInteractions)
 		r.Post("/{personId}/corrections", h.CorrectPerson)
 		r.Post("/{personId}/attributes/{attributeId}/retract", h.RetractPersonAttribute)
+		r.Delete("/{personId}", h.DeletePerson)
 	})
 	r.Route("/v1/relationship-person-merge-candidates", func(r chi.Router) {
 		r.Get("/", h.ListPersonMergeCandidates)
@@ -246,20 +247,23 @@ type participantDTO struct {
 // from PersonAttribute rows, so each has a source, a confidence and a timestamp
 // behind it — see GET /v1/relationship-persons/{id}/attributes.
 type personDTO struct {
-	ID                 string   `json:"id"`
-	DisplayName        string   `json:"displayName"`
-	Aliases            []string `json:"aliases"`
-	PrimaryEmail       string   `json:"primaryEmail,omitempty"`
-	Title              string   `json:"title,omitempty"`
-	OrgName            string   `json:"orgName,omitempty"`
-	OrgDomain          string   `json:"orgDomain,omitempty"`
-	Timezone           string   `json:"timezone,omitempty"`
-	Locale             string   `json:"locale,omitempty"`
-	Status             string   `json:"status"`
-	RelationshipCount  int      `json:"relationshipCount"`
-	FirstInteractionAt *string  `json:"firstInteractionAt,omitempty"`
-	LastInteractionAt  *string  `json:"lastInteractionAt,omitempty"`
-	AttributesVersion  int      `json:"attributesVersion"`
+	ID           string   `json:"id"`
+	DisplayName  string   `json:"displayName"`
+	Aliases      []string `json:"aliases"`
+	PrimaryEmail string   `json:"primaryEmail,omitempty"`
+	Title        string   `json:"title,omitempty"`
+	OrgName      string   `json:"orgName,omitempty"`
+	OrgDomain    string   `json:"orgDomain,omitempty"`
+	Timezone     string   `json:"timezone,omitempty"`
+	Locale       string   `json:"locale,omitempty"`
+	Status       string   `json:"status"`
+	// Whether their mail still reaches them. Surfaced so the UI can say a contact
+	// has left rather than silently ranking the account as merely quiet.
+	EmploymentStatus   string  `json:"employmentStatus,omitempty"`
+	RelationshipCount  int     `json:"relationshipCount"`
+	FirstInteractionAt *string `json:"firstInteractionAt,omitempty"`
+	LastInteractionAt  *string `json:"lastInteractionAt,omitempty"`
+	AttributesVersion  int     `json:"attributesVersion"`
 	// Phone is deliberately absent: it is derived PII with no relationship
 	// dimension to land in, and it stays on the device that parsed it.
 }
@@ -279,6 +283,7 @@ func personToDTO(p *ent.Person) *personDTO {
 		Timezone:          p.Timezone,
 		Locale:            p.Locale,
 		Status:            p.Status,
+		EmploymentStatus:  p.EmploymentStatus,
 		RelationshipCount: p.RelationshipCount,
 		AttributesVersion: p.AttributesVersion,
 	}

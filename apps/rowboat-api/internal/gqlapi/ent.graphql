@@ -7106,6 +7106,7 @@ type Person implements Node {
   orgDomain: String
   timezone: String
   locale: String
+  employmentStatus: String!
   attributesVersion: Int!
   attributesHash: String
   projectorVersion: Int!
@@ -8296,6 +8297,22 @@ input PersonWhereInput {
   localeNotNil: Boolean
   localeEqualFold: String
   localeContainsFold: String
+  """
+  employment_status field predicates
+  """
+  employmentStatus: String
+  employmentStatusNEQ: String
+  employmentStatusIn: [String!]
+  employmentStatusNotIn: [String!]
+  employmentStatusGT: String
+  employmentStatusGTE: String
+  employmentStatusLT: String
+  employmentStatusLTE: String
+  employmentStatusContains: String
+  employmentStatusHasPrefix: String
+  employmentStatusHasSuffix: String
+  employmentStatusEqualFold: String
+  employmentStatusContainsFold: String
   """
   attributes_version field predicates
   """

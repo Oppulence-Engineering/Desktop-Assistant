@@ -176,6 +176,7 @@ import {
   snoozeRelationshipAction,
   dismissRelationshipAction,
   decideIdentityCandidate,
+  deletePerson,
   resyncRelationshipSource,
   disconnectRelationshipSource,
   rejectRelationshipRecommendation,
@@ -1087,6 +1088,8 @@ export function setupIpcHandlers() {
       resyncRelationshipSource(args.source, args.sourceAccountId),
     "relationships:disconnectSource": async (_event, args) =>
       disconnectRelationshipSource(args.source, args.sourceAccountId),
+    "relationships:deletePerson": async (_event, args) =>
+      deletePerson(args.personId, { reason: args.reason, note: args.note }),
     "relationships:listIdentityCandidates": async (_event, args) =>
       listIdentityCandidates(args.status, args.relationshipId),
     "relationships:decideIdentityCandidate": async (_event, args) =>

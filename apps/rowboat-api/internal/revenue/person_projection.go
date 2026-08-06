@@ -27,7 +27,7 @@ import (
 // assertionPriority, then valid_from, then confidence, then id — so "why does it say
 // she works at Acme?" has one answer everywhere in the system.
 
-const personProjectorVersion = 1
+const personProjectorVersion = 2
 
 /** Dimensions that accumulate every active value. */
 var personMultiValuedDimensions = [...]string{"alias", "handle"}
@@ -85,6 +85,17 @@ func acceptPersonAttribute(in PersonAttributeInput, email string) bool {
 		// The address is a fallback, not evidence — unless it is all we have, in
 		// which case the caller sends it at low confidence with an explicit extractor.
 		if strings.EqualFold(value, email) && in.Extractor != "email_header" {
+			return false
+		}
+	case "employment_status":
+		// Only the two values the projection understands, and only from a mail
+		// system's own report. An LLM guessing that someone left from the tone of
+		// a thread is exactly the assertion this dimension must not accept —
+		// retiring a live contact is worse than never reading the bounce.
+		if value != "active" && value != "departed" {
+			return false
+		}
+		if in.Extractor != "mail_delivery_report" && in.Extractor != "user_entry" {
 			return false
 		}
 	}
@@ -261,6 +272,13 @@ func projectPersonAttributes(
 	aliases := multi["alias"]
 	aliases = slicesDeleteString(aliases, displayName)
 
+	// Absent means unknown, not active: we have never had a reason to ask. Only a
+	// delivery report or a user saying so moves it off that.
+	employment := value("employment_status")
+	if employment == "" {
+		employment = "unknown"
+	}
+
 	projected := map[string]any{
 		"display_name": displayName,
 		"aliases":      aliases,
@@ -270,6 +288,7 @@ func projectPersonAttributes(
 		"phone":        value("phone"),
 		"timezone":     value("timezone"),
 		"locale":       value("locale"),
+		"employment":   employment,
 	}
 	encoded, err := json.Marshal(projected)
 	if err != nil {
@@ -291,6 +310,7 @@ func projectPersonAttributes(
 		SetPhone(value("phone")).
 		SetTimezone(value("timezone")).
 		SetLocale(value("locale")).
+		SetEmploymentStatus(employment).
 		SetAttributesHash(hash).
 		SetAttributesVersion(p.AttributesVersion + 1).
 		SetProjectorVersion(personProjectorVersion).
