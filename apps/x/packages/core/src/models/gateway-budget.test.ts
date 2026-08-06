@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import fs from "node:fs";
 import {
+  BACKGROUND_BUDGET,
   backgroundQueueStats,
   clearBackgroundQueue,
   isInteractive,
@@ -57,8 +58,8 @@ describe("isInteractive", () => {
 describe("background pacing", () => {
   it("releases at most the interval cap per window", async () => {
     const started: number[] = [];
-    // 120 against a 50-per-window cap: enough to span three windows.
-    const calls = Array.from({ length: 120 }, () =>
+    // 170 against a 70-per-window cap: enough to span three windows.
+    const calls = Array.from({ length: 170 }, () =>
       throughBackgroundBudget(async () => {
         started.push(Date.now());
         return ok();
@@ -66,13 +67,13 @@ describe("background pacing", () => {
     );
 
     await vi.advanceTimersByTimeAsync(0);
-    expect(started.length).toBe(50);
+    expect(started.length).toBe(70);
 
     await vi.advanceTimersByTimeAsync(10_000);
-    expect(started.length).toBe(100);
+    expect(started.length).toBe(140);
 
     await vi.advanceTimersByTimeAsync(10_000);
-    expect(started.length).toBe(120);
+    expect(started.length).toBe(170);
     await Promise.all(calls);
   });
 
@@ -157,6 +158,44 @@ describe("interactive traffic bypasses the queue", () => {
 
   it("still queues everything else", () => {
     expect(source).toMatch(/return throughBackgroundBudget\(\(\) => fetch\(/);
+  });
+});
+
+describe("background leaves the server ceiling a reserve", () => {
+  // The client cap and the server cap live in different languages in different
+  // processes. Reading the Go config here is the only way to notice when one
+  // moves and the other does not — and the failure mode is silent: background
+  // work quietly consuming the allowance a waiting user needs.
+  const goConfig = fs.readFileSync(
+    new URL("../../../../../rowboat-api/internal/appconfig/config.go", import.meta.url),
+    "utf8",
+  );
+
+  function serverDefault(env: string): number {
+    const m = goConfig.match(new RegExp(`getint\\("${env}",\\s*(\\d+)\\)`));
+    expect(m, `${env} not found in config.go`).not.toBeNull();
+    return Number(m![1]);
+  }
+
+  it("stays under the server's 10s burst allowance", () => {
+    const serverBurst = serverDefault("LLM_RATE_LIMIT_PER_USER_BURST_PER_10S");
+    expect(BACKGROUND_BUDGET.perInterval).toBeLessThan(serverBurst);
+  });
+
+  it("leaves enough for a Copilot turn", () => {
+    // An interactive agent loop can be ~30 calls in ten seconds. If the reserve
+    // drops below that, a user asking a question starts getting rate limited
+    // while background labeling runs — the regression this module exists for.
+    const serverBurst = serverDefault("LLM_RATE_LIMIT_PER_USER_BURST_PER_10S");
+    const reserve = serverBurst - BACKGROUND_BUDGET.perInterval;
+    expect(reserve).toBeGreaterThanOrEqual(30);
+  });
+
+  it("does not open more sockets than the gateway will forward", () => {
+    // The gateway caps its own outbound fan-out; exceeding it just queues
+    // inside the server instead.
+    const llmMaxConcurrent = serverDefault("LLM_MAX_CONCURRENT");
+    expect(BACKGROUND_BUDGET.concurrency).toBeLessThanOrEqual(llmMaxConcurrent);
   });
 });
 

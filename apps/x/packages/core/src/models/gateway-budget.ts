@@ -39,20 +39,26 @@ export function isInteractive(useCase: string | undefined): boolean {
 }
 
 // The gateway allows 100 per 10s and 600/min per user
-// (LLM_RATE_LIMIT_PER_USER_*). Background takes half — 50 per 10s, 300/min —
-// leaving the rest permanently free for interactive traffic, which is never
-// queued at all.
+// (LLM_RATE_LIMIT_PER_USER_*). Both work out to the same 10-per-second ceiling,
+// so the 10s window is the binding constraint and the only number to reason
+// about.
 //
-// Half, rather than as much as possible: the point of this module is that a
-// person typing in chat is never behind a labeling backlog. Spending the whole
-// ceiling on background work would reintroduce exactly that.
+// Background takes 70 of those 100, leaving 30 per 10s for interactive traffic,
+// which is never queued at all. That reserve is sized off what a person can
+// actually generate: a Copilot turn is one agent loop, and 30 calls in ten
+// seconds is a fast one. Background gets the rest, because it is the thing with
+// hundreds of calls to make.
 //
-// Concurrency is capped separately. The server limits are per window, but the
-// desktop opening 50 sockets at once helps nobody, and the gateway bounds its
-// own outbound fan-out at LLM_MAX_CONCURRENT regardless.
+// The reserve exists so a labeling backlog can never put a waiting user behind
+// it. Handing background the whole ceiling would reintroduce exactly that, and
+// leaving it at half was simply leaving throughput unused.
+//
+// Concurrency is capped separately: the limits are per window, but the desktop
+// opening 70 sockets at once helps nobody, and the gateway bounds its own
+// outbound fan-out at LLM_MAX_CONCURRENT regardless.
 const BACKGROUND_INTERVAL_MS = 10_000;
-const BACKGROUND_PER_INTERVAL = 50;
-const BACKGROUND_CONCURRENCY = 8;
+const BACKGROUND_PER_INTERVAL = 70;
+const BACKGROUND_CONCURRENCY = 12;
 
 function newQueue(): PQueue {
   return new PQueue({
@@ -168,6 +174,19 @@ export function resetBackgroundBudgetForTests(): void {
   // window's allowance and waits on a timer from the previous test's clock.
   queue = newQueue();
 }
+
+/**
+ * What background work is allowed to spend, in requests per 10s window.
+ *
+ * Exported so the gap between this and the server's own ceiling can be
+ * asserted: the reserve is the whole design, and it is easy to erase by
+ * raising one number.
+ */
+export const BACKGROUND_BUDGET = {
+  perInterval: BACKGROUND_PER_INTERVAL,
+  intervalMs: BACKGROUND_INTERVAL_MS,
+  concurrency: BACKGROUND_CONCURRENCY,
+} as const;
 
 /** Test/diagnostic view of the shared queue. */
 export function backgroundQueueStats(): { pending: number; size: number; paused: boolean } {
