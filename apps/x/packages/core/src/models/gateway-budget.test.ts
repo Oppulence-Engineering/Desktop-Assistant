@@ -38,7 +38,7 @@ const ok = (status = 200) => ({ status });
 
 describe("isInteractive", () => {
   it("treats use cases with a person waiting as interactive", () => {
-    for (const useCase of ["copilot_chat", "dictation_command", "meeting_note"]) {
+    for (const useCase of ["copilot_chat", "dictation_command"]) {
       expect(isInteractive(useCase)).toBe(true);
     }
   });
@@ -47,6 +47,22 @@ describe("isInteractive", () => {
     for (const useCase of ["knowledge_sync", "background_task_agent", "live_note_agent"]) {
       expect(isInteractive(useCase)).toBe(false);
     }
+  });
+
+  it("paces the bulk half of meeting_note", () => {
+    // meeting_note covers both kinds of work. These four run over every email
+    // thread and every meeting; treating the use case as wholly interactive let
+    // them bypass the queue entirely, which is the opposite of what pacing is
+    // for.
+    for (const sub of ["contact_extraction", "conversation_extraction", "commitments"]) {
+      expect(isInteractive("meeting_note", sub), `${sub} should be paced`).toBe(false);
+    }
+    // summarize_meeting sets no subUseCase at all.
+    expect(isInteractive("meeting_note", undefined)).toBe(false);
+  });
+
+  it("still lets someone ask a question about a meeting through", () => {
+    expect(isInteractive("meeting_note", "ask")).toBe(true);
   });
 
   it("treats an unlabelled request as background", () => {
@@ -110,6 +126,18 @@ describe("circuit breaker", () => {
     expect(backgroundQueueStats().paused).toBe(true);
   });
 
+  it("trips on the client-side failures that strand a desktop", () => {
+    // The failures that actually keep an app stuck are permanent and 4xx: an
+    // account out of credits, a model missing from the gateway allowlist, dead
+    // auth. Every request fails identically and no retry helps, so a breaker
+    // that only watches 5xx would let the queue grind through hundreds of them.
+    for (const status of [402, 400, 401, 403, 404]) {
+      resetBackgroundBudgetForTests();
+      for (let i = 0; i < 5; i++) recordBackgroundOutcome(status);
+      expect(backgroundQueueStats().paused, `status ${status} should trip the breaker`).toBe(true);
+    }
+  });
+
   it("does not trip on rate limiting", () => {
     // Being throttled means the pacing is working. Tripping here would stall
     // background work exactly when it is behaving correctly.
@@ -147,8 +175,8 @@ describe("interactive traffic bypasses the queue", () => {
   const source = fs.readFileSync(new URL("./gateway.ts", import.meta.url), "utf8");
 
   it("returns fetch directly for an interactive use case", () => {
-    const guard = source.indexOf("if (isInteractive(ctx?.useCase))");
-    expect(guard, "authedFetch must branch on isInteractive").toBeGreaterThan(-1);
+    const guard = source.indexOf("if (isInteractive(ctx?.useCase, ctx?.subUseCase))");
+    expect(guard, "authedFetch must branch on isInteractive, passing both fields").toBeGreaterThan(-1);
 
     const queued = source.indexOf("throughBackgroundBudget", guard);
     const bypass = source.indexOf("return fetch(", guard);

@@ -27,15 +27,29 @@ import type { UseCase } from "../analytics/use_case.js";
  * interactive request goes straight out and its slot cannot have been taken.
  */
 
-/** Requests a person is actively waiting on. Never queued. */
+/** Use cases that are always someone waiting on an answer. */
 const INTERACTIVE_USE_CASES: ReadonlySet<string> = new Set<UseCase>([
   "copilot_chat",
   "dictation_command",
-  "meeting_note",
 ]);
 
-export function isInteractive(useCase: string | undefined): boolean {
-  return useCase !== undefined && INTERACTIVE_USE_CASES.has(useCase);
+/**
+ * `meeting_note` covers both kinds of work, so the use case alone cannot decide
+ * it. Most of it is unattended and bulk — summarizing a finished meeting,
+ * extracting commitments, pulling contacts out of every email thread, pulling
+ * conversations out of every meeting. One sub-case is a person typing a
+ * question about a meeting and waiting for the answer.
+ *
+ * Listing the interactive sub-case rather than the background ones is the safe
+ * direction: a sub-case added later is paced by default, and the cost of
+ * getting that wrong is a queued request rather than an unpaced flood.
+ */
+const INTERACTIVE_SUB_USE_CASES: ReadonlySet<string> = new Set(["ask"]);
+
+export function isInteractive(useCase: string | undefined, subUseCase?: string): boolean {
+  if (useCase === undefined) return false;
+  if (INTERACTIVE_USE_CASES.has(useCase)) return true;
+  return subUseCase !== undefined && INTERACTIVE_SUB_USE_CASES.has(subUseCase);
 }
 
 // The gateway allows 100 per 10s and 600/min per user
@@ -107,10 +121,23 @@ export function pauseBackground(ms: number): void {
  * `status` is the HTTP status, or undefined for a transport-level failure.
  */
 export function recordBackgroundOutcome(status: number | undefined): void {
+  // Anything that is not a success and not a rate limit counts.
+  //
+  // This deliberately includes 4xx. The tempting rule is "only 5xx is a real
+  // outage", but the failures that actually strand a desktop are client-side
+  // and permanent: 402 when an account runs out of credits, 400 when the
+  // configured model is not on the gateway's allowlist, 401 when auth is dead.
+  // Every request fails identically, no retry can help, and a breaker that
+  // ignores them lets the queue grind through hundreds of doomed calls — the
+  // exact thing it exists to stop.
+  //
+  // 429 is excluded because it means the pacing is working, not that anything
+  // is broken. A missing status is a transport failure (offline, DNS, timeout)
+  // and counts.
   const rateLimited = status === 429;
-  const failed = status === undefined || status >= 500;
+  const succeeded = status !== undefined && status >= 200 && status < 300;
 
-  if (!failed || rateLimited) {
+  if (succeeded || rateLimited) {
     consecutiveFailures = 0;
     cooldownMs = BREAKER_BASE_COOLDOWN_MS;
     return;
@@ -131,7 +158,7 @@ export function recordBackgroundOutcome(status: number | undefined): void {
  * SDK retries inside that call, so queueing at the outer level would let one
  * queued item issue three requests and quietly triple the real rate.
  */
-export async function throughBackgroundBudget<T extends { status?: number }>(
+export async function throughBackgroundBudget<T extends { status: number }>(
   fn: () => Promise<T>,
 ): Promise<T> {
   try {

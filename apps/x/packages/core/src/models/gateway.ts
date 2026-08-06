@@ -20,7 +20,7 @@ const authedFetch: typeof fetch = async (input, init) => {
 
   // Someone is waiting on this one — send it now. Background work is capped at
   // half the gateway budget precisely so this path always has room.
-  if (isInteractive(ctx?.useCase)) {
+  if (isInteractive(ctx?.useCase, ctx?.subUseCase)) {
     return fetch(input, { ...init, headers });
   }
   // Queued per HTTP request, not per generateText call: the AI SDK retries
