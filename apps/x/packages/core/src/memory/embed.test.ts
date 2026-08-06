@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetBackgroundBudgetForTests } from "../models/gateway-budget.js";
 
 // embedBatch (metered path) needs an access token; stub it so no real auth runs.
 vi.mock("../auth/tokens.js", () => ({ getAccessToken: async () => "test-token" }));
@@ -64,6 +65,11 @@ beforeEach(() => {
   getConfig.mockReset();
   isSignedInMock.mockReset();
   isSignedInMock.mockResolvedValue(false);
+  // meteredEmbed draws on the shared gateway budget (6 requests per 10s), which
+  // is process-wide. Without a reset the seventh request in this file waits for
+  // the next window and the test times out — a property of the pacing, not of
+  // the code under test here.
+  resetBackgroundBudgetForTests();
 });
 
 describe("embedBatch — empty input", () => {

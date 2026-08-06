@@ -8,6 +8,7 @@ import { z } from "zod";
 import { getAccessToken } from "../auth/tokens.js";
 import { isSignedIn } from "../account/account.js";
 import { API_URL } from "../config/env.js";
+import { throughBackgroundBudget } from "../models/gateway-budget.js";
 import { createProvider, Provider } from "../models/models.js";
 import { FSModelConfigRepo } from "../models/repo.js";
 import { PRODUCT_PROVIDER_ID } from "@x/shared/dist/branding.js";
@@ -140,22 +141,29 @@ async function meteredEmbed(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const res = await fetch(`${API_URL}/v1/llm/embeddings`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        // The metered proxy requires an idempotency key (428 without it);
-        // stable across retries of this batch (see embedBatch).
-        "Idempotency-Key": idempotencyKey,
-      },
-      body: JSON.stringify({
-        model: normalizeMeteredModel(model),
-        input: texts,
-        ...(dimensions ? { dimensions } : {}),
+    // /v1/llm/embeddings shares the rate-limit bucket with chat, so memory
+    // indexing has to draw on the same background budget — otherwise a rebuild
+    // silently spends the allowance the labeling agent is waiting for.
+    const res = await throughBackgroundBudget(() =>
+      fetch(`${API_URL}/v1/llm/embeddings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          // The metered proxy requires an idempotency key (428 without it);
+          // stable across retries of this batch (see embedBatch). Deliberately
+          // unlike the gateway's per-request key: a retry here must not be
+          // billed twice.
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: JSON.stringify({
+          model: normalizeMeteredModel(model),
+          input: texts,
+          ...(dimensions ? { dimensions } : {}),
+        }),
+        signal: controller.signal,
       }),
-      signal: controller.signal,
-    });
+    );
     if (!res.ok) {
       const err = new Error(
         `embeddings proxy ${res.status}: ${await res.text().catch(() => "")}`,

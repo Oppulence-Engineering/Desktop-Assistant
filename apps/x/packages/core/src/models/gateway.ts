@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { getAccessToken } from "../auth/tokens.js";
 import { getCurrentUseCase } from "../analytics/use_case.js";
 import { API_URL } from "../config/env.js";
+import { isInteractive, throughBackgroundBudget } from "./gateway-budget.js";
 
 const authedFetch: typeof fetch = async (input, init) => {
   const token = await getAccessToken();
@@ -16,7 +17,16 @@ const authedFetch: typeof fetch = async (input, init) => {
   if (ctx?.useCase) headers.set("x-solomon-use-case", ctx.useCase);
   if (ctx?.subUseCase) headers.set("x-solomon-sub-use-case", ctx.subUseCase);
   if (ctx?.agentName) headers.set("x-solomon-agent-name", ctx.agentName);
-  return fetch(input, { ...init, headers });
+
+  // Someone is waiting on this one — send it now. Background work is capped at
+  // half the gateway budget precisely so this path always has room.
+  if (isInteractive(ctx?.useCase)) {
+    return fetch(input, { ...init, headers });
+  }
+  // Queued per HTTP request, not per generateText call: the AI SDK retries
+  // inside that call, so each retry re-enters here and is counted against the
+  // budget rather than riding along on one already-granted slot.
+  return throughBackgroundBudget(() => fetch(input, { ...init, headers }));
 };
 
 export function getGatewayProvider(): ProviderV2 {
@@ -39,9 +49,13 @@ type ProviderSummary = {
 
 export async function listGatewayModels(): Promise<{ providers: ProviderSummary[] }> {
   const accessToken = await getAccessToken();
-  const response = await fetch(`${API_URL}/v1/llm/models`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  // Shares the /v1/llm limiter with chat and embeddings, so it draws on the
+  // same budget — nobody is blocked on a model catalog refresh.
+  const response = await throughBackgroundBudget(() =>
+    fetch(`${API_URL}/v1/llm/models`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }),
+  );
   if (!response.ok) {
     throw new Error(`Gateway /v1/models failed: ${response.status}`);
   }

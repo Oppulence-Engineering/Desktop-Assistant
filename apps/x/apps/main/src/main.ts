@@ -30,6 +30,7 @@ import { calendarNotifyHooks } from "./meeting-autostart.js";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
 import { initUpdates } from "./update-manager.js";
+import { clearBackgroundQueue } from "@x/core/dist/models/gateway-budget.js";
 import { init as initGmailSync } from "@x/core/dist/knowledge/sync_gmail.js";
 import { initEmailRelationshipEvidence } from "@x/core/dist/relationships/email-sync-bridge.js";
 import { initCalendarAttendance } from "@x/core/dist/relationships/calendar-attendance.js";
@@ -731,6 +732,10 @@ function runQuitCleanup(): void {
   stopWorkspaceWatcher();
   stopRunsWatcher();
   stopServicesWatcher();
+  // Drop paced background LLM work. A labeling run can leave hundreds of
+  // requests queued; without this they keep firing while everything else is
+  // being torn down.
+  clearBackgroundQueue();
   // Tear down any live ACP coding-agent adapter processes so they don't outlive the app.
   try {
     container.resolve<CodeModeManager>("codeModeManager").disposeAll();
