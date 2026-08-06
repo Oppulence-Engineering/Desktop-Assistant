@@ -37,6 +37,8 @@ const (
 	FieldTimezone = "timezone"
 	// FieldLocale holds the string denoting the locale field in the database.
 	FieldLocale = "locale"
+	// FieldEmploymentStatus holds the string denoting the employment_status field in the database.
+	FieldEmploymentStatus = "employment_status"
 	// FieldAttributesVersion holds the string denoting the attributes_version field in the database.
 	FieldAttributesVersion = "attributes_version"
 	// FieldAttributesHash holds the string denoting the attributes_hash field in the database.
@@ -147,6 +149,7 @@ var Columns = []string{
 	FieldPhone,
 	FieldTimezone,
 	FieldLocale,
+	FieldEmploymentStatus,
 	FieldAttributesVersion,
 	FieldAttributesHash,
 	FieldProjectorVersion,
@@ -192,6 +195,10 @@ var (
 	DisplayNameValidator func(string) error
 	// DefaultAliases holds the default value on creation for the "aliases" field.
 	DefaultAliases []string
+	// DefaultEmploymentStatus holds the default value on creation for the "employment_status" field.
+	DefaultEmploymentStatus string
+	// EmploymentStatusValidator is a validator for the "employment_status" field. It is called by the builders before save.
+	EmploymentStatusValidator func(string) error
 	// DefaultAttributesVersion holds the default value on creation for the "attributes_version" field.
 	DefaultAttributesVersion int
 	// AttributesVersionValidator is a validator for the "attributes_version" field. It is called by the builders before save.
@@ -268,6 +275,11 @@ func ByTimezone(opts ...sql.OrderTermOption) OrderOption {
 // ByLocale orders the results by the locale field.
 func ByLocale(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLocale, opts...).ToFunc()
+}
+
+// ByEmploymentStatus orders the results by the employment_status field.
+func ByEmploymentStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEmploymentStatus, opts...).ToFunc()
 }
 
 // ByAttributesVersion orders the results by the attributes_version field.

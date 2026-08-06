@@ -91,13 +91,24 @@ function routeFacts(routing: TranscriptionRouting | null): RouteFact[] {
         ? `Meeting transcript text is sent to ${providerLabel(enrichment.provider)} (${enrichment.model}) for enabled summaries, commitment suggestions, or live answers. Audio is not sent for this enrichment step.`
         : `Meeting transcript text may leave this device for enabled summaries, commitment suggestions, or live answers because the location of ${providerLabel(enrichment.provider)} could not be verified.`;
   const relationshipEvidence = routing.relationshipEvidence;
+  // Name what is actually on, flag by flag. The old copy described transcripts
+  // and commitments regardless of which of the five switches was enabled, so a
+  // user sharing email metadata was told their data stayed local.
+  const sharedKinds = [
+    relationshipEvidence.sharing.meetingTranscripts && "finished 1:1 transcript text and confirmed commitments",
+    relationshipEvidence.sharing.meetingAttendance && "who was invited to your meetings",
+    relationshipEvidence.sharing.emailMetadata && "email participants, direction and timing (never subjects or bodies)",
+    relationshipEvidence.sharing.signatureEnrichment && "names and titles parsed from email signatures",
+    relationshipEvidence.sharing.modelContactExtraction && "contact details a model extracted from message text",
+  ].filter((v): v is string => typeof v === "string");
+
   const relationshipEvidenceDetail = !relationshipEvidence.enabled
-    ? "Off. Finished meeting transcripts and confirmed commitments remain in the local workspace."
+    ? "Off. Nothing about your meetings, email or contacts is published to relationship state."
     : relationshipEvidence.location === "device"
-      ? `Enabled. Meeting evidence is published to ${relationshipEvidence.destination} on this device.`
+      ? `Enabled. Published to ${relationshipEvidence.destination} on this device: ${sharedKinds.join("; ")}.`
       : relationshipEvidence.location === "cloud"
-        ? `Enabled in Transcription settings. The resolved counterparty identity, finished 1:1 transcript text, and confirmed commitments are sent to ${relationshipEvidence.destination}; meeting audio and local file paths are not sent by this step.`
-        : `Enabled. Counterparty identity and transcript text may leave this device because the location of ${relationshipEvidence.destination} could not be verified.`;
+        ? `Enabled in Transcription settings. Sent to ${relationshipEvidence.destination}: ${sharedKinds.join("; ")}. Meeting audio and local file paths are never sent by this step.`
+        : `Enabled. This may leave the device because the location of ${relationshipEvidence.destination} could not be verified: ${sharedKinds.join("; ")}.`;
 
   return [
     {

@@ -860,6 +860,22 @@ func (_m *PersonMergeCandidate) User(ctx context.Context) (*User, error) {
 	return result, err
 }
 
+func (_m *PersonSuppression) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *PersonSuppression) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *PolicyDecisionSnapshot) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
 	result, err := _m.Edges.WorkspaceOrErr()
 	if IsNotLoaded(err) {
@@ -2052,6 +2068,18 @@ func (_m *RevenueWorkspace) PersonIdentities(ctx context.Context) (result []*Per
 	return result, err
 }
 
+func (_m *RevenueWorkspace) PersonSuppressions(ctx context.Context) (result []*PersonSuppression, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedPersonSuppressions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.PersonSuppressionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPersonSuppressions().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *RevenueWorkspace) PersonAttributes(ctx context.Context) (result []*PersonAttribute, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
 		result, err = _m.NamedPersonAttributes(graphql.GetFieldContext(ctx).Field.Alias)
@@ -2624,6 +2652,18 @@ func (_m *User) PersonIdentities(ctx context.Context) (result []*PersonIdentity,
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryPersonIdentities().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) PersonSuppressions(ctx context.Context) (result []*PersonSuppression, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedPersonSuppressions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.PersonSuppressionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryPersonSuppressions().All(ctx)
 	}
 	return result, err
 }

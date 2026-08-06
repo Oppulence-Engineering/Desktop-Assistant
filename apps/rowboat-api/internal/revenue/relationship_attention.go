@@ -15,8 +15,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipparticipant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
@@ -170,6 +172,13 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 		capabilities[reason] = enabled
 	}
 
+	// Which relationships have lost their contact. One query for the workspace
+	// rather than a join per relationship: departures are rare and the set is small.
+	departedContacts, err := s.departedContactsByRelationship(ctx, ws)
+	if err != nil {
+		return err
+	}
+
 	candidates := make([]attentionCandidate, 0)
 	for _, rel := range relationships {
 		dependencies := relationshipSourceDependencies(rel)
@@ -180,9 +189,26 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 			if cooldown > 0 && age >= cooldown {
 				days := int(age.Hours() / 24)
 				score := min(88, 45+days/2)
+				reasonCode := "quiet_account"
+				explanation := fmt.Sprintf("No recorded interaction for %d days; the %s lifecycle cooldown is %d days.", days, strings.ReplaceAll(rel.Lifecycle, "_", " "), int(cooldown.Hours()/24))
+				// A departed contact explains the silence, and changes what the
+				// user should do about it. "Follow up" is the wrong instruction
+				// when there is nobody left to follow up with, and repeating it
+				// every cooldown is how a product teaches people to ignore it.
+				if departed := departedContacts[rel.ID]; len(departed) > 0 {
+					reasonCode = "contact_departed"
+					explanation = fmt.Sprintf(
+						"%s has left; mail to that address is no longer delivered. Quiet for %d days because there is nobody here to reply.",
+						strings.Join(departed, " and "), days,
+					)
+					// Higher than a quiet account of the same age: an account with
+					// no reachable contact is a real gap, not a nudge, and unlike
+					// silence it will not resolve on its own.
+					score = min(92, 70+days/4)
+				}
 				candidates = append(candidates, attentionCandidate{
-					Relationship: rel, ReasonCode: "quiet_account",
-					Explanation:         fmt.Sprintf("No recorded interaction for %d days; the %s lifecycle cooldown is %d days.", days, strings.ReplaceAll(rel.Lifecycle, "_", " "), int(cooldown.Hours()/24)),
+					Relationship: rel, ReasonCode: reasonCode,
+					Explanation:         explanation,
 					TriggeringObjectRef: "relationship:" + rel.ID.String(), RankScore: score, UrgencyBand: urgencyBand(score),
 					RankFactors:        map[string]int{"inactivity_days": min(days, 60), "lifecycle_urgency": score - min(days, 60)},
 					SourceRequirements: dependencies,
@@ -280,6 +306,61 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 	}
 	sortAttentionCandidates(candidates)
 	return s.persistAttentionCandidates(ctx, ws, u, now, candidates)
+}
+
+// departedContactsByRelationship maps each relationship to the display names of its
+// participants whose mail no longer reaches them.
+//
+// Reads the projected `employment_status` rather than the attribute table so this
+// stays one indexed query, and so a user correction that says the person is still
+// there has already won on the ladder before it is seen here.
+func (s *Service) departedContactsByRelationship(
+	ctx context.Context,
+	ws *ent.RevenueWorkspace,
+) (map[uuid.UUID][]string, error) {
+	people, err := s.client.Person.Query().
+		Where(
+			person.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+			person.EmploymentStatusEQ("departed"),
+			person.StatusEQ("active"),
+		).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(people) == 0 {
+		return map[uuid.UUID][]string{}, nil
+	}
+	byPerson := make(map[uuid.UUID]string, len(people))
+	ids := make([]uuid.UUID, 0, len(people))
+	for _, p := range people {
+		byPerson[p.ID] = p.DisplayName
+		ids = append(ids, p.ID)
+	}
+	participants, err := s.client.RelationshipParticipant.Query().
+		Where(relationshipparticipant.HasPersonWith(person.IDIn(ids...))).
+		WithPerson().WithRelationship().All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := map[uuid.UUID][]string{}
+	for _, participant := range participants {
+		if participant.Edges.Relationship == nil || participant.Edges.Person == nil {
+			continue
+		}
+		name := byPerson[participant.Edges.Person.ID]
+		if name == "" {
+			continue
+		}
+		relID := participant.Edges.Relationship.ID
+		if slicesContains(out[relID], name) {
+			continue
+		}
+		out[relID] = append(out[relID], name)
+	}
+	for _, names := range out {
+		sort.Strings(names)
+	}
+	return out, nil
 }
 
 func relationshipSourceDependencies(rel *ent.Relationship) []string {

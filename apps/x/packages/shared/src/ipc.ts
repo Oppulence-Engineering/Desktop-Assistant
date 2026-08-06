@@ -2461,6 +2461,28 @@ const ipcSchemas = {
     }),
     res: RelationshipIdentityCandidateSchema,
   },
+  // Deleting a person is the one relationship mutation whose subject may not be
+  // the user. The receipt comes back so the UI can show what was actually
+  // removed rather than asserting success.
+  "relationships:deletePerson": {
+    req: z.object({
+      personId: z.string().min(1),
+      reason: z.enum(["user_action", "subject_request"]).optional(),
+      note: z.string().optional(),
+    }),
+    res: z.object({
+      receiptId: z.string(),
+      personId: z.string(),
+      requestedAt: z.string(),
+      completedAt: z.string(),
+      reason: z.string(),
+      suppressedIdentities: z.number().int(),
+      attributesDeleted: z.number().int(),
+      identitiesDeleted: z.number().int(),
+      interactionStatsDeleted: z.number().int(),
+      mergeCandidatesDeleted: z.number().int(),
+    }),
+  },
   "relationships:listAttention": {
     req: z.object({ status: z.string().optional() }),
     res: z.object({

@@ -1342,6 +1342,29 @@ func HasPersonIdentitiesWith(preds ...predicate.PersonIdentity) predicate.User {
 	})
 }
 
+// HasPersonSuppressions applies the HasEdge predicate on the "person_suppressions" edge.
+func HasPersonSuppressions() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PersonSuppressionsTable, PersonSuppressionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPersonSuppressionsWith applies the HasEdge predicate on the "person_suppressions" edge with a given conditions (other predicates).
+func HasPersonSuppressionsWith(preds ...predicate.PersonSuppression) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newPersonSuppressionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasPersonAttributes applies the HasEdge predicate on the "person_attributes" edge.
 func HasPersonAttributes() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

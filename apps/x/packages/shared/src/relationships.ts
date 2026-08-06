@@ -123,6 +123,23 @@ export const RelationshipParticipantSchema = z.object({
   title: z.string().optional(),
   active: z.boolean(),
   externalRefs: z.array(z.string()),
+  // The canonical person behind this participant. Optional because backfill has
+  // not reached every historical row; the API has always sent it when it exists.
+  personId: z.string().optional(),
+  // The canonical person, when resolution has run. Only the fields the detail
+  // view reads: passthrough keeps the rest without asserting a shape the API is
+  // free to extend.
+  person: z
+    .object({
+      id: z.string(),
+      displayName: z.string(),
+      // "departed" when a bounce or an autoreply said this person has left.
+      // Drives the one thing that matters about it in the UI: not asking the
+      // user to chase someone whose mailbox rejects mail.
+      employmentStatus: z.enum(["unknown", "active", "departed"]).optional(),
+    })
+    .passthrough()
+    .optional(),
 });
 
 export const RelationshipCommitmentSchema = z.object({
@@ -1076,6 +1093,10 @@ export const RelationshipAttentionItemSchema = z.object({
     "source_degradation",
     "action_outcome_review",
     "recommendation",
+    // A quiet account whose contact has left. Read the enum as open-ended: a
+    // server that learns a new reason code must not break the client's parse of
+    // every other item in the list.
+    "contact_departed",
   ]),
   explanation: z.string(),
   triggeringObjectRef: z.string(),

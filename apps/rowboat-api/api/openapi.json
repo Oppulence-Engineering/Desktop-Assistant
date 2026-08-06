@@ -641,7 +641,11 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": ["INSERT", "UPDATE", "DELETE"],
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ],
             "example": "UPDATE",
             "type": "string"
           },
@@ -1186,7 +1190,10 @@
           },
           "executionTarget": {
             "description": "Where this task executes. desktop preserves the local-first path; api dispatches to the Temporal-backed API worker.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "desktop",
             "type": "string"
           },
@@ -1263,7 +1270,12 @@
           },
           "scheduleSyncState": {
             "description": "Server-owned Temporal schedule reconciliation state.",
-            "enum": ["current", "syncing", "failed", "paused"],
+            "enum": [
+              "current",
+              "syncing",
+              "failed",
+              "paused"
+            ],
             "example": "current",
             "type": "string"
           },
@@ -1350,7 +1362,12 @@
             "type": "string"
           }
         },
-        "required": ["slug", "body", "revision", "updatedAt"],
+        "required": [
+          "slug",
+          "body",
+          "revision",
+          "updatedAt"
+        ],
         "type": "object"
       },
       "BackgroundTaskArtifactPutRequest": {
@@ -1367,7 +1384,9 @@
             "type": "integer"
           }
         },
-        "required": ["body"],
+        "required": [
+          "body"
+        ],
         "type": "object"
       },
       "BackgroundTaskCreateRequest": {
@@ -1387,7 +1406,10 @@
           },
           "executionTarget": {
             "description": "Where this task should execute. Defaults to desktop.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "desktop",
             "type": "string"
           },
@@ -1460,7 +1482,10 @@
             "nullable": true
           }
         },
-        "required": ["name", "instructions"],
+        "required": [
+          "name",
+          "instructions"
+        ],
         "type": "object"
       },
       "BackgroundTaskListResponse": {
@@ -1474,7 +1499,9 @@
             "type": "array"
           }
         },
-        "required": ["tasks"],
+        "required": [
+          "tasks"
+        ],
         "type": "object"
       },
       "BackgroundTaskPatchRequest": {
@@ -1494,7 +1521,10 @@
           },
           "executionTarget": {
             "description": "Where this task should execute.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "api",
             "type": "string"
           },
@@ -1568,7 +1598,9 @@
             "nullable": true
           }
         },
-        "required": ["revision"],
+        "required": [
+          "revision"
+        ],
         "type": "object"
       },
       "BackgroundTaskRun": {
@@ -1595,7 +1627,10 @@
           },
           "executor": {
             "description": "Execution backend that owns this run.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "api",
             "type": "string"
           },
@@ -1678,7 +1713,13 @@
           },
           "status": {
             "description": "Background task run lifecycle state.",
-            "enum": ["queued", "running", "succeeded", "failed", "stopped"],
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "stopped"
+            ],
             "example": "succeeded",
             "type": "string"
           },
@@ -1728,7 +1769,12 @@
           },
           "trigger": {
             "description": "Trigger source for a task run.",
-            "enum": ["manual", "cron", "window", "event"],
+            "enum": [
+              "manual",
+              "cron",
+              "window",
+              "event"
+            ],
             "example": "manual",
             "type": "string"
           },
@@ -1776,7 +1822,10 @@
           },
           "executor": {
             "description": "Execution backend. Defaults from task.executionTarget.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "desktop",
             "type": "string"
           },
@@ -1843,7 +1892,13 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["queued", "running", "succeeded", "failed", "stopped"],
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "stopped"
+            ],
             "example": "active",
             "type": "string"
           },
@@ -1879,7 +1934,12 @@
           },
           "trigger": {
             "description": "Trigger source. Defaults to manual.",
-            "enum": ["manual", "cron", "window", "event"],
+            "enum": [
+              "manual",
+              "cron",
+              "window",
+              "event"
+            ],
             "example": "manual",
             "type": "string"
           },
@@ -1890,7 +1950,9 @@
             "type": "string"
           }
         },
-        "required": ["runId"],
+        "required": [
+          "runId"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunEvent": {
@@ -1925,7 +1987,12 @@
             "type": "string"
           }
         },
-        "required": ["id", "seq", "event", "receivedAt"],
+        "required": [
+          "id",
+          "seq",
+          "event",
+          "receivedAt"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunEventInput": {
@@ -1948,7 +2015,10 @@
             "type": "string"
           }
         },
-        "required": ["seq", "event"],
+        "required": [
+          "seq",
+          "event"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunEventsAppendRequest": {
@@ -1962,7 +2032,9 @@
             "type": "array"
           }
         },
-        "required": ["events"],
+        "required": [
+          "events"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunEventsAppendResponse": {
@@ -1979,7 +2051,10 @@
             "type": "integer"
           }
         },
-        "required": ["stored", "skipped"],
+        "required": [
+          "stored",
+          "skipped"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunEventsResponse": {
@@ -1993,7 +2068,9 @@
             "type": "array"
           }
         },
-        "required": ["events"],
+        "required": [
+          "events"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunPatchRequest": {
@@ -2014,7 +2091,10 @@
           },
           "executor": {
             "description": "Execution backend.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "api",
             "type": "string"
           },
@@ -2081,7 +2161,13 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["queued", "running", "succeeded", "failed", "stopped"],
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "stopped"
+            ],
             "example": "active",
             "type": "string"
           },
@@ -2131,7 +2217,12 @@
           },
           "trigger": {
             "description": "Trigger source.",
-            "enum": ["manual", "cron", "window", "event"],
+            "enum": [
+              "manual",
+              "cron",
+              "window",
+              "event"
+            ],
             "example": "manual",
             "type": "string"
           },
@@ -2142,7 +2233,9 @@
             "type": "string"
           }
         },
-        "required": ["revision"],
+        "required": [
+          "revision"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunStatusResponse": {
@@ -2163,7 +2256,10 @@
           },
           "executor": {
             "description": "Execution backend.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "api",
             "type": "string"
           },
@@ -2210,7 +2306,13 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["queued", "running", "succeeded", "failed", "stopped"],
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "failed",
+              "stopped"
+            ],
             "example": "active",
             "type": "string"
           },
@@ -2233,7 +2335,13 @@
             "type": "string"
           }
         },
-        "required": ["runId", "slug", "status", "executor", "revision"],
+        "required": [
+          "runId",
+          "slug",
+          "status",
+          "executor",
+          "revision"
+        ],
         "type": "object"
       },
       "BackgroundTaskRunsResponse": {
@@ -2253,7 +2361,9 @@
             "type": "array"
           }
         },
-        "required": ["runs"],
+        "required": [
+          "runs"
+        ],
         "type": "object"
       },
       "BackgroundTaskScheduleState": {
@@ -2339,12 +2449,18 @@
           },
           "signal": {
             "description": "Supported control signal.",
-            "enum": ["pause", "resume", "update_context"],
+            "enum": [
+              "pause",
+              "resume",
+              "update_context"
+            ],
             "example": "pause",
             "type": "string"
           }
         },
-        "required": ["signal"],
+        "required": [
+          "signal"
+        ],
         "type": "object"
       },
       "BackgroundTaskTemplate": {
@@ -2362,7 +2478,10 @@
           },
           "executionTarget": {
             "description": "Default execution target.",
-            "enum": ["api", "desktop"],
+            "enum": [
+              "api",
+              "desktop"
+            ],
             "example": "api",
             "type": "string"
           },
@@ -2458,7 +2577,10 @@
           },
           "executionTarget": {
             "description": "Execution target override.",
-            "enum": ["desktop", "api"],
+            "enum": [
+              "desktop",
+              "api"
+            ],
             "example": "api",
             "type": "string"
           },
@@ -2508,7 +2630,9 @@
             "type": "array"
           }
         },
-        "required": ["templates"],
+        "required": [
+          "templates"
+        ],
         "type": "object"
       },
       "BackgroundTaskTriggerRequest": {
@@ -2522,7 +2646,12 @@
           },
           "trigger": {
             "description": "Trigger source for the queued run. Defaults to manual.",
-            "enum": ["manual", "cron", "window", "event"],
+            "enum": [
+              "manual",
+              "cron",
+              "window",
+              "event"
+            ],
             "example": "manual",
             "type": "string"
           }
@@ -2554,12 +2683,20 @@
                 },
                 "status": {
                   "description": "Check state.",
-                  "enum": ["pass", "attention"],
+                  "enum": [
+                    "pass",
+                    "attention"
+                  ],
                   "example": "pass",
                   "type": "string"
                 }
               },
-              "required": ["code", "status", "explanation", "count"],
+              "required": [
+                "code",
+                "status",
+                "explanation",
+                "count"
+              ],
               "type": "object"
             },
             "type": "array"
@@ -2595,7 +2732,11 @@
                   "type": "string"
                 }
               },
-              "required": ["capability", "enabled", "rolloutStage"],
+              "required": [
+                "capability",
+                "enabled",
+                "rolloutStage"
+              ],
               "type": "object"
             },
             "type": "array"
@@ -2715,7 +2856,11 @@
                   "type": "string"
                 }
               },
-              "required": ["eventName", "outcome", "count"],
+              "required": [
+                "eventName",
+                "outcome",
+                "count"
+              ],
               "type": "object"
             },
             "type": "array"
@@ -2743,14 +2888,23 @@
         "properties": {
           "plan": {
             "description": "Billing plan slug.",
-            "enum": ["free", "starter", "pro"],
+            "enum": [
+              "free",
+              "starter",
+              "pro"
+            ],
             "example": "free",
             "nullable": true,
             "type": "string"
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["active", "trialing", "past_due", "canceled"],
+            "enum": [
+              "active",
+              "trialing",
+              "past_due",
+              "canceled"
+            ],
             "example": "active",
             "nullable": true,
             "type": "string"
@@ -2765,7 +2919,12 @@
             "$ref": "#/components/schemas/BillingUsage"
           }
         },
-        "required": ["plan", "status", "trialExpiresAt", "usage"],
+        "required": [
+          "plan",
+          "status",
+          "trialExpiresAt",
+          "usage"
+        ],
         "type": "object"
       },
       "BillingUsage": {
@@ -2793,7 +2952,13 @@
             "type": "integer"
           }
         },
-        "required": ["sanctionedCredits", "usedCredits", "availableCredits", "monthly", "daily"],
+        "required": [
+          "sanctionedCredits",
+          "usedCredits",
+          "availableCredits",
+          "monthly",
+          "daily"
+        ],
         "type": "object"
       },
       "CloudEvent": {
@@ -2849,7 +3014,12 @@
           },
           "routingStatus": {
             "description": "Routing status.",
-            "enum": ["pending", "routed", "skipped", "failed"],
+            "enum": [
+              "pending",
+              "routed",
+              "skipped",
+              "failed"
+            ],
             "example": "routed",
             "type": "string"
           },
@@ -2895,7 +3065,13 @@
             "type": "string"
           }
         },
-        "required": ["id", "source", "dedupeKey", "routingStatus", "receivedAt"],
+        "required": [
+          "id",
+          "source",
+          "dedupeKey",
+          "routingStatus",
+          "receivedAt"
+        ],
         "type": "object"
       },
       "CloudEventIngestRequest": {
@@ -2965,7 +3141,10 @@
             "type": "string"
           }
         },
-        "required": ["source", "dedupeKey"],
+        "required": [
+          "source",
+          "dedupeKey"
+        ],
         "type": "object"
       },
       "CloudEventIngestResponse": {
@@ -2988,12 +3167,21 @@
           },
           "routingStatus": {
             "description": "Routing status at response time.",
-            "enum": ["pending", "routed", "skipped", "failed"],
+            "enum": [
+              "pending",
+              "routed",
+              "skipped",
+              "failed"
+            ],
             "example": "pending",
             "type": "string"
           }
         },
-        "required": ["eventId", "routingStatus", "deduped"],
+        "required": [
+          "eventId",
+          "routingStatus",
+          "deduped"
+        ],
         "type": "object"
       },
       "CloudEventListResponse": {
@@ -3013,7 +3201,9 @@
             "type": "string"
           }
         },
-        "required": ["events"],
+        "required": [
+          "events"
+        ],
         "type": "object"
       },
       "CloudEventRun": {
@@ -3032,7 +3222,9 @@
           },
           "executor": {
             "description": "Run executor.",
-            "enum": ["api"],
+            "enum": [
+              "api"
+            ],
             "example": "api",
             "type": "string"
           },
@@ -3054,12 +3246,20 @@
           },
           "trigger": {
             "description": "Run trigger.",
-            "enum": ["event"],
+            "enum": [
+              "event"
+            ],
             "example": "event",
             "type": "string"
           }
         },
-        "required": ["runId", "status", "trigger", "executor", "createdAt"],
+        "required": [
+          "runId",
+          "status",
+          "trigger",
+          "executor",
+          "createdAt"
+        ],
         "type": "object"
       },
       "CloudEventRunsResponse": {
@@ -3073,7 +3273,9 @@
             "type": "array"
           }
         },
-        "required": ["runs"],
+        "required": [
+          "runs"
+        ],
         "type": "object"
       },
       "Commitment": {
@@ -3233,7 +3435,11 @@
           },
           "kind": {
             "description": "Dependency semantics.",
-            "enum": ["blocks", "requires", "supersedes"],
+            "enum": [
+              "blocks",
+              "requires",
+              "supersedes"
+            ],
             "example": "blocks",
             "type": "string"
           },
@@ -3276,7 +3482,12 @@
           },
           "actorType": {
             "description": "Transition authority.",
-            "enum": ["user", "source_fact", "deterministic_rule", "ai_candidate"],
+            "enum": [
+              "user",
+              "source_fact",
+              "deterministic_rule",
+              "ai_candidate"
+            ],
             "example": "user",
             "type": "string"
           },
@@ -3438,7 +3649,13 @@
             "type": "string"
           }
         },
-        "required": ["appUrl", "oidcIssuerUrl", "supabaseUrl", "websocketApiUrl", "oauthClientId"],
+        "required": [
+          "appUrl",
+          "oidcIssuerUrl",
+          "supabaseUrl",
+          "websocketApiUrl",
+          "oauthClientId"
+        ],
         "type": "object"
       },
       "ConnectionAPIKeyRequest": {
@@ -3450,7 +3667,9 @@
             "type": "string"
           }
         },
-        "required": ["apiKey"],
+        "required": [
+          "apiKey"
+        ],
         "type": "object"
       },
       "ConnectionClaimRequest": {
@@ -3462,7 +3681,9 @@
             "type": "string"
           }
         },
-        "required": ["state"],
+        "required": [
+          "state"
+        ],
         "type": "object"
       },
       "ConnectionConnectedResponse": {
@@ -3474,7 +3695,9 @@
             "type": "boolean"
           }
         },
-        "required": ["connected"],
+        "required": [
+          "connected"
+        ],
         "type": "object"
       },
       "ConnectionStartResponse": {
@@ -3486,7 +3709,9 @@
             "type": "string"
           }
         },
-        "required": ["authorize_url"],
+        "required": [
+          "authorize_url"
+        ],
         "type": "object"
       },
       "Connector": {
@@ -3494,7 +3719,10 @@
         "properties": {
           "authType": {
             "description": "Connector credential flow.",
-            "enum": ["oauth", "api_key"],
+            "enum": [
+              "oauth",
+              "api_key"
+            ],
             "example": "oauth",
             "type": "string"
           },
@@ -3551,7 +3779,10 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
             "items": {
               "description": "Scope.",
               "example": "invoices:read",
@@ -3568,12 +3799,22 @@
           },
           "transport": {
             "description": "Connector execution transport. MCP is the default; native uses server-side SDK tools.",
-            "enum": ["mcp", "native"],
+            "enum": [
+              "mcp",
+              "native"
+            ],
             "example": "mcp",
             "type": "string"
           }
         },
-        "required": ["name", "displayName", "description", "mcpUrl", "authType", "connected"],
+        "required": [
+          "name",
+          "displayName",
+          "description",
+          "mcpUrl",
+          "authType",
+          "connected"
+        ],
         "type": "object"
       },
       "ConnectorsResponse": {
@@ -3587,7 +3828,9 @@
             "type": "array"
           }
         },
-        "required": ["connectors"],
+        "required": [
+          "connectors"
+        ],
         "type": "object"
       },
       "ConversationClaim": {
@@ -3728,7 +3971,12 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["pending", "blocked", "partial", "verified"],
+            "enum": [
+              "pending",
+              "blocked",
+              "partial",
+              "verified"
+            ],
             "example": "active",
             "type": "string"
           },
@@ -3749,7 +3997,13 @@
                 },
                 "status": {
                   "description": "Target state.",
-                  "enum": ["pending", "deleted", "not_found", "blocked", "failed"],
+                  "enum": [
+                    "pending",
+                    "deleted",
+                    "not_found",
+                    "blocked",
+                    "failed"
+                  ],
                   "example": "deleted",
                   "type": "string"
                 },
@@ -3773,13 +4027,24 @@
                   "type": "string"
                 }
               },
-              "required": ["target", "status", "attempts"],
+              "required": [
+                "target",
+                "status",
+                "attempts"
+              ],
               "type": "object"
             },
             "type": "array"
           }
         },
-        "required": ["receiptId", "requestedAt", "scopeRef", "legalHold", "status", "targets"],
+        "required": [
+          "receiptId",
+          "requestedAt",
+          "scopeRef",
+          "legalHold",
+          "status",
+          "targets"
+        ],
         "type": "object"
       },
       "ConversationGovernanceReceipt": {
@@ -3803,7 +4068,10 @@
           },
           "evidenceClip": {
             "description": "Material audio evidence status; retained clips may only be encrypted.",
-            "enum": ["not_retained", "encrypted"],
+            "enum": [
+              "not_retained",
+              "encrypted"
+            ],
             "example": "not_retained",
             "type": "string"
           },
@@ -3995,7 +4263,13 @@
           },
           "kind": {
             "description": "Review kind.",
-            "enum": ["word", "speaker", "entity", "claim", "capture"],
+            "enum": [
+              "word",
+              "speaker",
+              "entity",
+              "claim",
+              "capture"
+            ],
             "example": "speaker",
             "type": "string"
           },
@@ -4022,12 +4296,25 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["pending_review", "accepted", "corrected", "rejected", "deferred"],
+            "enum": [
+              "pending_review",
+              "accepted",
+              "corrected",
+              "rejected",
+              "deferred"
+            ],
             "example": "active",
             "type": "string"
           }
         },
-        "required": ["id", "kind", "label", "currentValue", "confidence", "observationId"],
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "currentValue",
+          "confidence",
+          "observationId"
+        ],
         "type": "object"
       },
       "CreditLedger": {
@@ -4075,7 +4362,14 @@
             "description": "User that owns this row."
           }
         },
-        "required": ["id", "delta", "reason", "request_id", "ts", "user"],
+        "required": [
+          "id",
+          "delta",
+          "reason",
+          "request_id",
+          "ts",
+          "user"
+        ],
         "type": "object"
       },
       "CreditUsageBucket": {
@@ -4097,7 +4391,11 @@
             "type": "integer"
           }
         },
-        "required": ["sanctionedCredits", "usedCredits", "availableCredits"],
+        "required": [
+          "sanctionedCredits",
+          "usedCredits",
+          "availableCredits"
+        ],
         "type": "object"
       },
       "CurrentUser": {
@@ -4115,7 +4413,10 @@
             "type": "string"
           }
         },
-        "required": ["id", "email"],
+        "required": [
+          "id",
+          "email"
+        ],
         "type": "object"
       },
       "DailyCreditUsageBucket": {
@@ -4142,7 +4443,12 @@
             "type": "integer"
           }
         },
-        "required": ["sanctionedCredits", "usedCredits", "availableCredits", "usageDay"],
+        "required": [
+          "sanctionedCredits",
+          "usedCredits",
+          "availableCredits",
+          "usageDay"
+        ],
         "type": "object"
       },
       "ErrorEnvelope": {
@@ -4192,7 +4498,12 @@
             "type": "string"
           }
         },
-        "required": ["type", "title", "status", "code"],
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code"
+        ],
         "type": "object"
       },
       "ExaSearchRequest": {
@@ -4238,7 +4549,9 @@
             "type": "string"
           }
         },
-        "required": ["query"],
+        "required": [
+          "query"
+        ],
         "type": "object"
       },
       "ExaSearchResponse": {
@@ -4274,7 +4587,13 @@
           },
           "source": {
             "description": "Webhook source.",
-            "enum": ["webhook", "mcp", "github", "linear", "stripe"],
+            "enum": [
+              "webhook",
+              "mcp",
+              "github",
+              "linear",
+              "stripe"
+            ],
             "example": "webhook",
             "type": "string"
           },
@@ -4308,7 +4627,9 @@
             "type": "string"
           }
         },
-        "required": ["userId"],
+        "required": [
+          "userId"
+        ],
         "type": "object"
       },
       "GoogleClaimRequest": {
@@ -4320,7 +4641,9 @@
             "type": "string"
           }
         },
-        "required": ["session"],
+        "required": [
+          "session"
+        ],
         "type": "object"
       },
       "GoogleRefreshRequest": {
@@ -4332,7 +4655,9 @@
             "type": "string"
           }
         },
-        "required": ["refreshToken"],
+        "required": [
+          "refreshToken"
+        ],
         "type": "object"
       },
       "GoogleWatch": {
@@ -4419,7 +4744,9 @@
             "type": "object"
           }
         },
-        "required": ["query"],
+        "required": [
+          "query"
+        ],
         "type": "object"
       },
       "GraphQLResponse": {
@@ -4447,12 +4774,16 @@
         "properties": {
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["ok"],
+            "enum": [
+              "ok"
+            ],
             "example": "active",
             "type": "string"
           }
         },
-        "required": ["status"],
+        "required": [
+          "status"
+        ],
         "type": "object"
       },
       "HubSpotSearchObject": {
@@ -4487,7 +4818,10 @@
             "type": "string"
           }
         },
-        "required": ["id", "properties"],
+        "required": [
+          "id",
+          "properties"
+        ],
         "type": "object"
       },
       "HubSpotSearchRequest": {
@@ -4500,7 +4834,12 @@
           },
           "objectType": {
             "description": "CRM object type.",
-            "enum": ["contact", "company", "deal", "ticket"],
+            "enum": [
+              "contact",
+              "company",
+              "deal",
+              "ticket"
+            ],
             "example": "contact",
             "type": "string"
           },
@@ -4510,7 +4849,10 @@
             "type": "string"
           }
         },
-        "required": ["objectType", "query"],
+        "required": [
+          "objectType",
+          "query"
+        ],
         "type": "object"
       },
       "HubSpotSearchResponse": {
@@ -4518,7 +4860,12 @@
         "properties": {
           "objectType": {
             "description": "Canonical CRM object type.",
-            "enum": ["contact", "company", "deal", "ticket"],
+            "enum": [
+              "contact",
+              "company",
+              "deal",
+              "ticket"
+            ],
             "example": "contact",
             "type": "string"
           },
@@ -4536,7 +4883,11 @@
             "type": "integer"
           }
         },
-        "required": ["objectType", "total", "results"],
+        "required": [
+          "objectType",
+          "total",
+          "results"
+        ],
         "type": "object"
       },
       "IntegrationTemplateBlock": {
@@ -4597,12 +4948,23 @@
           },
           "trustTier": {
             "description": "Highest trust tier needed by this capability.",
-            "enum": ["read", "write", "act", "money-moving"],
+            "enum": [
+              "read",
+              "write",
+              "act",
+              "money-moving"
+            ],
             "example": "read",
             "type": "string"
           }
         },
-        "required": ["id", "title", "description", "category", "trustTier"],
+        "required": [
+          "id",
+          "title",
+          "description",
+          "category",
+          "trustTier"
+        ],
         "type": "object"
       },
       "InternalCloudEventIngestRequest": {
@@ -4636,7 +4998,11 @@
             "type": "string"
           }
         },
-        "required": ["userId", "source", "dedupeKey"],
+        "required": [
+          "userId",
+          "source",
+          "dedupeKey"
+        ],
         "type": "object"
       },
       "InternalInvalidateRequest": {
@@ -4653,7 +5019,10 @@
             "type": "string"
           }
         },
-        "required": ["workos_user_id", "connector"],
+        "required": [
+          "workos_user_id",
+          "connector"
+        ],
         "type": "object"
       },
       "InternalInvalidateResponse": {
@@ -4670,7 +5039,9 @@
             "type": "boolean"
           }
         },
-        "required": ["invalidated"],
+        "required": [
+          "invalidated"
+        ],
         "type": "object"
       },
       "LLMChatCompletionsRequest": {
@@ -4723,7 +5094,10 @@
             "type": "array"
           }
         },
-        "required": ["model", "messages"],
+        "required": [
+          "model",
+          "messages"
+        ],
         "type": "object"
       },
       "LLMChatMessage": {
@@ -4741,12 +5115,20 @@
           },
           "role": {
             "description": "Message role.",
-            "enum": ["system", "user", "assistant", "tool"],
+            "enum": [
+              "system",
+              "user",
+              "assistant",
+              "tool"
+            ],
             "example": "user",
             "type": "string"
           }
         },
-        "required": ["role", "content"],
+        "required": [
+          "role",
+          "content"
+        ],
         "type": "object"
       },
       "LLMCompletionsRequest": {
@@ -4778,7 +5160,10 @@
             "type": "number"
           }
         },
-        "required": ["model", "prompt"],
+        "required": [
+          "model",
+          "prompt"
+        ],
         "type": "object"
       },
       "LLMEmbeddingsRequest": {
@@ -4798,7 +5183,10 @@
           },
           "input": {
             "description": "Input string or array of strings.",
-            "example": ["customer invoice", "payment risk"]
+            "example": [
+              "customer invoice",
+              "payment risk"
+            ]
           },
           "model": {
             "description": "Desktop-facing LLM model id.",
@@ -4806,7 +5194,10 @@
             "type": "string"
           }
         },
-        "required": ["model", "input"],
+        "required": [
+          "model",
+          "input"
+        ],
         "type": "object"
       },
       "LLMGatewayResponse": {
@@ -4823,7 +5214,9 @@
             "type": "string"
           }
         },
-        "required": ["id"],
+        "required": [
+          "id"
+        ],
         "type": "object"
       },
       "LLMModelsResponse": {
@@ -4837,7 +5230,9 @@
             "type": "array"
           }
         },
-        "required": ["data"],
+        "required": [
+          "data"
+        ],
         "type": "object"
       },
       "LLMUsage": {
@@ -4950,7 +5345,11 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": ["INSERT", "UPDATE", "DELETE"],
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ],
             "example": "UPDATE",
             "type": "string"
           },
@@ -5058,7 +5457,10 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
             "items": {
               "type": "string"
             },
@@ -5075,7 +5477,14 @@
             "description": "User that owns this row."
           }
         },
-        "required": ["id", "created_at", "updated_at", "connector", "audience", "user"],
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "connector",
+          "audience",
+          "user"
+        ],
         "type": "object"
       },
       "MCPConnectionHistory": {
@@ -5135,7 +5544,11 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": ["INSERT", "UPDATE", "DELETE"],
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ],
             "example": "UPDATE",
             "type": "string"
           },
@@ -5153,7 +5566,10 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
             "items": {
               "type": "string"
             },
@@ -5202,7 +5618,11 @@
             "type": "string"
           }
         },
-        "required": ["access_token", "token_type", "mcpUrl"],
+        "required": [
+          "access_token",
+          "token_type",
+          "mcpUrl"
+        ],
         "type": "object"
       },
       "MCPToolPolicy": {
@@ -5215,12 +5635,20 @@
           },
           "trustTier": {
             "description": "Runtime trust tier for this tool.",
-            "enum": ["read", "write", "act", "money-moving"],
+            "enum": [
+              "read",
+              "write",
+              "act",
+              "money-moving"
+            ],
             "example": "read",
             "type": "string"
           }
         },
-        "required": ["name", "trustTier"],
+        "required": [
+          "name",
+          "trustTier"
+        ],
         "type": "object"
       },
       "MailBodyCache": {
@@ -5505,7 +5933,10 @@
             "description": "User that owns this row."
           }
         },
-        "required": ["user", "billing"],
+        "required": [
+          "user",
+          "billing"
+        ],
         "type": "object"
       },
       "MeetingMinuteUsage": {
@@ -5693,7 +6124,10 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
             "items": {
               "type": "string"
             },
@@ -5746,7 +6180,11 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": ["INSERT", "UPDATE", "DELETE"],
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ],
             "example": "UPDATE",
             "type": "string"
           },
@@ -5769,7 +6207,10 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
             "items": {
               "type": "string"
             },
@@ -5881,7 +6322,10 @@
             "type": "string"
           }
         },
-        "required": ["access_token", "expires_at"],
+        "required": [
+          "access_token",
+          "expires_at"
+        ],
         "type": "object"
       },
       "Person": {
@@ -5911,6 +6355,9 @@
             "type": "string"
           },
           "display_name": {
+            "type": "string"
+          },
+          "employment_status": {
             "type": "string"
           },
           "existing_merge_candidates": {
@@ -6015,6 +6462,7 @@
           "updated_at",
           "display_name",
           "aliases",
+          "employment_status",
           "attributes_version",
           "projector_version",
           "status",
@@ -6422,6 +6870,70 @@
         ],
         "type": "object"
       },
+      "PersonSuppression": {
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "type": "string"
+          },
+          "suppressed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "kind",
+          "reason",
+          "suppressed_at",
+          "workspace",
+          "user"
+        ],
+        "type": "object"
+      },
       "PolicyDecisionSnapshot": {
         "properties": {
           "action": {
@@ -6549,7 +7061,9 @@
             "type": "string"
           }
         },
-        "required": ["requested_audience"],
+        "required": [
+          "requested_audience"
+        ],
         "type": "object"
       },
       "PreConsentResponse": {
@@ -6564,7 +7078,9 @@
             "$ref": "#/components/schemas/Upsell"
           }
         },
-        "required": ["allow"],
+        "required": [
+          "allow"
+        ],
         "type": "object"
       },
       "ReadyResponse": {
@@ -6578,12 +7094,17 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["ready", "not_ready"],
+            "enum": [
+              "ready",
+              "not_ready"
+            ],
             "example": "active",
             "type": "string"
           }
         },
-        "required": ["status"],
+        "required": [
+          "status"
+        ],
         "type": "object"
       },
       "ReconnectErrorEnvelope": {
@@ -6591,7 +7112,9 @@
         "properties": {
           "code": {
             "description": "Stable machine-readable error code.",
-            "enum": ["reconnect_required"],
+            "enum": [
+              "reconnect_required"
+            ],
             "example": "reconnect_required",
             "type": "string"
           },
@@ -6633,7 +7156,13 @@
             "type": "string"
           }
         },
-        "required": ["type", "title", "status", "code", "reconnectRequired"],
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code",
+          "reconnectRequired"
+        ],
         "type": "object"
       },
       "Relationship": {
@@ -7144,7 +7673,14 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["open", "acknowledged", "snoozed", "dismissed", "superseded", "resolved"],
+            "enum": [
+              "open",
+              "acknowledged",
+              "snoozed",
+              "dismissed",
+              "superseded",
+              "resolved"
+            ],
             "example": "active",
             "type": "string"
           },
@@ -7161,7 +7697,12 @@
           },
           "urgencyBand": {
             "description": "Urgency.",
-            "enum": ["low", "normal", "high", "critical"],
+            "enum": [
+              "low",
+              "normal",
+              "high",
+              "critical"
+            ],
             "example": "high",
             "type": "string"
           },
@@ -7235,7 +7776,14 @@
             "type": "boolean"
           }
         },
-        "required": ["id", "direction", "text", "status", "confidence", "userConfirmed"],
+        "required": [
+          "id",
+          "direction",
+          "text",
+          "status",
+          "confidence",
+          "userConfirmed"
+        ],
         "type": "object"
       },
       "RelationshipGraph": {
@@ -7312,7 +7860,13 @@
                 "type": "boolean"
               }
             },
-            "required": ["canView", "canContribute", "canApprove", "canExecute", "canSaveViews"],
+            "required": [
+              "canView",
+              "canContribute",
+              "canApprove",
+              "canExecute",
+              "canSaveViews"
+            ],
             "type": "object"
           },
           "relationshipId": {
@@ -7323,7 +7877,10 @@
           },
           "scope": {
             "description": "Graph scope.",
-            "enum": ["portfolio", "relationship"],
+            "enum": [
+              "portfolio",
+              "relationship"
+            ],
             "example": "portfolio",
             "type": "string"
           }
@@ -7405,7 +7962,15 @@
             "type": "string"
           }
         },
-        "required": ["id", "source", "target", "kind", "label", "directed", "evidenceRefs"],
+        "required": [
+          "id",
+          "source",
+          "target",
+          "kind",
+          "label",
+          "directed",
+          "evidenceRefs"
+        ],
         "type": "object"
       },
       "RelationshipGraphNode": {
@@ -7464,7 +8029,12 @@
           },
           "freshness": {
             "description": "Evidence freshness.",
-            "enum": ["current", "aging", "stale", "unknown"],
+            "enum": [
+              "current",
+              "aging",
+              "stale",
+              "unknown"
+            ],
             "example": "current",
             "type": "string"
           },
@@ -7796,7 +8366,13 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["pending", "deferred", "resolving", "resolved", "undone"],
+            "enum": [
+              "pending",
+              "deferred",
+              "resolving",
+              "resolved",
+              "undone"
+            ],
             "example": "active",
             "type": "string"
           },
@@ -7878,7 +8454,13 @@
             "type": "string"
           }
         },
-        "required": ["id", "decision", "candidateVersion", "actorId", "decidedAt"],
+        "required": [
+          "id",
+          "decision",
+          "candidateVersion",
+          "actorId",
+          "decidedAt"
+        ],
         "type": "object"
       },
       "RelationshipIdentityLineage": {
@@ -8314,7 +8896,13 @@
             "type": "string"
           }
         },
-        "required": ["id", "displayName", "role", "active", "externalRefs"],
+        "required": [
+          "id",
+          "displayName",
+          "role",
+          "active",
+          "externalRefs"
+        ],
         "type": "object"
       },
       "RelationshipProjectionJob": {
@@ -8526,7 +9114,11 @@
           },
           "source": {
             "description": "Source provider.",
-            "enum": ["google", "slack", "hubspot"],
+            "enum": [
+              "google",
+              "slack",
+              "hubspot"
+            ],
             "example": "google",
             "type": "string"
           },
@@ -8598,7 +9190,14 @@
           },
           "backfillPhase": {
             "description": "Backfill phase.",
-            "enum": ["idle", "queued", "running", "live", "paused", "failed"],
+            "enum": [
+              "idle",
+              "queued",
+              "running",
+              "live",
+              "paused",
+              "failed"
+            ],
             "example": "live",
             "type": "string"
           },
@@ -8609,7 +9208,13 @@
           },
           "completeness": {
             "description": "Impact on relationship completeness.",
-            "enum": ["complete", "partial", "stale", "rebuilding", "disconnected"],
+            "enum": [
+              "complete",
+              "partial",
+              "stale",
+              "rebuilding",
+              "disconnected"
+            ],
             "example": "partial",
             "type": "string"
           },
@@ -8735,7 +9340,11 @@
           },
           "source": {
             "description": "Source provider.",
-            "enum": ["google", "slack", "hubspot"],
+            "enum": [
+              "google",
+              "slack",
+              "hubspot"
+            ],
             "example": "google",
             "type": "string"
           },
@@ -8866,7 +9475,11 @@
         "properties": {
           "capture": {
             "description": "Capture rule.",
-            "enum": ["deny", "require_consent", "allow"],
+            "enum": [
+              "deny",
+              "require_consent",
+              "allow"
+            ],
             "example": "require_consent",
             "type": "string"
           },
@@ -8882,7 +9495,11 @@
           },
           "modelRoute": {
             "description": "Most permissive model route allowed.",
-            "enum": ["local_only", "region_restricted", "hosted_allowed"],
+            "enum": [
+              "local_only",
+              "region_restricted",
+              "hosted_allowed"
+            ],
             "example": "local_only",
             "type": "string"
           },
@@ -8962,7 +9579,11 @@
           },
           "approvalStatus": {
             "description": "Approval state, bound to the exact revision and decision.",
-            "enum": ["pending", "approved", "rejected"],
+            "enum": [
+              "pending",
+              "approved",
+              "rejected"
+            ],
             "example": "pending",
             "type": "string"
           },
@@ -8980,7 +9601,15 @@
           },
           "channel": {
             "description": "Delivery channel.",
-            "enum": ["email", "slack", "call", "crm_task", "crm", "task", "calendar"],
+            "enum": [
+              "email",
+              "slack",
+              "call",
+              "crm_task",
+              "crm",
+              "task",
+              "calendar"
+            ],
             "example": "email",
             "type": "string"
           },
@@ -9060,7 +9689,13 @@
                   "type": "string"
                 }
               },
-              "required": ["id", "source", "sourceRecordId", "occurredAt", "externalEvidenceRefs"],
+              "required": [
+                "id",
+                "source",
+                "sourceRecordId",
+                "occurredAt",
+                "externalEvidenceRefs"
+              ],
               "type": "object"
             },
             "type": "array"
@@ -9079,19 +9714,32 @@
           },
           "executionMode": {
             "description": "Draft lands in the operator's mailbox; send requires a passed unexpired decision and a linked workspace.",
-            "enum": ["draft", "send"],
+            "enum": [
+              "draft",
+              "send"
+            ],
             "example": "draft",
             "type": "string"
           },
           "executionOwner": {
             "description": "Exactly one owner may execute a revision.",
-            "enum": ["rowboat", "outbound"],
+            "enum": [
+              "rowboat",
+              "outbound"
+            ],
             "example": "rowboat",
             "type": "string"
           },
           "executionStatus": {
             "description": "Execution state. A lost provider result is ambiguous, never auto-resent.",
-            "enum": ["pending", "requested", "sent", "failed", "ambiguous", "cancelled"],
+            "enum": [
+              "pending",
+              "requested",
+              "sent",
+              "failed",
+              "ambiguous",
+              "cancelled"
+            ],
             "example": "pending",
             "type": "string"
           },
@@ -9103,7 +9751,13 @@
           },
           "policyStatus": {
             "description": "Preflight state. Facade unavailability keeps pending (fail closed).",
-            "enum": ["pending", "passed", "review_required", "blocked", "stale"],
+            "enum": [
+              "pending",
+              "passed",
+              "review_required",
+              "blocked",
+              "stale"
+            ],
             "example": "pending",
             "type": "string"
           },
@@ -9139,7 +9793,12 @@
           },
           "queueStatus": {
             "description": "Operator triage state.",
-            "enum": ["open", "snoozed", "dismissed", "handled"],
+            "enum": [
+              "open",
+              "snoozed",
+              "dismissed",
+              "handled"
+            ],
             "example": "open",
             "type": "string"
           },
@@ -9188,7 +9847,13 @@
           },
           "reconciliationStatus": {
             "description": "Read-only provider reconciliation state for an ambiguous write.",
-            "enum": ["pending", "found", "not_found", "error", "manual_review"],
+            "enum": [
+              "pending",
+              "found",
+              "not_found",
+              "error",
+              "manual_review"
+            ],
             "example": "pending",
             "type": "string"
           },
@@ -9393,7 +10058,10 @@
             "type": "array"
           }
         },
-        "required": ["generatedAt", "openCount"],
+        "required": [
+          "generatedAt",
+          "openCount"
+        ],
         "type": "object"
       },
       "RevenueEvidence": {
@@ -9601,7 +10269,13 @@
             "type": "integer"
           }
         },
-        "required": ["surfaced", "open", "handled", "approved", "executed"],
+        "required": [
+          "surfaced",
+          "open",
+          "handled",
+          "approved",
+          "executed"
+        ],
         "type": "object"
       },
       "RevenueLeakScan": {
@@ -9647,7 +10321,10 @@
           },
           "mode": {
             "description": "Workspace mode at scan time.",
-            "enum": ["local", "linked"],
+            "enum": [
+              "local",
+              "linked"
+            ],
             "example": "local",
             "type": "string"
           },
@@ -9672,7 +10349,12 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["pending", "running", "completed", "failed"],
+            "enum": [
+              "pending",
+              "running",
+              "completed",
+              "failed"
+            ],
             "example": "active",
             "type": "string"
           },
@@ -9682,7 +10364,12 @@
             "type": "integer"
           }
         },
-        "required": ["id", "status", "mode", "lookbackDays"],
+        "required": [
+          "id",
+          "status",
+          "mode",
+          "lookbackDays"
+        ],
         "type": "object"
       },
       "RevenueOutboxEvent": {
@@ -9806,7 +10493,16 @@
           },
           "source": {
             "description": "Observing source.",
-            "enum": ["gmail", "calendar", "crm", "user", "outbound", "slack", "meeting", "task"],
+            "enum": [
+              "gmail",
+              "calendar",
+              "crm",
+              "user",
+              "outbound",
+              "slack",
+              "meeting",
+              "task"
+            ],
             "example": "gmail",
             "type": "string"
           },
@@ -9816,7 +10512,13 @@
             "type": "string"
           }
         },
-        "required": ["id", "kind", "source", "sourceEventId", "occurredAt"],
+        "required": [
+          "id",
+          "kind",
+          "source",
+          "sourceEventId",
+          "occurredAt"
+        ],
         "type": "object"
       },
       "RevenuePolicyDecision": {
@@ -9871,7 +10573,11 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["passed", "review_required", "blocked"],
+            "enum": [
+              "passed",
+              "review_required",
+              "blocked"
+            ],
             "example": "active",
             "type": "string"
           },
@@ -9886,7 +10592,14 @@
             "type": "object"
           }
         },
-        "required": ["id", "revision", "revisionHash", "status", "evaluatedAt", "expiresAt"],
+        "required": [
+          "id",
+          "revision",
+          "revisionHash",
+          "status",
+          "evaluatedAt",
+          "expiresAt"
+        ],
         "type": "object"
       },
       "RevenueRelationship": {
@@ -9904,13 +10617,24 @@
           },
           "engagement": {
             "description": "Direction of engagement.",
-            "enum": ["unknown", "increasing", "steady", "declining", "dormant"],
+            "enum": [
+              "unknown",
+              "increasing",
+              "steady",
+              "declining",
+              "dormant"
+            ],
             "example": "declining",
             "type": "string"
           },
           "health": {
             "description": "Explainable health state; never a magic score.",
-            "enum": ["unknown", "healthy", "needs_attention", "critical"],
+            "enum": [
+              "unknown",
+              "healthy",
+              "needs_attention",
+              "critical"
+            ],
             "example": "needs_attention",
             "type": "string"
           },
@@ -9922,7 +10646,14 @@
           },
           "kind": {
             "description": "Relationship kind.",
-            "enum": ["person", "company", "customer", "opportunity", "referral", "partner"],
+            "enum": [
+              "person",
+              "company",
+              "customer",
+              "opportunity",
+              "referral",
+              "partner"
+            ],
             "example": "person",
             "type": "string"
           },
@@ -10009,7 +10740,12 @@
           },
           "sentiment": {
             "description": "Observed sentiment.",
-            "enum": ["unknown", "positive", "mixed", "negative"],
+            "enum": [
+              "unknown",
+              "positive",
+              "mixed",
+              "negative"
+            ],
             "example": "mixed",
             "type": "string"
           },
@@ -10030,7 +10766,12 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["active", "dormant", "closed", "archived"],
+            "enum": [
+              "active",
+              "dormant",
+              "closed",
+              "archived"
+            ],
             "example": "active",
             "type": "string"
           },
@@ -10149,7 +10890,10 @@
           },
           "mode": {
             "description": "Workspace mode.",
-            "enum": ["local", "linked"],
+            "enum": [
+              "local",
+              "linked"
+            ],
             "example": "local",
             "type": "string"
           },
@@ -10170,12 +10914,21 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": ["active", "disconnected", "repair_required"],
+            "enum": [
+              "active",
+              "disconnected",
+              "repair_required"
+            ],
             "example": "active",
             "type": "string"
           }
         },
-        "required": ["id", "mode", "status", "preflightAvailable"],
+        "required": [
+          "id",
+          "mode",
+          "status",
+          "preflightAvailable"
+        ],
         "type": "object"
       },
       "RevenueWorkspaceMember": {
@@ -10217,7 +10970,15 @@
             "$ref": "#/components/schemas/RevenueWorkspace"
           }
         },
-        "required": ["id", "created_at", "updated_at", "role", "status", "workspace", "user"],
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "role",
+          "status",
+          "workspace",
+          "user"
+        ],
         "type": "object"
       },
       "RevisionConflictEnvelope": {
@@ -10225,7 +10986,9 @@
         "properties": {
           "code": {
             "description": "Stable machine-readable conflict code.",
-            "enum": ["conflict"],
+            "enum": [
+              "conflict"
+            ],
             "example": "conflict",
             "type": "string"
           },
@@ -10236,7 +10999,9 @@
           },
           "detail": {
             "description": "Human-readable conflict detail.",
-            "enum": ["revision conflict"],
+            "enum": [
+              "revision conflict"
+            ],
             "example": "revision conflict",
             "type": "string"
           },
@@ -10268,7 +11033,13 @@
             "type": "string"
           }
         },
-        "required": ["type", "title", "status", "code", "currentRevision"],
+        "required": [
+          "type",
+          "title",
+          "status",
+          "code",
+          "currentRevision"
+        ],
         "type": "object"
       },
       "SlackClaimRequest": {
@@ -10280,7 +11051,9 @@
             "type": "string"
           }
         },
-        "required": ["session"],
+        "required": [
+          "session"
+        ],
         "type": "object"
       },
       "SlackClaimResponse": {
@@ -10315,7 +11088,10 @@
             "type": "string"
           }
         },
-        "required": ["connected", "teamId"],
+        "required": [
+          "connected",
+          "teamId"
+        ],
         "type": "object"
       },
       "SlackThreadMessage": {
@@ -10372,7 +11148,12 @@
             "type": "string"
           }
         },
-        "required": ["teamId", "channel", "threadTs", "text"],
+        "required": [
+          "teamId",
+          "channel",
+          "threadTs",
+          "text"
+        ],
         "type": "object"
       },
       "SlackThreadPostResponse": {
@@ -10399,7 +11180,12 @@
             "type": "string"
           }
         },
-        "required": ["ok", "teamId", "channel", "threadTs"],
+        "required": [
+          "ok",
+          "teamId",
+          "channel",
+          "threadTs"
+        ],
         "type": "object"
       },
       "SlackThreadReadRequest": {
@@ -10427,7 +11213,11 @@
             "type": "string"
           }
         },
-        "required": ["teamId", "channel", "threadTs"],
+        "required": [
+          "teamId",
+          "channel",
+          "threadTs"
+        ],
         "type": "object"
       },
       "SlackThreadReadResponse": {
@@ -10456,7 +11246,12 @@
             "type": "string"
           }
         },
-        "required": ["teamId", "channel", "threadTs", "messages"],
+        "required": [
+          "teamId",
+          "channel",
+          "threadTs",
+          "messages"
+        ],
         "type": "object"
       },
       "SlackWorkspace": {
@@ -10470,7 +11265,10 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": ["invoices:read", "customers:read"],
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
             "items": {
               "description": "Slack OAuth scope.",
               "example": "channels:history",
@@ -10490,7 +11288,9 @@
             "type": "string"
           }
         },
-        "required": ["teamId"],
+        "required": [
+          "teamId"
+        ],
         "type": "object"
       },
       "SlackWorkspacesResponse": {
@@ -10504,7 +11304,9 @@
             "type": "array"
           }
         },
-        "required": ["workspaces"],
+        "required": [
+          "workspaces"
+        ],
         "type": "object"
       },
       "Subscription": {
@@ -10524,7 +11326,11 @@
           },
           "plan": {
             "description": "Billing plan slug.",
-            "enum": ["free", "starter", "pro"],
+            "enum": [
+              "free",
+              "starter",
+              "pro"
+            ],
             "example": "free",
             "type": "string"
           },
@@ -10600,13 +11406,21 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": ["INSERT", "UPDATE", "DELETE"],
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ],
             "example": "UPDATE",
             "type": "string"
           },
           "plan": {
             "description": "Billing plan slug.",
-            "enum": ["free", "starter", "pro"],
+            "enum": [
+              "free",
+              "starter",
+              "pro"
+            ],
             "example": "free",
             "type": "string"
           },
@@ -10738,12 +11552,18 @@
           },
           "requiredPlan": {
             "description": "Minimum plan required.",
-            "enum": ["starter", "pro"],
+            "enum": [
+              "starter",
+              "pro"
+            ],
             "example": "pro",
             "type": "string"
           }
         },
-        "required": ["requiredPlan", "message"],
+        "required": [
+          "requiredPlan",
+          "message"
+        ],
         "type": "object"
       },
       "User": {
@@ -10972,6 +11792,12 @@
             },
             "type": "array"
           },
+          "person_suppressions": {
+            "items": {
+              "$ref": "#/components/schemas/PersonSuppression"
+            },
+            "type": "array"
+          },
           "policy_decision_snapshots": {
             "items": {
               "$ref": "#/components/schemas/PolicyDecisionSnapshot"
@@ -11143,7 +11969,12 @@
             "type": "array"
           }
         },
-        "required": ["id", "created_at", "updated_at", "workos_user_id"],
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "workos_user_id"
+        ],
         "type": "object"
       },
       "UserHistory": {
@@ -11174,7 +12005,11 @@
           },
           "operation": {
             "description": "Mutation operation that produced this history row.",
-            "enum": ["INSERT", "UPDATE", "DELETE"],
+            "enum": [
+              "INSERT",
+              "UPDATE",
+              "DELETE"
+            ],
             "example": "UPDATE",
             "type": "string"
           },
@@ -11252,7 +12087,9 @@
             "type": "object"
           }
         },
-        "required": ["text"],
+        "required": [
+          "text"
+        ],
         "type": "object"
       },
       "WorkOSExchangeRequest": {
@@ -11270,7 +12107,9 @@
             "type": "string"
           }
         },
-        "required": ["code"],
+        "required": [
+          "code"
+        ],
         "type": "object"
       },
       "WorkOSLoginURLResponse": {
@@ -11282,7 +12121,9 @@
             "type": "string"
           }
         },
-        "required": ["url"],
+        "required": [
+          "url"
+        ],
         "type": "object"
       },
       "WorkOSRefreshRequest": {
@@ -11294,7 +12135,9 @@
             "type": "string"
           }
         },
-        "required": ["refreshToken"],
+        "required": [
+          "refreshToken"
+        ],
         "type": "object"
       },
       "WorkOSTokenBundle": {
@@ -11325,7 +12168,9 @@
           },
           "token_type": {
             "description": "Token type.",
-            "enum": ["Bearer"],
+            "enum": [
+              "Bearer"
+            ],
             "example": "Bearer",
             "type": "string"
           },
@@ -11336,7 +12181,11 @@
             "type": "string"
           }
         },
-        "required": ["access_token", "expires_at", "token_type"],
+        "required": [
+          "access_token",
+          "expires_at",
+          "token_type"
+        ],
         "type": "object"
       },
       "WorkspaceFeatureControl": {
@@ -11479,7 +12328,9 @@
           }
         ],
         "summary": "Admin GraphQL",
-        "tags": ["GraphQL"]
+        "tags": [
+          "GraphQL"
+        ]
       }
     },
     "/healthz": {
@@ -11502,7 +12353,9 @@
           }
         },
         "summary": "Liveness probe",
-        "tags": ["System"]
+        "tags": [
+          "System"
+        ]
       }
     },
     "/oauth-hooks/pre-consent": {
@@ -11559,7 +12412,9 @@
           }
         ],
         "summary": "Evaluate connector pre-consent entitlement",
-        "tags": ["Webhooks"]
+        "tags": [
+          "Webhooks"
+        ]
       }
     },
     "/oauth/google/callback": {
@@ -11624,7 +12479,9 @@
           }
         },
         "summary": "Handle Google OAuth callback",
-        "tags": ["Google OAuth"]
+        "tags": [
+          "Google OAuth"
+        ]
       }
     },
     "/oauth/slack/callback": {
@@ -11689,7 +12546,9 @@
           }
         },
         "summary": "Handle Slack OAuth callback",
-        "tags": ["Slack OAuth"]
+        "tags": [
+          "Slack OAuth"
+        ]
       }
     },
     "/openapi.json": {
@@ -11711,7 +12570,9 @@
           }
         },
         "summary": "Download OpenAPI document",
-        "tags": ["System"]
+        "tags": [
+          "System"
+        ]
       }
     },
     "/readyz": {
@@ -11737,7 +12598,9 @@
           }
         },
         "summary": "Readiness probe",
-        "tags": ["System"]
+        "tags": [
+          "System"
+        ]
       }
     },
     "/v1/auth/workos/exchange": {
@@ -11789,7 +12652,9 @@
           }
         },
         "summary": "Exchange WorkOS authorization code",
-        "tags": ["Auth"]
+        "tags": [
+          "Auth"
+        ]
       }
     },
     "/v1/auth/workos/login-url": {
@@ -11853,7 +12718,9 @@
           }
         },
         "summary": "Create WorkOS AuthKit login URL",
-        "tags": ["Auth"]
+        "tags": [
+          "Auth"
+        ]
       }
     },
     "/v1/auth/workos/refresh": {
@@ -11904,7 +12771,9 @@
           }
         },
         "summary": "Refresh WorkOS token bundle",
-        "tags": ["Auth"]
+        "tags": [
+          "Auth"
+        ]
       }
     },
     "/v1/background-task-runs": {
@@ -11919,7 +12788,13 @@
             "required": false,
             "schema": {
               "description": "Run status.",
-              "enum": ["queued", "running", "succeeded", "failed", "stopped"],
+              "enum": [
+                "queued",
+                "running",
+                "succeeded",
+                "failed",
+                "stopped"
+              ],
               "example": "queued",
               "type": "string"
             }
@@ -11931,7 +12806,10 @@
             "required": false,
             "schema": {
               "description": "Run executor.",
-              "enum": ["desktop", "api"],
+              "enum": [
+                "desktop",
+                "api"
+              ],
               "example": "api",
               "type": "string"
             }
@@ -12025,7 +12903,9 @@
           }
         ],
         "summary": "List account background task runs",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-task-templates": {
@@ -12047,9 +12927,15 @@
                       "model": "anthropic/claude-sonnet-4-5",
                       "name": "Inbox Digest",
                       "provider": "openrouter",
-                      "requiredConnectors": ["google"],
+                      "requiredConnectors": [
+                        "google"
+                      ],
                       "slug": "inbox-digest",
-                      "tags": ["gmail", "digest", "scheduled"],
+                      "tags": [
+                        "gmail",
+                        "digest",
+                        "scheduled"
+                      ],
                       "taskSlug": "inbox-digest",
                       "triggers": {
                         "cronExpr": "0 8 * * 1-5",
@@ -12079,7 +12965,9 @@
           }
         ],
         "summary": "List background task templates",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-task-templates/{templateSlug}": {
@@ -12112,9 +13000,15 @@
                   "model": "anthropic/claude-sonnet-4-5",
                   "name": "Inbox Digest",
                   "provider": "openrouter",
-                  "requiredConnectors": ["google"],
+                  "requiredConnectors": [
+                    "google"
+                  ],
                   "slug": "inbox-digest",
-                  "tags": ["gmail", "digest", "scheduled"],
+                  "tags": [
+                    "gmail",
+                    "digest",
+                    "scheduled"
+                  ],
                   "taskSlug": "inbox-digest",
                   "triggers": {
                     "cronExpr": "0 8 * * 1-5",
@@ -12145,7 +13039,9 @@
           }
         ],
         "summary": "Get background task template",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-task-templates/{templateSlug}/instantiate": {
@@ -12256,7 +13152,9 @@
           }
         ],
         "summary": "Instantiate background task template",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks": {
@@ -12319,7 +13217,9 @@
           }
         ],
         "summary": "List background tasks",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "post": {
         "description": "Creates the cloud mirror for a desktop task.yaml entry. If slug is omitted, Solomon AI API derives one from name. Slugs are unique per authenticated user.",
@@ -12421,7 +13321,9 @@
           }
         ],
         "summary": "Create background task mirror",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/first-party/ensure": {
@@ -12484,7 +13386,9 @@
           }
         ],
         "summary": "Ensure first-party workflows",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}": {
@@ -12557,7 +13461,9 @@
           }
         ],
         "summary": "Delete background task mirror",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "get": {
         "description": "Fetches one task mirror by slug for the authenticated user. Tenant scoping ensures the same slug can exist for different users without leaking data.",
@@ -12630,7 +13536,9 @@
           }
         ],
         "summary": "Get background task mirror",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "patch": {
         "description": "Applies a partial task update using optimistic locking. The desktop should send the current revision from its last read; stale writes return currentRevision for merge/retry.",
@@ -12743,7 +13651,9 @@
           }
         ],
         "summary": "Patch background task mirror",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/artifact": {
@@ -12796,7 +13706,9 @@
           }
         ],
         "summary": "Get task artifact",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "put": {
         "description": "Creates or updates the markdown artifact mirror. Updates require the current artifact revision; creation can omit revision or send revision 0.",
@@ -12884,7 +13796,9 @@
           }
         ],
         "summary": "Put task artifact",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs": {
@@ -12910,7 +13824,13 @@
             "required": false,
             "schema": {
               "description": "Run status.",
-              "enum": ["queued", "running", "succeeded", "failed", "stopped"],
+              "enum": [
+                "queued",
+                "running",
+                "succeeded",
+                "failed",
+                "stopped"
+              ],
               "example": "queued",
               "type": "string"
             }
@@ -12922,7 +13842,10 @@
             "required": false,
             "schema": {
               "description": "Run executor.",
-              "enum": ["desktop", "api"],
+              "enum": [
+                "desktop",
+                "api"
+              ],
               "example": "api",
               "type": "string"
             }
@@ -13008,7 +13931,9 @@
           }
         ],
         "summary": "List task runs",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "post": {
         "description": "Creates a run mirror for a desktop execution. Use this for local scheduler/manual runs; use /trigger when a remote user action should queue a new local execution.",
@@ -13118,7 +14043,9 @@
           }
         ],
         "summary": "Create task run mirror",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}": {
@@ -13199,7 +14126,9 @@
           }
         ],
         "summary": "Get task run",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "patch": {
         "description": "Updates run state with optimistic locking. Desktop should patch queued remote-trigger runs to running/succeeded/failed as it claims and completes them locally.",
@@ -13318,7 +14247,9 @@
           }
         ],
         "summary": "Patch task run mirror",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/cancel": {
@@ -13406,7 +14337,9 @@
           }
         ],
         "summary": "Cancel API-worker run",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/events": {
@@ -13489,7 +14422,9 @@
           }
         ],
         "summary": "List task run logs",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       },
       "post": {
         "description": "Appends a batch of durable log/progress events. The unique (run, seq) key makes retries idempotent: duplicate seq values are counted as skipped.",
@@ -13581,7 +14516,9 @@
           }
         ],
         "summary": "Append task run logs",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/events/stream": {
@@ -13663,7 +14600,9 @@
           }
         ],
         "summary": "Stream task run progress",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/retry": {
@@ -13753,7 +14692,9 @@
           }
         ],
         "summary": "Retry API-worker run",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/signal": {
@@ -13860,7 +14801,9 @@
           }
         ],
         "summary": "Signal API-worker run",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/runs/{runId}/status": {
@@ -13934,7 +14877,9 @@
           }
         ],
         "summary": "Poll task run status",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/background-tasks/{slug}/trigger": {
@@ -14029,7 +14974,9 @@
           }
         ],
         "summary": "Queue or start task trigger",
-        "tags": ["Background Tasks"]
+        "tags": [
+          "Background Tasks"
+        ]
       }
     },
     "/v1/config": {
@@ -14056,7 +15003,9 @@
           }
         },
         "summary": "Fetch desktop bootstrap config",
-        "tags": ["System"]
+        "tags": [
+          "System"
+        ]
       }
     },
     "/v1/connections/{name}": {
@@ -14096,7 +15045,9 @@
           }
         ],
         "summary": "Disconnect connector",
-        "tags": ["Connectors"]
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/connections/{name}/api-key": {
@@ -14166,7 +15117,9 @@
           }
         ],
         "summary": "Connect API-key connector",
-        "tags": ["Connectors"]
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/connections/{name}/callback": {
@@ -14240,7 +15193,9 @@
           }
         },
         "summary": "Handle connector OAuth callback",
-        "tags": ["Connectors"]
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/connections/{name}/claim": {
@@ -14319,7 +15274,9 @@
           }
         ],
         "summary": "Claim connector OAuth flow",
-        "tags": ["Connectors"]
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/connections/{name}/mcp-token": {
@@ -14381,7 +15338,9 @@
           }
         ],
         "summary": "Mint connector MCP token",
-        "tags": ["Connectors"]
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/connections/{name}/start": {
@@ -14437,7 +15396,9 @@
           }
         ],
         "summary": "Start connector OAuth flow",
-        "tags": ["Connectors"]
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/connectors": {
@@ -14464,14 +15425,20 @@
                       ],
                       "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp",
                       "name": "canvas",
-                      "scopes": ["invoices:read"],
+                      "scopes": [
+                        "invoices:read"
+                      ],
                       "templateBlocks": [
                         {
                           "category": "finance",
                           "description": "Look up invoices and customers.",
                           "id": "invoice-context",
-                          "mcpTools": ["invoice.lookup"],
-                          "requiredScopes": ["invoices:read"],
+                          "mcpTools": [
+                            "invoice.lookup"
+                          ],
+                          "requiredScopes": [
+                            "invoices:read"
+                          ],
                           "title": "Invoice context",
                           "trustTier": "read"
                         }
@@ -14502,7 +15469,9 @@
           }
         ],
         "summary": "List connectors",
-        "tags": ["Connectors"]
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/events": {
@@ -14608,7 +15577,9 @@
           }
         ],
         "summary": "List cloud events",
-        "tags": ["Cloud Events"]
+        "tags": [
+          "Cloud Events"
+        ]
       },
       "post": {
         "description": "Stores one normalized event idempotently on (user, source, dedupeKey) and enqueues async routing to matching API-target background tasks. Returns 202 for a fresh event and 200 with deduped=true for a replay.",
@@ -14701,7 +15672,9 @@
           }
         ],
         "summary": "Ingest a cloud event",
-        "tags": ["Cloud Events"]
+        "tags": [
+          "Cloud Events"
+        ]
       }
     },
     "/v1/events/{eventId}": {
@@ -14756,7 +15729,9 @@
           }
         ],
         "summary": "Get a cloud event",
-        "tags": ["Cloud Events"]
+        "tags": [
+          "Cloud Events"
+        ]
       }
     },
     "/v1/events/{eventId}/runs": {
@@ -14815,7 +15790,9 @@
           }
         ],
         "summary": "List runs triggered by a cloud event",
-        "tags": ["Cloud Events"]
+        "tags": [
+          "Cloud Events"
+        ]
       }
     },
     "/v1/google-oauth": {
@@ -14839,7 +15816,9 @@
           }
         ],
         "summary": "Disconnect Google",
-        "tags": ["Google OAuth"]
+        "tags": [
+          "Google OAuth"
+        ]
       }
     },
     "/v1/google-oauth/claim": {
@@ -14909,7 +15888,9 @@
           }
         ],
         "summary": "Claim Google OAuth token bundle",
-        "tags": ["Google OAuth"]
+        "tags": [
+          "Google OAuth"
+        ]
       }
     },
     "/v1/google-oauth/refresh": {
@@ -14969,7 +15950,9 @@
           }
         ],
         "summary": "Refresh Google access token",
-        "tags": ["Google OAuth"]
+        "tags": [
+          "Google OAuth"
+        ]
       }
     },
     "/v1/google-oauth/start": {
@@ -14990,7 +15973,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["authorizeUrl"],
+                  "required": [
+                    "authorizeUrl"
+                  ],
                   "type": "object"
                 }
               }
@@ -15013,7 +15998,9 @@
           }
         ],
         "summary": "Start Google OAuth consent",
-        "tags": ["Google OAuth"]
+        "tags": [
+          "Google OAuth"
+        ]
       }
     },
     "/v1/hubspot/search": {
@@ -15081,7 +16068,9 @@
           }
         ],
         "summary": "Search HubSpot CRM",
-        "tags": ["Connectors"]
+        "tags": [
+          "Connectors"
+        ]
       }
     },
     "/v1/internal/connections/invalidate": {
@@ -15134,7 +16123,9 @@
           }
         ],
         "summary": "Force-disconnect a connector",
-        "tags": ["Internal"]
+        "tags": [
+          "Internal"
+        ]
       }
     },
     "/v1/internal/events": {
@@ -15205,7 +16196,9 @@
           }
         ],
         "summary": "Ingest a cloud event (server-to-server)",
-        "tags": ["Internal"]
+        "tags": [
+          "Internal"
+        ]
       }
     },
     "/v1/llm/chat/completions": {
@@ -15314,7 +16307,9 @@
           }
         ],
         "summary": "Proxy OpenAI-compatible chat completion",
-        "tags": ["LLM"]
+        "tags": [
+          "LLM"
+        ]
       }
     },
     "/v1/llm/completions": {
@@ -15418,7 +16413,9 @@
           }
         ],
         "summary": "Proxy OpenAI-compatible legacy completion",
-        "tags": ["LLM"]
+        "tags": [
+          "LLM"
+        ]
       }
     },
     "/v1/llm/embeddings": {
@@ -15467,7 +16464,10 @@
           "content": {
             "application/json": {
               "example": {
-                "input": ["invoice", "payment"],
+                "input": [
+                  "invoice",
+                  "payment"
+                ],
                 "model": "openai/text-embedding-3-small"
               },
               "schema": {
@@ -15515,7 +16515,9 @@
           }
         ],
         "summary": "Proxy OpenAI-compatible embeddings",
-        "tags": ["LLM"]
+        "tags": [
+          "LLM"
+        ]
       }
     },
     "/v1/llm/models": {
@@ -15556,7 +16558,9 @@
           }
         ],
         "summary": "List routable LLM models",
-        "tags": ["LLM"]
+        "tags": [
+          "LLM"
+        ]
       }
     },
     "/v1/me": {
@@ -15617,7 +16621,9 @@
           }
         ],
         "summary": "Get current user and billing state",
-        "tags": ["Billing"]
+        "tags": [
+          "Billing"
+        ]
       }
     },
     "/v1/public/mutual-action-plan": {
@@ -15653,7 +16659,9 @@
           }
         },
         "summary": "Open a scoped mutual action plan",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/public/mutual-action-plan/responses": {
@@ -15693,7 +16701,13 @@
                   },
                   "kind": {
                     "description": "Response kind.",
-                    "enum": ["confirm", "correct", "blocked", "completed", "comment"],
+                    "enum": [
+                      "confirm",
+                      "correct",
+                      "blocked",
+                      "completed",
+                      "comment"
+                    ],
                     "example": "confirm",
                     "type": "string"
                   },
@@ -15708,7 +16722,10 @@
                     "type": "string"
                   }
                 },
-                "required": ["responseId", "kind"],
+                "required": [
+                  "responseId",
+                  "kind"
+                ],
                 "type": "object"
               }
             }
@@ -15737,7 +16754,9 @@
           }
         },
         "summary": "Respond to a scoped plan",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-attention": {
@@ -15797,7 +16816,11 @@
                       "type": "array"
                     }
                   },
-                  "required": ["contractVersion", "asOf", "items"],
+                  "required": [
+                    "contractVersion",
+                    "asOf",
+                    "items"
+                  ],
                   "type": "object"
                 }
               }
@@ -15814,7 +16837,9 @@
           }
         ],
         "summary": "List portfolio attention",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-attention/{attentionId}/decisions": {
@@ -15845,7 +16870,11 @@
                 "properties": {
                   "decision": {
                     "description": "Decision.",
-                    "enum": ["acknowledge", "snooze", "dismiss"],
+                    "enum": [
+                      "acknowledge",
+                      "snooze",
+                      "dismiss"
+                    ],
                     "example": "acknowledge",
                     "type": "string"
                   },
@@ -15867,7 +16896,10 @@
                     "type": "string"
                   }
                 },
-                "required": ["decision", "expectedVersion"],
+                "required": [
+                  "decision",
+                  "expectedVersion"
+                ],
                 "type": "object"
               }
             }
@@ -15905,7 +16937,9 @@
           }
         ],
         "summary": "Decide attention item",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-beta/diagnostics": {
@@ -15936,7 +16970,9 @@
           }
         ],
         "summary": "Export redacted beta diagnostics",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-identity-candidates": {
@@ -15949,7 +16985,13 @@
             "name": "status",
             "required": false,
             "schema": {
-              "enum": ["pending", "deferred", "resolving", "resolved", "undone"],
+              "enum": [
+                "pending",
+                "deferred",
+                "resolving",
+                "resolved",
+                "undone"
+              ],
               "type": "string"
             }
           },
@@ -15994,7 +17036,9 @@
                       "type": "array"
                     }
                   },
-                  "required": ["candidates"],
+                  "required": [
+                    "candidates"
+                  ],
                   "type": "object"
                 }
               }
@@ -16014,7 +17058,9 @@
           }
         ],
         "summary": "List identity review candidates",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-identity-candidates/{candidateId}": {
@@ -16057,7 +17103,9 @@
           }
         ],
         "summary": "Inspect identity candidate",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-identity-candidates/{candidateId}/decisions": {
@@ -16089,7 +17137,14 @@
                 "properties": {
                   "decision": {
                     "description": "Decision.",
-                    "enum": ["merge", "keep_separate", "move_evidence", "split", "defer", "undo"],
+                    "enum": [
+                      "merge",
+                      "keep_separate",
+                      "move_evidence",
+                      "split",
+                      "defer",
+                      "undo"
+                    ],
                     "example": "merge",
                     "type": "string"
                   },
@@ -16109,7 +17164,11 @@
                     "type": "string"
                   }
                 },
-                "required": ["decision", "expectedVersion", "idempotencyKey"],
+                "required": [
+                  "decision",
+                  "expectedVersion",
+                  "idempotencyKey"
+                ],
                 "type": "object"
               }
             }
@@ -16147,7 +17206,9 @@
           }
         ],
         "summary": "Decide identity candidate",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-observations/batch": {
@@ -16244,13 +17305,19 @@
                           "type": "string"
                         }
                       },
-                      "required": ["source", "externalId", "eventType"],
+                      "required": [
+                        "source",
+                        "externalId",
+                        "eventType"
+                      ],
                       "type": "object"
                     },
                     "type": "array"
                   }
                 },
-                "required": ["observations"],
+                "required": [
+                  "observations"
+                ],
                 "type": "object"
               }
             }
@@ -16287,7 +17354,9 @@
           }
         ],
         "summary": "Ingest relationship observations",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-recommendations/{actionId}/approve": {
@@ -16352,7 +17421,9 @@
           }
         ],
         "summary": "Approve a recommendation",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-recommendations/{actionId}/reject": {
@@ -16386,7 +17457,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["reason"],
+                "required": [
+                  "reason"
+                ],
                 "type": "object"
               }
             }
@@ -16421,7 +17494,9 @@
           }
         ],
         "summary": "Reject a recommendation",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-sources": {
@@ -16443,7 +17518,9 @@
                       "type": "array"
                     }
                   },
-                  "required": ["sources"],
+                  "required": [
+                    "sources"
+                  ],
                   "type": "object"
                 }
               }
@@ -16460,7 +17537,9 @@
           }
         ],
         "summary": "List guided source connections",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-sources/status": {
@@ -16498,7 +17577,9 @@
           }
         ],
         "summary": "Get source health",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-sources/{source}/authorization": {
@@ -16512,7 +17593,11 @@
             "name": "source",
             "required": true,
             "schema": {
-              "enum": ["google", "slack", "hubspot"],
+              "enum": [
+                "google",
+                "slack",
+                "hubspot"
+              ],
               "type": "string"
             }
           }
@@ -16552,12 +17637,19 @@
                   },
                   "state": {
                     "description": "Consent transition.",
-                    "enum": ["started", "completed", "canceled", "failed"],
+                    "enum": [
+                      "started",
+                      "completed",
+                      "canceled",
+                      "failed"
+                    ],
                     "example": "completed",
                     "type": "string"
                   }
                 },
-                "required": ["state"],
+                "required": [
+                  "state"
+                ],
                 "type": "object"
               }
             }
@@ -16592,7 +17684,9 @@
           }
         ],
         "summary": "Report source authorization lifecycle",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-sources/{source}/resync": {
@@ -16606,7 +17700,11 @@
             "name": "source",
             "required": true,
             "schema": {
-              "enum": ["google", "slack", "hubspot"],
+              "enum": [
+                "google",
+                "slack",
+                "hubspot"
+              ],
               "type": "string"
             }
           }
@@ -16626,7 +17724,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["sourceAccountId"],
+                "required": [
+                  "sourceAccountId"
+                ],
                 "type": "object"
               }
             }
@@ -16661,7 +17761,9 @@
           }
         ],
         "summary": "Resync a source",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationship-sources/{source}/{sourceAccountId}/disconnect": {
@@ -16675,7 +17777,11 @@
             "name": "source",
             "required": true,
             "schema": {
-              "enum": ["google", "slack", "hubspot"],
+              "enum": [
+                "google",
+                "slack",
+                "hubspot"
+              ],
               "type": "string"
             }
           },
@@ -16716,7 +17822,9 @@
           }
         ],
         "summary": "Disconnect relationship source",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships": {
@@ -16792,7 +17900,9 @@
           }
         ],
         "summary": "List relationships",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       },
       "post": {
         "description": "Records a canonical relationship in the caller's workspace.",
@@ -16820,7 +17930,14 @@
                   },
                   "kind": {
                     "description": "Relationship kind.",
-                    "enum": ["person", "company", "customer", "opportunity", "referral", "partner"],
+                    "enum": [
+                      "person",
+                      "company",
+                      "customer",
+                      "opportunity",
+                      "referral",
+                      "partner"
+                    ],
                     "example": "person",
                     "type": "string"
                   },
@@ -16835,7 +17952,10 @@
                     "type": "string"
                   }
                 },
-                "required": ["kind", "displayName"],
+                "required": [
+                  "kind",
+                  "displayName"
+                ],
                 "type": "object"
               }
             }
@@ -16867,7 +17987,9 @@
           }
         ],
         "summary": "Create a relationship",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/graph": {
@@ -16882,7 +18004,10 @@
             "required": false,
             "schema": {
               "default": "portfolio",
-              "enum": ["portfolio", "relationship"],
+              "enum": [
+                "portfolio",
+                "relationship"
+              ],
               "type": "string"
             }
           },
@@ -16946,7 +18071,9 @@
           }
         ],
         "summary": "Get the relationship graph",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}": {
@@ -17036,7 +18163,9 @@
           }
         ],
         "summary": "Get relationship mission control",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/acknowledgements": {
@@ -17076,7 +18205,10 @@
                     "type": "integer"
                   }
                 },
-                "required": ["stateVersion", "stateHash"],
+                "required": [
+                  "stateVersion",
+                  "stateHash"
+                ],
                 "type": "object"
               }
             }
@@ -17114,7 +18246,12 @@
                       "type": "integer"
                     }
                   },
-                  "required": ["id", "stateVersion", "stateHash", "acknowledgedAt"],
+                  "required": [
+                    "id",
+                    "stateVersion",
+                    "stateHash",
+                    "acknowledgedAt"
+                  ],
                   "type": "object"
                 }
               }
@@ -17140,7 +18277,9 @@
           }
         ],
         "summary": "Acknowledge Mission Control state",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/assertions/{assertionId}/retract": {
@@ -17184,7 +18323,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["reason"],
+                "required": [
+                  "reason"
+                ],
                 "type": "object"
               }
             }
@@ -17222,7 +18363,9 @@
           }
         ],
         "summary": "Retract a relationship correction",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/changes": {
@@ -17275,7 +18418,9 @@
           }
         ],
         "summary": "Get relationship changes",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/commitment-dependencies": {
@@ -17298,7 +18443,9 @@
           "content": {
             "application/json": {
               "example": {
-                "evidenceRefs": ["relationship-observation:ab12"],
+                "evidenceRefs": [
+                  "relationship-observation:ab12"
+                ],
                 "fromCommitmentId": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
                 "kind": "blocks",
                 "toCommitmentId": "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51"
@@ -17323,7 +18470,11 @@
                   },
                   "kind": {
                     "description": "Dependency semantics.",
-                    "enum": ["blocks", "requires", "supersedes"],
+                    "enum": [
+                      "blocks",
+                      "requires",
+                      "supersedes"
+                    ],
                     "example": "blocks",
                     "type": "string"
                   },
@@ -17334,7 +18485,12 @@
                     "type": "string"
                   }
                 },
-                "required": ["fromCommitmentId", "toCommitmentId", "kind", "evidenceRefs"],
+                "required": [
+                  "fromCommitmentId",
+                  "toCommitmentId",
+                  "kind",
+                  "evidenceRefs"
+                ],
                 "type": "object"
               }
             }
@@ -17372,7 +18528,9 @@
           }
         ],
         "summary": "Create a commitment dependency",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/commitment-recovery/run": {
@@ -17431,7 +18589,9 @@
           }
         ],
         "summary": "Run commitment recovery",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/commitments/{commitmentId}/events": {
@@ -17475,7 +18635,9 @@
                       "type": "array"
                     }
                   },
-                  "required": ["events"],
+                  "required": [
+                    "events"
+                  ],
                   "type": "object"
                 }
               }
@@ -17495,7 +18657,9 @@
           }
         ],
         "summary": "Get commitment history",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions": {
@@ -17528,7 +18692,9 @@
           "content": {
             "application/json": {
               "example": {
-                "evidenceRefs": ["counterparty:accepted"],
+                "evidenceRefs": [
+                  "counterparty:accepted"
+                ],
                 "idempotencyKey": "ui:accept:ab12",
                 "kind": "accepted"
               },
@@ -17589,7 +18755,10 @@
                     "type": "string"
                   }
                 },
-                "required": ["kind", "idempotencyKey"],
+                "required": [
+                  "kind",
+                  "idempotencyKey"
+                ],
                 "type": "object"
               }
             }
@@ -17627,7 +18796,9 @@
           }
         ],
         "summary": "Append a commitment transition",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/contradictions/{caseId}/resolve": {
@@ -17675,7 +18846,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["selectedAssertionId"],
+                "required": [
+                  "selectedAssertionId"
+                ],
                 "type": "object"
               }
             }
@@ -17715,7 +18888,9 @@
           }
         ],
         "summary": "Resolve a typed contradiction",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/conversation-corrections": {
@@ -17761,7 +18936,11 @@
                     "type": "string"
                   }
                 },
-                "required": ["reviewItemId", "correctedValue", "reason"],
+                "required": [
+                  "reviewItemId",
+                  "correctedValue",
+                  "reason"
+                ],
                 "type": "object"
               }
             }
@@ -17783,7 +18962,10 @@
                       "$ref": "#/components/schemas/RevenueRelationship"
                     }
                   },
-                  "required": ["relationship", "intelligence"],
+                  "required": [
+                    "relationship",
+                    "intelligence"
+                  ],
                   "type": "object"
                 }
               }
@@ -17806,7 +18988,9 @@
           }
         ],
         "summary": "Correct reviewed conversation evidence",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/conversation-decisions": {
@@ -17849,7 +19033,12 @@
                   },
                   "kind": {
                     "description": "Decision kind.",
-                    "enum": ["approve", "correct", "reject", "defer"],
+                    "enum": [
+                      "approve",
+                      "correct",
+                      "reject",
+                      "defer"
+                    ],
                     "example": "approve",
                     "type": "string"
                   },
@@ -17864,7 +19053,10 @@
                     "type": "string"
                   }
                 },
-                "required": ["reviewItemId", "kind"],
+                "required": [
+                  "reviewItemId",
+                  "kind"
+                ],
                 "type": "object"
               }
             }
@@ -17886,7 +19078,10 @@
                       "$ref": "#/components/schemas/RevenueRelationship"
                     }
                   },
-                  "required": ["relationship", "intelligence"],
+                  "required": [
+                    "relationship",
+                    "intelligence"
+                  ],
                   "type": "object"
                 }
               }
@@ -17912,7 +19107,9 @@
           }
         ],
         "summary": "Decide a proposed conversation change",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/conversation-deletion": {
@@ -17946,7 +19143,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["requestId"],
+                "required": [
+                  "requestId"
+                ],
                 "type": "object"
               }
             }
@@ -17984,7 +19183,9 @@
           }
         ],
         "summary": "Request conversation deletion",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/conversation-policy": {
@@ -18029,7 +19230,9 @@
           }
         ],
         "summary": "Inspect conversation policy",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       },
       "put": {
         "description": "Appends authorized policy-layer versions; lower layers may only make handling stricter.",
@@ -18062,7 +19265,9 @@
                     "type": "array"
                   }
                 },
-                "required": ["layers"],
+                "required": [
+                  "layers"
+                ],
                 "type": "object"
               }
             }
@@ -18099,7 +19304,9 @@
           }
         ],
         "summary": "Update conversation policy",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/corrections": {
@@ -18131,7 +19338,13 @@
                 "properties": {
                   "dimension": {
                     "description": "Corrected state dimension.",
-                    "enum": ["lifecycle", "engagement", "sentiment", "health", "next_action"],
+                    "enum": [
+                      "lifecycle",
+                      "engagement",
+                      "sentiment",
+                      "health",
+                      "next_action"
+                    ],
                     "example": "health",
                     "type": "string"
                   },
@@ -18159,7 +19372,11 @@
                     "type": "string"
                   }
                 },
-                "required": ["dimension", "value", "reason"],
+                "required": [
+                  "dimension",
+                  "value",
+                  "reason"
+                ],
                 "type": "object"
               }
             }
@@ -18194,7 +19411,9 @@
           }
         ],
         "summary": "Correct relationship state",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/evidence/{evidenceId}": {
@@ -18258,7 +19477,9 @@
           }
         ],
         "summary": "Open source evidence",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/mutual-action-plans": {
@@ -18281,7 +19502,9 @@
           "content": {
             "application/json": {
               "example": {
-                "commitmentIds": ["8b8dfa9b-a7b2-46ea-982c-622a914c00e5"]
+                "commitmentIds": [
+                  "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"
+                ]
               },
               "schema": {
                 "description": "Plan create request.",
@@ -18297,7 +19520,9 @@
                     "type": "array"
                   }
                 },
-                "required": ["commitmentIds"],
+                "required": [
+                  "commitmentIds"
+                ],
                 "type": "object"
               }
             }
@@ -18337,7 +19562,9 @@
           }
         ],
         "summary": "Create a mutual action plan",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/mutual-action-plans/{planId}": {
@@ -18381,7 +19608,9 @@
                     "type": "array"
                   }
                 },
-                "required": ["items"],
+                "required": [
+                  "items"
+                ],
                 "type": "object"
               }
             }
@@ -18421,7 +19650,9 @@
           }
         ],
         "summary": "Revise a mutual action plan",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/approve": {
@@ -18492,7 +19723,9 @@
           }
         ],
         "summary": "Approve a plan revision",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/mutual-action-plans/{planId}/share": {
@@ -18563,7 +19796,9 @@
           }
         ],
         "summary": "Queue an approved plan share",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/relationships/{relationshipId}/timeline": {
@@ -18625,7 +19860,9 @@
           }
         ],
         "summary": "Get evidence timeline",
-        "tags": ["Relationship Intelligence"]
+        "tags": [
+          "Relationship Intelligence"
+        ]
       }
     },
     "/v1/revenue-actions": {
@@ -18639,7 +19876,13 @@
             "name": "queueStatus",
             "required": false,
             "schema": {
-              "enum": ["open", "snoozed", "dismissed", "handled", "all"],
+              "enum": [
+                "open",
+                "snoozed",
+                "dismissed",
+                "handled",
+                "all"
+              ],
               "type": "string"
             }
           },
@@ -18684,7 +19927,9 @@
           }
         ],
         "summary": "List the action queue",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       },
       "post": {
         "description": "Proposes a manual queue action with revision 1 and an immutable revision snapshot. A duplicate dedupe key returns the existing item.",
@@ -18714,7 +19959,15 @@
                   },
                   "channel": {
                     "description": "Delivery channel.",
-                    "enum": ["email", "slack", "call", "crm_task", "crm", "task", "calendar"],
+                    "enum": [
+                      "email",
+                      "slack",
+                      "call",
+                      "crm_task",
+                      "crm",
+                      "task",
+                      "calendar"
+                    ],
                     "example": "email",
                     "type": "string"
                   },
@@ -18727,7 +19980,10 @@
                   },
                   "executionMode": {
                     "description": "Execution mode.",
-                    "enum": ["draft", "send"],
+                    "enum": [
+                      "draft",
+                      "send"
+                    ],
                     "example": "draft",
                     "type": "string"
                   },
@@ -18773,7 +20029,12 @@
                     "type": "string"
                   }
                 },
-                "required": ["relationshipId", "actionType", "channel", "reason"],
+                "required": [
+                  "relationshipId",
+                  "actionType",
+                  "channel",
+                  "reason"
+                ],
                 "type": "object"
               }
             }
@@ -18808,7 +20069,9 @@
           }
         ],
         "summary": "Create a manual action",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}": {
@@ -18851,7 +20114,9 @@
           }
         ],
         "summary": "Get an action",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}/approve": {
@@ -18952,7 +20217,9 @@
           }
         ],
         "summary": "Approve an action",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}/audit": {
@@ -19024,7 +20291,9 @@
           }
         ],
         "summary": "Get the audit chain",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}/dismiss": {
@@ -19089,7 +20358,9 @@
           }
         ],
         "summary": "Dismiss an action",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}/edit": {
@@ -19128,13 +20399,21 @@
                   },
                   "channel": {
                     "description": "Channel.",
-                    "enum": ["email", "slack", "call", "crm_task"],
+                    "enum": [
+                      "email",
+                      "slack",
+                      "call",
+                      "crm_task"
+                    ],
                     "example": "email",
                     "type": "string"
                   },
                   "executionMode": {
                     "description": "Execution mode.",
-                    "enum": ["draft", "send"],
+                    "enum": [
+                      "draft",
+                      "send"
+                    ],
                     "example": "draft",
                     "type": "string"
                   },
@@ -19221,7 +20500,9 @@
           }
         ],
         "summary": "Edit an action",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}/evaluate": {
@@ -19282,7 +20563,9 @@
           }
         ],
         "summary": "Request policy preflight",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}/execute": {
@@ -19361,7 +20644,9 @@
           }
         ],
         "summary": "Execute an action",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}/outcomes": {
@@ -19421,7 +20706,13 @@
                   },
                   "source": {
                     "description": "Observing source.",
-                    "enum": ["gmail", "calendar", "crm", "user", "outbound"],
+                    "enum": [
+                      "gmail",
+                      "calendar",
+                      "crm",
+                      "user",
+                      "outbound"
+                    ],
                     "example": "gmail",
                     "type": "string"
                   },
@@ -19431,7 +20722,11 @@
                     "type": "string"
                   }
                 },
-                "required": ["kind", "source", "sourceEventId"],
+                "required": [
+                  "kind",
+                  "source",
+                  "sourceEventId"
+                ],
                 "type": "object"
               }
             }
@@ -19466,7 +20761,9 @@
           }
         ],
         "summary": "Record an outcome",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}/reject": {
@@ -19534,7 +20831,9 @@
           }
         ],
         "summary": "Reject an action",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}/snooze": {
@@ -19569,7 +20868,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["until"],
+                "required": [
+                  "until"
+                ],
                 "type": "object"
               }
             }
@@ -19604,7 +20905,9 @@
           }
         ],
         "summary": "Snooze an action",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-actions/{actionId}/source-body": {
@@ -19655,7 +20958,9 @@
           }
         ],
         "summary": "Get the original email body",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-digest": {
@@ -19683,7 +20988,9 @@
           }
         ],
         "summary": "Preview the proactive digest",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-impact": {
@@ -19711,7 +21018,9 @@
           }
         ],
         "summary": "Get the revenue impact summary",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-leak-scans": {
@@ -19779,7 +21088,9 @@
           }
         ],
         "summary": "Start a revenue leak scan",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-leak-scans/{scanId}": {
@@ -19822,7 +21133,9 @@
           }
         ],
         "summary": "Get scan progress",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-search": {
@@ -19859,7 +21172,13 @@
                         "properties": {
                           "classification": {
                             "description": "Signal class.",
-                            "enum": ["deal", "invoice", "client", "referral", "other"],
+                            "enum": [
+                              "deal",
+                              "invoice",
+                              "client",
+                              "referral",
+                              "other"
+                            ],
                             "example": "deal",
                             "type": "string"
                           },
@@ -19913,7 +21232,9 @@
           }
         ],
         "summary": "Semantic search over mail",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-workspaces/current": {
@@ -19941,7 +21262,9 @@
           }
         ],
         "summary": "Get current revenue workspace",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/revenue-workspaces/link": {
@@ -19969,7 +21292,9 @@
                     "type": "string"
                   }
                 },
-                "required": ["outboundWorkspaceId"],
+                "required": [
+                  "outboundWorkspaceId"
+                ],
                 "type": "object"
               }
             }
@@ -20019,7 +21344,9 @@
           }
         ],
         "summary": "Link the OutboundConsole workspace",
-        "tags": ["Revenue"]
+        "tags": [
+          "Revenue"
+        ]
       }
     },
     "/v1/search/exa": {
@@ -20094,7 +21421,9 @@
           }
         ],
         "summary": "Run Exa search",
-        "tags": ["Search"]
+        "tags": [
+          "Search"
+        ]
       }
     },
     "/v1/slack-oauth/claim": {
@@ -20168,7 +21497,9 @@
           }
         ],
         "summary": "Claim Slack workspace connection",
-        "tags": ["Slack OAuth"]
+        "tags": [
+          "Slack OAuth"
+        ]
       }
     },
     "/v1/slack-oauth/start": {
@@ -20189,7 +21520,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["authorizeUrl"],
+                  "required": [
+                    "authorizeUrl"
+                  ],
                   "type": "object"
                 }
               }
@@ -20212,7 +21545,9 @@
           }
         ],
         "summary": "Start Slack workspace install",
-        "tags": ["Slack OAuth"]
+        "tags": [
+          "Slack OAuth"
+        ]
       }
     },
     "/v1/slack-oauth/thread/post": {
@@ -20275,7 +21610,9 @@
           }
         ],
         "summary": "Post Slack thread reply",
-        "tags": ["Slack OAuth"]
+        "tags": [
+          "Slack OAuth"
+        ]
       }
     },
     "/v1/slack-oauth/thread/read": {
@@ -20344,7 +21681,9 @@
           }
         ],
         "summary": "Read Slack thread",
-        "tags": ["Slack OAuth"]
+        "tags": [
+          "Slack OAuth"
+        ]
       }
     },
     "/v1/slack-oauth/workspaces": {
@@ -20359,7 +21698,10 @@
                   "workspaces": [
                     {
                       "connectedAt": "2026-06-04T20:38:00Z",
-                      "scopes": ["channels:history", "chat:write"],
+                      "scopes": [
+                        "channels:history",
+                        "chat:write"
+                      ],
                       "teamId": "T0EXAMPLE"
                     }
                   ]
@@ -20384,7 +21726,9 @@
           }
         ],
         "summary": "List Slack workspace connections",
-        "tags": ["Slack OAuth"]
+        "tags": [
+          "Slack OAuth"
+        ]
       }
     },
     "/v1/slack-oauth/workspaces/{teamId}": {
@@ -20424,7 +21768,9 @@
           }
         ],
         "summary": "Disconnect Slack workspace",
-        "tags": ["Slack OAuth"]
+        "tags": [
+          "Slack OAuth"
+        ]
       }
     },
     "/v1/voice/text-to-speech/{voiceId}": {
@@ -20502,7 +21848,9 @@
           }
         ],
         "summary": "Generate speech audio",
-        "tags": ["Voice"]
+        "tags": [
+          "Voice"
+        ]
       }
     },
     "/v1/webhooks/events": {
@@ -20607,7 +21955,9 @@
           }
         ],
         "summary": "Generic signed webhook event",
-        "tags": ["Cloud Events"]
+        "tags": [
+          "Cloud Events"
+        ]
       }
     },
     "/v1/webhooks/google": {
@@ -20676,7 +22026,9 @@
           }
         },
         "summary": "Google push webhook",
-        "tags": ["Cloud Events"]
+        "tags": [
+          "Cloud Events"
+        ]
       }
     },
     "/v1/webhooks/slack": {
@@ -20735,7 +22087,9 @@
           }
         },
         "summary": "Slack Events API webhook",
-        "tags": ["Cloud Events"]
+        "tags": [
+          "Cloud Events"
+        ]
       }
     }
   },

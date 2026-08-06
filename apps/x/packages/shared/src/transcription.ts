@@ -703,10 +703,32 @@ export type TranscriptEnrichmentRoute = z.infer<typeof TranscriptEnrichmentRoute
 
 /** Optional publication of transcript evidence into shared relationship state. */
 export const RelationshipEvidenceRoute = z.object({
+  /** True when any of the five consent flags below is on. */
   enabled: z.boolean(),
   location: TranscriptionDataLocation,
   transcriptTextMayLeaveDevice: z.boolean(),
   destination: z.string(),
+  /**
+   * What is actually being published, flag by flag.
+   *
+   * The receipt used to carry a single boolean read from the deprecated
+   * `meetings.syncRelationshipEvidence`, which no UI has written since the
+   * migration to these five flags. A user who turned on email metadata was told
+   * "Off. Finished meeting transcripts and confirmed commitments remain in the
+   * local workspace" while their email metadata shipped. A privacy receipt that
+   * names the wrong thing is worse than none: it is read as a guarantee.
+   *
+   * Enumerated rather than summarised because the five disclose different people
+   * — a transcript sends what two people said, a roster sends who else was
+   * invited, email metadata sends counterparties who were never in a meeting.
+   */
+  sharing: z.object({
+    meetingTranscripts: z.boolean(),
+    meetingAttendance: z.boolean(),
+    emailMetadata: z.boolean(),
+    signatureEnrichment: z.boolean(),
+    modelContactExtraction: z.boolean(),
+  }),
 });
 export type RelationshipEvidenceRoute = z.infer<typeof RelationshipEvidenceRoute>;
 

@@ -21,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personsuppression"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -660,6 +661,21 @@ func (_u *RevenueWorkspaceUpdate) AddPersonIdentities(v ...*PersonIdentity) *Rev
 		ids[i] = v[i].ID
 	}
 	return _u.AddPersonIdentityIDs(ids...)
+}
+
+// AddPersonSuppressionIDs adds the "person_suppressions" edge to the PersonSuppression entity by IDs.
+func (_u *RevenueWorkspaceUpdate) AddPersonSuppressionIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.AddPersonSuppressionIDs(ids...)
+	return _u
+}
+
+// AddPersonSuppressions adds the "person_suppressions" edges to the PersonSuppression entity.
+func (_u *RevenueWorkspaceUpdate) AddPersonSuppressions(v ...*PersonSuppression) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonSuppressionIDs(ids...)
 }
 
 // AddPersonAttributeIDs adds the "person_attributes" edge to the PersonAttribute entity by IDs.
@@ -1325,6 +1341,27 @@ func (_u *RevenueWorkspaceUpdate) RemovePersonIdentities(v ...*PersonIdentity) *
 		ids[i] = v[i].ID
 	}
 	return _u.RemovePersonIdentityIDs(ids...)
+}
+
+// ClearPersonSuppressions clears all "person_suppressions" edges to the PersonSuppression entity.
+func (_u *RevenueWorkspaceUpdate) ClearPersonSuppressions() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearPersonSuppressions()
+	return _u
+}
+
+// RemovePersonSuppressionIDs removes the "person_suppressions" edge to PersonSuppression entities by IDs.
+func (_u *RevenueWorkspaceUpdate) RemovePersonSuppressionIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.RemovePersonSuppressionIDs(ids...)
+	return _u
+}
+
+// RemovePersonSuppressions removes "person_suppressions" edges to PersonSuppression entities.
+func (_u *RevenueWorkspaceUpdate) RemovePersonSuppressions(v ...*PersonSuppression) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonSuppressionIDs(ids...)
 }
 
 // ClearPersonAttributes clears all "person_attributes" edges to the PersonAttribute entity.
@@ -2835,6 +2872,51 @@ func (_u *RevenueWorkspaceUpdate) sqlSave(ctx context.Context) (_node int, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.PersonSuppressionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonSuppressionsTable,
+			Columns: []string{revenueworkspace.PersonSuppressionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personsuppression.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonSuppressionsIDs(); len(nodes) > 0 && !_u.mutation.PersonSuppressionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonSuppressionsTable,
+			Columns: []string{revenueworkspace.PersonSuppressionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personsuppression.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonSuppressionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonSuppressionsTable,
+			Columns: []string{revenueworkspace.PersonSuppressionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personsuppression.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.PersonAttributesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -3590,6 +3672,21 @@ func (_u *RevenueWorkspaceUpdateOne) AddPersonIdentities(v ...*PersonIdentity) *
 	return _u.AddPersonIdentityIDs(ids...)
 }
 
+// AddPersonSuppressionIDs adds the "person_suppressions" edge to the PersonSuppression entity by IDs.
+func (_u *RevenueWorkspaceUpdateOne) AddPersonSuppressionIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.AddPersonSuppressionIDs(ids...)
+	return _u
+}
+
+// AddPersonSuppressions adds the "person_suppressions" edges to the PersonSuppression entity.
+func (_u *RevenueWorkspaceUpdateOne) AddPersonSuppressions(v ...*PersonSuppression) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddPersonSuppressionIDs(ids...)
+}
+
 // AddPersonAttributeIDs adds the "person_attributes" edge to the PersonAttribute entity by IDs.
 func (_u *RevenueWorkspaceUpdateOne) AddPersonAttributeIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
 	_u.mutation.AddPersonAttributeIDs(ids...)
@@ -4253,6 +4350,27 @@ func (_u *RevenueWorkspaceUpdateOne) RemovePersonIdentities(v ...*PersonIdentity
 		ids[i] = v[i].ID
 	}
 	return _u.RemovePersonIdentityIDs(ids...)
+}
+
+// ClearPersonSuppressions clears all "person_suppressions" edges to the PersonSuppression entity.
+func (_u *RevenueWorkspaceUpdateOne) ClearPersonSuppressions() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearPersonSuppressions()
+	return _u
+}
+
+// RemovePersonSuppressionIDs removes the "person_suppressions" edge to PersonSuppression entities by IDs.
+func (_u *RevenueWorkspaceUpdateOne) RemovePersonSuppressionIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.RemovePersonSuppressionIDs(ids...)
+	return _u
+}
+
+// RemovePersonSuppressions removes "person_suppressions" edges to PersonSuppression entities.
+func (_u *RevenueWorkspaceUpdateOne) RemovePersonSuppressions(v ...*PersonSuppression) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemovePersonSuppressionIDs(ids...)
 }
 
 // ClearPersonAttributes clears all "person_attributes" edges to the PersonAttribute entity.
@@ -5786,6 +5904,51 @@ func (_u *RevenueWorkspaceUpdateOne) sqlSave(ctx context.Context) (_node *Revenu
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.PersonSuppressionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonSuppressionsTable,
+			Columns: []string{revenueworkspace.PersonSuppressionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personsuppression.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedPersonSuppressionsIDs(); len(nodes) > 0 && !_u.mutation.PersonSuppressionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonSuppressionsTable,
+			Columns: []string{revenueworkspace.PersonSuppressionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personsuppression.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.PersonSuppressionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonSuppressionsTable,
+			Columns: []string{revenueworkspace.PersonSuppressionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personsuppression.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -93,6 +93,33 @@ func linkParticipantPerson(
 		})
 	}
 
+	// A departure observation is the mail system telling us this person no longer
+	// works where we last saw them — a hard bounce naming their address, or an
+	// autoreply that says so in words. It rides the ordinary participant path so it
+	// competes on the same ladder as everything else: a user_correction saying
+	// "no, they are still there" beats it without any special case.
+	//
+	// The claim is deliberately narrow. `source_fact` because the mail server's own
+	// 5.1.1 is a fact about the mailbox, not an inference about the person, and the
+	// confidence gap between the two kinds reflects which of those we actually have:
+	// words that name a departure are stronger than an address that stopped
+	// accepting mail, because a mistyped address bounces identically to a departed one.
+	if input.EventType == "contact_departed" {
+		confidence := 0.7
+		reason := "Their mail server rejected delivery as an unknown recipient."
+		if kind, _ := input.Facts["departure_kind"].(string); kind == "left_organization" {
+			confidence = 0.9
+			reason = "A reply from this address said the person has left."
+		}
+		attributes = append(attributes, PersonAttributeInput{
+			Dimension: "employment_status", Value: "departed",
+			SourceType: "source_fact", Source: input.Source,
+			Extractor: "mail_delivery_report", Confidence: confidence,
+			Reason:     reason,
+			ObservedAt: input.OccurredAt, ExternalID: input.ExternalID,
+		})
+	}
+
 	if err := upsertPersonAttributes(ctx, client, ws, u, p, observation, attributes); err != nil {
 		return nil, err
 	}

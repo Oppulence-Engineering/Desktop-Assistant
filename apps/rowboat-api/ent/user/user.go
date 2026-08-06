@@ -109,6 +109,8 @@ const (
 	EdgeRelationshipPersons = "relationship_persons"
 	// EdgePersonIdentities holds the string denoting the person_identities edge name in mutations.
 	EdgePersonIdentities = "person_identities"
+	// EdgePersonSuppressions holds the string denoting the person_suppressions edge name in mutations.
+	EdgePersonSuppressions = "person_suppressions"
 	// EdgePersonAttributes holds the string denoting the person_attributes edge name in mutations.
 	EdgePersonAttributes = "person_attributes"
 	// EdgePersonMergeCandidates holds the string denoting the person_merge_candidates edge name in mutations.
@@ -439,6 +441,13 @@ const (
 	PersonIdentitiesInverseTable = "person_identities"
 	// PersonIdentitiesColumn is the table column denoting the person_identities relation/edge.
 	PersonIdentitiesColumn = "user_person_identities"
+	// PersonSuppressionsTable is the table that holds the person_suppressions relation/edge.
+	PersonSuppressionsTable = "person_suppressions"
+	// PersonSuppressionsInverseTable is the table name for the PersonSuppression entity.
+	// It exists in this package in order to avoid circular dependency with the "personsuppression" package.
+	PersonSuppressionsInverseTable = "person_suppressions"
+	// PersonSuppressionsColumn is the table column denoting the person_suppressions relation/edge.
+	PersonSuppressionsColumn = "user_person_suppressions"
 	// PersonAttributesTable is the table that holds the person_attributes relation/edge.
 	PersonAttributesTable = "person_attributes"
 	// PersonAttributesInverseTable is the table name for the PersonAttribute entity.
@@ -1207,6 +1216,20 @@ func ByPersonIdentities(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption 
 	}
 }
 
+// ByPersonSuppressionsCount orders the results by person_suppressions count.
+func ByPersonSuppressionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPersonSuppressionsStep(), opts...)
+	}
+}
+
+// ByPersonSuppressions orders the results by person_suppressions terms.
+func ByPersonSuppressions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPersonSuppressionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByPersonAttributesCount orders the results by person_attributes count.
 func ByPersonAttributesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -1736,6 +1759,13 @@ func newPersonIdentitiesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PersonIdentitiesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, PersonIdentitiesTable, PersonIdentitiesColumn),
+	)
+}
+func newPersonSuppressionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PersonSuppressionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, PersonSuppressionsTable, PersonSuppressionsColumn),
 	)
 }
 func newPersonAttributesStep() *sqlgraph.Step {

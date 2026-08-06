@@ -194,6 +194,39 @@ export const decideIdentityCandidate = (
     { method: "POST", body: JSON.stringify(input) },
   );
 
+export interface PersonDeletionReceipt {
+  receiptId: string;
+  personId: string;
+  requestedAt: string;
+  completedAt: string;
+  reason: string;
+  suppressedIdentities: number;
+  attributesDeleted: number;
+  identitiesDeleted: number;
+  interactionStatsDeleted: number;
+  mergeCandidatesDeleted: number;
+}
+
+/**
+ * Delete a person and suppress their identity so ingest cannot recreate them.
+ *
+ * `reason` separates a subject asking to be forgotten from the account holder
+ * tidying their graph. Only the first is a promise made to someone who is not
+ * the user, and a system that cannot tell them apart cannot honour that
+ * difference later.
+ *
+ * Returns a receipt rather than nothing: deleting another person's data should
+ * be evidenced, not merely acknowledged.
+ */
+export const deletePerson = (
+  personId: string,
+  input?: { reason?: "user_action" | "subject_request"; note?: string },
+) =>
+  call<PersonDeletionReceipt>(`/v1/relationship-persons/${encodeURIComponent(personId)}`, {
+    method: "DELETE",
+    body: JSON.stringify(input ?? {}),
+  });
+
 export const listRelationshipAttention = (status = "open") =>
   call<{ contractVersion: string; asOf: string; items: RelationshipAttentionItem[] }>(
     `/v1/relationship-attention?status=${encodeURIComponent(status)}`,

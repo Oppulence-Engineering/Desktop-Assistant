@@ -46,6 +46,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personsuppression"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -125,6 +126,7 @@ type UserQuery struct {
 	withRelationshipIdentities                  *RelationshipIdentityQuery
 	withRelationshipPersons                     *PersonQuery
 	withPersonIdentities                        *PersonIdentityQuery
+	withPersonSuppressions                      *PersonSuppressionQuery
 	withPersonAttributes                        *PersonAttributeQuery
 	withPersonMergeCandidates                   *PersonMergeCandidateQuery
 	withRelationshipProjectionJobs              *RelationshipProjectionJobQuery
@@ -185,6 +187,7 @@ type UserQuery struct {
 	withNamedRelationshipIdentities             map[string]*RelationshipIdentityQuery
 	withNamedRelationshipPersons                map[string]*PersonQuery
 	withNamedPersonIdentities                   map[string]*PersonIdentityQuery
+	withNamedPersonSuppressions                 map[string]*PersonSuppressionQuery
 	withNamedPersonAttributes                   map[string]*PersonAttributeQuery
 	withNamedPersonMergeCandidates              map[string]*PersonMergeCandidateQuery
 	withNamedRelationshipProjectionJobs         map[string]*RelationshipProjectionJobQuery
@@ -1162,6 +1165,28 @@ func (_q *UserQuery) QueryPersonIdentities() *PersonIdentityQuery {
 	return query
 }
 
+// QueryPersonSuppressions chains the current query on the "person_suppressions" edge.
+func (_q *UserQuery) QueryPersonSuppressions() *PersonSuppressionQuery {
+	query := (&PersonSuppressionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(personsuppression.Table, personsuppression.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.PersonSuppressionsTable, user.PersonSuppressionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryPersonAttributes chains the current query on the "person_attributes" edge.
 func (_q *UserQuery) QueryPersonAttributes() *PersonAttributeQuery {
 	query := (&PersonAttributeClient{config: _q.config}).Query()
@@ -1770,6 +1795,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withRelationshipIdentities:             _q.withRelationshipIdentities.Clone(),
 		withRelationshipPersons:                _q.withRelationshipPersons.Clone(),
 		withPersonIdentities:                   _q.withPersonIdentities.Clone(),
+		withPersonSuppressions:                 _q.withPersonSuppressions.Clone(),
 		withPersonAttributes:                   _q.withPersonAttributes.Clone(),
 		withPersonMergeCandidates:              _q.withPersonMergeCandidates.Clone(),
 		withRelationshipProjectionJobs:         _q.withRelationshipProjectionJobs.Clone(),
@@ -2255,6 +2281,17 @@ func (_q *UserQuery) WithPersonIdentities(opts ...func(*PersonIdentityQuery)) *U
 	return _q
 }
 
+// WithPersonSuppressions tells the query-builder to eager-load the nodes that are connected to
+// the "person_suppressions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithPersonSuppressions(opts ...func(*PersonSuppressionQuery)) *UserQuery {
+	query := (&PersonSuppressionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPersonSuppressions = query
+	return _q
+}
+
 // WithPersonAttributes tells the query-builder to eager-load the nodes that are connected to
 // the "person_attributes" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithPersonAttributes(opts ...func(*PersonAttributeQuery)) *UserQuery {
@@ -2520,7 +2557,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [59]bool{
+		loadedTypes = [60]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -2563,6 +2600,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withRelationshipIdentities != nil,
 			_q.withRelationshipPersons != nil,
 			_q.withPersonIdentities != nil,
+			_q.withPersonSuppressions != nil,
 			_q.withPersonAttributes != nil,
 			_q.withPersonMergeCandidates != nil,
 			_q.withRelationshipProjectionJobs != nil,
@@ -2923,6 +2961,15 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadPersonIdentities(ctx, query, nodes,
 			func(n *User) { n.Edges.PersonIdentities = []*PersonIdentity{} },
 			func(n *User, e *PersonIdentity) { n.Edges.PersonIdentities = append(n.Edges.PersonIdentities, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withPersonSuppressions; query != nil {
+		if err := _q.loadPersonSuppressions(ctx, query, nodes,
+			func(n *User) { n.Edges.PersonSuppressions = []*PersonSuppression{} },
+			func(n *User, e *PersonSuppression) {
+				n.Edges.PersonSuppressions = append(n.Edges.PersonSuppressions, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -3359,6 +3406,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadPersonIdentities(ctx, query, nodes,
 			func(n *User) { n.appendNamedPersonIdentities(name) },
 			func(n *User, e *PersonIdentity) { n.appendNamedPersonIdentities(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedPersonSuppressions {
+		if err := _q.loadPersonSuppressions(ctx, query, nodes,
+			func(n *User) { n.appendNamedPersonSuppressions(name) },
+			func(n *User, e *PersonSuppression) { n.appendNamedPersonSuppressions(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -4790,6 +4844,37 @@ func (_q *UserQuery) loadPersonIdentities(ctx context.Context, query *PersonIden
 	}
 	return nil
 }
+func (_q *UserQuery) loadPersonSuppressions(ctx context.Context, query *PersonSuppressionQuery, nodes []*User, init func(*User), assign func(*User, *PersonSuppression)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PersonSuppression(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.PersonSuppressionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_person_suppressions
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_person_suppressions" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_person_suppressions" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (_q *UserQuery) loadPersonAttributes(ctx context.Context, query *PersonAttributeQuery, nodes []*User, init func(*User), assign func(*User, *PersonAttribute)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*User)
@@ -5973,6 +6058,20 @@ func (_q *UserQuery) WithNamedPersonIdentities(name string, opts ...func(*Person
 		_q.withNamedPersonIdentities = make(map[string]*PersonIdentityQuery)
 	}
 	_q.withNamedPersonIdentities[name] = query
+	return _q
+}
+
+// WithNamedPersonSuppressions tells the query-builder to eager-load the nodes that are connected to the "person_suppressions"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedPersonSuppressions(name string, opts ...func(*PersonSuppressionQuery)) *UserQuery {
+	query := (&PersonSuppressionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedPersonSuppressions == nil {
+		_q.withNamedPersonSuppressions = make(map[string]*PersonSuppressionQuery)
+	}
+	_q.withNamedPersonSuppressions[name] = query
 	return _q
 }
 

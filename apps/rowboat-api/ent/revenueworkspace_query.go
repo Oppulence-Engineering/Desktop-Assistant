@@ -22,6 +22,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personsuppression"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -87,6 +88,7 @@ type RevenueWorkspaceQuery struct {
 	withRelationshipSourceStatuses              *RelationshipSourceStatusQuery
 	withRelationshipPersons                     *PersonQuery
 	withPersonIdentities                        *PersonIdentityQuery
+	withPersonSuppressions                      *PersonSuppressionQuery
 	withPersonAttributes                        *PersonAttributeQuery
 	withPersonInteractionStats                  *PersonInteractionStatQuery
 	withPersonMergeCandidates                   *PersonMergeCandidateQuery
@@ -122,6 +124,7 @@ type RevenueWorkspaceQuery struct {
 	withNamedRelationshipSourceStatuses         map[string]*RelationshipSourceStatusQuery
 	withNamedRelationshipPersons                map[string]*PersonQuery
 	withNamedPersonIdentities                   map[string]*PersonIdentityQuery
+	withNamedPersonSuppressions                 map[string]*PersonSuppressionQuery
 	withNamedPersonAttributes                   map[string]*PersonAttributeQuery
 	withNamedPersonInteractionStats             map[string]*PersonInteractionStatQuery
 	withNamedPersonMergeCandidates              map[string]*PersonMergeCandidateQuery
@@ -821,6 +824,28 @@ func (_q *RevenueWorkspaceQuery) QueryPersonIdentities() *PersonIdentityQuery {
 	return query
 }
 
+// QueryPersonSuppressions chains the current query on the "person_suppressions" edge.
+func (_q *RevenueWorkspaceQuery) QueryPersonSuppressions() *PersonSuppressionQuery {
+	query := (&PersonSuppressionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(personsuppression.Table, personsuppression.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.PersonSuppressionsTable, revenueworkspace.PersonSuppressionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryPersonAttributes chains the current query on the "person_attributes" edge.
 func (_q *RevenueWorkspaceQuery) QueryPersonAttributes() *PersonAttributeQuery {
 	query := (&PersonAttributeClient{config: _q.config}).Query()
@@ -1109,6 +1134,7 @@ func (_q *RevenueWorkspaceQuery) Clone() *RevenueWorkspaceQuery {
 		withRelationshipSourceStatuses:         _q.withRelationshipSourceStatuses.Clone(),
 		withRelationshipPersons:                _q.withRelationshipPersons.Clone(),
 		withPersonIdentities:                   _q.withPersonIdentities.Clone(),
+		withPersonSuppressions:                 _q.withPersonSuppressions.Clone(),
 		withPersonAttributes:                   _q.withPersonAttributes.Clone(),
 		withPersonInteractionStats:             _q.withPersonInteractionStats.Clone(),
 		withPersonMergeCandidates:              _q.withPersonMergeCandidates.Clone(),
@@ -1448,6 +1474,17 @@ func (_q *RevenueWorkspaceQuery) WithPersonIdentities(opts ...func(*PersonIdenti
 	return _q
 }
 
+// WithPersonSuppressions tells the query-builder to eager-load the nodes that are connected to
+// the "person_suppressions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithPersonSuppressions(opts ...func(*PersonSuppressionQuery)) *RevenueWorkspaceQuery {
+	query := (&PersonSuppressionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withPersonSuppressions = query
+	return _q
+}
+
 // WithPersonAttributes tells the query-builder to eager-load the nodes that are connected to
 // the "person_attributes" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *RevenueWorkspaceQuery) WithPersonAttributes(opts ...func(*PersonAttributeQuery)) *RevenueWorkspaceQuery {
@@ -1560,7 +1597,7 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		nodes       = []*RevenueWorkspace{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [33]bool{
+		loadedTypes = [34]bool{
 			_q.withUser != nil,
 			_q.withMembers != nil,
 			_q.withRelationships != nil,
@@ -1591,6 +1628,7 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			_q.withRelationshipSourceStatuses != nil,
 			_q.withRelationshipPersons != nil,
 			_q.withPersonIdentities != nil,
+			_q.withPersonSuppressions != nil,
 			_q.withPersonAttributes != nil,
 			_q.withPersonInteractionStats != nil,
 			_q.withPersonMergeCandidates != nil,
@@ -1876,6 +1914,15 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			return nil, err
 		}
 	}
+	if query := _q.withPersonSuppressions; query != nil {
+		if err := _q.loadPersonSuppressions(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.PersonSuppressions = []*PersonSuppression{} },
+			func(n *RevenueWorkspace, e *PersonSuppression) {
+				n.Edges.PersonSuppressions = append(n.Edges.PersonSuppressions, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withPersonAttributes; query != nil {
 		if err := _q.loadPersonAttributes(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.Edges.PersonAttributes = []*PersonAttribute{} },
@@ -2119,6 +2166,13 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		if err := _q.loadPersonIdentities(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.appendNamedPersonIdentities(name) },
 			func(n *RevenueWorkspace, e *PersonIdentity) { n.appendNamedPersonIdentities(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedPersonSuppressions {
+		if err := _q.loadPersonSuppressions(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedPersonSuppressions(name) },
+			func(n *RevenueWorkspace, e *PersonSuppression) { n.appendNamedPersonSuppressions(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -3082,6 +3136,37 @@ func (_q *RevenueWorkspaceQuery) loadPersonIdentities(ctx context.Context, query
 	}
 	return nil
 }
+func (_q *RevenueWorkspaceQuery) loadPersonSuppressions(ctx context.Context, query *PersonSuppressionQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *PersonSuppression)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.PersonSuppression(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.PersonSuppressionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (_q *RevenueWorkspaceQuery) loadPersonAttributes(ctx context.Context, query *PersonAttributeQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *PersonAttribute)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
@@ -3663,6 +3748,20 @@ func (_q *RevenueWorkspaceQuery) WithNamedPersonIdentities(name string, opts ...
 		_q.withNamedPersonIdentities = make(map[string]*PersonIdentityQuery)
 	}
 	_q.withNamedPersonIdentities[name] = query
+	return _q
+}
+
+// WithNamedPersonSuppressions tells the query-builder to eager-load the nodes that are connected to the "person_suppressions"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedPersonSuppressions(name string, opts ...func(*PersonSuppressionQuery)) *RevenueWorkspaceQuery {
+	query := (&PersonSuppressionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedPersonSuppressions == nil {
+		_q.withNamedPersonSuppressions = make(map[string]*PersonSuppressionQuery)
+	}
+	_q.withNamedPersonSuppressions[name] = query
 	return _q
 }
 

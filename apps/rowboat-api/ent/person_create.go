@@ -169,6 +169,20 @@ func (_c *PersonCreate) SetNillableLocale(v *string) *PersonCreate {
 	return _c
 }
 
+// SetEmploymentStatus sets the "employment_status" field.
+func (_c *PersonCreate) SetEmploymentStatus(v string) *PersonCreate {
+	_c.mutation.SetEmploymentStatus(v)
+	return _c
+}
+
+// SetNillableEmploymentStatus sets the "employment_status" field if the given value is not nil.
+func (_c *PersonCreate) SetNillableEmploymentStatus(v *string) *PersonCreate {
+	if v != nil {
+		_c.SetEmploymentStatus(*v)
+	}
+	return _c
+}
+
 // SetAttributesVersion sets the "attributes_version" field.
 func (_c *PersonCreate) SetAttributesVersion(v int) *PersonCreate {
 	_c.mutation.SetAttributesVersion(v)
@@ -482,6 +496,10 @@ func (_c *PersonCreate) defaults() {
 		v := person.DefaultAliases
 		_c.mutation.SetAliases(v)
 	}
+	if _, ok := _c.mutation.EmploymentStatus(); !ok {
+		v := person.DefaultEmploymentStatus
+		_c.mutation.SetEmploymentStatus(v)
+	}
 	if _, ok := _c.mutation.AttributesVersion(); !ok {
 		v := person.DefaultAttributesVersion
 		_c.mutation.SetAttributesVersion(v)
@@ -522,6 +540,14 @@ func (_c *PersonCreate) check() error {
 	}
 	if _, ok := _c.mutation.Aliases(); !ok {
 		return &ValidationError{Name: "aliases", err: errors.New(`ent: missing required field "Person.aliases"`)}
+	}
+	if _, ok := _c.mutation.EmploymentStatus(); !ok {
+		return &ValidationError{Name: "employment_status", err: errors.New(`ent: missing required field "Person.employment_status"`)}
+	}
+	if v, ok := _c.mutation.EmploymentStatus(); ok {
+		if err := person.EmploymentStatusValidator(v); err != nil {
+			return &ValidationError{Name: "employment_status", err: fmt.Errorf(`ent: validator failed for field "Person.employment_status": %w`, err)}
+		}
 	}
 	if _, ok := _c.mutation.AttributesVersion(); !ok {
 		return &ValidationError{Name: "attributes_version", err: errors.New(`ent: missing required field "Person.attributes_version"`)}
@@ -640,6 +666,10 @@ func (_c *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Locale(); ok {
 		_spec.SetField(person.FieldLocale, field.TypeString, value)
 		_node.Locale = value
+	}
+	if value, ok := _c.mutation.EmploymentStatus(); ok {
+		_spec.SetField(person.FieldEmploymentStatus, field.TypeString, value)
+		_node.EmploymentStatus = value
 	}
 	if value, ok := _c.mutation.AttributesVersion(); ok {
 		_spec.SetField(person.FieldAttributesVersion, field.TypeInt, value)
@@ -1022,6 +1052,18 @@ func (u *PersonUpsert) UpdateLocale() *PersonUpsert {
 // ClearLocale clears the value of the "locale" field.
 func (u *PersonUpsert) ClearLocale() *PersonUpsert {
 	u.SetNull(person.FieldLocale)
+	return u
+}
+
+// SetEmploymentStatus sets the "employment_status" field.
+func (u *PersonUpsert) SetEmploymentStatus(v string) *PersonUpsert {
+	u.Set(person.FieldEmploymentStatus, v)
+	return u
+}
+
+// UpdateEmploymentStatus sets the "employment_status" field to the value that was provided on create.
+func (u *PersonUpsert) UpdateEmploymentStatus() *PersonUpsert {
+	u.SetExcluded(person.FieldEmploymentStatus)
 	return u
 }
 
@@ -1436,6 +1478,20 @@ func (u *PersonUpsertOne) UpdateLocale() *PersonUpsertOne {
 func (u *PersonUpsertOne) ClearLocale() *PersonUpsertOne {
 	return u.Update(func(s *PersonUpsert) {
 		s.ClearLocale()
+	})
+}
+
+// SetEmploymentStatus sets the "employment_status" field.
+func (u *PersonUpsertOne) SetEmploymentStatus(v string) *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetEmploymentStatus(v)
+	})
+}
+
+// UpdateEmploymentStatus sets the "employment_status" field to the value that was provided on create.
+func (u *PersonUpsertOne) UpdateEmploymentStatus() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateEmploymentStatus()
 	})
 }
 
@@ -2046,6 +2102,20 @@ func (u *PersonUpsertBulk) UpdateLocale() *PersonUpsertBulk {
 func (u *PersonUpsertBulk) ClearLocale() *PersonUpsertBulk {
 	return u.Update(func(s *PersonUpsert) {
 		s.ClearLocale()
+	})
+}
+
+// SetEmploymentStatus sets the "employment_status" field.
+func (u *PersonUpsertBulk) SetEmploymentStatus(v string) *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetEmploymentStatus(v)
+	})
+}
+
+// UpdateEmploymentStatus sets the "employment_status" field to the value that was provided on create.
+func (u *PersonUpsertBulk) UpdateEmploymentStatus() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateEmploymentStatus()
 	})
 }
 

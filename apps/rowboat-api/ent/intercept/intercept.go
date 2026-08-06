@@ -48,6 +48,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personsuppression"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -1215,6 +1216,33 @@ func (f TraversePersonMergeCandidate) Traverse(ctx context.Context, q ent.Query)
 	return fmt.Errorf("unexpected query type %T. expect *ent.PersonMergeCandidateQuery", q)
 }
 
+// The PersonSuppressionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type PersonSuppressionFunc func(context.Context, *ent.PersonSuppressionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f PersonSuppressionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.PersonSuppressionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.PersonSuppressionQuery", q)
+}
+
+// The TraversePersonSuppression type is an adapter to allow the use of ordinary function as Traverser.
+type TraversePersonSuppression func(context.Context, *ent.PersonSuppressionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraversePersonSuppression) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraversePersonSuppression) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.PersonSuppressionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.PersonSuppressionQuery", q)
+}
+
 // The PolicyDecisionSnapshotFunc type is an adapter to allow the use of ordinary function as a Querier.
 type PolicyDecisionSnapshotFunc func(context.Context, *ent.PolicyDecisionSnapshotQuery) (ent.Value, error)
 
@@ -2054,6 +2082,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.PersonInteractionStatQuery, predicate.PersonInteractionStat, personinteractionstat.OrderOption]{typ: ent.TypePersonInteractionStat, tq: q}, nil
 	case *ent.PersonMergeCandidateQuery:
 		return &query[*ent.PersonMergeCandidateQuery, predicate.PersonMergeCandidate, personmergecandidate.OrderOption]{typ: ent.TypePersonMergeCandidate, tq: q}, nil
+	case *ent.PersonSuppressionQuery:
+		return &query[*ent.PersonSuppressionQuery, predicate.PersonSuppression, personsuppression.OrderOption]{typ: ent.TypePersonSuppression, tq: q}, nil
 	case *ent.PolicyDecisionSnapshotQuery:
 		return &query[*ent.PolicyDecisionSnapshotQuery, predicate.PolicyDecisionSnapshot, policydecisionsnapshot.OrderOption]{typ: ent.TypePolicyDecisionSnapshot, tq: q}, nil
 	case *ent.RelationshipQuery:

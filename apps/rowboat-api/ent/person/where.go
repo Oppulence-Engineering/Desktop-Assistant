@@ -106,6 +106,11 @@ func Locale(v string) predicate.Person {
 	return predicate.Person(sql.FieldEQ(FieldLocale, v))
 }
 
+// EmploymentStatus applies equality check predicate on the "employment_status" field. It's identical to EmploymentStatusEQ.
+func EmploymentStatus(v string) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldEmploymentStatus, v))
+}
+
 // AttributesVersion applies equality check predicate on the "attributes_version" field. It's identical to AttributesVersionEQ.
 func AttributesVersion(v int) predicate.Person {
 	return predicate.Person(sql.FieldEQ(FieldAttributesVersion, v))
@@ -824,6 +829,71 @@ func LocaleEqualFold(v string) predicate.Person {
 // LocaleContainsFold applies the ContainsFold predicate on the "locale" field.
 func LocaleContainsFold(v string) predicate.Person {
 	return predicate.Person(sql.FieldContainsFold(FieldLocale, v))
+}
+
+// EmploymentStatusEQ applies the EQ predicate on the "employment_status" field.
+func EmploymentStatusEQ(v string) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldEmploymentStatus, v))
+}
+
+// EmploymentStatusNEQ applies the NEQ predicate on the "employment_status" field.
+func EmploymentStatusNEQ(v string) predicate.Person {
+	return predicate.Person(sql.FieldNEQ(FieldEmploymentStatus, v))
+}
+
+// EmploymentStatusIn applies the In predicate on the "employment_status" field.
+func EmploymentStatusIn(vs ...string) predicate.Person {
+	return predicate.Person(sql.FieldIn(FieldEmploymentStatus, vs...))
+}
+
+// EmploymentStatusNotIn applies the NotIn predicate on the "employment_status" field.
+func EmploymentStatusNotIn(vs ...string) predicate.Person {
+	return predicate.Person(sql.FieldNotIn(FieldEmploymentStatus, vs...))
+}
+
+// EmploymentStatusGT applies the GT predicate on the "employment_status" field.
+func EmploymentStatusGT(v string) predicate.Person {
+	return predicate.Person(sql.FieldGT(FieldEmploymentStatus, v))
+}
+
+// EmploymentStatusGTE applies the GTE predicate on the "employment_status" field.
+func EmploymentStatusGTE(v string) predicate.Person {
+	return predicate.Person(sql.FieldGTE(FieldEmploymentStatus, v))
+}
+
+// EmploymentStatusLT applies the LT predicate on the "employment_status" field.
+func EmploymentStatusLT(v string) predicate.Person {
+	return predicate.Person(sql.FieldLT(FieldEmploymentStatus, v))
+}
+
+// EmploymentStatusLTE applies the LTE predicate on the "employment_status" field.
+func EmploymentStatusLTE(v string) predicate.Person {
+	return predicate.Person(sql.FieldLTE(FieldEmploymentStatus, v))
+}
+
+// EmploymentStatusContains applies the Contains predicate on the "employment_status" field.
+func EmploymentStatusContains(v string) predicate.Person {
+	return predicate.Person(sql.FieldContains(FieldEmploymentStatus, v))
+}
+
+// EmploymentStatusHasPrefix applies the HasPrefix predicate on the "employment_status" field.
+func EmploymentStatusHasPrefix(v string) predicate.Person {
+	return predicate.Person(sql.FieldHasPrefix(FieldEmploymentStatus, v))
+}
+
+// EmploymentStatusHasSuffix applies the HasSuffix predicate on the "employment_status" field.
+func EmploymentStatusHasSuffix(v string) predicate.Person {
+	return predicate.Person(sql.FieldHasSuffix(FieldEmploymentStatus, v))
+}
+
+// EmploymentStatusEqualFold applies the EqualFold predicate on the "employment_status" field.
+func EmploymentStatusEqualFold(v string) predicate.Person {
+	return predicate.Person(sql.FieldEqualFold(FieldEmploymentStatus, v))
+}
+
+// EmploymentStatusContainsFold applies the ContainsFold predicate on the "employment_status" field.
+func EmploymentStatusContainsFold(v string) predicate.Person {
+	return predicate.Person(sql.FieldContainsFold(FieldEmploymentStatus, v))
 }
 
 // AttributesVersionEQ applies the EQ predicate on the "attributes_version" field.
