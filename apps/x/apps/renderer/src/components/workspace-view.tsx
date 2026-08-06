@@ -52,6 +52,7 @@ interface TreeNode {
 
 type WorkspaceActions = {
   remove: (path: string) => Promise<void>;
+  duplicate: (path: string, isDir: boolean) => Promise<string>;
   copyPath: (path: string) => void;
   revealInFileManager: (path: string, isDir: boolean) => void;
   createNote: (parentPath?: string) => void;
@@ -544,6 +545,24 @@ export function WorkspaceView({
                     <ContextMenuItem onClick={() => beginRename(item)}>
                       <Pencil className="mr-2 size-4" />
                       Rename
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                      onClick={() => {
+                        void actions
+                          .duplicate(item.path, isDir)
+                          .then((created) =>
+                            toast(`Duplicated to ${created.split("/").pop()}`, "success"),
+                          )
+                          .catch((err: unknown) =>
+                            toast(
+                              err instanceof Error ? err.message : "Failed to duplicate",
+                              "error",
+                            ),
+                          );
+                      }}
+                    >
+                      <Copy className="mr-2 size-4" />
+                      Duplicate
                     </ContextMenuItem>
                     <ContextMenuItem variant="destructive" onClick={() => void handleDelete(item)}>
                       <Trash2 className="mr-2 size-4" />

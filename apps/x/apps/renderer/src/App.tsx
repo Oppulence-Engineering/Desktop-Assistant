@@ -5962,6 +5962,34 @@ function App() {
           document.body.removeChild(textarea);
         });
       },
+      // Duplicate a file or folder. workspace:copy existed with no caller, so
+      // the tree could rename and delete but never copy.
+      //
+      // Never overwrites: it walks "name copy", "name copy 2", … until it finds
+      // a free path. Passing overwrite would make a mis-click destroy the file
+      // next to the one being duplicated.
+      duplicate: async (path: string, isDir: boolean): Promise<string> => {
+        const slash = path.lastIndexOf("/");
+        const dir = slash === -1 ? "" : path.slice(0, slash);
+        const base = slash === -1 ? path : path.slice(slash + 1);
+        const dot = isDir ? -1 : base.lastIndexOf(".");
+        const stem = dot === -1 ? base : base.slice(0, dot);
+        const ext = dot === -1 ? "" : base.slice(dot);
+
+        for (let n = 1; n < 100; n++) {
+          const suffix = n === 1 ? " copy" : ` copy ${n}`;
+          const candidate = `${dir ? `${dir}/` : ""}${stem}${suffix}${ext}`;
+          const { exists } = await window.ipc.invoke("workspace:exists", { path: candidate });
+          if (exists) continue;
+          await window.ipc.invoke("workspace:copy", {
+            from: path,
+            to: candidate,
+            overwrite: false,
+          });
+          return candidate;
+        }
+        throw new Error("Too many copies of that name already exist");
+      },
       revealInFileManager: (path: string, isDir: boolean) => {
         const channel = isDir ? "shell:openPath" : "shell:showItemInFolder";
         void window.ipc.invoke(channel, { path }).catch((err) => {
@@ -7160,6 +7188,7 @@ function App() {
                       initialPath={workspaceInitialPath}
                       actions={{
                         remove: knowledgeActions.remove,
+                        duplicate: knowledgeActions.duplicate,
                         copyPath: knowledgeActions.copyPath,
                         revealInFileManager: knowledgeActions.revealInFileManager,
                         createNote: knowledgeActions.createNote,
@@ -7188,6 +7217,7 @@ function App() {
                         createFolder: knowledgeActions.createFolder,
                         rename: knowledgeActions.rename,
                         remove: knowledgeActions.remove,
+                        duplicate: knowledgeActions.duplicate,
                         copyPath: knowledgeActions.copyPath,
                         revealInFileManager: knowledgeActions.revealInFileManager,
                         onOpenInNewTab: knowledgeActions.onOpenInNewTab,

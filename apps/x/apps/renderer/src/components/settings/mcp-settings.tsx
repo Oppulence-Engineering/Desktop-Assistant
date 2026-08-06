@@ -407,17 +407,119 @@ function ServerToolList({ serverName }: { serverName: string }) {
       {tools !== null && tools.length > 0 && (
         <ul className="mt-2 space-y-1">
           {tools.map((tool) => (
-            <li key={tool.name} className="rounded-none border border-border/60 px-2.5 py-1.5">
-              <p className="font-mono text-xs">{tool.name}</p>
-              {tool.description && (
-                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                  {tool.description}
-                </p>
-              )}
-            </li>
+            <ToolRow key={tool.name} serverName={serverName} tool={tool} />
           ))}
         </ul>
       )}
     </div>
+  );
+}
+
+/**
+ * One tool, with an opt-in way to run it.
+ *
+ * `mcp:executeTool` had a handler and no caller. Surfacing it needs more care
+ * than the other channels in this pane: an MCP tool is arbitrary third-party
+ * code with real side effects — it can write files, call APIs, spend money. The
+ * point of running one from here is to check a server works before trusting it
+ * with an agent, and that has to be an explicit act rather than a stray click.
+ *
+ * So the runner stays collapsed until asked for, the arguments are typed by
+ * hand rather than guessed, and the button says what it does. No confirmation
+ * dialog on top: a dialog after a deliberate expand-type-run sequence is noise,
+ * and noise is what teaches people to click through warnings.
+ */
+function ToolRow({
+  serverName,
+  tool,
+}: {
+  serverName: string;
+  tool: { name: string; description?: string };
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [input, setInput] = React.useState("{}");
+  const [busy, setBusy] = React.useState(false);
+  const [output, setOutput] = React.useState<string | null>(null);
+  const [failure, setFailure] = React.useState<string | null>(null);
+
+  const run = async () => {
+    let parsed: Record<string, unknown>;
+    try {
+      const value: unknown = JSON.parse(input || "{}");
+      if (typeof value !== "object" || value === null || Array.isArray(value)) {
+        throw new Error("Arguments must be a JSON object");
+      }
+      parsed = value as Record<string, unknown>;
+    } catch (err) {
+      // Caught here rather than at the server: a JSON typo should not start a
+      // tool call.
+      setFailure(err instanceof Error ? err.message : "Arguments must be valid JSON");
+      setOutput(null);
+      return;
+    }
+
+    setBusy(true);
+    setFailure(null);
+    try {
+      const res = await window.ipc.invoke("mcp:executeTool", {
+        serverName,
+        toolName: tool.name,
+        input: parsed,
+      });
+      setOutput(JSON.stringify(res.result, null, 2));
+    } catch (err) {
+      setFailure(err instanceof Error ? err.message : "The tool call failed.");
+      setOutput(null);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <li className="rounded-none border border-border/60 px-2.5 py-1.5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-mono text-xs">{tool.name}</p>
+          {tool.description && (
+            <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{tool.description}</p>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="shrink-0 text-xs"
+          onClick={() => setOpen((v) => !v)}
+        >
+          {open ? "Cancel" : "Test"}
+        </Button>
+      </div>
+
+      {open && (
+        <div className="mt-2 space-y-2">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            rows={3}
+            spellCheck={false}
+            className="w-full rounded-none border border-border bg-background p-2 font-mono text-xs"
+            aria-label={`Arguments for ${tool.name}`}
+          />
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={() => void run()} disabled={busy}>
+              {busy ? "Running…" : `Run ${tool.name}`}
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Runs for real — this tool can have side effects.
+            </span>
+          </div>
+          {failure && <p className="text-xs text-destructive">{failure}</p>}
+          {output !== null && (
+            <pre className="max-h-48 overflow-auto rounded-none border border-border/60 bg-muted/40 p-2 font-mono text-[11px]">
+              {output}
+            </pre>
+          )}
+        </div>
+      )}
+    </li>
   );
 }
