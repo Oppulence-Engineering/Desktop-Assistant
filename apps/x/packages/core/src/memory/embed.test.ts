@@ -272,3 +272,42 @@ describe("embedBatch — queue wait vs request timeout", () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe("embedBatch — draws on the shared gateway budget", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("waits its turn behind other background work", async () => {
+    // /v1/llm/embeddings shares the server's rate-limit bucket with chat, so a
+    // memory rebuild that skipped the queue would spend the allowance the
+    // labeling agent is waiting on. Nothing else asserts this: unwiring
+    // meteredEmbed from the budget leaves every other test passing.
+    vi.useFakeTimers();
+    resetBackgroundBudgetForTests();
+    isSignedInMock.mockResolvedValue(true);
+
+    let embedFetches = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        embedFetches += 1;
+        return res({ data: [{ embedding: [1] }], usage: { total_tokens: 1 } });
+      }),
+    );
+
+    // Fill this second's allowance with other background work.
+    Array.from({ length: 7 }, () =>
+      throughBackgroundBudget(async () => ({ status: 200 })).catch(() => {}),
+    );
+
+    const pending = embedBatch(metered, ["hello"]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(embedFetches, "embed jumped the queue instead of waiting its turn").toBe(0);
+
+    await vi.advanceTimersByTimeAsync(2_000);
+    await expect(pending).resolves.toMatchObject({ vectors: [[1]] });
+    expect(embedFetches).toBe(1);
+
+    resetBackgroundBudgetForTests();
+    vi.unstubAllGlobals();
+  });
+});
