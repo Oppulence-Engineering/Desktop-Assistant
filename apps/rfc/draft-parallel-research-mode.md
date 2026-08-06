@@ -203,7 +203,7 @@ The Group API is the right shape, but a bulk action over an entire workspace nee
 | **Chase** | **$99/mo** | Drafted nudges in your voice, approve/edit/snooze/reject, verified sends, monthly recovery receipt |
 | **Teams** | Talk to us | Shared queue, roles, audit trail |
 
-Defined in `apps/rowboat-www/app/(marketing)/marketing-data.ts`; Stripe carries `starter` and `pro` price IDs. The marketing copy promises *"priced on executed chases, not seats or email volume"*, which the flat $99 does not currently deliver — a pre-existing tension, noted rather than solved here.
+Defined in `apps/rowboat-www/app/(marketing)/marketing-data.ts`; Stripe carries `starter` and `pro` price IDs. The marketing copy promises *"priced on executed chases, not seats or email volume"*, which the flat $99 does not currently deliver — a pre-existing tension, discussed under [On outcome-based pricing](#on-outcome-based-pricing-do-not-extend-it-here) below.
 
 ### What this actually costs to serve
 
@@ -246,6 +246,23 @@ So:
 **Guard rails, expressed in product terms and never in credits.** "Up to 250 monitored accounts", "unlimited enrichment of people you already correspond with". Enforced server-side through the existing `quota.Gate` reservation, surfaced to the user as a plan limit rather than a balance.
 
 **Give the free tier one taste: job-change alerts on the top 10 contacts.** A `Monitor` at `lite` on ten people is roughly $0.36/month, and "your champion just moved to a company you don't cover" is the most visceral *I did not know that* moment on this entire list. It is the conversion hook, and it costs approximately nothing.
+
+### On outcome-based pricing: do not extend it here
+
+The pricing page says *"priced on executed chases, not seats or email volume. One saved deal pays for years."* The plan underneath it is a flat $99/month. That gap predates this work, and the tempting move — since `Intelligence` is the moment the pricing gets revisited anyway — is to close it by pricing research on outcomes too.
+
+**Do not.** Outcome pricing needs an outcome you can point at, and the two halves of this product are not alike in that respect.
+
+A chase has one. There is a specific invoice, a specific amount, a send with a receipt, and a payment that either arrives or does not. Attribution is a straight line and the customer will agree with it, which is exactly why the existing promise is credible.
+
+Research has no such line. A trigger says *"they announced a Series B on Tuesday"*; the user writes their own email, has their own conversation, and closes their own deal five weeks later. The value is real and probably larger than the chase — but it is **diffuse, delayed, and jointly produced**. Any attribution rule strong enough to bill on is one the customer can argue with, and *"we found the signal, therefore we are owed a share of the deal"* is a conversation that costs more in goodwill than the invoice is worth. It also reintroduces the metering problem through the back door: the user starts asking which triggers are billable, which is precisely the question that makes them switch the feature off.
+
+So the recommendation stands as written — a flat subscription for research, with limits stated in product terms.
+
+Two honest notes on the gap that leaves:
+
+- **The marketing copy should be reconciled with reality regardless**, independently of this RFC. Either the flat fee is described as a flat fee, or `Chase` genuinely moves to per-executed-chase pricing. Shipping a third tier underneath a claim the first tier does not meet makes the inconsistency more visible, not less.
+- **If outcome pricing is wanted anyway**, the defensible version prices the *action*, not the *insight*: a chase executed off a trigger is still an executed chase and can bill as one. That keeps the promise intact and leaves research as what it is — the thing that made the chase worth sending.
 
 ## Verification
 
