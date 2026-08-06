@@ -9,14 +9,27 @@ import {
   isProductProvider,
 } from "@x/shared/dist/branding.js";
 
-// Signed-in defaults must be ids the Solomon AI gateway actually serves (see
-// its pricing/catalog: openai/*, anthropic/*, google/gemini-2.5*). openai/* is
-// routed to real OpenAI; the others need an OpenRouter key or hit the dev mock.
-const SIGNED_IN_DEFAULT_MODEL = "openai/gpt-4.1-mini";
+// Signed-in defaults must be ids the gateway actually serves *and can reach*.
+//
+// These were openai/gpt-4.1-mini. On the deployed gateway that prefix is the
+// one model family routed direct to OpenAI rather than through OpenRouter, and
+// that leg is returning 502 upstream_error for every request — so every
+// signed-in LLM feature was failing: Copilot chat, email labeling, note
+// tagging, live notes. anthropic/* reaches its provider through OpenRouter and
+// answers normally, which is the whole of why it works and openai/* does not.
+//
+// claude-haiku-4-5 is the cheap tier, in the same class as gpt-4.1-mini, so
+// this keeps the cost posture that put us on 4.1-mini in the first place.
+//
+// TEMPORARY. rowboat-api already routes every model through OpenRouter on main
+// (internal/llm/router.go) — once that is deployed, openai/gpt-4.1-mini works
+// again and these can go back. Revert together; there is no reason to keep
+// them split across providers.
+const SIGNED_IN_DEFAULT_MODEL = "anthropic/claude-haiku-4-5";
 const SIGNED_IN_DEFAULT_PROVIDER = PRODUCT_PROVIDER_ID;
-const SIGNED_IN_KG_MODEL = "openai/gpt-4.1-mini";
-const SIGNED_IN_LIVE_NOTE_AGENT_MODEL = "openai/gpt-4.1-mini";
-const SIGNED_IN_AUTO_PERMISSION_DECISION_MODEL = "openai/gpt-4.1-mini";
+const SIGNED_IN_KG_MODEL = "anthropic/claude-haiku-4-5";
+const SIGNED_IN_LIVE_NOTE_AGENT_MODEL = "anthropic/claude-haiku-4-5";
+const SIGNED_IN_AUTO_PERMISSION_DECISION_MODEL = "anthropic/claude-haiku-4-5";
 
 // ... (ERRORS.md E52) Only honor a signed-in user's saved model when it's a real
 // gateway-served id. Gateway ids are namespaced ("openai/…", "anthropic/…",
