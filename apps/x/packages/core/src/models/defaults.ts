@@ -18,12 +18,16 @@ import {
 // tagging, live notes. anthropic/* reaches its provider through OpenRouter and
 // answers normally, which is the whole of why it works and openai/* does not.
 //
-// claude-haiku-4-5 is the cheap tier, in the same class as gpt-4.1-mini, so
-// this keeps the cost posture that put us on 4.1-mini in the first place.
+// This costs more, and the number is worth knowing rather than assuming.
+// Against the gateway's own table (internal/pricing/pricing.go) haiku is 8/40
+// per 1K where gpt-4.1-mini is 4/16 — 2x input, 2.5x output. It is still the
+// cheapest model that currently works, and far below sonnet at 30/150, but it
+// is not the like-for-like swap it looks like.
 //
-// TEMPORARY. rowboat-api already routes every model through OpenRouter on main
-// (internal/llm/router.go) — once that is deployed, openai/gpt-4.1-mini works
-// again and these can go back. Revert together; there is no reason to keep
+// TEMPORARY, and the price is the reason to mean it. rowboat-api already routes
+// every model through OpenRouter on main (internal/llm/router.go) — once that
+// is deployed, openai/gpt-4.1-mini works again and reverting halves the cost of
+// every background run. Revert all four together; there is no reason to keep
 // them split across providers.
 const SIGNED_IN_DEFAULT_MODEL = "anthropic/claude-haiku-4-5";
 const SIGNED_IN_DEFAULT_PROVIDER = PRODUCT_PROVIDER_ID;

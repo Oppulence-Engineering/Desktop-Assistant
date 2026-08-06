@@ -94,3 +94,29 @@ func TestUnknownModelBillsAtTheExpensiveDefault(t *testing.T) {
 			"the allowlist is the only thing preventing under-billing", unknown, known)
 	}
 }
+
+// The desktop's signed-in defaults are temporarily on anthropic/claude-haiku-4-5
+// because every openai/* model routes to a leg that is returning 502. That swap
+// is not free: haiku is priced above gpt-4.1-mini in this very table, and the
+// comment in apps/x/packages/core/src/models/defaults.ts quotes the multiple.
+//
+// This exists so the quoted number cannot drift from the table. If the rates
+// move, the comment is wrong and someone should notice here rather than in a
+// billing report.
+func TestHaikuIsPricedAboveGPT41Mini(t *testing.T) {
+	table := pricing.DefaultTable()
+
+	const inTok, outTok = 1000, 1000
+	mini := table.LLMCost("openai/gpt-4.1-mini", inTok, outTok)
+	haiku := table.LLMCost("anthropic/claude-haiku-4-5", inTok, outTok)
+	sonnet := table.LLMCost("anthropic/claude-sonnet-4-5", inTok, outTok)
+
+	if haiku <= mini {
+		t.Errorf("haiku (%d) is no longer more expensive than gpt-4.1-mini (%d); "+
+			"the cost note in defaults.ts needs updating", haiku, mini)
+	}
+	if haiku >= sonnet {
+		t.Errorf("haiku (%d) is no longer clearly below sonnet (%d); it was chosen "+
+			"as the cheapest working model", haiku, sonnet)
+	}
+}
