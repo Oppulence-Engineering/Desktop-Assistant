@@ -36,7 +36,6 @@ type Handler struct {
 	http    *outbound.Client
 	log     *zap.Logger
 
-	openAIBaseURL     string
 	openRouterBaseURL string
 	allowedModels     map[string]struct{}
 	maxPromptBytes    int
@@ -69,7 +68,6 @@ func New(prices *pricing.Table, gate *quota.Gate, sec *secrets.Store, client *en
 			MaxResponseBytes:      64 << 20,
 		}),
 		log:               log,
-		openAIBaseURL:     openAIBase,
 		openRouterBaseURL: openRouterBase,
 		maxPromptBytes:    2 << 20,
 		maxToolBytes:      1 << 20,
@@ -77,12 +75,14 @@ func New(prices *pricing.Table, gate *quota.Gate, sec *secrets.Store, client *en
 	}
 }
 
-// SetUpstreams overrides the upstream base URLs (used in tests and for
+// SetUpstreams overrides the upstream base URL (used in tests and for
 // self-hosted gateway deployments).
-func (h *Handler) SetUpstreams(openAI, openRouter string) {
-	if openAI != "" {
-		h.openAIBaseURL = openAI
-	}
+//
+// The first parameter was the direct-OpenAI base URL and is ignored: all chat
+// traffic goes through OpenRouter now. Kept in the signature so the two
+// production call sites and the test helpers do not have to change in the same
+// commit as the routing switch.
+func (h *Handler) SetUpstreams(_ignoredOpenAI, openRouter string) {
 	if openRouter != "" {
 		h.openRouterBaseURL = openRouter
 	}
@@ -280,6 +280,16 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 	// belong in our public API contract.
 	if resp.StatusCode >= http.StatusBadRequest {
 		h.refund(r.Context(), charge)
+		// Log the status, provider and model — never the body. Without this the
+		// server recorded nothing about why an upstream rejected a request, so a
+		// dead key, a missing model and an unfunded account were indistinguishable
+		// from the outside: all three surfaced as a bare "upstream_error". Status
+		// alone is enough to tell them apart and carries none of the account or
+		// policy detail the body would.
+		h.log.Warn("llm upstream rejected",
+			zap.String("provider", up.provider),
+			zap.String("model", up.model),
+			zap.Int("upstream_status", resp.StatusCode))
 		if resp.StatusCode == http.StatusTooManyRequests {
 			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
 				w.Header().Set("Retry-After", retryAfter)
