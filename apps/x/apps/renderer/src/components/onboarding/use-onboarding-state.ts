@@ -170,8 +170,9 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
   }, [open])
 
   // Preferred default models for each provider
+  // Billed to the user's own key — default to the cheap capable tier.
   const preferredDefaults: Partial<Record<LlmProviderFlavor, string>> = {
-    openai: "gpt-5.2",
+    openai: "gpt-4.1-mini",
     anthropic: "claude-opus-4-6-20260202",
   }
 

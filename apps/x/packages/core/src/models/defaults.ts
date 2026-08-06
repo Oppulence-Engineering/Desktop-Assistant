@@ -20,9 +20,10 @@ const SIGNED_IN_AUTO_PERMISSION_DECISION_MODEL = "openai/gpt-4.1-mini";
 
 // ... (ERRORS.md E52) Only honor a signed-in user's saved model when it's a real
 // gateway-served id. Gateway ids are namespaced ("openai/…", "anthropic/…",
-// "google/gemini-2.5*"); the bootstrap/BYOK default ("gpt-5.4") is NOT served by
-// the gateway, so for those (and any unset value) we fall back to the curated
-// default instead of sending an id the gateway would reject.
+// "google/gemini-2.5*"); the bootstrap/BYOK default ("gpt-4.1-mini") is bare and
+// NOT served under that name by the gateway, so for those (and any unset value)
+// we fall back to the curated default instead of sending an id the gateway would
+// reject with `model_not_allowed`.
 function honorGatewayModel(saved: string | undefined, fallback: string): string {
   return saved && saved.includes("/") ? saved : fallback;
 }
