@@ -1020,12 +1020,27 @@ async function transcriptionRoutingMain() {
       liveQuestionsEnabled: captureEngine === "native" && cfg.meetings.liveTranscript === true,
     },
     relationshipEvidence: {
-      enabled: cfg.meetings.syncRelationshipEvidence === true,
+      // Read from the five live consent flags, not the deprecated
+      // meetings.syncRelationshipEvidence, which no UI has written since the
+      // migration — so the receipt reported "off" while email metadata shipped.
+      enabled:
+        cfg.relationships.meetingTranscripts ||
+        cfg.relationships.meetingAttendance ||
+        cfg.relationships.emailMetadata ||
+        cfg.relationships.signatureEnrichment ||
+        cfg.relationships.modelContactExtraction,
       location: providerDataLocation({
         flavor: "openai-compatible",
         baseURL: API_URL,
       }),
       destination: "Oppulence relationship state",
+      sharing: {
+        meetingTranscripts: cfg.relationships.meetingTranscripts,
+        meetingAttendance: cfg.relationships.meetingAttendance,
+        emailMetadata: cfg.relationships.emailMetadata,
+        signatureEnrichment: cfg.relationships.signatureEnrichment,
+        modelContactExtraction: cfg.relationships.modelContactExtraction,
+      },
     },
   });
 }
