@@ -38,7 +38,12 @@ func (PersonAttribute) Fields() []ent.Field {
 		field.String("dimension").
 			Validate(oneOfRevenue("dimension",
 				"display_name", "alias", "title", "org_name", "org_domain",
-				"phone", "timezone", "locale", "handle")),
+				"phone", "timezone", "locale", "handle",
+				// Whether the person still works where we last saw them. Written
+				// only from a mail system's own words — a hard bounce or a
+				// departure autoreply — never inferred from silence. A quiet
+				// contact may be on holiday; a 5.1.1 is a fact.
+				"employment_status")),
 		field.Text("value").NotEmpty().Sensitive(),
 		field.String("source_type").
 			Validate(oneOfRevenue("source_type",
@@ -54,7 +59,11 @@ func (PersonAttribute) Fields() []ent.Field {
 			Default("unknown").
 			Validate(oneOfRevenue("extractor",
 				"unknown", "email_signature", "email_header", "calendar_invite",
-				"transcript_intro", "crm_field", "user_entry", "display_name_header")),
+				"transcript_intro", "crm_field", "user_entry", "display_name_header",
+				// Bounces and departure autoresponders. Named separately from
+				// email_header so the UI can say "their mail server told us"
+				// rather than attributing it to the person.
+				"mail_delivery_report")),
 		field.String("status").
 			Default("active").
 			Validate(oneOfRevenue("status", "active", "retracted", "superseded")),

@@ -489,6 +489,18 @@ func (f PersonMergeCandidateFunc) Mutate(ctx context.Context, m ent.Mutation) (e
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PersonMergeCandidateMutation", m)
 }
 
+// The PersonSuppressionFunc type is an adapter to allow the use of ordinary
+// function as PersonSuppression mutator.
+type PersonSuppressionFunc func(context.Context, *ent.PersonSuppressionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PersonSuppressionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PersonSuppressionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PersonSuppressionMutation", m)
+}
+
 // The PolicyDecisionSnapshotFunc type is an adapter to allow the use of ordinary
 // function as PolicyDecisionSnapshot mutator.
 type PolicyDecisionSnapshotFunc func(context.Context, *ent.PolicyDecisionSnapshotMutation) (ent.Value, error)

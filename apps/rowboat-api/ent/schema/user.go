@@ -97,6 +97,7 @@ func (User) Edges() []ent.Edge {
 		edge.To("relationship_identities", RelationshipIdentity.Type).Annotations(entproto.Skip()),
 		edge.To("relationship_persons", Person.Type).Annotations(entproto.Skip()),
 		edge.To("person_identities", PersonIdentity.Type).Annotations(entproto.Skip()),
+		edge.To("person_suppressions", PersonSuppression.Type).Annotations(entproto.Skip()),
 		edge.To("person_attributes", PersonAttribute.Type).Annotations(entproto.Skip()),
 		edge.To("person_merge_candidates", PersonMergeCandidate.Type).Annotations(entproto.Skip()),
 		edge.To("relationship_projection_jobs", RelationshipProjectionJob.Type).Annotations(entproto.Skip()),

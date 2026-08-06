@@ -52,6 +52,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personsuppression"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -180,6 +181,7 @@ func checkColumn(t, c string) error {
 			personidentity.Table:                    personidentity.ValidColumn,
 			personinteractionstat.Table:             personinteractionstat.ValidColumn,
 			personmergecandidate.Table:              personmergecandidate.ValidColumn,
+			personsuppression.Table:                 personsuppression.ValidColumn,
 			policydecisionsnapshot.Table:            policydecisionsnapshot.ValidColumn,
 			relationship.Table:                      relationship.ValidColumn,
 			relationshipassertion.Table:             relationshipassertion.ValidColumn,

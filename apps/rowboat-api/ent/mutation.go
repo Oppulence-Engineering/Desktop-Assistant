@@ -51,6 +51,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personsuppression"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -133,6 +134,7 @@ const (
 	TypePersonIdentity                    = "PersonIdentity"
 	TypePersonInteractionStat             = "PersonInteractionStat"
 	TypePersonMergeCandidate              = "PersonMergeCandidate"
+	TypePersonSuppression                 = "PersonSuppression"
 	TypePolicyDecisionSnapshot            = "PolicyDecisionSnapshot"
 	TypeRelationship                      = "Relationship"
 	TypeRelationshipAssertion             = "RelationshipAssertion"
@@ -42633,6 +42635,7 @@ type PersonMutation struct {
 	phone                            *string
 	timezone                         *string
 	locale                           *string
+	employment_status                *string
 	attributes_version               *int
 	addattributes_version            *int
 	attributes_hash                  *string
@@ -43278,6 +43281,42 @@ func (m *PersonMutation) LocaleCleared() bool {
 func (m *PersonMutation) ResetLocale() {
 	m.locale = nil
 	delete(m.clearedFields, person.FieldLocale)
+}
+
+// SetEmploymentStatus sets the "employment_status" field.
+func (m *PersonMutation) SetEmploymentStatus(s string) {
+	m.employment_status = &s
+}
+
+// EmploymentStatus returns the value of the "employment_status" field in the mutation.
+func (m *PersonMutation) EmploymentStatus() (r string, exists bool) {
+	v := m.employment_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEmploymentStatus returns the old "employment_status" field's value of the Person entity.
+// If the Person object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PersonMutation) OldEmploymentStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEmploymentStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEmploymentStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEmploymentStatus: %w", err)
+	}
+	return oldValue.EmploymentStatus, nil
+}
+
+// ResetEmploymentStatus resets all changes to the "employment_status" field.
+func (m *PersonMutation) ResetEmploymentStatus() {
+	m.employment_status = nil
 }
 
 // SetAttributesVersion sets the "attributes_version" field.
@@ -44214,7 +44253,7 @@ func (m *PersonMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PersonMutation) Fields() []string {
-	fields := make([]string, 0, 21)
+	fields := make([]string, 0, 22)
 	if m.created_at != nil {
 		fields = append(fields, person.FieldCreatedAt)
 	}
@@ -44247,6 +44286,9 @@ func (m *PersonMutation) Fields() []string {
 	}
 	if m.locale != nil {
 		fields = append(fields, person.FieldLocale)
+	}
+	if m.employment_status != nil {
+		fields = append(fields, person.FieldEmploymentStatus)
 	}
 	if m.attributes_version != nil {
 		fields = append(fields, person.FieldAttributesVersion)
@@ -44308,6 +44350,8 @@ func (m *PersonMutation) Field(name string) (ent.Value, bool) {
 		return m.Timezone()
 	case person.FieldLocale:
 		return m.Locale()
+	case person.FieldEmploymentStatus:
+		return m.EmploymentStatus()
 	case person.FieldAttributesVersion:
 		return m.AttributesVersion()
 	case person.FieldAttributesHash:
@@ -44359,6 +44403,8 @@ func (m *PersonMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldTimezone(ctx)
 	case person.FieldLocale:
 		return m.OldLocale(ctx)
+	case person.FieldEmploymentStatus:
+		return m.OldEmploymentStatus(ctx)
 	case person.FieldAttributesVersion:
 		return m.OldAttributesVersion(ctx)
 	case person.FieldAttributesHash:
@@ -44464,6 +44510,13 @@ func (m *PersonMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetLocale(v)
+		return nil
+	case person.FieldEmploymentStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEmploymentStatus(v)
 		return nil
 	case person.FieldAttributesVersion:
 		v, ok := value.(int)
@@ -44736,6 +44789,9 @@ func (m *PersonMutation) ResetField(name string) error {
 		return nil
 	case person.FieldLocale:
 		m.ResetLocale()
+		return nil
+	case person.FieldEmploymentStatus:
+		m.ResetEmploymentStatus()
 		return nil
 	case person.FieldAttributesVersion:
 		m.ResetAttributesVersion()
@@ -51050,6 +51106,810 @@ func (m *PersonMergeCandidateMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown PersonMergeCandidate edge %s", name)
+}
+
+// PersonSuppressionMutation represents an operation that mutates the PersonSuppression nodes in the graph.
+type PersonSuppressionMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	key_hash         *string
+	kind             *string
+	reason           *string
+	suppressed_at    *time.Time
+	note             *string
+	clearedFields    map[string]struct{}
+	workspace        *uuid.UUID
+	clearedworkspace bool
+	user             *uuid.UUID
+	cleareduser      bool
+	done             bool
+	oldValue         func(context.Context) (*PersonSuppression, error)
+	predicates       []predicate.PersonSuppression
+}
+
+var _ ent.Mutation = (*PersonSuppressionMutation)(nil)
+
+// personsuppressionOption allows management of the mutation configuration using functional options.
+type personsuppressionOption func(*PersonSuppressionMutation)
+
+// newPersonSuppressionMutation creates new mutation for the PersonSuppression entity.
+func newPersonSuppressionMutation(c config, op Op, opts ...personsuppressionOption) *PersonSuppressionMutation {
+	m := &PersonSuppressionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypePersonSuppression,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withPersonSuppressionID sets the ID field of the mutation.
+func withPersonSuppressionID(id uuid.UUID) personsuppressionOption {
+	return func(m *PersonSuppressionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *PersonSuppression
+		)
+		m.oldValue = func(ctx context.Context) (*PersonSuppression, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().PersonSuppression.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withPersonSuppression sets the old PersonSuppression of the mutation.
+func withPersonSuppression(node *PersonSuppression) personsuppressionOption {
+	return func(m *PersonSuppressionMutation) {
+		m.oldValue = func(context.Context) (*PersonSuppression, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m PersonSuppressionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m PersonSuppressionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of PersonSuppression entities.
+func (m *PersonSuppressionMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *PersonSuppressionMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *PersonSuppressionMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().PersonSuppression.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *PersonSuppressionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *PersonSuppressionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the PersonSuppression entity.
+// If the PersonSuppression object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PersonSuppressionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *PersonSuppressionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *PersonSuppressionMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *PersonSuppressionMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the PersonSuppression entity.
+// If the PersonSuppression object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PersonSuppressionMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *PersonSuppressionMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetKeyHash sets the "key_hash" field.
+func (m *PersonSuppressionMutation) SetKeyHash(s string) {
+	m.key_hash = &s
+}
+
+// KeyHash returns the value of the "key_hash" field in the mutation.
+func (m *PersonSuppressionMutation) KeyHash() (r string, exists bool) {
+	v := m.key_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKeyHash returns the old "key_hash" field's value of the PersonSuppression entity.
+// If the PersonSuppression object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PersonSuppressionMutation) OldKeyHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKeyHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKeyHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKeyHash: %w", err)
+	}
+	return oldValue.KeyHash, nil
+}
+
+// ResetKeyHash resets all changes to the "key_hash" field.
+func (m *PersonSuppressionMutation) ResetKeyHash() {
+	m.key_hash = nil
+}
+
+// SetKind sets the "kind" field.
+func (m *PersonSuppressionMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *PersonSuppressionMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the PersonSuppression entity.
+// If the PersonSuppression object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PersonSuppressionMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *PersonSuppressionMutation) ResetKind() {
+	m.kind = nil
+}
+
+// SetReason sets the "reason" field.
+func (m *PersonSuppressionMutation) SetReason(s string) {
+	m.reason = &s
+}
+
+// Reason returns the value of the "reason" field in the mutation.
+func (m *PersonSuppressionMutation) Reason() (r string, exists bool) {
+	v := m.reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReason returns the old "reason" field's value of the PersonSuppression entity.
+// If the PersonSuppression object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PersonSuppressionMutation) OldReason(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReason: %w", err)
+	}
+	return oldValue.Reason, nil
+}
+
+// ResetReason resets all changes to the "reason" field.
+func (m *PersonSuppressionMutation) ResetReason() {
+	m.reason = nil
+}
+
+// SetSuppressedAt sets the "suppressed_at" field.
+func (m *PersonSuppressionMutation) SetSuppressedAt(t time.Time) {
+	m.suppressed_at = &t
+}
+
+// SuppressedAt returns the value of the "suppressed_at" field in the mutation.
+func (m *PersonSuppressionMutation) SuppressedAt() (r time.Time, exists bool) {
+	v := m.suppressed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSuppressedAt returns the old "suppressed_at" field's value of the PersonSuppression entity.
+// If the PersonSuppression object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PersonSuppressionMutation) OldSuppressedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSuppressedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSuppressedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSuppressedAt: %w", err)
+	}
+	return oldValue.SuppressedAt, nil
+}
+
+// ResetSuppressedAt resets all changes to the "suppressed_at" field.
+func (m *PersonSuppressionMutation) ResetSuppressedAt() {
+	m.suppressed_at = nil
+}
+
+// SetNote sets the "note" field.
+func (m *PersonSuppressionMutation) SetNote(s string) {
+	m.note = &s
+}
+
+// Note returns the value of the "note" field in the mutation.
+func (m *PersonSuppressionMutation) Note() (r string, exists bool) {
+	v := m.note
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNote returns the old "note" field's value of the PersonSuppression entity.
+// If the PersonSuppression object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PersonSuppressionMutation) OldNote(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNote is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNote requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNote: %w", err)
+	}
+	return oldValue.Note, nil
+}
+
+// ClearNote clears the value of the "note" field.
+func (m *PersonSuppressionMutation) ClearNote() {
+	m.note = nil
+	m.clearedFields[personsuppression.FieldNote] = struct{}{}
+}
+
+// NoteCleared returns if the "note" field was cleared in this mutation.
+func (m *PersonSuppressionMutation) NoteCleared() bool {
+	_, ok := m.clearedFields[personsuppression.FieldNote]
+	return ok
+}
+
+// ResetNote resets all changes to the "note" field.
+func (m *PersonSuppressionMutation) ResetNote() {
+	m.note = nil
+	delete(m.clearedFields, personsuppression.FieldNote)
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *PersonSuppressionMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *PersonSuppressionMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *PersonSuppressionMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *PersonSuppressionMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *PersonSuppressionMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *PersonSuppressionMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *PersonSuppressionMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *PersonSuppressionMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *PersonSuppressionMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *PersonSuppressionMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *PersonSuppressionMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *PersonSuppressionMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the PersonSuppressionMutation builder.
+func (m *PersonSuppressionMutation) Where(ps ...predicate.PersonSuppression) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the PersonSuppressionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *PersonSuppressionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.PersonSuppression, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *PersonSuppressionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *PersonSuppressionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (PersonSuppression).
+func (m *PersonSuppressionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *PersonSuppressionMutation) Fields() []string {
+	fields := make([]string, 0, 7)
+	if m.created_at != nil {
+		fields = append(fields, personsuppression.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, personsuppression.FieldUpdatedAt)
+	}
+	if m.key_hash != nil {
+		fields = append(fields, personsuppression.FieldKeyHash)
+	}
+	if m.kind != nil {
+		fields = append(fields, personsuppression.FieldKind)
+	}
+	if m.reason != nil {
+		fields = append(fields, personsuppression.FieldReason)
+	}
+	if m.suppressed_at != nil {
+		fields = append(fields, personsuppression.FieldSuppressedAt)
+	}
+	if m.note != nil {
+		fields = append(fields, personsuppression.FieldNote)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *PersonSuppressionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case personsuppression.FieldCreatedAt:
+		return m.CreatedAt()
+	case personsuppression.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case personsuppression.FieldKeyHash:
+		return m.KeyHash()
+	case personsuppression.FieldKind:
+		return m.Kind()
+	case personsuppression.FieldReason:
+		return m.Reason()
+	case personsuppression.FieldSuppressedAt:
+		return m.SuppressedAt()
+	case personsuppression.FieldNote:
+		return m.Note()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *PersonSuppressionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case personsuppression.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case personsuppression.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case personsuppression.FieldKeyHash:
+		return m.OldKeyHash(ctx)
+	case personsuppression.FieldKind:
+		return m.OldKind(ctx)
+	case personsuppression.FieldReason:
+		return m.OldReason(ctx)
+	case personsuppression.FieldSuppressedAt:
+		return m.OldSuppressedAt(ctx)
+	case personsuppression.FieldNote:
+		return m.OldNote(ctx)
+	}
+	return nil, fmt.Errorf("unknown PersonSuppression field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PersonSuppressionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case personsuppression.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case personsuppression.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case personsuppression.FieldKeyHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKeyHash(v)
+		return nil
+	case personsuppression.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
+	case personsuppression.FieldReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReason(v)
+		return nil
+	case personsuppression.FieldSuppressedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSuppressedAt(v)
+		return nil
+	case personsuppression.FieldNote:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNote(v)
+		return nil
+	}
+	return fmt.Errorf("unknown PersonSuppression field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *PersonSuppressionMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *PersonSuppressionMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PersonSuppressionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown PersonSuppression numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *PersonSuppressionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(personsuppression.FieldNote) {
+		fields = append(fields, personsuppression.FieldNote)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *PersonSuppressionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *PersonSuppressionMutation) ClearField(name string) error {
+	switch name {
+	case personsuppression.FieldNote:
+		m.ClearNote()
+		return nil
+	}
+	return fmt.Errorf("unknown PersonSuppression nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *PersonSuppressionMutation) ResetField(name string) error {
+	switch name {
+	case personsuppression.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case personsuppression.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case personsuppression.FieldKeyHash:
+		m.ResetKeyHash()
+		return nil
+	case personsuppression.FieldKind:
+		m.ResetKind()
+		return nil
+	case personsuppression.FieldReason:
+		m.ResetReason()
+		return nil
+	case personsuppression.FieldSuppressedAt:
+		m.ResetSuppressedAt()
+		return nil
+	case personsuppression.FieldNote:
+		m.ResetNote()
+		return nil
+	}
+	return fmt.Errorf("unknown PersonSuppression field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *PersonSuppressionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.workspace != nil {
+		edges = append(edges, personsuppression.EdgeWorkspace)
+	}
+	if m.user != nil {
+		edges = append(edges, personsuppression.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *PersonSuppressionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case personsuppression.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case personsuppression.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *PersonSuppressionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *PersonSuppressionMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *PersonSuppressionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedworkspace {
+		edges = append(edges, personsuppression.EdgeWorkspace)
+	}
+	if m.cleareduser {
+		edges = append(edges, personsuppression.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *PersonSuppressionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case personsuppression.EdgeWorkspace:
+		return m.clearedworkspace
+	case personsuppression.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *PersonSuppressionMutation) ClearEdge(name string) error {
+	switch name {
+	case personsuppression.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case personsuppression.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown PersonSuppression unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *PersonSuppressionMutation) ResetEdge(name string) error {
+	switch name {
+	case personsuppression.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case personsuppression.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown PersonSuppression edge %s", name)
 }
 
 // PolicyDecisionSnapshotMutation represents an operation that mutates the PolicyDecisionSnapshot nodes in the graph.
@@ -84906,6 +85766,9 @@ type RevenueWorkspaceMutation struct {
 	person_identities                           map[uuid.UUID]struct{}
 	removedperson_identities                    map[uuid.UUID]struct{}
 	clearedperson_identities                    bool
+	person_suppressions                         map[uuid.UUID]struct{}
+	removedperson_suppressions                  map[uuid.UUID]struct{}
+	clearedperson_suppressions                  bool
 	person_attributes                           map[uuid.UUID]struct{}
 	removedperson_attributes                    map[uuid.UUID]struct{}
 	clearedperson_attributes                    bool
@@ -87067,6 +87930,60 @@ func (m *RevenueWorkspaceMutation) ResetPersonIdentities() {
 	m.removedperson_identities = nil
 }
 
+// AddPersonSuppressionIDs adds the "person_suppressions" edge to the PersonSuppression entity by ids.
+func (m *RevenueWorkspaceMutation) AddPersonSuppressionIDs(ids ...uuid.UUID) {
+	if m.person_suppressions == nil {
+		m.person_suppressions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.person_suppressions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearPersonSuppressions clears the "person_suppressions" edge to the PersonSuppression entity.
+func (m *RevenueWorkspaceMutation) ClearPersonSuppressions() {
+	m.clearedperson_suppressions = true
+}
+
+// PersonSuppressionsCleared reports if the "person_suppressions" edge to the PersonSuppression entity was cleared.
+func (m *RevenueWorkspaceMutation) PersonSuppressionsCleared() bool {
+	return m.clearedperson_suppressions
+}
+
+// RemovePersonSuppressionIDs removes the "person_suppressions" edge to the PersonSuppression entity by IDs.
+func (m *RevenueWorkspaceMutation) RemovePersonSuppressionIDs(ids ...uuid.UUID) {
+	if m.removedperson_suppressions == nil {
+		m.removedperson_suppressions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.person_suppressions, ids[i])
+		m.removedperson_suppressions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPersonSuppressions returns the removed IDs of the "person_suppressions" edge to the PersonSuppression entity.
+func (m *RevenueWorkspaceMutation) RemovedPersonSuppressionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedperson_suppressions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PersonSuppressionsIDs returns the "person_suppressions" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) PersonSuppressionsIDs() (ids []uuid.UUID) {
+	for id := range m.person_suppressions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPersonSuppressions resets all changes to the "person_suppressions" edge.
+func (m *RevenueWorkspaceMutation) ResetPersonSuppressions() {
+	m.person_suppressions = nil
+	m.clearedperson_suppressions = false
+	m.removedperson_suppressions = nil
+}
+
 // AddPersonAttributeIDs adds the "person_attributes" edge to the PersonAttribute entity by ids.
 func (m *RevenueWorkspaceMutation) AddPersonAttributeIDs(ids ...uuid.UUID) {
 	if m.person_attributes == nil {
@@ -87554,7 +88471,7 @@ func (m *RevenueWorkspaceMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RevenueWorkspaceMutation) AddedEdges() []string {
-	edges := make([]string, 0, 33)
+	edges := make([]string, 0, 34)
 	if m.user != nil {
 		edges = append(edges, revenueworkspace.EdgeUser)
 	}
@@ -87644,6 +88561,9 @@ func (m *RevenueWorkspaceMutation) AddedEdges() []string {
 	}
 	if m.person_identities != nil {
 		edges = append(edges, revenueworkspace.EdgePersonIdentities)
+	}
+	if m.person_suppressions != nil {
+		edges = append(edges, revenueworkspace.EdgePersonSuppressions)
 	}
 	if m.person_attributes != nil {
 		edges = append(edges, revenueworkspace.EdgePersonAttributes)
@@ -87839,6 +88759,12 @@ func (m *RevenueWorkspaceMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgePersonSuppressions:
+		ids := make([]ent.Value, 0, len(m.person_suppressions))
+		for id := range m.person_suppressions {
+			ids = append(ids, id)
+		}
+		return ids
 	case revenueworkspace.EdgePersonAttributes:
 		ids := make([]ent.Value, 0, len(m.person_attributes))
 		for id := range m.person_attributes {
@@ -87863,7 +88789,7 @@ func (m *RevenueWorkspaceMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 33)
+	edges := make([]string, 0, 34)
 	if m.removedmembers != nil {
 		edges = append(edges, revenueworkspace.EdgeMembers)
 	}
@@ -87950,6 +88876,9 @@ func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
 	}
 	if m.removedperson_identities != nil {
 		edges = append(edges, revenueworkspace.EdgePersonIdentities)
+	}
+	if m.removedperson_suppressions != nil {
+		edges = append(edges, revenueworkspace.EdgePersonSuppressions)
 	}
 	if m.removedperson_attributes != nil {
 		edges = append(edges, revenueworkspace.EdgePersonAttributes)
@@ -88141,6 +89070,12 @@ func (m *RevenueWorkspaceMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgePersonSuppressions:
+		ids := make([]ent.Value, 0, len(m.removedperson_suppressions))
+		for id := range m.removedperson_suppressions {
+			ids = append(ids, id)
+		}
+		return ids
 	case revenueworkspace.EdgePersonAttributes:
 		ids := make([]ent.Value, 0, len(m.removedperson_attributes))
 		for id := range m.removedperson_attributes {
@@ -88165,7 +89100,7 @@ func (m *RevenueWorkspaceMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 33)
+	edges := make([]string, 0, 34)
 	if m.cleareduser {
 		edges = append(edges, revenueworkspace.EdgeUser)
 	}
@@ -88256,6 +89191,9 @@ func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
 	if m.clearedperson_identities {
 		edges = append(edges, revenueworkspace.EdgePersonIdentities)
 	}
+	if m.clearedperson_suppressions {
+		edges = append(edges, revenueworkspace.EdgePersonSuppressions)
+	}
 	if m.clearedperson_attributes {
 		edges = append(edges, revenueworkspace.EdgePersonAttributes)
 	}
@@ -88332,6 +89270,8 @@ func (m *RevenueWorkspaceMutation) EdgeCleared(name string) bool {
 		return m.clearedrelationship_persons
 	case revenueworkspace.EdgePersonIdentities:
 		return m.clearedperson_identities
+	case revenueworkspace.EdgePersonSuppressions:
+		return m.clearedperson_suppressions
 	case revenueworkspace.EdgePersonAttributes:
 		return m.clearedperson_attributes
 	case revenueworkspace.EdgePersonInteractionStats:
@@ -88446,6 +89386,9 @@ func (m *RevenueWorkspaceMutation) ResetEdge(name string) error {
 		return nil
 	case revenueworkspace.EdgePersonIdentities:
 		m.ResetPersonIdentities()
+		return nil
+	case revenueworkspace.EdgePersonSuppressions:
+		m.ResetPersonSuppressions()
 		return nil
 	case revenueworkspace.EdgePersonAttributes:
 		m.ResetPersonAttributes()
@@ -92158,6 +93101,9 @@ type UserMutation struct {
 	person_identities                           map[uuid.UUID]struct{}
 	removedperson_identities                    map[uuid.UUID]struct{}
 	clearedperson_identities                    bool
+	person_suppressions                         map[uuid.UUID]struct{}
+	removedperson_suppressions                  map[uuid.UUID]struct{}
+	clearedperson_suppressions                  bool
 	person_attributes                           map[uuid.UUID]struct{}
 	removedperson_attributes                    map[uuid.UUID]struct{}
 	clearedperson_attributes                    bool
@@ -94777,6 +95723,60 @@ func (m *UserMutation) ResetPersonIdentities() {
 	m.removedperson_identities = nil
 }
 
+// AddPersonSuppressionIDs adds the "person_suppressions" edge to the PersonSuppression entity by ids.
+func (m *UserMutation) AddPersonSuppressionIDs(ids ...uuid.UUID) {
+	if m.person_suppressions == nil {
+		m.person_suppressions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.person_suppressions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearPersonSuppressions clears the "person_suppressions" edge to the PersonSuppression entity.
+func (m *UserMutation) ClearPersonSuppressions() {
+	m.clearedperson_suppressions = true
+}
+
+// PersonSuppressionsCleared reports if the "person_suppressions" edge to the PersonSuppression entity was cleared.
+func (m *UserMutation) PersonSuppressionsCleared() bool {
+	return m.clearedperson_suppressions
+}
+
+// RemovePersonSuppressionIDs removes the "person_suppressions" edge to the PersonSuppression entity by IDs.
+func (m *UserMutation) RemovePersonSuppressionIDs(ids ...uuid.UUID) {
+	if m.removedperson_suppressions == nil {
+		m.removedperson_suppressions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.person_suppressions, ids[i])
+		m.removedperson_suppressions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPersonSuppressions returns the removed IDs of the "person_suppressions" edge to the PersonSuppression entity.
+func (m *UserMutation) RemovedPersonSuppressionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedperson_suppressions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PersonSuppressionsIDs returns the "person_suppressions" edge IDs in the mutation.
+func (m *UserMutation) PersonSuppressionsIDs() (ids []uuid.UUID) {
+	for id := range m.person_suppressions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPersonSuppressions resets all changes to the "person_suppressions" edge.
+func (m *UserMutation) ResetPersonSuppressions() {
+	m.person_suppressions = nil
+	m.clearedperson_suppressions = false
+	m.removedperson_suppressions = nil
+}
+
 // AddPersonAttributeIDs adds the "person_attributes" edge to the PersonAttribute entity by ids.
 func (m *UserMutation) AddPersonAttributeIDs(ids ...uuid.UUID) {
 	if m.person_attributes == nil {
@@ -95911,7 +96911,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 59)
+	edges := make([]string, 0, 60)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -96037,6 +97037,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.person_identities != nil {
 		edges = append(edges, user.EdgePersonIdentities)
+	}
+	if m.person_suppressions != nil {
+		edges = append(edges, user.EdgePersonSuppressions)
 	}
 	if m.person_attributes != nil {
 		edges = append(edges, user.EdgePersonAttributes)
@@ -96346,6 +97349,12 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgePersonSuppressions:
+		ids := make([]ent.Value, 0, len(m.person_suppressions))
+		for id := range m.person_suppressions {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgePersonAttributes:
 		ids := make([]ent.Value, 0, len(m.person_attributes))
 		for id := range m.person_attributes {
@@ -96454,7 +97463,7 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 59)
+	edges := make([]string, 0, 60)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -96577,6 +97586,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedperson_identities != nil {
 		edges = append(edges, user.EdgePersonIdentities)
+	}
+	if m.removedperson_suppressions != nil {
+		edges = append(edges, user.EdgePersonSuppressions)
 	}
 	if m.removedperson_attributes != nil {
 		edges = append(edges, user.EdgePersonAttributes)
@@ -96882,6 +97894,12 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgePersonSuppressions:
+		ids := make([]ent.Value, 0, len(m.removedperson_suppressions))
+		for id := range m.removedperson_suppressions {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgePersonAttributes:
 		ids := make([]ent.Value, 0, len(m.removedperson_attributes))
 		for id := range m.removedperson_attributes {
@@ -96990,7 +98008,7 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 59)
+	edges := make([]string, 0, 60)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -97116,6 +98134,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedperson_identities {
 		edges = append(edges, user.EdgePersonIdentities)
+	}
+	if m.clearedperson_suppressions {
+		edges = append(edges, user.EdgePersonSuppressions)
 	}
 	if m.clearedperson_attributes {
 		edges = append(edges, user.EdgePersonAttributes)
@@ -97259,6 +98280,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedrelationship_persons
 	case user.EdgePersonIdentities:
 		return m.clearedperson_identities
+	case user.EdgePersonSuppressions:
+		return m.clearedperson_suppressions
 	case user.EdgePersonAttributes:
 		return m.clearedperson_attributes
 	case user.EdgePersonMergeCandidates:
@@ -97437,6 +98460,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgePersonIdentities:
 		m.ResetPersonIdentities()
+		return nil
+	case user.EdgePersonSuppressions:
+		m.ResetPersonSuppressions()
 		return nil
 	case user.EdgePersonAttributes:
 		m.ResetPersonAttributes()

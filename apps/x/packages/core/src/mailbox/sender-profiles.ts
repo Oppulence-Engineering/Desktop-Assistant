@@ -1,4 +1,5 @@
 import { emailDomain } from "@x/shared/dist/email-domain.js";
+import { detectDepartureSignal } from "./departure-signal.js";
 import type { MailboxStore } from "./store.js";
 import type { MailboxSenderProfile } from "./store.js";
 import type { MailboxThread } from "./types.js";
@@ -25,6 +26,28 @@ import { parseEmailSignature, corroboratedConfidence } from "./signature.js";
 /** Local parts that are systems rather than people. */
 const MACHINE_LOCAL_PART =
   /^(no-?reply|do-?not-?reply|donotreply|mailer-daemon|postmaster|bounce|notifications?|alerts?|automated|system)\b/i;
+
+/**
+ * A departure detected on this pass that was not already on the profile.
+ *
+ * Returned rather than published from here because this module is local-only
+ * bookkeeping — deciding to send something about a third party to the graph is a
+ * consent-gated call that belongs with the caller who already checks consent.
+ */
+export interface NewDeparture {
+  email: string;
+  displayName?: string;
+  kind: "left_organization" | "recipient_unknown";
+  evidence: string;
+  observedAt: number;
+  /** Stable per (address, kind) so a re-sync of the same bounce publishes once. */
+  externalId: string;
+}
+
+export interface SenderProfileResult {
+  profiles: MailboxSenderProfile[];
+  departures: NewDeparture[];
+}
 
 export interface SenderProfileUpdate {
   store: MailboxStore;
@@ -56,9 +79,10 @@ export function isMachineSender(email: string): boolean {
  */
 export async function updateSenderProfiles(
   input: SenderProfileUpdate,
-): Promise<MailboxSenderProfile[]> {
+): Promise<SenderProfileResult> {
   const now = input.now?.() ?? Date.now();
   const touched = new Map<string, MailboxSenderProfile>();
+  const departures: NewDeparture[] = [];
 
   // Did the user ever participate? One outbound message makes every counterparty
   // on this thread a prior contact.
@@ -67,6 +91,46 @@ export async function updateSenderProfiles(
   );
 
   for (const message of input.thread.messages) {
+    // Read the departure signal before the machine-sender skip below. A hard
+    // bounce arrives *from* mailer-daemon and is *about* someone else, so the
+    // message that carries the evidence is exactly the one this loop discards.
+    const departure = detectDepartureSignal(
+      {
+        from: message.from.email,
+        subject: input.thread.subject,
+        body: message.textBody,
+      },
+      input.selfEmails,
+    );
+    if (departure) {
+      const subject = departure.email;
+      const known =
+        touched.get(subject) ?? (await input.store.getSenderProfile(input.accountId, subject));
+      // Only annotate someone already corresponded with. A bounce for an address
+      // never seen is a typo, not a departure.
+      if (known) {
+        const observedAt = message.sentAt || now;
+        // Only report a departure the profile did not already carry. A bounce sits
+        // in the mailbox forever and every re-sync re-reads it; without this the
+        // graph would receive the same departure on every pass.
+        if (known.departure?.kind !== departure.kind) {
+          departures.push({
+            email: subject,
+            ...(known.displayName ? { displayName: known.displayName } : {}),
+            kind: departure.kind,
+            evidence: departure.evidence,
+            observedAt,
+            externalId: `departure:${subject}:${departure.kind}`,
+          });
+        }
+        const updated: MailboxSenderProfile = {
+          ...known,
+          departure: { kind: departure.kind, evidence: departure.evidence, observedAt },
+        };
+        touched.set(subject, updated);
+      }
+    }
+
     const email = normalize(message.from.email);
     if (!email || input.selfEmails.has(email)) continue;
 
@@ -123,7 +187,7 @@ export async function updateSenderProfiles(
   for (const profile of profiles) {
     await input.store.upsertSenderProfile(profile);
   }
-  return profiles;
+  return { profiles, departures };
 }
 
 /**

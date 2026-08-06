@@ -41,6 +41,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personsuppression"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
@@ -135,6 +136,7 @@ var tenantUserColumns = map[string]string{
 	ent.TypeRevenueTrustEvent:                 revenuetrustevent.UserColumn,
 	ent.TypePerson:                            person.UserColumn,
 	ent.TypePersonIdentity:                    personidentity.UserColumn,
+	ent.TypePersonSuppression:                 personsuppression.UserColumn,
 	ent.TypePersonAttribute:                   personattribute.UserColumn,
 	ent.TypePersonMergeCandidate:              personmergecandidate.UserColumn,
 }
@@ -173,6 +175,7 @@ var workspaceTenantColumns = map[string]string{
 	ent.TypeRevenueTrustEvent:                 revenuetrustevent.WorkspaceColumn,
 	ent.TypePerson:                            person.WorkspaceColumn,
 	ent.TypePersonIdentity:                    personidentity.WorkspaceColumn,
+	ent.TypePersonSuppression:                 personsuppression.WorkspaceColumn,
 	ent.TypePersonAttribute:                   personattribute.WorkspaceColumn,
 	// No user edge: a rollup is derived, owned by the workspace, never authored.
 	ent.TypePersonInteractionStat: personinteractionstat.WorkspaceColumn,
@@ -429,6 +432,13 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.PersonIdentityQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(personidentity.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.PersonSuppression.Intercept(intercept.TraversePersonSuppression(
+		func(ctx context.Context, q *ent.PersonSuppressionQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(personsuppression.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 

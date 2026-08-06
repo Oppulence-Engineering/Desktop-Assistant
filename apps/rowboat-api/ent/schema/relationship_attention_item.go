@@ -25,7 +25,11 @@ func (RelationshipAttentionItem) Fields() []ent.Field {
 		field.Int("version").Default(1).Positive(),
 		field.String("reason_code").Validate(oneOfRevenue("reason_code",
 			"quiet_account", "overdue_commitment", "unresolved_risk", "missing_next_step",
-			"source_degradation", "action_outcome_review", "recommendation")),
+			"source_degradation", "action_outcome_review", "recommendation",
+			// A quiet account whose contact has left. Distinct from quiet_account
+			// because the correct response is different: not "follow up", but
+			// "you have no one here any more".
+			"contact_departed")),
 		field.Text("explanation").NotEmpty(),
 		field.String("triggering_object_ref").NotEmpty(),
 		field.JSON("evidence_refs", []string{}).Default([]string{}),

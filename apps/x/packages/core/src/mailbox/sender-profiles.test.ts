@@ -164,3 +164,178 @@ describe("updateSenderProfiles", () => {
     expect(isMachineSender("sarah@acme.com")).toBe(false);
   });
 });
+
+describe("departure signals from bounces", () => {
+  // The bounce arrives from mailer-daemon and is about someone else, so the
+  // message carrying the evidence is exactly the one the machine-sender skip
+  // discards. These assert it is read before that skip, and attributed to the
+  // right person.
+  async function runWith(msgs: MailboxMessage[], store = fakeStore()) {
+    await updateSenderProfiles({
+      store,
+      accountId: "acct",
+      selfEmails: SELF,
+      thread: thread(msgs),
+    });
+    return store;
+  }
+
+  it("annotates a known contact when their address hard-bounces", async () => {
+    const store = fakeStore();
+    // Established correspondence first — a bounce for a stranger is a typo.
+    await runWith([message({ from: { email: "sarah@acme.com", name: "Sarah Chen" } })], store);
+
+    await runWith(
+      [
+        message({
+          id: "m2",
+          from: { email: "mailer-daemon@googlemail.com" },
+          subject: "Delivery Status Notification (Failure)",
+          textBody: "Your message to sarah@acme.com was not delivered.\n550 5.1.1 user unknown",
+        }),
+      ],
+      store,
+    );
+
+    const sarah = await store.getSenderProfile("acct", "sarah@acme.com");
+    expect(sarah?.departure?.kind).toBe("recipient_unknown");
+    expect(sarah?.departure?.evidence).toMatch(/user unknown/i);
+  });
+
+  it("does not invent a profile for an address never corresponded with", async () => {
+    // A bounce for an unknown address is a mistyped recipient, not a departure,
+    // and creating a contact from one would populate the graph with typos.
+    const store = await runWith([
+      message({
+        from: { email: "mailer-daemon@googlemail.com" },
+        subject: "Delivery Status Notification (Failure)",
+        textBody: "Your message to nobody@acme.com failed.\n550 5.1.1 user unknown",
+      }),
+    ]);
+    expect(await store.getSenderProfile("acct", "nobody@acme.com")).toBeNull();
+  });
+
+  it("leaves a contact untouched when the bounce is transient", async () => {
+    const store = fakeStore();
+    await runWith([message({ from: { email: "sarah@acme.com" } })], store);
+    await runWith(
+      [
+        message({
+          id: "m2",
+          from: { email: "mailer-daemon@acme.com" },
+          subject: "Undeliverable",
+          textBody: "sarah@acme.com: mailbox full, will retry.",
+        }),
+      ],
+      store,
+    );
+    expect((await store.getSenderProfile("acct", "sarah@acme.com"))?.departure).toBeUndefined();
+  });
+
+  it("does not mark the messenger when a colleague reports someone else's departure", async () => {
+    const store = fakeStore();
+    await runWith([message({ from: { email: "tom@acme.com" } })], store);
+    await runWith(
+      [
+        message({
+          id: "m2",
+          from: { email: "tom@acme.com" },
+          subject: "Re: intro",
+          textBody: "Sarah has left the company, I am picking this up.",
+        }),
+      ],
+      store,
+    );
+    expect((await store.getSenderProfile("acct", "tom@acme.com"))?.departure).toBeUndefined();
+  });
+});
+
+describe("departures reported to the caller", () => {
+  /**
+   * The profile write was never the point — nothing read it. What matters is that
+   * a departure is handed back exactly once, because the bounce that carries it
+   * stays in the mailbox and every sync re-reads the same message.
+   */
+  const bounce = () =>
+    thread([
+      message({
+        from: { email: "mailer-daemon@googlemail.com" },
+        textBody:
+          "Your message to sarah@acme.com was not delivered.\n550 5.1.1 The email account that you tried to reach does not exist.",
+      }),
+    ]);
+
+  async function seedKnownContact(store: MailboxStore) {
+    // Only someone already corresponded with can depart. A bounce for a stranger
+    // is a typo.
+    await store.upsertSenderProfile({
+      accountId: "acct",
+      email: "sarah@acme.com",
+      domain: "acme.com",
+      messageCount: 4,
+      firstSeenAt: 1_600_000_000_000,
+      lastSeenAt: 1_699_000_000_000,
+      hasPriorContact: true,
+      isNewsletter: false,
+      isColdEmail: false,
+      displayName: "Sarah Chen",
+    } as MailboxSenderProfile);
+  }
+
+  it("reports a departure the profile did not already carry", async () => {
+    const store = fakeStore();
+    await seedKnownContact(store);
+    const result = await updateSenderProfiles({
+      store,
+      accountId: "acct",
+      selfEmails: SELF,
+      thread: bounce(),
+    });
+    expect(result.departures).toHaveLength(1);
+    expect(result.departures[0]!.email).toBe("sarah@acme.com");
+    expect(result.departures[0]!.kind).toBe("recipient_unknown");
+    expect(result.departures[0]!.displayName).toBe("Sarah Chen");
+  });
+
+  it("reports nothing on a re-sync of the same bounce", async () => {
+    // The regression that would otherwise republish a departure on every pass.
+    const store = fakeStore();
+    await seedKnownContact(store);
+    await updateSenderProfiles({ store, accountId: "acct", selfEmails: SELF, thread: bounce() });
+    const second = await updateSenderProfiles({
+      store,
+      accountId: "acct",
+      selfEmails: SELF,
+      thread: bounce(),
+    });
+    expect(second.departures).toHaveLength(0);
+  });
+
+  it("reports nothing for an address never corresponded with", async () => {
+    const store = fakeStore();
+    const result = await updateSenderProfiles({
+      store,
+      accountId: "acct",
+      selfEmails: SELF,
+      thread: bounce(),
+    });
+    expect(result.departures).toHaveLength(0);
+  });
+
+  it("reports nothing for a transient failure", async () => {
+    const store = fakeStore();
+    await seedKnownContact(store);
+    const result = await updateSenderProfiles({
+      store,
+      accountId: "acct",
+      selfEmails: SELF,
+      thread: thread([
+        message({
+          from: { email: "mailer-daemon@acme.com" },
+          textBody: "sarah@acme.com: 4.2.2 mailbox full, will retry.",
+        }),
+      ]),
+    });
+    expect(result.departures).toHaveLength(0);
+  });
+});

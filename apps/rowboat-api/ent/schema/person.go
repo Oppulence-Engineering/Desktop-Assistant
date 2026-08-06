@@ -51,6 +51,13 @@ func (Person) Fields() []ent.Field {
 		field.String("phone").Optional().Sensitive().Annotations(entoas.Skip(true)),
 		field.String("timezone").Optional(),
 		field.String("locale").Optional(),
+		// Projected from the employment_status attribute so the attention
+		// detectors can filter on it without joining attributes per relationship.
+		// `departed` exists to stop the product nagging a user to chase someone
+		// whose mailbox no longer accepts mail.
+		field.String("employment_status").
+			Default("unknown").
+			Validate(oneOfRevenue("employment_status", "unknown", "active", "departed")),
 
 		// --- projection bookkeeping ---
 		field.Int("attributes_version").Default(0).NonNegative(),

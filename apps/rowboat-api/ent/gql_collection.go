@@ -43,6 +43,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personsuppression"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -4894,6 +4895,11 @@ func (_q *PersonQuery) collectField(ctx context.Context, oneNode bool, opCtx *gr
 				selectedFields = append(selectedFields, person.FieldLocale)
 				fieldSeen[person.FieldLocale] = struct{}{}
 			}
+		case "employmentStatus":
+			if _, ok := fieldSeen[person.FieldEmploymentStatus]; !ok {
+				selectedFields = append(selectedFields, person.FieldEmploymentStatus)
+				fieldSeen[person.FieldEmploymentStatus] = struct{}{}
+			}
 		case "attributesVersion":
 			if _, ok := fieldSeen[person.FieldAttributesVersion]; !ok {
 				selectedFields = append(selectedFields, person.FieldAttributesVersion)
@@ -5643,6 +5649,120 @@ func newPersonMergeCandidatePaginateArgs(rv map[string]any) *personmergecandidat
 	}
 	if v, ok := rv[whereField].(*PersonMergeCandidateWhereInput); ok {
 		args.opts = append(args.opts, WithPersonMergeCandidateFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *PersonSuppressionQuery) CollectFields(ctx context.Context, satisfies ...string) (*PersonSuppressionQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *PersonSuppressionQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(personsuppression.Columns))
+		selectedFields = []string{personsuppression.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+		case "createdAt":
+			if _, ok := fieldSeen[personsuppression.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, personsuppression.FieldCreatedAt)
+				fieldSeen[personsuppression.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[personsuppression.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, personsuppression.FieldUpdatedAt)
+				fieldSeen[personsuppression.FieldUpdatedAt] = struct{}{}
+			}
+		case "kind":
+			if _, ok := fieldSeen[personsuppression.FieldKind]; !ok {
+				selectedFields = append(selectedFields, personsuppression.FieldKind)
+				fieldSeen[personsuppression.FieldKind] = struct{}{}
+			}
+		case "reason":
+			if _, ok := fieldSeen[personsuppression.FieldReason]; !ok {
+				selectedFields = append(selectedFields, personsuppression.FieldReason)
+				fieldSeen[personsuppression.FieldReason] = struct{}{}
+			}
+		case "suppressedAt":
+			if _, ok := fieldSeen[personsuppression.FieldSuppressedAt]; !ok {
+				selectedFields = append(selectedFields, personsuppression.FieldSuppressedAt)
+				fieldSeen[personsuppression.FieldSuppressedAt] = struct{}{}
+			}
+		case "note":
+			if _, ok := fieldSeen[personsuppression.FieldNote]; !ok {
+				selectedFields = append(selectedFields, personsuppression.FieldNote)
+				fieldSeen[personsuppression.FieldNote] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type personsuppressionPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []PersonSuppressionPaginateOption
+}
+
+func newPersonSuppressionPaginateArgs(rv map[string]any) *personsuppressionPaginateArgs {
+	args := &personsuppressionPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*PersonSuppressionWhereInput); ok {
+		args.opts = append(args.opts, WithPersonSuppressionFilter(v.Filter))
 	}
 	return args
 }
@@ -9843,6 +9963,19 @@ func (_q *RevenueWorkspaceQuery) collectField(ctx context.Context, oneNode bool,
 				*wq = *query
 			})
 
+		case "personSuppressions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&PersonSuppressionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, personsuppressionImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedPersonSuppressions(alias, func(wq *PersonSuppressionQuery) {
+				*wq = *query
+			})
+
 		case "personAttributes":
 			var (
 				alias = field.Alias
@@ -10881,6 +11014,19 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				return err
 			}
 			_q.WithNamedPersonIdentities(alias, func(wq *PersonIdentityQuery) {
+				*wq = *query
+			})
+
+		case "personSuppressions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&PersonSuppressionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, personsuppressionImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedPersonSuppressions(alias, func(wq *PersonSuppressionQuery) {
 				*wq = *query
 			})
 

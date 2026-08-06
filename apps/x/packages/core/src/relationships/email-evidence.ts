@@ -218,3 +218,71 @@ export function emailThreadObservation(
     },
   };
 }
+
+/**
+ * The observation that carries a departure to the graph.
+ *
+ * Separate from `emailThreadObservation` because the thread rules do not apply and
+ * would suppress it: a bounce arrives from `mailer-daemon`, which `machine_sender`
+ * skips, and it is one message with no engagement, which `no_engagement` skips.
+ * Those rules exist to keep bulk mail out of the graph; a delivery report about
+ * someone you already correspond with is the opposite of bulk mail.
+ *
+ * Carries the mail system's own sentence as the summary. `evidence` is text the
+ * server will store, so it is bounded here — a bounce report can quote an entire
+ * original message, and the point is the sentence that names the failure, not the
+ * thread it was attached to.
+ */
+export function departureObservation(args: {
+  departure: {
+    email: string;
+    displayName?: string;
+    kind: "left_organization" | "recipient_unknown";
+    evidence: string;
+    observedAt: number;
+    externalId: string;
+  };
+  sourceAccountId: string;
+  now?: () => number;
+}): RelationshipObservationInput | null {
+  const { departure } = args;
+  const email = departure.email.trim().toLowerCase();
+  if (!email) return null;
+  // A bounce for a public mailbox says nothing about a person, and a machine
+  // address cannot depart.
+  const accountDomain = organizationDomain(email);
+  if (!accountDomain || isMachineSender(email)) return null;
+
+  const now = args.now?.() ?? Date.now();
+  const occurred = clampOccurredAt(departure.observedAt, now);
+  const displayName = departure.displayName?.trim() || email;
+
+  return {
+    primaryEmail: email,
+    accountDomain,
+    displayName: accountDomain,
+    source: "gmail",
+    sourceAccountId: args.sourceAccountId,
+    externalId: departure.externalId,
+    sourceVersion: "1",
+    eventType: "contact_departed",
+    occurredAt: new Date(occurred.at).toISOString(),
+    summary:
+      departure.kind === "left_organization"
+        ? `${displayName} replied that they have left ${accountDomain}`
+        : `Mail to ${displayName} was rejected as an unknown recipient`,
+    channel: "email",
+    // The mail system spoke, not the user.
+    direction: "inbound",
+    participants: [{ displayName, email, role: "contact" }],
+    normalizedFacts: {
+      provider: "gmail",
+      departure_kind: departure.kind,
+      // The one piece of message text that crosses, and only because a claim that
+      // someone has left is unreviewable without it. Truncated: the sentence is
+      // the evidence, the quoted original is not.
+      departure_evidence: departure.evidence.slice(0, 300),
+      ...(occurred.clamped ? { occurred_at_clamped: true } : {}),
+    },
+  };
+}

@@ -92,6 +92,8 @@ type Tx struct {
 	PersonInteractionStat *PersonInteractionStatClient
 	// PersonMergeCandidate is the client for interacting with the PersonMergeCandidate builders.
 	PersonMergeCandidate *PersonMergeCandidateClient
+	// PersonSuppression is the client for interacting with the PersonSuppression builders.
+	PersonSuppression *PersonSuppressionClient
 	// PolicyDecisionSnapshot is the client for interacting with the PolicyDecisionSnapshot builders.
 	PolicyDecisionSnapshot *PolicyDecisionSnapshotClient
 	// Relationship is the client for interacting with the Relationship builders.
@@ -319,6 +321,7 @@ func (tx *Tx) init() {
 	tx.PersonIdentity = NewPersonIdentityClient(tx.config)
 	tx.PersonInteractionStat = NewPersonInteractionStatClient(tx.config)
 	tx.PersonMergeCandidate = NewPersonMergeCandidateClient(tx.config)
+	tx.PersonSuppression = NewPersonSuppressionClient(tx.config)
 	tx.PolicyDecisionSnapshot = NewPolicyDecisionSnapshotClient(tx.config)
 	tx.Relationship = NewRelationshipClient(tx.config)
 	tx.RelationshipAssertion = NewRelationshipAssertionClient(tx.config)

@@ -38,6 +38,13 @@ export interface BuildRoutingInput {
     enabled: boolean;
     location: TranscriptionDataLocation;
     destination: string;
+    sharing: {
+      meetingTranscripts: boolean;
+      meetingAttendance: boolean;
+      emailMetadata: boolean;
+      signatureEnrichment: boolean;
+      modelContactExtraction: boolean;
+    };
   };
 }
 
@@ -121,6 +128,10 @@ export function buildTranscriptionRouting(input: BuildRoutingInput): Transcripti
     liveQuestionsEnabled: input.enrichment.liveQuestionsEnabled,
   };
 
+  const relationshipEvidenceEnabled = Object.values(input.relationshipEvidence.sharing).some(
+    Boolean,
+  );
+
   return {
     localOnly: input.localOnly,
     voice,
@@ -129,13 +140,19 @@ export function buildTranscriptionRouting(input: BuildRoutingInput): Transcripti
     meeting,
     enrichment,
     relationshipEvidence: {
-      enabled: input.relationshipEvidence.enabled,
+      // Derived, never taken from the caller. "Enabled" and "what is shared"
+      // are the same fact, and the receipt's original bug was exactly these two
+      // disagreeing: `enabled` read a deprecated flag no UI wrote, so it said
+      // off while email metadata shipped. Computing it here makes that
+      // inconsistency unrepresentable rather than merely tested for.
+      enabled: relationshipEvidenceEnabled,
       location: input.relationshipEvidence.location,
       transcriptTextMayLeaveDevice:
-        input.relationshipEvidence.enabled &&
+        relationshipEvidenceEnabled &&
         (input.relationshipEvidence.location === "cloud" ||
           input.relationshipEvidence.location === "unknown"),
       destination: input.relationshipEvidence.destination,
+      sharing: input.relationshipEvidence.sharing,
     },
   };
 }

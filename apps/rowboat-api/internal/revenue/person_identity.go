@@ -109,6 +109,20 @@ func resolvePerson(
 	}
 
 	signals := personIdentitySignals(in)
+
+	// A suppressed identity never becomes a person again. Checked here, beside the
+	// no-reply test and before anything is created, because ingest re-derives
+	// people from every sync — a deletion that does not block re-resolution is
+	// undone by the next pass, which is how "delete" quietly means "until
+	// tomorrow".
+	suppressed, err := personIdentitySuppressed(ctx, client, ws, signals)
+	if err != nil {
+		return nil, err
+	}
+	if suppressed {
+		return nil, nil
+	}
+
 	observedAt := in.ObservedAt
 	if observedAt.IsZero() {
 		observedAt = time.Now().UTC()

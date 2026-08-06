@@ -383,7 +383,8 @@ export interface RelationshipAttentionItem {
     | "missing_next_step"
     | "source_degradation"
     | "action_outcome_review"
-    | "recommendation";
+    | "recommendation"
+    | "contact_departed";
   explanation: string;
   triggeringObjectRef: string;
   evidenceRefs: string[];

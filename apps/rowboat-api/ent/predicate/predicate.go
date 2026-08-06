@@ -126,6 +126,9 @@ type PersonInteractionStat func(*sql.Selector)
 // PersonMergeCandidate is the predicate function for personmergecandidate builders.
 type PersonMergeCandidate func(*sql.Selector)
 
+// PersonSuppression is the predicate function for personsuppression builders.
+type PersonSuppression func(*sql.Selector)
+
 // PolicyDecisionSnapshot is the predicate function for policydecisionsnapshot builders.
 type PolicyDecisionSnapshot func(*sql.Selector)
 
