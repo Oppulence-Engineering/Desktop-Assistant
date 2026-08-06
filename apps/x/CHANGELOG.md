@@ -1,5 +1,88 @@
 # Changelog
 
+## [0.1.29](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.28...v0.1.29) (2026-08-06)
+
+
+### Bug Fixes
+
+* **llm:** route every chat model through OpenRouter ([#212](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/212)) ([c032b32](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/c032b32fe7453c564aa58eacefa779c812b5fd15))
+
+## [0.1.28](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.27...v0.1.28) (2026-08-06)
+
+
+### Bug Fixes
+
+* Google scope contract, dev deep-link hijack, and cheaper model defaults ([#209](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/209)) ([eb6f6a5](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/eb6f6a58380554aee5a5e05458c59154d91254d5))
+
+## [0.1.27](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.26...v0.1.27) (2026-08-05)
+
+
+### Bug Fixes
+
+* **gmail:** mailbox sync and Google write scopes ([#204](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/204)) ([3832c8c](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/3832c8c46ea288616c008ee68565f81994b6a4dc))
+
+## [0.1.26](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.25...v0.1.26) (2026-08-05)
+
+
+### Features
+
+* **desktop:** in-app update prompt ([#201](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/201)) ([c4e3da4](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/c4e3da4a2f21c8c5df706051f5c683a9aa659511))
+
+## [0.1.25](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.24...v0.1.25) (2026-08-05)
+
+
+### Features
+
+* Google connect fix and Next.js 16.3 migration ([#199](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/199)) ([daf26b3](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/daf26b3ec022a9dc50a50855a58304ebb3aedc8a))
+
+
+### Bug Fixes
+
+* honest sign-in errors and a manual build that cannot ship unsigned ([#195](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/195)) ([dc75a09](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/dc75a09cd41f2ce36b40ec208e8e1a0569f92d93))
+
+## [0.1.24](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.23...v0.1.24) (2026-08-05)
+
+
+### Features
+
+* canonical person, and relationship evidence from meetings and email ([0268364](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/02683643df29e6262353374b6ca215cffe8d6838))
+* **desktop:** add guided product tour ([a7e50e6](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/a7e50e63f674d50f768fbb75bed1d275e37565e8))
+* **desktop:** add guided product tour ([9eb90d8](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/9eb90d8862c3e9d102ba73cb9fe6b72671a967e4))
+* **x:** publish relationship evidence from meetings and email ([fea9179](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/fea917903ab546c05104c1eabe8bc2800dd332f5))
+
+
+### Bug Fixes
+
+* **desktop:** stop the collapsed sidebar spilling over the content header ([f5d1479](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/f5d14798acf0b6209296546a3a251ba5762cd72f))
+* **meetings:** correct language claims Parakeet cannot keep ([8c3ddfb](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/8c3ddfb136e653e1d2675bf1120f08099cdce50d))
+* **meetings:** four defects found by adversarial review of the note path work ([dd589f6](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/dd589f61482a58a935f34d77c9964430d20972b9))
+* **meetings:** stop a same-titled meeting overwriting an earlier one's note ([e26ea55](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/e26ea554c71c0c9f50ede836344f63fbe0094102))
+* **meetings:** transcribe in the language spoken, and stop deleting user notes ([d6b45cc](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/d6b45cc34044937aef97a231283fd7607b4c23f7))
+* **meetings:** transcribe in the language spoken, and stop deleting user notes ([06b356c](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/06b356cf3f79e114ae15c5cf89b0eba52b2d4936))
+
+
+### Documentation
+
+* **meetings:** record the note-ownership contract, and cover transcriptionOrder ([2835410](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/28354106338b332ff7f4fd07aecfc2196b27d0fe))
+
+## [0.1.23](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.22...v0.1.23) (2026-08-01)
+
+
+### Features
+
+* add conversation follow-through intelligence ([23d0518](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/23d0518c7ddaa7ffcb9a737e66b5904bd501f66e))
+* add cross-channel relationship intelligence learning loop ([b16713e](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/b16713e9a9e5c9c78b2009f1a034579691ff9214))
+* connect transcription to relationship evidence ([#172](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/172)) ([f7ec822](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/f7ec82292250f1621a4657955d00bc67c8a1d75e))
+* enable production conversation intelligence integrations ([#175](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/175)) ([861b580](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/861b58047a2fb078c6d964ca8f13f09c7cdb9d98))
+* implement RFC 037 conversation intelligence and follow-through ([#174](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/174)) ([cbc6eba](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/cbc6eba2ad2ffaf1376707f887583e0a294aaeef))
+
+## [0.1.22](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.21...v0.1.22) (2026-07-29)
+
+
+### Features
+
+* build relationship intelligence foundation ([fb16aed](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/fb16aeda554e00e8404f3e72e6f4fce87a3d7db3))
+
 ## [0.1.21](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.20...v0.1.21) (2026-07-21)
 
 
