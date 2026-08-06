@@ -10,11 +10,21 @@ export interface IModelConfigRepo {
     setConfig(config: z.infer<typeof ModelConfig>): Promise<void>;
 }
 
+// Bootstrap default, written to models.json on first run and used verbatim by
+// BYOK users calling OpenAI with their own key — so this id is a bill someone
+// pays. gpt-4.1-mini is the cheap tier and is what the signed-in path already
+// resolves to; gpt-5.4 was several times the price for work like email
+// labeling and note tagging that does not need it.
+//
+// Deliberately un-namespaced. Gateway ids carry a provider prefix
+// ("openai/gpt-4.1-mini"); a direct OpenAI call takes the bare id. Keeping it
+// bare also means honorGatewayModel() in defaults.ts still recognises it as a
+// non-gateway id and maps a signed-in user onto the gateway's own default.
 const defaultConfig: z.infer<typeof ModelConfig> = {
     provider: {
         flavor: "openai",
     },
-    model: "gpt-5.4",
+    model: "gpt-4.1-mini",
 };
 
 export class FSModelConfigRepo implements IModelConfigRepo {
