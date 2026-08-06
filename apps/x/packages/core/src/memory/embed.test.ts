@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resetBackgroundBudgetForTests, throughBackgroundBudget } from "../models/gateway-budget.js";
 
 // embedBatch (metered path) needs an access token; stub it so no real auth runs.
 vi.mock("../auth/tokens.js", () => ({ getAccessToken: async () => "test-token" }));
@@ -64,6 +65,11 @@ beforeEach(() => {
   getConfig.mockReset();
   isSignedInMock.mockReset();
   isSignedInMock.mockResolvedValue(false);
+  // meteredEmbed draws on the shared gateway budget (6 requests per 10s), which
+  // is process-wide. Without a reset the seventh request in this file waits for
+  // the next window and the test times out — a property of the pacing, not of
+  // the code under test here.
+  resetBackgroundBudgetForTests();
 });
 
 describe("embedBatch — empty input", () => {
@@ -227,5 +233,81 @@ describe("resolveEmbedTarget", () => {
     expect((await resolveEmbedTarget("m", 512)).dimensions).toBe(512);
     expect((await resolveEmbedTarget("m", 0)).dimensions).toBeUndefined();
     expect((await resolveEmbedTarget("m")).dimensions).toBeUndefined();
+  });
+});
+
+describe("embedBatch — queue wait vs request timeout", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("does not spend the request timeout waiting in the background queue", async () => {
+    // meteredEmbed goes through the shared budget, which can hold a request far
+    // longer than REQUEST_TIMEOUT_MS during a backlog. Arming the
+    // AbortController before queueing made that wait count against the request:
+    // the call aborted before it was ever sent, withRetry burned an attempt on
+    // it, and each abort counted as a transport failure toward the circuit
+    // breaker — so a large enough backlog paused itself.
+    vi.useFakeTimers();
+    resetBackgroundBudgetForTests();
+    isSignedInMock.mockResolvedValue(true);
+
+    let fetchCalls = 0;
+    const fetchFn = vi.fn(async (_url: unknown, init: RequestInit) => {
+      fetchCalls += 1;
+      if (init?.signal?.aborted) throw new Error("aborted before send");
+      return res({ data: [{ embedding: [1] }], usage: { total_tokens: 1 } });
+    });
+    vi.stubGlobal("fetch", fetchFn);
+
+    // ~40s of backlog ahead of it, well past the 30s request timeout.
+    Array.from({ length: 300 }, () =>
+      throughBackgroundBudget(async () => ({ status: 200 })).catch(() => {}),
+    );
+
+    const pending = embedBatch(metered, ["hello"]);
+    await vi.advanceTimersByTimeAsync(120_000);
+    await expect(pending).resolves.toMatchObject({ vectors: [[1]] });
+    expect(fetchCalls, "one attempt, not a retry after a spurious abort").toBe(1);
+
+    resetBackgroundBudgetForTests();
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("embedBatch — draws on the shared gateway budget", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("waits its turn behind other background work", async () => {
+    // /v1/llm/embeddings shares the server's rate-limit bucket with chat, so a
+    // memory rebuild that skipped the queue would spend the allowance the
+    // labeling agent is waiting on. Nothing else asserts this: unwiring
+    // meteredEmbed from the budget leaves every other test passing.
+    vi.useFakeTimers();
+    resetBackgroundBudgetForTests();
+    isSignedInMock.mockResolvedValue(true);
+
+    let embedFetches = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        embedFetches += 1;
+        return res({ data: [{ embedding: [1] }], usage: { total_tokens: 1 } });
+      }),
+    );
+
+    // Fill this second's allowance with other background work.
+    Array.from({ length: 7 }, () =>
+      throughBackgroundBudget(async () => ({ status: 200 })).catch(() => {}),
+    );
+
+    const pending = embedBatch(metered, ["hello"]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(embedFetches, "embed jumped the queue instead of waiting its turn").toBe(0);
+
+    await vi.advanceTimersByTimeAsync(2_000);
+    await expect(pending).resolves.toMatchObject({ vectors: [[1]] });
+    expect(embedFetches).toBe(1);
+
+    resetBackgroundBudgetForTests();
+    vi.unstubAllGlobals();
   });
 });

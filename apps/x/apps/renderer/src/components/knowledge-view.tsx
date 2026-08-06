@@ -42,6 +42,7 @@ export type KnowledgeViewActions = {
   createFolder: (parentPath?: string) => Promise<string>;
   rename: (path: string, newName: string, isDir: boolean) => Promise<void>;
   remove: (path: string) => Promise<void>;
+  duplicate: (path: string, isDir: boolean) => Promise<string>;
   copyPath: (path: string) => void;
   revealInFileManager: (path: string, isDir: boolean) => void;
   onOpenInNewTab?: (path: string) => void;
@@ -820,6 +821,15 @@ function RowContextMenu({
     }
   }, [actions, node.path]);
 
+  const handleDuplicate = useCallback(async () => {
+    try {
+      const created = await actions.duplicate(node.path, isDir);
+      toast(`Duplicated to ${created.split("/").pop()}`, "success");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to duplicate", "error");
+    }
+  }, [actions, node.path, isDir]);
+
   const handleCopyPath = useCallback(() => {
     actions.copyPath(node.path);
     toast("Path copied", "success");
@@ -870,6 +880,10 @@ function RowContextMenu({
         <ContextMenuItem onClick={() => onRequestRename(node.path)}>
           <Pencil className="mr-2 size-4" />
           Rename
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => void handleDuplicate()}>
+          <Copy className="mr-2 size-4" />
+          Duplicate
         </ContextMenuItem>
         <ContextMenuItem variant="destructive" onClick={handleDelete}>
           <Trash2 className="mr-2 size-4" />

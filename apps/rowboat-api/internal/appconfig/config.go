@@ -251,6 +251,14 @@ type Config struct {
 	CloudRunMaxInflightPerUser     int
 	CloudRunRateLimitGlobalPerMin  int
 	CloudRunRateLimitPerUserPerMin int
+
+	// Per-user LLM gateway limits. Deliberately generous: the desktop is an
+	// agentic client whose tool loops make many small calls for one user action
+	// (labeling 15 emails is ~16 round trips), and spend is capped separately by
+	// DAILY_CREDIT_LIMIT / MONTHLY_CREDIT_LIMIT plus per-call credit reservation.
+	// These bound burst and abuse, not cost.
+	LLMRateLimitPerUserPerMin      int
+	LLMRateLimitPerUserBurst       int
 	CloudRunCreditPreflightEnabled bool
 
 	// Cloud event ingestion + routing (RFC 003). Ingestion (/v1/events and
@@ -616,6 +624,8 @@ func Load() Config {
 		CloudRunMaxInflightPerUser:     getint("CLOUD_RUN_MAX_INFLIGHT_PER_USER", 50),
 		CloudRunRateLimitGlobalPerMin:  getint("CLOUD_RUN_RATE_LIMIT_GLOBAL_PER_MINUTE", 2000),
 		CloudRunRateLimitPerUserPerMin: getint("CLOUD_RUN_RATE_LIMIT_PER_USER_PER_MINUTE", 60),
+		LLMRateLimitPerUserPerMin:      getint("LLM_RATE_LIMIT_PER_USER_PER_MINUTE", 600),
+		LLMRateLimitPerUserBurst:       getint("LLM_RATE_LIMIT_PER_USER_BURST_PER_10S", 100),
 		CloudRunCreditPreflightEnabled: getbool("CLOUD_RUN_CREDIT_PREFLIGHT_ENABLED", true),
 
 		CloudEventsRoutingEnabled: getbool("CLOUD_EVENTS_ROUTING_ENABLED", false),
@@ -844,7 +854,8 @@ func (c Config) Validate() error {
 		}
 	}
 	if c.CloudRunMaxInflightGlobal < 0 || c.CloudRunMaxInflightPerUser < 0 ||
-		c.CloudRunRateLimitGlobalPerMin < 0 || c.CloudRunRateLimitPerUserPerMin < 0 {
+		c.CloudRunRateLimitGlobalPerMin < 0 || c.CloudRunRateLimitPerUserPerMin < 0 ||
+		c.LLMRateLimitPerUserPerMin <= 0 || c.LLMRateLimitPerUserBurst <= 0 {
 		return fmt.Errorf("cloud run admission limits must be >= 0")
 	}
 	if c.TemporalSchedulesEnabled {

@@ -8,6 +8,7 @@ import { z } from "zod";
 import { getAccessToken } from "../auth/tokens.js";
 import { isSignedIn } from "../account/account.js";
 import { API_URL } from "../config/env.js";
+import { throughBackgroundBudget } from "../models/gateway-budget.js";
 import { createProvider, Provider } from "../models/models.js";
 import { FSModelConfigRepo } from "../models/repo.js";
 import { PRODUCT_PROVIDER_ID } from "@x/shared/dist/branding.js";
@@ -137,24 +138,40 @@ async function meteredEmbed(
   dimensions?: number,
 ): Promise<EmbedResult> {
   const token = await getAccessToken();
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  // The timeout has to start when the request does, not when it is queued.
+  //
+  // /v1/llm/embeddings shares the rate-limit bucket with chat, so memory
+  // indexing draws on the same background budget — otherwise a rebuild
+  // silently spends the allowance the labeling agent is waiting for. But that
+  // queue can hold a request for far longer than REQUEST_TIMEOUT_MS during a
+  // backlog. Arming the AbortController before queueing made the wait count
+  // against the request: the call aborted before it was ever sent, withRetry
+  // burned attempts on it, and each abort counted as a transport failure
+  // toward the circuit breaker — so a big enough backlog would pause itself.
+  let controller: AbortController | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const res = await fetch(`${API_URL}/v1/llm/embeddings`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        // The metered proxy requires an idempotency key (428 without it);
-        // stable across retries of this batch (see embedBatch).
-        "Idempotency-Key": idempotencyKey,
-      },
-      body: JSON.stringify({
-        model: normalizeMeteredModel(model),
-        input: texts,
-        ...(dimensions ? { dimensions } : {}),
-      }),
-      signal: controller.signal,
+    const res = await throughBackgroundBudget(() => {
+      controller = new AbortController();
+      timer = setTimeout(() => controller?.abort(), REQUEST_TIMEOUT_MS);
+      return fetch(`${API_URL}/v1/llm/embeddings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          // The metered proxy requires an idempotency key (428 without it);
+          // stable across retries of this batch (see embedBatch). Deliberately
+          // unlike the gateway's per-request key: a retry here must not be
+          // billed twice.
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: JSON.stringify({
+          model: normalizeMeteredModel(model),
+          input: texts,
+          ...(dimensions ? { dimensions } : {}),
+        }),
+        signal: controller.signal,
+      });
     });
     if (!res.ok) {
       const err = new Error(

@@ -34,6 +34,22 @@ type upstream struct {
 //
 // The OpenAI key is still used elsewhere for embeddings (semantic memory);
 // this only removes it from chat routing.
+//
+// A note on the openrouter/ branch, because it looks more useful than it is:
+// now that every model goes to OpenRouter, "openrouter/openai/gpt-4.1" and
+// "openai/gpt-4.1" produce a byte-identical upstream request. The prefix is a
+// pure alias, and it is unreachable in production anyway — validatePolicy
+// matches the raw requested string against LLM_ALLOWED_MODELS *before* this
+// function runs, and no prefixed id is on that list.
+//
+// Do not "fix" that by stripping the prefix before validation. Pricing keys on
+// the same raw id (LLMEstimate/LLMCost in handler.go), and Table.rate() falls
+// back to DefaultModel — 30/150 per 1K, ~100x gpt-4.1-mini — for anything it
+// does not recognise. No openrouter/-prefixed entry exists in the pricing
+// table. So letting the prefixed form through the allowlist would route
+// correctly and then bill at the fallback rate. The allowlist is what keeps an
+// unpriced id away from the biller; it and the pricing table have to agree on
+// the same string.
 func (h *Handler) route(model string) (upstream, error) {
 	if strings.HasPrefix(model, "openrouter/") {
 		return h.openRouter(strings.TrimPrefix(model, "openrouter/"))

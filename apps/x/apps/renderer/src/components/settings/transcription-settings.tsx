@@ -442,6 +442,17 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
     await refreshDictationRecovery();
   }, [refreshDictationRecovery]);
 
+  // Paste it straight into the focused app rather than only to the clipboard.
+  // This is what dictation is normally for, and the handler existed with no
+  // caller — the recovery row offered Copy and nothing else, so recovering a
+  // transcript meant copying it and then pasting by hand.
+  const pasteLastDictation = useCallback(async () => {
+    const result = await window.ipc.invoke("dictation:pasteLast", null);
+    if (result.success) toast.success("Last transcript pasted");
+    else toast.error(result.error ?? "Could not paste — check Accessibility permission");
+    await refreshDictationRecovery();
+  }, [refreshDictationRecovery]);
+
   const selectModel = useCallback(
     async (id: string) => {
       if (benchmarkBusy) return;
@@ -895,6 +906,16 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                       : "Your next completed dictation will be kept locally as a one-item safety net."}
                 </p>
               </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={!dictationRecovery?.available}
+                onClick={() => void pasteLastDictation()}
+                className="shrink-0"
+              >
+                Paste last
+              </Button>
               <Button
                 type="button"
                 size="sm"

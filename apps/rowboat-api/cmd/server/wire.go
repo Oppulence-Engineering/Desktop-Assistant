@@ -684,8 +684,17 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		}
 
 		r.Route("/v1/llm", func(r chi.Router) {
-			r.Use(rl.PerUser(ratelimit.GroupLLM, 60))
-			r.Use(rl.PerUserWindow(ratelimit.GroupLLMBurst, 12, 10*time.Second))
+			// Configurable and generous. The old hardcoded 60/min + 12/10s was
+			// sized for chat-shaped traffic; the desktop is agentic, so one user
+			// action ("label these 15 emails") is ~16 round trips and three of
+			// those run concurrently alongside note tagging and graph builds.
+			// Users hit the ceiling doing exactly what the product asks of them.
+			//
+			// This bounds burst and abuse, not spend: credits are reserved per
+			// call and DAILY_CREDIT_LIMIT / MONTHLY_CREDIT_LIMIT cap cost
+			// independently, and LLM_MAX_CONCURRENT bounds outbound concurrency.
+			r.Use(rl.PerUser(ratelimit.GroupLLM, cfg.LLMRateLimitPerUserPerMin))
+			r.Use(rl.PerUserWindow(ratelimit.GroupLLMBurst, cfg.LLMRateLimitPerUserBurst, 10*time.Second))
 			r.Post("/chat/completions", llmH.ChatCompletions)
 			r.Post("/completions", llmH.Completions)
 			r.Post("/embeddings", llmH.Embeddings)
