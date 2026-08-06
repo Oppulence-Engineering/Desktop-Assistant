@@ -5,26 +5,27 @@ import type { UseCase } from "../analytics/use_case.js";
  * Shapes background LLM traffic to fit the gateway's per-user budget, without
  * ever making a waiting user queue behind it.
  *
- * The gateway allows 60 requests/minute and 12 per 10s per user
- * (rowboat-api cmd/server/wire.go: GroupLLM + GroupLLMBurst). The desktop
- * routinely wants far more than that: one email-labeling batch is a tool-using
- * agent over 15 files — roughly 15 reads and 15 edits, each its own round trip
- * — and three batches run at once alongside note tagging, graph builds and
- * embeddings. Bursts of 5-10x the budget are normal, so requests were rejected
- * faster than the AI SDK's three retries could absorb, and whole batches were
- * reported to the user as failures.
+ * The gateway allows 600 requests/minute and 100 per 10s per user
+ * (rowboat-api cmd/server/wire.go, LLM_RATE_LIMIT_PER_USER_*). The desktop can
+ * still want more: one email-labeling batch is a tool-using agent over 15 files
+ * — roughly 15 reads and 15 edits, each its own round trip — and three batches
+ * run at once alongside note tagging, graph builds and embeddings. Before the
+ * ceiling was raised this overshot by 5-10x, requests were rejected faster than
+ * the AI SDK's three retries could absorb, and whole batches were reported to
+ * the user as failures.
  *
  * Two rules, and the second matters more than the first:
  *
- *   1. Background work is paced to half the budget.
+ *   1. Background work is paced below the ceiling, at 7/s (420/min).
  *   2. Interactive work is never queued at all.
  *
  * Rule 2 is the point. A single FIFO queue over all traffic would be worse than
  * the bug it fixes: a labeling run enqueues hundreds of calls, and a person
  * typing in chat would land behind every one of them and wait minutes for a
  * reply. Today that person is served fine and only background work fails.
- * Capping background at half leaves the rest permanently free, so an
- * interactive request goes straight out and its slot cannot have been taken.
+ * Leaving headroom above the background rate keeps that path permanently clear,
+ * so an interactive request goes straight out and its slot cannot have been
+ * taken.
  */
 
 /** Use cases that are always someone waiting on an answer. */
@@ -67,30 +68,22 @@ export function isInteractive(useCase: string | undefined, subUseCase?: string):
   return subUseCase !== undefined && INTERACTIVE_SUB_USE_CASES.has(subUseCase);
 }
 
-// The gateway allows 100 per 10s and 600/min per user
-// (LLM_RATE_LIMIT_PER_USER_*). Both work out to the same 10-per-second ceiling,
-// so the 10s window is the binding constraint and the only number to reason
-// about.
+// The gateway allows 600/min and 100 per 10s per user
+// (LLM_RATE_LIMIT_PER_USER_*). Both come to the same 10-per-second ceiling, so
+// that is the only number to reason about.
 //
-// Background takes 70 of those 100, leaving 30 per 10s for interactive traffic,
-// which is never queued at all. That reserve is sized off what a person can
-// actually generate: a Copilot turn is one agent loop, and 30 calls in ten
-// seconds is a fast one. Background gets the rest, because it is the thing with
-// hundreds of calls to make.
+// Background takes 7 of those 10 per second — 420/min — leaving ~3/s for
+// interactive traffic, which is never queued at all. The reserve is sized off
+// what a person can actually generate: a Copilot turn is one agent loop, and 30
+// calls in ten seconds is a fast one. Background gets the larger share because
+// it is the side with hundreds of calls to make.
 //
-// The reserve exists so a labeling backlog can never put a waiting user behind
-// it. Handing background the whole ceiling would reintroduce exactly that, and
-// leaving it at half was simply leaving throughput unused.
-//
-// Spread over one-second slices rather than released in a burst every ten.
-//
-// The server's limiter is a fixed window (INCR + PEXPIRE in
-// internal/ratelimit/redis.go), not a sliding one, so its window boundary is
-// wherever the first request of a window happened to land. Releasing 70 at once
-// every 10s means two adjacent bursts can fall inside a single server window —
-// 140 against a cap of 100 — and roughly a third of them get rejected for no
-// reason other than phase. 7 per second is the same 420/min with no burst to
-// straddle a boundary.
+// Per second rather than per ten. The server's limiter is a fixed window (INCR
+// + PEXPIRE in internal/ratelimit/redis.go), not sliding, so its boundary sits
+// wherever the first request of a window landed. Releasing a whole window's
+// worth at once means two adjacent bursts can fall inside one server window —
+// 140 against a cap of 100 — and roughly a third get rejected for no reason but
+// phase. Same rate, no burst to straddle a boundary.
 //
 // Concurrency is capped separately: the limits are per window, but the desktop
 // opening dozens of sockets at once helps nobody, and the gateway bounds its

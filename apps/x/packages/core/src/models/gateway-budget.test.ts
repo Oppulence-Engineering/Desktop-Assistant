@@ -252,9 +252,23 @@ describe("background leaves the server ceiling a reserve", () => {
     return Number(m![1]);
   }
 
+  // The server's window is 10s; ours is 1s. Compare like with like, or a
+  // config that is wildly over-rate still "passes" on a unit mismatch.
+  const SERVER_WINDOW_MS = 10_000;
+  const clientPerServerWindow =
+    (BACKGROUND_BUDGET.perInterval * SERVER_WINDOW_MS) / BACKGROUND_BUDGET.intervalMs;
+
   it("stays under the server's 10s burst allowance", () => {
     const serverBurst = serverDefault("LLM_RATE_LIMIT_PER_USER_BURST_PER_10S");
-    expect(BACKGROUND_BUDGET.perInterval).toBeLessThan(serverBurst);
+    expect(
+      clientPerServerWindow,
+      `background emits ${clientPerServerWindow} per ${SERVER_WINDOW_MS}ms against a cap of ${serverBurst}`,
+    ).toBeLessThan(serverBurst);
+  });
+
+  it("stays under the per-minute ceiling too", () => {
+    const perMinute = (BACKGROUND_BUDGET.perInterval * 60_000) / BACKGROUND_BUDGET.intervalMs;
+    expect(perMinute).toBeLessThan(serverDefault("LLM_RATE_LIMIT_PER_USER_PER_MINUTE"));
   });
 
   it("leaves enough for a Copilot turn", () => {
@@ -262,8 +276,10 @@ describe("background leaves the server ceiling a reserve", () => {
     // drops below that, a user asking a question starts getting rate limited
     // while background labeling runs — the regression this module exists for.
     const serverBurst = serverDefault("LLM_RATE_LIMIT_PER_USER_BURST_PER_10S");
-    const reserve = serverBurst - BACKGROUND_BUDGET.perInterval;
-    expect(reserve).toBeGreaterThanOrEqual(30);
+    const reserve = serverBurst - clientPerServerWindow;
+    expect(reserve, `only ${reserve} requests per 10s left for interactive`).toBeGreaterThanOrEqual(
+      30,
+    );
   });
 
   it("does not open more sockets than the gateway will forward", () => {
