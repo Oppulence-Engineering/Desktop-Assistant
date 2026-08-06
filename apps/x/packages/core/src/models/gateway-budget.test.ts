@@ -74,8 +74,7 @@ describe("isInteractive", () => {
 describe("background pacing", () => {
   it("releases at most the interval cap per window", async () => {
     const started: number[] = [];
-    // 170 against a 70-per-window cap: enough to span three windows.
-    const calls = Array.from({ length: 170 }, () =>
+    const calls = Array.from({ length: 30 }, () =>
       throughBackgroundBudget(async () => {
         started.push(Date.now());
         return ok();
@@ -83,14 +82,39 @@ describe("background pacing", () => {
     );
 
     await vi.advanceTimersByTimeAsync(0);
-    expect(started.length).toBe(70);
+    expect(started.length).toBe(7);
 
-    await vi.advanceTimersByTimeAsync(10_000);
-    expect(started.length).toBe(140);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(started.length).toBe(14);
 
-    await vi.advanceTimersByTimeAsync(10_000);
-    expect(started.length).toBe(170);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(started.length).toBe(21);
+    await vi.advanceTimersByTimeAsync(5_000);
     await Promise.all(calls);
+  });
+
+  it("never puts more than the server's window cap into any 10s span", async () => {
+    // The server limiter is a fixed window, so its boundary is arbitrary
+    // relative to ours. Any 10s slice of our output must fit under the cap
+    // whatever the phase offset, or a third of a burst gets rejected on timing
+    // alone.
+    const started: number[] = [];
+    Array.from({ length: 300 }, () =>
+      throughBackgroundBudget(async () => {
+        started.push(Date.now());
+        return ok();
+      }).catch(() => {}),
+    );
+    await vi.advanceTimersByTimeAsync(40_000);
+
+    const SERVER_WINDOW_MS = 10_000;
+    const SERVER_CAP = 100;
+    let worst = 0;
+    for (const t of started) {
+      const inWindow = started.filter((u) => u >= t && u < t + SERVER_WINDOW_MS).length;
+      worst = Math.max(worst, inWindow);
+    }
+    expect(worst, `worst 10s span held ${worst} requests`).toBeLessThanOrEqual(SERVER_CAP);
   });
 
   it("builds exactly the backlog an interactive caller must not wait behind", async () => {

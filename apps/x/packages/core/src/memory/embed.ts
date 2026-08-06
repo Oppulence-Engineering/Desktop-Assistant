@@ -138,14 +138,23 @@ async function meteredEmbed(
   dimensions?: number,
 ): Promise<EmbedResult> {
   const token = await getAccessToken();
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  // The timeout has to start when the request does, not when it is queued.
+  //
+  // /v1/llm/embeddings shares the rate-limit bucket with chat, so memory
+  // indexing draws on the same background budget — otherwise a rebuild
+  // silently spends the allowance the labeling agent is waiting for. But that
+  // queue can hold a request for far longer than REQUEST_TIMEOUT_MS during a
+  // backlog. Arming the AbortController before queueing made the wait count
+  // against the request: the call aborted before it was ever sent, withRetry
+  // burned attempts on it, and each abort counted as a transport failure
+  // toward the circuit breaker — so a big enough backlog would pause itself.
+  let controller: AbortController | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    // /v1/llm/embeddings shares the rate-limit bucket with chat, so memory
-    // indexing has to draw on the same background budget — otherwise a rebuild
-    // silently spends the allowance the labeling agent is waiting for.
-    const res = await throughBackgroundBudget(() =>
-      fetch(`${API_URL}/v1/llm/embeddings`, {
+    const res = await throughBackgroundBudget(() => {
+      controller = new AbortController();
+      timer = setTimeout(() => controller?.abort(), REQUEST_TIMEOUT_MS);
+      return fetch(`${API_URL}/v1/llm/embeddings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -162,8 +171,8 @@ async function meteredEmbed(
           ...(dimensions ? { dimensions } : {}),
         }),
         signal: controller.signal,
-      }),
-    );
+      });
+    });
     if (!res.ok) {
       const err = new Error(
         `embeddings proxy ${res.status}: ${await res.text().catch(() => "")}`,

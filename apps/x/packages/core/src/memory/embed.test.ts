@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { resetBackgroundBudgetForTests } from "../models/gateway-budget.js";
+import { resetBackgroundBudgetForTests, throughBackgroundBudget } from "../models/gateway-budget.js";
 
 // embedBatch (metered path) needs an access token; stub it so no real auth runs.
 vi.mock("../auth/tokens.js", () => ({ getAccessToken: async () => "test-token" }));
@@ -233,5 +233,42 @@ describe("resolveEmbedTarget", () => {
     expect((await resolveEmbedTarget("m", 512)).dimensions).toBe(512);
     expect((await resolveEmbedTarget("m", 0)).dimensions).toBeUndefined();
     expect((await resolveEmbedTarget("m")).dimensions).toBeUndefined();
+  });
+});
+
+describe("embedBatch — queue wait vs request timeout", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("does not spend the request timeout waiting in the background queue", async () => {
+    // meteredEmbed goes through the shared budget, which can hold a request far
+    // longer than REQUEST_TIMEOUT_MS during a backlog. Arming the
+    // AbortController before queueing made that wait count against the request:
+    // the call aborted before it was ever sent, withRetry burned an attempt on
+    // it, and each abort counted as a transport failure toward the circuit
+    // breaker — so a large enough backlog paused itself.
+    vi.useFakeTimers();
+    resetBackgroundBudgetForTests();
+    isSignedInMock.mockResolvedValue(true);
+
+    let fetchCalls = 0;
+    const fetchFn = vi.fn(async (_url: unknown, init: RequestInit) => {
+      fetchCalls += 1;
+      if (init?.signal?.aborted) throw new Error("aborted before send");
+      return res({ data: [{ embedding: [1] }], usage: { total_tokens: 1 } });
+    });
+    vi.stubGlobal("fetch", fetchFn);
+
+    // ~40s of backlog ahead of it, well past the 30s request timeout.
+    Array.from({ length: 300 }, () =>
+      throughBackgroundBudget(async () => ({ status: 200 })).catch(() => {}),
+    );
+
+    const pending = embedBatch(metered, ["hello"]);
+    await vi.advanceTimersByTimeAsync(120_000);
+    await expect(pending).resolves.toMatchObject({ vectors: [[1]] });
+    expect(fetchCalls, "one attempt, not a retry after a spurious abort").toBe(1);
+
+    resetBackgroundBudgetForTests();
+    vi.unstubAllGlobals();
   });
 });

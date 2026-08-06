@@ -67,11 +67,21 @@ export function isInteractive(useCase: string | undefined, subUseCase?: string):
 // it. Handing background the whole ceiling would reintroduce exactly that, and
 // leaving it at half was simply leaving throughput unused.
 //
+// Spread over one-second slices rather than released in a burst every ten.
+//
+// The server's limiter is a fixed window (INCR + PEXPIRE in
+// internal/ratelimit/redis.go), not a sliding one, so its window boundary is
+// wherever the first request of a window happened to land. Releasing 70 at once
+// every 10s means two adjacent bursts can fall inside a single server window —
+// 140 against a cap of 100 — and roughly a third of them get rejected for no
+// reason other than phase. 7 per second is the same 420/min with no burst to
+// straddle a boundary.
+//
 // Concurrency is capped separately: the limits are per window, but the desktop
-// opening 70 sockets at once helps nobody, and the gateway bounds its own
-// outbound fan-out at LLM_MAX_CONCURRENT regardless.
-const BACKGROUND_INTERVAL_MS = 10_000;
-const BACKGROUND_PER_INTERVAL = 70;
+// opening dozens of sockets at once helps nobody, and the gateway bounds its
+// own outbound fan-out at LLM_MAX_CONCURRENT regardless.
+const BACKGROUND_INTERVAL_MS = 1_000;
+const BACKGROUND_PER_INTERVAL = 7;
 const BACKGROUND_CONCURRENCY = 12;
 
 function newQueue(): PQueue {
