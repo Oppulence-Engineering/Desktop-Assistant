@@ -38,12 +38,21 @@ export function isInteractive(useCase: string | undefined): boolean {
   return useCase !== undefined && INTERACTIVE_USE_CASES.has(useCase);
 }
 
-// 6 per 10s = 36/min against a 60/min ceiling, so ~24/min stays free for
-// interactive traffic. Concurrency is separately capped: the limits are per
-// window, but a wall of simultaneous sockets helps nobody.
+// The gateway allows 100 per 10s and 600/min per user
+// (LLM_RATE_LIMIT_PER_USER_*). Background takes half — 50 per 10s, 300/min —
+// leaving the rest permanently free for interactive traffic, which is never
+// queued at all.
+//
+// Half, rather than as much as possible: the point of this module is that a
+// person typing in chat is never behind a labeling backlog. Spending the whole
+// ceiling on background work would reintroduce exactly that.
+//
+// Concurrency is capped separately. The server limits are per window, but the
+// desktop opening 50 sockets at once helps nobody, and the gateway bounds its
+// own outbound fan-out at LLM_MAX_CONCURRENT regardless.
 const BACKGROUND_INTERVAL_MS = 10_000;
-const BACKGROUND_PER_INTERVAL = 6;
-const BACKGROUND_CONCURRENCY = 3;
+const BACKGROUND_PER_INTERVAL = 50;
+const BACKGROUND_CONCURRENCY = 8;
 
 function newQueue(): PQueue {
   return new PQueue({

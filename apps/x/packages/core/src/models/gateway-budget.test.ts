@@ -57,7 +57,8 @@ describe("isInteractive", () => {
 describe("background pacing", () => {
   it("releases at most the interval cap per window", async () => {
     const started: number[] = [];
-    const calls = Array.from({ length: 14 }, () =>
+    // 120 against a 50-per-window cap: enough to span three windows.
+    const calls = Array.from({ length: 120 }, () =>
       throughBackgroundBudget(async () => {
         started.push(Date.now());
         return ok();
@@ -65,14 +66,13 @@ describe("background pacing", () => {
     );
 
     await vi.advanceTimersByTimeAsync(0);
-    // 6 per 10s: the first window releases 6 and no more.
-    expect(started.length).toBe(6);
+    expect(started.length).toBe(50);
 
     await vi.advanceTimersByTimeAsync(10_000);
-    expect(started.length).toBe(12);
+    expect(started.length).toBe(100);
 
     await vi.advanceTimersByTimeAsync(10_000);
-    expect(started.length).toBe(14);
+    expect(started.length).toBe(120);
     await Promise.all(calls);
   });
 
@@ -82,16 +82,16 @@ describe("background pacing", () => {
     // it — asserted in "interactive traffic bypasses the queue" below.
     // Not awaited: p-queue's clear() drops queued tasks without settling their
     // promises, so awaiting them here would hang forever.
-    Array.from({ length: 100 }, () => throughBackgroundBudget(async () => ok()).catch(() => {}));
+    Array.from({ length: 400 }, () => throughBackgroundBudget(async () => ok()).catch(() => {}));
 
     await vi.advanceTimersByTimeAsync(0);
-    expect(backgroundQueueStats().size).toBeGreaterThan(80);
+    expect(backgroundQueueStats().size).toBeGreaterThan(300);
   });
 
   it("drops queued work when cleared, without failing in-flight requests", async () => {
     const inFlight = throughBackgroundBudget(async () => ok());
     // Not awaited: clear() drops these without settling their promises.
-    Array.from({ length: 50 }, () => throughBackgroundBudget(async () => ok()).catch(() => {}));
+    Array.from({ length: 200 }, () => throughBackgroundBudget(async () => ok()).catch(() => {}));
 
     // Already dequeued and running — clear() must not disturb it.
     await vi.advanceTimersByTimeAsync(10);
@@ -165,7 +165,7 @@ describe("shared budget", () => {
     // Chat, embeddings and the model catalog share one server-side bucket, so
     // they have to share one client-side queue or the budget leaks.
     const again = await import("./gateway-budget.js");
-    Array.from({ length: 20 }, () => throughBackgroundBudget(async () => ok()).catch(() => {}));
+    Array.from({ length: 200 }, () => throughBackgroundBudget(async () => ok()).catch(() => {}));
 
     // Read through the second import handle: it must observe the same backlog.
     const stats = again.backgroundQueueStats();
