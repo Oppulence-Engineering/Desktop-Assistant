@@ -64,6 +64,7 @@ import {
 } from "@x/core/dist/config/note_creation_config.js";
 import { consumePendingDeepLink } from "./deeplink.js";
 import { checkForUpdates, getUpdateStatus, installUpdate } from "./update-manager.js";
+import { getPrivacyConfig, setPrivacyConfig } from "@x/core/dist/config/privacy.js";
 import { IAgentScheduleRepo } from "@x/core/dist/agent-schedule/repo.js";
 import { IAgentScheduleStateRepo } from "@x/core/dist/agent-schedule/state-repo.js";
 import {
@@ -1041,6 +1042,8 @@ export function setupIpcHandlers() {
     "app:consumePendingDeepLink": async () => {
       return { url: consumePendingDeepLink() };
     },
+    "privacy:getConfig": async () => getPrivacyConfig(),
+    "privacy:setConfig": async (_event, args) => setPrivacyConfig(args),
     "app:getUpdateStatus": async () => getUpdateStatus(),
     "app:checkForUpdates": async () => checkForUpdates(),
     "app:installUpdate": async () => installUpdate(),

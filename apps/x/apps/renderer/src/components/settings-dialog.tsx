@@ -35,7 +35,6 @@ import {
   ArrowLeft,
   Cloud,
   Download,
-  LayoutGridIcon,
   RotateCcw,
   Settings,
 } from "@/lib/icons";
@@ -71,7 +70,6 @@ import { useConnectors } from "@/hooks/useConnectors";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
 import { PRODUCT_NAME, getProductProviderState } from "@x/shared/dist/branding.js";
 import type { ApprovalPolicy } from "@x/shared/src/code-mode.js";
-import settingsWorkspacePreview from "../../../../../rowboat-www/public/marketing/desktop-home.png";
 
 type ConfigTab =
   | "overview"
@@ -85,7 +83,6 @@ type ConfigTab =
   | "transcription"
   | "note-tagging"
   | "advanced"
-  | "customization"
   | "code-mode"
   | "mcp"
   | "environment"
@@ -215,13 +212,6 @@ const tabs: TabConfig[] = [
     label: "Code Mode",
     icon: Terminal,
     description: "Delegate coding tasks to Claude Code or Codex.",
-    group: "global",
-  },
-  {
-    id: "customization",
-    label: "Customization",
-    icon: LayoutGridIcon,
-    description: "Tune product branding, navigation, and workspace layout.",
     group: "global",
   },
   {
@@ -1263,23 +1253,6 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
   );
 }
 
-function useStoredBoolean(key: string, initial: boolean) {
-  const [value, setValue] = useState(() => {
-    const stored = localStorage.getItem(key);
-    return stored === null ? initial : stored === "true";
-  });
-
-  const update = useCallback(
-    (next: boolean) => {
-      setValue(next);
-      localStorage.setItem(key, String(next));
-    },
-    [key],
-  );
-
-  return [value, update] as const;
-}
-
 function SettingsPage({
   title,
   description,
@@ -1384,156 +1357,71 @@ function SettingsOverview({ onNavigate }: { onNavigate: (tab: ConfigTab) => void
   );
 }
 
+/**
+ * This pane held four switches; three of them controlled nothing.
+ *
+ * All four wrote to renderer localStorage that no code read. "Show model
+ * reasoning" and "Auto context compaction" named features that do not exist,
+ * and "Memory Bank (preview)" duplicated the real, working memory pane — so
+ * flipping it could contradict the setting that actually applies. Offering a
+ * switch for something the app cannot do is worse than offering nothing: it
+ * reads as a promise.
+ *
+ * "Share anonymous usage data" was the one worth keeping, and the one whose
+ * being dead actually mattered — a person turning it off was told their
+ * telemetry stopped, and it did not. It now writes to privacy.json, which the
+ * main process reads before anything can capture.
+ */
 function DesktopPreferenceToggles() {
-  const [reasoning, setReasoning] = useStoredBoolean("settings-show-model-reasoning", true);
-  const [compaction, setCompaction] = useStoredBoolean("settings-auto-context-compaction", true);
-  const [analytics, setAnalytics] = useStoredBoolean("settings-share-usage", true);
-  const [memory, setMemory] = useStoredBoolean("settings-memory-bank", false);
-  const options = [
-    {
-      value: reasoning,
-      setValue: setReasoning,
-      label: "Show model reasoning",
-      description: "Show the reasoning trace behind relationship recommendations.",
-    },
-    {
-      value: compaction,
-      setValue: setCompaction,
-      label: "Auto context compaction",
-      description: "Compress older evidence automatically as working context grows.",
-    },
-    {
-      value: analytics,
-      setValue: setAnalytics,
-      label: "Share anonymous usage data",
-      description: "Help improve the product without sharing relationship content.",
-    },
-    {
-      value: memory,
-      setValue: setMemory,
-      label: "Memory Bank (preview)",
-      description: "Build a private semantic memory from approved relationship evidence.",
-    },
-  ];
+  const [shareUsageData, setShareUsageData] = useState<boolean | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    void window.ipc
+      .invoke("privacy:getConfig", null)
+      .then((config) => setShareUsageData(config.shareUsageData))
+      .catch(() => setShareUsageData(null));
+  }, []);
+
+  const toggle = async () => {
+    if (shareUsageData === null || saving) return;
+    const next = !shareUsageData;
+    setSaving(true);
+    // Optimistic, then reconciled against what was actually written — a
+    // privacy switch must not show a state the app is not in.
+    setShareUsageData(next);
+    try {
+      const saved = await window.ipc.invoke("privacy:setConfig", { shareUsageData: next });
+      setShareUsageData(saved.shareUsageData);
+    } catch {
+      setShareUsageData(!next);
+      toast.error("Could not save that preference.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="settings-panel">
-      {options.map((option) => (
-        <div className="settings-row" key={option.label}>
-          <div className="settings-row-copy">
-            <p className="settings-row-label">{option.label}</p>
-            <p className="settings-row-description">{option.description}</p>
-          </div>
-          <button
-            aria-checked={option.value}
-            aria-label={option.label}
-            className="settings-switch shrink-0"
-            onClick={() => option.setValue(!option.value)}
-            role="switch"
-            type="button"
-          />
+      <div className="settings-row">
+        <div className="settings-row-copy">
+          <p className="settings-row-label">Share anonymous usage data</p>
+          <p className="settings-row-description">
+            {shareUsageData === null
+              ? "Loading…"
+              : "Product analytics only — never note, email, meeting or relationship content. Takes effect immediately."}
+          </p>
         </div>
-      ))}
-    </div>
-  );
-}
-
-function CustomizationSettings() {
-  const [appName, setAppName] = useState(PRODUCT_NAME);
-  const [savedName, setSavedName] = useState(PRODUCT_NAME);
-  const [sidebar, setSidebar] = useStoredBoolean("settings-display-sidebar", true);
-  const [statusBar, setStatusBar] = useStoredBoolean("settings-display-status-bar", true);
-  const [docs, setDocs] = useStoredBoolean("settings-display-docs", true);
-  const [feedback, setFeedback] = useStoredBoolean("settings-display-feedback", true);
-  const options = [
-    {
-      value: sidebar,
-      setValue: setSidebar,
-      label: "Display sidebar",
-      description: "Keep relationship navigation visible.",
-    },
-    {
-      value: statusBar,
-      setValue: setStatusBar,
-      label: "Display status bar",
-      description: "Show local service and synchronization state.",
-    },
-    {
-      value: docs,
-      setValue: setDocs,
-      label: "Display documentation link",
-      description: "Keep product documentation available from the app rail.",
-    },
-    {
-      value: feedback,
-      setValue: setFeedback,
-      label: "Display feedback button",
-      description: "Make feedback available to everyone using this device.",
-    },
-  ];
-
-  useEffect(() => {
-    const stored = localStorage.getItem("settings-app-name") || PRODUCT_NAME;
-    setAppName(stored);
-    setSavedName(stored);
-  }, []);
-
-  return (
-    <div className="space-y-7">
-      <SettingsSection title="Branding" description="Set the local workspace label on this device.">
-        <div className="settings-panel p-4">
-          <label className="settings-row-label" htmlFor="desktop-settings-app-name">
-            App name
-          </label>
-          <div className="mt-2 flex gap-2">
-            <input
-              className="settings-control min-w-0 flex-1"
-              id="desktop-settings-app-name"
-              onChange={(event) => setAppName(event.target.value)}
-              value={appName}
-            />
-            <button
-              className="settings-button settings-button--primary"
-              disabled={appName.trim() === savedName}
-              onClick={() => {
-                const next = appName.trim() || PRODUCT_NAME;
-                localStorage.setItem("settings-app-name", next);
-                setAppName(next);
-                setSavedName(next);
-              }}
-              type="button"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      </SettingsSection>
-      <SettingsSection
-        title="Layout"
-        description="Preview the same relationship workspace available in the web app."
-      >
-        <div className="settings-preview">
-          <img alt="Oppulence relationship workspace" src={settingsWorkspacePreview} />
-        </div>
-        <div className="settings-panel mt-3">
-          {options.map((option) => (
-            <div className="settings-row" key={option.label}>
-              <div className="settings-row-copy">
-                <p className="settings-row-label">{option.label}</p>
-                <p className="settings-row-description">{option.description}</p>
-              </div>
-              <button
-                aria-checked={option.value}
-                aria-label={option.label}
-                className="settings-switch"
-                onClick={() => option.setValue(!option.value)}
-                role="switch"
-                type="button"
-              />
-            </div>
-          ))}
-        </div>
-      </SettingsSection>
+        <button
+          aria-checked={shareUsageData ?? false}
+          aria-label="Share anonymous usage data"
+          className="settings-switch shrink-0"
+          disabled={shareUsageData === null || saving}
+          onClick={() => void toggle()}
+          role="switch"
+          type="button"
+        />
+      </div>
     </div>
   );
 }
@@ -1928,8 +1816,6 @@ export function SettingsDialog({
                     )
                   ) : activeTab === "code-mode" ? (
                     <CodeModeSettings dialogOpen={open} />
-                  ) : activeTab === "customization" ? (
-                    <CustomizationSettings />
                   ) : activeTab === "appearance" ? (
                     <AppearanceSettings />
                   ) : activeTab === "mcp" ? (

@@ -13,6 +13,7 @@ import {
 } from "./workspace.js";
 import { ListToolsResponse } from "./mcp.js";
 import { UpdateStatusSchema } from "./updates.js";
+import { PrivacyConfigSchema } from "./privacy.js";
 import {
   AskHumanResponsePayload,
   CreateRunOptions,
@@ -780,6 +781,17 @@ const ipcSchemas = {
   "app:updateStatus": {
     req: UpdateStatusSchema,
     res: z.null(),
+  },
+  // Privacy preferences. Lives in main-readable config rather than renderer
+  // localStorage: the code that sends analytics runs in main and could not see
+  // the old value.
+  "privacy:getConfig": {
+    req: z.null(),
+    res: PrivacyConfigSchema,
+  },
+  "privacy:setConfig": {
+    req: z.object({ shareUsageData: z.boolean().optional() }),
+    res: PrivacyConfigSchema,
   },
   "app:getUpdateStatus": {
     req: z.null(),
