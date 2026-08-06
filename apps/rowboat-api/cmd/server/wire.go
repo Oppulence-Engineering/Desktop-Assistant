@@ -212,7 +212,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		}()
 	}
 	llmH := llm.New(prices, gate, sec, client, log)
-	llmH.SetUpstreams(cfg.OpenAIBaseURL, cfg.OpenRouterBaseURL) // empty → provider defaults
+	llmH.SetUpstream(cfg.OpenRouterBaseURL) // empty → provider defaults
 	spendLimits := quota.SpendLimits{Daily: cfg.DailyCreditLimit, Monthly: cfg.MonthlyCreditLimit}
 	vendorPolicy := outbound.Policy{
 		Timeout:               cfg.VendorTimeout,

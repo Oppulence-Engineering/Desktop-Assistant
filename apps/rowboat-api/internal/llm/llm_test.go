@@ -49,7 +49,7 @@ func TestChatCompletionsDoesNotExposeUpstreamErrorBody(t *testing.T) {
 		_, _ = io.WriteString(w, `{"error":{"message":"secret provider account project_123"}}`)
 	}))
 	defer upstream.Close()
-	h.SetUpstreams("", upstream.URL)
+	h.SetUpstream(upstream.URL)
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/llm/chat/completions", strings.NewReader(`{"model":"anthropic/claude-sonnet-4-5","messages":[{"role":"user","content":"hi"}]}`)).WithContext(ctx)
 	req.Header.Set("Idempotency-Key", "llm-upstream-error-redaction")
@@ -72,7 +72,7 @@ func TestStreamingToolCallsWithoutUsageAreBilled(t *testing.T) {
 		_, _ = io.WriteString(w, "data: [DONE]\n\n")
 	}))
 	defer upstream.Close()
-	h.SetUpstreams("", upstream.URL)
+	h.SetUpstream(upstream.URL)
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/llm/chat/completions", strings.NewReader(`{"model":"anthropic/claude-sonnet-4-5","stream":true,"messages":[{"role":"user","content":"search"}]}`)).WithContext(ctx)
 	req.Header.Set("Idempotency-Key", "llm-tool-fallback-usage")
@@ -108,7 +108,7 @@ func TestChatCompletionsStreamingSettlesCredits(t *testing.T) {
 		_, _ = io.WriteString(w, "data: [DONE]\n\n")
 	}))
 	defer upstream.Close()
-	h.SetUpstreams("", upstream.URL)
+	h.SetUpstream(upstream.URL)
 
 	reqBody := `{"model":"anthropic/claude-sonnet-4-5","stream":true,"messages":[{"role":"user","content":"hi"}]}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/llm/chat/completions", strings.NewReader(reqBody)).WithContext(ctx)
@@ -156,7 +156,7 @@ func TestChatCompletionsInsufficientCredits(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer upstream.Close()
-	h.SetUpstreams("", upstream.URL)
+	h.SetUpstream(upstream.URL)
 
 	reqBody := `{"model":"anthropic/claude-sonnet-4-5","stream":true,"messages":[{"role":"user","content":"hi"}]}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/llm/chat/completions", strings.NewReader(reqBody)).WithContext(ctx)

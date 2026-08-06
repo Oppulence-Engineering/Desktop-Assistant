@@ -105,7 +105,7 @@ func newIntegrationHarness(t *testing.T, llmHandler func(call int, w http.Respon
 	})
 	gate := quota.New(d, zap.NewNop())
 	llmH := llm.New(pricing.DefaultTable(), gate, sec, d, zap.NewNop())
-	llmH.SetUpstreams("", llmSrv.URL)
+	llmH.SetUpstream(llmSrv.URL)
 
 	a := &Activities{
 		Client:        d,
