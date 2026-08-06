@@ -45,6 +45,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personsuppression"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -264,6 +265,11 @@ var personmergecandidateImplementors = []string{"PersonMergeCandidate", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*PersonMergeCandidate) IsNode() {}
+
+var personsuppressionImplementors = []string{"PersonSuppression", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*PersonSuppression) IsNode() {}
 
 var policydecisionsnapshotImplementors = []string{"PolicyDecisionSnapshot", "Node"}
 
@@ -782,6 +788,15 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(personmergecandidate.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, personmergecandidateImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case personsuppression.Table:
+		query := c.PersonSuppression.Query().
+			Where(personsuppression.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, personsuppressionImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -1673,6 +1688,22 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.PersonMergeCandidate.Query().
 			Where(personmergecandidate.IDIn(ids...))
 		query, err := query.CollectFields(ctx, personmergecandidateImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case personsuppression.Table:
+		query := c.PersonSuppression.Query().
+			Where(personsuppression.IDIn(ids...))
+		query, err := query.CollectFields(ctx, personsuppressionImplementors...)
 		if err != nil {
 			return nil, err
 		}

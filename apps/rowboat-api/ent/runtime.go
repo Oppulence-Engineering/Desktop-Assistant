@@ -45,6 +45,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personsuppression"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -1804,6 +1805,39 @@ func init() {
 	personmergecandidateDescID := personmergecandidateMixinFields0[0].Descriptor()
 	// personmergecandidate.DefaultID holds the default value on creation for the id field.
 	personmergecandidate.DefaultID = personmergecandidateDescID.Default.(func() uuid.UUID)
+	personsuppressionMixin := schema.PersonSuppression{}.Mixin()
+	personsuppressionMixinFields0 := personsuppressionMixin[0].Fields()
+	_ = personsuppressionMixinFields0
+	personsuppressionFields := schema.PersonSuppression{}.Fields()
+	_ = personsuppressionFields
+	// personsuppressionDescCreatedAt is the schema descriptor for created_at field.
+	personsuppressionDescCreatedAt := personsuppressionMixinFields0[1].Descriptor()
+	// personsuppression.DefaultCreatedAt holds the default value on creation for the created_at field.
+	personsuppression.DefaultCreatedAt = personsuppressionDescCreatedAt.Default.(func() time.Time)
+	// personsuppressionDescUpdatedAt is the schema descriptor for updated_at field.
+	personsuppressionDescUpdatedAt := personsuppressionMixinFields0[2].Descriptor()
+	// personsuppression.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	personsuppression.DefaultUpdatedAt = personsuppressionDescUpdatedAt.Default.(func() time.Time)
+	// personsuppression.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	personsuppression.UpdateDefaultUpdatedAt = personsuppressionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// personsuppressionDescKeyHash is the schema descriptor for key_hash field.
+	personsuppressionDescKeyHash := personsuppressionFields[0].Descriptor()
+	// personsuppression.KeyHashValidator is a validator for the "key_hash" field. It is called by the builders before save.
+	personsuppression.KeyHashValidator = personsuppressionDescKeyHash.Validators[0].(func(string) error)
+	// personsuppressionDescKind is the schema descriptor for kind field.
+	personsuppressionDescKind := personsuppressionFields[1].Descriptor()
+	// personsuppression.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	personsuppression.KindValidator = personsuppressionDescKind.Validators[0].(func(string) error)
+	// personsuppressionDescReason is the schema descriptor for reason field.
+	personsuppressionDescReason := personsuppressionFields[2].Descriptor()
+	// personsuppression.DefaultReason holds the default value on creation for the reason field.
+	personsuppression.DefaultReason = personsuppressionDescReason.Default.(string)
+	// personsuppression.ReasonValidator is a validator for the "reason" field. It is called by the builders before save.
+	personsuppression.ReasonValidator = personsuppressionDescReason.Validators[0].(func(string) error)
+	// personsuppressionDescID is the schema descriptor for id field.
+	personsuppressionDescID := personsuppressionMixinFields0[0].Descriptor()
+	// personsuppression.DefaultID holds the default value on creation for the id field.
+	personsuppression.DefaultID = personsuppressionDescID.Default.(func() uuid.UUID)
 	policydecisionsnapshotMixin := schema.PolicyDecisionSnapshot{}.Mixin()
 	policydecisionsnapshotMixinFields0 := policydecisionsnapshotMixin[0].Fields()
 	_ = policydecisionsnapshotMixinFields0

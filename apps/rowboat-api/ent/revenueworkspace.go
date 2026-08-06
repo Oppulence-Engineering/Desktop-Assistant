@@ -108,6 +108,8 @@ type RevenueWorkspaceEdges struct {
 	RelationshipPersons []*Person `json:"relationship_persons,omitempty"`
 	// PersonIdentities holds the value of the person_identities edge.
 	PersonIdentities []*PersonIdentity `json:"person_identities,omitempty"`
+	// PersonSuppressions holds the value of the person_suppressions edge.
+	PersonSuppressions []*PersonSuppression `json:"person_suppressions,omitempty"`
 	// PersonAttributes holds the value of the person_attributes edge.
 	PersonAttributes []*PersonAttribute `json:"person_attributes,omitempty"`
 	// PersonInteractionStats holds the value of the person_interaction_stats edge.
@@ -116,9 +118,9 @@ type RevenueWorkspaceEdges struct {
 	PersonMergeCandidates []*PersonMergeCandidate `json:"person_merge_candidates,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [33]bool
+	loadedTypes [34]bool
 	// totalCount holds the count of the edges above.
-	totalCount [33]map[string]int
+	totalCount [34]map[string]int
 
 	namedMembers                            map[string][]*RevenueWorkspaceMember
 	namedRelationships                      map[string][]*Relationship
@@ -149,6 +151,7 @@ type RevenueWorkspaceEdges struct {
 	namedRelationshipSourceStatuses         map[string][]*RelationshipSourceStatus
 	namedRelationshipPersons                map[string][]*Person
 	namedPersonIdentities                   map[string][]*PersonIdentity
+	namedPersonSuppressions                 map[string][]*PersonSuppression
 	namedPersonAttributes                   map[string][]*PersonAttribute
 	namedPersonInteractionStats             map[string][]*PersonInteractionStat
 	namedPersonMergeCandidates              map[string][]*PersonMergeCandidate
@@ -426,10 +429,19 @@ func (e RevenueWorkspaceEdges) PersonIdentitiesOrErr() ([]*PersonIdentity, error
 	return nil, &NotLoadedError{edge: "person_identities"}
 }
 
+// PersonSuppressionsOrErr returns the PersonSuppressions value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) PersonSuppressionsOrErr() ([]*PersonSuppression, error) {
+	if e.loadedTypes[30] {
+		return e.PersonSuppressions, nil
+	}
+	return nil, &NotLoadedError{edge: "person_suppressions"}
+}
+
 // PersonAttributesOrErr returns the PersonAttributes value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) PersonAttributesOrErr() ([]*PersonAttribute, error) {
-	if e.loadedTypes[30] {
+	if e.loadedTypes[31] {
 		return e.PersonAttributes, nil
 	}
 	return nil, &NotLoadedError{edge: "person_attributes"}
@@ -438,7 +450,7 @@ func (e RevenueWorkspaceEdges) PersonAttributesOrErr() ([]*PersonAttribute, erro
 // PersonInteractionStatsOrErr returns the PersonInteractionStats value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) PersonInteractionStatsOrErr() ([]*PersonInteractionStat, error) {
-	if e.loadedTypes[31] {
+	if e.loadedTypes[32] {
 		return e.PersonInteractionStats, nil
 	}
 	return nil, &NotLoadedError{edge: "person_interaction_stats"}
@@ -447,7 +459,7 @@ func (e RevenueWorkspaceEdges) PersonInteractionStatsOrErr() ([]*PersonInteracti
 // PersonMergeCandidatesOrErr returns the PersonMergeCandidates value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) PersonMergeCandidatesOrErr() ([]*PersonMergeCandidate, error) {
-	if e.loadedTypes[32] {
+	if e.loadedTypes[33] {
 		return e.PersonMergeCandidates, nil
 	}
 	return nil, &NotLoadedError{edge: "person_merge_candidates"}
@@ -718,6 +730,11 @@ func (_m *RevenueWorkspace) QueryRelationshipPersons() *PersonQuery {
 // QueryPersonIdentities queries the "person_identities" edge of the RevenueWorkspace entity.
 func (_m *RevenueWorkspace) QueryPersonIdentities() *PersonIdentityQuery {
 	return NewRevenueWorkspaceClient(_m.config).QueryPersonIdentities(_m)
+}
+
+// QueryPersonSuppressions queries the "person_suppressions" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryPersonSuppressions() *PersonSuppressionQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryPersonSuppressions(_m)
 }
 
 // QueryPersonAttributes queries the "person_attributes" edge of the RevenueWorkspace entity.
@@ -1490,6 +1507,30 @@ func (_m *RevenueWorkspace) appendNamedPersonIdentities(name string, edges ...*P
 		_m.Edges.namedPersonIdentities[name] = []*PersonIdentity{}
 	} else {
 		_m.Edges.namedPersonIdentities[name] = append(_m.Edges.namedPersonIdentities[name], edges...)
+	}
+}
+
+// NamedPersonSuppressions returns the PersonSuppressions named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedPersonSuppressions(name string) ([]*PersonSuppression, error) {
+	if _m.Edges.namedPersonSuppressions == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedPersonSuppressions[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedPersonSuppressions(name string, edges ...*PersonSuppression) {
+	if _m.Edges.namedPersonSuppressions == nil {
+		_m.Edges.namedPersonSuppressions = make(map[string][]*PersonSuppression)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedPersonSuppressions[name] = []*PersonSuppression{}
+	} else {
+		_m.Edges.namedPersonSuppressions[name] = append(_m.Edges.namedPersonSuppressions[name], edges...)
 	}
 }
 

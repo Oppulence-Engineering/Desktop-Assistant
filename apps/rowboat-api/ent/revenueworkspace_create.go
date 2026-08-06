@@ -22,6 +22,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personsuppression"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipassertion"
@@ -655,6 +656,21 @@ func (_c *RevenueWorkspaceCreate) AddPersonIdentities(v ...*PersonIdentity) *Rev
 		ids[i] = v[i].ID
 	}
 	return _c.AddPersonIdentityIDs(ids...)
+}
+
+// AddPersonSuppressionIDs adds the "person_suppressions" edge to the PersonSuppression entity by IDs.
+func (_c *RevenueWorkspaceCreate) AddPersonSuppressionIDs(ids ...uuid.UUID) *RevenueWorkspaceCreate {
+	_c.mutation.AddPersonSuppressionIDs(ids...)
+	return _c
+}
+
+// AddPersonSuppressions adds the "person_suppressions" edges to the PersonSuppression entity.
+func (_c *RevenueWorkspaceCreate) AddPersonSuppressions(v ...*PersonSuppression) *RevenueWorkspaceCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddPersonSuppressionIDs(ids...)
 }
 
 // AddPersonAttributeIDs adds the "person_attributes" edge to the PersonAttribute entity by IDs.
@@ -1336,6 +1352,22 @@ func (_c *RevenueWorkspaceCreate) createSpec() (*RevenueWorkspace, *sqlgraph.Cre
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(personidentity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.PersonSuppressionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.PersonSuppressionsTable,
+			Columns: []string{revenueworkspace.PersonSuppressionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(personsuppression.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

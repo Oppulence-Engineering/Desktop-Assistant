@@ -1942,6 +1942,46 @@ var (
 			},
 		},
 	}
+	// PersonSuppressionsColumns holds the columns for the "person_suppressions" table.
+	PersonSuppressionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "key_hash", Type: field.TypeString},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "reason", Type: field.TypeString, Default: "user_action"},
+		{Name: "suppressed_at", Type: field.TypeTime},
+		{Name: "note", Type: field.TypeString, Nullable: true},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_person_suppressions", Type: field.TypeUUID},
+	}
+	// PersonSuppressionsTable holds the schema information for the "person_suppressions" table.
+	PersonSuppressionsTable = &schema.Table{
+		Name:       "person_suppressions",
+		Columns:    PersonSuppressionsColumns,
+		PrimaryKey: []*schema.Column{PersonSuppressionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "person_suppressions_revenue_workspaces_person_suppressions",
+				Columns:    []*schema.Column{PersonSuppressionsColumns[8]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "person_suppressions_users_person_suppressions",
+				Columns:    []*schema.Column{PersonSuppressionsColumns[9]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "personsuppression_key_hash_revenue_workspace_id",
+				Unique:  true,
+				Columns: []*schema.Column{PersonSuppressionsColumns[3], PersonSuppressionsColumns[8]},
+			},
+		},
+	}
 	// PolicyDecisionSnapshotsColumns holds the columns for the "policy_decision_snapshots" table.
 	PolicyDecisionSnapshotsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -3491,6 +3531,7 @@ var (
 		PersonIdentitiesTable,
 		PersonInteractionStatsTable,
 		PersonMergeCandidatesTable,
+		PersonSuppressionsTable,
 		PolicyDecisionSnapshotsTable,
 		RelationshipsTable,
 		RelationshipAssertionsTable,
@@ -3605,6 +3646,8 @@ func init() {
 	PersonMergeCandidatesTable.ForeignKeys[1].RefTable = RelationshipPersonsTable
 	PersonMergeCandidatesTable.ForeignKeys[2].RefTable = RevenueWorkspacesTable
 	PersonMergeCandidatesTable.ForeignKeys[3].RefTable = UsersTable
+	PersonSuppressionsTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
+	PersonSuppressionsTable.ForeignKeys[1].RefTable = UsersTable
 	PolicyDecisionSnapshotsTable.ForeignKeys[0].RefTable = RevenueActionsTable
 	PolicyDecisionSnapshotsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
 	PolicyDecisionSnapshotsTable.ForeignKeys[2].RefTable = UsersTable
