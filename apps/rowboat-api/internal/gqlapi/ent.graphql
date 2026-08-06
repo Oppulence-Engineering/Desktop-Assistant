@@ -7106,6 +7106,8 @@ type Person implements Node {
   orgDomain: String
   timezone: String
   locale: String
+  seniority: String
+  location: String
   employmentStatus: String!
   attributesVersion: Int!
   attributesHash: String
@@ -7142,6 +7144,7 @@ type PersonAttribute implements Node {
   retractedAt: Time
   supersedesAttributeID: String
   extractorVersion: String!
+  citationsJSON: String
   dedupeKey: String!
   supportingObservationIds: [String!]!
   workspace: RevenueWorkspace!
@@ -7363,6 +7366,24 @@ input PersonAttributeWhereInput {
   extractorVersionHasSuffix: String
   extractorVersionEqualFold: String
   extractorVersionContainsFold: String
+  """
+  citations_json field predicates
+  """
+  citationsJSON: String
+  citationsJSONNEQ: String
+  citationsJSONIn: [String!]
+  citationsJSONNotIn: [String!]
+  citationsJSONGT: String
+  citationsJSONGTE: String
+  citationsJSONLT: String
+  citationsJSONLTE: String
+  citationsJSONContains: String
+  citationsJSONHasPrefix: String
+  citationsJSONHasSuffix: String
+  citationsJSONIsNil: Boolean
+  citationsJSONNotNil: Boolean
+  citationsJSONEqualFold: String
+  citationsJSONContainsFold: String
   """
   dedupe_key field predicates
   """
@@ -8298,6 +8319,42 @@ input PersonWhereInput {
   localeEqualFold: String
   localeContainsFold: String
   """
+  seniority field predicates
+  """
+  seniority: String
+  seniorityNEQ: String
+  seniorityIn: [String!]
+  seniorityNotIn: [String!]
+  seniorityGT: String
+  seniorityGTE: String
+  seniorityLT: String
+  seniorityLTE: String
+  seniorityContains: String
+  seniorityHasPrefix: String
+  seniorityHasSuffix: String
+  seniorityIsNil: Boolean
+  seniorityNotNil: Boolean
+  seniorityEqualFold: String
+  seniorityContainsFold: String
+  """
+  location field predicates
+  """
+  location: String
+  locationNEQ: String
+  locationIn: [String!]
+  locationNotIn: [String!]
+  locationGT: String
+  locationGTE: String
+  locationLT: String
+  locationLTE: String
+  locationContains: String
+  locationHasPrefix: String
+  locationHasSuffix: String
+  locationIsNil: Boolean
+  locationNotNil: Boolean
+  locationEqualFold: String
+  locationContainsFold: String
+  """
   employment_status field predicates
   """
   employmentStatus: String
@@ -9103,6 +9160,7 @@ type RelationshipAssertion implements Node {
   retractedAt: Time
   supersedesAssertionID: String
   extractorVersion: String!
+  citationsJSON: String
   projectorCompatVersion: Int!
   supportingObservationIds: [String!]!
   workspace: RevenueWorkspace!
@@ -9281,6 +9339,24 @@ input RelationshipAssertionWhereInput {
   extractorVersionHasSuffix: String
   extractorVersionEqualFold: String
   extractorVersionContainsFold: String
+  """
+  citations_json field predicates
+  """
+  citationsJSON: String
+  citationsJSONNEQ: String
+  citationsJSONIn: [String!]
+  citationsJSONNotIn: [String!]
+  citationsJSONGT: String
+  citationsJSONGTE: String
+  citationsJSONLT: String
+  citationsJSONLTE: String
+  citationsJSONContains: String
+  citationsJSONHasPrefix: String
+  citationsJSONHasSuffix: String
+  citationsJSONIsNil: Boolean
+  citationsJSONNotNil: Boolean
+  citationsJSONEqualFold: String
+  citationsJSONContainsFold: String
   """
   projector_compat_version field predicates
   """
@@ -13957,6 +14033,8 @@ type RevenueWorkspace implements Node {
   lastVerifiedAt: Time
   lastDigestAt: Time
   mailHistoryID: String
+  cloudResearchConsent: Boolean!
+  cloudResearchConsentAt: Time
   user: User!
   members: [RevenueWorkspaceMember!]
   relationships: [Relationship!]
@@ -14275,6 +14353,24 @@ input RevenueWorkspaceWhereInput {
   mailHistoryIDNotNil: Boolean
   mailHistoryIDEqualFold: String
   mailHistoryIDContainsFold: String
+  """
+  cloud_research_consent field predicates
+  """
+  cloudResearchConsent: Boolean
+  cloudResearchConsentNEQ: Boolean
+  """
+  cloud_research_consent_at field predicates
+  """
+  cloudResearchConsentAt: Time
+  cloudResearchConsentAtNEQ: Time
+  cloudResearchConsentAtIn: [Time!]
+  cloudResearchConsentAtNotIn: [Time!]
+  cloudResearchConsentAtGT: Time
+  cloudResearchConsentAtGTE: Time
+  cloudResearchConsentAtLT: Time
+  cloudResearchConsentAtLTE: Time
+  cloudResearchConsentAtIsNil: Boolean
+  cloudResearchConsentAtNotNil: Boolean
   """
   user edge predicates
   """

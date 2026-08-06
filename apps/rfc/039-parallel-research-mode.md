@@ -1,4 +1,7 @@
-# Research Mode: local by default, Parallel-backed when paid
+# RFC 039 — Research Mode: local by default, Parallel-backed when paid
+
+> **Status: implemented.** See [Implementation](#implementation) for what shipped,
+> where the code lives, and the three places the build departed from this draft.
 
 ## Context
 
@@ -39,12 +42,12 @@ Modelled on transcription, which already ships "On-device (Whisper)" vs "Cloud (
 | Mode | Behaviour |
 | --- | --- |
 | **Local** — default, all plans | Today exactly. Owned signals only. Nothing about a counterparty leaves the device. |
-| **Cloud** — `pro` plan | Adds Parallel enrichment, monitoring and research. Writes `external_research` assertions with citations. |
+| **Cloud** — `intelligence` plan | Adds Parallel enrichment, monitoring and research. Writes `external_research` assertions with citations. |
 
 ### Gating reuses what exists
 
 - **Capability**: add `CapabilityCloudResearch` to `internal/revenue/release_controls.go`, beside `CapabilityGoogleSource`. `ErrCapabilityDisabled` and the workspace-entitlement plumbing already exist.
-- **Plan**: the Stripe integration already distinguishes `starter` and `pro` (`internal/billing/stripe.go`). Cloud mode requires `pro`.
+- **Plan**: the Stripe integration already distinguishes `starter` and `pro` (`internal/billing/stripe.go`). Cloud mode requires the new `intelligence` plan — see [Recommendation](#recommendation-a-new-tier-not-a-higher-chase), which supersedes the `pro` gate this section originally proposed.
 - **Kill switch**: the same release-control path already supports disabling a capability fleet-wide, which matters for a vendor that can have an outage or a price change.
 
 Gate on the **server**, not the client. The desktop asking politely is not a gate; the API key lives server-side and the capability check belongs next to it.
@@ -277,3 +280,93 @@ Two honest notes on the gap that leaves:
 1. ~~**Is `pro` the right gate, or is this a separate add-on?**~~ **Answered above:** a new `Intelligence` tier at $249/mo, because cloud research is consent-gated and users who decline it on privacy grounds must not be repriced for it. Margin was never the deciding factor — at ~$8/seat/month it is comfortable either way. What remains open is whether `Teams` includes `Intelligence` by default or stacks on top of it.
 2. **Do enriched fields sync to the cloud graph, or stay local?** They are about third parties; the answer differs from first-party evidence and the current consent copy does not cover it.
 3. **Retention.** Public professional data still ages. A `valid_to` policy for `external_research` attributes — 90 days? — versus keeping them until contradicted.
+
+## Implementation
+
+Shipped on `feat/parallel-research-mode`. This section is the map from the
+argument above to the code, and the honest record of where the build departed
+from the draft.
+
+### What exists
+
+| Piece | Where |
+| --- | --- |
+| Vendor client (Task API, basis, citations) | `apps/rowboat-api/internal/parallel/` |
+| Provenance tier + citations columns | `ent/schema/{person_attribute,relationship_assertion}.go` |
+| Ladder | `internal/revenue/relationship_state.go` — `assertionPriority` |
+| Consent + the three gates | `internal/revenue/research_consent.go` |
+| Person enrichment, basis→attribute mapping, bulk estimate | `internal/revenue/research.go` |
+| Trigger surface + daily sweep | `internal/revenue/research_triggers.go` |
+| `external_trigger` detector | `internal/revenue/relationship_attention.go` |
+| HTTP surface | `internal/revenue/handler_research.go` — `/v1/research/*` |
+| Desktop consent switch and bulk run | `apps/x/apps/renderer/src/components/settings/transcription-settings.tsx` |
+| Privacy receipt | `apps/x/apps/renderer/src/components/settings/privacy-settings.tsx` |
+| `Intelligence` tier | `apps/rowboat-www/app/(marketing)/marketing-data.ts`, `internal/billing/stripe.go` |
+| Schema record | `apps/rowboat-api/migrations/20260806220000_cloud_research.sql` |
+
+The three gates are separate errors with separate remedies —
+`ErrCapabilityDisabled` (an operator re-enables), `ErrResearchPlanRequired` (a
+user upgrades), `ErrResearchConsentRequired` (only the user can grant). They are
+checked in that order, so a vendor incident stops traffic regardless of what
+anyone has bought or agreed to. Consent is checked last and is still the
+strongest: it is the only one nobody can grant on the user's behalf.
+
+Consent shipped first, with tests, before the client existed — as this document
+demanded. `cloud_research_consent` lives on `RevenueWorkspace`, not only in
+desktop config, because the data subject is not the user.
+
+### Where this departs from the draft
+
+1. **The trigger surface is a scheduled Task, not a vendor `Monitor`.** A Monitor
+   subscription needs an inbound webhook, its signature verification and a replay
+   story, all built against a contract nobody here has exercised against a real
+   key. `ResearchTriggerRunner` asks the same question daily through the Task API
+   at a comparable price, and shares the reserve/settle path everything else
+   already uses. The Monitor product is the optimisation; moving to it changes
+   nothing a user sees.
+2. **Bulk enrichment is chunked by the client, not streamed over SSE.** The Group
+   API with `last_event_id` is the right shape for a durable job runner, and there
+   is no durable job runner to put it in. `POST /v1/research/people` takes at most
+   25 ids; the desktop walks the pending list and re-sends a failed chunk.
+   Idempotency per person + task-spec version makes a resumed run free for
+   everyone it already covered, which is the property `last_event_id` was wanted
+   for.
+3. **The verification bullet "a `starter` plan gets `ErrCapabilityDisabled`" is
+   implemented as a distinct `ErrResearchPlanRequired`** returning 402 rather than
+   409. The intent — an under-plan caller is refused, and consent-off is refused
+   independently — is tested; collapsing a plan problem into "capability disabled"
+   would tell a user nothing they can act on.
+
+### Two decisions the draft left implicit
+
+**Silence still settles.** A run where the vendor honestly reports "I could not
+identify this person" writes nothing and is still billed to the user, because the
+vendor ran and billed us. Refunding silence would make the cheapest possible
+answer the one the accounting rewards.
+
+**An unmatched identity discards the whole result, not the weak fields.** Anything
+short of a `high` identity match stores nothing at all. "Store it at low
+confidence" is precisely how a stranger's job history ends up on a real contact:
+a low confidence still wins a dimension nothing else asserts.
+
+### Open questions, updated
+
+1. ~~**Is `pro` the right gate?**~~ Answered: the `intelligence` plan at $249/mo,
+   implemented in Stripe and in the marketing page. Whether `Teams` includes it or
+   stacks on top is still open.
+2. **Do enriched fields sync to the cloud graph, or stay local?** Still open —
+   they are written server-side today, since that is where the vendor call
+   happens. The consent copy covers what is *sent*; it does not yet say what is
+   *retained*, and that gap is real.
+3. ~~**Retention.**~~ Answered for triggers only: a trigger carries
+   `valid_to = observed + 30 days`, because a funding round announced six weeks
+   ago is no longer a reason to write today. Person attributes still have no
+   expiry and are kept until contradicted — the question stands for those.
+
+### The manual check this cannot automate
+
+The end-to-end bullet is not covered by any test and must be run by a person
+against a real key on a throwaway workspace: enrich one person, click the
+citation, confirm the page actually supports the claim. A citation that does not
+support its field is the failure mode that matters, and no unit test will catch
+it.

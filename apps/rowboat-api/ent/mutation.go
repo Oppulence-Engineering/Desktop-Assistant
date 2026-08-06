@@ -42635,6 +42635,8 @@ type PersonMutation struct {
 	phone                            *string
 	timezone                         *string
 	locale                           *string
+	seniority                        *string
+	location                         *string
 	employment_status                *string
 	attributes_version               *int
 	addattributes_version            *int
@@ -43281,6 +43283,104 @@ func (m *PersonMutation) LocaleCleared() bool {
 func (m *PersonMutation) ResetLocale() {
 	m.locale = nil
 	delete(m.clearedFields, person.FieldLocale)
+}
+
+// SetSeniority sets the "seniority" field.
+func (m *PersonMutation) SetSeniority(s string) {
+	m.seniority = &s
+}
+
+// Seniority returns the value of the "seniority" field in the mutation.
+func (m *PersonMutation) Seniority() (r string, exists bool) {
+	v := m.seniority
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSeniority returns the old "seniority" field's value of the Person entity.
+// If the Person object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PersonMutation) OldSeniority(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSeniority is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSeniority requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSeniority: %w", err)
+	}
+	return oldValue.Seniority, nil
+}
+
+// ClearSeniority clears the value of the "seniority" field.
+func (m *PersonMutation) ClearSeniority() {
+	m.seniority = nil
+	m.clearedFields[person.FieldSeniority] = struct{}{}
+}
+
+// SeniorityCleared returns if the "seniority" field was cleared in this mutation.
+func (m *PersonMutation) SeniorityCleared() bool {
+	_, ok := m.clearedFields[person.FieldSeniority]
+	return ok
+}
+
+// ResetSeniority resets all changes to the "seniority" field.
+func (m *PersonMutation) ResetSeniority() {
+	m.seniority = nil
+	delete(m.clearedFields, person.FieldSeniority)
+}
+
+// SetLocation sets the "location" field.
+func (m *PersonMutation) SetLocation(s string) {
+	m.location = &s
+}
+
+// Location returns the value of the "location" field in the mutation.
+func (m *PersonMutation) Location() (r string, exists bool) {
+	v := m.location
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLocation returns the old "location" field's value of the Person entity.
+// If the Person object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PersonMutation) OldLocation(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLocation is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLocation requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLocation: %w", err)
+	}
+	return oldValue.Location, nil
+}
+
+// ClearLocation clears the value of the "location" field.
+func (m *PersonMutation) ClearLocation() {
+	m.location = nil
+	m.clearedFields[person.FieldLocation] = struct{}{}
+}
+
+// LocationCleared returns if the "location" field was cleared in this mutation.
+func (m *PersonMutation) LocationCleared() bool {
+	_, ok := m.clearedFields[person.FieldLocation]
+	return ok
+}
+
+// ResetLocation resets all changes to the "location" field.
+func (m *PersonMutation) ResetLocation() {
+	m.location = nil
+	delete(m.clearedFields, person.FieldLocation)
 }
 
 // SetEmploymentStatus sets the "employment_status" field.
@@ -44253,7 +44353,7 @@ func (m *PersonMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PersonMutation) Fields() []string {
-	fields := make([]string, 0, 22)
+	fields := make([]string, 0, 24)
 	if m.created_at != nil {
 		fields = append(fields, person.FieldCreatedAt)
 	}
@@ -44286,6 +44386,12 @@ func (m *PersonMutation) Fields() []string {
 	}
 	if m.locale != nil {
 		fields = append(fields, person.FieldLocale)
+	}
+	if m.seniority != nil {
+		fields = append(fields, person.FieldSeniority)
+	}
+	if m.location != nil {
+		fields = append(fields, person.FieldLocation)
 	}
 	if m.employment_status != nil {
 		fields = append(fields, person.FieldEmploymentStatus)
@@ -44350,6 +44456,10 @@ func (m *PersonMutation) Field(name string) (ent.Value, bool) {
 		return m.Timezone()
 	case person.FieldLocale:
 		return m.Locale()
+	case person.FieldSeniority:
+		return m.Seniority()
+	case person.FieldLocation:
+		return m.Location()
 	case person.FieldEmploymentStatus:
 		return m.EmploymentStatus()
 	case person.FieldAttributesVersion:
@@ -44403,6 +44513,10 @@ func (m *PersonMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldTimezone(ctx)
 	case person.FieldLocale:
 		return m.OldLocale(ctx)
+	case person.FieldSeniority:
+		return m.OldSeniority(ctx)
+	case person.FieldLocation:
+		return m.OldLocation(ctx)
 	case person.FieldEmploymentStatus:
 		return m.OldEmploymentStatus(ctx)
 	case person.FieldAttributesVersion:
@@ -44510,6 +44624,20 @@ func (m *PersonMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetLocale(v)
+		return nil
+	case person.FieldSeniority:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSeniority(v)
+		return nil
+	case person.FieldLocation:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLocation(v)
 		return nil
 	case person.FieldEmploymentStatus:
 		v, ok := value.(string)
@@ -44678,6 +44806,12 @@ func (m *PersonMutation) ClearedFields() []string {
 	if m.FieldCleared(person.FieldLocale) {
 		fields = append(fields, person.FieldLocale)
 	}
+	if m.FieldCleared(person.FieldSeniority) {
+		fields = append(fields, person.FieldSeniority)
+	}
+	if m.FieldCleared(person.FieldLocation) {
+		fields = append(fields, person.FieldLocation)
+	}
 	if m.FieldCleared(person.FieldAttributesHash) {
 		fields = append(fields, person.FieldAttributesHash)
 	}
@@ -44730,6 +44864,12 @@ func (m *PersonMutation) ClearField(name string) error {
 		return nil
 	case person.FieldLocale:
 		m.ClearLocale()
+		return nil
+	case person.FieldSeniority:
+		m.ClearSeniority()
+		return nil
+	case person.FieldLocation:
+		m.ClearLocation()
 		return nil
 	case person.FieldAttributesHash:
 		m.ClearAttributesHash()
@@ -44789,6 +44929,12 @@ func (m *PersonMutation) ResetField(name string) error {
 		return nil
 	case person.FieldLocale:
 		m.ResetLocale()
+		return nil
+	case person.FieldSeniority:
+		m.ResetSeniority()
+		return nil
+	case person.FieldLocation:
+		m.ResetLocation()
 		return nil
 	case person.FieldEmploymentStatus:
 		m.ResetEmploymentStatus()
@@ -45100,6 +45246,7 @@ type PersonAttributeMutation struct {
 	retracted_at                     *time.Time
 	supersedes_attribute_id          *string
 	extractor_version                *string
+	citations_json                   *string
 	dedupe_key                       *string
 	supporting_observation_ids       *[]string
 	appendsupporting_observation_ids []string
@@ -45869,6 +46016,55 @@ func (m *PersonAttributeMutation) ResetExtractorVersion() {
 	m.extractor_version = nil
 }
 
+// SetCitationsJSON sets the "citations_json" field.
+func (m *PersonAttributeMutation) SetCitationsJSON(s string) {
+	m.citations_json = &s
+}
+
+// CitationsJSON returns the value of the "citations_json" field in the mutation.
+func (m *PersonAttributeMutation) CitationsJSON() (r string, exists bool) {
+	v := m.citations_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCitationsJSON returns the old "citations_json" field's value of the PersonAttribute entity.
+// If the PersonAttribute object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PersonAttributeMutation) OldCitationsJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCitationsJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCitationsJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCitationsJSON: %w", err)
+	}
+	return oldValue.CitationsJSON, nil
+}
+
+// ClearCitationsJSON clears the value of the "citations_json" field.
+func (m *PersonAttributeMutation) ClearCitationsJSON() {
+	m.citations_json = nil
+	m.clearedFields[personattribute.FieldCitationsJSON] = struct{}{}
+}
+
+// CitationsJSONCleared returns if the "citations_json" field was cleared in this mutation.
+func (m *PersonAttributeMutation) CitationsJSONCleared() bool {
+	_, ok := m.clearedFields[personattribute.FieldCitationsJSON]
+	return ok
+}
+
+// ResetCitationsJSON resets all changes to the "citations_json" field.
+func (m *PersonAttributeMutation) ResetCitationsJSON() {
+	m.citations_json = nil
+	delete(m.clearedFields, personattribute.FieldCitationsJSON)
+}
+
 // SetDedupeKey sets the "dedupe_key" field.
 func (m *PersonAttributeMutation) SetDedupeKey(s string) {
 	m.dedupe_key = &s
@@ -46146,7 +46342,7 @@ func (m *PersonAttributeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PersonAttributeMutation) Fields() []string {
-	fields := make([]string, 0, 18)
+	fields := make([]string, 0, 19)
 	if m.created_at != nil {
 		fields = append(fields, personattribute.FieldCreatedAt)
 	}
@@ -46195,6 +46391,9 @@ func (m *PersonAttributeMutation) Fields() []string {
 	if m.extractor_version != nil {
 		fields = append(fields, personattribute.FieldExtractorVersion)
 	}
+	if m.citations_json != nil {
+		fields = append(fields, personattribute.FieldCitationsJSON)
+	}
 	if m.dedupe_key != nil {
 		fields = append(fields, personattribute.FieldDedupeKey)
 	}
@@ -46241,6 +46440,8 @@ func (m *PersonAttributeMutation) Field(name string) (ent.Value, bool) {
 		return m.SupersedesAttributeID()
 	case personattribute.FieldExtractorVersion:
 		return m.ExtractorVersion()
+	case personattribute.FieldCitationsJSON:
+		return m.CitationsJSON()
 	case personattribute.FieldDedupeKey:
 		return m.DedupeKey()
 	case personattribute.FieldSupportingObservationIds:
@@ -46286,6 +46487,8 @@ func (m *PersonAttributeMutation) OldField(ctx context.Context, name string) (en
 		return m.OldSupersedesAttributeID(ctx)
 	case personattribute.FieldExtractorVersion:
 		return m.OldExtractorVersion(ctx)
+	case personattribute.FieldCitationsJSON:
+		return m.OldCitationsJSON(ctx)
 	case personattribute.FieldDedupeKey:
 		return m.OldDedupeKey(ctx)
 	case personattribute.FieldSupportingObservationIds:
@@ -46411,6 +46614,13 @@ func (m *PersonAttributeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetExtractorVersion(v)
 		return nil
+	case personattribute.FieldCitationsJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCitationsJSON(v)
+		return nil
 	case personattribute.FieldDedupeKey:
 		v, ok := value.(string)
 		if !ok {
@@ -46482,6 +46692,9 @@ func (m *PersonAttributeMutation) ClearedFields() []string {
 	if m.FieldCleared(personattribute.FieldSupersedesAttributeID) {
 		fields = append(fields, personattribute.FieldSupersedesAttributeID)
 	}
+	if m.FieldCleared(personattribute.FieldCitationsJSON) {
+		fields = append(fields, personattribute.FieldCitationsJSON)
+	}
 	return fields
 }
 
@@ -46507,6 +46720,9 @@ func (m *PersonAttributeMutation) ClearField(name string) error {
 		return nil
 	case personattribute.FieldSupersedesAttributeID:
 		m.ClearSupersedesAttributeID()
+		return nil
+	case personattribute.FieldCitationsJSON:
+		m.ClearCitationsJSON()
 		return nil
 	}
 	return fmt.Errorf("unknown PersonAttribute nullable field %s", name)
@@ -46563,6 +46779,9 @@ func (m *PersonAttributeMutation) ResetField(name string) error {
 		return nil
 	case personattribute.FieldExtractorVersion:
 		m.ResetExtractorVersion()
+		return nil
+	case personattribute.FieldCitationsJSON:
+		m.ResetCitationsJSON()
 		return nil
 	case personattribute.FieldDedupeKey:
 		m.ResetDedupeKey()
@@ -57107,6 +57326,7 @@ type RelationshipAssertionMutation struct {
 	retraction_reason                *string
 	supersedes_assertion_id          *string
 	extractor_version                *string
+	citations_json                   *string
 	projector_compat_version         *int
 	addprojector_compat_version      *int
 	supporting_observation_ids       *[]string
@@ -57818,6 +58038,55 @@ func (m *RelationshipAssertionMutation) ResetExtractorVersion() {
 	m.extractor_version = nil
 }
 
+// SetCitationsJSON sets the "citations_json" field.
+func (m *RelationshipAssertionMutation) SetCitationsJSON(s string) {
+	m.citations_json = &s
+}
+
+// CitationsJSON returns the value of the "citations_json" field in the mutation.
+func (m *RelationshipAssertionMutation) CitationsJSON() (r string, exists bool) {
+	v := m.citations_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCitationsJSON returns the old "citations_json" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldCitationsJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCitationsJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCitationsJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCitationsJSON: %w", err)
+	}
+	return oldValue.CitationsJSON, nil
+}
+
+// ClearCitationsJSON clears the value of the "citations_json" field.
+func (m *RelationshipAssertionMutation) ClearCitationsJSON() {
+	m.citations_json = nil
+	m.clearedFields[relationshipassertion.FieldCitationsJSON] = struct{}{}
+}
+
+// CitationsJSONCleared returns if the "citations_json" field was cleared in this mutation.
+func (m *RelationshipAssertionMutation) CitationsJSONCleared() bool {
+	_, ok := m.clearedFields[relationshipassertion.FieldCitationsJSON]
+	return ok
+}
+
+// ResetCitationsJSON resets all changes to the "citations_json" field.
+func (m *RelationshipAssertionMutation) ResetCitationsJSON() {
+	m.citations_json = nil
+	delete(m.clearedFields, relationshipassertion.FieldCitationsJSON)
+}
+
 // SetProjectorCompatVersion sets the "projector_compat_version" field.
 func (m *RelationshipAssertionMutation) SetProjectorCompatVersion(i int) {
 	m.projector_compat_version = &i
@@ -58115,7 +58384,7 @@ func (m *RelationshipAssertionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RelationshipAssertionMutation) Fields() []string {
-	fields := make([]string, 0, 16)
+	fields := make([]string, 0, 17)
 	if m.created_at != nil {
 		fields = append(fields, relationshipassertion.FieldCreatedAt)
 	}
@@ -58157,6 +58426,9 @@ func (m *RelationshipAssertionMutation) Fields() []string {
 	}
 	if m.extractor_version != nil {
 		fields = append(fields, relationshipassertion.FieldExtractorVersion)
+	}
+	if m.citations_json != nil {
+		fields = append(fields, relationshipassertion.FieldCitationsJSON)
 	}
 	if m.projector_compat_version != nil {
 		fields = append(fields, relationshipassertion.FieldProjectorCompatVersion)
@@ -58200,6 +58472,8 @@ func (m *RelationshipAssertionMutation) Field(name string) (ent.Value, bool) {
 		return m.SupersedesAssertionID()
 	case relationshipassertion.FieldExtractorVersion:
 		return m.ExtractorVersion()
+	case relationshipassertion.FieldCitationsJSON:
+		return m.CitationsJSON()
 	case relationshipassertion.FieldProjectorCompatVersion:
 		return m.ProjectorCompatVersion()
 	case relationshipassertion.FieldSupportingObservationIds:
@@ -58241,6 +58515,8 @@ func (m *RelationshipAssertionMutation) OldField(ctx context.Context, name strin
 		return m.OldSupersedesAssertionID(ctx)
 	case relationshipassertion.FieldExtractorVersion:
 		return m.OldExtractorVersion(ctx)
+	case relationshipassertion.FieldCitationsJSON:
+		return m.OldCitationsJSON(ctx)
 	case relationshipassertion.FieldProjectorCompatVersion:
 		return m.OldProjectorCompatVersion(ctx)
 	case relationshipassertion.FieldSupportingObservationIds:
@@ -58352,6 +58628,13 @@ func (m *RelationshipAssertionMutation) SetField(name string, value ent.Value) e
 		}
 		m.SetExtractorVersion(v)
 		return nil
+	case relationshipassertion.FieldCitationsJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCitationsJSON(v)
+		return nil
 	case relationshipassertion.FieldProjectorCompatVersion:
 		v, ok := value.(int)
 		if !ok {
@@ -58438,6 +58721,9 @@ func (m *RelationshipAssertionMutation) ClearedFields() []string {
 	if m.FieldCleared(relationshipassertion.FieldSupersedesAssertionID) {
 		fields = append(fields, relationshipassertion.FieldSupersedesAssertionID)
 	}
+	if m.FieldCleared(relationshipassertion.FieldCitationsJSON) {
+		fields = append(fields, relationshipassertion.FieldCitationsJSON)
+	}
 	return fields
 }
 
@@ -58466,6 +58752,9 @@ func (m *RelationshipAssertionMutation) ClearField(name string) error {
 		return nil
 	case relationshipassertion.FieldSupersedesAssertionID:
 		m.ClearSupersedesAssertionID()
+		return nil
+	case relationshipassertion.FieldCitationsJSON:
+		m.ClearCitationsJSON()
 		return nil
 	}
 	return fmt.Errorf("unknown RelationshipAssertion nullable field %s", name)
@@ -58516,6 +58805,9 @@ func (m *RelationshipAssertionMutation) ResetField(name string) error {
 		return nil
 	case relationshipassertion.FieldExtractorVersion:
 		m.ResetExtractorVersion()
+		return nil
+	case relationshipassertion.FieldCitationsJSON:
+		m.ResetCitationsJSON()
 		return nil
 	case relationshipassertion.FieldProjectorCompatVersion:
 		m.ResetProjectorCompatVersion()
@@ -85676,6 +85968,8 @@ type RevenueWorkspaceMutation struct {
 	last_verified_at                            *time.Time
 	last_digest_at                              *time.Time
 	mail_history_id                             *string
+	cloud_research_consent                      *bool
+	cloud_research_consent_at                   *time.Time
 	clearedFields                               map[string]struct{}
 	user                                        *uuid.UUID
 	cleareduser                                 bool
@@ -86323,6 +86617,91 @@ func (m *RevenueWorkspaceMutation) MailHistoryIDCleared() bool {
 func (m *RevenueWorkspaceMutation) ResetMailHistoryID() {
 	m.mail_history_id = nil
 	delete(m.clearedFields, revenueworkspace.FieldMailHistoryID)
+}
+
+// SetCloudResearchConsent sets the "cloud_research_consent" field.
+func (m *RevenueWorkspaceMutation) SetCloudResearchConsent(b bool) {
+	m.cloud_research_consent = &b
+}
+
+// CloudResearchConsent returns the value of the "cloud_research_consent" field in the mutation.
+func (m *RevenueWorkspaceMutation) CloudResearchConsent() (r bool, exists bool) {
+	v := m.cloud_research_consent
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCloudResearchConsent returns the old "cloud_research_consent" field's value of the RevenueWorkspace entity.
+// If the RevenueWorkspace object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueWorkspaceMutation) OldCloudResearchConsent(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCloudResearchConsent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCloudResearchConsent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCloudResearchConsent: %w", err)
+	}
+	return oldValue.CloudResearchConsent, nil
+}
+
+// ResetCloudResearchConsent resets all changes to the "cloud_research_consent" field.
+func (m *RevenueWorkspaceMutation) ResetCloudResearchConsent() {
+	m.cloud_research_consent = nil
+}
+
+// SetCloudResearchConsentAt sets the "cloud_research_consent_at" field.
+func (m *RevenueWorkspaceMutation) SetCloudResearchConsentAt(t time.Time) {
+	m.cloud_research_consent_at = &t
+}
+
+// CloudResearchConsentAt returns the value of the "cloud_research_consent_at" field in the mutation.
+func (m *RevenueWorkspaceMutation) CloudResearchConsentAt() (r time.Time, exists bool) {
+	v := m.cloud_research_consent_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCloudResearchConsentAt returns the old "cloud_research_consent_at" field's value of the RevenueWorkspace entity.
+// If the RevenueWorkspace object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueWorkspaceMutation) OldCloudResearchConsentAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCloudResearchConsentAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCloudResearchConsentAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCloudResearchConsentAt: %w", err)
+	}
+	return oldValue.CloudResearchConsentAt, nil
+}
+
+// ClearCloudResearchConsentAt clears the value of the "cloud_research_consent_at" field.
+func (m *RevenueWorkspaceMutation) ClearCloudResearchConsentAt() {
+	m.cloud_research_consent_at = nil
+	m.clearedFields[revenueworkspace.FieldCloudResearchConsentAt] = struct{}{}
+}
+
+// CloudResearchConsentAtCleared returns if the "cloud_research_consent_at" field was cleared in this mutation.
+func (m *RevenueWorkspaceMutation) CloudResearchConsentAtCleared() bool {
+	_, ok := m.clearedFields[revenueworkspace.FieldCloudResearchConsentAt]
+	return ok
+}
+
+// ResetCloudResearchConsentAt resets all changes to the "cloud_research_consent_at" field.
+func (m *RevenueWorkspaceMutation) ResetCloudResearchConsentAt() {
+	m.cloud_research_consent_at = nil
+	delete(m.clearedFields, revenueworkspace.FieldCloudResearchConsentAt)
 }
 
 // SetUserID sets the "user" edge to the User entity by id.
@@ -88180,7 +88559,7 @@ func (m *RevenueWorkspaceMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RevenueWorkspaceMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, revenueworkspace.FieldCreatedAt)
 	}
@@ -88211,6 +88590,12 @@ func (m *RevenueWorkspaceMutation) Fields() []string {
 	if m.mail_history_id != nil {
 		fields = append(fields, revenueworkspace.FieldMailHistoryID)
 	}
+	if m.cloud_research_consent != nil {
+		fields = append(fields, revenueworkspace.FieldCloudResearchConsent)
+	}
+	if m.cloud_research_consent_at != nil {
+		fields = append(fields, revenueworkspace.FieldCloudResearchConsentAt)
+	}
 	return fields
 }
 
@@ -88239,6 +88624,10 @@ func (m *RevenueWorkspaceMutation) Field(name string) (ent.Value, bool) {
 		return m.LastDigestAt()
 	case revenueworkspace.FieldMailHistoryID:
 		return m.MailHistoryID()
+	case revenueworkspace.FieldCloudResearchConsent:
+		return m.CloudResearchConsent()
+	case revenueworkspace.FieldCloudResearchConsentAt:
+		return m.CloudResearchConsentAt()
 	}
 	return nil, false
 }
@@ -88268,6 +88657,10 @@ func (m *RevenueWorkspaceMutation) OldField(ctx context.Context, name string) (e
 		return m.OldLastDigestAt(ctx)
 	case revenueworkspace.FieldMailHistoryID:
 		return m.OldMailHistoryID(ctx)
+	case revenueworkspace.FieldCloudResearchConsent:
+		return m.OldCloudResearchConsent(ctx)
+	case revenueworkspace.FieldCloudResearchConsentAt:
+		return m.OldCloudResearchConsentAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown RevenueWorkspace field %s", name)
 }
@@ -88347,6 +88740,20 @@ func (m *RevenueWorkspaceMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetMailHistoryID(v)
 		return nil
+	case revenueworkspace.FieldCloudResearchConsent:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCloudResearchConsent(v)
+		return nil
+	case revenueworkspace.FieldCloudResearchConsentAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCloudResearchConsentAt(v)
+		return nil
 	}
 	return fmt.Errorf("unknown RevenueWorkspace field %s", name)
 }
@@ -88395,6 +88802,9 @@ func (m *RevenueWorkspaceMutation) ClearedFields() []string {
 	if m.FieldCleared(revenueworkspace.FieldMailHistoryID) {
 		fields = append(fields, revenueworkspace.FieldMailHistoryID)
 	}
+	if m.FieldCleared(revenueworkspace.FieldCloudResearchConsentAt) {
+		fields = append(fields, revenueworkspace.FieldCloudResearchConsentAt)
+	}
 	return fields
 }
 
@@ -88426,6 +88836,9 @@ func (m *RevenueWorkspaceMutation) ClearField(name string) error {
 		return nil
 	case revenueworkspace.FieldMailHistoryID:
 		m.ClearMailHistoryID()
+		return nil
+	case revenueworkspace.FieldCloudResearchConsentAt:
+		m.ClearCloudResearchConsentAt()
 		return nil
 	}
 	return fmt.Errorf("unknown RevenueWorkspace nullable field %s", name)
@@ -88464,6 +88877,12 @@ func (m *RevenueWorkspaceMutation) ResetField(name string) error {
 		return nil
 	case revenueworkspace.FieldMailHistoryID:
 		m.ResetMailHistoryID()
+		return nil
+	case revenueworkspace.FieldCloudResearchConsent:
+		m.ResetCloudResearchConsent()
+		return nil
+	case revenueworkspace.FieldCloudResearchConsentAt:
+		m.ResetCloudResearchConsentAt()
 		return nil
 	}
 	return fmt.Errorf("unknown RevenueWorkspace field %s", name)

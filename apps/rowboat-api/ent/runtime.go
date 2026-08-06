@@ -1494,31 +1494,31 @@ func init() {
 	// person.DefaultAliases holds the default value on creation for the aliases field.
 	person.DefaultAliases = personDescAliases.Default.([]string)
 	// personDescEmploymentStatus is the schema descriptor for employment_status field.
-	personDescEmploymentStatus := personFields[9].Descriptor()
+	personDescEmploymentStatus := personFields[11].Descriptor()
 	// person.DefaultEmploymentStatus holds the default value on creation for the employment_status field.
 	person.DefaultEmploymentStatus = personDescEmploymentStatus.Default.(string)
 	// person.EmploymentStatusValidator is a validator for the "employment_status" field. It is called by the builders before save.
 	person.EmploymentStatusValidator = personDescEmploymentStatus.Validators[0].(func(string) error)
 	// personDescAttributesVersion is the schema descriptor for attributes_version field.
-	personDescAttributesVersion := personFields[10].Descriptor()
+	personDescAttributesVersion := personFields[12].Descriptor()
 	// person.DefaultAttributesVersion holds the default value on creation for the attributes_version field.
 	person.DefaultAttributesVersion = personDescAttributesVersion.Default.(int)
 	// person.AttributesVersionValidator is a validator for the "attributes_version" field. It is called by the builders before save.
 	person.AttributesVersionValidator = personDescAttributesVersion.Validators[0].(func(int) error)
 	// personDescProjectorVersion is the schema descriptor for projector_version field.
-	personDescProjectorVersion := personFields[12].Descriptor()
+	personDescProjectorVersion := personFields[14].Descriptor()
 	// person.DefaultProjectorVersion holds the default value on creation for the projector_version field.
 	person.DefaultProjectorVersion = personDescProjectorVersion.Default.(int)
 	// person.ProjectorVersionValidator is a validator for the "projector_version" field. It is called by the builders before save.
 	person.ProjectorVersionValidator = personDescProjectorVersion.Validators[0].(func(int) error)
 	// personDescStatus is the schema descriptor for status field.
-	personDescStatus := personFields[14].Descriptor()
+	personDescStatus := personFields[16].Descriptor()
 	// person.DefaultStatus holds the default value on creation for the status field.
 	person.DefaultStatus = personDescStatus.Default.(string)
 	// person.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	person.StatusValidator = personDescStatus.Validators[0].(func(string) error)
 	// personDescRelationshipCount is the schema descriptor for relationship_count field.
-	personDescRelationshipCount := personFields[19].Descriptor()
+	personDescRelationshipCount := personFields[21].Descriptor()
 	// person.DefaultRelationshipCount holds the default value on creation for the relationship_count field.
 	person.DefaultRelationshipCount = personDescRelationshipCount.Default.(int)
 	// person.RelationshipCountValidator is a validator for the "relationship_count" field. It is called by the builders before save.
@@ -1594,12 +1594,16 @@ func init() {
 	personattributeDescExtractorVersion := personattributeFields[13].Descriptor()
 	// personattribute.DefaultExtractorVersion holds the default value on creation for the extractor_version field.
 	personattribute.DefaultExtractorVersion = personattributeDescExtractorVersion.Default.(string)
+	// personattributeDescCitationsJSON is the schema descriptor for citations_json field.
+	personattributeDescCitationsJSON := personattributeFields[14].Descriptor()
+	// personattribute.CitationsJSONValidator is a validator for the "citations_json" field. It is called by the builders before save.
+	personattribute.CitationsJSONValidator = personattributeDescCitationsJSON.Validators[0].(func(string) error)
 	// personattributeDescDedupeKey is the schema descriptor for dedupe_key field.
-	personattributeDescDedupeKey := personattributeFields[14].Descriptor()
+	personattributeDescDedupeKey := personattributeFields[15].Descriptor()
 	// personattribute.DedupeKeyValidator is a validator for the "dedupe_key" field. It is called by the builders before save.
 	personattribute.DedupeKeyValidator = personattributeDescDedupeKey.Validators[0].(func(string) error)
 	// personattributeDescSupportingObservationIds is the schema descriptor for supporting_observation_ids field.
-	personattributeDescSupportingObservationIds := personattributeFields[15].Descriptor()
+	personattributeDescSupportingObservationIds := personattributeFields[16].Descriptor()
 	// personattribute.DefaultSupportingObservationIds holds the default value on creation for the supporting_observation_ids field.
 	personattribute.DefaultSupportingObservationIds = personattributeDescSupportingObservationIds.Default.([]string)
 	// personattributeDescID is the schema descriptor for id field.
@@ -2041,14 +2045,18 @@ func init() {
 	relationshipassertionDescExtractorVersion := relationshipassertionFields[11].Descriptor()
 	// relationshipassertion.DefaultExtractorVersion holds the default value on creation for the extractor_version field.
 	relationshipassertion.DefaultExtractorVersion = relationshipassertionDescExtractorVersion.Default.(string)
+	// relationshipassertionDescCitationsJSON is the schema descriptor for citations_json field.
+	relationshipassertionDescCitationsJSON := relationshipassertionFields[12].Descriptor()
+	// relationshipassertion.CitationsJSONValidator is a validator for the "citations_json" field. It is called by the builders before save.
+	relationshipassertion.CitationsJSONValidator = relationshipassertionDescCitationsJSON.Validators[0].(func(string) error)
 	// relationshipassertionDescProjectorCompatVersion is the schema descriptor for projector_compat_version field.
-	relationshipassertionDescProjectorCompatVersion := relationshipassertionFields[12].Descriptor()
+	relationshipassertionDescProjectorCompatVersion := relationshipassertionFields[13].Descriptor()
 	// relationshipassertion.DefaultProjectorCompatVersion holds the default value on creation for the projector_compat_version field.
 	relationshipassertion.DefaultProjectorCompatVersion = relationshipassertionDescProjectorCompatVersion.Default.(int)
 	// relationshipassertion.ProjectorCompatVersionValidator is a validator for the "projector_compat_version" field. It is called by the builders before save.
 	relationshipassertion.ProjectorCompatVersionValidator = relationshipassertionDescProjectorCompatVersion.Validators[0].(func(int) error)
 	// relationshipassertionDescSupportingObservationIds is the schema descriptor for supporting_observation_ids field.
-	relationshipassertionDescSupportingObservationIds := relationshipassertionFields[13].Descriptor()
+	relationshipassertionDescSupportingObservationIds := relationshipassertionFields[14].Descriptor()
 	// relationshipassertion.DefaultSupportingObservationIds holds the default value on creation for the supporting_observation_ids field.
 	relationshipassertion.DefaultSupportingObservationIds = relationshipassertionDescSupportingObservationIds.Default.([]string)
 	// relationshipassertionDescID is the schema descriptor for id field.
@@ -3061,6 +3069,10 @@ func init() {
 	revenueworkspace.DefaultStatus = revenueworkspaceDescStatus.Default.(string)
 	// revenueworkspace.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	revenueworkspace.StatusValidator = revenueworkspaceDescStatus.Validators[0].(func(string) error)
+	// revenueworkspaceDescCloudResearchConsent is the schema descriptor for cloud_research_consent field.
+	revenueworkspaceDescCloudResearchConsent := revenueworkspaceFields[8].Descriptor()
+	// revenueworkspace.DefaultCloudResearchConsent holds the default value on creation for the cloud_research_consent field.
+	revenueworkspace.DefaultCloudResearchConsent = revenueworkspaceDescCloudResearchConsent.Default.(bool)
 	// revenueworkspaceDescID is the schema descriptor for id field.
 	revenueworkspaceDescID := revenueworkspaceMixinFields0[0].Descriptor()
 	// revenueworkspace.DefaultID holds the default value on creation for the id field.

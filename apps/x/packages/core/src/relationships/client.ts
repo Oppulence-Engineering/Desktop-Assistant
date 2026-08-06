@@ -461,3 +461,117 @@ export const rejectRelationshipRecommendation = (actionId: string, reason: strin
     `/v1/relationship-recommendations/${encodeURIComponent(actionId)}/reject`,
     { method: "POST", body: JSON.stringify({ reason }) },
   );
+
+// --- cloud research (RFC 039) ------------------------------------------------
+
+/** Whether this workspace has agreed to send counterparty details to the vendor. */
+export type ResearchConsentState = {
+  consented: boolean;
+  consentedAt?: string;
+};
+
+/**
+ * What the desktop needs to render the research control honestly.
+ *
+ * `allowed` is the server's answer, not ours. The desktop must never decide it
+ * can do research: the vendor key, the capability, the plan and the consent all
+ * live server-side, and a client that guessed would show a control that fails
+ * when used.
+ */
+export type ResearchStatus = {
+  available: boolean;
+  allowed: boolean;
+  reason?: string;
+  requiredPlan: string;
+  consent: ResearchConsentState;
+};
+
+export type PersonResearchOutcome = {
+  personId: string;
+  matched: boolean;
+  runId?: string;
+  written: number;
+  rejected?: string[];
+  replayed: boolean;
+};
+
+export type ResearchEstimate = {
+  people: number;
+  processor: string;
+  credits: number;
+  usd: number;
+  batchSize: number;
+};
+
+export const getResearchStatus = () => call<ResearchStatus>("/v1/research/status");
+
+export const setResearchConsent = (consented: boolean) =>
+  call<ResearchConsentState>("/v1/research/consent", {
+    method: "PUT",
+    body: JSON.stringify({ consented }),
+  });
+
+export const getResearchEstimate = () =>
+  call<ResearchEstimate>("/v1/research/people/estimate");
+
+export const listPendingResearchPeople = () =>
+  call<{ personIds: string[] }>("/v1/research/people/pending");
+
+export const enrichPerson = (personId: string) =>
+  call<PersonResearchOutcome>(`/v1/research/people/${personId}`, { method: "POST" });
+
+/**
+ * Enrich one chunk of a bulk run.
+ *
+ * The caller walks the pending list in batches of `estimate.batchSize`. Chunking
+ * is the client's job because the desktop sleeps: a re-sent chunk costs nothing
+ * for the people it already covered, so resuming is just sending the same list
+ * again.
+ */
+export const enrichPeople = (personIds: string[]) =>
+  call<{ outcomes: PersonResearchOutcome[] }>("/v1/research/people", {
+    method: "POST",
+    body: JSON.stringify({ personIds }),
+  });
+
+/**
+ * Run the whole pending enrichment, in server-sized chunks.
+ *
+ * Chunking lives here rather than in the renderer because the batch size is a
+ * server contract. A chunk that fails stops the run and reports how far it got:
+ * enrichment is idempotent per person and task-spec version, so "run it again"
+ * resumes rather than re-charging.
+ */
+export async function enrichPendingPeople(): Promise<{
+  requested: number;
+  enriched: number;
+  matched: number;
+  attributes: number;
+  stoppedReason?: string;
+}> {
+  const estimate = await getResearchEstimate();
+  const { personIds } = await listPendingResearchPeople();
+  const summary = {
+    requested: personIds.length,
+    enriched: 0,
+    matched: 0,
+    attributes: 0,
+    stoppedReason: undefined as string | undefined,
+  };
+  const batchSize = Math.max(1, estimate.batchSize);
+  for (let i = 0; i < personIds.length; i += batchSize) {
+    try {
+      const { outcomes } = await enrichPeople(personIds.slice(i, i + batchSize));
+      for (const outcome of outcomes) {
+        summary.enriched += 1;
+        if (outcome.matched) summary.matched += 1;
+        summary.attributes += outcome.written;
+      }
+    } catch (error) {
+      summary.stoppedReason =
+        error instanceof RelationshipApiError ? error.message : "the run could not be completed";
+      return summary;
+    }
+  }
+  return summary;
+}

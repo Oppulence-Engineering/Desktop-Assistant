@@ -135,6 +135,15 @@ type Config struct {
 	// PlainAPIKey is optional: when unset, POST /v1/feedback returns
 	// provider_unconfigured instead of relaying to Plain.
 	PlainAPIKey string
+	// ParallelAPIKey is optional and off by default (RFC 039). When unset the
+	// cloud research surface reports itself unconfigured; it is NOT in the
+	// required-key list below, because a deployment that never sells the
+	// Intelligence tier should not be forced to hold a research vendor key.
+	ParallelAPIKey string
+
+	// ParallelBaseURL points the research client at the vendor (or at a stub in
+	// staging).
+	ParallelBaseURL string
 
 	// Plain (plain.com) feedback relay. Label type ids are workspace data and
 	// differ per environment; the raw JSON maps category -> lt_… id.
@@ -173,11 +182,14 @@ type Config struct {
 	StripeWebhookSecret  string
 	StripeStarterPriceID string
 	StripeProPriceID     string
-	StripeSuccessURL     string
-	StripeCancelURL      string
-	StripeAPIBaseURL     string
-	StripeStarterCredits int
-	StripeProCredits     int
+	// STRIPE_INTELLIGENCE_PRICE_ID is the cloud-research tier (RFC 039).
+	StripeIntelligencePriceID string
+	StripeSuccessURL          string
+	StripeCancelURL           string
+	StripeAPIBaseURL          string
+	StripeStarterCredits      int
+	StripeProCredits          int
+	StripeIntelligenceCredits int
 
 	// Free cloud meeting-transcription seconds per UTC month for non-paid plans
 	// (RFC 009 §16). Exhausted → the desktop falls back to on-device transcription.
@@ -556,6 +568,8 @@ func Load() Config {
 		GoogleOAuthClientID:         getenv("GOOGLE_OAUTH_CLIENT_ID", ""),
 		GoogleOAuthClientSecret:     getenv("GOOGLE_OAUTH_CLIENT_SECRET", ""),
 		PlainAPIKey:                 getenv("PLAIN_API_KEY", ""),
+		ParallelAPIKey:              getenv("PARALLEL_API_KEY", ""),
+		ParallelBaseURL:             getenv("PARALLEL_BASE_URL", "https://api.parallel.ai"),
 		PlainAPIURL:                 getenv("PLAIN_API_URL", "https://core-api.uk.plain.com/graphql/v1"),
 		PlainLabelTypeIDs:           getenv("PLAIN_LABEL_TYPE_IDS", ""),
 		PlainTitlePrefix:            getenv("PLAIN_TITLE_PREFIX", ""),
@@ -568,17 +582,19 @@ func Load() Config {
 		GoogleAuthorizeURL:          getenv("GOOGLE_AUTHORIZE_URL", ""),
 		GoogleRedirectURI:           getenv("GOOGLE_REDIRECT_URI", ""),
 
-		DesktopDeepLinkScheme: getenv("DESKTOP_DEEPLINK_SCHEME", "solomon-ai"),
-		FreeTierCredits:       getint("FREE_TIER_CREDITS", 10000),
-		StripeSecretKey:       getenv("STRIPE_SECRET_KEY", ""),
-		StripeWebhookSecret:   getenv("STRIPE_WEBHOOK_SECRET", ""),
-		StripeStarterPriceID:  getenv("STRIPE_STARTER_PRICE_ID", ""),
-		StripeProPriceID:      getenv("STRIPE_PRO_PRICE_ID", ""),
-		StripeSuccessURL:      getenv("STRIPE_SUCCESS_URL", getenv("APP_URL", "https://app.solomon-ai.co")+"/billing/success"),
-		StripeCancelURL:       getenv("STRIPE_CANCEL_URL", getenv("APP_URL", "https://app.solomon-ai.co")+"/billing/cancel"),
-		StripeAPIBaseURL:      getenv("STRIPE_API_BASE_URL", "https://api.stripe.com"),
-		StripeStarterCredits:  getint("STRIPE_STARTER_CREDITS", 200000),
-		StripeProCredits:      getint("STRIPE_PRO_CREDITS", 2000000),
+		DesktopDeepLinkScheme:     getenv("DESKTOP_DEEPLINK_SCHEME", "solomon-ai"),
+		FreeTierCredits:           getint("FREE_TIER_CREDITS", 10000),
+		StripeSecretKey:           getenv("STRIPE_SECRET_KEY", ""),
+		StripeWebhookSecret:       getenv("STRIPE_WEBHOOK_SECRET", ""),
+		StripeStarterPriceID:      getenv("STRIPE_STARTER_PRICE_ID", ""),
+		StripeProPriceID:          getenv("STRIPE_PRO_PRICE_ID", ""),
+		StripeIntelligencePriceID: getenv("STRIPE_INTELLIGENCE_PRICE_ID", ""),
+		StripeSuccessURL:          getenv("STRIPE_SUCCESS_URL", getenv("APP_URL", "https://app.solomon-ai.co")+"/billing/success"),
+		StripeCancelURL:           getenv("STRIPE_CANCEL_URL", getenv("APP_URL", "https://app.solomon-ai.co")+"/billing/cancel"),
+		StripeAPIBaseURL:          getenv("STRIPE_API_BASE_URL", "https://api.stripe.com"),
+		StripeStarterCredits:      getint("STRIPE_STARTER_CREDITS", 200000),
+		StripeProCredits:          getint("STRIPE_PRO_CREDITS", 2000000),
+		StripeIntelligenceCredits: getint("STRIPE_INTELLIGENCE_CREDITS", 5000000),
 
 		FreeMeetingSecondsPerMonth:  getint("FREE_MEETING_SECONDS_PER_MONTH", 10800), // 180 min
 		TranscriptionVoiceDefault:   getenv("TRANSCRIPTION_VOICE_DEFAULT", "whisper-local"),

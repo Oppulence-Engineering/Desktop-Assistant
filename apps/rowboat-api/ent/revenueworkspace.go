@@ -39,6 +39,10 @@ type RevenueWorkspace struct {
 	LastDigestAt *time.Time `json:"last_digest_at,omitempty"`
 	// MailHistoryID holds the value of the "mail_history_id" field.
 	MailHistoryID string `json:"mail_history_id,omitempty"`
+	// CloudResearchConsent holds the value of the "cloud_research_consent" field.
+	CloudResearchConsent bool `json:"cloud_research_consent,omitempty"`
+	// CloudResearchConsentAt holds the value of the "cloud_research_consent_at" field.
+	CloudResearchConsentAt *time.Time `json:"cloud_research_consent_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RevenueWorkspaceQuery when eager-loading is set.
 	Edges                   RevenueWorkspaceEdges `json:"edges"`
@@ -470,9 +474,11 @@ func (*RevenueWorkspace) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case revenueworkspace.FieldCloudResearchConsent:
+			values[i] = new(sql.NullBool)
 		case revenueworkspace.FieldWorkosOrgID, revenueworkspace.FieldOutboundOrganizationID, revenueworkspace.FieldOutboundWorkspaceID, revenueworkspace.FieldMode, revenueworkspace.FieldStatus, revenueworkspace.FieldMailHistoryID:
 			values[i] = new(sql.NullString)
-		case revenueworkspace.FieldCreatedAt, revenueworkspace.FieldUpdatedAt, revenueworkspace.FieldLastVerifiedAt, revenueworkspace.FieldLastDigestAt:
+		case revenueworkspace.FieldCreatedAt, revenueworkspace.FieldUpdatedAt, revenueworkspace.FieldLastVerifiedAt, revenueworkspace.FieldLastDigestAt, revenueworkspace.FieldCloudResearchConsentAt:
 			values[i] = new(sql.NullTime)
 		case revenueworkspace.FieldID:
 			values[i] = new(uuid.UUID)
@@ -561,6 +567,19 @@ func (_m *RevenueWorkspace) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field mail_history_id", values[i])
 			} else if value.Valid {
 				_m.MailHistoryID = value.String
+			}
+		case revenueworkspace.FieldCloudResearchConsent:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field cloud_research_consent", values[i])
+			} else if value.Valid {
+				_m.CloudResearchConsent = value.Bool
+			}
+		case revenueworkspace.FieldCloudResearchConsentAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field cloud_research_consent_at", values[i])
+			} else if value.Valid {
+				_m.CloudResearchConsentAt = new(time.Time)
+				*_m.CloudResearchConsentAt = value.Time
 			}
 		case revenueworkspace.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -810,6 +829,14 @@ func (_m *RevenueWorkspace) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("mail_history_id=")
 	builder.WriteString(_m.MailHistoryID)
+	builder.WriteString(", ")
+	builder.WriteString("cloud_research_consent=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CloudResearchConsent))
+	builder.WriteString(", ")
+	if v := _m.CloudResearchConsentAt; v != nil {
+		builder.WriteString("cloud_research_consent_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

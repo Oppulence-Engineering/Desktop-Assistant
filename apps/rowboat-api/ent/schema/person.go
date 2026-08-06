@@ -51,6 +51,12 @@ func (Person) Fields() []ent.Field {
 		field.String("phone").Optional().Sensitive().Annotations(entoas.Skip(true)),
 		field.String("timezone").Optional(),
 		field.String("locale").Optional(),
+		// Projected from cloud-research attributes only (RFC 039). Both stay
+		// empty for every workspace that never enables research, which is why
+		// they are Optional rather than defaulted to a placeholder: "" reads as
+		// "we were never told", not as an assertion of anything.
+		field.String("seniority").Optional(),
+		field.String("location").Optional(),
 		// Projected from the employment_status attribute so the attention
 		// detectors can filter on it without joining attributes per relationship.
 		// `departed` exists to stop the product nagging a user to chase someone

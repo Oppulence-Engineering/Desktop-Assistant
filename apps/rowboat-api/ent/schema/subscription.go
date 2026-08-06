@@ -45,10 +45,15 @@ func (Subscription) Annotations() []schema.Annotation {
 func (Subscription) Fields() []ent.Field {
 	return []ent.Field{
 		// Plan values must match BillingPlan in apps/x/packages/shared/src/billing.ts:
-		// 'free' | 'starter' | 'pro'. Stored as a validated string (not an ent
-		// Enum) so enthistory can mirror the field into the history table.
+		// 'free' | 'starter' | 'pro' | 'intelligence'. Stored as a validated string
+		// (not an ent Enum) so enthistory can mirror the field into the history table.
+		//
+		// `intelligence` is the cloud-research tier (RFC 039). It is a separate plan
+		// rather than a higher `pro` because research is consent-gated: a user who
+		// declines to send counterparty details to a vendor must not be repriced for
+		// a capability they switched off.
 		field.String("plan").Default("free").
-			Validate(oneOf("plan", "free", "starter", "pro")),
+			Validate(oneOf("plan", "free", "starter", "pro", "intelligence")),
 		field.String("status").Default("active").
 			Validate(oneOf("status", "active", "trialing", "past_due", "canceled")),
 		field.Time("trial_expires_at").Optional().Nillable(),

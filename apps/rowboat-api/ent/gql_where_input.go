@@ -23083,6 +23083,40 @@ type PersonWhereInput struct {
 	LocaleEqualFold    *string  `json:"localeEqualFold,omitempty"`
 	LocaleContainsFold *string  `json:"localeContainsFold,omitempty"`
 
+	// "seniority" field predicates.
+	Seniority             *string  `json:"seniority,omitempty"`
+	SeniorityNEQ          *string  `json:"seniorityNEQ,omitempty"`
+	SeniorityIn           []string `json:"seniorityIn,omitempty"`
+	SeniorityNotIn        []string `json:"seniorityNotIn,omitempty"`
+	SeniorityGT           *string  `json:"seniorityGT,omitempty"`
+	SeniorityGTE          *string  `json:"seniorityGTE,omitempty"`
+	SeniorityLT           *string  `json:"seniorityLT,omitempty"`
+	SeniorityLTE          *string  `json:"seniorityLTE,omitempty"`
+	SeniorityContains     *string  `json:"seniorityContains,omitempty"`
+	SeniorityHasPrefix    *string  `json:"seniorityHasPrefix,omitempty"`
+	SeniorityHasSuffix    *string  `json:"seniorityHasSuffix,omitempty"`
+	SeniorityIsNil        bool     `json:"seniorityIsNil,omitempty"`
+	SeniorityNotNil       bool     `json:"seniorityNotNil,omitempty"`
+	SeniorityEqualFold    *string  `json:"seniorityEqualFold,omitempty"`
+	SeniorityContainsFold *string  `json:"seniorityContainsFold,omitempty"`
+
+	// "location" field predicates.
+	Location             *string  `json:"location,omitempty"`
+	LocationNEQ          *string  `json:"locationNEQ,omitempty"`
+	LocationIn           []string `json:"locationIn,omitempty"`
+	LocationNotIn        []string `json:"locationNotIn,omitempty"`
+	LocationGT           *string  `json:"locationGT,omitempty"`
+	LocationGTE          *string  `json:"locationGTE,omitempty"`
+	LocationLT           *string  `json:"locationLT,omitempty"`
+	LocationLTE          *string  `json:"locationLTE,omitempty"`
+	LocationContains     *string  `json:"locationContains,omitempty"`
+	LocationHasPrefix    *string  `json:"locationHasPrefix,omitempty"`
+	LocationHasSuffix    *string  `json:"locationHasSuffix,omitempty"`
+	LocationIsNil        bool     `json:"locationIsNil,omitempty"`
+	LocationNotNil       bool     `json:"locationNotNil,omitempty"`
+	LocationEqualFold    *string  `json:"locationEqualFold,omitempty"`
+	LocationContainsFold *string  `json:"locationContainsFold,omitempty"`
+
 	// "employment_status" field predicates.
 	EmploymentStatus             *string  `json:"employmentStatus,omitempty"`
 	EmploymentStatusNEQ          *string  `json:"employmentStatusNEQ,omitempty"`
@@ -23749,6 +23783,96 @@ func (i *PersonWhereInput) P() (predicate.Person, error) {
 	}
 	if i.LocaleContainsFold != nil {
 		predicates = append(predicates, person.LocaleContainsFold(*i.LocaleContainsFold))
+	}
+	if i.Seniority != nil {
+		predicates = append(predicates, person.SeniorityEQ(*i.Seniority))
+	}
+	if i.SeniorityNEQ != nil {
+		predicates = append(predicates, person.SeniorityNEQ(*i.SeniorityNEQ))
+	}
+	if len(i.SeniorityIn) > 0 {
+		predicates = append(predicates, person.SeniorityIn(i.SeniorityIn...))
+	}
+	if len(i.SeniorityNotIn) > 0 {
+		predicates = append(predicates, person.SeniorityNotIn(i.SeniorityNotIn...))
+	}
+	if i.SeniorityGT != nil {
+		predicates = append(predicates, person.SeniorityGT(*i.SeniorityGT))
+	}
+	if i.SeniorityGTE != nil {
+		predicates = append(predicates, person.SeniorityGTE(*i.SeniorityGTE))
+	}
+	if i.SeniorityLT != nil {
+		predicates = append(predicates, person.SeniorityLT(*i.SeniorityLT))
+	}
+	if i.SeniorityLTE != nil {
+		predicates = append(predicates, person.SeniorityLTE(*i.SeniorityLTE))
+	}
+	if i.SeniorityContains != nil {
+		predicates = append(predicates, person.SeniorityContains(*i.SeniorityContains))
+	}
+	if i.SeniorityHasPrefix != nil {
+		predicates = append(predicates, person.SeniorityHasPrefix(*i.SeniorityHasPrefix))
+	}
+	if i.SeniorityHasSuffix != nil {
+		predicates = append(predicates, person.SeniorityHasSuffix(*i.SeniorityHasSuffix))
+	}
+	if i.SeniorityIsNil {
+		predicates = append(predicates, person.SeniorityIsNil())
+	}
+	if i.SeniorityNotNil {
+		predicates = append(predicates, person.SeniorityNotNil())
+	}
+	if i.SeniorityEqualFold != nil {
+		predicates = append(predicates, person.SeniorityEqualFold(*i.SeniorityEqualFold))
+	}
+	if i.SeniorityContainsFold != nil {
+		predicates = append(predicates, person.SeniorityContainsFold(*i.SeniorityContainsFold))
+	}
+	if i.Location != nil {
+		predicates = append(predicates, person.LocationEQ(*i.Location))
+	}
+	if i.LocationNEQ != nil {
+		predicates = append(predicates, person.LocationNEQ(*i.LocationNEQ))
+	}
+	if len(i.LocationIn) > 0 {
+		predicates = append(predicates, person.LocationIn(i.LocationIn...))
+	}
+	if len(i.LocationNotIn) > 0 {
+		predicates = append(predicates, person.LocationNotIn(i.LocationNotIn...))
+	}
+	if i.LocationGT != nil {
+		predicates = append(predicates, person.LocationGT(*i.LocationGT))
+	}
+	if i.LocationGTE != nil {
+		predicates = append(predicates, person.LocationGTE(*i.LocationGTE))
+	}
+	if i.LocationLT != nil {
+		predicates = append(predicates, person.LocationLT(*i.LocationLT))
+	}
+	if i.LocationLTE != nil {
+		predicates = append(predicates, person.LocationLTE(*i.LocationLTE))
+	}
+	if i.LocationContains != nil {
+		predicates = append(predicates, person.LocationContains(*i.LocationContains))
+	}
+	if i.LocationHasPrefix != nil {
+		predicates = append(predicates, person.LocationHasPrefix(*i.LocationHasPrefix))
+	}
+	if i.LocationHasSuffix != nil {
+		predicates = append(predicates, person.LocationHasSuffix(*i.LocationHasSuffix))
+	}
+	if i.LocationIsNil {
+		predicates = append(predicates, person.LocationIsNil())
+	}
+	if i.LocationNotNil {
+		predicates = append(predicates, person.LocationNotNil())
+	}
+	if i.LocationEqualFold != nil {
+		predicates = append(predicates, person.LocationEqualFold(*i.LocationEqualFold))
+	}
+	if i.LocationContainsFold != nil {
+		predicates = append(predicates, person.LocationContainsFold(*i.LocationContainsFold))
 	}
 	if i.EmploymentStatus != nil {
 		predicates = append(predicates, person.EmploymentStatusEQ(*i.EmploymentStatus))
@@ -24480,6 +24604,23 @@ type PersonAttributeWhereInput struct {
 	ExtractorVersionEqualFold    *string  `json:"extractorVersionEqualFold,omitempty"`
 	ExtractorVersionContainsFold *string  `json:"extractorVersionContainsFold,omitempty"`
 
+	// "citations_json" field predicates.
+	CitationsJSON             *string  `json:"citationsJSON,omitempty"`
+	CitationsJSONNEQ          *string  `json:"citationsJSONNEQ,omitempty"`
+	CitationsJSONIn           []string `json:"citationsJSONIn,omitempty"`
+	CitationsJSONNotIn        []string `json:"citationsJSONNotIn,omitempty"`
+	CitationsJSONGT           *string  `json:"citationsJSONGT,omitempty"`
+	CitationsJSONGTE          *string  `json:"citationsJSONGTE,omitempty"`
+	CitationsJSONLT           *string  `json:"citationsJSONLT,omitempty"`
+	CitationsJSONLTE          *string  `json:"citationsJSONLTE,omitempty"`
+	CitationsJSONContains     *string  `json:"citationsJSONContains,omitempty"`
+	CitationsJSONHasPrefix    *string  `json:"citationsJSONHasPrefix,omitempty"`
+	CitationsJSONHasSuffix    *string  `json:"citationsJSONHasSuffix,omitempty"`
+	CitationsJSONIsNil        bool     `json:"citationsJSONIsNil,omitempty"`
+	CitationsJSONNotNil       bool     `json:"citationsJSONNotNil,omitempty"`
+	CitationsJSONEqualFold    *string  `json:"citationsJSONEqualFold,omitempty"`
+	CitationsJSONContainsFold *string  `json:"citationsJSONContainsFold,omitempty"`
+
 	// "dedupe_key" field predicates.
 	DedupeKey             *string  `json:"dedupeKey,omitempty"`
 	DedupeKeyNEQ          *string  `json:"dedupeKeyNEQ,omitempty"`
@@ -25149,6 +25290,51 @@ func (i *PersonAttributeWhereInput) P() (predicate.PersonAttribute, error) {
 	}
 	if i.ExtractorVersionContainsFold != nil {
 		predicates = append(predicates, personattribute.ExtractorVersionContainsFold(*i.ExtractorVersionContainsFold))
+	}
+	if i.CitationsJSON != nil {
+		predicates = append(predicates, personattribute.CitationsJSONEQ(*i.CitationsJSON))
+	}
+	if i.CitationsJSONNEQ != nil {
+		predicates = append(predicates, personattribute.CitationsJSONNEQ(*i.CitationsJSONNEQ))
+	}
+	if len(i.CitationsJSONIn) > 0 {
+		predicates = append(predicates, personattribute.CitationsJSONIn(i.CitationsJSONIn...))
+	}
+	if len(i.CitationsJSONNotIn) > 0 {
+		predicates = append(predicates, personattribute.CitationsJSONNotIn(i.CitationsJSONNotIn...))
+	}
+	if i.CitationsJSONGT != nil {
+		predicates = append(predicates, personattribute.CitationsJSONGT(*i.CitationsJSONGT))
+	}
+	if i.CitationsJSONGTE != nil {
+		predicates = append(predicates, personattribute.CitationsJSONGTE(*i.CitationsJSONGTE))
+	}
+	if i.CitationsJSONLT != nil {
+		predicates = append(predicates, personattribute.CitationsJSONLT(*i.CitationsJSONLT))
+	}
+	if i.CitationsJSONLTE != nil {
+		predicates = append(predicates, personattribute.CitationsJSONLTE(*i.CitationsJSONLTE))
+	}
+	if i.CitationsJSONContains != nil {
+		predicates = append(predicates, personattribute.CitationsJSONContains(*i.CitationsJSONContains))
+	}
+	if i.CitationsJSONHasPrefix != nil {
+		predicates = append(predicates, personattribute.CitationsJSONHasPrefix(*i.CitationsJSONHasPrefix))
+	}
+	if i.CitationsJSONHasSuffix != nil {
+		predicates = append(predicates, personattribute.CitationsJSONHasSuffix(*i.CitationsJSONHasSuffix))
+	}
+	if i.CitationsJSONIsNil {
+		predicates = append(predicates, personattribute.CitationsJSONIsNil())
+	}
+	if i.CitationsJSONNotNil {
+		predicates = append(predicates, personattribute.CitationsJSONNotNil())
+	}
+	if i.CitationsJSONEqualFold != nil {
+		predicates = append(predicates, personattribute.CitationsJSONEqualFold(*i.CitationsJSONEqualFold))
+	}
+	if i.CitationsJSONContainsFold != nil {
+		predicates = append(predicates, personattribute.CitationsJSONContainsFold(*i.CitationsJSONContainsFold))
 	}
 	if i.DedupeKey != nil {
 		predicates = append(predicates, personattribute.DedupeKeyEQ(*i.DedupeKey))
@@ -31059,6 +31245,23 @@ type RelationshipAssertionWhereInput struct {
 	ExtractorVersionEqualFold    *string  `json:"extractorVersionEqualFold,omitempty"`
 	ExtractorVersionContainsFold *string  `json:"extractorVersionContainsFold,omitempty"`
 
+	// "citations_json" field predicates.
+	CitationsJSON             *string  `json:"citationsJSON,omitempty"`
+	CitationsJSONNEQ          *string  `json:"citationsJSONNEQ,omitempty"`
+	CitationsJSONIn           []string `json:"citationsJSONIn,omitempty"`
+	CitationsJSONNotIn        []string `json:"citationsJSONNotIn,omitempty"`
+	CitationsJSONGT           *string  `json:"citationsJSONGT,omitempty"`
+	CitationsJSONGTE          *string  `json:"citationsJSONGTE,omitempty"`
+	CitationsJSONLT           *string  `json:"citationsJSONLT,omitempty"`
+	CitationsJSONLTE          *string  `json:"citationsJSONLTE,omitempty"`
+	CitationsJSONContains     *string  `json:"citationsJSONContains,omitempty"`
+	CitationsJSONHasPrefix    *string  `json:"citationsJSONHasPrefix,omitempty"`
+	CitationsJSONHasSuffix    *string  `json:"citationsJSONHasSuffix,omitempty"`
+	CitationsJSONIsNil        bool     `json:"citationsJSONIsNil,omitempty"`
+	CitationsJSONNotNil       bool     `json:"citationsJSONNotNil,omitempty"`
+	CitationsJSONEqualFold    *string  `json:"citationsJSONEqualFold,omitempty"`
+	CitationsJSONContainsFold *string  `json:"citationsJSONContainsFold,omitempty"`
+
 	// "projector_compat_version" field predicates.
 	ProjectorCompatVersion      *int  `json:"projectorCompatVersion,omitempty"`
 	ProjectorCompatVersionNEQ   *int  `json:"projectorCompatVersionNEQ,omitempty"`
@@ -31666,6 +31869,51 @@ func (i *RelationshipAssertionWhereInput) P() (predicate.RelationshipAssertion, 
 	}
 	if i.ExtractorVersionContainsFold != nil {
 		predicates = append(predicates, relationshipassertion.ExtractorVersionContainsFold(*i.ExtractorVersionContainsFold))
+	}
+	if i.CitationsJSON != nil {
+		predicates = append(predicates, relationshipassertion.CitationsJSONEQ(*i.CitationsJSON))
+	}
+	if i.CitationsJSONNEQ != nil {
+		predicates = append(predicates, relationshipassertion.CitationsJSONNEQ(*i.CitationsJSONNEQ))
+	}
+	if len(i.CitationsJSONIn) > 0 {
+		predicates = append(predicates, relationshipassertion.CitationsJSONIn(i.CitationsJSONIn...))
+	}
+	if len(i.CitationsJSONNotIn) > 0 {
+		predicates = append(predicates, relationshipassertion.CitationsJSONNotIn(i.CitationsJSONNotIn...))
+	}
+	if i.CitationsJSONGT != nil {
+		predicates = append(predicates, relationshipassertion.CitationsJSONGT(*i.CitationsJSONGT))
+	}
+	if i.CitationsJSONGTE != nil {
+		predicates = append(predicates, relationshipassertion.CitationsJSONGTE(*i.CitationsJSONGTE))
+	}
+	if i.CitationsJSONLT != nil {
+		predicates = append(predicates, relationshipassertion.CitationsJSONLT(*i.CitationsJSONLT))
+	}
+	if i.CitationsJSONLTE != nil {
+		predicates = append(predicates, relationshipassertion.CitationsJSONLTE(*i.CitationsJSONLTE))
+	}
+	if i.CitationsJSONContains != nil {
+		predicates = append(predicates, relationshipassertion.CitationsJSONContains(*i.CitationsJSONContains))
+	}
+	if i.CitationsJSONHasPrefix != nil {
+		predicates = append(predicates, relationshipassertion.CitationsJSONHasPrefix(*i.CitationsJSONHasPrefix))
+	}
+	if i.CitationsJSONHasSuffix != nil {
+		predicates = append(predicates, relationshipassertion.CitationsJSONHasSuffix(*i.CitationsJSONHasSuffix))
+	}
+	if i.CitationsJSONIsNil {
+		predicates = append(predicates, relationshipassertion.CitationsJSONIsNil())
+	}
+	if i.CitationsJSONNotNil {
+		predicates = append(predicates, relationshipassertion.CitationsJSONNotNil())
+	}
+	if i.CitationsJSONEqualFold != nil {
+		predicates = append(predicates, relationshipassertion.CitationsJSONEqualFold(*i.CitationsJSONEqualFold))
+	}
+	if i.CitationsJSONContainsFold != nil {
+		predicates = append(predicates, relationshipassertion.CitationsJSONContainsFold(*i.CitationsJSONContainsFold))
 	}
 	if i.ProjectorCompatVersion != nil {
 		predicates = append(predicates, relationshipassertion.ProjectorCompatVersionEQ(*i.ProjectorCompatVersion))
@@ -47009,6 +47257,22 @@ type RevenueWorkspaceWhereInput struct {
 	MailHistoryIDEqualFold    *string  `json:"mailHistoryIDEqualFold,omitempty"`
 	MailHistoryIDContainsFold *string  `json:"mailHistoryIDContainsFold,omitempty"`
 
+	// "cloud_research_consent" field predicates.
+	CloudResearchConsent    *bool `json:"cloudResearchConsent,omitempty"`
+	CloudResearchConsentNEQ *bool `json:"cloudResearchConsentNEQ,omitempty"`
+
+	// "cloud_research_consent_at" field predicates.
+	CloudResearchConsentAt       *time.Time  `json:"cloudResearchConsentAt,omitempty"`
+	CloudResearchConsentAtNEQ    *time.Time  `json:"cloudResearchConsentAtNEQ,omitempty"`
+	CloudResearchConsentAtIn     []time.Time `json:"cloudResearchConsentAtIn,omitempty"`
+	CloudResearchConsentAtNotIn  []time.Time `json:"cloudResearchConsentAtNotIn,omitempty"`
+	CloudResearchConsentAtGT     *time.Time  `json:"cloudResearchConsentAtGT,omitempty"`
+	CloudResearchConsentAtGTE    *time.Time  `json:"cloudResearchConsentAtGTE,omitempty"`
+	CloudResearchConsentAtLT     *time.Time  `json:"cloudResearchConsentAtLT,omitempty"`
+	CloudResearchConsentAtLTE    *time.Time  `json:"cloudResearchConsentAtLTE,omitempty"`
+	CloudResearchConsentAtIsNil  bool        `json:"cloudResearchConsentAtIsNil,omitempty"`
+	CloudResearchConsentAtNotNil bool        `json:"cloudResearchConsentAtNotNil,omitempty"`
+
 	// "user" edge predicates.
 	HasUser     *bool             `json:"hasUser,omitempty"`
 	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
@@ -47606,6 +47870,42 @@ func (i *RevenueWorkspaceWhereInput) P() (predicate.RevenueWorkspace, error) {
 	}
 	if i.MailHistoryIDContainsFold != nil {
 		predicates = append(predicates, revenueworkspace.MailHistoryIDContainsFold(*i.MailHistoryIDContainsFold))
+	}
+	if i.CloudResearchConsent != nil {
+		predicates = append(predicates, revenueworkspace.CloudResearchConsentEQ(*i.CloudResearchConsent))
+	}
+	if i.CloudResearchConsentNEQ != nil {
+		predicates = append(predicates, revenueworkspace.CloudResearchConsentNEQ(*i.CloudResearchConsentNEQ))
+	}
+	if i.CloudResearchConsentAt != nil {
+		predicates = append(predicates, revenueworkspace.CloudResearchConsentAtEQ(*i.CloudResearchConsentAt))
+	}
+	if i.CloudResearchConsentAtNEQ != nil {
+		predicates = append(predicates, revenueworkspace.CloudResearchConsentAtNEQ(*i.CloudResearchConsentAtNEQ))
+	}
+	if len(i.CloudResearchConsentAtIn) > 0 {
+		predicates = append(predicates, revenueworkspace.CloudResearchConsentAtIn(i.CloudResearchConsentAtIn...))
+	}
+	if len(i.CloudResearchConsentAtNotIn) > 0 {
+		predicates = append(predicates, revenueworkspace.CloudResearchConsentAtNotIn(i.CloudResearchConsentAtNotIn...))
+	}
+	if i.CloudResearchConsentAtGT != nil {
+		predicates = append(predicates, revenueworkspace.CloudResearchConsentAtGT(*i.CloudResearchConsentAtGT))
+	}
+	if i.CloudResearchConsentAtGTE != nil {
+		predicates = append(predicates, revenueworkspace.CloudResearchConsentAtGTE(*i.CloudResearchConsentAtGTE))
+	}
+	if i.CloudResearchConsentAtLT != nil {
+		predicates = append(predicates, revenueworkspace.CloudResearchConsentAtLT(*i.CloudResearchConsentAtLT))
+	}
+	if i.CloudResearchConsentAtLTE != nil {
+		predicates = append(predicates, revenueworkspace.CloudResearchConsentAtLTE(*i.CloudResearchConsentAtLTE))
+	}
+	if i.CloudResearchConsentAtIsNil {
+		predicates = append(predicates, revenueworkspace.CloudResearchConsentAtIsNil())
+	}
+	if i.CloudResearchConsentAtNotNil {
+		predicates = append(predicates, revenueworkspace.CloudResearchConsentAtNotNil())
 	}
 
 	if i.HasUser != nil {

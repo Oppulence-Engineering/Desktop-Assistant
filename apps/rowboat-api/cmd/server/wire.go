@@ -40,6 +40,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/minutes"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/parallel"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/ratelimit"
@@ -163,15 +164,17 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	docsH := docs.New()
 	billingH := billing.New(client, cfg.FreeTierCredits, cfg.DailyCreditLimit, database.Cached, log)
 	billingH.ConfigureStripe(billing.StripeConfig{
-		SecretKey:      cfg.StripeSecretKey,
-		WebhookSecret:  cfg.StripeWebhookSecret,
-		StarterPriceID: cfg.StripeStarterPriceID,
-		ProPriceID:     cfg.StripeProPriceID,
-		SuccessURL:     cfg.StripeSuccessURL,
-		CancelURL:      cfg.StripeCancelURL,
-		APIBaseURL:     cfg.StripeAPIBaseURL,
-		StarterCredits: cfg.StripeStarterCredits,
-		ProCredits:     cfg.StripeProCredits,
+		SecretKey:           cfg.StripeSecretKey,
+		WebhookSecret:       cfg.StripeWebhookSecret,
+		StarterPriceID:      cfg.StripeStarterPriceID,
+		ProPriceID:          cfg.StripeProPriceID,
+		IntelligencePriceID: cfg.StripeIntelligencePriceID,
+		SuccessURL:          cfg.StripeSuccessURL,
+		CancelURL:           cfg.StripeCancelURL,
+		APIBaseURL:          cfg.StripeAPIBaseURL,
+		StarterCredits:      cfg.StripeStarterCredits,
+		ProCredits:          cfg.StripeProCredits,
+		IntelligenceCredits: cfg.StripeIntelligenceCredits,
 	})
 	backgroundTasksH := backgroundtasks.New(client, log)
 	backgroundTasksH.SetAdmission(backgroundtaskruns.AdmissionFromConfig(cfg, gate, prices))
@@ -451,6 +454,28 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			Model:   cfg.EmbeddingsModel,
 		}))
 	}
+	// Cloud research (RFC 039). Always wired; the client is nil without a vendor
+	// key, and every research entry point then reports itself unconfigured. The
+	// key stays here: the desktop never holds it, exactly as with the LLM
+	// gateway. Reaching the vendor additionally needs the cloud_research
+	// capability, the intelligence plan, and workspace consent — all three
+	// checked server-side on every call.
+	revenueSvc.SetResearch(revenue.ResearchConfig{
+		Client: parallel.New(parallel.Config{
+			APIKey:  sec.Parallel(),
+			BaseURL: cfg.ParallelBaseURL,
+			Policy:  vendorPolicy,
+		}),
+		Gate:   gate,
+		Costs:  prices.ResearchCosts(),
+		Limits: quota.SpendLimits{Daily: cfg.DailyCreditLimit, Monthly: cfg.MonthlyCreditLimit},
+	})
+	// The daily account poll that turns the attention queue from a nag list into
+	// a "why now" list. Only ever loads workspaces that have consented, and does
+	// nothing at all without a vendor key.
+	go func() {
+		_ = revenue.NewResearchTriggerRunner(revenueSvc, 24*time.Hour, 200, log).Run(ctx)
+	}()
 	revenueH := revenue.NewHandler(revenueSvc, log)
 	// RFC 031 Layer-1 push sync: keep the mail index live from Gmail pushes.
 	// Ships dark behind REVENUE_MAIL_PUSH_SYNC_ENABLED.

@@ -198,6 +198,34 @@ func (_c *RevenueWorkspaceCreate) SetNillableMailHistoryID(v *string) *RevenueWo
 	return _c
 }
 
+// SetCloudResearchConsent sets the "cloud_research_consent" field.
+func (_c *RevenueWorkspaceCreate) SetCloudResearchConsent(v bool) *RevenueWorkspaceCreate {
+	_c.mutation.SetCloudResearchConsent(v)
+	return _c
+}
+
+// SetNillableCloudResearchConsent sets the "cloud_research_consent" field if the given value is not nil.
+func (_c *RevenueWorkspaceCreate) SetNillableCloudResearchConsent(v *bool) *RevenueWorkspaceCreate {
+	if v != nil {
+		_c.SetCloudResearchConsent(*v)
+	}
+	return _c
+}
+
+// SetCloudResearchConsentAt sets the "cloud_research_consent_at" field.
+func (_c *RevenueWorkspaceCreate) SetCloudResearchConsentAt(v time.Time) *RevenueWorkspaceCreate {
+	_c.mutation.SetCloudResearchConsentAt(v)
+	return _c
+}
+
+// SetNillableCloudResearchConsentAt sets the "cloud_research_consent_at" field if the given value is not nil.
+func (_c *RevenueWorkspaceCreate) SetNillableCloudResearchConsentAt(v *time.Time) *RevenueWorkspaceCreate {
+	if v != nil {
+		_c.SetCloudResearchConsentAt(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *RevenueWorkspaceCreate) SetID(v uuid.UUID) *RevenueWorkspaceCreate {
 	_c.mutation.SetID(v)
@@ -769,6 +797,10 @@ func (_c *RevenueWorkspaceCreate) defaults() {
 		v := revenueworkspace.DefaultStatus
 		_c.mutation.SetStatus(v)
 	}
+	if _, ok := _c.mutation.CloudResearchConsent(); !ok {
+		v := revenueworkspace.DefaultCloudResearchConsent
+		_c.mutation.SetCloudResearchConsent(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := revenueworkspace.DefaultID()
 		_c.mutation.SetID(v)
@@ -798,6 +830,9 @@ func (_c *RevenueWorkspaceCreate) check() error {
 		if err := revenueworkspace.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "RevenueWorkspace.status": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.CloudResearchConsent(); !ok {
+		return &ValidationError{Name: "cloud_research_consent", err: errors.New(`ent: missing required field "RevenueWorkspace.cloud_research_consent"`)}
 	}
 	if len(_c.mutation.UserIDs()) == 0 {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "RevenueWorkspace.user"`)}
@@ -877,6 +912,14 @@ func (_c *RevenueWorkspaceCreate) createSpec() (*RevenueWorkspace, *sqlgraph.Cre
 	if value, ok := _c.mutation.MailHistoryID(); ok {
 		_spec.SetField(revenueworkspace.FieldMailHistoryID, field.TypeString, value)
 		_node.MailHistoryID = value
+	}
+	if value, ok := _c.mutation.CloudResearchConsent(); ok {
+		_spec.SetField(revenueworkspace.FieldCloudResearchConsent, field.TypeBool, value)
+		_node.CloudResearchConsent = value
+	}
+	if value, ok := _c.mutation.CloudResearchConsentAt(); ok {
+		_spec.SetField(revenueworkspace.FieldCloudResearchConsentAt, field.TypeTime, value)
+		_node.CloudResearchConsentAt = &value
 	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -1619,6 +1662,36 @@ func (u *RevenueWorkspaceUpsert) ClearMailHistoryID() *RevenueWorkspaceUpsert {
 	return u
 }
 
+// SetCloudResearchConsent sets the "cloud_research_consent" field.
+func (u *RevenueWorkspaceUpsert) SetCloudResearchConsent(v bool) *RevenueWorkspaceUpsert {
+	u.Set(revenueworkspace.FieldCloudResearchConsent, v)
+	return u
+}
+
+// UpdateCloudResearchConsent sets the "cloud_research_consent" field to the value that was provided on create.
+func (u *RevenueWorkspaceUpsert) UpdateCloudResearchConsent() *RevenueWorkspaceUpsert {
+	u.SetExcluded(revenueworkspace.FieldCloudResearchConsent)
+	return u
+}
+
+// SetCloudResearchConsentAt sets the "cloud_research_consent_at" field.
+func (u *RevenueWorkspaceUpsert) SetCloudResearchConsentAt(v time.Time) *RevenueWorkspaceUpsert {
+	u.Set(revenueworkspace.FieldCloudResearchConsentAt, v)
+	return u
+}
+
+// UpdateCloudResearchConsentAt sets the "cloud_research_consent_at" field to the value that was provided on create.
+func (u *RevenueWorkspaceUpsert) UpdateCloudResearchConsentAt() *RevenueWorkspaceUpsert {
+	u.SetExcluded(revenueworkspace.FieldCloudResearchConsentAt)
+	return u
+}
+
+// ClearCloudResearchConsentAt clears the value of the "cloud_research_consent_at" field.
+func (u *RevenueWorkspaceUpsert) ClearCloudResearchConsentAt() *RevenueWorkspaceUpsert {
+	u.SetNull(revenueworkspace.FieldCloudResearchConsentAt)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -1835,6 +1908,41 @@ func (u *RevenueWorkspaceUpsertOne) UpdateMailHistoryID() *RevenueWorkspaceUpser
 func (u *RevenueWorkspaceUpsertOne) ClearMailHistoryID() *RevenueWorkspaceUpsertOne {
 	return u.Update(func(s *RevenueWorkspaceUpsert) {
 		s.ClearMailHistoryID()
+	})
+}
+
+// SetCloudResearchConsent sets the "cloud_research_consent" field.
+func (u *RevenueWorkspaceUpsertOne) SetCloudResearchConsent(v bool) *RevenueWorkspaceUpsertOne {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.SetCloudResearchConsent(v)
+	})
+}
+
+// UpdateCloudResearchConsent sets the "cloud_research_consent" field to the value that was provided on create.
+func (u *RevenueWorkspaceUpsertOne) UpdateCloudResearchConsent() *RevenueWorkspaceUpsertOne {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.UpdateCloudResearchConsent()
+	})
+}
+
+// SetCloudResearchConsentAt sets the "cloud_research_consent_at" field.
+func (u *RevenueWorkspaceUpsertOne) SetCloudResearchConsentAt(v time.Time) *RevenueWorkspaceUpsertOne {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.SetCloudResearchConsentAt(v)
+	})
+}
+
+// UpdateCloudResearchConsentAt sets the "cloud_research_consent_at" field to the value that was provided on create.
+func (u *RevenueWorkspaceUpsertOne) UpdateCloudResearchConsentAt() *RevenueWorkspaceUpsertOne {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.UpdateCloudResearchConsentAt()
+	})
+}
+
+// ClearCloudResearchConsentAt clears the value of the "cloud_research_consent_at" field.
+func (u *RevenueWorkspaceUpsertOne) ClearCloudResearchConsentAt() *RevenueWorkspaceUpsertOne {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.ClearCloudResearchConsentAt()
 	})
 }
 
@@ -2221,6 +2329,41 @@ func (u *RevenueWorkspaceUpsertBulk) UpdateMailHistoryID() *RevenueWorkspaceUpse
 func (u *RevenueWorkspaceUpsertBulk) ClearMailHistoryID() *RevenueWorkspaceUpsertBulk {
 	return u.Update(func(s *RevenueWorkspaceUpsert) {
 		s.ClearMailHistoryID()
+	})
+}
+
+// SetCloudResearchConsent sets the "cloud_research_consent" field.
+func (u *RevenueWorkspaceUpsertBulk) SetCloudResearchConsent(v bool) *RevenueWorkspaceUpsertBulk {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.SetCloudResearchConsent(v)
+	})
+}
+
+// UpdateCloudResearchConsent sets the "cloud_research_consent" field to the value that was provided on create.
+func (u *RevenueWorkspaceUpsertBulk) UpdateCloudResearchConsent() *RevenueWorkspaceUpsertBulk {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.UpdateCloudResearchConsent()
+	})
+}
+
+// SetCloudResearchConsentAt sets the "cloud_research_consent_at" field.
+func (u *RevenueWorkspaceUpsertBulk) SetCloudResearchConsentAt(v time.Time) *RevenueWorkspaceUpsertBulk {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.SetCloudResearchConsentAt(v)
+	})
+}
+
+// UpdateCloudResearchConsentAt sets the "cloud_research_consent_at" field to the value that was provided on create.
+func (u *RevenueWorkspaceUpsertBulk) UpdateCloudResearchConsentAt() *RevenueWorkspaceUpsertBulk {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.UpdateCloudResearchConsentAt()
+	})
+}
+
+// ClearCloudResearchConsentAt clears the value of the "cloud_research_consent_at" field.
+func (u *RevenueWorkspaceUpsertBulk) ClearCloudResearchConsentAt() *RevenueWorkspaceUpsertBulk {
+	return u.Update(func(s *RevenueWorkspaceUpsert) {
+		s.ClearCloudResearchConsentAt()
 	})
 }
 

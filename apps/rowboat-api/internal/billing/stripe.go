@@ -37,11 +37,16 @@ type StripeConfig struct {
 	WebhookSecret  string
 	StarterPriceID string
 	ProPriceID     string
-	SuccessURL     string
-	CancelURL      string
-	APIBaseURL     string
-	StarterCredits int
-	ProCredits     int
+	// IntelligencePriceID is the cloud-research tier (RFC 039). Unset in a
+	// deployment that does not sell it; checkout then rejects the plan rather
+	// than falling back to a cheaper one.
+	IntelligencePriceID string
+	SuccessURL          string
+	CancelURL           string
+	APIBaseURL          string
+	StarterCredits      int
+	ProCredits          int
+	IntelligenceCredits int
 }
 
 // ConfigureStripe installs Stripe settings after the handler is constructed.
@@ -54,6 +59,13 @@ func (h *Handler) ConfigureStripe(cfg StripeConfig) {
 	}
 	if cfg.ProCredits <= 0 {
 		cfg.ProCredits = 2000000
+	}
+	if cfg.IntelligenceCredits <= 0 {
+		// Research is bounded by product-level limits ("up to 250 monitored
+		// accounts"), not by a credit balance the user is asked to reason about.
+		// The grant is generous enough that a normal month never touches it and
+		// a runaway still stops.
+		cfg.IntelligenceCredits = 5000000
 	}
 	h.stripe = cfg
 	h.stripeHTTP = &http.Client{Timeout: 15 * time.Second}
@@ -76,7 +88,7 @@ func (h *Handler) CheckoutSession(w http.ResponseWriter, r *http.Request) {
 	}
 	priceID, ok := h.priceForPlan(req.Plan)
 	if !ok {
-		httpx.Error(w, http.StatusBadRequest, "plan must be starter or pro", "bad_request")
+		httpx.Error(w, http.StatusBadRequest, "plan must be starter, pro or intelligence", "bad_request")
 		return
 	}
 	if priceID == "" || h.stripe.SecretKey == "" {
@@ -661,6 +673,8 @@ func (h *Handler) priceForPlan(plan string) (string, bool) {
 		return h.stripe.StarterPriceID, true
 	case "pro":
 		return h.stripe.ProPriceID, true
+	case "intelligence":
+		return h.stripe.IntelligencePriceID, true
 	default:
 		return "", false
 	}
@@ -669,6 +683,8 @@ func (h *Handler) priceForPlan(plan string) (string, bool) {
 func (h *Handler) planForStripeSubscription(ss stripeSubscription) string {
 	for _, item := range ss.Items.Data {
 		switch item.Price.ID {
+		case h.stripe.IntelligencePriceID:
+			return "intelligence"
 		case h.stripe.ProPriceID:
 			return "pro"
 		case h.stripe.StarterPriceID:
@@ -677,7 +693,7 @@ func (h *Handler) planForStripeSubscription(ss stripeSubscription) string {
 	}
 	if ss.Metadata != nil {
 		switch ss.Metadata["plan"] {
-		case "starter", "pro":
+		case "starter", "pro", "intelligence":
 			return ss.Metadata["plan"]
 		}
 	}
@@ -686,6 +702,8 @@ func (h *Handler) planForStripeSubscription(ss stripeSubscription) string {
 
 func (h *Handler) creditsForPlan(plan string) int {
 	switch plan {
+	case "intelligence":
+		return h.stripe.IntelligenceCredits
 	case "pro":
 		return h.stripe.ProCredits
 	case "starter":

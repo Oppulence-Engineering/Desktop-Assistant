@@ -164,6 +164,10 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 		CapabilityDetectorQuiet: "quiet_account", CapabilityDetectorOverdue: "overdue_commitment",
 		CapabilityDetectorRisk: "unresolved_risk", CapabilityDetectorNextStep: "missing_next_step",
 		CapabilityDetectorSource: "source_degradation", CapabilityDetectorOutcome: "action_outcome_review",
+		// The trigger detector has no local detector capability of its own: it
+		// cannot fire without cloud research, so the research kill switch is the
+		// only switch it needs. One switch, not two that can disagree.
+		CapabilityCloudResearch: "external_trigger",
 	} {
 		enabled, capabilityErr := s.attentionCapabilityEnabled(ctx, ws, capability)
 		if capabilityErr != nil {
@@ -177,6 +181,22 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 	departedContacts, err := s.departedContactsByRelationship(ctx, ws)
 	if err != nil {
 		return err
+	}
+
+	// Cited external events, one per account. Empty for every workspace that
+	// has not enabled research, which is why the detector below costs a map
+	// lookup rather than a query.
+	triggers := map[uuid.UUID]*ent.RelationshipAssertion{}
+	triggerContacts := map[uuid.UUID][]string{}
+	if capabilities["external_trigger"] {
+		triggers, err = s.activeAccountTriggers(ctx, ws, now)
+		if err != nil {
+			return err
+		}
+		triggerContacts, err = s.contactNamesForRelationships(ctx, triggers)
+		if err != nil {
+			return err
+		}
 	}
 
 	candidates := make([]attentionCandidate, 0)
@@ -214,6 +234,23 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 					SourceRequirements: dependencies,
 				})
 			}
+		}
+		// The queue's only forward-looking reason: something happened out there,
+		// here is the evidence, and here is who you know. Everything else in this
+		// loop is derived from the user's own history.
+		if trigger := triggers[rel.ID]; trigger != nil {
+			contacts := triggerContacts[rel.ID]
+			candidates = append(candidates, attentionCandidate{
+				Relationship: rel, ReasonCode: "external_trigger",
+				Explanation:         triggerExplanation(trigger.Value, strings.Join(contacts, " and ")),
+				TriggeringObjectRef: "relationship-assertion:" + trigger.ID.String(),
+				EvidenceRefs:        []string{"relationship-assertion:" + trigger.ID.String()},
+				RankScore:           triggerRankScore, UrgencyBand: urgencyBand(triggerRankScore),
+				RankFactors: map[string]int{"external_event": triggerRankScore, "cited_evidence": 1},
+				// The reason expires with the event: a Series B stops being a
+				// reason to write today about six weeks after it was announced.
+				ExpiresAt: trigger.ValidTo,
+			})
 		}
 		if capabilities["overdue_commitment"] {
 			for _, promised := range rel.Edges.Commitments {

@@ -209,6 +209,46 @@ func (_u *PersonUpdate) ClearLocale() *PersonUpdate {
 	return _u
 }
 
+// SetSeniority sets the "seniority" field.
+func (_u *PersonUpdate) SetSeniority(v string) *PersonUpdate {
+	_u.mutation.SetSeniority(v)
+	return _u
+}
+
+// SetNillableSeniority sets the "seniority" field if the given value is not nil.
+func (_u *PersonUpdate) SetNillableSeniority(v *string) *PersonUpdate {
+	if v != nil {
+		_u.SetSeniority(*v)
+	}
+	return _u
+}
+
+// ClearSeniority clears the value of the "seniority" field.
+func (_u *PersonUpdate) ClearSeniority() *PersonUpdate {
+	_u.mutation.ClearSeniority()
+	return _u
+}
+
+// SetLocation sets the "location" field.
+func (_u *PersonUpdate) SetLocation(v string) *PersonUpdate {
+	_u.mutation.SetLocation(v)
+	return _u
+}
+
+// SetNillableLocation sets the "location" field if the given value is not nil.
+func (_u *PersonUpdate) SetNillableLocation(v *string) *PersonUpdate {
+	if v != nil {
+		_u.SetLocation(*v)
+	}
+	return _u
+}
+
+// ClearLocation clears the value of the "location" field.
+func (_u *PersonUpdate) ClearLocation() *PersonUpdate {
+	_u.mutation.ClearLocation()
+	return _u
+}
+
 // SetEmploymentStatus sets the "employment_status" field.
 func (_u *PersonUpdate) SetEmploymentStatus(v string) *PersonUpdate {
 	_u.mutation.SetEmploymentStatus(v)
@@ -820,6 +860,18 @@ func (_u *PersonUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.LocaleCleared() {
 		_spec.ClearField(person.FieldLocale, field.TypeString)
 	}
+	if value, ok := _u.mutation.Seniority(); ok {
+		_spec.SetField(person.FieldSeniority, field.TypeString, value)
+	}
+	if _u.mutation.SeniorityCleared() {
+		_spec.ClearField(person.FieldSeniority, field.TypeString)
+	}
+	if value, ok := _u.mutation.Location(); ok {
+		_spec.SetField(person.FieldLocation, field.TypeString, value)
+	}
+	if _u.mutation.LocationCleared() {
+		_spec.ClearField(person.FieldLocation, field.TypeString)
+	}
 	if value, ok := _u.mutation.EmploymentStatus(); ok {
 		_spec.SetField(person.FieldEmploymentStatus, field.TypeString, value)
 	}
@@ -1397,6 +1449,46 @@ func (_u *PersonUpdateOne) SetNillableLocale(v *string) *PersonUpdateOne {
 // ClearLocale clears the value of the "locale" field.
 func (_u *PersonUpdateOne) ClearLocale() *PersonUpdateOne {
 	_u.mutation.ClearLocale()
+	return _u
+}
+
+// SetSeniority sets the "seniority" field.
+func (_u *PersonUpdateOne) SetSeniority(v string) *PersonUpdateOne {
+	_u.mutation.SetSeniority(v)
+	return _u
+}
+
+// SetNillableSeniority sets the "seniority" field if the given value is not nil.
+func (_u *PersonUpdateOne) SetNillableSeniority(v *string) *PersonUpdateOne {
+	if v != nil {
+		_u.SetSeniority(*v)
+	}
+	return _u
+}
+
+// ClearSeniority clears the value of the "seniority" field.
+func (_u *PersonUpdateOne) ClearSeniority() *PersonUpdateOne {
+	_u.mutation.ClearSeniority()
+	return _u
+}
+
+// SetLocation sets the "location" field.
+func (_u *PersonUpdateOne) SetLocation(v string) *PersonUpdateOne {
+	_u.mutation.SetLocation(v)
+	return _u
+}
+
+// SetNillableLocation sets the "location" field if the given value is not nil.
+func (_u *PersonUpdateOne) SetNillableLocation(v *string) *PersonUpdateOne {
+	if v != nil {
+		_u.SetLocation(*v)
+	}
+	return _u
+}
+
+// ClearLocation clears the value of the "location" field.
+func (_u *PersonUpdateOne) ClearLocation() *PersonUpdateOne {
+	_u.mutation.ClearLocation()
 	return _u
 }
 
@@ -2040,6 +2132,18 @@ func (_u *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err erro
 	}
 	if _u.mutation.LocaleCleared() {
 		_spec.ClearField(person.FieldLocale, field.TypeString)
+	}
+	if value, ok := _u.mutation.Seniority(); ok {
+		_spec.SetField(person.FieldSeniority, field.TypeString, value)
+	}
+	if _u.mutation.SeniorityCleared() {
+		_spec.ClearField(person.FieldSeniority, field.TypeString)
+	}
+	if value, ok := _u.mutation.Location(); ok {
+		_spec.SetField(person.FieldLocation, field.TypeString, value)
+	}
+	if _u.mutation.LocationCleared() {
+		_spec.ClearField(person.FieldLocation, field.TypeString)
 	}
 	if value, ok := _u.mutation.EmploymentStatus(); ok {
 		_spec.SetField(person.FieldEmploymentStatus, field.TypeString, value)

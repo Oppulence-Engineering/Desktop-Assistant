@@ -515,6 +515,7 @@ describe("relationship evidence consent", () => {
       emailMetadata: false,
       signatureEnrichment: false,
       modelContactExtraction: false,
+      cloudResearch: false,
     });
   });
 

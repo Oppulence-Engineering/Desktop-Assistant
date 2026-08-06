@@ -1176,9 +1176,9 @@ export const primaryPages: MarketingPage[] = [
   {
     path: "pricing",
     eyebrow: "Pricing",
-    title: "Watch is free. Chase is $99.",
+    title: "Watch is free. Chase is $99. Intelligence is $249.",
     description:
-      "Priced on executed chases, not seats or email volume. One saved deal pays for years. Cancel at any time.",
+      "A flat monthly price — never per seat, per email, or per lookup. One saved deal pays for years. Cancel at any time.",
     category: "product",
     bullets: [
       "Founders recover warm pipeline from existing communication and CRM history.",
@@ -1423,7 +1423,12 @@ export const pricingPlans = [
     period: "",
     description:
       "See what is slipping. A weekly report of the deals, invoices, and clients going quiet.",
-    features: ["Weekly slip report", "Dollar amounts on each finding", "Links to the source email"],
+    features: [
+      "Weekly slip report",
+      "Dollar amounts on each finding",
+      "Links to the source email",
+      "Job-change alerts on your ten closest contacts",
+    ],
     ctaLabel: "Get the report",
     ctaHref: "/book-a-demo",
   },
@@ -1444,11 +1449,28 @@ export const pricingPlans = [
     ctaHref: "/sign-up",
   },
   {
+    name: "Intelligence",
+    price: "$249",
+    period: "/month",
+    description:
+      "Why today, not just who is quiet. Watches your accounts for the things that make an email worth sending.",
+    features: [
+      "Everything in Chase",
+      "Funding, launch, acquisition and hiring alerts on your accounts",
+      "Where a departed contact went, and who replaced them",
+      "Meeting briefs that know what happened this week",
+      "Every fact carries a link you can click",
+      "Up to 250 monitored accounts",
+    ],
+    ctaLabel: "Start watching",
+    ctaHref: "/sign-up",
+  },
+  {
     name: "Teams",
     price: "Talk to us",
     period: "",
     description: "A shared queue and governance for small revenue teams.",
-    features: ["Everything in Chase", "Shared action queue", "Roles and audit trail"],
+    features: ["Everything in Intelligence", "Shared action queue", "Roles and audit trail"],
     ctaLabel: "Talk to us",
     ctaHref: "/book-a-demo",
   },

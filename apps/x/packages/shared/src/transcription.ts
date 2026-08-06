@@ -558,6 +558,20 @@ export const RelationshipEvidenceSettings = z.object({
   signatureEnrichment: z.boolean().default(false),
   /** Model-assisted contact extraction. Falls back to signature parsing. */
   modelContactExtraction: z.boolean().default(false),
+  /**
+   * Cloud research (RFC 039): look up public professional information about the
+   * people and companies you correspond with.
+   *
+   * Categorically different from every other flag here, and the reason it is a
+   * separate switch rather than part of a mode toggle. Everywhere else on this
+   * list, the data subject is the person flipping the switch. Here it is the
+   * counterparty — someone who is not your user and did not agree to anything.
+   *
+   * The desktop's copy of this flag is a display and a control surface. The
+   * server holds the authoritative value on the workspace and checks it on every
+   * call, because a gate the client can assert its way past is not a gate.
+   */
+  cloudResearch: z.boolean().default(false),
 });
 export type RelationshipEvidenceSettings = z.infer<typeof RelationshipEvidenceSettings>;
 
@@ -586,6 +600,7 @@ export const DEFAULT_RELATIONSHIP_EVIDENCE_SETTINGS: RelationshipEvidenceSetting
   emailMetadata: false,
   signatureEnrichment: false,
   modelContactExtraction: false,
+  cloudResearch: false,
 };
 
 export const TranscriptionConfig = z.object({
@@ -733,6 +748,25 @@ export const RelationshipEvidenceRoute = z.object({
 export type RelationshipEvidenceRoute = z.infer<typeof RelationshipEvidenceRoute>;
 
 /**
+ * Cloud research (RFC 039), as its own route rather than a sixth entry under
+ * `sharing`.
+ *
+ * Deliberate: `relationshipEvidence.enabled` is derived from whether ANY sharing
+ * flag is on, so folding research in there would make turning on research claim
+ * that meeting and email evidence is being published too. Different data
+ * subject, different destination, different sentence.
+ */
+export const CloudResearchRoute = z.object({
+  enabled: z.boolean(),
+  /** Named, because "a third party" is not consent. */
+  vendor: z.string(),
+  /** Exactly what is transmitted, in the order a person would ask. */
+  sends: z.array(z.string()),
+  neverSends: z.array(z.string()),
+});
+export type CloudResearchRoute = z.infer<typeof CloudResearchRoute>;
+
+/**
  * One truthful receipt for every transcription-adjacent desktop surface.
  *
  * Voice memos intentionally share the voice route. Keeping a separate route in this
@@ -741,6 +775,7 @@ export type RelationshipEvidenceRoute = z.infer<typeof RelationshipEvidenceRoute
  */
 export const TranscriptionRouting = z.object({
   localOnly: z.boolean(),
+  cloudResearch: CloudResearchRoute,
   voice: EffectiveTranscriptionRoute,
   voiceMemo: EffectiveTranscriptionRoute,
   meeting: EffectiveTranscriptionRoute.extend({

@@ -6395,6 +6395,9 @@
           "locale": {
             "type": "string"
           },
+          "location": {
+            "type": "string"
+          },
           "merged_at": {
             "format": "date-time",
             "type": "string"
@@ -6430,6 +6433,9 @@
           },
           "relationship_count": {
             "type": "integer"
+          },
+          "seniority": {
+            "type": "string"
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
@@ -6474,6 +6480,9 @@
       },
       "PersonAttribute": {
         "properties": {
+          "citations_json": {
+            "type": "string"
+          },
           "confidence": {
             "format": "double",
             "type": "number"
@@ -7417,6 +7426,9 @@
       },
       "RelationshipAssertion": {
         "properties": {
+          "citations_json": {
+            "type": "string"
+          },
           "confidence": {
             "format": "double",
             "type": "number"

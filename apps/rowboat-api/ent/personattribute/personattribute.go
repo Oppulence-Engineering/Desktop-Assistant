@@ -47,6 +47,8 @@ const (
 	FieldSupersedesAttributeID = "supersedes_attribute_id"
 	// FieldExtractorVersion holds the string denoting the extractor_version field in the database.
 	FieldExtractorVersion = "extractor_version"
+	// FieldCitationsJSON holds the string denoting the citations_json field in the database.
+	FieldCitationsJSON = "citations_json"
 	// FieldDedupeKey holds the string denoting the dedupe_key field in the database.
 	FieldDedupeKey = "dedupe_key"
 	// FieldSupportingObservationIds holds the string denoting the supporting_observation_ids field in the database.
@@ -110,6 +112,7 @@ var Columns = []string{
 	FieldRetractedAt,
 	FieldSupersedesAttributeID,
 	FieldExtractorVersion,
+	FieldCitationsJSON,
 	FieldDedupeKey,
 	FieldSupportingObservationIds,
 }
@@ -167,6 +170,8 @@ var (
 	ConfidenceValidator func(float64) error
 	// DefaultExtractorVersion holds the default value on creation for the "extractor_version" field.
 	DefaultExtractorVersion string
+	// CitationsJSONValidator is a validator for the "citations_json" field. It is called by the builders before save.
+	CitationsJSONValidator func(string) error
 	// DedupeKeyValidator is a validator for the "dedupe_key" field. It is called by the builders before save.
 	DedupeKeyValidator func(string) error
 	// DefaultSupportingObservationIds holds the default value on creation for the "supporting_observation_ids" field.
@@ -261,6 +266,11 @@ func BySupersedesAttributeID(opts ...sql.OrderTermOption) OrderOption {
 // ByExtractorVersion orders the results by the extractor_version field.
 func ByExtractorVersion(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldExtractorVersion, opts...).ToFunc()
+}
+
+// ByCitationsJSON orders the results by the citations_json field.
+func ByCitationsJSON(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCitationsJSON, opts...).ToFunc()
 }
 
 // ByDedupeKey orders the results by the dedupe_key field.

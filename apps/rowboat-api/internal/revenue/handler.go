@@ -90,6 +90,7 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Put("/{relationshipId}/conversation-policy", h.PutConversationPolicy)
 		r.Post("/{relationshipId}/conversation-deletion", h.RequestConversationDeletion)
 	})
+	h.MountResearch(r)
 	r.Post("/v1/relationship-observations/batch", h.IngestRelationshipObservations)
 	r.Route("/v1/relationship-identity-candidates", func(r chi.Router) {
 		r.Get("/", h.ListIdentityCandidates)
@@ -952,6 +953,21 @@ func (h *Handler) writeServiceError(w http.ResponseWriter, err error) {
 		httpx.Error(w, http.StatusServiceUnavailable, "tenant evidence encryption is unavailable", "evidence_encryption_unavailable")
 	case errors.Is(err, ErrEvidenceKeyDestroyed):
 		httpx.Error(w, http.StatusGone, "tenant evidence key has been destroyed", "evidence_key_destroyed")
+	// Ordered before ErrCapabilityDisabled: the research refusals are specific
+	// remedies (upgrade / agree / wait for the vendor), and collapsing them into
+	// "capability disabled" tells a user nothing they can act on.
+	case errors.Is(err, ErrResearchPlanRequired):
+		httpx.Error(w, http.StatusPaymentRequired,
+			"cloud research requires the intelligence plan", "research_plan_required")
+	case errors.Is(err, ErrResearchConsentRequired):
+		httpx.Error(w, http.StatusConflict,
+			"cloud research consent has not been granted for this workspace", "research_consent_required")
+	case errors.Is(err, ErrResearchUnavailable):
+		httpx.Error(w, http.StatusServiceUnavailable,
+			"cloud research is not configured", "provider_unconfigured")
+	case errors.Is(err, ErrResearchInProgress):
+		httpx.Error(w, http.StatusConflict,
+			"an identical research request is already in flight", "request_in_progress")
 	case errors.Is(err, ErrCapabilityDisabled):
 		httpx.Error(w, http.StatusConflict, err.Error(), "capability_disabled")
 	case errors.Is(err, ErrIdentityUnresolved):
