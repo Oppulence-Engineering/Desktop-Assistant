@@ -73,7 +73,7 @@ func TestChatCompleteToolCallRoundTrip(t *testing.T) {
 		_, _ = io.WriteString(w, finalBody)
 	}))
 	defer upstream.Close()
-	h.SetUpstreams("", upstream.URL)
+	h.SetUpstream(upstream.URL)
 
 	// First turn: model requests a tool call.
 	res, err := h.ChatComplete(ctx, chatRequest(uuid.New(), []llm.ChatMessage{
@@ -143,7 +143,7 @@ func TestChatCompleteBillsToolCallsWhenUsageIsMissing(t *testing.T) {
 			"id":"call_1","type":"function","function":{"name":"connector.read.gmail","arguments":"{\"query\":\"from:acme.com\"}"}
 		}]}}]
 	}`, http.StatusOK)
-	h.SetUpstreams("", upstream.URL)
+	h.SetUpstream(upstream.URL)
 
 	res, err := h.ChatComplete(ctx, chatRequest(uuid.New(), []llm.ChatMessage{{Role: "user", Content: "search"}}))
 	if err != nil {
@@ -161,7 +161,7 @@ func TestChatCompleteRefundsOnFailure(t *testing.T) {
 		_, _ = io.WriteString(w, `{"error":"down"}`)
 	}))
 	defer upstream.Close()
-	h.SetUpstreams("", upstream.URL)
+	h.SetUpstream(upstream.URL)
 
 	_, err := h.ChatComplete(ctx, chatRequest(uuid.New(), []llm.ChatMessage{{Role: "user", Content: "x"}}))
 	if err == nil {
@@ -179,7 +179,7 @@ func TestChatCompleteReplayIsRejected(t *testing.T) {
 		_, _ = io.WriteString(w, finalBody)
 	}))
 	defer upstream.Close()
-	h.SetUpstreams("", upstream.URL)
+	h.SetUpstream(upstream.URL)
 
 	rid := uuid.New()
 	req := chatRequest(rid, []llm.ChatMessage{{Role: "user", Content: "x"}})

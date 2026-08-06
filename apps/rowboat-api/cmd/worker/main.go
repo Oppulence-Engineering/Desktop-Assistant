@@ -515,7 +515,7 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 
 	gate := quota.New(client, log)
 	llmH := llm.New(prices, gate, sec, client, log)
-	llmH.SetUpstreams(cfg.OpenAIBaseURL, cfg.OpenRouterBaseURL)
+	llmH.SetUpstream(cfg.OpenRouterBaseURL)
 	llmPolicy := outbound.Policy{
 		Timeout:               cfg.VendorTimeout,
 		ResponseHeaderTimeout: cfg.VendorResponseHeaderTimeout,

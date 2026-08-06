@@ -31,7 +31,7 @@ const completionBody = `{"choices":[{"message":{"content":"{\"ids\":[\"task-a\"]
 func TestCompleteSettlesAndRecordsUsage(t *testing.T) {
 	client, ctx, h := setup(t, 100000)
 	upstream := jsonUpstream(t, completionBody, http.StatusOK)
-	h.SetUpstreams("", upstream.URL)
+	h.SetUpstream(upstream.URL)
 
 	res, err := h.Complete(ctx, llm.CompleteRequest{
 		Model:      "anthropic/claude-haiku-4-5",
@@ -71,7 +71,7 @@ func TestCompleteSettlesAndRecordsUsage(t *testing.T) {
 func TestCompleteRefundsOnUpstreamError(t *testing.T) {
 	client, ctx, h := setup(t, 100000)
 	upstream := jsonUpstream(t, `{"error":"boom"}`, http.StatusInternalServerError)
-	h.SetUpstreams("", upstream.URL)
+	h.SetUpstream(upstream.URL)
 
 	_, err := h.Complete(ctx, llm.CompleteRequest{
 		Model: "anthropic/claude-haiku-4-5", Prompt: "x",
@@ -92,7 +92,7 @@ func TestCompleteRefundsOnUpstreamError(t *testing.T) {
 func TestCompleteInsufficientCredits(t *testing.T) {
 	_, ctx, h := setup(t, 0)
 	upstream := jsonUpstream(t, completionBody, http.StatusOK)
-	h.SetUpstreams("", upstream.URL)
+	h.SetUpstream(upstream.URL)
 
 	_, err := h.Complete(ctx, llm.CompleteRequest{
 		Model: "anthropic/claude-haiku-4-5", Prompt: "x",
@@ -106,7 +106,7 @@ func TestCompleteInsufficientCredits(t *testing.T) {
 func TestCompleteReplayIsRejected(t *testing.T) {
 	_, ctx, h := setup(t, 100000)
 	upstream := jsonUpstream(t, completionBody, http.StatusOK)
-	h.SetUpstreams("", upstream.URL)
+	h.SetUpstream(upstream.URL)
 
 	rid := uuid.New()
 	req := llm.CompleteRequest{
@@ -126,7 +126,7 @@ func TestCompleteJSONStripsFences(t *testing.T) {
 	_, ctx, h := setup(t, 100000)
 	fenced := `{"choices":[{"message":{"content":"` + "```json\\n{\\\"match\\\":true,\\\"confidence\\\":0.9}\\n```" + `"}}],"usage":{"prompt_tokens":10,"completion_tokens":5}}`
 	upstream := jsonUpstream(t, fenced, http.StatusOK)
-	h.SetUpstreams("", upstream.URL)
+	h.SetUpstream(upstream.URL)
 
 	var out struct {
 		Match      bool    `json:"match"`

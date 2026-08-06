@@ -1,7 +1,6 @@
-// Package llm is the OpenRouter/OpenAI-compatible LLM gateway: it gates on
-// credits, forwards to an OpenAI-compatible upstream (OpenAI direct or
-// OpenRouter), streams responses back, settles the credit reservation against
-// actual token usage, and records an LLMUsage row per call.
+// Package llm is the OpenAI-compatible LLM gateway: it gates on credits,
+// forwards to OpenRouter, streams responses back, settles the credit
+// reservation against actual token usage, and records an LLMUsage row per call.
 package llm
 
 import (
@@ -75,14 +74,15 @@ func New(prices *pricing.Table, gate *quota.Gate, sec *secrets.Store, client *en
 	}
 }
 
-// SetUpstreams overrides the upstream base URL (used in tests and for
+// SetUpstream overrides the OpenRouter base URL (used in tests and for
 // self-hosted gateway deployments).
 //
-// The first parameter was the direct-OpenAI base URL and is ignored: all chat
-// traffic goes through OpenRouter now. Kept in the signature so the two
-// production call sites and the test helpers do not have to change in the same
-// commit as the routing switch.
-func (h *Handler) SetUpstreams(_ignoredOpenAI, openRouter string) {
+// Was SetUpstreams(openAI, openRouter). The OpenAI parameter is gone rather
+// than ignored: a setter that silently discards an argument is a trap for
+// whoever configures OPENAI_BASE_URL next and wonders why it has no effect.
+// All chat traffic goes through OpenRouter; the OpenAI key and base URL are
+// still used for embeddings, wired separately.
+func (h *Handler) SetUpstream(openRouter string) {
 	if openRouter != "" {
 		h.openRouterBaseURL = openRouter
 	}
