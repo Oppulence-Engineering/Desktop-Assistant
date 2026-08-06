@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.28](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.27...v0.1.28) (2026-08-06)
+
+
+### Bug Fixes
+
+* Google scope contract, dev deep-link hijack, and cheaper model defaults ([#209](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/209)) ([eb6f6a5](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/eb6f6a58380554aee5a5e05458c59154d91254d5))
+
 ## [0.1.27](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.26...v0.1.27) (2026-08-05)
 
 
