@@ -63,3 +63,34 @@ func TestLoadJSONOverride(t *testing.T) {
 		t.Fatalf("voice default not preserved: %d", tbl.VoiceCost(10))
 	}
 }
+
+// An unrecognised model id bills at DefaultModel, and DefaultModel is expensive.
+//
+// This is what makes LLM_ALLOWED_MODELS load-bearing rather than cosmetic. The
+// allowlist is checked against the raw requested string before routing, and the
+// pricing table is keyed on that same string. Anything that let an unpriced id
+// past the allowlist — for instance "normalising" the openrouter/ prefix so
+// "openrouter/openai/gpt-4.1-mini" resolves like "openai/gpt-4.1-mini" — would
+// route correctly and then charge the fallback rate.
+//
+// The failure mode is over-billing, not free calls, which is the quieter and
+// worse of the two. See the note on route() in internal/llm/router.go.
+func TestUnknownModelBillsAtTheExpensiveDefault(t *testing.T) {
+	table := pricing.DefaultTable()
+
+	const inTok, outTok = 1000, 1000
+	known := table.LLMCost("openai/gpt-4.1-mini", inTok, outTok)
+	unknown := table.LLMCost("openrouter/openai/gpt-4.1-mini", inTok, outTok)
+
+	if known == 0 {
+		t.Fatal("expected a real rate for a priced model; fixture drifted")
+	}
+	if unknown == known {
+		t.Fatal("prefixed id resolved to the same rate — the pricing table now " +
+			"recognises it, so the allowlist note in llm/router.go needs revisiting")
+	}
+	if unknown < known {
+		t.Errorf("unknown-model fallback (%d) is cheaper than a priced model (%d); "+
+			"the allowlist is the only thing preventing under-billing", unknown, known)
+	}
+}
