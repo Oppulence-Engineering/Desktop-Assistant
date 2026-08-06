@@ -46,6 +46,21 @@ const INTERACTIVE_USE_CASES: ReadonlySet<string> = new Set<UseCase>([
  */
 const INTERACTIVE_SUB_USE_CASES: ReadonlySet<string> = new Set(["ask"]);
 
+/**
+ * Note the coupling, because it is not visible from here: an agent run that
+ * does not declare a use case is tagged `copilot_chat` by the runtime
+ * (agents/runtime.ts `state.runUseCase ?? "copilot_chat"`), so it reaches this
+ * function looking interactive and skips the queue entirely. The `undefined`
+ * branch below almost never fires for agent traffic.
+ *
+ * That default is right for the path it was written for — `runs:create` from
+ * the renderer really is someone typing — and every background caller today
+ * does declare one (label_emails, tag_notes, build_graph, agent_notes,
+ * inline_tasks, live-note, background-tasks, agent-schedule, pre_built; checked
+ * all 13 createRun sites). But a new background run that forgets to set
+ * `useCase` will not be paced, and nothing will say so: it will simply spend
+ * the interactive reserve.
+ */
 export function isInteractive(useCase: string | undefined, subUseCase?: string): boolean {
   if (useCase === undefined) return false;
   if (INTERACTIVE_USE_CASES.has(useCase)) return true;
@@ -84,11 +99,30 @@ const BACKGROUND_INTERVAL_MS = 1_000;
 const BACKGROUND_PER_INTERVAL = 7;
 const BACKGROUND_CONCURRENCY = 12;
 
+/**
+ * Safety valve against a request that never settles.
+ *
+ * A stalled socket — laptop sleep with calls in flight, a captive portal, a
+ * connection dropped without an RST — leaves fetch pending forever. Nothing
+ * else times it out: the desktop passes no abort signal on this path, and the
+ * gateway's own response deadline is server-side. Enough of those and the
+ * concurrency slots are all held by ghosts and no background work ever runs
+ * again until the app restarts. Measured: 12 hangers, zero throughput,
+ * permanently.
+ *
+ * Five minutes is far longer than any real call — for streaming responses fetch
+ * settles once headers arrive, so this bounds the wait for a reply to start,
+ * not the length of a generation. It exists to break a deadlock, not to enforce
+ * latency.
+ */
+const BACKGROUND_STALL_TIMEOUT_MS = 5 * 60_000;
+
 function newQueue(): PQueue {
   return new PQueue({
     concurrency: BACKGROUND_CONCURRENCY,
     intervalCap: BACKGROUND_PER_INTERVAL,
     interval: BACKGROUND_INTERVAL_MS,
+    timeout: BACKGROUND_STALL_TIMEOUT_MS,
   });
 }
 

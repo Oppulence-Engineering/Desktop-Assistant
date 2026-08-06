@@ -129,6 +129,29 @@ describe("background pacing", () => {
     expect(backgroundQueueStats().size).toBeGreaterThan(300);
   });
 
+  it("recovers when every slot is held by a request that never settles", async () => {
+    // A stalled socket (sleep/wake, captive portal, connection dropped without
+    // an RST) leaves fetch pending forever, and nothing else on this path times
+    // it out. Without a stall timeout, enough of them hold every concurrency
+    // slot and background work stops permanently until the app restarts —
+    // measured at zero throughput behind 12 hangers.
+    Array.from({ length: 12 }, () =>
+      throughBackgroundBudget(() => new Promise<{ status: number }>(() => {})).catch(() => {}),
+    );
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    let ran = 0;
+    Array.from({ length: 20 }, () =>
+      throughBackgroundBudget(async () => {
+        ran += 1;
+        return ok();
+      }).catch(() => {}),
+    );
+    // Past the stall timeout, the ghosts release and the real work drains.
+    await vi.advanceTimersByTimeAsync(400_000);
+    expect(ran, "queue is wedged behind non-settling requests").toBe(20);
+  });
+
   it("drops queued work when cleared, without failing in-flight requests", async () => {
     const inFlight = throughBackgroundBudget(async () => ok());
     // Not awaited: clear() drops these without settling their promises.
@@ -264,4 +287,35 @@ describe("shared budget", () => {
     expect(stats).toEqual(backgroundQueueStats());
   });
 
+});
+
+describe("background agent runs declare a use case", () => {
+  // isInteractive depends on this and cannot see it. The runtime tags any run
+  // without a declared use case as copilot_chat, so a background run that
+  // forgets to set one is treated as interactive and skips the queue — it
+  // silently spends the reserve that exists for people who are waiting.
+  //
+  // Pins the modules that generate sustained LLM load. A new one is not covered
+  // here, which is exactly why the coupling is documented on isInteractive.
+  const BACKGROUND_RUNNERS = [
+    "knowledge/label_emails.ts",
+    "knowledge/tag_notes.ts",
+    "knowledge/build_graph.ts",
+    "knowledge/agent_notes.ts",
+    "knowledge/inline_tasks.ts",
+    "background-tasks/runner.ts",
+    "agent-schedule/runner.ts",
+  ];
+
+  for (const rel of BACKGROUND_RUNNERS) {
+    it(`${rel} tags its runs`, () => {
+      const src = fs.readFileSync(new URL(`../${rel}`, import.meta.url), "utf8");
+      const createRunAt = src.indexOf("createRun(");
+      expect(createRunAt, `${rel} no longer calls createRun`).toBeGreaterThan(-1);
+      // The useCase has to sit in the createRun options, not merely somewhere
+      // in the file.
+      const opts = src.slice(createRunAt, createRunAt + 400);
+      expect(opts, `${rel} must pass a useCase to createRun`).toMatch(/useCase:/);
+    });
+  }
 });
