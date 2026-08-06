@@ -164,3 +164,88 @@ describe("updateSenderProfiles", () => {
     expect(isMachineSender("sarah@acme.com")).toBe(false);
   });
 });
+
+describe("departure signals from bounces", () => {
+  // The bounce arrives from mailer-daemon and is about someone else, so the
+  // message carrying the evidence is exactly the one the machine-sender skip
+  // discards. These assert it is read before that skip, and attributed to the
+  // right person.
+  async function runWith(msgs: MailboxMessage[], store = fakeStore()) {
+    await updateSenderProfiles({
+      store,
+      accountId: "acct",
+      selfEmails: SELF,
+      thread: thread(msgs),
+    });
+    return store;
+  }
+
+  it("annotates a known contact when their address hard-bounces", async () => {
+    const store = fakeStore();
+    // Established correspondence first — a bounce for a stranger is a typo.
+    await runWith([message({ from: { email: "sarah@acme.com", name: "Sarah Chen" } })], store);
+
+    await runWith(
+      [
+        message({
+          id: "m2",
+          from: { email: "mailer-daemon@googlemail.com" },
+          subject: "Delivery Status Notification (Failure)",
+          textBody: "Your message to sarah@acme.com was not delivered.\n550 5.1.1 user unknown",
+        }),
+      ],
+      store,
+    );
+
+    const sarah = await store.getSenderProfile("acct", "sarah@acme.com");
+    expect(sarah?.departure?.kind).toBe("recipient_unknown");
+    expect(sarah?.departure?.evidence).toMatch(/user unknown/i);
+  });
+
+  it("does not invent a profile for an address never corresponded with", async () => {
+    // A bounce for an unknown address is a mistyped recipient, not a departure,
+    // and creating a contact from one would populate the graph with typos.
+    const store = await runWith([
+      message({
+        from: { email: "mailer-daemon@googlemail.com" },
+        subject: "Delivery Status Notification (Failure)",
+        textBody: "Your message to nobody@acme.com failed.\n550 5.1.1 user unknown",
+      }),
+    ]);
+    expect(await store.getSenderProfile("acct", "nobody@acme.com")).toBeNull();
+  });
+
+  it("leaves a contact untouched when the bounce is transient", async () => {
+    const store = fakeStore();
+    await runWith([message({ from: { email: "sarah@acme.com" } })], store);
+    await runWith(
+      [
+        message({
+          id: "m2",
+          from: { email: "mailer-daemon@acme.com" },
+          subject: "Undeliverable",
+          textBody: "sarah@acme.com: mailbox full, will retry.",
+        }),
+      ],
+      store,
+    );
+    expect((await store.getSenderProfile("acct", "sarah@acme.com"))?.departure).toBeUndefined();
+  });
+
+  it("does not mark the messenger when a colleague reports someone else's departure", async () => {
+    const store = fakeStore();
+    await runWith([message({ from: { email: "tom@acme.com" } })], store);
+    await runWith(
+      [
+        message({
+          id: "m2",
+          from: { email: "tom@acme.com" },
+          subject: "Re: intro",
+          textBody: "Sarah has left the company, I am picking this up.",
+        }),
+      ],
+      store,
+    );
+    expect((await store.getSenderProfile("acct", "tom@acme.com"))?.departure).toBeUndefined();
+  });
+});

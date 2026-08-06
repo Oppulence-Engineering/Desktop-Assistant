@@ -1,4 +1,5 @@
 import { emailDomain } from "@x/shared/dist/email-domain.js";
+import { detectDepartureSignal } from "./departure-signal.js";
 import type { MailboxStore } from "./store.js";
 import type { MailboxSenderProfile } from "./store.js";
 import type { MailboxThread } from "./types.js";
@@ -67,6 +68,36 @@ export async function updateSenderProfiles(
   );
 
   for (const message of input.thread.messages) {
+    // Read the departure signal before the machine-sender skip below. A hard
+    // bounce arrives *from* mailer-daemon and is *about* someone else, so the
+    // message that carries the evidence is exactly the one this loop discards.
+    const departure = detectDepartureSignal(
+      {
+        from: message.from.email,
+        subject: input.thread.subject,
+        body: message.textBody,
+      },
+      input.selfEmails,
+    );
+    if (departure) {
+      const subject = departure.email;
+      const known =
+        touched.get(subject) ?? (await input.store.getSenderProfile(input.accountId, subject));
+      // Only annotate someone already corresponded with. A bounce for an address
+      // never seen is a typo, not a departure.
+      if (known) {
+        const updated: MailboxSenderProfile = {
+          ...known,
+          departure: {
+            kind: departure.kind,
+            evidence: departure.evidence,
+            observedAt: message.sentAt || now,
+          },
+        };
+        touched.set(subject, updated);
+      }
+    }
+
     const email = normalize(message.from.email);
     if (!email || input.selfEmails.has(email)) continue;
 

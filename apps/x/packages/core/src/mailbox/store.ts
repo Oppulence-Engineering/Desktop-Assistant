@@ -70,6 +70,20 @@ export type MailboxSenderProfile = {
   categoryId?: string;
   isNewsletter: boolean;
   isColdEmail: boolean;
+  /**
+   * A bounce or autoreply indicated this address is gone.
+   *
+   * Recorded, never acted on here. "This address is dead" and "this person left"
+   * are different claims — a mistyped address bounces identically to a departed
+   * one — so this is evidence for a reviewer, not a state change. The desktop
+   * previously discarded these messages entirely as machine senders.
+   */
+  departure?: {
+    kind: "left_organization" | "recipient_unknown";
+    /** What the mail system actually said, so a person can judge it. */
+    evidence: string;
+    observedAt: number;
+  };
   unsubscribeUrl?: string;
   /**
    * Deterministically parsed from the sender's own signature block.
