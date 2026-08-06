@@ -1358,9 +1358,6 @@ export function setupIpcHandlers() {
       return { config };
     },
     "account:getSolomon": async () => getSolomonAccountState(),
-    "account:getRowboat": async () => {
-      return getSolomonAccountState();
-    },
     "granola:getConfig": async () => {
       const repo = container.resolve<IGranolaConfigRepo>("granolaConfigRepo");
       const config = await repo.getConfig();

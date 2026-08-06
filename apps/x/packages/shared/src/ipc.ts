@@ -734,15 +734,6 @@ const ipcSchemas = {
       authReason: z.enum(["not_signed_in", "reconnect_required", "refresh_backoff"]).nullable(),
     }),
   },
-  "account:getRowboat": {
-    req: z.null(),
-    res: z.object({
-      signedIn: z.boolean(),
-      accessToken: z.string().nullable(),
-      config: SolomonApiConfig.nullable(),
-      authReason: z.enum(["not_signed_in", "reconnect_required", "refresh_backoff"]).nullable(),
-    }),
-  },
   "oauth:didConnect": {
     req: z.object({
       provider: z.string(),

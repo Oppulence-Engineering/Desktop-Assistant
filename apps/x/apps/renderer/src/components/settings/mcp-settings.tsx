@@ -258,6 +258,8 @@ export function McpSettings({ dialogOpen }: { dialogOpen: boolean }) {
                 </Button>
               </div>
 
+              <ServerToolList serverName={s.name} />
+
               {s.kind === "stdio" ? (
                 <div className="space-y-3">
                   <SettingsField label="Command">
@@ -348,6 +350,74 @@ export function McpSettings({ dialogOpen }: { dialogOpen: boolean }) {
           {saving ? "Saving…" : "Save"}
         </Button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Show what a configured MCP server actually exposes.
+ *
+ * `mcp:listTools` had a handler, a schema and no caller: you could add a server,
+ * edit its command and save it, with no way to confirm it started or see what it
+ * offered. A typo in a command and a server with no tools looked identical —
+ * both were silence.
+ *
+ * Deliberately on demand rather than on render. Listing tools starts the server
+ * process, so doing it for every row whenever the pane opens would launch every
+ * configured MCP server just for visiting settings.
+ */
+function ServerToolList({ serverName }: { serverName: string }) {
+  const [tools, setTools] = React.useState<Array<{ name: string; description?: string }> | null>(
+    null,
+  );
+  const [busy, setBusy] = React.useState(false);
+  const [failure, setFailure] = React.useState<string | null>(null);
+
+  const load = async () => {
+    if (busy || !serverName.trim()) return;
+    setBusy(true);
+    setFailure(null);
+    try {
+      const res = await window.ipc.invoke("mcp:listTools", { serverName });
+      setTools(res.tools.map((t) => ({ name: t.name, description: t.description })));
+    } catch (err) {
+      // Surfaced inline rather than as a toast: it belongs to this server row,
+      // and it is usually a wrong command or a server that failed to start.
+      setFailure(err instanceof Error ? err.message : "Could not reach that server.");
+      setTools(null);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-3">
+      <Button variant="outline" size="sm" onClick={() => void load()} disabled={busy || !serverName.trim()}>
+        {busy ? "Connecting…" : tools ? "Refresh tools" : "Show tools"}
+      </Button>
+
+      {failure && <p className="mt-2 text-xs text-destructive">{failure}</p>}
+
+      {tools !== null && tools.length === 0 && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Connected, but this server exposes no tools.
+        </p>
+      )}
+
+      {tools !== null && tools.length > 0 && (
+        <ul className="mt-2 space-y-1">
+          {tools.map((tool) => (
+            <li key={tool.name} className="rounded-none border border-border/60 px-2.5 py-1.5">
+              <p className="font-mono text-xs">{tool.name}</p>
+              {tool.description && (
+                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                  {tool.description}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
