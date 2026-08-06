@@ -63,8 +63,10 @@ const moreProviders: Array<{
   },
 ];
 
+// Preselected when a user picks a provider. These are billed to the user's own
+// key, so the default is the cheap capable tier rather than the newest model.
 const preferredDefaults: Partial<Record<LlmProviderFlavor, string>> = {
-  openai: "gpt-5.2",
+  openai: "gpt-4.1-mini",
   anthropic: "claude-opus-4-6-20260202",
 };
 
