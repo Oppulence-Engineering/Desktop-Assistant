@@ -16,6 +16,8 @@ import {
   saveAgentNotesState,
   markEmailProcessed,
   markRunProcessed,
+  markSourceFailed,
+  shouldAttemptSource,
   type AgentNotesState,
 } from "./agent_notes_state.js";
 
@@ -59,6 +61,11 @@ export function findUserSentEmails(state: AgentNotesState, userEmail: string, li
         }
       } else if (stat.isFile() && entry.endsWith(".md")) {
         if (state.processedEmails[fullPath]) {
+          continue;
+        }
+        // Skip emails whose processing failed recently — without this the same
+        // batch is re-sent to the LLM every 10 seconds until it happens to work.
+        if (!shouldAttemptSource(fullPath, state)) {
           continue;
         }
         candidates.push({ path: fullPath, mtime: stat.mtimeMs });
@@ -171,7 +178,7 @@ async function shouldSkipForProductAuth(): Promise<boolean> {
 
 // --- Copilot run scanning ---
 
-function findNewCopilotRuns(state: AgentNotesState): string[] {
+export function findNewCopilotRuns(state: AgentNotesState): string[] {
   if (!fs.existsSync(RUNS_DIR)) {
     return [];
   }
@@ -181,6 +188,9 @@ function findNewCopilotRuns(state: AgentNotesState): string[] {
 
   for (const file of files) {
     if (state.processedRuns[file]) {
+      continue;
+    }
+    if (!shouldAttemptSource(file, state)) {
       continue;
     }
 
@@ -275,7 +285,7 @@ async function ensureUserEmail(): Promise<string | null> {
 
 // --- Main processing ---
 
-async function processAgentNotes(): Promise<void> {
+export async function processAgentNotes(): Promise<void> {
   ensureAgentNotesDir();
   const state = loadAgentNotesState();
   const userEmail = await ensureUserEmail();
@@ -348,11 +358,16 @@ async function processAgentNotes(): Promise<void> {
     await createMessage(agentRun.id, message);
     await waitForRunCompletion(agentRun.id, { throwOnError: true });
 
-    // Mark everything as processed
+    // Mark what was actually sent to the agent.
+    //
+    // This used to mark ALL of newRuns, but only runsToProcess — the last
+    // RUNS_BATCH_SIZE of them — went into the prompt. With 40 runs pending, 35
+    // were recorded as learned-from having never been sent, and were never
+    // revisited. The overflow must stay eligible for the next pass.
     for (const p of emailPaths) {
       markEmailProcessed(p, state);
     }
-    for (const r of newRuns) {
+    for (const r of runsToProcess) {
       markRunProcessed(r, state);
     }
     if (inboxEntries.length > 0) {
@@ -378,6 +393,15 @@ async function processAgentNotes(): Promise<void> {
     });
   } catch (error) {
     console.error("[AgentNotes] Error processing:", error);
+    // Back off everything that was in this failed pass; only successes were
+    // recorded before, so the identical batch returned every 10 seconds.
+    for (const p of emailPaths) {
+      markSourceFailed(p, state);
+    }
+    for (const r of runsToProcess) {
+      markSourceFailed(r, state);
+    }
+    saveAgentNotesState(state);
     await serviceLogger.log({
       type: "error",
       service: serviceRun.service,
