@@ -4125,7 +4125,7 @@ export interface components {
        * @example free
        * @enum {string|null}
        */
-      plan: "free" | "starter" | "pro" | null;
+      plan: "free" | "starter" | "pro" | "intelligence" | null;
       /**
        * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
        * @example active
@@ -6411,6 +6411,7 @@ export interface components {
        */
       created_at: string;
       display_name: string;
+      employment_status: string;
       existing_merge_candidates?: components["schemas"]["PersonMergeCandidate"][];
       /** Format: date-time */
       first_interaction_at?: string;
@@ -6425,6 +6426,7 @@ export interface components {
       /** Format: date-time */
       last_interaction_at?: string;
       locale?: string;
+      location?: string;
       /** Format: date-time */
       merged_at?: string;
       /** Format: uuid */
@@ -6437,6 +6439,7 @@ export interface components {
       projector_version: number;
       proposed_merge_candidates?: components["schemas"]["PersonMergeCandidate"][];
       relationship_count: number;
+      seniority?: string;
       /**
        * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
        * @example active
@@ -6455,6 +6458,7 @@ export interface components {
       workspace: components["schemas"]["RevenueWorkspace"];
     };
     PersonAttribute: {
+      citations_json?: string;
       /** Format: double */
       confidence: number;
       /**
@@ -6639,6 +6643,46 @@ export interface components {
       /** @description User that owns this row. */
       user: components["schemas"]["User"];
       version: number;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    PersonSuppression: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      kind: string;
+      note?: string;
+      /**
+       * @description Reason code for the ledger entry.
+       * @example llm_settle
+       * @enum {string}
+       */
+      reason:
+        | "llm_call"
+        | "llm_call_reserve"
+        | "llm_settle"
+        | "voice_tts"
+        | "exa_search"
+        | "grant"
+        | "refund";
+      /** Format: date-time */
+      suppressed_at: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
       workspace: components["schemas"]["RevenueWorkspace"];
     };
     PolicyDecisionSnapshot: {
@@ -6853,6 +6897,7 @@ export interface components {
       workspace: components["schemas"]["RevenueWorkspace"];
     };
     RelationshipAssertion: {
+      citations_json?: string;
       /** Format: double */
       confidence: number;
       /**
@@ -9366,7 +9411,7 @@ export interface components {
        * @example free
        * @enum {string}
        */
-      plan: "free" | "starter" | "pro";
+      plan: "free" | "starter" | "pro" | "intelligence";
       /**
        * @description Credits granted by the current subscription.
        * @example 10000
@@ -9433,7 +9478,7 @@ export interface components {
        * @example free
        * @enum {string}
        */
-      plan: "free" | "starter" | "pro";
+      plan: "free" | "starter" | "pro" | "intelligence";
       /**
        * Format: uuid
        * @description UUID of the source row represented by a history row.
@@ -9584,6 +9629,7 @@ export interface components {
       person_attributes?: components["schemas"]["PersonAttribute"][];
       person_identities?: components["schemas"]["PersonIdentity"][];
       person_merge_candidates?: components["schemas"]["PersonMergeCandidate"][];
+      person_suppressions?: components["schemas"]["PersonSuppression"][];
       policy_decision_snapshots?: components["schemas"]["PolicyDecisionSnapshot"][];
       relationship_assertions?: components["schemas"]["RelationshipAssertion"][];
       relationship_attention_items?: components["schemas"]["RelationshipAttentionItem"][];

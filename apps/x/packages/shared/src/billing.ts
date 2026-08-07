@@ -1,6 +1,13 @@
 import { z } from 'zod';
 
-export const BillingPlanSchema = z.enum(['free', 'starter', 'pro']);
+/**
+ * Must match the `plan` validator on the Subscription ent schema.
+ *
+ * `intelligence` is the cloud-research tier (RFC 039). A separate plan rather
+ * than a higher `pro`, because research is consent-gated and users who decline
+ * it must not be repriced for a capability they switched off.
+ */
+export const BillingPlanSchema = z.enum(['free', 'starter', 'pro', 'intelligence']);
 export type BillingPlan = z.infer<typeof BillingPlanSchema>;
 
 export const BillingUsageBucketSchema = z.object({

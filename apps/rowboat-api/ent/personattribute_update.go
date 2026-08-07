@@ -267,6 +267,26 @@ func (_u *PersonAttributeUpdate) SetNillableExtractorVersion(v *string) *PersonA
 	return _u
 }
 
+// SetCitationsJSON sets the "citations_json" field.
+func (_u *PersonAttributeUpdate) SetCitationsJSON(v string) *PersonAttributeUpdate {
+	_u.mutation.SetCitationsJSON(v)
+	return _u
+}
+
+// SetNillableCitationsJSON sets the "citations_json" field if the given value is not nil.
+func (_u *PersonAttributeUpdate) SetNillableCitationsJSON(v *string) *PersonAttributeUpdate {
+	if v != nil {
+		_u.SetCitationsJSON(*v)
+	}
+	return _u
+}
+
+// ClearCitationsJSON clears the value of the "citations_json" field.
+func (_u *PersonAttributeUpdate) ClearCitationsJSON() *PersonAttributeUpdate {
+	_u.mutation.ClearCitationsJSON()
+	return _u
+}
+
 // SetDedupeKey sets the "dedupe_key" field.
 func (_u *PersonAttributeUpdate) SetDedupeKey(v string) *PersonAttributeUpdate {
 	_u.mutation.SetDedupeKey(v)
@@ -447,6 +467,11 @@ func (_u *PersonAttributeUpdate) check() error {
 			return &ValidationError{Name: "confidence", err: fmt.Errorf(`ent: validator failed for field "PersonAttribute.confidence": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CitationsJSON(); ok {
+		if err := personattribute.CitationsJSONValidator(v); err != nil {
+			return &ValidationError{Name: "citations_json", err: fmt.Errorf(`ent: validator failed for field "PersonAttribute.citations_json": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.DedupeKey(); ok {
 		if err := personattribute.DedupeKeyValidator(v); err != nil {
 			return &ValidationError{Name: "dedupe_key", err: fmt.Errorf(`ent: validator failed for field "PersonAttribute.dedupe_key": %w`, err)}
@@ -535,6 +560,12 @@ func (_u *PersonAttributeUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if value, ok := _u.mutation.ExtractorVersion(); ok {
 		_spec.SetField(personattribute.FieldExtractorVersion, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.CitationsJSON(); ok {
+		_spec.SetField(personattribute.FieldCitationsJSON, field.TypeString, value)
+	}
+	if _u.mutation.CitationsJSONCleared() {
+		_spec.ClearField(personattribute.FieldCitationsJSON, field.TypeString)
 	}
 	if value, ok := _u.mutation.DedupeKey(); ok {
 		_spec.SetField(personattribute.FieldDedupeKey, field.TypeString, value)
@@ -916,6 +947,26 @@ func (_u *PersonAttributeUpdateOne) SetNillableExtractorVersion(v *string) *Pers
 	return _u
 }
 
+// SetCitationsJSON sets the "citations_json" field.
+func (_u *PersonAttributeUpdateOne) SetCitationsJSON(v string) *PersonAttributeUpdateOne {
+	_u.mutation.SetCitationsJSON(v)
+	return _u
+}
+
+// SetNillableCitationsJSON sets the "citations_json" field if the given value is not nil.
+func (_u *PersonAttributeUpdateOne) SetNillableCitationsJSON(v *string) *PersonAttributeUpdateOne {
+	if v != nil {
+		_u.SetCitationsJSON(*v)
+	}
+	return _u
+}
+
+// ClearCitationsJSON clears the value of the "citations_json" field.
+func (_u *PersonAttributeUpdateOne) ClearCitationsJSON() *PersonAttributeUpdateOne {
+	_u.mutation.ClearCitationsJSON()
+	return _u
+}
+
 // SetDedupeKey sets the "dedupe_key" field.
 func (_u *PersonAttributeUpdateOne) SetDedupeKey(v string) *PersonAttributeUpdateOne {
 	_u.mutation.SetDedupeKey(v)
@@ -1109,6 +1160,11 @@ func (_u *PersonAttributeUpdateOne) check() error {
 			return &ValidationError{Name: "confidence", err: fmt.Errorf(`ent: validator failed for field "PersonAttribute.confidence": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CitationsJSON(); ok {
+		if err := personattribute.CitationsJSONValidator(v); err != nil {
+			return &ValidationError{Name: "citations_json", err: fmt.Errorf(`ent: validator failed for field "PersonAttribute.citations_json": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.DedupeKey(); ok {
 		if err := personattribute.DedupeKeyValidator(v); err != nil {
 			return &ValidationError{Name: "dedupe_key", err: fmt.Errorf(`ent: validator failed for field "PersonAttribute.dedupe_key": %w`, err)}
@@ -1214,6 +1270,12 @@ func (_u *PersonAttributeUpdateOne) sqlSave(ctx context.Context) (_node *PersonA
 	}
 	if value, ok := _u.mutation.ExtractorVersion(); ok {
 		_spec.SetField(personattribute.FieldExtractorVersion, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.CitationsJSON(); ok {
+		_spec.SetField(personattribute.FieldCitationsJSON, field.TypeString, value)
+	}
+	if _u.mutation.CitationsJSONCleared() {
+		_spec.ClearField(personattribute.FieldCitationsJSON, field.TypeString)
 	}
 	if value, ok := _u.mutation.DedupeKey(); ok {
 		_spec.SetField(personattribute.FieldDedupeKey, field.TypeString, value)

@@ -90,6 +90,7 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Put("/{relationshipId}/conversation-policy", h.PutConversationPolicy)
 		r.Post("/{relationshipId}/conversation-deletion", h.RequestConversationDeletion)
 	})
+	h.MountResearch(r)
 	r.Post("/v1/relationship-observations/batch", h.IngestRelationshipObservations)
 	r.Route("/v1/relationship-identity-candidates", func(r chi.Router) {
 		r.Get("/", h.ListIdentityCandidates)
@@ -314,6 +315,18 @@ type personAttributeDTO struct {
 	ObservedAt string  `json:"observedAt"`
 	ValidFrom  string  `json:"validFrom"`
 	ValidTo    *string `json:"validTo,omitempty"`
+	// The evidence behind an external_research claim (RFC 039). Present only for
+	// that source type, and the whole point of it: a vendor fact the user cannot
+	// check is indistinguishable from a guess, so the citation travels with the
+	// claim to every surface that shows it.
+	Citations []attributeCitationDTO `json:"citations,omitempty"`
+}
+
+// attributeCitationDTO mirrors the stored {title, url, excerpts[]} shape.
+type attributeCitationDTO struct {
+	Title    string   `json:"title,omitempty"`
+	URL      string   `json:"url"`
+	Excerpts []string `json:"excerpts,omitempty"`
 }
 
 func personAttributeToDTO(attribute *ent.PersonAttribute) personAttributeDTO {
@@ -334,7 +347,25 @@ func personAttributeToDTO(attribute *ent.PersonAttribute) personAttributeDTO {
 		value := attribute.ValidTo.UTC().Format(time.RFC3339)
 		dto.ValidTo = &value
 	}
+	dto.Citations = decodeAttributeCitations(attribute.CitationsJSON)
 	return dto
+}
+
+// decodeAttributeCitations parses the stored citation array.
+//
+// Unparseable JSON yields no citations rather than an error: a malformed
+// citation column must not make a person's whole attribute list unreadable. The
+// writer rejects uncited external_research claims, so an empty result here means
+// either an owned-data source or a row that predates this column.
+func decodeAttributeCitations(encoded string) []attributeCitationDTO {
+	if strings.TrimSpace(encoded) == "" {
+		return nil
+	}
+	var citations []attributeCitationDTO
+	if err := json.Unmarshal([]byte(encoded), &citations); err != nil {
+		return nil
+	}
+	return citations
 }
 
 type personInteractionDTO struct {
@@ -952,6 +983,21 @@ func (h *Handler) writeServiceError(w http.ResponseWriter, err error) {
 		httpx.Error(w, http.StatusServiceUnavailable, "tenant evidence encryption is unavailable", "evidence_encryption_unavailable")
 	case errors.Is(err, ErrEvidenceKeyDestroyed):
 		httpx.Error(w, http.StatusGone, "tenant evidence key has been destroyed", "evidence_key_destroyed")
+	// Ordered before ErrCapabilityDisabled: the research refusals are specific
+	// remedies (upgrade / agree / wait for the vendor), and collapsing them into
+	// "capability disabled" tells a user nothing they can act on.
+	case errors.Is(err, ErrResearchPlanRequired):
+		httpx.Error(w, http.StatusPaymentRequired,
+			"cloud research requires the intelligence plan", "research_plan_required")
+	case errors.Is(err, ErrResearchConsentRequired):
+		httpx.Error(w, http.StatusConflict,
+			"cloud research consent has not been granted for this workspace", "research_consent_required")
+	case errors.Is(err, ErrResearchUnavailable):
+		httpx.Error(w, http.StatusServiceUnavailable,
+			"cloud research is not configured", "provider_unconfigured")
+	case errors.Is(err, ErrResearchInProgress):
+		httpx.Error(w, http.StatusConflict,
+			"an identical research request is already in flight", "request_in_progress")
 	case errors.Is(err, ErrCapabilityDisabled):
 		httpx.Error(w, http.StatusConflict, err.Error(), "capability_disabled")
 	case errors.Is(err, ErrIdentityUnresolved):

@@ -106,6 +106,16 @@ func Locale(v string) predicate.Person {
 	return predicate.Person(sql.FieldEQ(FieldLocale, v))
 }
 
+// Seniority applies equality check predicate on the "seniority" field. It's identical to SeniorityEQ.
+func Seniority(v string) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldSeniority, v))
+}
+
+// Location applies equality check predicate on the "location" field. It's identical to LocationEQ.
+func Location(v string) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldLocation, v))
+}
+
 // EmploymentStatus applies equality check predicate on the "employment_status" field. It's identical to EmploymentStatusEQ.
 func EmploymentStatus(v string) predicate.Person {
 	return predicate.Person(sql.FieldEQ(FieldEmploymentStatus, v))
@@ -829,6 +839,156 @@ func LocaleEqualFold(v string) predicate.Person {
 // LocaleContainsFold applies the ContainsFold predicate on the "locale" field.
 func LocaleContainsFold(v string) predicate.Person {
 	return predicate.Person(sql.FieldContainsFold(FieldLocale, v))
+}
+
+// SeniorityEQ applies the EQ predicate on the "seniority" field.
+func SeniorityEQ(v string) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldSeniority, v))
+}
+
+// SeniorityNEQ applies the NEQ predicate on the "seniority" field.
+func SeniorityNEQ(v string) predicate.Person {
+	return predicate.Person(sql.FieldNEQ(FieldSeniority, v))
+}
+
+// SeniorityIn applies the In predicate on the "seniority" field.
+func SeniorityIn(vs ...string) predicate.Person {
+	return predicate.Person(sql.FieldIn(FieldSeniority, vs...))
+}
+
+// SeniorityNotIn applies the NotIn predicate on the "seniority" field.
+func SeniorityNotIn(vs ...string) predicate.Person {
+	return predicate.Person(sql.FieldNotIn(FieldSeniority, vs...))
+}
+
+// SeniorityGT applies the GT predicate on the "seniority" field.
+func SeniorityGT(v string) predicate.Person {
+	return predicate.Person(sql.FieldGT(FieldSeniority, v))
+}
+
+// SeniorityGTE applies the GTE predicate on the "seniority" field.
+func SeniorityGTE(v string) predicate.Person {
+	return predicate.Person(sql.FieldGTE(FieldSeniority, v))
+}
+
+// SeniorityLT applies the LT predicate on the "seniority" field.
+func SeniorityLT(v string) predicate.Person {
+	return predicate.Person(sql.FieldLT(FieldSeniority, v))
+}
+
+// SeniorityLTE applies the LTE predicate on the "seniority" field.
+func SeniorityLTE(v string) predicate.Person {
+	return predicate.Person(sql.FieldLTE(FieldSeniority, v))
+}
+
+// SeniorityContains applies the Contains predicate on the "seniority" field.
+func SeniorityContains(v string) predicate.Person {
+	return predicate.Person(sql.FieldContains(FieldSeniority, v))
+}
+
+// SeniorityHasPrefix applies the HasPrefix predicate on the "seniority" field.
+func SeniorityHasPrefix(v string) predicate.Person {
+	return predicate.Person(sql.FieldHasPrefix(FieldSeniority, v))
+}
+
+// SeniorityHasSuffix applies the HasSuffix predicate on the "seniority" field.
+func SeniorityHasSuffix(v string) predicate.Person {
+	return predicate.Person(sql.FieldHasSuffix(FieldSeniority, v))
+}
+
+// SeniorityIsNil applies the IsNil predicate on the "seniority" field.
+func SeniorityIsNil() predicate.Person {
+	return predicate.Person(sql.FieldIsNull(FieldSeniority))
+}
+
+// SeniorityNotNil applies the NotNil predicate on the "seniority" field.
+func SeniorityNotNil() predicate.Person {
+	return predicate.Person(sql.FieldNotNull(FieldSeniority))
+}
+
+// SeniorityEqualFold applies the EqualFold predicate on the "seniority" field.
+func SeniorityEqualFold(v string) predicate.Person {
+	return predicate.Person(sql.FieldEqualFold(FieldSeniority, v))
+}
+
+// SeniorityContainsFold applies the ContainsFold predicate on the "seniority" field.
+func SeniorityContainsFold(v string) predicate.Person {
+	return predicate.Person(sql.FieldContainsFold(FieldSeniority, v))
+}
+
+// LocationEQ applies the EQ predicate on the "location" field.
+func LocationEQ(v string) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldLocation, v))
+}
+
+// LocationNEQ applies the NEQ predicate on the "location" field.
+func LocationNEQ(v string) predicate.Person {
+	return predicate.Person(sql.FieldNEQ(FieldLocation, v))
+}
+
+// LocationIn applies the In predicate on the "location" field.
+func LocationIn(vs ...string) predicate.Person {
+	return predicate.Person(sql.FieldIn(FieldLocation, vs...))
+}
+
+// LocationNotIn applies the NotIn predicate on the "location" field.
+func LocationNotIn(vs ...string) predicate.Person {
+	return predicate.Person(sql.FieldNotIn(FieldLocation, vs...))
+}
+
+// LocationGT applies the GT predicate on the "location" field.
+func LocationGT(v string) predicate.Person {
+	return predicate.Person(sql.FieldGT(FieldLocation, v))
+}
+
+// LocationGTE applies the GTE predicate on the "location" field.
+func LocationGTE(v string) predicate.Person {
+	return predicate.Person(sql.FieldGTE(FieldLocation, v))
+}
+
+// LocationLT applies the LT predicate on the "location" field.
+func LocationLT(v string) predicate.Person {
+	return predicate.Person(sql.FieldLT(FieldLocation, v))
+}
+
+// LocationLTE applies the LTE predicate on the "location" field.
+func LocationLTE(v string) predicate.Person {
+	return predicate.Person(sql.FieldLTE(FieldLocation, v))
+}
+
+// LocationContains applies the Contains predicate on the "location" field.
+func LocationContains(v string) predicate.Person {
+	return predicate.Person(sql.FieldContains(FieldLocation, v))
+}
+
+// LocationHasPrefix applies the HasPrefix predicate on the "location" field.
+func LocationHasPrefix(v string) predicate.Person {
+	return predicate.Person(sql.FieldHasPrefix(FieldLocation, v))
+}
+
+// LocationHasSuffix applies the HasSuffix predicate on the "location" field.
+func LocationHasSuffix(v string) predicate.Person {
+	return predicate.Person(sql.FieldHasSuffix(FieldLocation, v))
+}
+
+// LocationIsNil applies the IsNil predicate on the "location" field.
+func LocationIsNil() predicate.Person {
+	return predicate.Person(sql.FieldIsNull(FieldLocation))
+}
+
+// LocationNotNil applies the NotNil predicate on the "location" field.
+func LocationNotNil() predicate.Person {
+	return predicate.Person(sql.FieldNotNull(FieldLocation))
+}
+
+// LocationEqualFold applies the EqualFold predicate on the "location" field.
+func LocationEqualFold(v string) predicate.Person {
+	return predicate.Person(sql.FieldEqualFold(FieldLocation, v))
+}
+
+// LocationContainsFold applies the ContainsFold predicate on the "location" field.
+func LocationContainsFold(v string) predicate.Person {
+	return predicate.Person(sql.FieldContainsFold(FieldLocation, v))
 }
 
 // EmploymentStatusEQ applies the EQ predicate on the "employment_status" field.

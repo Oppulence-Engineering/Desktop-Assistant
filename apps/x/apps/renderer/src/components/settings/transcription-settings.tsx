@@ -138,6 +138,39 @@ function classifyBenchmarkFailure(err: unknown): Omit<BenchmarkFailureState, "re
  * voice + meetings, a model picker with download progress, and a device line that
  * surfaces the capability probe. Writes `transcription.json` via typed IPC.
  */
+/**
+ * Why the research switch is off or unavailable, in the user's terms.
+ *
+ * Never says "disabled" without a reason: a switch that refuses without
+ * explaining is indistinguishable from one that is broken.
+ */
+
+/** A price a person can check, never a credit balance they have to convert. */
+function formatResearchCost(usd: number): string {
+  if (usd < 0.01) return "less than a cent";
+  return `$${usd.toFixed(2)}`;
+}
+
+function researchDisabledHint(research: {
+  allowed: boolean;
+  reason?: string;
+  requiredPlan: string;
+}): string {
+  if (research.allowed) {
+    return "Off · nothing about the people you correspond with is sent anywhere";
+  }
+  switch (research.reason) {
+    case "plan_required":
+      return `Off · included with the ${research.requiredPlan} plan. Nothing is sent until you turn this on, on any plan.`;
+    case "capability_disabled":
+      return "Off · cloud research is currently disabled for this workspace";
+    case "provider_unconfigured":
+      return "Off · no research provider is configured on the server";
+    default:
+      return "Off · nothing about the people you correspond with is sent anywhere";
+  }
+}
+
 export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const [models, setModels] = useState<WhisperModelSummary[]>([]);
   const [capability, setCapability] = useState<WhisperCapability | null>(null);
@@ -147,6 +180,23 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
   const [routing, setRouting] = useState<TranscriptionRouting | null>(null);
   const [meetings, setMeetings] = useState<MeetingsSettings | null>(null);
   const [relationships, setRelationships] = useState<RelationshipEvidenceSettings | null>(null);
+  // Cloud research is the one switch on this page whose authoritative value
+  // lives on the server, because the person it discloses is not the person
+  // flipping it. The local flag mirrors the server so the privacy summary can
+  // describe it offline; the server is what any call is checked against.
+  const [research, setResearch] = useState<{
+    available: boolean;
+    allowed: boolean;
+    reason?: string;
+    requiredPlan: string;
+    consent: { consented: boolean; consentedAt?: string };
+  } | null>(null);
+  const [researchBusy, setResearchBusy] = useState(false);
+  const [researchEstimate, setResearchEstimate] = useState<{
+    people: number;
+    usd: number;
+  } | null>(null);
+  const [researchResult, setResearchResult] = useState<string | null>(null);
   // What a start would actually use, as opposed to what is configured — the
   // difference is the whole point of showing it.
   const [resolvedEngine, setResolvedEngine] = useState<MeetingResolvedEngine | null>(null);
@@ -238,6 +288,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       })
       .catch(() => {});
     void refreshRouting();
+    void refreshResearch();
     void refreshDictationStatus();
     void refreshDictationRecovery();
     void window.ipc
@@ -417,6 +468,84 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
     },
     [relationships],
   );
+
+  const refreshResearchEstimate = useCallback(async () => {
+    try {
+      const estimate = await window.ipc.invoke("research:estimate", null);
+      setResearchEstimate({ people: estimate.people, usd: estimate.usd });
+    } catch {
+      // Not allowed, or nothing to enrich. Either way there is no price to show.
+      setResearchEstimate(null);
+    }
+  }, []);
+
+  const refreshResearch = useCallback(async () => {
+    try {
+      const status = await window.ipc.invoke("research:status", null);
+      setResearch(status);
+      // Reconcile the local mirror with the server, which is authoritative.
+      //
+      // Without this, consent granted on another machine leaves this one's
+      // privacy receipt saying "Off. Nothing about the people or companies you
+      // correspond with is sent to a research provider" while the server sweeps
+      // those accounts daily. A receipt that disagrees with what is actually
+      // happening is the specific bug this page exists to make impossible.
+      if (relationships && relationships.cloudResearch !== status.consent.consented) {
+        await changeRelationships({ cloudResearch: status.consent.consented });
+      }
+      if (status.allowed && status.consent.consented) {
+        await refreshResearchEstimate();
+      } else {
+        setResearchEstimate(null);
+      }
+    } catch {
+      // Signed out, offline, or a server without the research surface. Leaving
+      // this null hides the control rather than showing a switch that cannot be
+      // honoured.
+      setResearch(null);
+      setResearchEstimate(null);
+    }
+  }, [changeRelationships, refreshResearchEstimate, relationships]);
+
+  const changeResearchConsent = useCallback(
+    async (consented: boolean) => {
+      setResearchBusy(true);
+      try {
+        const state = await window.ipc.invoke("research:setConsent", { consented });
+        setResearch((current) => (current ? { ...current, consent: state } : current));
+        // Mirror locally so the privacy page can describe this route without a
+        // round trip. The server copy stays authoritative.
+        await changeRelationships({ cloudResearch: state.consented });
+        await refreshResearch();
+      } catch {
+        await refreshResearch();
+      } finally {
+        setResearchBusy(false);
+      }
+    },
+    [changeRelationships, refreshResearch],
+  );
+
+  const runResearchEnrichment = useCallback(async () => {
+    setResearchBusy(true);
+    setResearchResult(null);
+    try {
+      const summary = await window.ipc.invoke("research:enrichPending", null);
+      setResearchResult(
+        summary.stoppedReason
+          ? `Stopped after ${summary.enriched} of ${summary.requested}: ${summary.stoppedReason}`
+          : `Enriched ${summary.matched} of ${summary.requested} · ${summary.attributes} cited facts added` +
+              (summary.matched < summary.enriched
+                ? ` · ${summary.enriched - summary.matched} could not be identified confidently and were left alone`
+                : ""),
+      );
+    } catch {
+      setResearchResult("The enrichment run could not be completed.");
+    } finally {
+      setResearchBusy(false);
+      await refreshResearchEstimate();
+    }
+  }, [refreshResearchEstimate]);
 
   const changeDictationSettings = useCallback(
     async (next: DictationSettings) => {
@@ -1508,6 +1637,64 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                   onChange={(next) => void changeRelationships({ modelContactExtraction: next })}
                   disabled={!relationships.signatureEnrichment}
                 />
+              </div>
+            </SettingsSection>
+          )}
+
+          {/* Shown when research is configured OR when this workspace has already
+              consented. The second half matters: if an operator removes the
+              vendor key, a workspace that agreed must still be able to see and
+              withdraw that agreement. Hiding the switch would strand consent in
+              the "on" position with no way to reach it. */}
+          {research && (research.available || research.consent.consented) && (
+            <SettingsSection
+              title="Cloud research"
+              description="Everything above discloses your own data. This one discloses someone else's, so it is a separate decision and it is off until you make it."
+            >
+              <div className="space-y-2">
+                <SettingToggle
+                  title="Look up people and companies on the public web"
+                  hint={
+                    research.consent.consented
+                      ? "Sends the person's name, email domain and employer to Parallel Web to look up public professional information. Never sends message content, transcripts or notes. Every fact it stores carries a link you can click and a confidence you can argue with."
+                      : researchDisabledHint(research)
+                  }
+                  value={research.consent.consented}
+                  onChange={(next) => void changeResearchConsent(next)}
+                  disabled={researchBusy || (!research.allowed && !research.consent.consented)}
+                />
+                {research.allowed && research.consent.consented && researchEstimate && (
+                  <div className="rounded-md border border-border/60 p-3 text-sm">
+                    {researchEstimate.people === 0 ? (
+                      <p className="text-muted-foreground">
+                        Everyone you correspond with has already been looked up. New contacts are
+                        enriched as they appear.
+                      </p>
+                    ) : (
+                      <>
+                        {/* The price before the button, always. A bulk run over a
+                            large workspace is real money, and a spinner followed
+                            by a bill is not a design. */}
+                        <p>
+                          Look up {researchEstimate.people}{" "}
+                          {researchEstimate.people === 1 ? "person" : "people"} — about{" "}
+                          {formatResearchCost(researchEstimate.usd)}.
+                        </p>
+                        <button
+                          type="button"
+                          className="mt-2 rounded border border-border px-3 py-1 text-sm disabled:opacity-50"
+                          onClick={() => void runResearchEnrichment()}
+                          disabled={researchBusy}
+                        >
+                          {researchBusy ? "Looking up…" : "Look them up"}
+                        </button>
+                      </>
+                    )}
+                    {researchResult && (
+                      <p className="mt-2 text-muted-foreground">{researchResult}</p>
+                    )}
+                  </div>
+                )}
               </div>
             </SettingsSection>
           )}

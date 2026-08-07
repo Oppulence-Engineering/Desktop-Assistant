@@ -217,6 +217,40 @@ func (_u *RevenueWorkspaceUpdate) ClearMailHistoryID() *RevenueWorkspaceUpdate {
 	return _u
 }
 
+// SetCloudResearchConsent sets the "cloud_research_consent" field.
+func (_u *RevenueWorkspaceUpdate) SetCloudResearchConsent(v bool) *RevenueWorkspaceUpdate {
+	_u.mutation.SetCloudResearchConsent(v)
+	return _u
+}
+
+// SetNillableCloudResearchConsent sets the "cloud_research_consent" field if the given value is not nil.
+func (_u *RevenueWorkspaceUpdate) SetNillableCloudResearchConsent(v *bool) *RevenueWorkspaceUpdate {
+	if v != nil {
+		_u.SetCloudResearchConsent(*v)
+	}
+	return _u
+}
+
+// SetCloudResearchConsentAt sets the "cloud_research_consent_at" field.
+func (_u *RevenueWorkspaceUpdate) SetCloudResearchConsentAt(v time.Time) *RevenueWorkspaceUpdate {
+	_u.mutation.SetCloudResearchConsentAt(v)
+	return _u
+}
+
+// SetNillableCloudResearchConsentAt sets the "cloud_research_consent_at" field if the given value is not nil.
+func (_u *RevenueWorkspaceUpdate) SetNillableCloudResearchConsentAt(v *time.Time) *RevenueWorkspaceUpdate {
+	if v != nil {
+		_u.SetCloudResearchConsentAt(*v)
+	}
+	return _u
+}
+
+// ClearCloudResearchConsentAt clears the value of the "cloud_research_consent_at" field.
+func (_u *RevenueWorkspaceUpdate) ClearCloudResearchConsentAt() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearCloudResearchConsentAt()
+	return _u
+}
+
 // SetUserID sets the "user" edge to the User entity by ID.
 func (_u *RevenueWorkspaceUpdate) SetUserID(id uuid.UUID) *RevenueWorkspaceUpdate {
 	_u.mutation.SetUserID(id)
@@ -1537,6 +1571,15 @@ func (_u *RevenueWorkspaceUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if _u.mutation.MailHistoryIDCleared() {
 		_spec.ClearField(revenueworkspace.FieldMailHistoryID, field.TypeString)
+	}
+	if value, ok := _u.mutation.CloudResearchConsent(); ok {
+		_spec.SetField(revenueworkspace.FieldCloudResearchConsent, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.CloudResearchConsentAt(); ok {
+		_spec.SetField(revenueworkspace.FieldCloudResearchConsentAt, field.TypeTime, value)
+	}
+	if _u.mutation.CloudResearchConsentAtCleared() {
+		_spec.ClearField(revenueworkspace.FieldCloudResearchConsentAt, field.TypeTime)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -3226,6 +3269,40 @@ func (_u *RevenueWorkspaceUpdateOne) ClearMailHistoryID() *RevenueWorkspaceUpdat
 	return _u
 }
 
+// SetCloudResearchConsent sets the "cloud_research_consent" field.
+func (_u *RevenueWorkspaceUpdateOne) SetCloudResearchConsent(v bool) *RevenueWorkspaceUpdateOne {
+	_u.mutation.SetCloudResearchConsent(v)
+	return _u
+}
+
+// SetNillableCloudResearchConsent sets the "cloud_research_consent" field if the given value is not nil.
+func (_u *RevenueWorkspaceUpdateOne) SetNillableCloudResearchConsent(v *bool) *RevenueWorkspaceUpdateOne {
+	if v != nil {
+		_u.SetCloudResearchConsent(*v)
+	}
+	return _u
+}
+
+// SetCloudResearchConsentAt sets the "cloud_research_consent_at" field.
+func (_u *RevenueWorkspaceUpdateOne) SetCloudResearchConsentAt(v time.Time) *RevenueWorkspaceUpdateOne {
+	_u.mutation.SetCloudResearchConsentAt(v)
+	return _u
+}
+
+// SetNillableCloudResearchConsentAt sets the "cloud_research_consent_at" field if the given value is not nil.
+func (_u *RevenueWorkspaceUpdateOne) SetNillableCloudResearchConsentAt(v *time.Time) *RevenueWorkspaceUpdateOne {
+	if v != nil {
+		_u.SetCloudResearchConsentAt(*v)
+	}
+	return _u
+}
+
+// ClearCloudResearchConsentAt clears the value of the "cloud_research_consent_at" field.
+func (_u *RevenueWorkspaceUpdateOne) ClearCloudResearchConsentAt() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearCloudResearchConsentAt()
+	return _u
+}
+
 // SetUserID sets the "user" edge to the User entity by ID.
 func (_u *RevenueWorkspaceUpdateOne) SetUserID(id uuid.UUID) *RevenueWorkspaceUpdateOne {
 	_u.mutation.SetUserID(id)
@@ -4576,6 +4653,15 @@ func (_u *RevenueWorkspaceUpdateOne) sqlSave(ctx context.Context) (_node *Revenu
 	}
 	if _u.mutation.MailHistoryIDCleared() {
 		_spec.ClearField(revenueworkspace.FieldMailHistoryID, field.TypeString)
+	}
+	if value, ok := _u.mutation.CloudResearchConsent(); ok {
+		_spec.SetField(revenueworkspace.FieldCloudResearchConsent, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.CloudResearchConsentAt(); ok {
+		_spec.SetField(revenueworkspace.FieldCloudResearchConsentAt, field.TypeTime, value)
+	}
+	if _u.mutation.CloudResearchConsentAtCleared() {
+		_spec.ClearField(revenueworkspace.FieldCloudResearchConsentAt, field.TypeTime)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -245,6 +245,26 @@ func (_u *RelationshipAssertionUpdate) SetNillableExtractorVersion(v *string) *R
 	return _u
 }
 
+// SetCitationsJSON sets the "citations_json" field.
+func (_u *RelationshipAssertionUpdate) SetCitationsJSON(v string) *RelationshipAssertionUpdate {
+	_u.mutation.SetCitationsJSON(v)
+	return _u
+}
+
+// SetNillableCitationsJSON sets the "citations_json" field if the given value is not nil.
+func (_u *RelationshipAssertionUpdate) SetNillableCitationsJSON(v *string) *RelationshipAssertionUpdate {
+	if v != nil {
+		_u.SetCitationsJSON(*v)
+	}
+	return _u
+}
+
+// ClearCitationsJSON clears the value of the "citations_json" field.
+func (_u *RelationshipAssertionUpdate) ClearCitationsJSON() *RelationshipAssertionUpdate {
+	_u.mutation.ClearCitationsJSON()
+	return _u
+}
+
 // SetProjectorCompatVersion sets the "projector_compat_version" field.
 func (_u *RelationshipAssertionUpdate) SetProjectorCompatVersion(v int) *RelationshipAssertionUpdate {
 	_u.mutation.ResetProjectorCompatVersion()
@@ -422,6 +442,11 @@ func (_u *RelationshipAssertionUpdate) check() error {
 			return &ValidationError{Name: "confidence", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.confidence": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CitationsJSON(); ok {
+		if err := relationshipassertion.CitationsJSONValidator(v); err != nil {
+			return &ValidationError{Name: "citations_json", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.citations_json": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ProjectorCompatVersion(); ok {
 		if err := relationshipassertion.ProjectorCompatVersionValidator(v); err != nil {
 			return &ValidationError{Name: "projector_compat_version", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.projector_compat_version": %w`, err)}
@@ -507,6 +532,12 @@ func (_u *RelationshipAssertionUpdate) sqlSave(ctx context.Context) (_node int, 
 	}
 	if value, ok := _u.mutation.ExtractorVersion(); ok {
 		_spec.SetField(relationshipassertion.FieldExtractorVersion, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.CitationsJSON(); ok {
+		_spec.SetField(relationshipassertion.FieldCitationsJSON, field.TypeString, value)
+	}
+	if _u.mutation.CitationsJSONCleared() {
+		_spec.ClearField(relationshipassertion.FieldCitationsJSON, field.TypeString)
 	}
 	if value, ok := _u.mutation.ProjectorCompatVersion(); ok {
 		_spec.SetField(relationshipassertion.FieldProjectorCompatVersion, field.TypeInt, value)
@@ -869,6 +900,26 @@ func (_u *RelationshipAssertionUpdateOne) SetNillableExtractorVersion(v *string)
 	return _u
 }
 
+// SetCitationsJSON sets the "citations_json" field.
+func (_u *RelationshipAssertionUpdateOne) SetCitationsJSON(v string) *RelationshipAssertionUpdateOne {
+	_u.mutation.SetCitationsJSON(v)
+	return _u
+}
+
+// SetNillableCitationsJSON sets the "citations_json" field if the given value is not nil.
+func (_u *RelationshipAssertionUpdateOne) SetNillableCitationsJSON(v *string) *RelationshipAssertionUpdateOne {
+	if v != nil {
+		_u.SetCitationsJSON(*v)
+	}
+	return _u
+}
+
+// ClearCitationsJSON clears the value of the "citations_json" field.
+func (_u *RelationshipAssertionUpdateOne) ClearCitationsJSON() *RelationshipAssertionUpdateOne {
+	_u.mutation.ClearCitationsJSON()
+	return _u
+}
+
 // SetProjectorCompatVersion sets the "projector_compat_version" field.
 func (_u *RelationshipAssertionUpdateOne) SetProjectorCompatVersion(v int) *RelationshipAssertionUpdateOne {
 	_u.mutation.ResetProjectorCompatVersion()
@@ -1059,6 +1110,11 @@ func (_u *RelationshipAssertionUpdateOne) check() error {
 			return &ValidationError{Name: "confidence", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.confidence": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CitationsJSON(); ok {
+		if err := relationshipassertion.CitationsJSONValidator(v); err != nil {
+			return &ValidationError{Name: "citations_json", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.citations_json": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ProjectorCompatVersion(); ok {
 		if err := relationshipassertion.ProjectorCompatVersionValidator(v); err != nil {
 			return &ValidationError{Name: "projector_compat_version", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.projector_compat_version": %w`, err)}
@@ -1161,6 +1217,12 @@ func (_u *RelationshipAssertionUpdateOne) sqlSave(ctx context.Context) (_node *R
 	}
 	if value, ok := _u.mutation.ExtractorVersion(); ok {
 		_spec.SetField(relationshipassertion.FieldExtractorVersion, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.CitationsJSON(); ok {
+		_spec.SetField(relationshipassertion.FieldCitationsJSON, field.TypeString, value)
+	}
+	if _u.mutation.CitationsJSONCleared() {
+		_spec.ClearField(relationshipassertion.FieldCitationsJSON, field.TypeString)
 	}
 	if value, ok := _u.mutation.ProjectorCompatVersion(); ok {
 		_spec.SetField(relationshipassertion.FieldProjectorCompatVersion, field.TypeInt, value)

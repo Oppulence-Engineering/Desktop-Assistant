@@ -43,16 +43,29 @@ func (PersonAttribute) Fields() []ent.Field {
 				// only from a mail system's own words — a hard bounce or a
 				// departure autoreply — never inferred from silence. A quiet
 				// contact may be on holiday; a 5.1.1 is a fact.
-				"employment_status")),
+				"employment_status",
+				// Cloud research only (RFC 039). Owned data cannot produce these:
+				// nobody writes their seniority band or city in a signature block
+				// reliably enough to assert it, and the whole point of the tier is
+				// that these arrive with a URL attached.
+				"seniority", "location")),
 		field.Text("value").NotEmpty().Sensitive(),
 		field.String("source_type").
 			Validate(oneOfRevenue("source_type",
-				"user_correction", "source_fact", "deterministic", "ai_inference")),
+				"user_correction", "source_fact", "deterministic",
+				// A third party's read of a public web page, carrying citations
+				// (RFC 039). Ranked above ai_inference because it can be checked
+				// by clicking a link, and below deterministic because a vendor
+				// reading the web is weaker than arithmetic on data you own.
+				"external_research",
+				"ai_inference")),
 		// Which owned surface produced it; mirrors RelationshipObservation.source.
+		// `web` is the one surface here that is not owned, and it is reachable only
+		// through the consent-gated cloud research path.
 		field.String("source").
 			Validate(oneOfRevenue("source",
 				"gmail", "calendar", "slack", "hubspot", "meeting",
-				"desktop_note", "voice_note", "browser", "crm", "user")),
+				"desktop_note", "voice_note", "browser", "crm", "user", "web")),
 		// Narrower than `source`: which extractor. This is what lets the UI say
 		// "from their email signature" rather than just "from email".
 		field.String("extractor").
@@ -63,7 +76,12 @@ func (PersonAttribute) Fields() []ent.Field {
 				// Bounces and departure autoresponders. Named separately from
 				// email_header so the UI can say "their mail server told us"
 				// rather than attributing it to the person.
-				"mail_delivery_report")),
+				"mail_delivery_report",
+				// The Parallel Task API (RFC 039). Named for the vendor, not for
+				// "web", so a user reading provenance sees who was asked — and so
+				// a vendor swap is a visible data migration rather than a silent
+				// re-attribution of existing rows.
+				"parallel")),
 		field.String("status").
 			Default("active").
 			Validate(oneOfRevenue("status", "active", "retracted", "superseded")),
@@ -76,6 +94,13 @@ func (PersonAttribute) Fields() []ent.Field {
 		field.Time("retracted_at").Optional().Nillable(),
 		field.String("supersedes_attribute_id").Optional(),
 		field.String("extractor_version").Default("unknown-v1"),
+		// Where an external_research claim came from, as a JSON array of
+		// {title, url, excerpts[]} (RFC 039). Empty for every owned-data source,
+		// and required — enforced in the writer, not here — for external_research:
+		// a vendor claim with nothing to click is exactly the "confident wrong
+		// answer" this tier exists to avoid, so it is rejected rather than stored
+		// at low confidence.
+		field.Text("citations_json").Optional().Validate(validJSON),
 		// sha256(personID, dimension, normalizedValue, source, externalID): replay is free.
 		field.String("dedupe_key").NotEmpty(),
 		field.JSON("supporting_observation_ids", []string{}).Default([]string{}),

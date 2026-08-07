@@ -68,6 +68,10 @@ type RelationshipAssertionInput struct {
 	SupersedesAssertionID  string     `json:"supersedesAssertionId,omitempty"`
 	ExtractorVersion       string     `json:"extractorVersion,omitempty"`
 	ProjectorCompatVersion int        `json:"projectorCompatVersion,omitempty"`
+	// CitationsJSON is the evidence behind an external_research assertion
+	// (RFC 039): a JSON array of {title, url, excerpts[]}. Empty for every
+	// owned-data source type.
+	CitationsJSON string `json:"citationsJson,omitempty"`
 }
 
 // RelationshipObservationInput is the provider-neutral adapter contract.
@@ -1400,6 +1404,9 @@ func createRelationshipAssertion(
 	if input.ValidTo != nil {
 		create.SetValidTo(*input.ValidTo)
 	}
+	if strings.TrimSpace(input.CitationsJSON) != "" {
+		create.SetCitationsJSON(strings.TrimSpace(input.CitationsJSON))
+	}
 	if strings.TrimSpace(input.SupersedesAssertionID) != "" {
 		create.SetSupersedesAssertionID(strings.TrimSpace(input.SupersedesAssertionID))
 	}
@@ -1496,13 +1503,29 @@ func updateRelationshipSourceStatus(
 	return err
 }
 
+// assertionPriority ranks the provenance ladder shared by RelationshipAssertion
+// and PersonAttribute:
+//
+//	user_correction > source_fact > deterministic > external_research > ai_inference
+//
+// external_research (RFC 039) sits above ai_inference because it carries
+// citations a user can click, and below deterministic because a vendor's read of
+// a web page is weaker than something computed from data we own.
+//
+// The numbers are ordinal and compared only against each other — nothing
+// persists them — but the STRINGS must match the schema validators exactly. A
+// tier name that does not match falls to the default and silently becomes the
+// weakest thing in the system rather than failing loudly, which is how a
+// misspelled tier ends up losing to the ai_inference it was meant to outrank.
 func assertionPriority(sourceType string) int {
 	switch sourceType {
 	case "user_correction":
-		return 4
+		return 5
 	case "source_fact":
-		return 3
+		return 4
 	case "deterministic":
+		return 3
+	case "external_research":
 		return 2
 	default:
 		return 1

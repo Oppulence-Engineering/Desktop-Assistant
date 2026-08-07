@@ -29,7 +29,13 @@ func (RelationshipAttentionItem) Fields() []ent.Field {
 			// A quiet account whose contact has left. Distinct from quiet_account
 			// because the correct response is different: not "follow up", but
 			// "you have no one here any more".
-			"contact_departed")),
+			"contact_departed",
+			// Something happened at the account that the user did not tell us
+			// about — a raise, a launch, an acquisition (RFC 039). Distinct from
+			// quiet_account because it supplies the one thing elapsed time never
+			// can: a reason to write today rather than a reminder that you have
+			// not. Cloud research only; never fires in local mode.
+			"external_trigger")),
 		field.Text("explanation").NotEmpty(),
 		field.String("triggering_object_ref").NotEmpty(),
 		field.JSON("evidence_refs", []string{}).Default([]string{}),

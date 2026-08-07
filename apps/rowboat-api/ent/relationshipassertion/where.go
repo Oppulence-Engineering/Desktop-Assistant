@@ -126,6 +126,11 @@ func ExtractorVersion(v string) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldEQ(FieldExtractorVersion, v))
 }
 
+// CitationsJSON applies equality check predicate on the "citations_json" field. It's identical to CitationsJSONEQ.
+func CitationsJSON(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldCitationsJSON, v))
+}
+
 // ProjectorCompatVersion applies equality check predicate on the "projector_compat_version" field. It's identical to ProjectorCompatVersionEQ.
 func ProjectorCompatVersion(v int) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldEQ(FieldProjectorCompatVersion, v))
@@ -939,6 +944,81 @@ func ExtractorVersionEqualFold(v string) predicate.RelationshipAssertion {
 // ExtractorVersionContainsFold applies the ContainsFold predicate on the "extractor_version" field.
 func ExtractorVersionContainsFold(v string) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldContainsFold(FieldExtractorVersion, v))
+}
+
+// CitationsJSONEQ applies the EQ predicate on the "citations_json" field.
+func CitationsJSONEQ(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldCitationsJSON, v))
+}
+
+// CitationsJSONNEQ applies the NEQ predicate on the "citations_json" field.
+func CitationsJSONNEQ(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNEQ(FieldCitationsJSON, v))
+}
+
+// CitationsJSONIn applies the In predicate on the "citations_json" field.
+func CitationsJSONIn(vs ...string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIn(FieldCitationsJSON, vs...))
+}
+
+// CitationsJSONNotIn applies the NotIn predicate on the "citations_json" field.
+func CitationsJSONNotIn(vs ...string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotIn(FieldCitationsJSON, vs...))
+}
+
+// CitationsJSONGT applies the GT predicate on the "citations_json" field.
+func CitationsJSONGT(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGT(FieldCitationsJSON, v))
+}
+
+// CitationsJSONGTE applies the GTE predicate on the "citations_json" field.
+func CitationsJSONGTE(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGTE(FieldCitationsJSON, v))
+}
+
+// CitationsJSONLT applies the LT predicate on the "citations_json" field.
+func CitationsJSONLT(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLT(FieldCitationsJSON, v))
+}
+
+// CitationsJSONLTE applies the LTE predicate on the "citations_json" field.
+func CitationsJSONLTE(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLTE(FieldCitationsJSON, v))
+}
+
+// CitationsJSONContains applies the Contains predicate on the "citations_json" field.
+func CitationsJSONContains(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldContains(FieldCitationsJSON, v))
+}
+
+// CitationsJSONHasPrefix applies the HasPrefix predicate on the "citations_json" field.
+func CitationsJSONHasPrefix(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldHasPrefix(FieldCitationsJSON, v))
+}
+
+// CitationsJSONHasSuffix applies the HasSuffix predicate on the "citations_json" field.
+func CitationsJSONHasSuffix(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldHasSuffix(FieldCitationsJSON, v))
+}
+
+// CitationsJSONIsNil applies the IsNil predicate on the "citations_json" field.
+func CitationsJSONIsNil() predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIsNull(FieldCitationsJSON))
+}
+
+// CitationsJSONNotNil applies the NotNil predicate on the "citations_json" field.
+func CitationsJSONNotNil() predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotNull(FieldCitationsJSON))
+}
+
+// CitationsJSONEqualFold applies the EqualFold predicate on the "citations_json" field.
+func CitationsJSONEqualFold(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEqualFold(FieldCitationsJSON, v))
+}
+
+// CitationsJSONContainsFold applies the ContainsFold predicate on the "citations_json" field.
+func CitationsJSONContainsFold(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldContainsFold(FieldCitationsJSON, v))
 }
 
 // ProjectorCompatVersionEQ applies the EQ predicate on the "projector_compat_version" field.

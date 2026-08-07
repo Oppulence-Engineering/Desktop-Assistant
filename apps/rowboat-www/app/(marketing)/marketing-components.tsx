@@ -1426,7 +1426,7 @@ export function PricingPage({ page }: { page: MarketingPage }) {
         ))}
       </section>
       <p className="linear-cta-note mt-6">
-        [usage-metered on executed chases · one saved deal pays for years]
+        [flat monthly price · never per seat, per email, or per lookup · one saved deal pays for years]
       </p>
     </div>
   );

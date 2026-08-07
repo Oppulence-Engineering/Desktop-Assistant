@@ -1630,6 +1630,8 @@ var (
 		{Name: "phone", Type: field.TypeString, Nullable: true},
 		{Name: "timezone", Type: field.TypeString, Nullable: true},
 		{Name: "locale", Type: field.TypeString, Nullable: true},
+		{Name: "seniority", Type: field.TypeString, Nullable: true},
+		{Name: "location", Type: field.TypeString, Nullable: true},
 		{Name: "employment_status", Type: field.TypeString, Default: "unknown"},
 		{Name: "attributes_version", Type: field.TypeInt, Default: 0},
 		{Name: "attributes_hash", Type: field.TypeString, Nullable: true},
@@ -1652,13 +1654,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "relationship_persons_revenue_workspaces_relationship_persons",
-				Columns:    []*schema.Column{RelationshipPersonsColumns[23]},
+				Columns:    []*schema.Column{RelationshipPersonsColumns[25]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "relationship_persons_users_relationship_persons",
-				Columns:    []*schema.Column{RelationshipPersonsColumns[24]},
+				Columns:    []*schema.Column{RelationshipPersonsColumns[26]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1667,17 +1669,17 @@ var (
 			{
 				Name:    "person_status_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipPersonsColumns[17], RelationshipPersonsColumns[23]},
+				Columns: []*schema.Column{RelationshipPersonsColumns[19], RelationshipPersonsColumns[25]},
 			},
 			{
 				Name:    "person_last_interaction_at_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipPersonsColumns[21], RelationshipPersonsColumns[23]},
+				Columns: []*schema.Column{RelationshipPersonsColumns[23], RelationshipPersonsColumns[25]},
 			},
 			{
 				Name:    "person_primary_email_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipPersonsColumns[5], RelationshipPersonsColumns[23]},
+				Columns: []*schema.Column{RelationshipPersonsColumns[5], RelationshipPersonsColumns[25]},
 			},
 		},
 	}
@@ -1700,6 +1702,7 @@ var (
 		{Name: "retracted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "supersedes_attribute_id", Type: field.TypeString, Nullable: true},
 		{Name: "extractor_version", Type: field.TypeString, Default: "unknown-v1"},
+		{Name: "citations_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "dedupe_key", Type: field.TypeString},
 		{Name: "supporting_observation_ids", Type: field.TypeJSON},
 		{Name: "person_id", Type: field.TypeUUID},
@@ -1715,25 +1718,25 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "person_attributes_relationship_persons_attributes",
-				Columns:    []*schema.Column{PersonAttributesColumns[19]},
+				Columns:    []*schema.Column{PersonAttributesColumns[20]},
 				RefColumns: []*schema.Column{RelationshipPersonsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "person_attributes_relationship_observations_person_attributes",
-				Columns:    []*schema.Column{PersonAttributesColumns[20]},
+				Columns:    []*schema.Column{PersonAttributesColumns[21]},
 				RefColumns: []*schema.Column{RelationshipObservationsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "person_attributes_revenue_workspaces_person_attributes",
-				Columns:    []*schema.Column{PersonAttributesColumns[21]},
+				Columns:    []*schema.Column{PersonAttributesColumns[22]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "person_attributes_users_person_attributes",
-				Columns:    []*schema.Column{PersonAttributesColumns[22]},
+				Columns:    []*schema.Column{PersonAttributesColumns[23]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1742,17 +1745,17 @@ var (
 			{
 				Name:    "personattribute_dimension_valid_from_person_id",
 				Unique:  false,
-				Columns: []*schema.Column{PersonAttributesColumns[3], PersonAttributesColumns[12], PersonAttributesColumns[19]},
+				Columns: []*schema.Column{PersonAttributesColumns[3], PersonAttributesColumns[12], PersonAttributesColumns[20]},
 			},
 			{
 				Name:    "personattribute_status_valid_to_person_id",
 				Unique:  false,
-				Columns: []*schema.Column{PersonAttributesColumns[8], PersonAttributesColumns[13], PersonAttributesColumns[19]},
+				Columns: []*schema.Column{PersonAttributesColumns[8], PersonAttributesColumns[13], PersonAttributesColumns[20]},
 			},
 			{
 				Name:    "personattribute_dedupe_key_revenue_workspace_id",
 				Unique:  true,
-				Columns: []*schema.Column{PersonAttributesColumns[17], PersonAttributesColumns[21]},
+				Columns: []*schema.Column{PersonAttributesColumns[18], PersonAttributesColumns[22]},
 			},
 		},
 	}
@@ -2112,6 +2115,7 @@ var (
 		{Name: "retraction_reason", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "supersedes_assertion_id", Type: field.TypeString, Nullable: true},
 		{Name: "extractor_version", Type: field.TypeString, Default: "unknown-v1"},
+		{Name: "citations_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "projector_compat_version", Type: field.TypeInt, Default: 1},
 		{Name: "supporting_observation_ids", Type: field.TypeJSON},
 		{Name: "relationship_id", Type: field.TypeUUID},
@@ -2127,25 +2131,25 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "relationship_assertions_relationships_assertions",
-				Columns:    []*schema.Column{RelationshipAssertionsColumns[17]},
+				Columns:    []*schema.Column{RelationshipAssertionsColumns[18]},
 				RefColumns: []*schema.Column{RelationshipsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "relationship_assertions_relationship_observations_assertions",
-				Columns:    []*schema.Column{RelationshipAssertionsColumns[18]},
+				Columns:    []*schema.Column{RelationshipAssertionsColumns[19]},
 				RefColumns: []*schema.Column{RelationshipObservationsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "relationship_assertions_revenue_workspaces_relationship_assertions",
-				Columns:    []*schema.Column{RelationshipAssertionsColumns[19]},
+				Columns:    []*schema.Column{RelationshipAssertionsColumns[20]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "relationship_assertions_users_relationship_assertions",
-				Columns:    []*schema.Column{RelationshipAssertionsColumns[20]},
+				Columns:    []*schema.Column{RelationshipAssertionsColumns[21]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -2154,12 +2158,12 @@ var (
 			{
 				Name:    "relationshipassertion_dimension_valid_from_relationship_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipAssertionsColumns[3], RelationshipAssertionsColumns[9], RelationshipAssertionsColumns[17]},
+				Columns: []*schema.Column{RelationshipAssertionsColumns[3], RelationshipAssertionsColumns[9], RelationshipAssertionsColumns[18]},
 			},
 			{
 				Name:    "relationshipassertion_status_valid_to_relationship_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipAssertionsColumns[6], RelationshipAssertionsColumns[10], RelationshipAssertionsColumns[17]},
+				Columns: []*schema.Column{RelationshipAssertionsColumns[6], RelationshipAssertionsColumns[10], RelationshipAssertionsColumns[18]},
 			},
 		},
 	}
@@ -3173,6 +3177,8 @@ var (
 		{Name: "last_verified_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_digest_at", Type: field.TypeTime, Nullable: true},
 		{Name: "mail_history_id", Type: field.TypeString, Nullable: true},
+		{Name: "cloud_research_consent", Type: field.TypeBool, Default: false},
+		{Name: "cloud_research_consent_at", Type: field.TypeTime, Nullable: true},
 		{Name: "user_revenue_workspaces", Type: field.TypeUUID},
 	}
 	// RevenueWorkspacesTable holds the schema information for the "revenue_workspaces" table.
@@ -3183,7 +3189,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "revenue_workspaces_users_revenue_workspaces",
-				Columns:    []*schema.Column{RevenueWorkspacesColumns[11]},
+				Columns:    []*schema.Column{RevenueWorkspacesColumns[13]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -3192,7 +3198,7 @@ var (
 			{
 				Name:    "revenueworkspace_user_revenue_workspaces",
 				Unique:  true,
-				Columns: []*schema.Column{RevenueWorkspacesColumns[11]},
+				Columns: []*schema.Column{RevenueWorkspacesColumns[13]},
 			},
 		},
 	}

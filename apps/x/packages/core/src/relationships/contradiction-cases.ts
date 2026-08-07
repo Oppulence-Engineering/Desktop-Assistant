@@ -1,10 +1,26 @@
 import type { ContradictionCase, ContradictionEvidenceSide } from "@x/shared/dist/relationships.js";
 import { conversationFingerprint } from "./conversation-utils.js";
 
+/**
+ * The provenance ladder, mirroring `assertionPriority` in
+ * apps/rowboat-api/internal/revenue/relationship_state.go. That function is the
+ * source of truth; this exists only so the desktop can rank a contradiction's
+ * two sides without a round trip.
+ *
+ * The numbers are ordinal and compared only against each other. Keeping them
+ * identical to the Go values is deliberate anyway: when the two drift, the
+ * difference shows up as a UI that disagrees with the server about which side of
+ * a contradiction won, which is the hardest kind of disagreement to debug.
+ *
+ * `external_research` (RFC 039) sits above ai_inference because it carries
+ * citations, and below deterministic because a vendor's read of a web page is
+ * weaker than something computed from data we own.
+ */
 const AUTHORITY: Record<ContradictionEvidenceSide["sourceType"], number> = {
-  user_correction: 4,
-  source_fact: 3,
-  deterministic: 2,
+  user_correction: 5,
+  source_fact: 4,
+  deterministic: 3,
+  external_research: 2,
   ai_inference: 1,
 };
 

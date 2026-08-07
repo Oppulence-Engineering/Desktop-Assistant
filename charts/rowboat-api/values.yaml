@@ -223,10 +223,30 @@ config:
   UPSTREAM_RESPONSE_MAX_BYTES: "67108864"
   DAILY_CREDIT_LIMIT: "100000"
   MONTHLY_CREDIT_LIMIT: "2000000"
+  # Cloud research (RFC 039) draws on a ring-fenced budget as well as the shared
+  # caps above. Without it, a busy day of model traffic consumes the shared cap
+  # and the nightly account sweep silently stops — the user is asleep for both
+  # halves of that. Sized against the promise the plan makes: 250 monitored
+  # accounts at 50 credits, polled daily, is 375,000 credits a month.
+  RESEARCH_DAILY_CREDIT_LIMIT: "50000"
+  RESEARCH_MONTHLY_CREDIT_LIMIT: "500000"
+  # Vendor endpoint for cloud research. PARALLEL_API_KEY comes from Infisical and
+  # is OPTIONAL: with no key the research surface reports itself unconfigured,
+  # the desktop hides the control, and the sweep does nothing. A key alone grants
+  # nothing either — the cloud_research capability, an active `intelligence`
+  # subscription and per-workspace consent are each required as well.
+  PARALLEL_BASE_URL: https://api.parallel.ai
   LLM_ALLOWED_MODELS: ""
   LLM_MAX_PROMPT_BYTES: "2097152"
   LLM_MAX_TOOL_PAYLOAD_BYTES: "1048576"
   LLM_MAX_MESSAGES: "128"
+  # Stripe price for the cloud-research tier (RFC 039). An identifier, not a
+  # secret. Empty means the plan cannot be bought: checkout answers
+  # provider_unconfigured rather than silently falling back to a cheaper price.
+  # The credit grant matches MONTHLY_CREDIT_LIMIT — a larger grant would be dead
+  # config, because the shared monthly cap binds first.
+  STRIPE_INTELLIGENCE_PRICE_ID: ""
+  STRIPE_INTELLIGENCE_CREDITS: "2000000"
   GRAPHQL_INTROSPECTION_ENABLED: "false"
   GRAPHQL_MAX_COMPLEXITY: "250"
   GRAPHQL_MAX_DEPTH: "12"
@@ -348,3 +368,4 @@ secretValues: {}
   # INFISICAL_TOKEN: ""
   # INFISICAL_PROJECT_ID: ""
   # PLAIN_API_KEY: ""
+  # PARALLEL_API_KEY: ""   # optional; see PARALLEL_BASE_URL above

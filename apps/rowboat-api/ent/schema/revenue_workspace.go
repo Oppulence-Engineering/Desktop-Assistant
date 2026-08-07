@@ -64,6 +64,23 @@ func (RevenueWorkspace) Fields() []ent.Field {
 		// The Gmail History API cursor for push-driven Layer-1 sync (RFC 031).
 		// Empty until the first push bootstraps it.
 		field.String("mail_history_id").Optional(),
+		// Whether a counterparty's name and domain may be sent to the research
+		// vendor (RFC 039).
+		//
+		// This lives on the server and not only in desktop config because the data
+		// subject is not the user: they are consenting on behalf of someone who
+		// never agreed to anything, and a gate the client can assert its way past
+		// is not a gate. The desktop toggle writes here; the research path reads
+		// here and nowhere else.
+		//
+		// Deliberately independent of every capability and plan check. An operator
+		// enabling cloud_research, or a user upgrading to the Intelligence plan,
+		// must not turn this on as a side effect.
+		field.Bool("cloud_research_consent").Default(false),
+		// When consent was last granted, for the audit answer to "when did I agree
+		// to this?". Cleared to nil on revocation so the column never claims a
+		// consent that is no longer in force.
+		field.Time("cloud_research_consent_at").Optional().Nillable(),
 	}
 }
 

@@ -25,6 +25,7 @@ const (
 	KeySlackClientID           = "SLACK_CLIENT_ID"
 	KeySlackClientSecret       = "SLACK_CLIENT_SECRET"
 	KeyPlain                   = "PLAIN_API_KEY"
+	KeyParallel                = "PARALLEL_API_KEY"
 )
 
 // Store holds vendor secrets behind a read-write lock so background refresh is
@@ -49,6 +50,7 @@ func NewFromConfig(cfg appconfig.Config) *Store {
 		KeySlackClientID:           cfg.SlackClientID,
 		KeySlackClientSecret:       cfg.SlackClientSecret,
 		KeyPlain:                   cfg.PlainAPIKey,
+		KeyParallel:                cfg.ParallelAPIKey,
 	}}
 }
 
@@ -104,3 +106,8 @@ func (s *Store) SlackClientSecret() string { return s.Get(KeySlackClientSecret) 
 
 // Plain returns the Plain (plain.com) API key.
 func (s *Store) Plain() string { return s.Get(KeyPlain) }
+
+// Parallel returns the cloud research vendor key (RFC 039). Empty disables
+// research entirely; the surface then reports itself unconfigured rather than
+// calling an unauthenticated endpoint.
+func (s *Store) Parallel() string { return s.Get(KeyParallel) }

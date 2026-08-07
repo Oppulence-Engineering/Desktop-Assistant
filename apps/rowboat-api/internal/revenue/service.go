@@ -163,6 +163,7 @@ type Service struct {
 	mailBodyTTL  time.Duration
 	embedder     embeddings.Embedder
 	mailSyncer   MailSyncer
+	research     ResearchConfig
 	log          *zap.Logger
 	now          func() time.Time
 }

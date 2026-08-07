@@ -35,6 +35,10 @@ const (
 	FieldLastDigestAt = "last_digest_at"
 	// FieldMailHistoryID holds the string denoting the mail_history_id field in the database.
 	FieldMailHistoryID = "mail_history_id"
+	// FieldCloudResearchConsent holds the string denoting the cloud_research_consent field in the database.
+	FieldCloudResearchConsent = "cloud_research_consent"
+	// FieldCloudResearchConsentAt holds the string denoting the cloud_research_consent_at field in the database.
+	FieldCloudResearchConsentAt = "cloud_research_consent_at"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
 	// EdgeMembers holds the string denoting the members edge name in mutations.
@@ -358,6 +362,8 @@ var Columns = []string{
 	FieldLastVerifiedAt,
 	FieldLastDigestAt,
 	FieldMailHistoryID,
+	FieldCloudResearchConsent,
+	FieldCloudResearchConsentAt,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "revenue_workspaces"
@@ -396,6 +402,8 @@ var (
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	StatusValidator func(string) error
+	// DefaultCloudResearchConsent holds the default value on creation for the "cloud_research_consent" field.
+	DefaultCloudResearchConsent bool
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -456,6 +464,16 @@ func ByLastDigestAt(opts ...sql.OrderTermOption) OrderOption {
 // ByMailHistoryID orders the results by the mail_history_id field.
 func ByMailHistoryID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMailHistoryID, opts...).ToFunc()
+}
+
+// ByCloudResearchConsent orders the results by the cloud_research_consent field.
+func ByCloudResearchConsent(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCloudResearchConsent, opts...).ToFunc()
+}
+
+// ByCloudResearchConsentAt orders the results by the cloud_research_consent_at field.
+func ByCloudResearchConsentAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCloudResearchConsentAt, opts...).ToFunc()
 }
 
 // ByUserField orders the results by user field.

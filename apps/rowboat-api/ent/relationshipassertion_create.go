@@ -192,6 +192,20 @@ func (_c *RelationshipAssertionCreate) SetNillableExtractorVersion(v *string) *R
 	return _c
 }
 
+// SetCitationsJSON sets the "citations_json" field.
+func (_c *RelationshipAssertionCreate) SetCitationsJSON(v string) *RelationshipAssertionCreate {
+	_c.mutation.SetCitationsJSON(v)
+	return _c
+}
+
+// SetNillableCitationsJSON sets the "citations_json" field if the given value is not nil.
+func (_c *RelationshipAssertionCreate) SetNillableCitationsJSON(v *string) *RelationshipAssertionCreate {
+	if v != nil {
+		_c.SetCitationsJSON(*v)
+	}
+	return _c
+}
+
 // SetProjectorCompatVersion sets the "projector_compat_version" field.
 func (_c *RelationshipAssertionCreate) SetProjectorCompatVersion(v int) *RelationshipAssertionCreate {
 	_c.mutation.SetProjectorCompatVersion(v)
@@ -401,6 +415,11 @@ func (_c *RelationshipAssertionCreate) check() error {
 	if _, ok := _c.mutation.ExtractorVersion(); !ok {
 		return &ValidationError{Name: "extractor_version", err: errors.New(`ent: missing required field "RelationshipAssertion.extractor_version"`)}
 	}
+	if v, ok := _c.mutation.CitationsJSON(); ok {
+		if err := relationshipassertion.CitationsJSONValidator(v); err != nil {
+			return &ValidationError{Name: "citations_json", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.citations_json": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.ProjectorCompatVersion(); !ok {
 		return &ValidationError{Name: "projector_compat_version", err: errors.New(`ent: missing required field "RelationshipAssertion.projector_compat_version"`)}
 	}
@@ -512,6 +531,10 @@ func (_c *RelationshipAssertionCreate) createSpec() (*RelationshipAssertion, *sq
 	if value, ok := _c.mutation.ExtractorVersion(); ok {
 		_spec.SetField(relationshipassertion.FieldExtractorVersion, field.TypeString, value)
 		_node.ExtractorVersion = value
+	}
+	if value, ok := _c.mutation.CitationsJSON(); ok {
+		_spec.SetField(relationshipassertion.FieldCitationsJSON, field.TypeString, value)
+		_node.CitationsJSON = value
 	}
 	if value, ok := _c.mutation.ProjectorCompatVersion(); ok {
 		_spec.SetField(relationshipassertion.FieldProjectorCompatVersion, field.TypeInt, value)
@@ -833,6 +856,24 @@ func (u *RelationshipAssertionUpsert) UpdateExtractorVersion() *RelationshipAsse
 	return u
 }
 
+// SetCitationsJSON sets the "citations_json" field.
+func (u *RelationshipAssertionUpsert) SetCitationsJSON(v string) *RelationshipAssertionUpsert {
+	u.Set(relationshipassertion.FieldCitationsJSON, v)
+	return u
+}
+
+// UpdateCitationsJSON sets the "citations_json" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsert) UpdateCitationsJSON() *RelationshipAssertionUpsert {
+	u.SetExcluded(relationshipassertion.FieldCitationsJSON)
+	return u
+}
+
+// ClearCitationsJSON clears the value of the "citations_json" field.
+func (u *RelationshipAssertionUpsert) ClearCitationsJSON() *RelationshipAssertionUpsert {
+	u.SetNull(relationshipassertion.FieldCitationsJSON)
+	return u
+}
+
 // SetProjectorCompatVersion sets the "projector_compat_version" field.
 func (u *RelationshipAssertionUpsert) SetProjectorCompatVersion(v int) *RelationshipAssertionUpsert {
 	u.Set(relationshipassertion.FieldProjectorCompatVersion, v)
@@ -1135,6 +1176,27 @@ func (u *RelationshipAssertionUpsertOne) SetExtractorVersion(v string) *Relation
 func (u *RelationshipAssertionUpsertOne) UpdateExtractorVersion() *RelationshipAssertionUpsertOne {
 	return u.Update(func(s *RelationshipAssertionUpsert) {
 		s.UpdateExtractorVersion()
+	})
+}
+
+// SetCitationsJSON sets the "citations_json" field.
+func (u *RelationshipAssertionUpsertOne) SetCitationsJSON(v string) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetCitationsJSON(v)
+	})
+}
+
+// UpdateCitationsJSON sets the "citations_json" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertOne) UpdateCitationsJSON() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateCitationsJSON()
+	})
+}
+
+// ClearCitationsJSON clears the value of the "citations_json" field.
+func (u *RelationshipAssertionUpsertOne) ClearCitationsJSON() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.ClearCitationsJSON()
 	})
 }
 
@@ -1612,6 +1674,27 @@ func (u *RelationshipAssertionUpsertBulk) SetExtractorVersion(v string) *Relatio
 func (u *RelationshipAssertionUpsertBulk) UpdateExtractorVersion() *RelationshipAssertionUpsertBulk {
 	return u.Update(func(s *RelationshipAssertionUpsert) {
 		s.UpdateExtractorVersion()
+	})
+}
+
+// SetCitationsJSON sets the "citations_json" field.
+func (u *RelationshipAssertionUpsertBulk) SetCitationsJSON(v string) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetCitationsJSON(v)
+	})
+}
+
+// UpdateCitationsJSON sets the "citations_json" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertBulk) UpdateCitationsJSON() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateCitationsJSON()
+	})
+}
+
+// ClearCitationsJSON clears the value of the "citations_json" field.
+func (u *RelationshipAssertionUpsertBulk) ClearCitationsJSON() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.ClearCitationsJSON()
 	})
 }
 

@@ -51,6 +51,8 @@ type RelationshipAssertion struct {
 	SupersedesAssertionID string `json:"supersedes_assertion_id,omitempty"`
 	// ExtractorVersion holds the value of the "extractor_version" field.
 	ExtractorVersion string `json:"extractor_version,omitempty"`
+	// CitationsJSON holds the value of the "citations_json" field.
+	CitationsJSON string `json:"citations_json,omitempty"`
 	// ProjectorCompatVersion holds the value of the "projector_compat_version" field.
 	ProjectorCompatVersion int `json:"projector_compat_version,omitempty"`
 	// SupportingObservationIds holds the value of the "supporting_observation_ids" field.
@@ -137,7 +139,7 @@ func (*RelationshipAssertion) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case relationshipassertion.FieldProjectorCompatVersion:
 			values[i] = new(sql.NullInt64)
-		case relationshipassertion.FieldDimension, relationshipassertion.FieldValue, relationshipassertion.FieldSourceType, relationshipassertion.FieldStatus, relationshipassertion.FieldReason, relationshipassertion.FieldRetractionReason, relationshipassertion.FieldSupersedesAssertionID, relationshipassertion.FieldExtractorVersion:
+		case relationshipassertion.FieldDimension, relationshipassertion.FieldValue, relationshipassertion.FieldSourceType, relationshipassertion.FieldStatus, relationshipassertion.FieldReason, relationshipassertion.FieldRetractionReason, relationshipassertion.FieldSupersedesAssertionID, relationshipassertion.FieldExtractorVersion, relationshipassertion.FieldCitationsJSON:
 			values[i] = new(sql.NullString)
 		case relationshipassertion.FieldCreatedAt, relationshipassertion.FieldUpdatedAt, relationshipassertion.FieldValidFrom, relationshipassertion.FieldValidTo, relationshipassertion.FieldRetractedAt:
 			values[i] = new(sql.NullTime)
@@ -257,6 +259,12 @@ func (_m *RelationshipAssertion) assignValues(columns []string, values []any) er
 				return fmt.Errorf("unexpected type %T for field extractor_version", values[i])
 			} else if value.Valid {
 				_m.ExtractorVersion = value.String
+			}
+		case relationshipassertion.FieldCitationsJSON:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field citations_json", values[i])
+			} else if value.Valid {
+				_m.CitationsJSON = value.String
 			}
 		case relationshipassertion.FieldProjectorCompatVersion:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -398,6 +406,9 @@ func (_m *RelationshipAssertion) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("extractor_version=")
 	builder.WriteString(_m.ExtractorVersion)
+	builder.WriteString(", ")
+	builder.WriteString("citations_json=")
+	builder.WriteString(_m.CitationsJSON)
 	builder.WriteString(", ")
 	builder.WriteString("projector_compat_version=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ProjectorCompatVersion))

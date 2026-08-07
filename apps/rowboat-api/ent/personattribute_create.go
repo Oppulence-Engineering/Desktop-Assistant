@@ -204,6 +204,20 @@ func (_c *PersonAttributeCreate) SetNillableExtractorVersion(v *string) *PersonA
 	return _c
 }
 
+// SetCitationsJSON sets the "citations_json" field.
+func (_c *PersonAttributeCreate) SetCitationsJSON(v string) *PersonAttributeCreate {
+	_c.mutation.SetCitationsJSON(v)
+	return _c
+}
+
+// SetNillableCitationsJSON sets the "citations_json" field if the given value is not nil.
+func (_c *PersonAttributeCreate) SetNillableCitationsJSON(v *string) *PersonAttributeCreate {
+	if v != nil {
+		_c.SetCitationsJSON(*v)
+	}
+	return _c
+}
+
 // SetDedupeKey sets the "dedupe_key" field.
 func (_c *PersonAttributeCreate) SetDedupeKey(v string) *PersonAttributeCreate {
 	_c.mutation.SetDedupeKey(v)
@@ -424,6 +438,11 @@ func (_c *PersonAttributeCreate) check() error {
 	if _, ok := _c.mutation.ExtractorVersion(); !ok {
 		return &ValidationError{Name: "extractor_version", err: errors.New(`ent: missing required field "PersonAttribute.extractor_version"`)}
 	}
+	if v, ok := _c.mutation.CitationsJSON(); ok {
+		if err := personattribute.CitationsJSONValidator(v); err != nil {
+			return &ValidationError{Name: "citations_json", err: fmt.Errorf(`ent: validator failed for field "PersonAttribute.citations_json": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.DedupeKey(); !ok {
 		return &ValidationError{Name: "dedupe_key", err: errors.New(`ent: missing required field "PersonAttribute.dedupe_key"`)}
 	}
@@ -543,6 +562,10 @@ func (_c *PersonAttributeCreate) createSpec() (*PersonAttribute, *sqlgraph.Creat
 	if value, ok := _c.mutation.ExtractorVersion(); ok {
 		_spec.SetField(personattribute.FieldExtractorVersion, field.TypeString, value)
 		_node.ExtractorVersion = value
+	}
+	if value, ok := _c.mutation.CitationsJSON(); ok {
+		_spec.SetField(personattribute.FieldCitationsJSON, field.TypeString, value)
+		_node.CitationsJSON = value
 	}
 	if value, ok := _c.mutation.DedupeKey(); ok {
 		_spec.SetField(personattribute.FieldDedupeKey, field.TypeString, value)
@@ -882,6 +905,24 @@ func (u *PersonAttributeUpsert) UpdateExtractorVersion() *PersonAttributeUpsert 
 	return u
 }
 
+// SetCitationsJSON sets the "citations_json" field.
+func (u *PersonAttributeUpsert) SetCitationsJSON(v string) *PersonAttributeUpsert {
+	u.Set(personattribute.FieldCitationsJSON, v)
+	return u
+}
+
+// UpdateCitationsJSON sets the "citations_json" field to the value that was provided on create.
+func (u *PersonAttributeUpsert) UpdateCitationsJSON() *PersonAttributeUpsert {
+	u.SetExcluded(personattribute.FieldCitationsJSON)
+	return u
+}
+
+// ClearCitationsJSON clears the value of the "citations_json" field.
+func (u *PersonAttributeUpsert) ClearCitationsJSON() *PersonAttributeUpsert {
+	u.SetNull(personattribute.FieldCitationsJSON)
+	return u
+}
+
 // SetDedupeKey sets the "dedupe_key" field.
 func (u *PersonAttributeUpsert) SetDedupeKey(v string) *PersonAttributeUpsert {
 	u.Set(personattribute.FieldDedupeKey, v)
@@ -1199,6 +1240,27 @@ func (u *PersonAttributeUpsertOne) SetExtractorVersion(v string) *PersonAttribut
 func (u *PersonAttributeUpsertOne) UpdateExtractorVersion() *PersonAttributeUpsertOne {
 	return u.Update(func(s *PersonAttributeUpsert) {
 		s.UpdateExtractorVersion()
+	})
+}
+
+// SetCitationsJSON sets the "citations_json" field.
+func (u *PersonAttributeUpsertOne) SetCitationsJSON(v string) *PersonAttributeUpsertOne {
+	return u.Update(func(s *PersonAttributeUpsert) {
+		s.SetCitationsJSON(v)
+	})
+}
+
+// UpdateCitationsJSON sets the "citations_json" field to the value that was provided on create.
+func (u *PersonAttributeUpsertOne) UpdateCitationsJSON() *PersonAttributeUpsertOne {
+	return u.Update(func(s *PersonAttributeUpsert) {
+		s.UpdateCitationsJSON()
+	})
+}
+
+// ClearCitationsJSON clears the value of the "citations_json" field.
+func (u *PersonAttributeUpsertOne) ClearCitationsJSON() *PersonAttributeUpsertOne {
+	return u.Update(func(s *PersonAttributeUpsert) {
+		s.ClearCitationsJSON()
 	})
 }
 
@@ -1690,6 +1752,27 @@ func (u *PersonAttributeUpsertBulk) SetExtractorVersion(v string) *PersonAttribu
 func (u *PersonAttributeUpsertBulk) UpdateExtractorVersion() *PersonAttributeUpsertBulk {
 	return u.Update(func(s *PersonAttributeUpsert) {
 		s.UpdateExtractorVersion()
+	})
+}
+
+// SetCitationsJSON sets the "citations_json" field.
+func (u *PersonAttributeUpsertBulk) SetCitationsJSON(v string) *PersonAttributeUpsertBulk {
+	return u.Update(func(s *PersonAttributeUpsert) {
+		s.SetCitationsJSON(v)
+	})
+}
+
+// UpdateCitationsJSON sets the "citations_json" field to the value that was provided on create.
+func (u *PersonAttributeUpsertBulk) UpdateCitationsJSON() *PersonAttributeUpsertBulk {
+	return u.Update(func(s *PersonAttributeUpsert) {
+		s.UpdateCitationsJSON()
+	})
+}
+
+// ClearCitationsJSON clears the value of the "citations_json" field.
+func (u *PersonAttributeUpsertBulk) ClearCitationsJSON() *PersonAttributeUpsertBulk {
+	return u.Update(func(s *PersonAttributeUpsert) {
+		s.ClearCitationsJSON()
 	})
 }
 

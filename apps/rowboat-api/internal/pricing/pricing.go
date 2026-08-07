@@ -26,6 +26,10 @@ type Table struct {
 	DefaultModel ModelRate            `json:"defaultModel"`
 	VoicePerChar int                  `json:"voicePerChar"` // credits per character
 	ExaPerQuery  int                  `json:"exaPerQuery"`  // flat credits per search
+	// ResearchTasks is credits per Parallel Task run, keyed by processor
+	// (RFC 039). Published 2026-08 list prices: lite $5/1k, base $10/1k,
+	// core $25/1k — so 50, 100 and 250 credits at $0.0001 each.
+	ResearchTasks map[string]int `json:"researchTasks"`
 }
 
 // DefaultTable returns the built-in catalog. Model keys match the provider/slug
@@ -45,6 +49,11 @@ func DefaultTable() *Table {
 		DefaultModel: ModelRate{InputPer1K: 30, OutputPer1K: 150},
 		VoicePerChar: 1,  // ≈ $0.0001/char
 		ExaPerQuery:  50, // ≈ $0.005/search
+		ResearchTasks: map[string]int{
+			"lite": 50,
+			"base": 100,
+			"core": 250,
+		},
 	}
 }
 
@@ -98,6 +107,11 @@ func (t *Table) validate() error {
 	}
 	if err := checkRate("voicePerChar", t.VoicePerChar); err != nil {
 		return err
+	}
+	for processor, credits := range t.ResearchTasks {
+		if err := checkRate("researchTasks."+processor, credits); err != nil {
+			return err
+		}
 	}
 	return checkRate("exaPerQuery", t.ExaPerQuery)
 }
@@ -171,6 +185,17 @@ func (t *Table) VoiceCost(chars int) int {
 
 // ExaCost is the flat per-query charge.
 func (t *Table) ExaCost() int { return t.ExaPerQuery }
+
+// ResearchCosts returns the per-processor research charges. Callers hold the
+// map, so it is copied: an operator override loaded once at boot must not be
+// mutable by a consumer.
+func (t *Table) ResearchCosts() map[string]int {
+	out := make(map[string]int, len(t.ResearchTasks))
+	for processor, credits := range t.ResearchTasks {
+		out[processor] = credits
+	}
+	return out
+}
 
 func ceilDiv(n, d int) int {
 	if d == 0 {

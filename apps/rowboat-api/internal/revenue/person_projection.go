@@ -27,7 +27,7 @@ import (
 // assertionPriority, then valid_from, then confidence, then id — so "why does it say
 // she works at Acme?" has one answer everywhere in the system.
 
-const personProjectorVersion = 2
+const personProjectorVersion = 3
 
 /** Dimensions that accumulate every active value. */
 var personMultiValuedDimensions = [...]string{"alias", "handle"}
@@ -46,6 +46,14 @@ type PersonAttributeInput struct {
 	Reason     string
 	ObservedAt time.Time
 	ExternalID string
+	// CitationsJSON is a JSON array of {title, url, excerpts[]} (RFC 039).
+	// Required for external_research and empty for every owned-data source.
+	CitationsJSON string
+	// ExtractorVersion identifies the exact extractor build behind the claim.
+	// For research this is the processor plus the task-spec hash, so a task-spec
+	// change reads as a different extractor rather than as a silent drift in
+	// what the same name means.
+	ExtractorVersion string
 }
 
 // personAttributeDedupeKey makes replay free.
@@ -64,6 +72,13 @@ func personAttributeDedupeKey(personID, dimension, value, source, externalID str
 func acceptPersonAttribute(in PersonAttributeInput, email string) bool {
 	value := strings.TrimSpace(in.Value)
 	if value == "" {
+		return false
+	}
+	// A vendor claim with nothing to click is refused outright rather than
+	// stored at low confidence (RFC 039). Once it is an attribute it competes on
+	// the ladder, and the only thing separating external_research from a guess
+	// is the citation — an uncited one is a guess wearing a better source_type.
+	if in.SourceType == "external_research" && strings.TrimSpace(in.CitationsJSON) == "" {
 		return false
 	}
 	switch in.Dimension {
@@ -162,6 +177,12 @@ func upsertPersonAttributes(
 			SetDedupeKey(dedupe)
 		if in.Reason != "" {
 			create.SetReason(in.Reason)
+		}
+		if in.CitationsJSON != "" {
+			create.SetCitationsJSON(in.CitationsJSON)
+		}
+		if in.ExtractorVersion != "" {
+			create.SetExtractorVersion(in.ExtractorVersion)
 		}
 		if observation != nil {
 			create.SetObservation(observation).
@@ -288,6 +309,8 @@ func projectPersonAttributes(
 		"phone":        value("phone"),
 		"timezone":     value("timezone"),
 		"locale":       value("locale"),
+		"seniority":    value("seniority"),
+		"location":     value("location"),
 		"employment":   employment,
 	}
 	encoded, err := json.Marshal(projected)
@@ -310,6 +333,8 @@ func projectPersonAttributes(
 		SetPhone(value("phone")).
 		SetTimezone(value("timezone")).
 		SetLocale(value("locale")).
+		SetSeniority(value("seniority")).
+		SetLocation(value("location")).
 		SetEmploymentStatus(employment).
 		SetAttributesHash(hash).
 		SetAttributesVersion(p.AttributesVersion + 1).

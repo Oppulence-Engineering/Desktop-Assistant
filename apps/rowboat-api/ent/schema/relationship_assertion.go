@@ -27,7 +27,13 @@ func (RelationshipAssertion) Fields() []ent.Field {
 		field.Text("value").NotEmpty().Sensitive(),
 		field.String("source_type").
 			Validate(oneOfRevenue("source_type",
-				"user_correction", "source_fact", "deterministic", "ai_inference")),
+				"user_correction", "source_fact", "deterministic",
+				// See PersonAttribute.source_type: the same ladder tier, kept in
+				// step on both tables because assertionPriority reads one switch
+				// for both and a tier present on only one of them would rank
+				// differently depending on which table it landed in.
+				"external_research",
+				"ai_inference")),
 		field.String("status").
 			Default("active").
 			Validate(oneOfRevenue("status", "active", "retracted", "superseded")),
@@ -39,6 +45,9 @@ func (RelationshipAssertion) Fields() []ent.Field {
 		field.Text("retraction_reason").Optional().Sensitive(),
 		field.String("supersedes_assertion_id").Optional(),
 		field.String("extractor_version").Default("unknown-v1"),
+		// JSON array of {title, url, excerpts[]} backing an external_research
+		// assertion. See PersonAttribute.citations_json.
+		field.Text("citations_json").Optional().Validate(validJSON),
 		field.Int("projector_compat_version").Default(1).Positive(),
 		field.JSON("supporting_observation_ids", []string{}).Default([]string{}),
 	}

@@ -14,6 +14,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/credits"
 	"github.com/google/uuid"
@@ -40,9 +41,23 @@ var ErrMonthlyLimitExceeded = errors.New("monthly_credit_limit_exceeded")
 var ErrSubscriptionNotActive = errors.New("subscription_not_active")
 
 // SpendLimits caps net consumed credits for the current UTC day/month.
+//
+// Daily/Monthly are the shared caps: every metered op draws on the same budget.
+// OpDaily/OpMonthly additionally ring-fence the CURRENT op, so one workload
+// cannot be starved by another's spending.
+//
+// The ring fence exists because a shared cap silently converts one product's
+// budget into another's. Cloud research (RFC 039) is background work sold as
+// "up to 250 monitored accounts"; without its own cap, a busy day of model
+// traffic consumes the shared budget and the nightly sweep simply stops. The
+// user is asleep for both halves of that and finds out from neither.
 type SpendLimits struct {
 	Daily   int
 	Monthly int
+	// OpDaily / OpMonthly apply only to the op named in the Reserve call.
+	// Zero means "no op-specific cap", so existing callers are unaffected.
+	OpDaily   int
+	OpMonthly int
 }
 
 // Gate issues credit reservations against the ledger.
@@ -181,7 +196,7 @@ func (g *Gate) Reserve(ctx context.Context, op string, estimated int, requestID 
 	// new reservation is visible to consumedSince here, so concurrent requests
 	// serialize on the cap instead of each passing a stale pre-reserve read and
 	// collectively exceeding it.
-	if err := checkSpendLimitsTx(ctx, txc, limits); err != nil {
+	if err := checkSpendLimitsTx(ctx, txc, limits, op); err != nil {
 		_ = tx.Rollback()
 		return nil, err
 	}
@@ -245,17 +260,42 @@ func (g *Gate) duplicateState(ctx context.Context, op string, requestID uuid.UUI
 	return false, time.Since(reservedAt) < inFlightWindow, nil
 }
 
-// checkSpendLimitsTx verifies the daily/monthly caps against the transaction's
-// view of the ledger (which already includes the current reservation, so the
-// comparison is spent > cap, not spent+estimate > cap).
-func checkSpendLimitsTx(ctx context.Context, txc *ent.Client, limits SpendLimits) error {
-	if limits.Daily <= 0 && limits.Monthly <= 0 {
+// checkSpendLimitsTx verifies the caps against the transaction's view of the
+// ledger (which already includes the current reservation, so the comparison is
+// spent > cap, not spent+estimate > cap).
+//
+// The op-scoped caps are checked FIRST. Both refusals are correct when both are
+// breached, but the op cap is the more specific and more actionable one: "this
+// workload has used its budget" tells an operator where to look, where "the
+// account has used its budget" does not.
+func checkSpendLimitsTx(ctx context.Context, txc *ent.Client, limits SpendLimits, op string) error {
+	if limits.Daily <= 0 && limits.Monthly <= 0 && limits.OpDaily <= 0 && limits.OpMonthly <= 0 {
 		return nil
 	}
 	now := time.Now().UTC()
+	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+
+	if limits.OpDaily > 0 {
+		spent, err := consumedSinceForOp(ctx, txc, dayStart, op)
+		if err != nil {
+			return err
+		}
+		if spent > limits.OpDaily {
+			return ErrDailyLimitExceeded
+		}
+	}
+	if limits.OpMonthly > 0 {
+		spent, err := consumedSinceForOp(ctx, txc, monthStart, op)
+		if err != nil {
+			return err
+		}
+		if spent > limits.OpMonthly {
+			return ErrMonthlyLimitExceeded
+		}
+	}
 	if limits.Daily > 0 {
-		start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-		spent, err := consumedSince(ctx, txc, start)
+		spent, err := consumedSince(ctx, txc, dayStart)
 		if err != nil {
 			return err
 		}
@@ -264,8 +304,7 @@ func checkSpendLimitsTx(ctx context.Context, txc *ent.Client, limits SpendLimits
 		}
 	}
 	if limits.Monthly > 0 {
-		start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-		spent, err := consumedSince(ctx, txc, start)
+		spent, err := consumedSince(ctx, txc, monthStart)
 		if err != nil {
 			return err
 		}
@@ -346,7 +385,30 @@ func (g *Gate) write(ctx context.Context, u *ent.User, delta int, reason string,
 	return err
 }
 
+// consumedSince sums net metered spend since start across every op.
 func consumedSince(ctx context.Context, client *ent.Client, start time.Time) (int, error) {
+	return consumedSinceMatching(ctx, client, start,
+		creditledger.ReasonHasSuffix(reserveReasonSuffix), nil)
+}
+
+// consumedSinceForOp sums net spend for ONE op since start.
+//
+// Both queries are narrowed to the op's own ledger reasons rather than only the
+// first: request ids are effectively unique per op, but scoping the sum as well
+// means a hypothetical collision cannot charge one budget for another's work.
+func consumedSinceForOp(ctx context.Context, client *ent.Client, start time.Time, op string) (int, error) {
+	return consumedSinceMatching(ctx, client, start,
+		creditledger.ReasonEQ(op+reserveReasonSuffix),
+		[]string{op + reserveReasonSuffix, op + terminalReasonSuffix})
+}
+
+func consumedSinceMatching(
+	ctx context.Context,
+	client *ent.Client,
+	start time.Time,
+	reservePredicate predicate.CreditLedger,
+	phaseReasons []string,
+) (int, error) {
 	// Attribute each charge to the period of its RESERVE, not to the individual
 	// timestamps of its rows. A charge spans a reserve row and a terminal row
 	// written at different real times; summing rows by their own ts would, for a
@@ -361,7 +423,7 @@ func consumedSince(ctx context.Context, client *ent.Client, start time.Time) (in
 	}
 	if err := client.CreditLedger.Query().
 		Where(
-			creditledger.ReasonHasSuffix(reserveReasonSuffix),
+			reservePredicate,
 			creditledger.TsGTE(start),
 		).
 		Select(creditledger.FieldRequestID).
@@ -378,8 +440,12 @@ func consumedSince(ctx context.Context, client *ent.Client, start time.Time) (in
 	var rows []struct {
 		Total *int `json:"total"`
 	}
+	phaseFilter := []predicate.CreditLedger{creditledger.RequestIDIn(ids...)}
+	if len(phaseReasons) > 0 {
+		phaseFilter = append(phaseFilter, creditledger.ReasonIn(phaseReasons...))
+	}
 	if err := client.CreditLedger.Query().
-		Where(creditledger.RequestIDIn(ids...)).
+		Where(phaseFilter...).
 		Aggregate(ent.As(ent.Sum(creditledger.FieldDelta), "total")).
 		Scan(ctx, &rows); err != nil {
 		return 0, err

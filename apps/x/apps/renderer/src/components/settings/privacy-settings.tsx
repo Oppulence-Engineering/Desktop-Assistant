@@ -110,7 +110,18 @@ function routeFacts(routing: TranscriptionRouting | null): RouteFact[] {
         ? `Enabled in Transcription settings. Sent to ${relationshipEvidence.destination}: ${sharedKinds.join("; ")}. Meeting audio and local file paths are never sent by this step.`
         : `Enabled. This may leave the device because the location of ${relationshipEvidence.destination} could not be verified: ${sharedKinds.join("; ")}.`;
 
+  const research = routing.cloudResearch;
+
   return [
+    {
+      // The only route on this page whose subject is someone other than the
+      // user, so it says so in the first clause.
+      location: research.enabled ? "cloud" : "device",
+      label: "Cloud research about other people",
+      detail: research.enabled
+        ? `On. Sends ${research.sends.join(", ")} to ${research.vendor} to look up public professional information. Never sends ${research.neverSends.join(", ")}.`
+        : "Off. Nothing about the people or companies you correspond with is sent to a research provider.",
+    },
     {
       location: routing.voice.location,
       label: "Push-to-talk and dictation",
