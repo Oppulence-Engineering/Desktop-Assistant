@@ -1115,8 +1115,18 @@ function loadState(stateFile: string): {
   last_sync?: string;
   last_recent_backfill?: string;
 } {
+  // A corrupt or truncated state file must read as "no state", not throw.
+  // This is called at the top of every sync pass, so an unguarded parse made
+  // one bad file fail every Gmail tick forever — the loop's catch just logged
+  // the same error each interval with no path to recovery. Fresh state costs a
+  // full re-sync, which is exactly what a new install does anyway. Every
+  // sibling state loader (labeling, tagging, agent notes) already does this.
   if (fs.existsSync(stateFile)) {
-    return JSON.parse(fs.readFileSync(stateFile, "utf-8"));
+    try {
+      return JSON.parse(fs.readFileSync(stateFile, "utf-8"));
+    } catch (err) {
+      console.warn("[Gmail] State file unreadable; starting from a full sync:", err);
+    }
   }
   return {};
 }

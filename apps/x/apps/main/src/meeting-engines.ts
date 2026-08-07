@@ -86,7 +86,15 @@ function lastJsonLine<T>(stdout: string): T {
     .filter((line) => line.trim().startsWith("{"));
   const last = lines.at(-1);
   if (!last) throw new Error("audiocap produced no JSON output");
-  return JSON.parse(last) as T;
+  try {
+    return JSON.parse(last) as T;
+  } catch {
+    // A sidecar killed mid-write leaves a truncated line. Callers all handle a
+    // throw (ensure surfaces {error} to the renderer; live transcription logs
+    // and skips the pass) — but a bare "Unexpected end of JSON input" gave no
+    // hint the sidecar was the source.
+    throw new Error(`audiocap produced malformed JSON output: ${last.slice(0, 200)}`);
+  }
 }
 
 // ---------------------------------------------------------------------------

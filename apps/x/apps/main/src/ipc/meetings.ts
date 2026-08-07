@@ -147,9 +147,10 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
     },
 
     "meeting:startStandby": async (_event, args) => {
-      const calendarEvent = args.calendarEventJson
-        ? (JSON.parse(args.calendarEventJson) as MeetingCalendarEvent)
-        : undefined;
+      // Same renderer-supplied payload as meeting:start, same safe parse — a
+      // malformed event string should degrade to "no calendar context", not
+      // reject the invoke.
+      const calendarEvent = parseCalendarEvent(args.calendarEventJson);
       const result = await controller().start(calendarEvent, {
         standby: true,
         relationshipTarget: args.relationshipTarget,

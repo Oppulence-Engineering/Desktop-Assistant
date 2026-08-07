@@ -241,9 +241,27 @@ export class FSRunsRepo implements IRunsRepo {
     async fetch(id: string): Promise<z.infer<typeof Run>> {
         const contents = await fsp.readFile(runLogPath(id), 'utf8');
         // Parse with the lenient schema so legacy start events (no model/provider) load.
+        //
+        // Malformed lines are skipped, not fatal. A crash mid-write leaves a
+        // truncated final line, and one such line used to make the run
+        // permanently unopenable — including for authorizePermission, which
+        // fetches the run to decide a pending tool call. A run missing one
+        // event beats a run that cannot be opened at all; the sibling
+        // readRunMetadata already tolerates malformed lines the same way.
+        let skipped = 0;
         const rawEvents = contents.split('\n')
             .filter(line => line.trim() !== '')
-            .map(line => ReadRunEvent.parse(JSON.parse(line)));
+            .flatMap(line => {
+                try {
+                    return [ReadRunEvent.parse(JSON.parse(line))];
+                } catch {
+                    skipped += 1;
+                    return [];
+                }
+            });
+        if (skipped > 0) {
+            console.warn(`[Runs] ${id}: skipped ${skipped} malformed line${skipped === 1 ? '' : 's'}`);
+        }
         if (rawEvents.length === 0 || rawEvents[0].type !== 'start') {
             throw new Error('Corrupt run data');
         }
