@@ -442,6 +442,9 @@ stop_matching_port_forward_listeners() {
 
 stop_port_forwards() {
   mkdir -p "$STATE_DIR"
+  # A ports.env left behind after teardown would send the next reader to a port
+  # nothing is listening on.
+  rm -f "${STATE_DIR}/ports.env"
   for name in api devstack; do
     local pid_file="${STATE_DIR}/${name}.pid"
     if [[ -f "$pid_file" ]]; then
@@ -642,10 +645,31 @@ ensure_local_http() {
   wait_for_http "$name" "http://localhost:${port}${path}"
 }
 
+# Record the ports actually in use, so nothing downstream has to assume them.
+#
+# The defaults are not reliable. Docker can hold a published host port whose
+# forwarding is dead — the kind node still serves the NodePort internally
+# (localhost:30080 inside the container answers) while the host side of the
+# mapping routes nowhere. select_host_port sees "occupied but unhealthy" and
+# falls back to $FALLBACK_API_PORT, which is correct but means the advertised
+# default is a lie for the rest of that cluster's life.
+#
+# Anything that hardcoded 18080 then pointed at a dead port and failed with a
+# connection error that looks like a broken backend rather than a wrong port.
+# This file is the single source of truth; `make help` and the banner read it.
+write_port_env() {
+  mkdir -p "$STATE_DIR"
+  cat >"${STATE_DIR}/ports.env" <<EOF
+ROWBOAT_API_PORT=${API_PORT}
+ROWBOAT_DEVSTACK_PORT=${DEVSTACK_PORT}
+EOF
+}
+
 ensure_host_access() {
   ensure_cluster
   ensure_local_http api svc/rowboat-api 80 /healthz API_PORT "$FALLBACK_API_PORT" "$API_PORT_ENV_SET"
   ensure_local_http devstack svc/rowboat-api-devstack 8090 /.well-known/jwks.json DEVSTACK_PORT "$FALLBACK_DEVSTACK_PORT" "$DEVSTACK_PORT_ENV_SET"
+  write_port_env
 }
 
 start_port_forwards() {
