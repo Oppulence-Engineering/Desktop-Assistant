@@ -45,6 +45,18 @@ func DefaultTable() *Table {
 			"openai/o4-mini":              {InputPer1K: 11, OutputPer1K: 44},
 			"google/gemini-2.5-pro":       {InputPer1K: 13, OutputPer1K: 100},
 			"google/gemini-2.5-flash":     {InputPer1K: 3, OutputPer1K: 25},
+			// Embeddings for the desktop's semantic memory index (RFC 021).
+			// Priced here because it must be: LLM_ALLOWED_MODELS and this table
+			// have to agree on the same string, and rate() falls back to
+			// DefaultModel — 30/150 per 1K — for anything it doesn't recognise.
+			// Allowing the id without a rate would bill embeddings at the sonnet
+			// rate, ~1500x their real cost.
+			//
+			// 1 credit/1K is the floor a whole-number rate allows. List price is
+			// $0.02/1M tokens = 0.2 credits/1K, so this rounds up to a 5x margin
+			// on a line item that is fractions of a cent per index pass. No
+			// output rate: an embeddings response has no completion tokens.
+			"openai/text-embedding-3-small": {InputPer1K: 1, OutputPer1K: 0},
 		},
 		DefaultModel: ModelRate{InputPer1K: 30, OutputPer1K: 150},
 		VoicePerChar: 1,  // ≈ $0.0001/char

@@ -75,6 +75,12 @@ func requestedMaxOutput(body map[string]any) int {
 	return 0
 }
 
+// isCompletionPath reports whether an upstream path takes max_tokens.
+// /embeddings goes through the same proxy and would reject the field.
+func isCompletionPath(path string) bool {
+	return path == "/chat/completions" || path == "/completions"
+}
+
 func isStream(body map[string]any) bool {
 	s, _ := body["stream"].(bool)
 	return s

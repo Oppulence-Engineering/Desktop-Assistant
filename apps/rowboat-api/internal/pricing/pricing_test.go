@@ -1,6 +1,8 @@
 package pricing_test
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
@@ -118,5 +120,50 @@ func TestHaikuIsPricedAboveGPT41Mini(t *testing.T) {
 	if haiku >= sonnet {
 		t.Errorf("haiku (%d) is no longer clearly below sonnet (%d); it was chosen "+
 			"as the cheapest working model", haiku, sonnet)
+	}
+}
+
+// Every model the production gateway allows must be priced here.
+//
+// LLM_ALLOWED_MODELS and this table are two lists that have to agree on the
+// same strings, kept in different files by different people. They drifted in
+// both directions at once: text-embedding-3-small was priced nowhere and
+// allowed nowhere, so the desktop's memory index got a 400 model_not_allowed
+// on every pass — and had someone fixed only the allowlist, rate() would have
+// silently billed embeddings at DefaultModel's 30/150 per 1K, roughly 1500x
+// their real cost.
+//
+// Reads the chart rather than restating the list, because a copy would drift too.
+func TestProductionAllowlistIsFullyPriced(t *testing.T) {
+	const chart = "../../../../charts/rowboat-api/values-production.yaml"
+	raw, err := os.ReadFile(chart)
+	if err != nil {
+		t.Fatalf("read %s: %v", chart, err)
+	}
+
+	var models []string
+	for _, line := range strings.Split(string(raw), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, "LLM_ALLOWED_MODELS:") {
+			continue
+		}
+		value := strings.TrimSpace(strings.TrimPrefix(trimmed, "LLM_ALLOWED_MODELS:"))
+		value = strings.Trim(value, `"'`)
+		for _, m := range strings.Split(value, ",") {
+			if m = strings.TrimSpace(m); m != "" {
+				models = append(models, m)
+			}
+		}
+	}
+	if len(models) == 0 {
+		t.Fatalf("no LLM_ALLOWED_MODELS found in %s; the key moved and this test is now vacuous", chart)
+	}
+
+	table := pricing.DefaultTable()
+	for _, model := range models {
+		if _, ok := table.Models[model]; !ok {
+			t.Errorf("%q is allowed in production but absent from the pricing table, "+
+				"so it bills at the DefaultModel fallback rate", model)
+		}
 	}
 }

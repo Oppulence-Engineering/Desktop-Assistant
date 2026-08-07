@@ -63,7 +63,12 @@ config:
   INFISICAL_ENABLED: "false"
   # Signed-in desktop inference/transcription. OpenAI is the fleet default;
   # OpenRouter remains available for explicitly selected Anthropic models.
-  LLM_ALLOWED_MODELS: openai/gpt-4.1-mini,openai/gpt-4.1,anthropic/claude-haiku-4-5,anthropic/claude-sonnet-4-5
+  #
+  # text-embedding-3-small backs the desktop's semantic memory index. It was
+  # missing here while the desktop shipped the feature, so every index pass got
+  # a 400 model_not_allowed. Every id on this list needs a matching entry in
+  # pricing.DefaultTable() — anything unpriced bills at the fallback rate.
+  LLM_ALLOWED_MODELS: openai/gpt-4.1-mini,openai/gpt-4.1,anthropic/claude-haiku-4-5,anthropic/claude-sonnet-4-5,openai/text-embedding-3-small
   TRANSCRIPTION_VOICE_DEFAULT: solomon
   TRANSCRIPTION_MEETING_DEFAULT: solomon
   CLOUD_RUNTIME_MODEL: openai/gpt-4.1-mini

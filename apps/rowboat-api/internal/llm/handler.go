@@ -26,6 +26,22 @@ import (
 
 const maxRequestBody = 24 << 20 // 24 MiB (large contexts + tool defs)
 
+// defaultMaxOutputTokens caps a completion request that arrives without one.
+//
+// OpenRouter sizes its credit check on the *requested* max_tokens, not on what
+// the model ends up emitting. A request with no cap is therefore priced against
+// the model's entire output window — 64,000 tokens on claude-haiku-4-5 — and is
+// refused with 402 unless the account balance covers all of it. The desktop's
+// streamText calls set no maxOutputTokens, so on 2026-08-07 a modest balance
+// failed every single background run ("you requested up to 64000 tokens, but
+// can only afford 6063") while the same request with a cap succeeded.
+//
+// 16k is far above anything the desktop's agents produce — labeling, graph
+// sync and note tagging emit hundreds of tokens, and no chat answer runs to
+// 12,000 words — so this bounds the reservation without truncating real work.
+// Operators can raise it with LLM_DEFAULT_MAX_OUTPUT_TOKENS.
+const defaultMaxOutputTokens = 16384
+
 // Handler serves the /v1/llm/* gateway.
 type Handler struct {
 	prices  *pricing.Table
@@ -40,16 +56,18 @@ type Handler struct {
 	maxPromptBytes    int
 	maxToolBytes      int
 	maxMessages       int
+	defaultMaxOutput  int
 	spendLimits       quota.SpendLimits
 }
 
 // Policy configures expensive-flow protections for LLM requests.
 type Policy struct {
-	AllowedModels       []string
-	MaxPromptBytes      int
-	MaxToolPayloadBytes int
-	MaxMessages         int
-	SpendLimits         quota.SpendLimits
+	AllowedModels          []string
+	MaxPromptBytes         int
+	MaxToolPayloadBytes    int
+	MaxMessages            int
+	DefaultMaxOutputTokens int
+	SpendLimits            quota.SpendLimits
 }
 
 // New builds the LLM gateway handler.
@@ -71,6 +89,7 @@ func New(prices *pricing.Table, gate *quota.Gate, sec *secrets.Store, client *en
 		maxPromptBytes:    2 << 20,
 		maxToolBytes:      1 << 20,
 		maxMessages:       128,
+		defaultMaxOutput:  defaultMaxOutputTokens,
 	}
 }
 
@@ -115,6 +134,9 @@ func (h *Handler) SetPolicy(policy Policy) {
 	}
 	if policy.MaxMessages > 0 {
 		h.maxMessages = policy.MaxMessages
+	}
+	if policy.DefaultMaxOutputTokens > 0 {
+		h.defaultMaxOutput = policy.DefaultMaxOutputTokens
 	}
 	h.spendLimits = policy.SpendLimits
 }
@@ -250,6 +272,17 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 	if streaming {
 		body["stream_options"] = map[string]any{"include_usage": true}
 	}
+	// Bound the completion the vendor has to price. See defaultMaxOutputTokens:
+	// an uncapped request is charged against the model's whole output window at
+	// reservation time, which turns a healthy balance into a 402 on every call.
+	//
+	// Applied to the outbound body only — deliberately after the estimate above,
+	// which keeps its own reservation math unchanged. Feeding 16k output into
+	// LLMEstimate would multiply every hold by three orders of magnitude and
+	// start refusing calls that settle for a handful of credits.
+	if isCompletionPath(path) && requestedMaxOutput(body) == 0 {
+		body["max_tokens"] = h.defaultMaxOutput
+	}
 	outBody, _ := json.Marshal(body)
 
 	upReq, err := http.NewRequestWithContext(r.Context(), http.MethodPost, up.baseURL+path, bytes.NewReader(outBody))
@@ -295,6 +328,21 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 				w.Header().Set("Retry-After", retryAfter)
 			}
 			httpx.Error(w, http.StatusTooManyRequests, "upstream provider rate limited the request", "upstream_rate_limited")
+			return
+		}
+		// 402 from the vendor means *our* provider account is out of credits —
+		// an operator problem, not a customer one, and not something the caller
+		// can fix or usefully retry within a request. Folding it into the generic
+		// upstream_error made an unfunded OpenRouter balance indistinguishable
+		// from a provider outage: clients saw "Bad Gateway", retried three times
+		// each, and nothing named the cause. Give it a code that can be alerted
+		// on, and log at error level because someone has to go top it up.
+		if resp.StatusCode == http.StatusPaymentRequired {
+			h.log.Error("llm upstream out of credits",
+				zap.String("provider", up.provider),
+				zap.String("model", up.model))
+			w.Header().Set("Retry-After", "60")
+			httpx.Error(w, http.StatusServiceUnavailable, "upstream provider account is out of credits", "upstream_credits_exhausted")
 			return
 		}
 		httpx.Error(w, http.StatusBadGateway, "upstream provider rejected the request", "upstream_error")
