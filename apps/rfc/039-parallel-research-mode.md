@@ -487,3 +487,213 @@ against a real key on a throwaway workspace: enrich one person, click the
 citation, confirm the page actually supports the claim. A citation that does not
 support its field is the failure mode that matters, and no unit test will catch
 it.
+
+## Follow-up: what a second look found
+
+Two research passes after the build — one on the vendor API against its live
+docs, one on what any of this does for the person using the product. Every
+code-side claim below was verified against the tree; vendor claims are sourced
+to `docs.parallel.ai` as of 2026-08-07 and dated, because that surface moves.
+
+### Three things in this document are wrong
+
+1. **"Parallel documents no batch limit and 429s exist"** — it documents both.
+   1,000 runs per `POST /v1/tasks/groups/{id}/runs`, and 2,000 Tasks/min with
+   GETs excluded from the count.
+
+2. **Departure 1 rests on a constraint that does not exist.** The build chose a
+   scheduled Task over a vendor `Monitor` because a Monitor "needs an inbound
+   webhook, its signature verification and a replay story." It does not:
+   `GET /v1/monitors/{id}/events` is a cursor-paginated poll whose `event_id` is
+   documented as safe for client-side dedup across retries. `ResearchTriggerRunner`
+   could poll it with no new infrastructure.
+
+   The cost of that mistaken premise is larger than the endpoint. A **snapshot
+   monitor** binds to a completed run's `task_run_id`, inherits its processor and
+   output schema, and returns `changed_output` — *only the fields that moved,
+   each with its own basis* — plus `previous_output`. That is
+   `supersedes_attribute_id` semantics arriving pre-computed, against today's
+   approach of re-running the whole spec and relying on `dedupe_key` to make it a
+   no-op. It is also $3/1k against $10/1k.
+
+3. **The cost table reads `~2 fields` / `~5 fields` as a billing unit.** Billing
+   is per run, not per field — the field counts are a capacity guide. `triggerSchema()`
+   asks two questions at `lite` and could ask four for no additional cost.
+
+Also, for whoever picks up surface 9: swapping `websearch.go` to Parallel Search
+is not a signature-compatible change. `V1SearchRequest` has no `query` field; it
+takes `search_queries[]` (3–6 words each) plus an `objective`.
+
+### The defect class this feature keeps reproducing
+
+The review that preceded this RFC found a privacy flag nothing wrote, seven IPC
+handlers nothing called, and a delete route nothing mounted. The pattern
+survived into the build:
+
+- **`researchSweepErrorText()`** — its own comment calls it "the one sentence a
+  user reads." It is written to `LastError` and no research DTO carries it;
+  `GET /v1/research/status` does not return it. Nobody reads it.
+- **`resultResponse`** decodes `run_id`, `status`, `content`, `basis` and stops.
+  `run.warnings` is dropped — including the documented warning that fires when an
+  output schema contains `citations`/`confidence`/`reasoning`/`source`, which is
+  precisely the drift a contributor adds while chasing more provenance. So the one
+  signal that would catch a bad spec is discarded. `error.ref_id` goes with it,
+  and it is the only thing that makes a vendor bug reportable.
+- **`privacyRoute: "cloud"`** exists in the `RelationshipLiveCue` enum and
+  nothing writes it.
+
+A grep for enum values and error strings with no writer or no reader belongs in
+this feature's review checklist, permanently.
+
+### Fix before anything else ships
+
+Research reserves against the same `DAILY_CREDIT_LIMIT` / `MONTHLY_CREDIT_LIMIT`
+as all other metered traffic. A heavy day of interactive LLM use can therefore
+starve the nightly sweep, and "up to 250 monitored accounts" quietly becomes
+zero — with the explanation written to a column nobody surfaces.
+
+This product is sold on *you will not miss anything*. **A watchdog that stops
+watching without saying so is worse than no watchdog**, because the user has
+stopped checking manually on the strength of the promise. Research needs its own
+reservation ceiling, and the sweep's last error needs to reach a human.
+
+### A promise on the pricing page with nothing behind it
+
+`marketing-data.ts:1430` sells, on the **free** tier: *"Job-change alerts on your
+ten closest contacts."* There is no code that selects a top-N contact set and no
+code that checks for a job change. This document proposed that hook and the
+marketing shipped ahead of it.
+
+It is also the cheapest thing here — ten people at `lite`, monthly, is about
+**$0.05/user/month**. Build it or remove the line; a false claim on a pricing
+page is a different category of problem from an unbuilt feature.
+
+### Five surfaces worth more than the ones ranked above
+
+Ordered by value per unit of work. All five reuse task specs that already exist;
+together they add **under $0.50/user/month** to the ~$11 already budgeted.
+
+**1. Put the research into the draft, not just the queue.**
+`research_triggers.go` already writes a `milestone` assertion with a citation and
+a 30-day `valid_to`, and `triggerExplanation()` renders it into the attention
+item — and nowhere else. Meanwhile the message the user actually sends comes from
+five hardcoded `fmt.Sprintf` templates in `scan.go:556-647` with no LLM and no
+research in the path. The last one reads *"it's been a while since \"%s\". Is this
+still something worth exploring?"* — a sentence that publicly admits you forgot
+someone, which is why those drafts sit unapproved.
+
+The queue knows Acme raised on Tuesday. The email does not. Joining the live
+`milestone` assertion to `RevenueAction.proposed_message` is the whole change,
+and it costs **zero additional calls**.
+
+This is the strongest item in this document. It is also the one place where
+evidence-shaped research earns its premium over a model with a search tool: this
+text gets *sent*, over the user's name, to a customer. A model re-searching at
+draft time can hallucinate a funding round into a real email. An assertion that
+passed `usableCitations()` and carries a `valid_to` can be clicked before
+approval. A wrong fact in a dashboard is embarrassing; a wrong fact in a sent
+email loses the account.
+
+**2. One line before the call, or nothing.** `home-view.tsx` renders an Up-next
+hero with title, time, location, "Take notes", "Join" — and nothing about who you
+are meeting or what happened to them. One `lite` Task at **T-2h** (not T-90s: a
+run takes tens of seconds and by then you are in the room), anchored on the
+external attendee's domain, asking for anything in the last 14 days a person
+walking into this meeting should know — layoffs, acquisition, outage, funding,
+leadership change — and answering exactly `none` otherwise. Lands as a
+`RelationshipLiveCue` with `privacyRoute: "cloud"`, the enum value nothing
+currently writes. **~$0.10/month.** The honest answer is `none` nine times in
+ten, and cheap silence is the feature.
+
+**3. Close the loop on what *they* promised, then say nothing.** The
+`overdue_commitment` branch does not read `Commitment.direction`, so it nags
+identically whether you owe them a deck or they owe you a signed contract. For
+`promised_by_them` commitments naming a publicly checkable event, a `lite` Task
+resolves it: if it happened, write a `fulfilled` `CommitmentEvent` at
+`source_fact` and **the item disappears** — the user never learns the feature
+exists. If it did not and the reason is public, the nag becomes context. If
+unknowable, stay silent. **Resolve only, never create**: a false "fulfilled" is
+the worst failure mode on this list and needs the `high`-or-discard rule
+`research.go` already enforces. **~$0.15/month.** The only proposal whose success
+metric is a *shorter* list.
+
+**4. Stop nagging people who were never deals.** Every one of `lifecycle`'s
+values is a sales stage and the default is `prospect`, so a former manager you
+would like to stay close to gets *"Is this still something worth exploring?"*
+every 30 days. That is not a missing feature; it is the product being socially
+wrong on a schedule, and it teaches the user the queue is stupid. Add a `network`
+lifecycle with cooldown `0` — never surface on elapsed time alone — and let the
+only trigger be external and human: a promotion, a move, a public announcement.
+Monthly `lite`, **~$0.05/month**. This is also the missing implementation behind
+the pricing-page promise above.
+
+**5. Learn your champion left before the bounce.** `employment_status` is written
+only by the `mail_delivery_report` extractor, so the product learns of a
+departure *only if you email someone after they left* — the email you most wish
+you had not sent. Reuse `enrichPerson` verbatim on a deliberately narrow trigger:
+a `champion`/`decision_maker`/`executive_sponsor` on an `active_customer` or
+`renewal` relationship who has gone quiet past cooldown. An `org_domain` that
+comes back different at `high` confidence is a departure with a citation, ahead
+of the bounce. **~$0.10/month.**
+
+### Where the creepy line is
+
+**Research what a company published, or what a person published about
+themselves. Never what a third party observed about them.**
+
+"Acme announced a Series B" is on the right side. `location` — the shipped
+schema's *"City and country the person currently works from"* — is on the wrong
+side for anyone who is not an active commercial counterparty.
+
+The test: **would the user be comfortable if the counterparty saw the brief?** A
+funding announcement passes. A dossier on where someone lives and how senior they
+are does not.
+
+Consent has the right shape — `cloud_research_consent` on the workspace, checked
+last, grantable by nobody but the user — but surface 4 above researches people
+who are *not* commercial counterparties. A mentor is a materially different
+bargain from an account you are selling to, and it needs its own opt-in rather
+than riding the existing one.
+
+### Rejected, with reasons
+
+- **Verifying `promised_by_me` commitments.** No web page knows whether you sent
+  the deck. The guilt case is the more painful one and research cannot touch it.
+- **An account dossier tab** (surface 4 in the ranking above). Produces a page the
+  user must remember to visit. One line in a card they already open beats it.
+- **"Enrich everything" at signup.** $3 for 300 people, returning `seniority` and
+  `location` on people the user already knows — the demo that sells the tier and
+  the feature nobody opens twice. It is also the worst consent surface in the
+  product: every counterparty you have ever emailed, shipped to a vendor in one
+  click.
+- **Mid-meeting research cues.** A `lite` run takes tens of seconds, the
+  conversation has moved on, and a card appearing while someone is talking
+  competes with the human for attention. T-2h or not at all.
+- **FindAll "who else should I know here".** Naming three strangers creates three
+  new obligations for someone already drowning. Coverage disguised as help.
+- **Inbound triage on first contact** (surface 8 above). Someone emails once and
+  their name goes to a vendor. `sender-profiles.ts` already answers the question
+  that matters — machine, newsletter, or cold pitch — entirely on device.
+
+### Questions only a real API key answers
+
+- Is `confidence` non-null on `base`? Both it and `excerpts` are documented as
+  "only certain processors provide". If `base` returns null, `researchConfidence`
+  writes **every** research row at 0.35 via its silent `default` arm.
+- Does a snapshot monitor diff at field granularity on a flat object, and is an
+  unchanged execution distinguishable from a failed one?
+- Is a no-change monitor execution billed? This decides whether "up to 250
+  monitored accounts" costs $22.50/month or nearly nothing.
+- Does an identical Group POST bill twice? No idempotency key exists anywhere in
+  the API — `metadata` echoed on runs and webhooks is the available handle, and
+  reconciling against `GET /v1/tasks/groups/{id}/runs` before resubmitting is the
+  available fix.
+- Default non-ZDR retention. The docs commit to US datacenters, TLS 1.2+ and no
+  training on customer data, but never state a window. That is open question 3,
+  and the answer is in the DPA rather than the docs.
+
+One free improvement while those are open: `source_policy.include_domains` (≤200)
+makes the verified company domain a **constraint on retrieval** rather than
+something the model self-attests to afterwards through `match_confidence`. The
+first-order failure mode this document names — attaching facts to the wrong
+person — is better answered before the search than after it.
