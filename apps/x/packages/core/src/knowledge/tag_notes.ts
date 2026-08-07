@@ -266,8 +266,13 @@ export async function init() {
     console.log('[NoteTagging] Starting Note Tagging Service...');
     console.log(`[NoteTagging] Will check for untagged notes every ${SYNC_INTERVAL_MS / 1000} seconds`);
 
-    // Initial run
-    await processUntaggedNotes();
+    // Initial run, guarded like every later tick — a bare first run that threw
+    // killed the service until app restart (init() is a floating promise).
+    try {
+        await processUntaggedNotes();
+    } catch (error) {
+        console.error('[NoteTagging] Initial run failed:', error);
+    }
 
     // Periodic polling
     while (true) {

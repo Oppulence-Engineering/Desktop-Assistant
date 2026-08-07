@@ -315,8 +315,17 @@ export async function init() {
     console.log('[EmailLabeling] Starting Email Labeling Service...');
     console.log(`[EmailLabeling] Will check for unlabeled emails every ${SYNC_INTERVAL_MS / 1000} seconds`);
 
-    // Initial run
-    await processUnlabeledEmails();
+    // Initial run. Guarded like every later tick: this line used to be bare,
+    // so a first run that threw rejected init() before the loop ever started —
+    // and init() is called as a floating promise from startBackgroundServices,
+    // so the service was simply dead until the next app launch. During the
+    // models.json incident every run threw, meaning any app started in that
+    // window lost email labeling entirely.
+    try {
+        await processUnlabeledEmails();
+    } catch (error) {
+        console.error('[EmailLabeling] Initial run failed:', error);
+    }
 
     // Periodic polling
     while (true) {

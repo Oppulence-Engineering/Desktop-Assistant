@@ -119,7 +119,13 @@ export async function processScheduledTasks(): Promise<void> {
 export async function init(): Promise<void> {
   log.log(`starting, polling every ${POLL_INTERVAL_MS / 1000}s`);
 
-  await processScheduledTasks();
+  // Guarded like every later tick — a bare first run that threw killed the
+  // service until app restart (init() is a floating promise).
+  try {
+    await processScheduledTasks();
+  } catch (err) {
+    log.log(`initial run failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
 
   while (true) {
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));

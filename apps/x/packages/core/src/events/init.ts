@@ -17,9 +17,14 @@ const POLL_INTERVAL_MS = 5_000; // 5 seconds — events should feel responsive
  */
 export async function init(): Promise<void> {
     log.log(`starting, polling every ${POLL_INTERVAL_MS / 1000}s`);
-    ensureEventDirs();
-
-    await processPendingEvents();
+    // Both guarded like every later tick — a bare first run that threw killed
+    // the processor until app restart (init() is a floating promise).
+    try {
+        ensureEventDirs();
+        await processPendingEvents();
+    } catch (err) {
+        log.log(`initial run failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     while (true) {
         await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));

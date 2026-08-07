@@ -129,8 +129,15 @@ export async function init(): Promise<void> {
 
     logStatus();
 
-    // Initial run
-    await checkAndRunAgents();
+    // Initial run, guarded like every later tick — a bare first run that threw
+    // would kill the service until app restart. (This runner is currently not
+    // wired into startBackgroundServices; fixed anyway so whoever wires it does
+    // not inherit the bug.)
+    try {
+        await checkAndRunAgents();
+    } catch (error) {
+        console.error('[PreBuilt] Initial run failed:', error);
+    }
 
     // Set up periodic checking
     while (true) {

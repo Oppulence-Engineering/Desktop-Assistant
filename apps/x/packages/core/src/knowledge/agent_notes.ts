@@ -404,8 +404,13 @@ export async function init() {
   console.log("[AgentNotes] Starting Agent Notes Service...");
   console.log(`[AgentNotes] Will process every ${SYNC_INTERVAL_MS / 1000} seconds`);
 
-  // Initial run
-  await processAgentNotes();
+  // Initial run, guarded like every later tick — a bare first run that threw
+  // killed the service until app restart (init() is a floating promise).
+  try {
+    await processAgentNotes();
+  } catch (error) {
+    console.error("[AgentNotes] Initial run failed:", error);
+  }
 
   // Periodic polling
   while (true) {

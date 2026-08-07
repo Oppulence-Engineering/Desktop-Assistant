@@ -781,8 +781,13 @@ export async function init() {
     console.log(`[GraphBuilder] Monitoring folders: ${SOURCE_FOLDERS.join(', ')}, knowledge/Voice Memos`);
     console.log(`[GraphBuilder] Will check for new content every ${SYNC_INTERVAL_MS / 1000} seconds`);
 
-    // Initial run
-    await processAllSources();
+    // Initial run, guarded like every later tick — a bare first run that threw
+    // killed the service until app restart (init() is a floating promise).
+    try {
+        await processAllSources();
+    } catch (error) {
+        console.error('[GraphBuilder] Initial run failed:', error);
+    }
 
     // Set up periodic processing
     while (true) {
