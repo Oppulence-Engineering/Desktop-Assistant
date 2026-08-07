@@ -1,5 +1,5 @@
 import { PrefixLogger } from '@x/shared';
-import { processPendingEvents } from './processor.js';
+import { processPendingEvents, pruneDoneEvents } from './processor.js';
 import { ensureEventDirs } from './producer.js';
 
 export { registerConsumer } from './processor.js';
@@ -21,6 +21,10 @@ export async function init(): Promise<void> {
     // the processor until app restart (init() is a floating promise).
     try {
         ensureEventDirs();
+        // Startup is the retention moment, matching pruneRunLogs — the only
+        // other time the directory shrinks is never.
+        const pruned = pruneDoneEvents();
+        if (pruned > 0) log.log(`pruned ${pruned} processed events older than 7 days`);
         await processPendingEvents();
     } catch (err) {
         log.log(`initial run failed: ${err instanceof Error ? err.message : String(err)}`);
