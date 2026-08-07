@@ -25,6 +25,22 @@ const LABELING_AGENT = 'labeling_agent';
 const GMAIL_SYNC_DIR = path.join(WorkDir, 'gmail_sync');
 const MAX_CONTENT_LENGTH = 8000;
 
+/** Whether a file begins with a YAML frontmatter fence, read without slurping it. */
+export function startsWithFrontmatter(filePath: string): boolean {
+    let fd: number | undefined;
+    try {
+        fd = fs.openSync(filePath, 'r');
+        const buf = Buffer.alloc(3);
+        const read = fs.readSync(fd, buf, 0, 3, 0);
+        return read === 3 && buf.toString('utf-8') === '---';
+    } catch {
+        // Unreadable — treat as "skip", matching the previous behaviour.
+        return true;
+    } finally {
+        if (fd !== undefined) fs.closeSync(fd);
+    }
+}
+
 /**
  * Find email files that haven't been labeled yet
  */
@@ -56,13 +72,14 @@ function getUnlabeledEmails(state: LabelingState): string[] {
                     continue;
                 }
 
-                // Skip if file already has frontmatter
-                try {
-                    const content = fs.readFileSync(fullPath, 'utf-8');
-                    if (content.startsWith('---')) {
-                        continue;
-                    }
-                } catch {
+                // Skip if file already has frontmatter.
+                //
+                // Reads the first bytes, not the file. This runs over every
+                // unlabeled email on a 15-second poll, and reading each one in
+                // full to look at three characters cost 41MB per pass on a real
+                // workspace — about 10GB an hour of disk traffic to answer a
+                // question the first line already answers.
+                if (startsWithFrontmatter(fullPath)) {
                     continue;
                 }
 

@@ -39,12 +39,12 @@ function ensureAgentNotesDir(): void {
 
 // --- Email scanning ---
 
-function findUserSentEmails(state: AgentNotesState, userEmail: string, limit: number): string[] {
+export function findUserSentEmails(state: AgentNotesState, userEmail: string, limit: number): string[] {
   if (!fs.existsSync(GMAIL_SYNC_DIR)) {
     return [];
   }
 
-  const results: { path: string; mtime: number }[] = [];
+  const candidates: { path: string; mtime: number }[] = [];
   const userEmailLower = userEmail.toLowerCase();
 
   function traverse(dir: string) {
@@ -61,24 +61,36 @@ function findUserSentEmails(state: AgentNotesState, userEmail: string, limit: nu
         if (state.processedEmails[fullPath]) {
           continue;
         }
-
-        try {
-          const content = fs.readFileSync(fullPath, "utf-8");
-          const fromLines = content.match(/^### From:.*$/gm);
-          if (fromLines?.some((line) => line.toLowerCase().includes(userEmailLower))) {
-            results.push({ path: fullPath, mtime: stat.mtimeMs });
-          }
-        } catch {
-          continue;
-        }
+        candidates.push({ path: fullPath, mtime: stat.mtimeMs });
       }
     }
   }
 
   traverse(GMAIL_SYNC_DIR);
 
-  results.sort((a, b) => b.mtime - a.mtime);
-  return results.slice(0, limit).map((r) => r.path);
+  // Sort by mtime first, then read only as far as needed.
+  //
+  // This used to read every unprocessed email in full, on a 10-second poll,
+  // to find the newest `limit` the user had sent — ~1,400 files and 40MB per
+  // tick on a real workspace, all to keep five of them. The mtime ordering
+  // does not depend on the contents, so the newest matches are the same either
+  // way; the difference is how much gets read to find them.
+  candidates.sort((a, b) => b.mtime - a.mtime);
+
+  const results: string[] = [];
+  for (const candidate of candidates) {
+    if (results.length >= limit) break;
+    try {
+      const content = fs.readFileSync(candidate.path, "utf-8");
+      const fromLines = content.match(/^### From:.*$/gm);
+      if (fromLines?.some((line) => line.toLowerCase().includes(userEmailLower))) {
+        results.push(candidate.path);
+      }
+    } catch {
+      continue;
+    }
+  }
+  return results;
 }
 
 function extractUserPartsFromEmail(content: string, userEmail: string): string | null {
