@@ -1433,15 +1433,30 @@ export const pricingPlans = [
     ctaHref: "/book-a-demo",
   },
   {
-    name: "Chase",
-    price: "$99",
+    name: "Starter",
+    price: "$49",
     period: "/month",
-    description: "The chase, done for you. Drafted nudges in your voice, approved with one click.",
+    description:
+      "The whole chase workflow at a smaller volume. For one person with one book of business.",
     features: [
       "Everything in Watch",
       "Drafted chases in your voice",
       "Approve, edit, snooze, or reject",
       "Verified, suppression-checked sends",
+      "Lower monthly usage allowance than Chase",
+    ],
+    ctaLabel: "Start chasing",
+    ctaHref: "/sign-up",
+  },
+  {
+    name: "Chase",
+    price: "$99",
+    period: "/month",
+    description: "The chase, done for you. Drafted nudges in your voice, approved with one click.",
+    features: [
+      "Everything in Starter",
+      "Room for a full book of business",
+      "Premium connectors",
       "Monthly recovery receipt",
     ],
     recommended: true,

@@ -12,7 +12,15 @@ import (
 )
 
 // planRank orders plans for entitlement comparison.
-var planRank = map[string]int{"free": 0, "starter": 1, "pro": 2}
+//
+// Every paid plan must appear here. A missing key resolves to 0 — the same rank
+// as free — so an omission does not fail loudly, it silently denies the most
+// expensive customers. `intelligence` was exactly that: it ranked below
+// `starter` and told $249/mo subscribers to "upgrade to pro".
+//
+// It sits above pro because it is a superset: everything Chase does, plus cloud
+// research (RFC 039).
+var planRank = map[string]int{"free": 0, "starter": 1, "pro": 2, "intelligence": 3}
 
 type preConsentRequest struct {
 	WorkOSUserID string `json:"workos_user_id"`
