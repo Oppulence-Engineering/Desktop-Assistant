@@ -74,6 +74,8 @@ const KNOWN_DIMS: Record<string, number> = {
     // On-device (Ollama). Namespaced so the manifest records which provider
     // produced the vectors — see LOCAL_EMBED_MODEL_ID in memory/ollama.ts.
     'ollama/nomic-embed-text': 768,
+    // In-process ONNX — see memory/onnx/assets.ts.
+    'local/all-MiniLM-L6-v2': 384,
 };
 
 /**

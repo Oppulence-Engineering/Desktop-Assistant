@@ -44,7 +44,11 @@ await esbuild.build({
   platform: "node",
   target: "node20",
   outfile: "./.package/dist/main.cjs",
-  external: ["electron"], // Provided by Electron runtime
+  // "electron" is provided by the runtime. "onnxruntime-node" is a native
+  // binding (.node + a ~35MB dylib) that esbuild cannot inline at all — it is
+  // staged into .package/node_modules by forge.config.cjs, where plain Node
+  // resolution from .package/dist/main.cjs finds it.
+  external: ["electron", "onnxruntime-node"],
   // Use CommonJS format - many dependencies use require() which doesn't work
   // well with esbuild's ESM shim. CJS handles dynamic requires natively.
   format: "cjs",

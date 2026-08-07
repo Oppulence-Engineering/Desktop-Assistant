@@ -20,6 +20,13 @@ import {
   ollamaHost,
   ollamaModelName,
 } from "./ollama.js";
+import { MINILM, assetsInstalled, installAssets } from "./onnx/assets.js";
+import { embedLocally, ensureEmbedder } from "./onnx/embedder.js";
+
+/** True when `model` is served in-process by ONNX Runtime rather than over HTTP. */
+export function isOnDeviceModel(model: string): boolean {
+  return model.startsWith("local/");
+}
 
 /** The result of an embed call: one vector per input text plus the billed token count. */
 export const EmbedResult = z.object({
@@ -53,6 +60,11 @@ export type EmbedTarget = z.infer<typeof EmbedTarget>;
  * @returns The routing decision + provider config + model (+ dimensions).
  */
 export async function resolveEmbedTarget(model: string, dimensions?: number): Promise<EmbedTarget> {
+  // In-process: no provider, no HTTP. `ollama` is a placeholder flavor that
+  // createProvider never sees, because embedBatch dispatches on the id first.
+  if (isOnDeviceModel(model)) {
+    return { metered: false, providerConfig: { flavor: "ollama" }, model, dimensions: undefined };
+  }
   // Routing keys on the model id, not on what happens to be reachable. It has
   // to: memorySearch embeds a query with the model recorded in the manifest,
   // and vectors from two models are not comparable. If the id says Ollama, the
@@ -107,9 +119,20 @@ export async function resolveEmbedTarget(model: string, dimensions?: number): Pr
  * @returns The model identity to index with.
  */
 export async function resolveEmbedModel(configured: string): Promise<string> {
-  if (isLocalEmbedModel(configured)) return configured;
+  if (isOnDeviceModel(configured) || isLocalEmbedModel(configured)) return configured;
   if (configured !== MemoryConfig.shape.model.parse(undefined)) return configured;
   if (loadMemoryConfig().localEmbeddings === "off") return configured;
+
+  // In-process ONNX is preferred over Ollama: no daemon, no port, ~35MB of
+  // runtime instead of 145MB (and it is the only local backend that works the
+  // same on Windows and Linux, where Ollama ships 1.4GB of GPU runners).
+  if (await assetsInstalled(MINILM)) {
+    if (await ensureEmbedder(MINILM)) return MINILM.id;
+  } else {
+    // Fire-and-forget: a 23MB download must not hold up an index pass.
+    void installAssets(MINILM);
+  }
+
   return (await localEmbedModelReady()) ? LOCAL_EMBED_MODEL_ID : configured;
 }
 
@@ -133,6 +156,20 @@ export async function embedBatch(target: EmbedTarget, texts: string[]): Promise<
   // after a timeout where the server actually succeeded does not double-charge
   // the metered endpoint.
   const idempotencyKey = randomUUID();
+  // On-device first: it cannot 429, 402 or time out, so the retry/idempotency
+  // machinery below has nothing to protect against.
+  //
+  // Loads on demand rather than assuming resolveEmbedModel ran. memorySearch
+  // reaches here via resolveEmbedTarget(manifest.model) without going through
+  // model selection at all, so after a restart the session is cold — and an
+  // unloaded embedder would have made every search fall back to lexical for the
+  // rest of the process's life.
+  if (isOnDeviceModel(target.model)) {
+    if (!(await ensureEmbedder())) {
+      throw new Error("on-device embedder unavailable");
+    }
+    return embedLocally(texts);
+  }
   const result = await withRetry(() =>
     target.metered
       ? meteredEmbed(target.model, texts, idempotencyKey, target.dimensions)

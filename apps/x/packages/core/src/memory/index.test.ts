@@ -20,6 +20,7 @@ vi.mock('./embed.js', () => ({
     // The façade resolves the model before indexing under it; the stub keeps the
     // configured id so these tests stay about the index, not provider selection.
     resolveEmbedModel: async (model: string) => model,
+    isOnDeviceModel: (model: string) => model.startsWith('local/'),
     embedBatch: async (_t: unknown, texts: string[]) => ({
         vectors: texts.map((t) => [t.length, t.charCodeAt(0) || 0, 1]),
         tokens: texts.length,

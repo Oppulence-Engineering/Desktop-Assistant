@@ -8,7 +8,7 @@ import * as files from '../filesystem/files.js';
 import { capture } from '../analytics/posthog.js';
 import { WorkDir } from '../config/config.js';
 import { indexDir, loadMemoryConfig } from './config.js';
-import { embedBatch, resolveEmbedModel, resolveEmbedTarget } from './embed.js';
+import { embedBatch, isOnDeviceModel, resolveEmbedModel, resolveEmbedTarget } from './embed.js';
 import { isLocalEmbedModel } from './ollama.js';
 import { expandQuery } from './expand.js';
 import { Indexer, type IndexStats } from './indexer.js';
@@ -232,7 +232,10 @@ async function runMemoryIndexOnce(): Promise<IndexStats | { disabled: true }> {
         // otherwise fall back to the configured/inferred dims. Not applicable
         // on-device — Ollama returns the model's native size, so let the known
         // dims table (or a probe) answer instead of a hint it will not honour.
-        dimsHint: isLocalEmbedModel(model) ? cfg.dims : cfg.embedDimensions || cfg.dims,
+        dimsHint:
+            isLocalEmbedModel(model) || isOnDeviceModel(model)
+                ? cfg.dims
+                : cfg.embedDimensions || cfg.dims,
         batchSize: cfg.batchSize,
         maxMonthlyEmbedTokens: cfg.maxMonthlyEmbedTokens,
         embed: (texts) => embedBatch(target, texts),
