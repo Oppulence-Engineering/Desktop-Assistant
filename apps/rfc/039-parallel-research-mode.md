@@ -437,6 +437,49 @@ monitored accounts" is a promise made in product terms against a budget shared
 with something else. Fixing it properly means either a research-specific budget
 or a user-facing degradation notice; both are larger than this change.
 
+### Round three: seven passes, one defect
+
+The find rate finally decayed. Six of seven lenses came back clean, which is
+reported as such rather than padded.
+
+**The defect.** `usableCitations` accepted a URL carrying userinfo. Two harms,
+the second worse than the first: `https://user:secret@acme.example/x` persists a
+credential and hands it back to a user to click, and
+`https://acme.example@evil.example/x` *reads* as acme.example while resolving to
+evil.example — in a string the trigger surface prints verbatim into the sentence
+it tells the user to trust. Refused now. A citation to a public page never needs
+credentials.
+
+**Cleared, with the reasoning, so nobody re-derives it:**
+
+- *Generated surfaces.* Regenerating ent published `citations_json` to the
+  documented OpenAPI schema and `citationsJSON` plus predicate filters to the
+  admin GraphQL. Not a leak: the already-`Sensitive()` `value` column sits in the
+  same documented schema, no entoas handler is mounted (`api/openapi.json` is
+  documentation, not a served surface), and `/graphql` is behind the internal
+  secret. Critically, `cloudResearchConsent` is readable and filterable there but
+  has **no mutation input** — consent cannot be set through the graph, only
+  through the endpoint that enforces `manage_sources`.
+- *The billing key.* `personTaskSpecVersion()` is half the idempotency key for
+  every charge; if it varied by process or build, a restart would re-bill a whole
+  workspace. It is stable because `encoding/json` sorts map keys — now pinned by
+  a golden test whose failure message explains that changing it makes every
+  enriched person billable again. The trigger key rolls exactly once per UTC day,
+  including across a zone difference and a month boundary.
+- *The admission table.* Four gates × five entry points, all 16 states now
+  asserted, including which refusal wins when several are shut and the invariant
+  that nothing reaches the vendor unless every gate is open.
+- *Degenerate vendor responses.* Nil results, nil content, basis without content,
+  wrong types, a non-string match confidence, duplicate basis entries, fields the
+  task never requested, and `javascript:`/`file:`/`data:`/`ftp:` citations all
+  produce silence rather than a wrong claim.
+- *Ledger algebra.* The op budget counts what was spent, not what was reserved —
+  an over-estimating caller does not burn budget on money it never spent.
+- *Clocks.* The `time.Now()` fallbacks in the person projector are pre-existing
+  and unreachable from research, which always passes the service clock.
+- *The desktop contract.* All four research IPC channels and the client outcome
+  type match their Go DTOs field for field.
+
 ### The manual check this cannot automate
 
 The end-to-end bullet is not covered by any test and must be run by a person

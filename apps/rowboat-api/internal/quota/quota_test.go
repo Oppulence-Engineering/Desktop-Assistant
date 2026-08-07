@@ -387,3 +387,39 @@ func TestZeroOpBudgetIsInert(t *testing.T) {
 		}
 	}
 }
+
+// The op budget must count what was actually SPENT, not what was reserved.
+//
+// A charge reserves an estimate and settles the difference back. If the op
+// accounting only summed reservations, an over-estimating caller would burn its
+// budget on money it never spent — and the ring fence would be tighter than the
+// number the plan advertises.
+func TestOpBudgetCountsActualNotReserved(t *testing.T) {
+	client, ctx := fundedSetup(t)
+	g := quota.New(client, zap.NewNop())
+	limits := quota.SpendLimits{OpDaily: 200, OpMonthly: 200}
+
+	// Reserve 250 (over the cap is fine — the cap is checked against consumption,
+	// and this reservation is refunded down to 50).
+	over, err := g.Reserve(ctx, "parallel_task", 150, uuid.New(), limits)
+	if err != nil {
+		t.Fatalf("reserve: %v", err)
+	}
+	if err := over.Settle(ctx, 50); err != nil {
+		t.Fatalf("settle: %v", err)
+	}
+
+	// 50 spent against a 200 budget leaves room for another 150.
+	next, err := g.Reserve(ctx, "parallel_task", 150, uuid.New(), limits)
+	if err != nil {
+		t.Fatalf("op budget counted the reservation rather than the settlement: %v", err)
+	}
+	if err := next.Settle(ctx, 150); err != nil {
+		t.Fatalf("settle: %v", err)
+	}
+
+	// Now 200 of 200 is spent; the next call is refused.
+	if _, err := g.Reserve(ctx, "parallel_task", 10, uuid.New(), limits); !errors.Is(err, quota.ErrDailyLimitExceeded) {
+		t.Fatalf("want ErrDailyLimitExceeded once the budget is spent, got %v", err)
+	}
+}

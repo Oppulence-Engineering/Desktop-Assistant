@@ -600,8 +600,20 @@ func researchConfidence(level string) float64 {
 	}
 }
 
-// usableCitations keeps only citations a user could actually click. A citation
-// that does not resolve to a web page is decoration.
+// usableCitations keeps only citations a user could actually click, safely.
+//
+// Three refusals:
+//
+//   - Anything that is not http(s). A citation is a web page; `javascript:`,
+//     `file:` and `data:` are not evidence and have no business in a link the
+//     product invites someone to open.
+//   - Anything carrying userinfo. `https://user:secret@acme.example/x` would
+//     persist a credential and hand it back to a user to click. More
+//     importantly `https://acme.example@evil.example/x` READS as acme.example
+//     and resolves to evil.example — and the trigger surface prints this URL
+//     verbatim into the sentence a user is told to trust. A real citation to a
+//     public page never needs credentials.
+//   - Anything with no host.
 func usableCitations(citations []parallel.Citation) []parallel.Citation {
 	kept := make([]parallel.Citation, 0, len(citations))
 	for _, citation := range citations {
@@ -610,6 +622,9 @@ func usableCitations(citations []parallel.Citation) []parallel.Citation {
 			continue
 		}
 		if parsed.Scheme != "http" && parsed.Scheme != "https" {
+			continue
+		}
+		if parsed.User != nil {
 			continue
 		}
 		kept = append(kept, citation)

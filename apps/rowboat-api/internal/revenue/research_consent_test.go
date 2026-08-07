@@ -2,6 +2,7 @@ package revenue
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
@@ -158,5 +159,116 @@ func TestCloudResearchRequiresIntelligencePlan(t *testing.T) {
 	grantSub(t, f, ResearchPlan, "active")
 	if err := f.svc.requireCloudResearch(f.ctx, ws); err != nil {
 		t.Fatalf("capability + plan + consent should admit: %v", err)
+	}
+}
+
+// Admission is four independent switches — vendor configured, capability, plan,
+// consent — across every research entry point. Previous rounds tested a handful
+// of cells by hand. This exhausts the table, and pins WHICH refusal wins when
+// several are shut, because the order is a product decision: the fleet-wide kill
+// switch must beat a billing problem, and neither may be reported as a consent
+// problem the user is then asked to solve.
+func TestResearchAdmissionTruthTable(t *testing.T) {
+	type gates struct{ configured, capability, plan, consent bool }
+
+	// want is the sentinel for each of the 16 states.
+	want := func(g gates) error {
+		switch {
+		case !g.capability:
+			return ErrCapabilityDisabled
+		case !g.plan:
+			return ErrResearchPlanRequired
+		case !g.consent:
+			return ErrResearchConsentRequired
+		case !g.configured:
+			return ErrResearchUnavailable
+		default:
+			return nil
+		}
+	}
+
+	for i := 0; i < 16; i++ {
+		g := gates{
+			configured: i&1 != 0,
+			capability: i&2 != 0,
+			plan:       i&4 != 0,
+			consent:    i&8 != 0,
+		}
+		name := fmt.Sprintf("cfg=%v/cap=%v/plan=%v/consent=%v",
+			g.configured, g.capability, g.plan, g.consent)
+
+		t.Run(name, func(t *testing.T) {
+			vendor := &vendorStub{
+				content: map[string]any{researchMatchField: "high", "title": "VP Engineering"},
+				basis:   []map[string]any{citedBasis("title", "high")},
+			}
+			rf := newResearchFixture(t, vendor)
+
+			if !g.capability {
+				if _, err := rf.svc.SetWorkspaceFeatureControl(
+					rf.ctx, rf.user, CapabilityCloudResearch, false, "beta", "vendor_incident",
+				); err != nil {
+					t.Fatalf("kill switch: %v", err)
+				}
+			}
+			if !g.plan {
+				rf.client.Subscription.Delete().ExecX(rf.ctx)
+				grantSub(t, rf.fixture, "pro", "active")
+			}
+			if !g.consent {
+				if _, err := rf.svc.SetCloudResearchConsent(rf.ctx, rf.user, false); err != nil {
+					t.Fatalf("revoke consent: %v", err)
+				}
+			}
+			if !g.configured {
+				cfg := rf.svc.research
+				cfg.Client = nil
+				rf.svc.SetResearch(cfg)
+			}
+
+			expected := want(g)
+
+			// Every entry point must agree. A gate enforced on one and not
+			// another is how a background job reaches a vendor a foreground call
+			// would have been refused for.
+			_, enrichErr := rf.svc.EnrichPerson(rf.ctx, rf.user, rf.person.ID)
+			assertAdmission(t, "EnrichPerson", expected, enrichErr)
+
+			_, batchErr := rf.svc.EnrichPersons(rf.ctx, rf.user, []uuid.UUID{rf.person.ID})
+			assertAdmission(t, "EnrichPersons", expected, batchErr)
+
+			_, triggerErr := rf.svc.ResearchAccountTrigger(rf.ctx, rf.user, rf.account(t).ID)
+			assertAdmission(t, "ResearchAccountTrigger", expected, triggerErr)
+
+			_, sweepErr := rf.svc.SweepAccountTriggers(rf.ctx, rf.user, 5)
+			assertAdmission(t, "SweepAccountTriggers", expected, sweepErr)
+
+			// The estimate reads no vendor, so it is admitted whenever the three
+			// gates that are about permission are open.
+			_, estimateErr := rf.svc.EstimatePersonEnrichment(rf.ctx, rf.user)
+			estimateWant := expected
+			if errors.Is(estimateWant, ErrResearchUnavailable) {
+				estimateWant = nil
+			}
+			assertAdmission(t, "EstimatePersonEnrichment", estimateWant, estimateErr)
+
+			// Nothing may reach the vendor unless every gate is open.
+			if expected != nil && vendor.runs != 0 {
+				t.Fatalf("vendor was called %d times while refused with %v", vendor.runs, expected)
+			}
+		})
+	}
+}
+
+func assertAdmission(t *testing.T, entry string, want, got error) {
+	t.Helper()
+	if want == nil {
+		if got != nil {
+			t.Fatalf("%s: want admission, got %v", entry, got)
+		}
+		return
+	}
+	if !errors.Is(got, want) {
+		t.Fatalf("%s: want %v, got %v", entry, want, got)
 	}
 }

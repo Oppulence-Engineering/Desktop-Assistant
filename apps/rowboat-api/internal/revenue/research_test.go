@@ -683,3 +683,230 @@ func TestImplausiblyLongVendorValuesAreRefused(t *testing.T) {
 		t.Fatalf("rejections = %v", rejected)
 	}
 }
+
+// --- the billing key -----------------------------------------------------
+
+// The task-spec version is half the idempotency key for every research charge.
+// If it were not stable across processes and builds, two replicas would compute
+// different keys for the same person and bill twice — and a restart would
+// re-bill an entire workspace.
+//
+// It hashes a marshalled map, which is safe only because encoding/json sorts map
+// keys. This test pins the value so that property cannot regress silently, and
+// so that CHANGING the question is a deliberate act: if you edited the schema or
+// the processor on purpose, update the constant and understand that every person
+// becomes billable again.
+func TestTaskSpecVersionsArePinned(t *testing.T) {
+	const (
+		wantPerson  = "parallel/base@1bea8549f33c"
+		wantTrigger = "parallel/lite@596b6305"
+	)
+
+	if got := personTaskSpecVersion(); got != wantPerson {
+		t.Fatalf("person task-spec version changed: got %q, want %q.\n"+
+			"Every already-enriched person becomes billable again at the new version. "+
+			"If that is intended, update the constant.", got, wantPerson)
+	}
+
+	day := time.Date(2026, 8, 6, 0, 0, 0, 0, time.UTC)
+	if got := triggerTaskSpecVersion(day); got != wantTrigger+":2026-08-06" {
+		t.Fatalf("trigger task-spec version changed: got %q, want %q", got, wantTrigger+":2026-08-06")
+	}
+
+	// Stable across calls within a process, which is what the map-ordering
+	// concern is actually about.
+	for i := 0; i < 50; i++ {
+		if personTaskSpecVersion() != wantPerson {
+			t.Fatal("person task-spec version is not stable across calls")
+		}
+		if triggerTaskSpecVersion(day) != wantTrigger+":2026-08-06" {
+			t.Fatal("trigger task-spec version is not stable across calls")
+		}
+	}
+}
+
+// The trigger key rolls at UTC midnight and nowhere else. A key that rolled on
+// local time would bill an account twice on a DST boundary; one that did not
+// roll at all would never re-poll.
+func TestTriggerKeyRollsOncePerUTCDay(t *testing.T) {
+	day := time.Date(2026, 8, 6, 0, 0, 0, 0, time.UTC)
+	sameDay := []time.Time{
+		day,
+		day.Add(23*time.Hour + 59*time.Minute + 59*time.Second),
+		// Same instant expressed in another zone must produce the same key:
+		// otherwise two replicas in different zones bill the same account twice.
+		day.Add(12 * time.Hour).In(time.FixedZone("UTC+9", 9*3600)),
+	}
+	first := triggerTaskSpecVersion(sameDay[0])
+	for _, at := range sameDay[1:] {
+		if got := triggerTaskSpecVersion(at); got != first {
+			t.Fatalf("key changed within one UTC day: %q vs %q at %s", got, first, at)
+		}
+	}
+	if next := triggerTaskSpecVersion(day.Add(24 * time.Hour)); next == first {
+		t.Fatal("the key did not roll at the next UTC day; accounts would never be re-polled")
+	}
+	// A month boundary is not special.
+	monthEnd := time.Date(2026, 8, 31, 23, 0, 0, 0, time.UTC)
+	if triggerTaskSpecVersion(monthEnd) == triggerTaskSpecVersion(monthEnd.Add(2*time.Hour)) {
+		t.Fatal("the key did not roll across a month boundary")
+	}
+}
+
+// --- degenerate vendor responses ---------------------------------------------
+
+// The mapper is the trust boundary. A vendor that is broken, adversarial, or
+// merely sloppy must produce silence, never a wrong claim about a real person.
+func TestDegenerateVendorResponses(t *testing.T) {
+	now := time.Now().UTC()
+	cited := []parallel.Citation{{URL: "https://acme.example/team"}}
+
+	cases := []struct {
+		name    string
+		result  *parallel.TaskResult
+		matched bool
+		written int
+	}{
+		{
+			name:   "nil result",
+			result: nil,
+		},
+		{
+			name:   "empty everything",
+			result: &parallel.TaskResult{},
+		},
+		{
+			name: "nil content map",
+			result: &parallel.TaskResult{
+				Content: nil,
+				Basis:   []parallel.Basis{{Field: "title", Citations: cited}},
+			},
+		},
+		{
+			// A basis for a field the content never mentioned is not a fact; it
+			// is evidence for nothing.
+			name: "basis without content",
+			result: &parallel.TaskResult{
+				Content: map[string]any{researchMatchField: "high"},
+				Basis:   []parallel.Basis{{Field: "title", Confidence: "high", Citations: cited}},
+			},
+			matched: true,
+		},
+		{
+			// Non-string types must not be coerced. A title of 42 is not "42".
+			name: "wrong types",
+			result: &parallel.TaskResult{
+				Content: map[string]any{researchMatchField: "high", "title": 42, "org_name": true},
+				Basis: []parallel.Basis{
+					{Field: "title", Confidence: "high", Citations: cited},
+					{Field: "org_name", Confidence: "high", Citations: cited},
+				},
+			},
+			matched: true,
+		},
+		{
+			// The match field itself arriving as a non-string must fail closed.
+			name: "match confidence is not a string",
+			result: &parallel.TaskResult{
+				Content: map[string]any{researchMatchField: 1, "title": "VP Engineering"},
+				Basis:   []parallel.Basis{{Field: "title", Confidence: "high", Citations: cited}},
+			},
+		},
+		{
+			// Duplicate basis entries: the first wins, and nothing is written
+			// twice for one dimension.
+			name: "duplicate basis for one field",
+			result: &parallel.TaskResult{
+				Content: map[string]any{researchMatchField: "high", "title": "VP Engineering"},
+				Basis: []parallel.Basis{
+					{Field: "title", Confidence: "high", Citations: cited},
+					{Field: "title", Confidence: "low", Citations: cited},
+				},
+			},
+			matched: true,
+			written: 1,
+		},
+		{
+			// A field the task never asked for has nowhere to go.
+			name: "unrequested field",
+			result: &parallel.TaskResult{
+				Content: map[string]any{researchMatchField: "high", "salary": "200000"},
+				Basis:   []parallel.Basis{{Field: "salary", Confidence: "high", Citations: cited}},
+			},
+			matched: true,
+		},
+		{
+			// Citation schemes that are not web pages are not citations.
+			name: "non-http citation schemes",
+			result: &parallel.TaskResult{
+				Content: map[string]any{researchMatchField: "high", "title": "VP Engineering"},
+				Basis: []parallel.Basis{{Field: "title", Confidence: "high", Citations: []parallel.Citation{
+					{URL: "javascript:alert(1)"},
+					{URL: "file:///etc/passwd"},
+					{URL: "data:text/html,<script>"},
+					{URL: "ftp://acme.example/x"},
+				}}},
+			},
+			matched: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			inputs, matched, _ := personAttributesFromResult(tc.result, "v1", now)
+			if matched != tc.matched {
+				t.Fatalf("matched = %v, want %v", matched, tc.matched)
+			}
+			if len(inputs) != tc.written {
+				t.Fatalf("wrote %d attributes, want %d: %+v", len(inputs), tc.written, inputs)
+			}
+			for _, in := range inputs {
+				if strings.TrimSpace(in.CitationsJSON) == "" {
+					t.Fatalf("%s stored with no citation", in.Dimension)
+				}
+			}
+		})
+	}
+}
+
+// A citation URL carrying credentials must not be stored and handed to a user to
+// click.
+func TestCitationCredentialsAreNotStored(t *testing.T) {
+	result := &parallel.TaskResult{
+		Content: map[string]any{researchMatchField: "high", "title": "VP Engineering"},
+		Basis: []parallel.Basis{{Field: "title", Confidence: "high", Citations: []parallel.Citation{
+			{URL: "https://user:secret@acme.example/team"},
+			{URL: "https://acme.example/team"},
+		}}},
+	}
+	inputs, _, _ := personAttributesFromResult(result, "v1", time.Now().UTC())
+	if len(inputs) != 1 {
+		t.Fatalf("expected the title to survive on its clean citation: %+v", inputs)
+	}
+	if strings.Contains(inputs[0].CitationsJSON, "secret") {
+		t.Fatalf("a credential-bearing URL was stored: %s", inputs[0].CitationsJSON)
+	}
+}
+
+// The spoofing case, which is the sharper half of the credential rule: the
+// trigger surface prints a citation URL verbatim into the sentence a user is
+// told to trust, so a userinfo-bearing URL reads as one host and resolves to
+// another.
+func TestSpoofedCitationHostIsRefused(t *testing.T) {
+	result := &parallel.TaskResult{
+		Content: map[string]any{researchMatchField: "high", "title": "VP Engineering"},
+		Basis: []parallel.Basis{{Field: "title", Confidence: "high", Citations: []parallel.Citation{
+			{URL: "https://acme.example@evil.example/press"},
+		}}},
+	}
+	inputs, matched, rejected := personAttributesFromResult(result, "v1", time.Now().UTC())
+	if !matched {
+		t.Fatal("the identity match was fine; only the citation was hostile")
+	}
+	if len(inputs) != 0 {
+		t.Fatalf("a spoofed citation host was accepted: %+v", inputs)
+	}
+	if len(rejected) != 1 {
+		t.Fatalf("rejections = %v", rejected)
+	}
+}
