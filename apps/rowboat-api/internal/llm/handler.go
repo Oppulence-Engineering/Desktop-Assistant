@@ -233,7 +233,7 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 	// Reserve credits before contacting the upstream. Spend caps are enforced
 	// inside the reservation transaction.
 	inputEst := estimateInputTokens(body)
-	estimate := h.prices.LLMEstimate(model, inputEst, requestedMaxOutput(body))
+	estimate := h.prices.LLMEstimate(model, inputEst, effectiveMaxOutput(body, path, h.defaultMaxOutput))
 	requestID := httpx.IdempotencyKeyUUID(r, u.ID.String(), raw)
 	charge, err := h.gate.Reserve(r.Context(), "llm_call", estimate, requestID, h.spendLimits)
 	if err != nil {
@@ -276,10 +276,9 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 	// an uncapped request is charged against the model's whole output window at
 	// reservation time, which turns a healthy balance into a 402 on every call.
 	//
-	// Applied to the outbound body only — deliberately after the estimate above,
-	// which keeps its own reservation math unchanged. Feeding 16k output into
-	// LLMEstimate would multiply every hold by three orders of magnitude and
-	// start refusing calls that settle for a handful of credits.
+	// This is the same ceiling effectiveMaxOutput reserved against above, and the
+	// two must stay in step: a hold smaller than what the vendor may bill is the
+	// gap Settle silently spends through.
 	if isCompletionPath(path) && requestedMaxOutput(body) == 0 {
 		body["max_tokens"] = h.defaultMaxOutput
 	}
