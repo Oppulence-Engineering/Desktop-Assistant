@@ -1,6 +1,6 @@
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import { WorkDir } from "../config/config.js";
 import { AgentScheduleState, AgentScheduleStateEntry } from "@x/shared/dist/agent-schedule-state.js";
-import fs from "fs/promises";
 import path from "path";
 import z from "zod";
 import { ensureJsonConfig, readJsonConfig } from "../config/json_config.js";
@@ -56,18 +56,24 @@ export class FSAgentScheduleStateRepo implements IAgentScheduleStateRepo {
             runCount: 0,
         };
         state.agents[agentName] = { ...existing, ...entry };
-        await fs.writeFile(this.statePath, JSON.stringify(state, null, 2));
+        // Atomic — and this is the highest-frequency config write in the app
+        // (per-run counters), so the torn-write window is not theoretical.
+        await writeJsonAtomic(this.statePath, state);
     }
 
     async setAgentState(agentName: string, entry: z.infer<typeof AgentScheduleStateEntry>): Promise<void> {
         const state = await this.getState();
         state.agents[agentName] = entry;
-        await fs.writeFile(this.statePath, JSON.stringify(state, null, 2));
+        // Atomic — and this is the highest-frequency config write in the app
+        // (per-run counters), so the torn-write window is not theoretical.
+        await writeJsonAtomic(this.statePath, state);
     }
 
     async deleteAgentState(agentName: string): Promise<void> {
         const state = await this.getState();
         delete state.agents[agentName];
-        await fs.writeFile(this.statePath, JSON.stringify(state, null, 2));
+        // Atomic — and this is the highest-frequency config write in the app
+        // (per-run counters), so the torn-write window is not theoretical.
+        await writeJsonAtomic(this.statePath, state);
     }
 }

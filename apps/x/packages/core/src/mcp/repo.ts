@@ -1,6 +1,6 @@
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import { WorkDir } from "../config/config.js";
 import { McpServerConfig, McpServerDefinition } from "@x/shared/dist/mcp.js";
-import fs from "fs/promises";
 import path from "path";
 import z from "zod";
 import { ensureJsonConfig, readJsonConfig } from "../config/json_config.js";
@@ -42,12 +42,14 @@ export class FSMcpConfigRepo implements IMcpConfigRepo {
     async upsert(serverName: string, config: z.infer<typeof McpServerDefinition>): Promise<void> {
         const conf = await this.getConfig();
         conf.mcpServers[serverName] = config;
-        await fs.writeFile(this.configPath, JSON.stringify(conf, null, 2));
+        // Atomic: a torn mcp.json reads as defaults — every server gone.
+        await writeJsonAtomic(this.configPath, conf);
     }
 
     async delete(serverName: string): Promise<void> {
         const conf = await this.getConfig();
         delete conf.mcpServers[serverName];
-        await fs.writeFile(this.configPath, JSON.stringify(conf, null, 2));
+        // Atomic: a torn mcp.json reads as defaults — every server gone.
+        await writeJsonAtomic(this.configPath, conf);
     }
 }

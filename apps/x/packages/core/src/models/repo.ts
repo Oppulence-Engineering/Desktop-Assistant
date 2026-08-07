@@ -2,6 +2,7 @@
 // AI SDK and the gateway, and the gateway imports the DI container, which
 // constructs this repo. Taking the plain zod schemas keeps the config layer out
 // of that cycle.
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import { LlmModelConfig as ModelConfig, LlmProvider as Provider } from "@x/shared/dist/models.js";
 import { WorkDir } from "../config/config.js";
 import fs from "fs/promises";
@@ -136,7 +137,7 @@ export class FSModelConfigRepo implements IModelConfigRepo {
         try {
             raw = await fs.readFile(this.configPath, "utf8");
         } catch {
-            await fs.writeFile(this.configPath, JSON.stringify(defaultConfig, null, 2));
+            await writeJsonAtomic(this.configPath, defaultConfig);
             return;
         }
 
@@ -153,8 +154,14 @@ export class FSModelConfigRepo implements IModelConfigRepo {
         const stamp = new Date().toISOString().replace(/[:.]/g, "-");
         const quarantinePath = `${this.configPath}.invalid-${stamp}`;
         try {
+            // Rebuild-first, then swap: the old order (rename away, then write)
+            // left NO config file at all if the process died between the two.
+            // Writing the replacement before renaming shrinks that window to a
+            // pair of renames, and the write itself is atomic.
+            const rebuilt = `${this.configPath}.rebuilt-${stamp}`;
+            await writeJsonAtomic(rebuilt, config);
             await fs.rename(this.configPath, quarantinePath);
-            await fs.writeFile(this.configPath, JSON.stringify(config, null, 2));
+            await fs.rename(rebuilt, this.configPath);
             console.error(
                 `[ModelConfig] ${this.configPath} could not be read (${problem}). ` +
                     `Moved it to ${quarantinePath} and rebuilt it from the salvageable parts.`,
@@ -202,6 +209,7 @@ export class FSModelConfigRepo implements IModelConfigRepo {
         };
 
         const toWrite = { ...config, providers: existingProviders };
-        await fs.writeFile(this.configPath, JSON.stringify(toWrite, null, 2));
+        // Atomic: this file carries the user's API keys; a torn write loses them.
+        await writeJsonAtomic(this.configPath, toWrite);
     }
 }

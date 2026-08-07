@@ -1,3 +1,4 @@
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import fs from 'fs/promises';
 import path from 'path';
 import { WorkDir } from '../config/config.js';
@@ -42,6 +43,7 @@ export class FSCodeModeConfigRepo implements ICodeModeConfigRepo {
     async setConfig(config: CodeModeConfig): Promise<void> {
         const validated = CodeModeConfig.parse(config);
         await fs.mkdir(path.dirname(this.configPath), { recursive: true });
-        await fs.writeFile(this.configPath, JSON.stringify(validated, null, 2));
+        // Atomic: a torn file reverts an explicit opt-out to auto-detection.
+        await writeJsonAtomic(this.configPath, validated);
     }
 }

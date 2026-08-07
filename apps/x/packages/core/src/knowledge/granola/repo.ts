@@ -1,3 +1,4 @@
+import { writeJsonAtomic } from "../../filesystem/atomic_write.js";
 import fs from 'fs/promises';
 import path from 'path';
 import { WorkDir } from '../../config/config.js';
@@ -21,7 +22,7 @@ export class FSGranolaConfigRepo implements IGranolaConfigRepo {
             await fs.access(this.configPath);
         } catch {
             // File doesn't exist, create it with default config
-            await fs.writeFile(this.configPath, JSON.stringify(this.defaultConfig, null, 2));
+            await writeJsonAtomic(this.configPath, this.defaultConfig);
         }
     }
 
@@ -39,7 +40,7 @@ export class FSGranolaConfigRepo implements IGranolaConfigRepo {
     async setConfig(config: GranolaConfig): Promise<void> {
         // Validate before saving
         const validated = GranolaConfig.parse(config);
-        await fs.writeFile(this.configPath, JSON.stringify(validated, null, 2));
+        await writeJsonAtomic(this.configPath, validated);
     }
 }
 

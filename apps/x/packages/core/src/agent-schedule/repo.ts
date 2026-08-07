@@ -1,6 +1,6 @@
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import { WorkDir } from "../config/config.js";
 import { AgentScheduleConfig, AgentScheduleEntry } from "@x/shared/dist/agent-schedule.js";
-import fs from "fs/promises";
 import path from "path";
 import z from "zod";
 import { ensureJsonConfig, readJsonConfig } from "../config/json_config.js";
@@ -41,12 +41,14 @@ export class FSAgentScheduleRepo implements IAgentScheduleRepo {
     async upsert(agentName: string, entry: z.infer<typeof AgentScheduleEntry>): Promise<void> {
         const conf = await this.getConfig();
         conf.agents[agentName] = entry;
-        await fs.writeFile(this.configPath, JSON.stringify(conf, null, 2));
+        // Atomic: a torn file reads as defaults — every schedule gone.
+        await writeJsonAtomic(this.configPath, conf);
     }
 
     async delete(agentName: string): Promise<void> {
         const conf = await this.getConfig();
         delete conf.agents[agentName];
-        await fs.writeFile(this.configPath, JSON.stringify(conf, null, 2));
+        // Atomic: a torn file reads as defaults — every schedule gone.
+        await writeJsonAtomic(this.configPath, conf);
     }
 }

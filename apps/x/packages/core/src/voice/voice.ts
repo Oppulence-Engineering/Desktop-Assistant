@@ -1,3 +1,4 @@
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { randomUUID } from "node:crypto";
@@ -220,7 +221,9 @@ export async function setTranscriptionConfig(
   });
   const configPath = transcriptionConfigPath();
   await fs.mkdir(path.dirname(configPath), { recursive: true });
-  await fs.writeFile(configPath, JSON.stringify(next, null, 2));
+  // Atomic — this file carries the five relationship consent flags, and the
+  // benchmarks a few lines down were already written atomically.
+  await writeJsonAtomic(configPath, next);
   return next;
 }
 

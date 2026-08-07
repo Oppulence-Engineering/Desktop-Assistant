@@ -1,3 +1,4 @@
+import { writeJsonAtomic, writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 import path from "path";
 import fs from "fs";
 import fsPromises from "fs/promises";
@@ -61,14 +62,12 @@ export async function addToSecurityConfig(commands: string[]): Promise<void> {
         const normalized = cmd.trim().toLowerCase();
         if (normalized) merged.add(normalized);
     }
-    await fsPromises.writeFile(
-        SECURITY_CONFIG_PATH,
-        JSON.stringify({
-            allowedCommands: Array.from(merged).sort(),
-            allowedFileAccess: current.allowedFileAccess,
-        }, null, 2) + "\n",
-        "utf8",
-    );
+    // Atomic: a torn security.json reads as the default allow-list — every
+    // grant the user ever approved dropped, and every one re-prompted for.
+    await writeJsonAtomic(SECURITY_CONFIG_PATH, {
+        allowedCommands: Array.from(merged).sort(),
+        allowedFileAccess: current.allowedFileAccess,
+    });
     // Reset cache so next read picks up the new file
     resetSecurityAllowListCache();
 }
@@ -86,14 +85,10 @@ export async function addFileAccessGrant(grant: FileAccessGrant): Promise<void> 
         : [...current.allowedFileAccess, normalizedGrant].sort((a, b) =>
             `${a.operation}:${a.pathPrefix}`.localeCompare(`${b.operation}:${b.pathPrefix}`)
         );
-    await fsPromises.writeFile(
-        SECURITY_CONFIG_PATH,
-        JSON.stringify({
-            allowedCommands: current.allowedCommands,
-            allowedFileAccess,
-        }, null, 2) + "\n",
-        "utf8",
-    );
+    await writeJsonAtomic(SECURITY_CONFIG_PATH, {
+        allowedCommands: current.allowedCommands,
+        allowedFileAccess,
+    });
     resetSecurityAllowListCache();
 }
 
@@ -105,11 +100,7 @@ export async function ensureSecurityConfig(): Promise<void> {
     try {
         await fsPromises.access(SECURITY_CONFIG_PATH);
     } catch {
-        await fsPromises.writeFile(
-            SECURITY_CONFIG_PATH,
-            JSON.stringify(DEFAULT_ALLOW_LIST, null, 2) + "\n",
-            "utf8",
-        );
+        await writeJsonAtomic(SECURITY_CONFIG_PATH, DEFAULT_ALLOW_LIST);
     }
 }
 
@@ -118,11 +109,7 @@ export async function ensureSecurityConfig(): Promise<void> {
  */
 function ensureSecurityConfigSync() {
     if (!fs.existsSync(SECURITY_CONFIG_PATH)) {
-        fs.writeFileSync(
-            SECURITY_CONFIG_PATH,
-            JSON.stringify(DEFAULT_ALLOW_LIST, null, 2) + "\n",
-            "utf8",
-        );
+        writeJsonAtomicSync(SECURITY_CONFIG_PATH, DEFAULT_ALLOW_LIST);
     }
 }
 

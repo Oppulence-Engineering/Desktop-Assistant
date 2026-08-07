@@ -1,3 +1,4 @@
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import fs from "fs/promises";
 import path from "path";
 import {
@@ -49,6 +50,6 @@ export async function setNotificationsConfig(
   });
   const configPath = notificationsConfigPath();
   await fs.mkdir(path.dirname(configPath), { recursive: true });
-  await fs.writeFile(configPath, JSON.stringify(next, null, 2));
+  await writeJsonAtomic(configPath, next);
   return next;
 }

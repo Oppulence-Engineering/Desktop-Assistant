@@ -89,4 +89,18 @@ describe("ensureJsonConfig", () => {
     expect(await fs.readFile(quarantined!, "utf8")).toBe('{"agents":"wrong"}');
     expect(JSON.parse(await fs.readFile(file, "utf8"))).toEqual({ agents: {} });
   });
+
+  // The repair is rebuild-first: the replacement is fully written before the
+  // original moves aside, so no crash window leaves the config absent — and no
+  // intermediate file survives the swap.
+  it("leaves only the config and its quarantine after a repair", async () => {
+    await fs.writeFile(file, "{ not json");
+
+    await ensureJsonConfig(file, Schema, defaults, "Test");
+
+    const entries = (await fs.readdir(DIR)).sort();
+    expect(entries.filter((e) => e.includes(".tmp") || e.includes(".rebuilt-"))).toEqual([]);
+    expect(entries.filter((e) => e.startsWith("conf.json.invalid-"))).toHaveLength(1);
+    expect(JSON.parse(await fs.readFile(file, "utf8"))).toEqual({ agents: {} });
+  });
 });

@@ -1,3 +1,4 @@
+import { writeJsonAtomic } from "@x/core/dist/filesystem/atomic_write.js";
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import { app, BrowserWindow } from "electron";
@@ -1345,9 +1346,9 @@ export class MeetingController {
     this.stopGuardianWatch();
     const health = this.guardianSnapshot;
     if (health) {
-      await fs
-        .writeFile(path.join(dir, "capture-health.json"), JSON.stringify(health, null, 2), "utf8")
-        .catch((err) => console.warn("[meeting] could not persist capture health:", err));
+      await writeJsonAtomic(path.join(dir, "capture-health.json"), health).catch((err) =>
+        console.warn("[meeting] could not persist capture health:", err),
+      );
     }
     this.sessionDir = null;
     this.sessionStartedAt = null;

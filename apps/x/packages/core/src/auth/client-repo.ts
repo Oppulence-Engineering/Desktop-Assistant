@@ -1,3 +1,4 @@
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import { WorkDir } from '../config/config.js';
 import fs from 'fs/promises';
 import path from 'path';
@@ -32,7 +33,7 @@ export class FSClientRegistrationRepo implements IClientRegistrationRepo {
       await fs.access(this.configPath);
     } catch {
       // File doesn't exist, create it with empty object
-      await fs.writeFile(this.configPath, JSON.stringify({}, null, 2));
+      await writeJsonAtomic(this.configPath, {});
     }
   }
 
@@ -47,7 +48,9 @@ export class FSClientRegistrationRepo implements IClientRegistrationRepo {
   }
 
   private async writeConfig(config: ClientRegistrationStorage): Promise<void> {
-    await fs.writeFile(this.configPath, JSON.stringify(config, null, 2));
+    // Atomic, like the sibling oauth.json repo already is — these are the
+    // dynamically-registered client credentials.
+    await writeJsonAtomic(this.configPath, config);
   }
 
   async getClientRegistration(provider: string): Promise<ClientRegistrationResponse | null> {

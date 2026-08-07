@@ -1,3 +1,4 @@
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
@@ -32,7 +33,7 @@ export function saveUserConfig(config: UserConfig): void {
         fs.mkdirSync(dir, { recursive: true });
     }
     const validated = UserConfig.parse(config);
-    fs.writeFileSync(USER_CONFIG_PATH, JSON.stringify(validated, null, 2));
+    writeJsonAtomicSync(USER_CONFIG_PATH, validated);
 }
 
 export function updateUserEmail(email: string): void {

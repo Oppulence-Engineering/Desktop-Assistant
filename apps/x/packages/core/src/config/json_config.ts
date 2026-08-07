@@ -19,6 +19,7 @@
 // Defaults are better than an exception here because these files are all
 // recreatable: a schedule, an MCP server list, per-agent timing state. Losing
 // one costs a re-configuration. Throwing on every read costs the feature.
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import fsp from "fs/promises";
 import type { ZodType } from "zod";
 
@@ -97,7 +98,7 @@ export async function ensureJsonConfig<T>(
   try {
     raw = await fsp.readFile(filePath, "utf8");
   } catch {
-    await fsp.writeFile(filePath, JSON.stringify(fallback(), null, 2));
+    await writeJsonAtomic(filePath, fallback());
     return null;
   }
 
@@ -107,8 +108,14 @@ export async function ensureJsonConfig<T>(
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const quarantinePath = `${filePath}.invalid-${stamp}`;
   try {
+    // Rebuild-first, then swap: the old order (rename away, then write) left
+    // NO config file at all if the process died between the two, and the
+    // replacement write itself could tear. Now the failure window is a pair of
+    // renames and the write is atomic.
+    const rebuilt = `${filePath}.rebuilt-${stamp}`;
+    await writeJsonAtomic(rebuilt, config);
     await fsp.rename(filePath, quarantinePath);
-    await fsp.writeFile(filePath, JSON.stringify(config, null, 2));
+    await fsp.rename(rebuilt, filePath);
     console.error(
       `[${label}] ${filePath} could not be read (${problem}). ` +
         `Moved it to ${quarantinePath} and rebuilt it from defaults.`,
