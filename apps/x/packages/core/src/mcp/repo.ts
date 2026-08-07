@@ -1,3 +1,4 @@
+import { withFileLock } from "../knowledge/file-lock.js";
 import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import { WorkDir } from "../config/config.js";
 import { McpServerConfig, McpServerDefinition } from "@x/shared/dist/mcp.js";
@@ -39,17 +40,23 @@ export class FSMcpConfigRepo implements IMcpConfigRepo {
         return config;
     }
 
+    // Locked: these are reached from LLM tool calls (addMcpServer,
+    // rowboat-configure-integration-mcp), so two agent runs can race, and each
+    // rewrites the whole server map from a value it read first.
     async upsert(serverName: string, config: z.infer<typeof McpServerDefinition>): Promise<void> {
-        const conf = await this.getConfig();
-        conf.mcpServers[serverName] = config;
-        // Atomic: a torn mcp.json reads as defaults — every server gone.
-        await writeJsonAtomic(this.configPath, conf);
+        return withFileLock(this.configPath, async () => {
+            const conf = await this.getConfig();
+            conf.mcpServers[serverName] = config;
+            // Atomic: a torn mcp.json reads as defaults — every server gone.
+            await writeJsonAtomic(this.configPath, conf);
+        });
     }
 
     async delete(serverName: string): Promise<void> {
-        const conf = await this.getConfig();
-        delete conf.mcpServers[serverName];
-        // Atomic: a torn mcp.json reads as defaults — every server gone.
-        await writeJsonAtomic(this.configPath, conf);
+        return withFileLock(this.configPath, async () => {
+            const conf = await this.getConfig();
+            delete conf.mcpServers[serverName];
+            await writeJsonAtomic(this.configPath, conf);
+        });
     }
 }

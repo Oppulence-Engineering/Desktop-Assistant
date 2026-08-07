@@ -1,3 +1,4 @@
+import { withFileLock } from '../knowledge/file-lock.js';
 import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import { WorkDir } from "../config/config.js";
 import { AgentScheduleState, AgentScheduleStateEntry } from "@x/shared/dist/agent-schedule-state.js";
@@ -45,7 +46,15 @@ export class FSAgentScheduleStateRepo implements IAgentScheduleStateRepo {
         return state.agents[agentName] ?? null;
     }
 
+    /**
+     * Locked, because the runner is concurrent by construction: pollAndRun
+     * deliberately does not await runAgent, so every agent due in a tick has a
+     * status/finished/failed update in flight at once — and each of these reads
+     * and rewrites the WHOLE agents map, so a lost update wipes *other* agents'
+     * entries, not just a field. The schedule-editing IPC races the same tick.
+     */
     async updateAgentState(agentName: string, entry: Partial<z.infer<typeof AgentScheduleStateEntry>>): Promise<void> {
+      return withFileLock(this.statePath, async () => {
         const state = await this.getState();
         const existing = state.agents[agentName] ?? {
             status: "scheduled" as const,
@@ -59,21 +68,22 @@ export class FSAgentScheduleStateRepo implements IAgentScheduleStateRepo {
         // Atomic — and this is the highest-frequency config write in the app
         // (per-run counters), so the torn-write window is not theoretical.
         await writeJsonAtomic(this.statePath, state);
+      });
     }
 
     async setAgentState(agentName: string, entry: z.infer<typeof AgentScheduleStateEntry>): Promise<void> {
+      return withFileLock(this.statePath, async () => {
         const state = await this.getState();
         state.agents[agentName] = entry;
-        // Atomic — and this is the highest-frequency config write in the app
-        // (per-run counters), so the torn-write window is not theoretical.
         await writeJsonAtomic(this.statePath, state);
+      });
     }
 
     async deleteAgentState(agentName: string): Promise<void> {
+      return withFileLock(this.statePath, async () => {
         const state = await this.getState();
         delete state.agents[agentName];
-        // Atomic — and this is the highest-frequency config write in the app
-        // (per-run counters), so the torn-write window is not theoretical.
         await writeJsonAtomic(this.statePath, state);
+      });
     }
 }

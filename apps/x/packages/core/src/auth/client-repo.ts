@@ -1,3 +1,4 @@
+import { withFileLock } from '../knowledge/file-lock.js';
 import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import { WorkDir } from '../config/config.js';
 import fs from 'fs/promises';
@@ -75,16 +76,23 @@ export class FSClientRegistrationRepo implements IClientRegistrationRepo {
     return config[provider]?._registeredPort ?? DEFAULT_CALLBACK_PORT;
   }
 
+  // Locked, like the sibling oauth.json repo: two OAuth flows can register
+  // concurrently, and each of these rewrites the whole provider map from a
+  // value it read first — so one provider's registration was lost.
   async saveClientRegistration(provider: string, registration: ClientRegistrationResponse, port: number): Promise<void> {
-    const config = await this.readConfig();
-    config[provider] = { ...registration, _registeredPort: port };
-    await this.writeConfig(config);
+    return withFileLock(this.configPath, async () => {
+      const config = await this.readConfig();
+      config[provider] = { ...registration, _registeredPort: port };
+      await this.writeConfig(config);
+    });
   }
 
   async clearClientRegistration(provider: string): Promise<void> {
-    const config = await this.readConfig();
-    delete config[provider];
-    await this.writeConfig(config);
+    return withFileLock(this.configPath, async () => {
+      const config = await this.readConfig();
+      delete config[provider];
+      await this.writeConfig(config);
+    });
   }
 }
 

@@ -2,6 +2,7 @@
 // AI SDK and the gateway, and the gateway imports the DI container, which
 // constructs this repo. Taking the plain zod schemas keeps the config layer out
 // of that cycle.
+import { withFileLock } from "../knowledge/file-lock.js";
 import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import { LlmModelConfig as ModelConfig, LlmProvider as Provider } from "@x/shared/dist/models.js";
 import { WorkDir } from "../config/config.js";
@@ -186,6 +187,9 @@ export class FSModelConfigRepo implements IModelConfigRepo {
     }
 
     async setConfig(config: z.infer<typeof ModelConfig>): Promise<void> {
+        // Locked: the merge below reads the existing providers map, and a lost
+        // update drops another provider's API key.
+        return withFileLock(this.configPath, async () => {
         let existingProviders: Record<string, Record<string, unknown>> = {};
         try {
             const raw = await fs.readFile(this.configPath, "utf8");
@@ -211,5 +215,6 @@ export class FSModelConfigRepo implements IModelConfigRepo {
         const toWrite = { ...config, providers: existingProviders };
         // Atomic: this file carries the user's API keys; a torn write loses them.
         await writeJsonAtomic(this.configPath, toWrite);
+        });
     }
 }

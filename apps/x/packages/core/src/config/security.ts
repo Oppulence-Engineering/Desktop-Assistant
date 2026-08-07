@@ -1,3 +1,4 @@
+import { withFileLock } from '../knowledge/file-lock.js';
 import { writeJsonAtomic, writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 import path from "path";
 import fs from "fs";
@@ -55,41 +56,56 @@ let cachedFileAccessAllowList: FileAccessGrant[] | null = null;
 let cachedMtimeMs: number | null = null;
 
 export async function addToSecurityConfig(commands: string[]): Promise<void> {
-    ensureSecurityConfigSync();
-    const current = readSecurityConfig();
-    const merged = new Set(current.allowedCommands);
-    for (const cmd of commands) {
-        const normalized = cmd.trim().toLowerCase();
-        if (normalized) merged.add(normalized);
-    }
-    // Atomic: a torn security.json reads as the default allow-list — every
-    // grant the user ever approved dropped, and every one re-prompted for.
-    await writeJsonAtomic(SECURITY_CONFIG_PATH, {
-        allowedCommands: Array.from(merged).sort(),
-        allowedFileAccess: current.allowedFileAccess,
+    // Locked, because both mutators here rewrite the WHOLE file from a value
+    // they read first. A single assistant turn can raise several permission
+    // prompts at once, the renderer fires each approval as its own
+    // runs:authorizePermission, and that handler awaits a full run-log fetch
+    // before reaching this write — so two grants interleaving is the ordinary
+    // case, not a corner one. Unlocked, the second write carried the first's
+    // pre-image and silently dropped its grant; the user saw "Always allow"
+    // succeed and got re-prompted anyway. auth/repo.ts already does this for
+    // the sibling oauth.json.
+    await withFileLock(SECURITY_CONFIG_PATH, async () => {
+        ensureSecurityConfigSync();
+        const current = readSecurityConfig();
+        const merged = new Set(current.allowedCommands);
+        for (const cmd of commands) {
+            const normalized = cmd.trim().toLowerCase();
+            if (normalized) merged.add(normalized);
+        }
+        // Atomic: a torn security.json reads as the default allow-list — every
+        // grant the user ever approved dropped, and every one re-prompted for.
+        await writeJsonAtomic(SECURITY_CONFIG_PATH, {
+            allowedCommands: Array.from(merged).sort(),
+            allowedFileAccess: current.allowedFileAccess,
+        });
+        // Reset cache so next read picks up the new file
+        resetSecurityAllowListCache();
     });
-    // Reset cache so next read picks up the new file
-    resetSecurityAllowListCache();
 }
 
 export async function addFileAccessGrant(grant: FileAccessGrant): Promise<void> {
-    ensureSecurityConfigSync();
-    const current = readSecurityConfig();
-    const normalizedGrant = normalizeFileAccessGrant(grant);
-    const exists = current.allowedFileAccess.some(existing =>
-        existing.operation === normalizedGrant.operation
-        && existing.pathPrefix === normalizedGrant.pathPrefix
-    );
-    const allowedFileAccess = exists
-        ? current.allowedFileAccess
-        : [...current.allowedFileAccess, normalizedGrant].sort((a, b) =>
-            `${a.operation}:${a.pathPrefix}`.localeCompare(`${b.operation}:${b.pathPrefix}`)
+    // Same lock, same file: this writes back allowedCommands verbatim, so
+    // racing a command grant loses it (and vice versa).
+    await withFileLock(SECURITY_CONFIG_PATH, async () => {
+        ensureSecurityConfigSync();
+        const current = readSecurityConfig();
+        const normalizedGrant = normalizeFileAccessGrant(grant);
+        const exists = current.allowedFileAccess.some(existing =>
+            existing.operation === normalizedGrant.operation
+            && existing.pathPrefix === normalizedGrant.pathPrefix
         );
-    await writeJsonAtomic(SECURITY_CONFIG_PATH, {
-        allowedCommands: current.allowedCommands,
-        allowedFileAccess,
+        const allowedFileAccess = exists
+            ? current.allowedFileAccess
+            : [...current.allowedFileAccess, normalizedGrant].sort((a, b) =>
+                `${a.operation}:${a.pathPrefix}`.localeCompare(`${b.operation}:${b.pathPrefix}`)
+            );
+        await writeJsonAtomic(SECURITY_CONFIG_PATH, {
+            allowedCommands: current.allowedCommands,
+            allowedFileAccess,
+        });
+        resetSecurityAllowListCache();
     });
-    resetSecurityAllowListCache();
 }
 
 /**
