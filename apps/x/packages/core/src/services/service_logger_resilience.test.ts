@@ -96,3 +96,24 @@ describe("ServiceLogger write queue", () => {
     expect(await readLog()).toContain("hello");
   });
 });
+
+/**
+ * Rotation creates a second stream. Attaching the error handler at only one of
+ * the two creation sites meant every log written after the first rotation was
+ * back to failing silently into a dead handle.
+ */
+describe("stream creation", () => {
+  it("attaches an error handler to every stream it opens, including after rotation", async () => {
+    const src = await fsp.readFile(
+      new URL("./service_logger.ts", import.meta.url),
+      "utf8",
+    );
+    const creations = src.match(/fs\.createWriteStream\(/g) ?? [];
+    expect(
+      creations.length,
+      "a second createWriteStream call site can silently skip the error handler; " +
+        "route it through openStream() instead",
+    ).toBe(1);
+    expect(src).toMatch(/private openStream\(\)/);
+  });
+});

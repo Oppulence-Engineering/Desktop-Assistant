@@ -101,16 +101,27 @@ export class ServiceLogger {
         } catch {
             this.currentSize = 0;
         }
-        this.stream = fs.createWriteStream(LOG_FILE, { flags: "a", encoding: "utf8" });
-        // A stream that dies (disk full, the file removed underneath us) stays
-        // an object that accepts write() and drops it. Reopen on the next event
-        // instead of silently discarding everything from here on.
-        this.stream.on("error", (error) => {
+        this.stream = this.openStream();
+        this.initialized = true;
+    }
+
+    /**
+     * The only place a log stream is created.
+     *
+     * A stream that dies (disk full, the file removed underneath us) stays an
+     * object that accepts write() and drops it, so it needs an error handler to
+     * force a reopen. Rotation creates a second stream, and attaching the
+     * handler at only one of the two call sites meant every log after the first
+     * rotation was back to discarding silently.
+     */
+    private openStream(): fs.WriteStream {
+        const stream = fs.createWriteStream(LOG_FILE, { flags: "a", encoding: "utf8" });
+        stream.on("error", (error) => {
             console.error("[ServiceLogger] Log stream error; reopening:", error);
             this.stream = null;
             this.initialized = false;
         });
-        this.initialized = true;
+        return stream;
     }
 
     private async rotateIfNeeded(nextBytes: number): Promise<void> {
@@ -137,7 +148,7 @@ export class ServiceLogger {
             // Ignore if file doesn't exist or rename fails
         }
         this.currentSize = 0;
-        this.stream = fs.createWriteStream(LOG_FILE, { flags: "a", encoding: "utf8" });
+        this.stream = this.openStream();
         // Rotation is the only moment the count changes, so it is the only
         // moment worth checking.
         await pruneRotatedLogs();

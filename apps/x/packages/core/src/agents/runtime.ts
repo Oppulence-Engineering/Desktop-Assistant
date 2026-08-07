@@ -597,6 +597,9 @@ export class RunLogger {
     }
   }
 
+  /** Cleared when the stream errors; writes become no-ops rather than throwing. */
+  private writable = true;
+
   constructor(runId: string) {
     this.ensureRunsDir();
     this.logFile = path.join(WorkDir, "runs", `${runId}.jsonl`);
@@ -604,9 +607,18 @@ export class RunLogger {
       flags: "a",
       encoding: "utf8",
     });
+    // One of these exists per agent run. An unhandled 'error' on a write stream
+    // is an uncaught exception, so a full disk — or the run file being pruned
+    // or deleted underneath us — would take the whole process down rather than
+    // cost us the transcript of one run.
+    this.fileHandle.on("error", (error) => {
+      console.error(`[RunLog] ${this.logFile} is no longer writable:`, error);
+      this.writable = false;
+    });
   }
 
   log(event: z.infer<typeof RunEvent>) {
+    if (!this.writable) return;
     if (event.type !== "llm-stream-event") {
       this.fileHandle.write(JSON.stringify(event) + "\n");
     }

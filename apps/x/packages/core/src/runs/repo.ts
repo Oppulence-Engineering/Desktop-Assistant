@@ -119,6 +119,18 @@ export class FSRunsRepo implements IRunsRepo {
             const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
             const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
 
+            // readline does not forward input errors when driven by events (it
+            // does under `for await`, which is why the file-reading code is
+            // safe and this is not). Unhandled, an ENOENT here is an uncaught
+            // exception, and listing runs walks the directory first — so a run
+            // deleted between readdir and open, by pruneRunLogs or by the user,
+            // took the process down. A metadata read that fails is a run we
+            // cannot describe, not a fatal condition.
+            stream.on('error', () => {
+                rl.close();
+                resolve(null);
+            });
+
             let start: z.infer<typeof LegacyStartEvent> | null = null;
             let title: string | undefined;
             let lineIndex = 0;
