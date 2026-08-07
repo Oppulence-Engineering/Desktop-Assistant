@@ -150,7 +150,8 @@ function formatResearchCost(usd: number): string {
   if (usd < 0.01) return "less than a cent";
   return `$${usd.toFixed(2)}`;
 }
-\nfunction researchDisabledHint(research: {
+
+function researchDisabledHint(research: {
   allowed: boolean;
   reason?: string;
   requiredPlan: string;
