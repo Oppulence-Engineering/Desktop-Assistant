@@ -12,6 +12,16 @@ API_PORT_ENV_SET="${ROWBOAT_API_PORT+x}"
 DEVSTACK_PORT_ENV_SET="${ROWBOAT_DEVSTACK_PORT+x}"
 FALLBACK_API_PORT="${ROWBOAT_API_FALLBACK_PORT:-18081}"
 FALLBACK_DEVSTACK_PORT="${ROWBOAT_DEVSTACK_FALLBACK_PORT:-18091}"
+# Set ROWBOAT_KIND_REAL_GOOGLE=1 to run the Google OAuth flow against real
+# accounts.google.com instead of the devstack mock — the only way to exercise a
+# real Gmail mailbox locally. Credentials come from the Infisical sync, so
+# nothing extra is needed beyond the flag.
+REAL_GOOGLE="${ROWBOAT_KIND_REAL_GOOGLE:-}"
+# The redirect URI has to match one registered on the Google Cloud OAuth client
+# byte for byte. Only this port is registered, which is why real-Google mode
+# refuses to start on any other one rather than failing later inside Google's
+# consent screen with redirect_uri_mismatch.
+GOOGLE_REDIRECT_PORT="${ROWBOAT_GOOGLE_REDIRECT_PORT:-18080}"
 COREDNS_MEMORY_LIMIT="${ROWBOAT_KIND_COREDNS_MEMORY_LIMIT:-512Mi}"
 STATE_DIR="${ROWBOAT_KIND_STATE_DIR:-${ROOT_DIR}/.rowboat-kind}"
 DEPS_FILE="${ROOT_DIR}/deploy/kind/rowboat-api/dependencies.yaml"
@@ -72,6 +82,12 @@ Environment overrides:
   ROWBOAT_DEVSTACK_PORT   default: 18090
   ROWBOAT_API_FALLBACK_PORT       default: 18081
   ROWBOAT_DEVSTACK_FALLBACK_PORT  default: 18091
+  ROWBOAT_KIND_REAL_GOOGLE        unset: devstack Google mock (hermetic).
+                                  set:   real accounts.google.com, so a real
+                                         Gmail account can be connected against
+                                         the local stack. Requires the API on
+                                         ROWBOAT_GOOGLE_REDIRECT_PORT.
+  ROWBOAT_GOOGLE_REDIRECT_PORT    default: 18080 (the registered redirect URI)
   INFISICAL_PROJECT_ID                    required unless .infisical.json exists
   INFISICAL_TOKEN                         optional service/machine token for CI
   INFISICAL_ENVIRONMENT                   default: dev
@@ -269,10 +285,41 @@ deploy_chart() {
   ensure_cluster
   ensure_namespace
   select_host_ports
+  # select_host_ports can move a port (fallback, or an ::1 reclaim), and the
+  # chart is about to be rendered against whatever it picked. Publish it here
+  # too, not just from ensure_host_access: `deploy` on its own otherwise leaves
+  # ports.env describing the previous run, which is worse than describing
+  # nothing because every reader trusts it.
+  write_port_env
   sync_infisical_cli_secret
   local api_origin="http://localhost:${API_PORT}"
   local devstack_origin="http://localhost:${DEVSTACK_PORT}"
   local cors_origins="http://localhost:3000\\,http://localhost:5173\\,${api_origin}"
+
+  # Google OAuth endpoints: the hermetic devstack mock by default, real Google
+  # when REAL_GOOGLE is set. Empty strings are the contract wire.go expects for
+  # "use the real endpoints" — SetOAuthFlow and SetTokenURL keep their built-in
+  # defaults (accounts.google.com / oauth2.googleapis.com) when handed an empty
+  # argument, so these must be set to "" rather than left out, which would
+  # inherit the mock from values-kind.yaml.
+  local -a google_args=(
+    --set-string "config.GOOGLE_AUTHORIZE_URL=${devstack_origin}/o/oauth2/v2/auth"
+  )
+  if [[ -n "$REAL_GOOGLE" ]]; then
+    if [[ "$API_PORT" != "$GOOGLE_REDIRECT_PORT" ]]; then
+      echo "real Google needs the API on localhost:${GOOGLE_REDIRECT_PORT}, but it is on ${API_PORT}." >&2
+      echo "Only http://localhost:${GOOGLE_REDIRECT_PORT}/oauth/google/callback is registered on the OAuth" >&2
+      echo "client; any other port fails inside Google's consent screen with redirect_uri_mismatch." >&2
+      echo "Free that port (or set ROWBOAT_GOOGLE_REDIRECT_PORT if you registered another) and retry." >&2
+      exit 1
+    fi
+    echo "Google OAuth: real accounts.google.com (redirect ${api_origin}/oauth/google/callback)"
+    google_args=(
+      --set-string "config.GOOGLE_AUTHORIZE_URL="
+      --set-string "config.GOOGLE_TOKEN_URL="
+    )
+  fi
+
   helm upgrade --install "$RELEASE_NAME" "$CHART_DIR" \
     --namespace "$NAMESPACE" \
     --values "$VALUES_FILE" \
@@ -286,7 +333,7 @@ deploy_chart() {
     --set-string "config.TOKEN_ISSUER=${devstack_origin}" \
     --set-string "config.WORKOS_AUTHORIZE_BASE_URL=${devstack_origin}" \
     --set-string "config.ORY_PUBLIC_URL=${devstack_origin}" \
-    --set-string "config.GOOGLE_AUTHORIZE_URL=${devstack_origin}/o/oauth2/v2/auth" \
+    "${google_args[@]}" \
     --wait \
     --timeout 5m
   # Helm may prune a previously chart-managed Secret during the migration to
@@ -469,6 +516,13 @@ start_port_forward() {
   local resource="$2"
   local local_port="$3"
   local remote_port="$4"
+  # Optional bind address. Empty keeps kubectl's default (127.0.0.1). Set to
+  # ::1 by reclaim_port_on_ipv6 to take the canonical port number back from a
+  # dead Docker IPv4 forward; in that mode the IPv4 in-use checks below are
+  # deliberately skipped, because Docker holding IPv4 is the very thing we are
+  # routing around, and a failure returns rather than exits so the caller can
+  # still fall back to a different port number.
+  local bind_address="${5:-}"
   local pid_file="${STATE_DIR}/${name}.pid"
   local log_file="${STATE_DIR}/${name}.log"
 
@@ -477,44 +531,48 @@ start_port_forward() {
     local existing_pid
     existing_pid="$(cat "$pid_file")"
     if [[ "$existing_pid" =~ ^[0-9]+$ ]] && kill -0 "$existing_pid" >/dev/null 2>&1; then
-      if port_in_use "$local_port"; then
+      if [[ -z "$bind_address" ]] && port_in_use "$local_port"; then
         echo "${name} port-forward already running on localhost:${local_port} (pid ${existing_pid})"
         return
       fi
       echo "${name} port-forward pid ${existing_pid} is alive but localhost:${local_port} is not listening; restarting"
       stop_pid_tree "$existing_pid"
-      wait_for_port_release "$local_port" >/dev/null 2>&1 || true
+      [[ -z "$bind_address" ]] && { wait_for_port_release "$local_port" >/dev/null 2>&1 || true; }
     fi
     rm -f "$pid_file"
   fi
 
-  if port_in_use "$local_port"; then
+  if [[ -z "$bind_address" ]] && port_in_use "$local_port"; then
     stop_matching_port_forward_listeners "$resource" "$local_port" "$remote_port" >/dev/null 2>&1 || true
     wait_for_port_release "$local_port" >/dev/null 2>&1 || true
   fi
 
-  if port_in_use "$local_port"; then
+  if [[ -z "$bind_address" ]] && port_in_use "$local_port"; then
     echo "localhost:${local_port} is already in use; stop that process or override the port" >&2
     exit 1
   fi
 
   if command -v python3 >/dev/null 2>&1; then
-    python3 - "$pid_file" "$log_file" "$NAMESPACE" "$resource" "$local_port" "$remote_port" <<'PY'
+    python3 - "$pid_file" "$log_file" "$NAMESPACE" "$resource" "$local_port" "$remote_port" "$bind_address" <<'PY'
 import subprocess
 import sys
 
-pid_file, log_file, namespace, resource, local_port, remote_port = sys.argv[1:]
+pid_file, log_file, namespace, resource, local_port, remote_port, bind_address = sys.argv[1:]
 script = """
 trap "" INT
 trap "exit 0" TERM
 while :; do
-  kubectl -n "$1" port-forward "$2" "${3}:${4}" </dev/null
+  if [ -n "$5" ]; then
+    kubectl -n "$1" port-forward --address "$5" "$2" "${3}:${4}" </dev/null
+  else
+    kubectl -n "$1" port-forward "$2" "${3}:${4}" </dev/null
+  fi
   sleep 1
 done
 """
 log = open(log_file, "ab", buffering=0)
 proc = subprocess.Popen(
-    ["/bin/sh", "-c", script, "rowboat-port-forward", namespace, resource, local_port, remote_port],
+    ["/bin/sh", "-c", script, "rowboat-port-forward", namespace, resource, local_port, remote_port, bind_address],
     stdin=subprocess.DEVNULL,
     stdout=log,
     stderr=subprocess.STDOUT,
@@ -530,22 +588,28 @@ PY
       resource="$2"
       local_port="$3"
       remote_port="$4"
+      bind_address="$5"
       trap "" INT
       trap "exit 0" TERM
       while :; do
-        kubectl -n "$namespace" port-forward "$resource" "${local_port}:${remote_port}" </dev/null
+        if [ -n "$bind_address" ]; then
+          kubectl -n "$namespace" port-forward --address "$bind_address" "$resource" "${local_port}:${remote_port}" </dev/null
+        else
+          kubectl -n "$namespace" port-forward "$resource" "${local_port}:${remote_port}" </dev/null
+        fi
         sleep 1
       done
-    ' rowboat-port-forward "$NAMESPACE" "$resource" "$local_port" "$remote_port" >"$log_file" 2>&1 </dev/null &
+    ' rowboat-port-forward "$NAMESPACE" "$resource" "$local_port" "$remote_port" "$bind_address" >"$log_file" 2>&1 </dev/null &
     echo "$!" >"$pid_file"
     disown "$(cat "$pid_file")" 2>/dev/null || true
   fi
   sleep 2
   if ! kill -0 "$(cat "$pid_file")" >/dev/null 2>&1; then
     echo "failed to start ${name} port-forward; see ${log_file}" >&2
+    [[ -n "$bind_address" ]] && return 1
     exit 1
   fi
-  echo "${name} port-forward: localhost:${local_port} -> ${resource}:${remote_port}"
+  echo "${name} port-forward: ${bind_address:-localhost}:${local_port} -> ${resource}:${remote_port}"
 }
 
 wait_for_http() {
@@ -576,6 +640,55 @@ wait_for_existing_http() {
   return 1
 }
 
+# Reclaim the canonical host port from a dead Docker forward.
+#
+# Docker Desktop can leave a published host port whose IPv4 forward is broken:
+# `lsof` shows *:PORT owned by com.docker.backend, the TCP handshake succeeds,
+# and then nothing is ever returned (connections pile up in CLOSE_WAIT). The
+# kind node is fine — inside the container the NodePort answers 200 on both
+# loopback and eth0 — so the fault is purely host-side. Restarting the node
+# container does not clear it; the wedge lives in Docker's own state, and a
+# sibling port published by the same container keeps working.
+#
+# Falling back to a different port number handles plain HTTP, but it breaks the
+# real-Google OAuth flow: GOOGLE_REDIRECT_URI has to match a URI registered in
+# Google Cloud byte for byte, and only http://localhost:18080/oauth/google/callback
+# is registered. Any other port number comes back redirect_uri_mismatch, which
+# surfaces as a Google error page rather than anything pointing at the port.
+#
+# Docker's stale listener is IPv4-only, so ::1 on the same port is still free.
+# macOS resolves localhost to ::1 ahead of 127.0.0.1 (curl, Chromium and Node
+# all try it first), so binding there wins back the canonical port number
+# without restarting Docker or disturbing unrelated containers.
+ipv6_loopback_free() {
+  local port="$1"
+  command -v lsof >/dev/null 2>&1 || return 1
+  # Quoted: the brackets are a glob pattern to the shell otherwise.
+  ! lsof -nP -iTCP@"[::1]:${port}" -sTCP:LISTEN >/dev/null 2>&1
+}
+
+reclaim_port_on_ipv6() {
+  local name="$1"
+  local resource="$2"
+  local port="$3"
+  local remote_port="$4"
+  local path="$5"
+
+  ipv6_loopback_free "$port" || return 1
+  echo "localhost:${port} has a dead IPv4 forward; reclaiming the port on ::1"
+  start_port_forward "$name" "$resource" "$port" "$remote_port" "::1" || return 1
+  if wait_for_http "$name" "http://localhost:${port}${path}"; then
+    return 0
+  fi
+  # Leave nothing running that the caller is not going to use.
+  local pid_file="${STATE_DIR}/${name}.pid"
+  if [[ -f "$pid_file" ]]; then
+    stop_pid_tree "$(cat "$pid_file")"
+    rm -f "$pid_file"
+  fi
+  return 1
+}
+
 select_host_port() {
   local name="$1"
   local resource="$2"
@@ -598,6 +711,11 @@ select_host_port() {
       wait_for_port_release "$port" >/dev/null 2>&1 || true
       start_port_forward "$name" "$resource" "$port" "$remote_port"
       wait_for_http "$name" "http://localhost:${port}${path}"
+      return
+    fi
+    # Prefer keeping the port number over keeping the address family — see
+    # reclaim_port_on_ipv6. Only then give up and move to another port.
+    if reclaim_port_on_ipv6 "$name" "$resource" "$port" "$remote_port" "$path"; then
       return
     fi
     if [[ -n "$env_set" ]]; then
@@ -630,6 +748,9 @@ ensure_local_http() {
 
   if port_in_use "$port"; then
     if wait_for_existing_http "http://localhost:${port}${path}" "$port"; then
+      return
+    fi
+    if reclaim_port_on_ipv6 "$name" "$resource" "$port" "$remote_port" "$path"; then
       return
     fi
     if [[ -n "$env_set" ]]; then
