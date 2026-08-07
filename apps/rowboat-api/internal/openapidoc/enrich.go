@@ -198,7 +198,7 @@ func addBillingSchemas(schemas obj) {
 		"daily":             ref("DailyCreditUsageBucket"),
 	}, "sanctionedCredits", "usedCredits", "availableCredits", "monthly", "daily")
 	schemas["BillingState"] = objectSchema("Current plan, status, trial, and usage for the authenticated user.", obj{
-		"plan":           stringSchema("Plan slug.", "free", obj{"enum": []any{"free", "starter", "pro"}}, nullable()),
+		"plan":           stringSchema("Plan slug.", "free", obj{"enum": []any{"free", "starter", "pro", "intelligence"}}, nullable()),
 		"status":         stringSchema("Billing status.", "active", obj{"enum": []any{"active", "trialing", "past_due", "canceled"}}, nullable()),
 		"trialExpiresAt": stringSchema("Trial expiry as RFC3339 when trialing; null otherwise.", "2026-07-01T00:00:00.000Z", nullable()),
 		"usage":          ref("BillingUsage"),
@@ -1436,7 +1436,7 @@ func enrichEntitySchemas(schemas obj) {
 		"email":                   {"description": "Best-known WorkOS primary email for the user.", "example": "user@example.com"},
 		"workos_user_id":          {"description": "WorkOS user id used to resolve bearer tokens into local users.", "example": "user_01HABCDEF"},
 		"workos_org_id":           {"description": "Optional WorkOS organization id for B2B/workspace contexts.", "example": "org_01HABCDEF"},
-		"plan":                    {"description": "Billing plan slug.", "enum": []any{"free", "starter", "pro"}, "example": "free"},
+		"plan":                    {"description": "Billing plan slug.", "enum": []any{"free", "starter", "pro", "intelligence"}, "example": "free"},
 		"status":                  {"description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.", "example": "active"},
 		"trial_expires_at":        {"description": "Trial expiry timestamp when the user is trialing.", "example": "2026-07-01T00:00:00Z", "nullable": true},
 		"sanctioned_credits":      {"description": "Credits granted by the current subscription.", "example": 10000},

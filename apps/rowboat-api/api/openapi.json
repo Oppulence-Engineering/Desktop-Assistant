@@ -2743,7 +2743,7 @@
         "properties": {
           "plan": {
             "description": "Billing plan slug.",
-            "enum": ["free", "starter", "pro"],
+            "enum": ["free", "starter", "pro", "intelligence"],
             "example": "free",
             "nullable": true,
             "type": "string"
@@ -10604,7 +10604,7 @@
           },
           "plan": {
             "description": "Billing plan slug.",
-            "enum": ["free", "starter", "pro"],
+            "enum": ["free", "starter", "pro", "intelligence"],
             "example": "free",
             "type": "string"
           },
@@ -10686,7 +10686,7 @@
           },
           "plan": {
             "description": "Billing plan slug.",
-            "enum": ["free", "starter", "pro"],
+            "enum": ["free", "starter", "pro", "intelligence"],
             "example": "free",
             "type": "string"
           },

@@ -4125,7 +4125,7 @@ export interface components {
        * @example free
        * @enum {string|null}
        */
-      plan: "free" | "starter" | "pro" | null;
+      plan: "free" | "starter" | "pro" | "intelligence" | null;
       /**
        * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
        * @example active
@@ -9411,7 +9411,7 @@ export interface components {
        * @example free
        * @enum {string}
        */
-      plan: "free" | "starter" | "pro";
+      plan: "free" | "starter" | "pro" | "intelligence";
       /**
        * @description Credits granted by the current subscription.
        * @example 10000
@@ -9478,7 +9478,7 @@ export interface components {
        * @example free
        * @enum {string}
        */
-      plan: "free" | "starter" | "pro";
+      plan: "free" | "starter" | "pro" | "intelligence";
       /**
        * Format: uuid
        * @description UUID of the source row represented by a history row.
