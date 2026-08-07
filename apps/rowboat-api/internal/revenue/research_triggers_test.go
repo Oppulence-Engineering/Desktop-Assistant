@@ -197,3 +197,45 @@ func TestFirstCitationURL(t *testing.T) {
 		}
 	}
 }
+
+// An expired trigger must be excluded by the query, not loaded and discarded.
+// This runs on every attention refresh, so a workspace's whole trigger history
+// would otherwise be read back to return the handful that are still live.
+func TestExpiredTriggersAreFilteredInTheQuery(t *testing.T) {
+	rf := newResearchFixture(t, triggerVendor("Acme announced a Series B.", true))
+	rel := rf.account(t)
+
+	if _, err := rf.svc.ResearchAccountTrigger(rf.ctx, rf.user, rel.ID); err != nil {
+		t.Fatalf("ResearchAccountTrigger: %v", err)
+	}
+	ws, err := rf.svc.CurrentWorkspace(rf.ctx, rf.user)
+	if err != nil {
+		t.Fatalf("workspace: %v", err)
+	}
+
+	now := time.Now().UTC()
+	live, err := rf.svc.activeAccountTriggers(rf.ctx, ws, now)
+	if err != nil {
+		t.Fatalf("active triggers: %v", err)
+	}
+	if len(live) != 1 {
+		t.Fatalf("a fresh trigger should be live, got %d", len(live))
+	}
+
+	expired, err := rf.svc.activeAccountTriggers(rf.ctx, ws, now.Add(triggerValidity+time.Hour))
+	if err != nil {
+		t.Fatalf("active triggers after expiry: %v", err)
+	}
+	if len(expired) != 0 {
+		t.Fatalf("expired trigger still returned: %+v", expired)
+	}
+
+	// And a trigger dated in the future is not a reason to write today.
+	future, err := rf.svc.activeAccountTriggers(rf.ctx, ws, now.Add(-time.Hour))
+	if err != nil {
+		t.Fatalf("active triggers before validFrom: %v", err)
+	}
+	if len(future) != 0 {
+		t.Fatalf("not-yet-valid trigger returned: %+v", future)
+	}
+}

@@ -399,6 +399,44 @@ question 2 on retention. And the `intelligence` credit grant is $500 against a
 $249 plan, which is loose, but it matches the existing `pro` convention ($200
 against $99) and tightening one tier alone would be arbitrary.
 
+### What three further adversarial passes found
+
+A second round, run under different lenses — concurrency and hostile input,
+tenant isolation, and behaviour over time.
+
+- **Nothing bounded the size of a vendor value.** Everything the vendor returns is
+  attacker-adjacent, because the task input carries a display name parsed from an
+  email signature and whoever sent the mail controls that. The response is capped
+  at 8MB by the outbound policy, and with no per-field bound that entire budget
+  could land in one `location` cell and then in an attention sentence. Values over
+  512 runes are now refused rather than truncated: a truncated value is a claim
+  nobody made.
+- **The live-trigger lookup grew without limit.** It loaded every research
+  milestone a workspace had ever produced and discarded the expired ones in Go, on
+  a path that runs on every attention refresh. Now filtered in SQL.
+- **The migration repeated a claim this codebase does not support.** It said the
+  projector-version bump makes every person reproject "on next read", copying the
+  framing of the migration before it. There is no read-path or background
+  reprojection here — only write paths call the projector. Corrected, and it turns
+  out not to matter: research writes and projects in one call.
+
+Three suspicions were checked and cleared, which is worth recording so the next
+reader does not re-derive them. The daily sweep is **replica-safe** — a second
+pod's reservation collides on the per-account, per-day idempotency key and skips,
+so N replicas cost the same as one. Attention explanations render as **React
+text**, so a vendor-supplied URL in the sentence is not an injection vector.
+Person deletion already removes `PersonAttribute` rows, so research facts and
+their citations leave with the person.
+
+One gap is left open deliberately. Research shares `DAILY_CREDIT_LIMIT` /
+`MONTHLY_CREDIT_LIMIT` with all other metered traffic, so heavy LLM use can
+consume the cap and the nightly trigger sweep then stops with
+`monthly_credit_limit_exceeded`. It logs, and it is alertable, but nothing tells
+the *user* that the monitoring they pay for did not run — and "up to 250
+monitored accounts" is a promise made in product terms against a budget shared
+with something else. Fixing it properly means either a research-specific budget
+or a user-facing degradation notice; both are larger than this change.
+
 ### The manual check this cannot automate
 
 The end-to-end bullet is not covered by any test and must be run by a person

@@ -47,10 +47,19 @@ ALTER TABLE `relationship_persons`
 ALTER TABLE `relationship_persons`
   ADD COLUMN `location` text NULL;
 
--- No backfill statement, deliberately. `personProjectorVersion` moves 2 -> 3 in
--- code, which makes every person reproject once on next read; rows still
--- claiming version 2 are stale by definition. There is nothing to backfill in
--- any case: no external_research attribute exists until someone consents.
+-- No backfill statement, and no reprojection sweep is needed.
+--
+-- Be careful with the framing used by the migration before this one: there is no
+-- read-path or background reprojection in this codebase. projectPersonAttributes
+-- is called only from write paths (ingest, backfill, merge, correction, and now
+-- research), so a person reprojects when something next touches them — not on
+-- the next read. `personProjectorVersion` moving 2 -> 3 only guarantees that when
+-- that happens, the hash guard does not short-circuit.
+--
+-- It does not matter here, which is why nothing else is required: the research
+-- path writes attributes and projects them in the same call, so an enriched
+-- person has these columns immediately. Every other row correctly has nothing to
+-- show, because no external_research attribute exists until someone consents.
 --
 -- Enum widenings carried by this change have no DDL because the validators are
 -- application-level (oneOfRevenue), not CHECK constraints:

@@ -61,6 +61,17 @@ const (
 	// value we can refuse on, rather than something inferred from whether the
 	// other fields happen to look plausible.
 	researchMatchField = "match_confidence"
+
+	// maxVendorValueRunes bounds any single string a vendor can put into a row.
+	//
+	// Everything the vendor returns is attacker-adjacent: the task input carries
+	// a display name parsed from an email signature, which is supplied by whoever
+	// sent the mail. The response is capped at 8MB by the outbound policy, and
+	// without a per-field bound that whole budget can land in one `location` cell
+	// and then in an attention explanation. A job title is not 512 characters; a
+	// value that long is a malfunction, and truncating it would fabricate a claim
+	// nobody made, so it is refused.
+	maxVendorValueRunes = 512
 )
 
 // personResearchDimensions maps task output fields onto PersonAttribute
@@ -534,6 +545,10 @@ func personAttributesFromResult(
 	for _, field := range fields {
 		value := strings.TrimSpace(stringValue(result.Content[field]))
 		if value == "" {
+			continue
+		}
+		if len([]rune(value)) > maxVendorValueRunes {
+			rejected = append(rejected, field+": value is implausibly long")
 			continue
 		}
 		basis, ok := result.BasisFor(field)

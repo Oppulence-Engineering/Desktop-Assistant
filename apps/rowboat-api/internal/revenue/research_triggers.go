@@ -151,6 +151,13 @@ func (s *Service) ResearchAccountTrigger(
 	if event == "" || strings.EqualFold(event, "none") {
 		return outcome, nil
 	}
+	// The event becomes an assertion value and then a sentence in the attention
+	// queue. A one-sentence answer that arrives as kilobytes is a malfunction,
+	// not a trigger. See maxVendorValueRunes.
+	if len([]rune(event)) > maxVendorValueRunes {
+		outcome.Rejected = "event text is implausibly long"
+		return outcome, nil
+	}
 	basis, ok := result.BasisFor(triggerEventField)
 	if !ok {
 		outcome.Rejected = "no basis returned for the event"
@@ -228,12 +235,23 @@ func (s *Service) activeAccountTriggers(
 	ws *ent.RevenueWorkspace,
 	now time.Time,
 ) (map[uuid.UUID]*ent.RelationshipAssertion, error) {
+	// Bounded in SQL, not in Go. Every trigger ever found stays in this table:
+	// loading them all and discarding the expired ones means this hot path — it
+	// runs on every attention refresh — grows without limit for the life of the
+	// workspace, to return the same ~250 live rows.
 	assertions, err := s.client.RelationshipAssertion.Query().
 		Where(
 			relationshipassertion.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
 			relationshipassertion.DimensionEQ("milestone"),
 			relationshipassertion.SourceTypeEQ(researchSourceType),
 			relationshipassertion.StatusEQ("active"),
+			relationshipassertion.ValidFromLTE(now),
+			// Every trigger is written with a valid_to, so a null one is a row
+			// this code did not create; accept it and let the Go guard decide.
+			relationshipassertion.Or(
+				relationshipassertion.ValidToGT(now),
+				relationshipassertion.ValidToIsNil(),
+			),
 		).
 		WithRelationship().
 		Order(ent.Desc(relationshipassertion.FieldValidFrom)).

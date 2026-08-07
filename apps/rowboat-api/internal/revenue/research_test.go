@@ -650,3 +650,36 @@ func TestCitationsReachTheClient(t *testing.T) {
 		t.Fatalf("owned-data attribute carried citations: %+v", owned.Citations)
 	}
 }
+
+// Everything the vendor returns is attacker-adjacent: the task input carries a
+// display name parsed from an email signature, which whoever sent the mail
+// controls. A response is capped at 8MB by the outbound policy, and without a
+// per-field bound that whole budget lands in one cell.
+func TestImplausiblyLongVendorValuesAreRefused(t *testing.T) {
+	long := strings.Repeat("x", maxVendorValueRunes+1)
+	result := &parallel.TaskResult{
+		Content: map[string]any{
+			researchMatchField: "high",
+			"location":         long,
+			"title":            "VP Engineering",
+		},
+		Basis: []parallel.Basis{
+			{Field: "location", Confidence: "high",
+				Citations: []parallel.Citation{{URL: "https://acme.example/team"}}},
+			{Field: "title", Confidence: "high",
+				Citations: []parallel.Citation{{URL: "https://acme.example/team"}}},
+		},
+	}
+
+	inputs, matched, rejected := personAttributesFromResult(result, "v1", time.Now().UTC())
+	if !matched {
+		t.Fatal("one bad field must not discard a good identity match")
+	}
+	if len(inputs) != 1 || inputs[0].Dimension != "title" {
+		t.Fatalf("expected only the sane field to survive, got %+v", inputs)
+	}
+	// Refused, not truncated: a truncated value is a claim nobody made.
+	if len(rejected) != 1 || !strings.Contains(rejected[0], "location") {
+		t.Fatalf("rejections = %v", rejected)
+	}
+}
