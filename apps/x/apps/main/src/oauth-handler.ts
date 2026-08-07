@@ -22,6 +22,7 @@ import { isSignedIn } from "@x/core/dist/account/account.js";
 import { startGoogleConnectViaBackend } from "@x/core/dist/auth/google-backend-oauth.js";
 import { invalidateCopilotInstructionsCache } from "@x/core/dist/application/assistant/instructions.js";
 import { claimTokensViaBackend } from "@x/core/dist/auth/google-backend-oauth.js";
+import type { OAuthTokens } from "@x/core/dist/auth/types.js";
 import {
   startConnectorViaBackend,
   claimConnectorViaBackend,
@@ -473,6 +474,11 @@ export async function connectProvider(
             const authorizeUrl = await startGoogleConnectViaBackend();
             await shell.openExternal(authorizeUrl);
             console.log("[OAuth] Started Oppulence-managed Google connect (browser opened)");
+            // Belt and braces: the api will deep-link back when it finishes,
+            // but that depends on owning the URL scheme. Poll for the same
+            // tokens so the connect still completes when it does not.
+            const state = new URL(authorizeUrl).searchParams.get("state");
+            if (state) void pollForGoogleConnect(state);
             return { success: true };
           } catch (error) {
             console.error("[OAuth] Failed to start Oppulence-managed Google connect:", error);
@@ -733,28 +739,85 @@ export async function connectProvider(
  * Called by the deep-link dispatcher (deeplink.ts) when the OS hands us a
  * solomon-ai://oauth/google/done?session=<state> URL.
  */
+async function persistGoogleConnect(tokens: OAuthTokens): Promise<void> {
+  const oauthRepo = getOAuthRepo();
+  await oauthRepo.upsert("google", {
+    tokens,
+    mode: PRODUCT_PROVIDER_ID,
+    // Explicitly null these — no client_id/secret on the desktop in this mode.
+    clientId: null,
+    clientSecret: null,
+    error: null,
+  });
+  triggerGmailSync();
+  triggerCalendarSync();
+  await recordRelationshipSourceAuthorization({
+    provider: "google",
+    success: true,
+    grantedScopes: tokens.scopes,
+  });
+  emitOAuthEvent({ provider: "google", success: true, grantedScopes: tokens.scopes });
+  console.log("[OAuth] Solomon AI-managed Google connect complete");
+}
+
+/** Whether a managed Google connect has already landed tokens on disk. */
+async function googleConnectLanded(): Promise<boolean> {
+  try {
+    const connection = await getOAuthRepo().read("google");
+    return Boolean(connection?.tokens?.access_token);
+  } catch {
+    return false;
+  }
+}
+
+const CLAIM_POLL_INTERVAL_MS = 2_000;
+// Long enough to cover picking an account, a password, and 2FA.
+const CLAIM_POLL_TIMEOUT_MS = 5 * 60_000;
+
+/**
+ * Wait for the api to park tokens under `state`, then finish the connect.
+ *
+ * The deep link is the fast path, but it only works when this app owns the URL
+ * scheme, and that is not something the app can assume:
+ *
+ *   - Dev builds on macOS deliberately never register it (see main.ts), because
+ *     registering would steal the scheme from the user's installed app. The
+ *     consequence is that a locally-run build could not complete a Google
+ *     connect at all, which is exactly what exercising a real mailbox against
+ *     the local stack requires.
+ *   - Any stale copy of the app can hold the LaunchServices claim — an old DMG
+ *     still mounted, a second install, a build someone ran once. The OS then
+ *     hands the callback to a process that has never heard of this `state`.
+ *
+ * In both cases the browser half succeeds and the tokens sit parked forever
+ * while the app reports "credentials not available", with nothing pointing at
+ * the URL scheme as the cause.
+ *
+ * Claiming is one-shot, so whichever path gets there first wins and the other
+ * finds nothing left to take — polling alongside a working deep link is safe.
+ */
+async function pollForGoogleConnect(state: string): Promise<void> {
+  const deadline = Date.now() + CLAIM_POLL_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, CLAIM_POLL_INTERVAL_MS));
+    // The deep link may have completed this already.
+    if (await googleConnectLanded()) return;
+    try {
+      await persistGoogleConnect(await claimTokensViaBackend(state));
+      console.log("[OAuth] Completed Google connect by polling (no deep link)");
+      return;
+    } catch {
+      // Nothing parked yet — the user is still in the browser — or the deep
+      // link claimed it first. Both are ordinary; keep waiting.
+    }
+  }
+  console.log("[OAuth] Gave up waiting for Google connect tokens");
+}
+
 export async function completeSolomonGoogleConnect(state: string): Promise<void> {
   try {
     console.log("[OAuth] Claiming Solomon AI-managed Google tokens...");
-    const tokens = await claimTokensViaBackend(state);
-    const oauthRepo = getOAuthRepo();
-    await oauthRepo.upsert("google", {
-      tokens,
-      mode: PRODUCT_PROVIDER_ID,
-      // Explicitly null these — no client_id/secret on the desktop in this mode.
-      clientId: null,
-      clientSecret: null,
-      error: null,
-    });
-    triggerGmailSync();
-    triggerCalendarSync();
-    await recordRelationshipSourceAuthorization({
-      provider: "google",
-      success: true,
-      grantedScopes: tokens.scopes,
-    });
-    emitOAuthEvent({ provider: "google", success: true, grantedScopes: tokens.scopes });
-    console.log("[OAuth] Solomon AI-managed Google connect complete");
+    await persistGoogleConnect(await claimTokensViaBackend(state));
   } catch (error) {
     console.error("[OAuth] Failed to complete Solomon AI-managed Google connect:", error);
     await recordRelationshipSourceAuthorization({
