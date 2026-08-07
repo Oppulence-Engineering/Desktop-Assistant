@@ -1,4 +1,7 @@
-# Research Mode: local by default, Parallel-backed when paid
+# RFC 039 — Research Mode: local by default, Parallel-backed when paid
+
+> **Status: implemented.** See [Implementation](#implementation) for what shipped,
+> where the code lives, and the three places the build departed from this draft.
 
 ## Context
 
@@ -39,12 +42,12 @@ Modelled on transcription, which already ships "On-device (Whisper)" vs "Cloud (
 | Mode | Behaviour |
 | --- | --- |
 | **Local** — default, all plans | Today exactly. Owned signals only. Nothing about a counterparty leaves the device. |
-| **Cloud** — `pro` plan | Adds Parallel enrichment, monitoring and research. Writes `external_research` assertions with citations. |
+| **Cloud** — `intelligence` plan | Adds Parallel enrichment, monitoring and research. Writes `external_research` assertions with citations. |
 
 ### Gating reuses what exists
 
 - **Capability**: add `CapabilityCloudResearch` to `internal/revenue/release_controls.go`, beside `CapabilityGoogleSource`. `ErrCapabilityDisabled` and the workspace-entitlement plumbing already exist.
-- **Plan**: the Stripe integration already distinguishes `starter` and `pro` (`internal/billing/stripe.go`). Cloud mode requires `pro`.
+- **Plan**: the Stripe integration already distinguishes `starter` and `pro` (`internal/billing/stripe.go`). Cloud mode requires the new `intelligence` plan — see [Recommendation](#recommendation-a-new-tier-not-a-higher-chase), which supersedes the `pro` gate this section originally proposed.
 - **Kill switch**: the same release-control path already supports disabling a capability fleet-wide, which matters for a vendor that can have an outage or a price change.
 
 Gate on the **server**, not the client. The desktop asking politely is not a gate; the API key lives server-side and the capability check belongs next to it.
@@ -213,14 +216,16 @@ A well-used single seat with cloud mode on:
 
 | Surface | Volume | Cost |
 | --- | --- | --- |
-| Monitor, 50 accounts daily @ `lite` | 1,500 runs | $4.50 |
+| Account triggers, 50 accounts daily @ Task `lite` | 1,500 runs | $7.50 |
 | Meeting prep, 20 meetings @ `core` | 20 | $0.50 |
 | Person enrichment, 300 people @ `base`, one-off | 300 | $3.00 |
 | Departure recovery, ~5/mo @ `base` | 5 | $0.05 |
 | Ad-hoc Search in copilot | 200 | $0.20 |
-| | | **≈ $8/month** |
+| | | **≈ $11/month** |
 
-Against $99 that is ~8% of revenue: meaningful, not structural. The tail is where it breaks — 5,000 people enriched at `base` is $50 in one action, and 500 monitored accounts is $45/month. Bulk needs the cost estimate, confirmation and credit reservation described above; that is a correctness requirement, not a nicety.
+Against $99 that is ~11% of revenue: meaningful, not structural. (The trigger
+line is Task `lite` rather than Monitor `lite` — $5/1k against $3/1k — which is
+the price of the Monitor departure recorded under [Implementation](#implementation).) The tail is where it breaks — 5,000 people enriched at `base` is $50 in one action, and 500 monitored accounts is $45/month. Bulk needs the cost estimate, confirmation and credit reservation described above; that is a correctness requirement, not a nicety.
 
 Note the offset: replacing the agent web-search loop *reduces* LLM spend, so net marginal cost is lower than the table suggests.
 
@@ -277,3 +282,208 @@ Two honest notes on the gap that leaves:
 1. ~~**Is `pro` the right gate, or is this a separate add-on?**~~ **Answered above:** a new `Intelligence` tier at $249/mo, because cloud research is consent-gated and users who decline it on privacy grounds must not be repriced for it. Margin was never the deciding factor — at ~$8/seat/month it is comfortable either way. What remains open is whether `Teams` includes `Intelligence` by default or stacks on top of it.
 2. **Do enriched fields sync to the cloud graph, or stay local?** They are about third parties; the answer differs from first-party evidence and the current consent copy does not cover it.
 3. **Retention.** Public professional data still ages. A `valid_to` policy for `external_research` attributes — 90 days? — versus keeping them until contradicted.
+
+## Implementation
+
+Shipped on `feat/parallel-research-mode`. This section is the map from the
+argument above to the code, and the honest record of where the build departed
+from the draft.
+
+### What exists
+
+| Piece | Where |
+| --- | --- |
+| Vendor client (Task API, basis, citations) | `apps/rowboat-api/internal/parallel/` |
+| Provenance tier + citations columns | `ent/schema/{person_attribute,relationship_assertion}.go` |
+| Ladder | `internal/revenue/relationship_state.go` — `assertionPriority` |
+| Consent + the three gates | `internal/revenue/research_consent.go` |
+| Person enrichment, basis→attribute mapping, bulk estimate | `internal/revenue/research.go` |
+| Trigger surface + daily sweep | `internal/revenue/research_triggers.go` |
+| `external_trigger` detector | `internal/revenue/relationship_attention.go` |
+| HTTP surface | `internal/revenue/handler_research.go` — `/v1/research/*` |
+| Desktop consent switch and bulk run | `apps/x/apps/renderer/src/components/settings/transcription-settings.tsx` |
+| Privacy receipt | `apps/x/apps/renderer/src/components/settings/privacy-settings.tsx` |
+| `Intelligence` tier | `apps/rowboat-www/app/(marketing)/marketing-data.ts`, `internal/billing/stripe.go` |
+| Schema record | `apps/rowboat-api/migrations/20260806220000_cloud_research.sql` |
+
+The three gates are separate errors with separate remedies —
+`ErrCapabilityDisabled` (an operator re-enables), `ErrResearchPlanRequired` (a
+user upgrades), `ErrResearchConsentRequired` (only the user can grant). They are
+checked in that order, so a vendor incident stops traffic regardless of what
+anyone has bought or agreed to. Consent is checked last and is still the
+strongest: it is the only one nobody can grant on the user's behalf.
+
+Consent shipped first, with tests, before the client existed — as this document
+demanded. `cloud_research_consent` lives on `RevenueWorkspace`, not only in
+desktop config, because the data subject is not the user.
+
+### Where this departs from the draft
+
+1. **The trigger surface is a scheduled Task, not a vendor `Monitor`.** A Monitor
+   subscription needs an inbound webhook, its signature verification and a replay
+   story, all built against a contract nobody here has exercised against a real
+   key. `ResearchTriggerRunner` asks the same question daily through the Task API
+   at a comparable price, and shares the reserve/settle path everything else
+   already uses. The Monitor product is the optimisation; moving to it changes
+   nothing a user sees.
+2. **Bulk enrichment is chunked by the client, not streamed over SSE.** The Group
+   API with `last_event_id` is the right shape for a durable job runner, and there
+   is no durable job runner to put it in. `POST /v1/research/people` takes at most
+   25 ids; the desktop walks the pending list and re-sends a failed chunk.
+   Idempotency per person + task-spec version makes a resumed run free for
+   everyone it already covered, which is the property `last_event_id` was wanted
+   for.
+3. **The verification bullet "a `starter` plan gets `ErrCapabilityDisabled`" is
+   implemented as a distinct `ErrResearchPlanRequired`** returning 402 rather than
+   409. The intent — an under-plan caller is refused, and consent-off is refused
+   independently — is tested; collapsing a plan problem into "capability disabled"
+   would tell a user nothing they can act on.
+
+### Two decisions the draft left implicit
+
+**Silence still settles.** A run where the vendor honestly reports "I could not
+identify this person" writes nothing and is still billed to the user, because the
+vendor ran and billed us. Refunding silence would make the cheapest possible
+answer the one the accounting rewards.
+
+**An unmatched identity discards the whole result, not the weak fields.** Anything
+short of a `high` identity match stores nothing at all. "Store it at low
+confidence" is precisely how a stranger's job history ends up on a real contact:
+a low confidence still wins a dimension nothing else asserts.
+
+### Open questions, updated
+
+1. ~~**Is `pro` the right gate?**~~ Answered: the `intelligence` plan at $249/mo,
+   implemented in Stripe and in the marketing page. Whether `Teams` includes it or
+   stacks on top is still open.
+2. **Do enriched fields sync to the cloud graph, or stay local?** Still open —
+   they are written server-side today, since that is where the vendor call
+   happens. The consent copy covers what is *sent*; it does not yet say what is
+   *retained*, and that gap is real.
+3. ~~**Retention.**~~ Answered for triggers only: a trigger carries
+   `valid_to = observed + 30 days`, because a funding round announced six weeks
+   ago is no longer a reason to write today. Person attributes still have no
+   expiry and are kept until contradicted — the question stands for those.
+
+### What three adversarial review passes found
+
+Recorded because the defects are more instructive than the design, and two of
+them were the kind that ship silently.
+
+- **Citations were written and read by nothing.** `citations_json` was populated,
+  migrated, and enforced — and absent from `personAttributeDTO`, from every
+  desktop type, and from every surface. The tier's entire promise ("a URL you can
+  click") was unshipped while every test passed, which is exactly the
+  fully-built-and-unreachable failure this repo already has a lint-style test
+  for. Fixed on the API, and the trigger's source URL now goes into the queue
+  item's own sentence, because nothing resolves an assertion evidence ref.
+- **The trigger sweep was priced at `core`.** Daily, at the advertised 250-account
+  limit, that is ~$187/month against a $249 plan — 75% of revenue, versus the
+  ~$4.50 this document budgeted. The task asks two questions, which is what
+  `lite` is priced for. A test now pins the per-run credit cost, because this is
+  a one-constant mistake with a four-figure annual consequence.
+- **The privacy receipt could lie.** Consent granted on one machine left another
+  machine's routing receipt reporting "nothing is sent" while the server swept
+  daily. The desktop mirror now reconciles to the server on every status read.
+- **Two strict `z.enum`s were missing the new values** — the attention reason code
+  and the contradiction source type — including one whose own comment claimed it
+  was open-ended. It is not.
+- **The pending-people query was N+1**, one round trip per contact on an endpoint
+  the settings pane opens with.
+- **Consent became unwithdrawable if the vendor key was removed**, because the UI
+  gated the whole section on the provider being configured.
+
+Two things were left alone deliberately. Revoking consent does not purge already
+-stored research attributes, and no copy claims it does — that belongs with open
+question 2 on retention. And the `intelligence` credit grant is $500 against a
+$249 plan, which is loose, but it matches the existing `pro` convention ($200
+against $99) and tightening one tier alone would be arbitrary.
+
+### What three further adversarial passes found
+
+A second round, run under different lenses — concurrency and hostile input,
+tenant isolation, and behaviour over time.
+
+- **Nothing bounded the size of a vendor value.** Everything the vendor returns is
+  attacker-adjacent, because the task input carries a display name parsed from an
+  email signature and whoever sent the mail controls that. The response is capped
+  at 8MB by the outbound policy, and with no per-field bound that entire budget
+  could land in one `location` cell and then in an attention sentence. Values over
+  512 runes are now refused rather than truncated: a truncated value is a claim
+  nobody made.
+- **The live-trigger lookup grew without limit.** It loaded every research
+  milestone a workspace had ever produced and discarded the expired ones in Go, on
+  a path that runs on every attention refresh. Now filtered in SQL.
+- **The migration repeated a claim this codebase does not support.** It said the
+  projector-version bump makes every person reproject "on next read", copying the
+  framing of the migration before it. There is no read-path or background
+  reprojection here — only write paths call the projector. Corrected, and it turns
+  out not to matter: research writes and projects in one call.
+
+Three suspicions were checked and cleared, which is worth recording so the next
+reader does not re-derive them. The daily sweep is **replica-safe** — a second
+pod's reservation collides on the per-account, per-day idempotency key and skips,
+so N replicas cost the same as one. Attention explanations render as **React
+text**, so a vendor-supplied URL in the sentence is not an injection vector.
+Person deletion already removes `PersonAttribute` rows, so research facts and
+their citations leave with the person.
+
+One gap is left open deliberately. Research shares `DAILY_CREDIT_LIMIT` /
+`MONTHLY_CREDIT_LIMIT` with all other metered traffic, so heavy LLM use can
+consume the cap and the nightly trigger sweep then stops with
+`monthly_credit_limit_exceeded`. It logs, and it is alertable, but nothing tells
+the *user* that the monitoring they pay for did not run — and "up to 250
+monitored accounts" is a promise made in product terms against a budget shared
+with something else. Fixing it properly means either a research-specific budget
+or a user-facing degradation notice; both are larger than this change.
+
+### Round three: seven passes, one defect
+
+The find rate finally decayed. Six of seven lenses came back clean, which is
+reported as such rather than padded.
+
+**The defect.** `usableCitations` accepted a URL carrying userinfo. Two harms,
+the second worse than the first: `https://user:secret@acme.example/x` persists a
+credential and hands it back to a user to click, and
+`https://acme.example@evil.example/x` *reads* as acme.example while resolving to
+evil.example — in a string the trigger surface prints verbatim into the sentence
+it tells the user to trust. Refused now. A citation to a public page never needs
+credentials.
+
+**Cleared, with the reasoning, so nobody re-derives it:**
+
+- *Generated surfaces.* Regenerating ent published `citations_json` to the
+  documented OpenAPI schema and `citationsJSON` plus predicate filters to the
+  admin GraphQL. Not a leak: the already-`Sensitive()` `value` column sits in the
+  same documented schema, no entoas handler is mounted (`api/openapi.json` is
+  documentation, not a served surface), and `/graphql` is behind the internal
+  secret. Critically, `cloudResearchConsent` is readable and filterable there but
+  has **no mutation input** — consent cannot be set through the graph, only
+  through the endpoint that enforces `manage_sources`.
+- *The billing key.* `personTaskSpecVersion()` is half the idempotency key for
+  every charge; if it varied by process or build, a restart would re-bill a whole
+  workspace. It is stable because `encoding/json` sorts map keys — now pinned by
+  a golden test whose failure message explains that changing it makes every
+  enriched person billable again. The trigger key rolls exactly once per UTC day,
+  including across a zone difference and a month boundary.
+- *The admission table.* Four gates × five entry points, all 16 states now
+  asserted, including which refusal wins when several are shut and the invariant
+  that nothing reaches the vendor unless every gate is open.
+- *Degenerate vendor responses.* Nil results, nil content, basis without content,
+  wrong types, a non-string match confidence, duplicate basis entries, fields the
+  task never requested, and `javascript:`/`file:`/`data:`/`ftp:` citations all
+  produce silence rather than a wrong claim.
+- *Ledger algebra.* The op budget counts what was spent, not what was reserved —
+  an over-estimating caller does not burn budget on money it never spent.
+- *Clocks.* The `time.Now()` fallbacks in the person projector are pre-existing
+  and unreachable from research, which always passes the service clock.
+- *The desktop contract.* All four research IPC channels and the client outcome
+  type match their Go DTOs field for field.
+
+### The manual check this cannot automate
+
+The end-to-end bullet is not covered by any test and must be run by a person
+against a real key on a throwaway workspace: enrich one person, click the
+citation, confirm the page actually supports the claim. A citation that does not
+support its field is the failure mode that matters, and no unit test will catch
+it.

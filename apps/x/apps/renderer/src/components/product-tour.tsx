@@ -87,14 +87,14 @@ export const PRODUCT_TOUR_STEPS: Record<ProductTourVariant, TourStep[]> = {
       target: "connections",
       eyebrow: "10 · Sources",
       title: "Keep source health visible",
-      body: "Google, Slack, Fireflies, HubSpot, MCP tools, and local notes contribute evidence to the same relationship model.",
+      body: "Google, Slack, Fireflies, HubSpot, MCP tools, and local notes contribute evidence to the same relationship model. Cloud research, if you enable it, reports here too so you can see whether it ran.",
       placement: "right",
     },
     {
       target: "settings",
       eyebrow: "11 · Settings",
       title: "Control privacy, models, and permissions",
-      body: "Configure connected accounts, model providers, notifications, security, and what stays on this Mac.",
+      body: "Configure connected accounts, model providers, notifications, security, and what stays on this Mac — including whether anything about the people you correspond with may be looked up on the public web.",
       placement: "right",
     },
     {
@@ -128,15 +128,27 @@ export const PRODUCT_TOUR_STEPS: Record<ProductTourVariant, TourStep[]> = {
       placement: "right",
     },
     {
+      // Deliberately targets Settings rather than the queue: this step exists to
+      // say the capability is OFF and where the switch is, not to sell it. The
+      // consent decision is meant to be made once, deliberately — a tour that
+      // nudged it at the moment of curiosity would be exactly the consent
+      // theatre the design refuses.
+      target: "settings",
+      eyebrow: "03 · Cloud research",
+      title: "Add a reason from outside your own data",
+      body: "Off by default. Turn it on and Oppulence looks up public professional information about the people and companies you correspond with — their name, email domain and employer go to Parallel Web; your messages, transcripts and notes never do. Every fact it adds carries a link you can click.",
+      placement: "right",
+    },
+    {
       target: "evidence",
-      eyebrow: "03 · Reconcile",
+      eyebrow: "04 · Reconcile",
       title: "Trace the relationship state",
       body: "Follow claims back to source records and timeline observations instead of trusting an opaque score.",
       placement: "right",
     },
     {
       target: "relationship-action",
-      eyebrow: "04 · Act safely",
+      eyebrow: "05 · Act safely",
       title: "Approve the next action",
       body: "Recommendations stay reviewable until you approve the exact action and revision.",
       placement: "right",

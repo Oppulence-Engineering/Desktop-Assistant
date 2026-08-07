@@ -43,6 +43,10 @@ type Person struct {
 	Timezone string `json:"timezone,omitempty"`
 	// Locale holds the value of the "locale" field.
 	Locale string `json:"locale,omitempty"`
+	// Seniority holds the value of the "seniority" field.
+	Seniority string `json:"seniority,omitempty"`
+	// Location holds the value of the "location" field.
+	Location string `json:"location,omitempty"`
 	// EmploymentStatus holds the value of the "employment_status" field.
 	EmploymentStatus string `json:"employment_status,omitempty"`
 	// AttributesVersion holds the value of the "attributes_version" field.
@@ -192,7 +196,7 @@ func (*Person) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case person.FieldAttributesVersion, person.FieldProjectorVersion, person.FieldRelationshipCount:
 			values[i] = new(sql.NullInt64)
-		case person.FieldDisplayName, person.FieldPrimaryEmail, person.FieldTitle, person.FieldOrgName, person.FieldOrgDomain, person.FieldPhone, person.FieldTimezone, person.FieldLocale, person.FieldEmploymentStatus, person.FieldAttributesHash, person.FieldStatus:
+		case person.FieldDisplayName, person.FieldPrimaryEmail, person.FieldTitle, person.FieldOrgName, person.FieldOrgDomain, person.FieldPhone, person.FieldTimezone, person.FieldLocale, person.FieldSeniority, person.FieldLocation, person.FieldEmploymentStatus, person.FieldAttributesHash, person.FieldStatus:
 			values[i] = new(sql.NullString)
 		case person.FieldCreatedAt, person.FieldUpdatedAt, person.FieldProjectedAt, person.FieldMergedAt, person.FieldFirstInteractionAt, person.FieldLastInteractionAt:
 			values[i] = new(sql.NullTime)
@@ -290,6 +294,18 @@ func (_m *Person) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field locale", values[i])
 			} else if value.Valid {
 				_m.Locale = value.String
+			}
+		case person.FieldSeniority:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field seniority", values[i])
+			} else if value.Valid {
+				_m.Seniority = value.String
+			}
+		case person.FieldLocation:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field location", values[i])
+			} else if value.Valid {
+				_m.Location = value.String
 			}
 		case person.FieldEmploymentStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -482,6 +498,12 @@ func (_m *Person) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("locale=")
 	builder.WriteString(_m.Locale)
+	builder.WriteString(", ")
+	builder.WriteString("seniority=")
+	builder.WriteString(_m.Seniority)
+	builder.WriteString(", ")
+	builder.WriteString("location=")
+	builder.WriteString(_m.Location)
 	builder.WriteString(", ")
 	builder.WriteString("employment_status=")
 	builder.WriteString(_m.EmploymentStatus)

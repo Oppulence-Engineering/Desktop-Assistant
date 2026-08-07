@@ -55,6 +55,8 @@ type PersonAttribute struct {
 	SupersedesAttributeID string `json:"supersedes_attribute_id,omitempty"`
 	// ExtractorVersion holds the value of the "extractor_version" field.
 	ExtractorVersion string `json:"extractor_version,omitempty"`
+	// CitationsJSON holds the value of the "citations_json" field.
+	CitationsJSON string `json:"citations_json,omitempty"`
 	// DedupeKey holds the value of the "dedupe_key" field.
 	DedupeKey string `json:"dedupe_key,omitempty"`
 	// SupportingObservationIds holds the value of the "supporting_observation_ids" field.
@@ -139,7 +141,7 @@ func (*PersonAttribute) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case personattribute.FieldConfidence:
 			values[i] = new(sql.NullFloat64)
-		case personattribute.FieldDimension, personattribute.FieldValue, personattribute.FieldSourceType, personattribute.FieldSource, personattribute.FieldExtractor, personattribute.FieldStatus, personattribute.FieldReason, personattribute.FieldSupersedesAttributeID, personattribute.FieldExtractorVersion, personattribute.FieldDedupeKey:
+		case personattribute.FieldDimension, personattribute.FieldValue, personattribute.FieldSourceType, personattribute.FieldSource, personattribute.FieldExtractor, personattribute.FieldStatus, personattribute.FieldReason, personattribute.FieldSupersedesAttributeID, personattribute.FieldExtractorVersion, personattribute.FieldCitationsJSON, personattribute.FieldDedupeKey:
 			values[i] = new(sql.NullString)
 		case personattribute.FieldCreatedAt, personattribute.FieldUpdatedAt, personattribute.FieldObservedAt, personattribute.FieldValidFrom, personattribute.FieldValidTo, personattribute.FieldRetractedAt:
 			values[i] = new(sql.NullTime)
@@ -271,6 +273,12 @@ func (_m *PersonAttribute) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field extractor_version", values[i])
 			} else if value.Valid {
 				_m.ExtractorVersion = value.String
+			}
+		case personattribute.FieldCitationsJSON:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field citations_json", values[i])
+			} else if value.Valid {
+				_m.CitationsJSON = value.String
 			}
 		case personattribute.FieldDedupeKey:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -419,6 +427,9 @@ func (_m *PersonAttribute) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("extractor_version=")
 	builder.WriteString(_m.ExtractorVersion)
+	builder.WriteString(", ")
+	builder.WriteString("citations_json=")
+	builder.WriteString(_m.CitationsJSON)
 	builder.WriteString(", ")
 	builder.WriteString("dedupe_key=")
 	builder.WriteString(_m.DedupeKey)

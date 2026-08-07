@@ -37,6 +37,10 @@ const (
 	FieldTimezone = "timezone"
 	// FieldLocale holds the string denoting the locale field in the database.
 	FieldLocale = "locale"
+	// FieldSeniority holds the string denoting the seniority field in the database.
+	FieldSeniority = "seniority"
+	// FieldLocation holds the string denoting the location field in the database.
+	FieldLocation = "location"
 	// FieldEmploymentStatus holds the string denoting the employment_status field in the database.
 	FieldEmploymentStatus = "employment_status"
 	// FieldAttributesVersion holds the string denoting the attributes_version field in the database.
@@ -149,6 +153,8 @@ var Columns = []string{
 	FieldPhone,
 	FieldTimezone,
 	FieldLocale,
+	FieldSeniority,
+	FieldLocation,
 	FieldEmploymentStatus,
 	FieldAttributesVersion,
 	FieldAttributesHash,
@@ -275,6 +281,16 @@ func ByTimezone(opts ...sql.OrderTermOption) OrderOption {
 // ByLocale orders the results by the locale field.
 func ByLocale(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLocale, opts...).ToFunc()
+}
+
+// BySeniority orders the results by the seniority field.
+func BySeniority(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSeniority, opts...).ToFunc()
+}
+
+// ByLocation orders the results by the location field.
+func ByLocation(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLocation, opts...).ToFunc()
 }
 
 // ByEmploymentStatus orders the results by the employment_status field.

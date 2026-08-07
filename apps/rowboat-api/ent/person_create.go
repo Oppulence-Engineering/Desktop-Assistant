@@ -169,6 +169,34 @@ func (_c *PersonCreate) SetNillableLocale(v *string) *PersonCreate {
 	return _c
 }
 
+// SetSeniority sets the "seniority" field.
+func (_c *PersonCreate) SetSeniority(v string) *PersonCreate {
+	_c.mutation.SetSeniority(v)
+	return _c
+}
+
+// SetNillableSeniority sets the "seniority" field if the given value is not nil.
+func (_c *PersonCreate) SetNillableSeniority(v *string) *PersonCreate {
+	if v != nil {
+		_c.SetSeniority(*v)
+	}
+	return _c
+}
+
+// SetLocation sets the "location" field.
+func (_c *PersonCreate) SetLocation(v string) *PersonCreate {
+	_c.mutation.SetLocation(v)
+	return _c
+}
+
+// SetNillableLocation sets the "location" field if the given value is not nil.
+func (_c *PersonCreate) SetNillableLocation(v *string) *PersonCreate {
+	if v != nil {
+		_c.SetLocation(*v)
+	}
+	return _c
+}
+
 // SetEmploymentStatus sets the "employment_status" field.
 func (_c *PersonCreate) SetEmploymentStatus(v string) *PersonCreate {
 	_c.mutation.SetEmploymentStatus(v)
@@ -667,6 +695,14 @@ func (_c *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 		_spec.SetField(person.FieldLocale, field.TypeString, value)
 		_node.Locale = value
 	}
+	if value, ok := _c.mutation.Seniority(); ok {
+		_spec.SetField(person.FieldSeniority, field.TypeString, value)
+		_node.Seniority = value
+	}
+	if value, ok := _c.mutation.Location(); ok {
+		_spec.SetField(person.FieldLocation, field.TypeString, value)
+		_node.Location = value
+	}
 	if value, ok := _c.mutation.EmploymentStatus(); ok {
 		_spec.SetField(person.FieldEmploymentStatus, field.TypeString, value)
 		_node.EmploymentStatus = value
@@ -1052,6 +1088,42 @@ func (u *PersonUpsert) UpdateLocale() *PersonUpsert {
 // ClearLocale clears the value of the "locale" field.
 func (u *PersonUpsert) ClearLocale() *PersonUpsert {
 	u.SetNull(person.FieldLocale)
+	return u
+}
+
+// SetSeniority sets the "seniority" field.
+func (u *PersonUpsert) SetSeniority(v string) *PersonUpsert {
+	u.Set(person.FieldSeniority, v)
+	return u
+}
+
+// UpdateSeniority sets the "seniority" field to the value that was provided on create.
+func (u *PersonUpsert) UpdateSeniority() *PersonUpsert {
+	u.SetExcluded(person.FieldSeniority)
+	return u
+}
+
+// ClearSeniority clears the value of the "seniority" field.
+func (u *PersonUpsert) ClearSeniority() *PersonUpsert {
+	u.SetNull(person.FieldSeniority)
+	return u
+}
+
+// SetLocation sets the "location" field.
+func (u *PersonUpsert) SetLocation(v string) *PersonUpsert {
+	u.Set(person.FieldLocation, v)
+	return u
+}
+
+// UpdateLocation sets the "location" field to the value that was provided on create.
+func (u *PersonUpsert) UpdateLocation() *PersonUpsert {
+	u.SetExcluded(person.FieldLocation)
+	return u
+}
+
+// ClearLocation clears the value of the "location" field.
+func (u *PersonUpsert) ClearLocation() *PersonUpsert {
+	u.SetNull(person.FieldLocation)
 	return u
 }
 
@@ -1478,6 +1550,48 @@ func (u *PersonUpsertOne) UpdateLocale() *PersonUpsertOne {
 func (u *PersonUpsertOne) ClearLocale() *PersonUpsertOne {
 	return u.Update(func(s *PersonUpsert) {
 		s.ClearLocale()
+	})
+}
+
+// SetSeniority sets the "seniority" field.
+func (u *PersonUpsertOne) SetSeniority(v string) *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetSeniority(v)
+	})
+}
+
+// UpdateSeniority sets the "seniority" field to the value that was provided on create.
+func (u *PersonUpsertOne) UpdateSeniority() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateSeniority()
+	})
+}
+
+// ClearSeniority clears the value of the "seniority" field.
+func (u *PersonUpsertOne) ClearSeniority() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.ClearSeniority()
+	})
+}
+
+// SetLocation sets the "location" field.
+func (u *PersonUpsertOne) SetLocation(v string) *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetLocation(v)
+	})
+}
+
+// UpdateLocation sets the "location" field to the value that was provided on create.
+func (u *PersonUpsertOne) UpdateLocation() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateLocation()
+	})
+}
+
+// ClearLocation clears the value of the "location" field.
+func (u *PersonUpsertOne) ClearLocation() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.ClearLocation()
 	})
 }
 
@@ -2102,6 +2216,48 @@ func (u *PersonUpsertBulk) UpdateLocale() *PersonUpsertBulk {
 func (u *PersonUpsertBulk) ClearLocale() *PersonUpsertBulk {
 	return u.Update(func(s *PersonUpsert) {
 		s.ClearLocale()
+	})
+}
+
+// SetSeniority sets the "seniority" field.
+func (u *PersonUpsertBulk) SetSeniority(v string) *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetSeniority(v)
+	})
+}
+
+// UpdateSeniority sets the "seniority" field to the value that was provided on create.
+func (u *PersonUpsertBulk) UpdateSeniority() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateSeniority()
+	})
+}
+
+// ClearSeniority clears the value of the "seniority" field.
+func (u *PersonUpsertBulk) ClearSeniority() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.ClearSeniority()
+	})
+}
+
+// SetLocation sets the "location" field.
+func (u *PersonUpsertBulk) SetLocation(v string) *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetLocation(v)
+	})
+}
+
+// UpdateLocation sets the "location" field to the value that was provided on create.
+func (u *PersonUpsertBulk) UpdateLocation() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateLocation()
+	})
+}
+
+// ClearLocation clears the value of the "location" field.
+func (u *PersonUpsertBulk) ClearLocation() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.ClearLocation()
 	})
 }
 

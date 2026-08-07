@@ -34,6 +34,7 @@ export interface BuildRoutingInput {
     commitmentsEnabled: boolean;
     liveQuestionsEnabled: boolean;
   };
+  cloudResearch: { enabled: boolean };
   relationshipEvidence: {
     enabled: boolean;
     location: TranscriptionDataLocation;
@@ -134,6 +135,20 @@ export function buildTranscriptionRouting(input: BuildRoutingInput): Transcripti
 
   return {
     localOnly: input.localOnly,
+    // Its own route. See CloudResearchRoute: this discloses a counterparty, not
+    // the user, so it must not be summarised alongside what the user publishes
+    // about themselves.
+    cloudResearch: {
+      enabled: input.cloudResearch.enabled,
+      vendor: "Parallel Web",
+      sends: [
+        "the person's name",
+        "their email domain",
+        "their employer",
+        "the company name and domain of accounts you follow",
+      ],
+      neverSends: ["message content", "transcripts", "notes", "email addresses"],
+    },
     voice,
     // Voice memos use the exact same capture/transcription service as push-to-talk.
     voiceMemo: { ...voice },

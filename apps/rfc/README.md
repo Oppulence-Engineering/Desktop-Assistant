@@ -113,6 +113,16 @@ learning into the first production beta. Its activation contract is a fresh
 workspace reaching one trustworthy account and completing the full
 evidence-to-outcome loop without operator-only setup.
 
+Ceiling companion:
+[RFC 039](./039-parallel-research-mode.md) lifts the owned-data-only ceiling for
+users who pay, without moving it for users who do not. Cloud research is off by
+default, consent-gated independently of plan because the data subject is a
+counterparty rather than the user, and every fact it stores carries a citation
+and lands on a new `external_research` rung of the provenance ladder — below
+`deterministic`, above `ai_inference`. Its first surface turns the attention
+queue from a list of accounts that have gone quiet into a list with a reason to
+write today.
+
 ## Cloud workflow RFCs
 
 | #                                                      | Title                           | Layer           | What it adds                                                                                                                    |

@@ -41,6 +41,14 @@ identifiers into the cluster Secrets below.
    (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `GOOGLE_API_KEY`,
    `ELEVENLABS_API_KEY`, `EXA_API_KEY`,
    `GOOGLE_OAUTH_CLIENT_ID/SECRET`). Record a machine token + project id.
+
+   **`PARALLEL_API_KEY` is optional** (RFC 039, cloud research). Leave it out and
+   the research surface reports itself unconfigured rather than failing at the
+   point of use: no enrichment, no nightly account sweep, and the desktop hides
+   the control. A key on its own grants nothing: every research call also
+   requires the `cloud_research` capability, an active `intelligence`
+   subscription (`STRIPE_INTELLIGENCE_PRICE_ID`), and per-workspace consent that
+   only the user can give.
 5. **DNS** — `api.x.solomon-ai.co` (rowboat-api). The issuer `auth.solomon-ai.co`
    is WorkOS's custom domain (they serve it). cert-manager issues TLS for the api.
    (`oauth.solomon-ai.co` + `consent.solomon-ai.co` are needed only in Hydra mode.)

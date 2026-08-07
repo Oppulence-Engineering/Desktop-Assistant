@@ -34,6 +34,7 @@ describe("buildTranscriptionRouting", () => {
       captureEngine: "renderer",
       nativeTranscriptionEngine: "whisper",
       enrichment,
+      cloudResearch: { enabled: false },
       relationshipEvidence,
     });
 
@@ -62,6 +63,7 @@ describe("buildTranscriptionRouting", () => {
       captureEngine: "renderer",
       nativeTranscriptionEngine: "whisper",
       enrichment,
+      cloudResearch: { enabled: false },
       relationshipEvidence,
     });
 
@@ -88,6 +90,7 @@ describe("buildTranscriptionRouting", () => {
       captureEngine: "native",
       nativeTranscriptionEngine: "parakeet",
       enrichment,
+      cloudResearch: { enabled: false },
       relationshipEvidence,
     });
 
@@ -114,6 +117,7 @@ describe("buildTranscriptionRouting", () => {
       enrichment,
       // Expressed through the flag that actually turns sharing on; `enabled`
       // is derived and no longer settable by the caller.
+      cloudResearch: { enabled: false },
       relationshipEvidence: {
         ...relationshipEvidence,
         sharing: { ...noSharing, meetingTranscripts: true },
@@ -175,6 +179,7 @@ describe("relationship evidence receipt", () => {
     // has to be independently visible or the receipt can describe the wrong one.
     const result = buildTranscriptionRouting({
       ...base,
+      cloudResearch: { enabled: false },
       relationshipEvidence: {
         ...relationshipEvidence,
         enabled: true,
@@ -191,6 +196,7 @@ describe("relationship evidence receipt", () => {
     // The exact false statement the old receipt made.
     const result = buildTranscriptionRouting({
       ...base,
+      cloudResearch: { enabled: false },
       relationshipEvidence: {
         ...relationshipEvidence,
         enabled: true,
@@ -207,6 +213,7 @@ describe("relationship evidence receipt", () => {
     // unrepresentable rather than merely discouraged.
     const result = buildTranscriptionRouting({
       ...base,
+      cloudResearch: { enabled: false },
       relationshipEvidence: { ...relationshipEvidence, enabled: true, sharing: noSharing },
     });
     expect(result.relationshipEvidence.enabled).toBe(false);
@@ -216,6 +223,7 @@ describe("relationship evidence receipt", () => {
   it("ignores a caller that claims disabled while sharing something", () => {
     const result = buildTranscriptionRouting({
       ...base,
+      cloudResearch: { enabled: false },
       relationshipEvidence: {
         ...relationshipEvidence,
         enabled: false,
@@ -226,7 +234,11 @@ describe("relationship evidence receipt", () => {
   });
 
   it("says nothing leaves the device when every flag is off", () => {
-    const result = buildTranscriptionRouting({ ...base, relationshipEvidence });
+    const result = buildTranscriptionRouting({
+      ...base,
+      cloudResearch: { enabled: false },
+      relationshipEvidence,
+    });
     expect(result.relationshipEvidence.enabled).toBe(false);
     expect(result.relationshipEvidence.transcriptTextMayLeaveDevice).toBe(false);
     expect(Object.values(result.relationshipEvidence.sharing)).not.toContain(true);

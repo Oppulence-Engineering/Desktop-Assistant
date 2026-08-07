@@ -106,6 +106,16 @@ func MailHistoryID(v string) predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(sql.FieldEQ(FieldMailHistoryID, v))
 }
 
+// CloudResearchConsent applies equality check predicate on the "cloud_research_consent" field. It's identical to CloudResearchConsentEQ.
+func CloudResearchConsent(v bool) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldEQ(FieldCloudResearchConsent, v))
+}
+
+// CloudResearchConsentAt applies equality check predicate on the "cloud_research_consent_at" field. It's identical to CloudResearchConsentAtEQ.
+func CloudResearchConsentAt(v time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldEQ(FieldCloudResearchConsentAt, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(sql.FieldEQ(FieldCreatedAt, v))
@@ -714,6 +724,66 @@ func MailHistoryIDEqualFold(v string) predicate.RevenueWorkspace {
 // MailHistoryIDContainsFold applies the ContainsFold predicate on the "mail_history_id" field.
 func MailHistoryIDContainsFold(v string) predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(sql.FieldContainsFold(FieldMailHistoryID, v))
+}
+
+// CloudResearchConsentEQ applies the EQ predicate on the "cloud_research_consent" field.
+func CloudResearchConsentEQ(v bool) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldEQ(FieldCloudResearchConsent, v))
+}
+
+// CloudResearchConsentNEQ applies the NEQ predicate on the "cloud_research_consent" field.
+func CloudResearchConsentNEQ(v bool) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldNEQ(FieldCloudResearchConsent, v))
+}
+
+// CloudResearchConsentAtEQ applies the EQ predicate on the "cloud_research_consent_at" field.
+func CloudResearchConsentAtEQ(v time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldEQ(FieldCloudResearchConsentAt, v))
+}
+
+// CloudResearchConsentAtNEQ applies the NEQ predicate on the "cloud_research_consent_at" field.
+func CloudResearchConsentAtNEQ(v time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldNEQ(FieldCloudResearchConsentAt, v))
+}
+
+// CloudResearchConsentAtIn applies the In predicate on the "cloud_research_consent_at" field.
+func CloudResearchConsentAtIn(vs ...time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldIn(FieldCloudResearchConsentAt, vs...))
+}
+
+// CloudResearchConsentAtNotIn applies the NotIn predicate on the "cloud_research_consent_at" field.
+func CloudResearchConsentAtNotIn(vs ...time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldNotIn(FieldCloudResearchConsentAt, vs...))
+}
+
+// CloudResearchConsentAtGT applies the GT predicate on the "cloud_research_consent_at" field.
+func CloudResearchConsentAtGT(v time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldGT(FieldCloudResearchConsentAt, v))
+}
+
+// CloudResearchConsentAtGTE applies the GTE predicate on the "cloud_research_consent_at" field.
+func CloudResearchConsentAtGTE(v time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldGTE(FieldCloudResearchConsentAt, v))
+}
+
+// CloudResearchConsentAtLT applies the LT predicate on the "cloud_research_consent_at" field.
+func CloudResearchConsentAtLT(v time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldLT(FieldCloudResearchConsentAt, v))
+}
+
+// CloudResearchConsentAtLTE applies the LTE predicate on the "cloud_research_consent_at" field.
+func CloudResearchConsentAtLTE(v time.Time) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldLTE(FieldCloudResearchConsentAt, v))
+}
+
+// CloudResearchConsentAtIsNil applies the IsNil predicate on the "cloud_research_consent_at" field.
+func CloudResearchConsentAtIsNil() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldIsNull(FieldCloudResearchConsentAt))
+}
+
+// CloudResearchConsentAtNotNil applies the NotNil predicate on the "cloud_research_consent_at" field.
+func CloudResearchConsentAtNotNil() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(sql.FieldNotNull(FieldCloudResearchConsentAt))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.

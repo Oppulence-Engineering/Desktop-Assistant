@@ -167,6 +167,10 @@ import {
   recordRelationshipActionOutcome,
   ingestRelationshipObservations,
   listRelationships,
+  getResearchStatus,
+  setResearchConsent,
+  getResearchEstimate,
+  enrichPendingPeople,
   listIdentityCandidates,
   listRelationshipAttention,
   decideRelationshipAttention,
@@ -1020,6 +1024,10 @@ async function transcriptionRoutingMain() {
       commitmentsEnabled: nativeProcessing && cfg.meetings.extractCommitments !== false,
       liveQuestionsEnabled: captureEngine === "native" && cfg.meetings.liveTranscript === true,
     },
+    // Deliberately NOT one of the relationshipEvidence.sharing flags: that set
+    // describes what the user publishes about themselves, and its `enabled` is
+    // an OR across all of them. See CloudResearchRoute.
+    cloudResearch: { enabled: cfg.relationships.cloudResearch === true },
     relationshipEvidence: {
       // Read from the five live consent flags, not the deprecated
       // meetings.syncRelationshipEvidence, which no UI has written since the
@@ -1070,6 +1078,10 @@ export function setupIpcHandlers() {
         appVersion: app.getVersion(),
       };
     },
+    "research:status": async () => getResearchStatus(),
+    "research:setConsent": async (_event, args) => setResearchConsent(args.consented),
+    "research:estimate": async () => getResearchEstimate(),
+    "research:enrichPending": async () => enrichPendingPeople(),
     "relationships:list": async (_event, args) => listRelationships(args),
     "relationships:graph": async (_event, args) => getRelationshipGraph(args),
     "relationships:create": async (_event, args) => createRelationship(args),

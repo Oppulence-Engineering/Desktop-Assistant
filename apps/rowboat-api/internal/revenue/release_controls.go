@@ -43,6 +43,13 @@ const (
 	CapabilityOutcomeRanking   = "outcome_ranking"
 	CapabilityDesktopPublish   = "desktop_evidence_publication"
 	CapabilityRealtimeUpdates  = "realtime_updates"
+	// CapabilityCloudResearch gates every call to the external research vendor
+	// (RFC 039). It is an entitlement and a kill switch, not consent: a vendor
+	// outage or a price change has to be stoppable fleet-wide without asking
+	// users to un-consent, and re-enabling it must not re-grant a consent nobody
+	// re-gave. Consent lives on RevenueWorkspace.cloud_research_consent and is
+	// checked separately.
+	CapabilityCloudResearch = "cloud_research"
 )
 
 var supportedWorkspaceCapabilities = map[string]bool{
@@ -53,6 +60,7 @@ var supportedWorkspaceCapabilities = map[string]bool{
 	CapabilityDetectorNextStep: true, CapabilityDetectorSource: true, CapabilityDetectorOutcome: true,
 	CapabilityActionGmail: true, CapabilityActionSlack: true, CapabilityActionHubSpot: true,
 	CapabilityOutcomeRanking: true, CapabilityDesktopPublish: true, CapabilityRealtimeUpdates: true,
+	CapabilityCloudResearch: true,
 }
 
 var supportedRolloutStages = map[string]bool{

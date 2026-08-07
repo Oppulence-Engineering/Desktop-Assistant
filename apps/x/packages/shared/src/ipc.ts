@@ -2357,6 +2357,53 @@ const ipcSchemas = {
       success: z.boolean(),
     }),
   },
+  // Cloud research (RFC 039). Read-only status plus the consent write; the
+  // server holds the authoritative consent and re-checks it on every call, so
+  // these channels move a decision rather than granting a permission.
+  "research:status": {
+    req: z.null(),
+    res: z.object({
+      available: z.boolean(),
+      allowed: z.boolean(),
+      reason: z.string().optional(),
+      requiredPlan: z.string(),
+      consent: z.object({
+        consented: z.boolean(),
+        consentedAt: z.string().optional(),
+      }),
+    }),
+  },
+  "research:setConsent": {
+    req: z.object({ consented: z.boolean() }),
+    res: z.object({
+      consented: z.boolean(),
+      consentedAt: z.string().optional(),
+    }),
+  },
+  "research:estimate": {
+    req: z.null(),
+    res: z.object({
+      people: z.number(),
+      processor: z.string(),
+      credits: z.number(),
+      usd: z.number(),
+      batchSize: z.number(),
+    }),
+  },
+  // One bulk run, chunked in the main process. The renderer asks for the whole
+  // thing and gets a summary, because the chunk size is a server contract
+  // (research.estimate.batchSize) and not a UI concern.
+  "research:enrichPending": {
+    req: z.null(),
+    res: z.object({
+      requested: z.number(),
+      enriched: z.number(),
+      matched: z.number(),
+      attributes: z.number(),
+      /** Set when the run stopped early — a spend cap, a revoked consent. */
+      stoppedReason: z.string().optional(),
+    }),
+  },
   "relationships:list": {
     req: z.object({
       q: z.string().optional(),

@@ -4895,6 +4895,16 @@ func (_q *PersonQuery) collectField(ctx context.Context, oneNode bool, opCtx *gr
 				selectedFields = append(selectedFields, person.FieldLocale)
 				fieldSeen[person.FieldLocale] = struct{}{}
 			}
+		case "seniority":
+			if _, ok := fieldSeen[person.FieldSeniority]; !ok {
+				selectedFields = append(selectedFields, person.FieldSeniority)
+				fieldSeen[person.FieldSeniority] = struct{}{}
+			}
+		case "location":
+			if _, ok := fieldSeen[person.FieldLocation]; !ok {
+				selectedFields = append(selectedFields, person.FieldLocation)
+				fieldSeen[person.FieldLocation] = struct{}{}
+			}
 		case "employmentStatus":
 			if _, ok := fieldSeen[person.FieldEmploymentStatus]; !ok {
 				selectedFields = append(selectedFields, person.FieldEmploymentStatus)
@@ -5125,6 +5135,11 @@ func (_q *PersonAttributeQuery) collectField(ctx context.Context, oneNode bool, 
 			if _, ok := fieldSeen[personattribute.FieldExtractorVersion]; !ok {
 				selectedFields = append(selectedFields, personattribute.FieldExtractorVersion)
 				fieldSeen[personattribute.FieldExtractorVersion] = struct{}{}
+			}
+		case "citationsJSON":
+			if _, ok := fieldSeen[personattribute.FieldCitationsJSON]; !ok {
+				selectedFields = append(selectedFields, personattribute.FieldCitationsJSON)
+				fieldSeen[personattribute.FieldCitationsJSON] = struct{}{}
 			}
 		case "dedupeKey":
 			if _, ok := fieldSeen[personattribute.FieldDedupeKey]; !ok {
@@ -6512,6 +6527,11 @@ func (_q *RelationshipAssertionQuery) collectField(ctx context.Context, oneNode 
 			if _, ok := fieldSeen[relationshipassertion.FieldExtractorVersion]; !ok {
 				selectedFields = append(selectedFields, relationshipassertion.FieldExtractorVersion)
 				fieldSeen[relationshipassertion.FieldExtractorVersion] = struct{}{}
+			}
+		case "citationsJSON":
+			if _, ok := fieldSeen[relationshipassertion.FieldCitationsJSON]; !ok {
+				selectedFields = append(selectedFields, relationshipassertion.FieldCitationsJSON)
+				fieldSeen[relationshipassertion.FieldCitationsJSON] = struct{}{}
 			}
 		case "projectorCompatVersion":
 			if _, ok := fieldSeen[relationshipassertion.FieldProjectorCompatVersion]; !ok {
@@ -10063,6 +10083,16 @@ func (_q *RevenueWorkspaceQuery) collectField(ctx context.Context, oneNode bool,
 			if _, ok := fieldSeen[revenueworkspace.FieldMailHistoryID]; !ok {
 				selectedFields = append(selectedFields, revenueworkspace.FieldMailHistoryID)
 				fieldSeen[revenueworkspace.FieldMailHistoryID] = struct{}{}
+			}
+		case "cloudResearchConsent":
+			if _, ok := fieldSeen[revenueworkspace.FieldCloudResearchConsent]; !ok {
+				selectedFields = append(selectedFields, revenueworkspace.FieldCloudResearchConsent)
+				fieldSeen[revenueworkspace.FieldCloudResearchConsent] = struct{}{}
+			}
+		case "cloudResearchConsentAt":
+			if _, ok := fieldSeen[revenueworkspace.FieldCloudResearchConsentAt]; !ok {
+				selectedFields = append(selectedFields, revenueworkspace.FieldCloudResearchConsentAt)
+				fieldSeen[revenueworkspace.FieldCloudResearchConsentAt] = struct{}{}
 			}
 		case "id":
 		case "__typename":
