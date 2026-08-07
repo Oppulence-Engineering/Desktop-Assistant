@@ -283,3 +283,107 @@ func TestSpendLimitsEnforcedInReserve(t *testing.T) {
 		t.Fatalf("after cap rejection available = %d, want 70 (rejected reserve rolled back)", avail)
 	}
 }
+
+// --- op-scoped budgets (RFC 039) ---------------------------------------------
+
+// fundedSetup is setup() with a grant large enough to exercise caps rather than
+// the balance check.
+func fundedSetup(t *testing.T) (*ent.Client, context.Context) {
+	t.Helper()
+	client, ctx, _ := setup(t)
+	client.Subscription.Update().SetSanctionedCredits(10_000_000).SaveX(ctx)
+	return client, ctx
+}
+
+// An op-scoped budget exists so one workload cannot be starved by another's
+// spending. Cloud research is background work sold as a fixed number of
+// monitored accounts; a shared cap silently converts that budget into whatever
+// the foreground happened to spend today, and the user is asleep for both
+// halves of that.
+func TestOpBudgetIsRingFenced(t *testing.T) {
+	client, ctx := fundedSetup(t)
+	g := quota.New(client, zap.NewNop())
+	limits := quota.SpendLimits{
+		Daily: 1_000_000, Monthly: 1_000_000,
+		OpDaily: 200, OpMonthly: 200,
+	}
+
+	first, err := g.Reserve(ctx, "parallel_task", 200, uuid.New(), limits)
+	if err != nil {
+		t.Fatalf("first research reserve: %v", err)
+	}
+	if err := first.Settle(ctx, 200); err != nil {
+		t.Fatalf("settle: %v", err)
+	}
+
+	if _, err := g.Reserve(ctx, "parallel_task", 200, uuid.New(), limits); !errors.Is(err, quota.ErrDailyLimitExceeded) {
+		t.Fatalf("research past its op budget: want ErrDailyLimitExceeded, got %v", err)
+	}
+
+	// The shared budget is barely touched and still admits other work. The ring
+	// fence is one-directional, which is the entire point.
+	other, err := g.Reserve(ctx, "llm_call", 200, uuid.New(), limits)
+	if err != nil {
+		t.Fatalf("unrelated op refused by another op's budget: %v", err)
+	}
+	if err := other.Settle(ctx, 200); err != nil {
+		t.Fatalf("settle: %v", err)
+	}
+}
+
+// The ring fence must not become an escape hatch: the shared cap still binds.
+func TestSharedBudgetStillBindsWithOpBudget(t *testing.T) {
+	client, ctx := fundedSetup(t)
+	g := quota.New(client, zap.NewNop())
+	limits := quota.SpendLimits{
+		Daily: 300, Monthly: 300,
+		OpDaily: 1_000_000, OpMonthly: 1_000_000,
+	}
+
+	spent, err := g.Reserve(ctx, "llm_call", 300, uuid.New(), limits)
+	if err != nil {
+		t.Fatalf("first reserve: %v", err)
+	}
+	if err := spent.Settle(ctx, 300); err != nil {
+		t.Fatalf("settle: %v", err)
+	}
+	if _, err := g.Reserve(ctx, "parallel_task", 100, uuid.New(), limits); !errors.Is(err, quota.ErrDailyLimitExceeded) {
+		t.Fatalf("shared cap should still refuse: got %v", err)
+	}
+}
+
+// A refunded call must not consume the op budget: the whole point of the
+// reserve/refund pair is that a failed vendor call costs nothing.
+func TestRefundedCallDoesNotConsumeOpBudget(t *testing.T) {
+	client, ctx := fundedSetup(t)
+	g := quota.New(client, zap.NewNop())
+	limits := quota.SpendLimits{OpDaily: 200, OpMonthly: 200}
+
+	failed, err := g.Reserve(ctx, "parallel_task", 200, uuid.New(), limits)
+	if err != nil {
+		t.Fatalf("reserve: %v", err)
+	}
+	if err := failed.Refund(ctx); err != nil {
+		t.Fatalf("refund: %v", err)
+	}
+	if _, err := g.Reserve(ctx, "parallel_task", 200, uuid.New(), limits); err != nil {
+		t.Fatalf("a refunded call consumed the op budget: %v", err)
+	}
+}
+
+// Zero op limits must leave every existing caller untouched.
+func TestZeroOpBudgetIsInert(t *testing.T) {
+	client, ctx := fundedSetup(t)
+	g := quota.New(client, zap.NewNop())
+	limits := quota.SpendLimits{Daily: 1_000_000, Monthly: 1_000_000}
+
+	for i := 0; i < 3; i++ {
+		charge, err := g.Reserve(ctx, "parallel_task", 1000, uuid.New(), limits)
+		if err != nil {
+			t.Fatalf("reserve %d with no op cap: %v", i, err)
+		}
+		if err := charge.Settle(ctx, 1000); err != nil {
+			t.Fatalf("settle %d: %v", i, err)
+		}
+	}
+}

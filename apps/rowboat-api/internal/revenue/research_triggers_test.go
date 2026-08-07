@@ -7,6 +7,8 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 )
 
 func triggerVendor(event string, cited bool) *vendorStub {
@@ -238,4 +240,77 @@ func TestExpiredTriggersAreFilteredInTheQuery(t *testing.T) {
 	if len(future) != 0 {
 		t.Fatalf("not-yet-valid trigger returned: %+v", future)
 	}
+}
+
+// A sweep that stops halfway through the accounts a user pays to have monitored
+// is not an operator-only fact. It is recorded on the ordinary source-status row
+// the desktop sidebar already renders.
+func TestCutShortSweepIsVisibleAsADegradedSource(t *testing.T) {
+	rf := newResearchFixture(t, triggerVendor("Acme announced a Series B.", true))
+	rf.account(t)
+
+	// Give research a budget of one run, then sweep two accounts.
+	rf.svc.SetResearch(ResearchConfig{
+		Client: rf.svc.research.Client,
+		Gate:   rf.svc.research.Gate,
+		Costs:  rf.svc.research.Costs,
+		Limits: quota.SpendLimits{OpDaily: 50, OpMonthly: 50},
+	})
+	second, err := rf.svc.CreateRelationship(rf.ctx, rf.user, RelationshipInput{
+		Kind: "company", DisplayName: "Globex", AccountDomain: "globex.example",
+	})
+	if err != nil {
+		t.Fatalf("second account: %v", err)
+	}
+	_ = second
+
+	if _, err := rf.svc.SweepAccountTriggers(rf.ctx, rf.user, 10); err == nil {
+		t.Fatal("a sweep past the research budget must surface an error")
+	}
+
+	status := researchSourceStatus(t, rf)
+	if status.Status != "degraded" {
+		t.Fatalf("source status = %q, want degraded", status.Status)
+	}
+	if status.ErrorCode != "credit_limit_exceeded" {
+		t.Fatalf("error code = %q", status.ErrorCode)
+	}
+	// The sentence a user reads names what did not happen, and carries no vendor
+	// or provider text.
+	if !strings.Contains(status.LastError, "research budget") {
+		t.Fatalf("last error = %q", status.LastError)
+	}
+}
+
+func TestCleanSweepRecordsSuccess(t *testing.T) {
+	rf := newResearchFixture(t, triggerVendor("none", true))
+	rf.account(t)
+
+	if _, err := rf.svc.SweepAccountTriggers(rf.ctx, rf.user, 10); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	status := researchSourceStatus(t, rf)
+	if status.Status != "live" || status.LastSuccessAt == nil {
+		t.Fatalf("clean sweep did not record success: %+v", status)
+	}
+	// Freshness is what makes a sweep that stops running ENTIRELY visible, with
+	// no detector written for it: two missed nights and the row goes stale.
+	if status.ExpectedCadenceSeconds != researchSweepCadenceSeconds {
+		t.Fatalf("cadence = %d", status.ExpectedCadenceSeconds)
+	}
+	applySourceFreshness(status, status.LastSuccessAt.Add(49*time.Hour))
+	if status.Status != "stale" {
+		t.Fatalf("a sweep that has not succeeded in 49h should read stale, got %q", status.Status)
+	}
+}
+
+func researchSourceStatus(t *testing.T, rf *researchFixture) *ent.RelationshipSourceStatus {
+	t.Helper()
+	status, err := rf.client.RelationshipSourceStatus.Query().
+		Where(relationshipsourcestatus.SourceEQ(researchSourceName)).
+		Only(rf.ctx)
+	if err != nil {
+		t.Fatalf("query research source status: %v", err)
+	}
+	return status
 }

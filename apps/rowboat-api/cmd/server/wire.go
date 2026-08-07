@@ -466,9 +466,12 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			BaseURL: cfg.ParallelBaseURL,
 			Policy:  vendorPolicy,
 		}),
-		Gate:   gate,
-		Costs:  prices.ResearchCosts(),
-		Limits: quota.SpendLimits{Daily: cfg.DailyCreditLimit, Monthly: cfg.MonthlyCreditLimit},
+		Gate:  gate,
+		Costs: prices.ResearchCosts(),
+		Limits: quota.SpendLimits{
+			Daily: cfg.DailyCreditLimit, Monthly: cfg.MonthlyCreditLimit,
+			OpDaily: cfg.ResearchDailyCreditLimit, OpMonthly: cfg.ResearchMonthlyCreditLimit,
+		},
 	})
 	// The daily account poll that turns the attention queue from a nag list into
 	// a "why now" list. Only ever loads workspaces that have consented, and does

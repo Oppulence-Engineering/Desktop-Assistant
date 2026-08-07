@@ -21,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/parallel"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
 )
 
 // Trigger-based outreach (RFC 039, surface 1).
@@ -430,13 +431,126 @@ func (s *Service) SweepAccountTriggers(
 			if errors.Is(err, ErrInvalidInput) || errors.Is(err, ErrResearchInProgress) {
 				continue
 			}
+			// Record WHY, where the user can see it. A sweep that stops halfway
+			// through the accounts they pay to have monitored is not an
+			// operator-only fact.
+			s.recordResearchSweepFailure(ctx, ws, u, err)
 			return found, err
 		}
 		if outcome.Found {
 			found++
 		}
 	}
+	s.recordResearchSweepSuccess(ctx, ws, u)
 	return found, nil
+}
+
+// The research sweep reports its own health through the ordinary source-status
+// row every other evidence stream uses (RFC 039).
+//
+// Deliberately not MarkSourceSyncFailure: that helper is gated to the beta
+// provider sources by validateBetaSource, and it carries provider-repair
+// semantics — retry_count, exponential next_retry_at, reconnect_required — that
+// describe a broken OAuth connection, not an exhausted budget. Reuse happens one
+// level down, at ensureSourceStatus, which is source-agnostic.
+//
+// The payoff is that nothing new has to be built to show this: the desktop
+// sidebar renders source statuses generically and rolls them into its health
+// summary, and applySourceFreshness independently flips the row to `stale` once
+// it is more than two cadences since the last success — so a sweep that stops
+// running at all surfaces without any detector for it.
+const (
+	researchSourceName = "research"
+	// researchSweepCadenceSeconds matches the daily runner. Freshness marks a
+	// source stale at twice the cadence, so a sweep silently stopping shows up
+	// after two missed nights rather than one — late enough to survive a single
+	// restart, early enough to matter.
+	researchSweepCadenceSeconds = 86400
+)
+
+func (s *Service) recordResearchSweepSuccess(
+	ctx context.Context,
+	ws *ent.RevenueWorkspace,
+	u *ent.User,
+) {
+	status, err := s.ensureSourceStatus(ctx, s.client, ws, u, researchSourceName, "default")
+	if err != nil {
+		s.log.Warn("revenue: research source status", zap.Error(err))
+		return
+	}
+	now := s.now().UTC()
+	if err := status.Update().
+		SetStatus("live").SetCompleteness("complete").SetBackfillPhase("live").
+		SetExpectedCadenceSeconds(researchSweepCadenceSeconds).
+		SetLastSyncAt(now).SetLastSuccessAt(now).SetLagSeconds(0).
+		SetRetryCount(0).
+		ClearLastError().ClearErrorCode().ClearNextRetryAt().
+		Exec(ctx); err != nil {
+		s.log.Warn("revenue: research source status", zap.Error(err))
+	}
+}
+
+func (s *Service) recordResearchSweepFailure(
+	ctx context.Context,
+	ws *ent.RevenueWorkspace,
+	u *ent.User,
+	cause error,
+) {
+	status, err := s.ensureSourceStatus(ctx, s.client, ws, u, researchSourceName, "default")
+	if err != nil {
+		s.log.Warn("revenue: research source status", zap.Error(err))
+		return
+	}
+	if err := status.Update().
+		SetStatus("degraded").SetCompleteness("partial").
+		SetExpectedCadenceSeconds(researchSweepCadenceSeconds).
+		SetErrorCode(researchSweepErrorCode(cause)).
+		SetLastError(researchSweepErrorText(cause)).
+		SetLastFailedSyncAt(s.now().UTC()).
+		Exec(ctx); err != nil {
+		s.log.Warn("revenue: research source status", zap.Error(err))
+	}
+}
+
+// researchSweepErrorCode maps a sweep failure onto a bounded categorical slug.
+// Categorical because these are rendered and counted, never parsed for detail,
+// and because a vendor message is not something to persist verbatim.
+func researchSweepErrorCode(cause error) string {
+	switch {
+	case errors.Is(cause, quota.ErrDailyLimitExceeded),
+		errors.Is(cause, quota.ErrMonthlyLimitExceeded),
+		errors.Is(cause, quota.ErrInsufficientCredits):
+		return "credit_limit_exceeded"
+	case errors.Is(cause, quota.ErrSubscriptionNotActive), errors.Is(cause, ErrResearchPlanRequired):
+		return "plan_required"
+	case errors.Is(cause, ErrResearchConsentRequired):
+		return "consent_required"
+	case errors.Is(cause, ErrCapabilityDisabled):
+		return "capability_disabled"
+	case errors.Is(cause, ErrResearchUnavailable):
+		return "provider_unconfigured"
+	default:
+		return "sweep_failed"
+	}
+}
+
+// researchSweepErrorText is the one sentence a user reads. It says what did not
+// happen and what to do, and never carries a vendor or provider message.
+func researchSweepErrorText(cause error) string {
+	switch researchSweepErrorCode(cause) {
+	case "credit_limit_exceeded":
+		return "Account monitoring stopped early because this workspace reached its research budget for the period."
+	case "plan_required":
+		return "Account monitoring is not running because the subscription does not currently include cloud research."
+	case "consent_required":
+		return "Account monitoring is not running because cloud research consent has been withdrawn."
+	case "capability_disabled":
+		return "Account monitoring is paused for this workspace."
+	case "provider_unconfigured":
+		return "Account monitoring is not running because no research provider is configured."
+	default:
+		return "Account monitoring did not finish its last run."
+	}
 }
 
 // ResearchTriggerRunner polls every consenting workspace's accounts once a day.

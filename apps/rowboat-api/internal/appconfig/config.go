@@ -206,6 +206,13 @@ type Config struct {
 	// Metered business-flow guardrails.
 	DailyCreditLimit   int
 	MonthlyCreditLimit int
+	// Cloud research (RFC 039) draws on its own ring-fenced budget as well as the
+	// shared one above. Without it, a busy day of model traffic consumes the
+	// shared cap and the nightly account sweep silently stops — the user is
+	// asleep for both halves of that. Sized against the promise: 250 accounts at
+	// 50 credits, polled daily, is 375,000 credits a month.
+	ResearchDailyCreditLimit   int
+	ResearchMonthlyCreditLimit int
 
 	// LLM request policy.
 	LLMAllowedModels       []string
@@ -594,24 +601,29 @@ func Load() Config {
 		StripeAPIBaseURL:          getenv("STRIPE_API_BASE_URL", "https://api.stripe.com"),
 		StripeStarterCredits:      getint("STRIPE_STARTER_CREDITS", 200000),
 		StripeProCredits:          getint("STRIPE_PRO_CREDITS", 2000000),
-		StripeIntelligenceCredits: getint("STRIPE_INTELLIGENCE_CREDITS", 5000000),
+		// Matches the shared monthly cap. A larger grant would be dead config: the
+		// 2,000,000-credit MONTHLY_CREDIT_LIMIT binds first, so headroom above it
+		// can never be spent. Research is governed by its own budget, not by this.
+		StripeIntelligenceCredits: getint("STRIPE_INTELLIGENCE_CREDITS", 2000000),
 
 		FreeMeetingSecondsPerMonth:  getint("FREE_MEETING_SECONDS_PER_MONTH", 10800), // 180 min
 		TranscriptionVoiceDefault:   getenv("TRANSCRIPTION_VOICE_DEFAULT", "whisper-local"),
 		TranscriptionMeetingDefault: getenv("TRANSCRIPTION_MEETING_DEFAULT", "deepgram"),
 
-		PricingJSON:            getenv("PRICING_JSON", ""),
-		DailyCreditLimit:       getint("DAILY_CREDIT_LIMIT", 100000),
-		MonthlyCreditLimit:     getint("MONTHLY_CREDIT_LIMIT", 2000000),
-		LLMAllowedModels:       getcsv("LLM_ALLOWED_MODELS", ""),
-		LLMMaxPromptBytes:      getint("LLM_MAX_PROMPT_BYTES", 2<<20),
-		LLMMaxToolPayloadBytes: getint("LLM_MAX_TOOL_PAYLOAD_BYTES", 1<<20),
-		LLMMaxMessages:         getint("LLM_MAX_MESSAGES", 128),
-		OpenAIBaseURL:          getenv("OPENAI_BASE_URL", ""),
-		OpenRouterBaseURL:      getenv("OPENROUTER_BASE_URL", ""),
-		GraphQLIntrospection:   getbool("GRAPHQL_INTROSPECTION_ENABLED", !production),
-		GraphQLMaxComplexity:   getint("GRAPHQL_MAX_COMPLEXITY", 250),
-		GraphQLMaxDepth:        getint("GRAPHQL_MAX_DEPTH", 12),
+		PricingJSON:                getenv("PRICING_JSON", ""),
+		DailyCreditLimit:           getint("DAILY_CREDIT_LIMIT", 100000),
+		MonthlyCreditLimit:         getint("MONTHLY_CREDIT_LIMIT", 2000000),
+		ResearchDailyCreditLimit:   getint("RESEARCH_DAILY_CREDIT_LIMIT", 50000),
+		ResearchMonthlyCreditLimit: getint("RESEARCH_MONTHLY_CREDIT_LIMIT", 500000),
+		LLMAllowedModels:           getcsv("LLM_ALLOWED_MODELS", ""),
+		LLMMaxPromptBytes:          getint("LLM_MAX_PROMPT_BYTES", 2<<20),
+		LLMMaxToolPayloadBytes:     getint("LLM_MAX_TOOL_PAYLOAD_BYTES", 1<<20),
+		LLMMaxMessages:             getint("LLM_MAX_MESSAGES", 128),
+		OpenAIBaseURL:              getenv("OPENAI_BASE_URL", ""),
+		OpenRouterBaseURL:          getenv("OPENROUTER_BASE_URL", ""),
+		GraphQLIntrospection:       getbool("GRAPHQL_INTROSPECTION_ENABLED", !production),
+		GraphQLMaxComplexity:       getint("GRAPHQL_MAX_COMPLEXITY", 250),
+		GraphQLMaxDepth:            getint("GRAPHQL_MAX_DEPTH", 12),
 
 		TemporalEnabled:       getbool("TEMPORAL_ENABLED", false),
 		TemporalAddress:       getenv("TEMPORAL_ADDRESS", "localhost:7233"),
