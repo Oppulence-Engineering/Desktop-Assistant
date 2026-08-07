@@ -39,8 +39,10 @@ export type CreateRunRepoOptions = {
     subUseCase?: string;
 };
 
+const RUNS_DIR = path.join(WorkDir, 'runs');
+
 function runLogPath(runId: string): string {
-    return path.join(WorkDir, 'runs', `${runId}.jsonl`);
+    return path.join(RUNS_DIR, `${runId}.jsonl`);
 }
 
 export interface IRunsRepo {
@@ -331,4 +333,62 @@ export class FSRunsRepo implements IRunsRepo {
     async delete(id: string): Promise<void> {
         await fsp.unlink(runLogPath(id));
     }
+}
+
+/**
+ * Runs kept regardless of age. A light user with a few hundred runs over two
+ * years keeps all of them; the cap only bites on machines producing thousands.
+ */
+const MIN_RUNS_KEPT = 500;
+const MAX_RUN_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Delete run logs older than 30 days, past the first {@link MIN_RUNS_KEPT}.
+ *
+ * Nothing pruned these. `delete` exists but is only reachable from the IPC a
+ * person clicks, so the directory grew for the life of the install — every
+ * background batch writes one, and email labeling alone writes ~90 per sweep.
+ * The evidence is on disk: 22,830 files and 2.4GB in runs-archive from an
+ * earlier era of the same directory.
+ *
+ * Age *and* a floor, deliberately. A pure count cap would delete a careful
+ * user's history the moment a background backlog outnumbered it; a pure age
+ * cap would wipe a machine that had been offline for a month.
+ *
+ * Best-effort: a run that will not delete is left for the next start.
+ *
+ * @returns Number of run logs removed.
+ */
+export async function pruneRunLogs(now: number = Date.now()): Promise<number> {
+    let names: string[];
+    try {
+        names = (await fsp.readdir(RUNS_DIR)).filter((n) => n.endsWith(".jsonl"));
+    } catch {
+        return 0;
+    }
+    if (names.length <= MIN_RUNS_KEPT) return 0;
+
+    const stated = await Promise.all(
+        names.map(async (name) => {
+            const full = path.join(RUNS_DIR, name);
+            try {
+                return { full, mtime: (await fsp.stat(full)).mtimeMs };
+            } catch {
+                return { full, mtime: now };
+            }
+        }),
+    );
+    stated.sort((a, b) => b.mtime - a.mtime);
+
+    let removed = 0;
+    for (const { full, mtime } of stated.slice(MIN_RUNS_KEPT)) {
+        if (now - mtime <= MAX_RUN_AGE_MS) continue;
+        try {
+            await fsp.rm(full, { force: true });
+            removed += 1;
+        } catch {
+            // Leave it; the next start tries again.
+        }
+    }
+    return removed;
 }
