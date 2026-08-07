@@ -41,8 +41,24 @@ export type CreateRunRepoOptions = {
 
 const RUNS_DIR = path.join(WorkDir, 'runs');
 
+/**
+ * Log path for one run. All three uses — appendEvents, fetch, delete — take a
+ * runId that can come straight from the renderer (`runs:createMessage`,
+ * `runs:fetch`, `runs:delete`), so the check belongs here rather than at any
+ * one handler.
+ *
+ * Same basename rule the sibling `runs:downloadLog` channel already applies;
+ * that one was guarded while fetch and delete were not. Deliberately NOT an
+ * IdGen-format regex: `list()` derives run ids from any `*.jsonl` basename, so
+ * a stricter rule would produce runs that appear in the list and then fail to
+ * open.
+ */
 function runLogPath(runId: string): string {
-    return path.join(RUNS_DIR, `${runId}.jsonl`);
+    const fileName = `${runId}.jsonl`;
+    if (path.basename(fileName) !== fileName) {
+        throw new Error(`Invalid run id: ${runId}`);
+    }
+    return path.join(RUNS_DIR, fileName);
 }
 
 export interface IRunsRepo {

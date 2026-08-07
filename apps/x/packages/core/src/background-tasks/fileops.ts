@@ -28,8 +28,29 @@ function deleteCloudTaskBestEffort(slug: string): void {
         });
 }
 
+/**
+ * Directory for one task. Every other bg-task path helper funnels through here,
+ * so this is the single place the slug has to be trusted.
+ *
+ * Slugs reach these helpers from three untrusted-ish directions — the renderer
+ * (`bg-task:*` IPC, typed only as `z.string()`), LLM builtin tools, and cloud
+ * artifact responses — and `deleteTask` ends in
+ * `fs.rm(taskDir(slug), { recursive: true, force: true })`. A slug of ".." or
+ * "" therefore recursively deleted the workspace, or the whole bg-tasks root,
+ * and `force: true` meant it did so silently.
+ *
+ * The rule is single-segment-inside-root, matching MeetingController.sessionPath
+ * and the case pinned in meetings/traversal.test.ts. Deliberately NOT a
+ * slugify/charset regex: `listTasks` treats any non-dot directory name as a
+ * task, so a hand-created folder like "My Task" is legitimate and must keep
+ * working.
+ */
 function taskDir(slug: string): string {
-    return path.join(BG_TASKS_DIR, slug);
+    const dir = path.join(BG_TASKS_DIR, slug);
+    if (path.dirname(path.resolve(dir)) !== path.resolve(BG_TASKS_DIR)) {
+        throw new Error(`Invalid task slug: ${slug}`);
+    }
+    return dir;
 }
 
 export function taskYamlPath(slug: string): string {

@@ -535,7 +535,10 @@ export class MeetingController {
   }
 
   async retranscribe(sessionId: string): Promise<{ queued: boolean; error?: string }> {
-    const dir = path.join(await this.root(), sessionId);
+    // Via sessionPath, like every other session-scoped method — this one built
+    // the path by hand and so skipped the traversal check its six siblings do.
+    const dir = await this.sessionPath(sessionId);
+    if (!dir) return { queued: false, error: "session not found" };
     const meta = await readMeta(dir);
     if (!meta) return { queued: false, error: "session not found" };
     if (meta.audio_deleted_at) {

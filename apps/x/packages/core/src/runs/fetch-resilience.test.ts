@@ -45,6 +45,10 @@ function repo(): FSRunsRepo {
 }
 
 beforeEach(async () => {
+  // FSRunsRepo's constructor fires an un-awaited fsp.mkdir (repo.ts:94), so a
+  // previous test can still have one in flight. Let it land before wiping, or
+  // it recreates the tree underneath the next test.
+  await new Promise((resolve) => setImmediate(resolve));
   await fs.rm(TEST_WORKDIR, { recursive: true, force: true });
   await fs.mkdir(RUNS, { recursive: true });
   vi.spyOn(console, "warn").mockImplementation(() => {});

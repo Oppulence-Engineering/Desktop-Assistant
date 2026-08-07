@@ -122,7 +122,14 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
     },
 
     "meeting:relationshipCandidates": async (_event, args) => {
-      const dir = path.join(recordingsRoot(), args.sessionId);
+      const root = recordingsRoot();
+      const dir = path.join(root, args.sessionId);
+      // The same single-segment rule MeetingController.sessionPath applies, and
+      // that meetings/traversal.test.ts pins. This handler sits outside the
+      // controller and was the one session path without it.
+      if (path.dirname(path.resolve(dir)) !== path.resolve(root)) {
+        return { resolved: false, candidates: [] };
+      }
       const stored = await readRelationshipCandidates(dir);
       if (!stored) return { resolved: false, candidates: [] };
       return {
