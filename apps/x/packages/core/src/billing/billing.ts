@@ -47,6 +47,35 @@ export async function getBillingInfo(): Promise<BillingInfo> {
   };
 }
 
+/**
+ * Read the API's problem code out of a failed billing response.
+ *
+ * "Billing API failed: 502" alone cannot be told apart from a network blip, so
+ * the UI had to describe every failure as if it were transient. Billing has one
+ * genuinely non-transient failure — provider_unconfigured, returned when the
+ * deployment has no Stripe credentials — and retrying that forever is not an
+ * answer the user can act on.
+ */
+async function billingProblemCode(response: Response): Promise<string | null> {
+  try {
+    const problem = (await response.json()) as { code?: unknown };
+    return typeof problem.code === "string" ? problem.code : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Carries the API's problem code so callers can branch without substring matching. */
+export class BillingRequestError extends Error {
+  constructor(
+    readonly status: number,
+    readonly code: string | null,
+  ) {
+    super(`Billing API failed: ${status}${code ? ` (${code})` : ""}`);
+    this.name = "BillingRequestError";
+  }
+}
+
 async function authedBillingPost<T>(path: string, body?: unknown): Promise<T> {
   const accessToken = await getAccessToken();
   const response = await fetch(`${API_URL}${path}`, {
@@ -58,7 +87,7 @@ async function authedBillingPost<T>(path: string, body?: unknown): Promise<T> {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!response.ok) {
-    throw new Error(`Billing API failed: ${response.status}`);
+    throw new BillingRequestError(response.status, await billingProblemCode(response));
   }
   return (await response.json()) as T;
 }

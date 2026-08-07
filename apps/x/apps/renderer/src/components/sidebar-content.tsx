@@ -49,7 +49,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@oppulence/ui/components/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
-import { openBillingFlow } from "@/lib/billing-flow";
+import { BillingUnavailableError, openBillingFlow } from "@/lib/billing-flow";
 import { dominantServiceFault, explainServiceError } from "@/lib/service-error-copy";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { updatePending, useUpdateStatus } from "@/hooks/use-update-prompt";
@@ -160,6 +160,16 @@ const SERVICE_LABELS: Record<string, string> = {
   memory: "Indexing memory",
 };
 
+/**
+ * "Try again" is the wrong thing to say when the deployment has no Stripe
+ * credentials at all — no retry will ever succeed.
+ */
+function billingFailureMessage(error: unknown): string {
+  return error instanceof BillingUnavailableError
+    ? "Upgrading isn't available yet. Reach out and we'll sort it out."
+    : "Could not open billing. Please try again.";
+}
+
 function summarizeServiceError(error: string): string {
   const firstLine = error.split("\n").find((line) => line.trim().length > 0);
   return firstLine?.trim() || error.trim();
@@ -247,7 +257,7 @@ function SyncStatusBar({ voiceRecording }: { voiceRecording?: VoiceNoteStatus | 
       await openBillingFlow();
     } catch (error) {
       console.error("Failed to open billing flow:", error);
-      toast("Could not open the upgrade page.", "error");
+      toast(billingFailureMessage(error), "error");
     } finally {
       setUpgradePending(false);
     }
@@ -1328,7 +1338,7 @@ export function SidebarContentPanel({
               onClick={() => {
                 void openBillingFlow().catch((error) => {
                   console.error("Failed to open billing flow:", error);
-                  toast("Could not open billing.", "error");
+                  toast(billingFailureMessage(error), "error");
                 });
               }}
               className="shrink-0 rounded-none bg-sidebar-foreground/10 px-2.5 py-1 text-[11px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-foreground/20"

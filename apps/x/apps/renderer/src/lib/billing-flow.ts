@@ -26,6 +26,29 @@ export function billingFlowForPlan(plan: string | null | undefined): BillingFlow
 const ENTRY_PLAN = "starter";
 
 /**
+ * The deployment has no Stripe credentials, so there is no checkout to open.
+ * Distinct from a transient failure because no amount of retrying fixes it and
+ * telling the user to try again would be a lie. Verified against production on
+ * 2026-08-07: POST /v1/billing/checkout-session answers 502 provider_unconfigured.
+ */
+export class BillingUnavailableError extends Error {
+  constructor() {
+    super("billing is not configured on this deployment");
+    this.name = "BillingUnavailableError";
+  }
+}
+
+/**
+ * Electron serialises a rejected IPC call down to its message, so the typed
+ * error raised in the main process does not survive the boundary. The message
+ * carries the API's problem code precisely so this check has something stable
+ * to read; see BillingRequestError in packages/core/src/billing/billing.ts.
+ */
+function isUnconfigured(error: unknown): boolean {
+  return error instanceof Error && error.message.includes("provider_unconfigured");
+}
+
+/**
  * Open the right billing destination for the current account. Resolves the plan
  * itself so every caller behaves the same without threading billing state
  * through — the drift between entry points is what produced the dead URL.
@@ -56,7 +79,13 @@ export async function openBillingFlow(): Promise<void> {
     }
   }
 
-  const checkout = await window.ipc.invoke("billing:getCheckoutUrl", { plan: ENTRY_PLAN });
+  let checkout: { url?: string };
+  try {
+    checkout = await window.ipc.invoke("billing:getCheckoutUrl", { plan: ENTRY_PLAN });
+  } catch (error) {
+    if (isUnconfigured(error)) throw new BillingUnavailableError();
+    throw error;
+  }
   if (!checkout?.url) throw new Error("billing returned no URL");
   window.open(checkout.url);
 }
