@@ -11,6 +11,10 @@ import {
     loadLabelingState,
     saveLabelingState,
     markFileAsLabeled,
+    markAttemptFailed,
+    shouldAttempt,
+    abandonedFiles,
+    MAX_LABEL_ATTEMPTS,
     type LabelingState,
 } from './labeling_state.js';
 
@@ -42,6 +46,13 @@ function getUnlabeledEmails(state: LabelingState): string[] {
             } else if (stat.isFile() && entry.endsWith('.md')) {
                 // Skip if already tracked in state
                 if (state.processedFiles[fullPath]) {
+                    continue;
+                }
+
+                // Skip files that failed recently or have exhausted their
+                // attempts. Without this a file the agent cannot label is
+                // re-sent to the model every poll, forever, at full token cost.
+                if (!shouldAttempt(fullPath, state)) {
                     continue;
                 }
 
@@ -143,6 +154,16 @@ export async function processUnlabeledEmails(concurrency: number = DEFAULT_CONCU
         trigger: 'timer',
     });
 
+    const abandoned = abandonedFiles(state);
+    if (abandoned.length > 0) {
+        // Say it out loud. These files are silently absent from every future
+        // pass, and "nothing happened" is indistinguishable from "all done".
+        console.log(
+            `[EmailLabeling] ${abandoned.length} email${abandoned.length === 1 ? '' : 's'} ` +
+            `gave up after ${MAX_LABEL_ATTEMPTS} attempts and will not be retried.`,
+        );
+    }
+
     const relativeFiles = unlabeled.map(f => path.relative(WorkDir, f));
     const limitedFiles = limitEventItems(relativeFiles);
     await serviceLogger.log({
@@ -201,11 +222,16 @@ export async function processUnlabeledEmails(concurrency: number = DEFAULT_CONCU
 
                 const result = await labelEmailBatch(files);
 
-                // Only mark files that were actually edited by the agent
+                // Only mark files that were actually edited by the agent. The
+                // rest count as a failed attempt — a batch that "succeeds" while
+                // silently labeling nothing is the common case here, and it is
+                // what made these files immortal.
                 for (const file of files) {
                     const relativePath = path.relative(WorkDir, file.path);
                     if (result.filesEdited.has(relativePath)) {
                         markFileAsLabeled(file.path, state);
+                    } else {
+                        markAttemptFailed(file.path, state);
                     }
                 }
 
@@ -214,6 +240,9 @@ export async function processUnlabeledEmails(concurrency: number = DEFAULT_CONCU
             } catch (error) {
                 hadError = true;
                 failedBatches++;
+                for (const file of files) {
+                    markAttemptFailed(file.path, state);
+                }
                 const errorDetails = getErrorDetails(error);
                 console.error(`[EmailLabeling] Error processing batch ${batchNumber}:`, error);
                 await serviceLogger.log({
@@ -253,6 +282,9 @@ export async function processUnlabeledEmails(concurrency: number = DEFAULT_CONCU
             totalEmails: unlabeled.length,
             filesLabeled: totalEdited,
             failedBatches,
+            // Visible on purpose: files we have stopped retrying are the ones a
+            // person has to decide about, and silence would read as success.
+            abandonedFiles: abandonedFiles(state).length,
         },
     });
 
