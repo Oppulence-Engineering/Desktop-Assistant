@@ -89,6 +89,8 @@ export class ServiceLogger {
     private currentSize = 0;
     private initialized = false;
     private writeQueue: Promise<void> = Promise.resolve();
+    /** One console line per outage, not one per dropped event. */
+    private warnedWriteFailure = false;
 
     private async ensureReady(): Promise<void> {
         if (this.initialized) return;
@@ -100,6 +102,14 @@ export class ServiceLogger {
             this.currentSize = 0;
         }
         this.stream = fs.createWriteStream(LOG_FILE, { flags: "a", encoding: "utf8" });
+        // A stream that dies (disk full, the file removed underneath us) stays
+        // an object that accepts write() and drops it. Reopen on the next event
+        // instead of silently discarding everything from here on.
+        this.stream.on("error", (error) => {
+            console.error("[ServiceLogger] Log stream error; reopening:", error);
+            this.stream = null;
+            this.initialized = false;
+        });
         this.initialized = true;
     }
 
@@ -141,17 +151,38 @@ export class ServiceLogger {
         const line = JSON.stringify(payload) + "\n";
         const bytes = Buffer.byteLength(line, "utf8");
 
-        this.writeQueue = this.writeQueue.then(async () => {
-            await this.ensureReady();
-            await this.rotateIfNeeded(bytes);
-            this.stream?.write(line);
-            this.currentSize += bytes;
-            try {
-                await serviceBus.publish(payload);
-            } catch {
-                // Ignore publish errors to avoid blocking log writes
-            }
-        });
+        // The queue must never be left rejected.
+        //
+        // `writeQueue.then(fn)` on a rejected promise does not run fn — it
+        // propagates the rejection — so a single failure here (a full disk, a
+        // transient EMFILE opening the stream) would make every later log()
+        // skip its work and reject as well. Service logging would be dead for
+        // the rest of the process from one bad moment, and the Data health
+        // panel would simply stop updating with nothing to say why.
+        //
+        // Callers do `await serviceLogger.log(...)` inside their own try/catch,
+        // so a rejection here would also be reported as a failure of the work
+        // being logged. Diagnostics must not become the thing that breaks the
+        // job they are describing.
+        this.writeQueue = this.writeQueue
+            .then(async () => {
+                await this.ensureReady();
+                await this.rotateIfNeeded(bytes);
+                this.stream?.write(line);
+                this.currentSize += bytes;
+                this.warnedWriteFailure = false;
+                try {
+                    await serviceBus.publish(payload);
+                } catch {
+                    // Ignore publish errors to avoid blocking log writes
+                }
+            })
+            .catch((error) => {
+                if (!this.warnedWriteFailure) {
+                    this.warnedWriteFailure = true;
+                    console.error("[ServiceLogger] Could not write service log:", error);
+                }
+            });
 
         return this.writeQueue;
     }
