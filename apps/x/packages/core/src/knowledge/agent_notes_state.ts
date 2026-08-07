@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { WorkDir } from '../config/config.js';
 import { abandoned, clearFailure, recordFailure, shouldRetry, type RetryMap } from './retry_state.js';
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 
 const STATE_FILE = path.join(WorkDir, 'agent_notes_state.json');
 
@@ -61,7 +62,9 @@ export function loadAgentNotesState(): AgentNotesState {
 
 export function saveAgentNotesState(state: AgentNotesState): void {
     try {
-        fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+        // Atomic: a torn write reads as corrupt, and the loader answers
+        // corruption with fresh state — a full, LLM-billed reprocessing pass.
+        writeJsonAtomicSync(STATE_FILE, state);
     } catch (error) {
         console.error('Error saving agent notes state:', error);
         throw error;

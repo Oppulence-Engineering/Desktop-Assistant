@@ -8,6 +8,7 @@ import {
 } from '@x/shared/dist/background-task.js';
 import { WorkDir } from '../config/config.js';
 import { withFileLock } from '../knowledge/file-lock.js';
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 
 const BG_TASKS_DIR = path.join(WorkDir, 'bg-tasks');
 
@@ -73,7 +74,7 @@ export async function readArtifactSync(slug: string): Promise<ArtifactSyncRecord
 
 export async function writeArtifactSync(slug: string, record: ArtifactSyncRecord): Promise<void> {
     try {
-        await fs.writeFile(artifactSyncPath(slug), JSON.stringify(record), 'utf-8');
+        await writeJsonAtomic(artifactSyncPath(slug), record);
     } catch {
         // Sidecar is advisory; a write failure must not break the pull itself.
     }

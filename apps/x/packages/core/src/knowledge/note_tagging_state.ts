@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { WorkDir } from '../config/config.js';
 import { MAX_ATTEMPTS, abandoned, clearFailure, recordFailure, shouldRetry, type RetryMap } from './retry_state.js';
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 
 const STATE_FILE = path.join(WorkDir, 'note_tagging_state.json');
 
@@ -60,7 +61,9 @@ export function loadNoteTaggingState(): NoteTaggingState {
 
 export function saveNoteTaggingState(state: NoteTaggingState): void {
     try {
-        fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+        // Atomic: a torn write reads as corrupt, and the loader answers
+        // corruption with fresh state — a full, LLM-billed reprocessing pass.
+        writeJsonAtomicSync(STATE_FILE, state);
     } catch (error) {
         console.error('Error saving note tagging state:', error);
         throw error;

@@ -1,3 +1,4 @@
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 import fs from 'fs';
 import path from 'path';
 import { WorkDir } from '../config/config.js';
@@ -275,12 +276,13 @@ function loadState(): {
 }
 
 function saveState(lastSyncDate: string, syncedIds: string[], lastCheckTime?: string) {
-    fs.writeFileSync(STATE_FILE, JSON.stringify({
+    // Atomic: a torn state file reads as corrupt and costs a full re-sync.
+    writeJsonAtomicSync(STATE_FILE, {
         lastSyncDate,
         syncedIds,
         lastCheckTime: lastCheckTime || new Date().toISOString(),
         last_sync: new Date().toISOString()
-    }, null, 2));
+    });
 }
 
 /**

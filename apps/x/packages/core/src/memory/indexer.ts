@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { chunkMarkdown } from './chunker.js';
 import { MemoryIndex, type IndexChunk } from './store.js';
 import type { Chunk } from './types.js';
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 
 /**
  * Embeds a batch of texts and reports the token cost. Injected into {@link Indexer}
@@ -283,7 +284,9 @@ class TokenBudget {
     persist(): void {
         try {
             fs.mkdirSync(this.dir, { recursive: true });
-            fs.writeFileSync(this.path(), JSON.stringify({ month: this.month, tokens: this.tokens }));
+            // Atomic: a torn file reads as corrupt, the loader answers with
+            // tokens = 0, and the monthly embed-token cap silently resets.
+            writeJsonAtomicSync(this.path(), { month: this.month, tokens: this.tokens });
         } catch {
             // best-effort
         }

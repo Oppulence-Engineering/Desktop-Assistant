@@ -9,6 +9,7 @@ import { serviceLogger, type ServiceRunContext } from "../services/service_logge
 import { limitEventItems } from "./limit_event_items.js";
 import { createEvent } from "../events/producer.js";
 import { classifyThread, getUserEmail } from "./classify_thread.js";
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 
 // Configuration
 const SYNC_DIR = path.join(WorkDir, "gmail_sync");
@@ -89,7 +90,7 @@ function writeCachedSnapshot(
       parserVersion: SNAPSHOT_PARSER_VERSION,
       snapshot,
     };
-    fs.writeFileSync(cachePath(threadId), JSON.stringify(entry), "utf-8");
+    writeJsonAtomicSync(cachePath(threadId), entry, 0);
   } catch (err) {
     console.warn(`[Gmail cache] write failed for ${threadId}:`, err);
   }
@@ -112,7 +113,7 @@ export function saveMessageBodyHeight(threadId: string, messageId: string, heigh
   if (message.bodyHeight === height) return;
   message.bodyHeight = height;
   try {
-    fs.writeFileSync(cachePath(threadId), JSON.stringify(cached), "utf-8");
+    writeJsonAtomicSync(cachePath(threadId), cached, 0);
   } catch (err) {
     console.warn(`[Gmail cache] height write failed for ${threadId}/${messageId}:`, err);
   }
@@ -197,7 +198,7 @@ export async function markThreadRead(threadId: string): Promise<ThreadActionResu
       for (const m of cached.snapshot.messages) m.unread = false;
       cached.snapshot.unread = false;
       try {
-        fs.writeFileSync(cachePath(threadId), JSON.stringify(cached), "utf-8");
+        writeJsonAtomicSync(cachePath(threadId), cached, 0);
       } catch (err) {
         console.warn(`[Gmail cache] markRead write failed for ${threadId}:`, err);
       }
@@ -1137,19 +1138,13 @@ function saveState(
   extra: { last_recent_backfill?: string } = {},
 ) {
   const previous = loadState(stateFile);
-  fs.writeFileSync(
-    stateFile,
-    JSON.stringify(
-      {
-        historyId,
-        last_sync: new Date().toISOString(),
-        last_recent_backfill: extra.last_recent_backfill ?? previous.last_recent_backfill,
-        ...extra,
-      },
-      null,
-      2,
-    ),
-  );
+  // Atomic: a torn state file reads as corrupt and costs a full re-sync.
+  writeJsonAtomicSync(stateFile, {
+    historyId,
+    last_sync: new Date().toISOString(),
+    last_recent_backfill: extra.last_recent_backfill ?? previous.last_recent_backfill,
+    ...extra,
+  });
 }
 
 function getErrorStatus(error: unknown): number | undefined {

@@ -4,6 +4,7 @@ import { events, PrefixLogger } from '@x/shared';
 import type { RowboatEvent, ConsumerResult } from '@x/shared/dist/events.js';
 import type { EventConsumer } from './consumer.js';
 import { PENDING_DIR, DONE_DIR, ensureEventDirs } from './producer.js';
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 
 const log = new PrefixLogger('Events:Processor');
 
@@ -22,7 +23,7 @@ export function _resetConsumersForTests(): void {
 function moveEventToDone(filename: string, enriched: RowboatEvent): void {
     const donePath = path.join(DONE_DIR, filename);
     const pendingPath = path.join(PENDING_DIR, filename);
-    fs.writeFileSync(donePath, JSON.stringify(enriched, null, 2), 'utf-8');
+    writeJsonAtomicSync(donePath, enriched);
     try {
         fs.unlinkSync(pendingPath);
     } catch (err) {

@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { WorkDir } from '../../config/config.js';
 import type { CodingAgent } from './types.js';
+import { writeJsonAtomic } from "../../filesystem/atomic_write.js";
 
 // One ACP session is pinned per chat run. We persist its sessionId (plus the agent
 // and cwd it belongs to) so reopening the chat after an app restart can resume the
@@ -36,7 +37,8 @@ export async function readStoredSession(runId: string): Promise<StoredSession | 
 export async function writeStoredSession(session: StoredSession): Promise<void> {
     const file = sessionFile(session.runId);
     await fs.mkdir(path.dirname(file), { recursive: true });
-    await fs.writeFile(file, JSON.stringify(session, null, 2));
+    // Atomic: a torn session file reads as null and the agent restarts cold.
+    await writeJsonAtomic(file, session);
 }
 
 export async function clearStoredSession(runId: string): Promise<void> {
