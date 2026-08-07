@@ -221,8 +221,8 @@ async function meteredEmbed(
   idempotencyKey: string,
   dimensions?: number,
 ): Promise<EmbedResult> {
-  const token = await getAccessToken();
-  // The timeout has to start when the request does, not when it is queued.
+  // Both the bearer and the timeout have to be established when the request is
+  // actually sent, not when it is queued.
   //
   // /v1/llm/embeddings shares the rate-limit bucket with chat, so memory
   // indexing draws on the same background budget — otherwise a rebuild
@@ -235,7 +235,11 @@ async function meteredEmbed(
   let controller: AbortController | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    const res = await throughBackgroundBudget(() => {
+    const res = await throughBackgroundBudget(async () => {
+      // Minted here, not above: an access token has minutes of life and the
+      // queue can hold a request for longer, so one taken before the wait goes
+      // out expired and comes back 401.
+      const token = await getAccessToken();
       controller = new AbortController();
       timer = setTimeout(() => controller?.abort(), REQUEST_TIMEOUT_MS);
       return fetch(`${API_URL}/v1/llm/embeddings`, {
