@@ -12,6 +12,14 @@ import { throughBackgroundBudget } from "../models/gateway-budget.js";
 import { createProvider, Provider } from "../models/models.js";
 import { FSModelConfigRepo } from "../models/repo.js";
 import { PRODUCT_PROVIDER_ID } from "@x/shared/dist/branding.js";
+import { loadMemoryConfig, MemoryConfig } from "./config.js";
+import {
+  LOCAL_EMBED_MODEL_ID,
+  isLocalEmbedModel,
+  localEmbedModelReady,
+  ollamaHost,
+  ollamaModelName,
+} from "./ollama.js";
 
 /** The result of an embed call: one vector per input text plus the billed token count. */
 export const EmbedResult = z.object({
@@ -45,6 +53,21 @@ export type EmbedTarget = z.infer<typeof EmbedTarget>;
  * @returns The routing decision + provider config + model (+ dimensions).
  */
 export async function resolveEmbedTarget(model: string, dimensions?: number): Promise<EmbedTarget> {
+  // Routing keys on the model id, not on what happens to be reachable. It has
+  // to: memorySearch embeds a query with the model recorded in the manifest,
+  // and vectors from two models are not comparable. If the id says Ollama, the
+  // request goes to Ollama or it fails — falling back to a hosted model here
+  // would silently return nonsense rankings rather than an error the retriever
+  // can catch and answer lexically.
+  if (isLocalEmbedModel(model)) {
+    return {
+      metered: false,
+      providerConfig: { flavor: "ollama", baseURL: ollamaHost() },
+      model: ollamaModelName(model),
+      // Matryoshka truncation is an OpenAI feature; Ollama returns native size.
+      dimensions: undefined,
+    };
+  }
   if (await isSignedIn()) {
     return {
       metered: true,
@@ -67,6 +90,27 @@ export async function resolveEmbedTarget(model: string, dimensions?: number): Pr
     model,
     dimensions: dimensions && dimensions > 0 ? dimensions : undefined,
   };
+}
+
+/**
+ * resolveEmbedModel picks which embedding model this index pass should use:
+ * the on-device one whenever a local daemon can serve it, otherwise whatever is
+ * configured. This is the "automatically" part — no setting to find, no key to
+ * paste. A change either way flips the manifest's model identity and the
+ * indexer rebuilds, which is correct: vectors from two models cannot be mixed.
+ *
+ * An explicitly configured model is left alone. Someone who set
+ * `model` in index.json to something other than the default meant it, and
+ * silently overriding a deliberate choice is worse than missing an optimisation.
+ *
+ * @param configured - The model from memory config.
+ * @returns The model identity to index with.
+ */
+export async function resolveEmbedModel(configured: string): Promise<string> {
+  if (isLocalEmbedModel(configured)) return configured;
+  if (configured !== MemoryConfig.shape.model.parse(undefined)) return configured;
+  if (loadMemoryConfig().localEmbeddings === "off") return configured;
+  return (await localEmbedModelReady()) ? LOCAL_EMBED_MODEL_ID : configured;
 }
 
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -108,7 +152,10 @@ async function byokEmbed(target: EmbedTarget, texts: string[]): Promise<EmbedRes
     model: provider.textEmbeddingModel(target.model),
     values: texts,
     // Matryoshka dimension reduction (text-embedding-3+ honors `dimensions`).
-    ...(target.dimensions
+    // Scoped to the OpenAI flavor: on any other provider this is a namespaced
+    // option nobody reads, and the returned vectors would be full-size while
+    // the manifest recorded the requested dims.
+    ...(target.dimensions && target.providerConfig.flavor === "openai"
       ? { providerOptions: { openai: { dimensions: target.dimensions } } }
       : {}),
   });

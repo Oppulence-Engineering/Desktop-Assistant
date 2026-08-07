@@ -8,7 +8,8 @@ import * as files from '../filesystem/files.js';
 import { capture } from '../analytics/posthog.js';
 import { WorkDir } from '../config/config.js';
 import { indexDir, loadMemoryConfig } from './config.js';
-import { embedBatch, resolveEmbedTarget } from './embed.js';
+import { embedBatch, resolveEmbedModel, resolveEmbedTarget } from './embed.js';
+import { isLocalEmbedModel } from './ollama.js';
 import { expandQuery } from './expand.js';
 import { Indexer, type IndexStats } from './indexer.js';
 import { MemoryIndex } from './store.js';
@@ -217,14 +218,21 @@ export async function rebuildMemoryIndex(): Promise<IndexStats | { disabled: tru
 async function runMemoryIndexOnce(): Promise<IndexStats | { disabled: true }> {
     const cfg = loadMemoryConfig();
     if (!cfg.enabled) return { disabled: true };
-    const target = await resolveEmbedTarget(cfg.model, cfg.embedDimensions);
+    // Resolve the model FIRST and index under that identity. If this returned
+    // cfg.model while the target quietly embedded with something else, the
+    // manifest would not notice the change, no rebuild would fire, and vectors
+    // from two different models would accumulate in one store.
+    const model = await resolveEmbedModel(cfg.model);
+    const target = await resolveEmbedTarget(model, cfg.embedDimensions);
     const indexer = new Indexer({
         dir: indexDir(),
         knowledgeDir: knowledgeDir(),
-        model: cfg.model,
+        model,
         // A requested Matryoshka size pins the dims (and the stored vectors are that size);
-        // otherwise fall back to the configured/inferred dims.
-        dimsHint: cfg.embedDimensions || cfg.dims,
+        // otherwise fall back to the configured/inferred dims. Not applicable
+        // on-device — Ollama returns the model's native size, so let the known
+        // dims table (or a probe) answer instead of a hint it will not honour.
+        dimsHint: isLocalEmbedModel(model) ? cfg.dims : cfg.embedDimensions || cfg.dims,
         batchSize: cfg.batchSize,
         maxMonthlyEmbedTokens: cfg.maxMonthlyEmbedTokens,
         embed: (texts) => embedBatch(target, texts),

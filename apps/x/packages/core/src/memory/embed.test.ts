@@ -18,6 +18,14 @@ vi.mock("../models/repo.js", async (io) => ({
 }));
 vi.mock("../account/account.js", () => ({ isSignedIn: isSignedInMock }));
 
+// Daemon availability is exercised in ollama.test.ts; here it is an input, so
+// these tests never depend on whether the machine running them has Ollama.
+const ready = vi.hoisted(() => ({ value: false }));
+vi.mock("./ollama.js", async (io) => ({
+  ...(await io<typeof import("./ollama.js")>()),
+  localEmbedModelReady: async () => ready.value,
+}));
+
 // BYOK path: stub the ai-sdk embedder and the provider factory (keep every other
 // real export via importOriginal so module loading isn't disturbed).
 vi.mock("ai", async (importOriginal) => {
@@ -32,7 +40,8 @@ vi.mock("../models/models.js", async (importOriginal) => {
   return { ...actual, createProvider: () => ({ textEmbeddingModel: (m: string) => m }) };
 });
 
-import { embedBatch, resolveEmbedTarget, type EmbedTarget } from "./embed.js";
+import { embedBatch, resolveEmbedModel, resolveEmbedTarget, type EmbedTarget } from "./embed.js";
+import { LOCAL_EMBED_MODEL, LOCAL_EMBED_MODEL_ID } from "./ollama.js";
 
 const metered: EmbedTarget = { metered: true, providerConfig: { flavor: "solomon" }, model: "m" };
 const byok: EmbedTarget = {
@@ -70,6 +79,7 @@ beforeEach(() => {
   // the next window and the test times out — a property of the pacing, not of
   // the code under test here.
   resetBackgroundBudgetForTests();
+  ready.value = false;
 });
 
 describe("embedBatch — empty input", () => {
@@ -233,6 +243,85 @@ describe("resolveEmbedTarget", () => {
     expect((await resolveEmbedTarget("m", 512)).dimensions).toBe(512);
     expect((await resolveEmbedTarget("m", 0)).dimensions).toBeUndefined();
     expect((await resolveEmbedTarget("m")).dimensions).toBeUndefined();
+  });
+});
+
+describe("resolveEmbedTarget — on-device", () => {
+  it("routes a local model id to the Ollama daemon", async () => {
+    const target = await resolveEmbedTarget(LOCAL_EMBED_MODEL_ID);
+    expect(target.metered).toBe(false);
+    expect(target.providerConfig.flavor).toBe("ollama");
+    expect(target.providerConfig.baseURL).toContain("11434");
+    // The provider takes the bare name; the namespace is our bookkeeping.
+    expect(target.model).toBe(LOCAL_EMBED_MODEL);
+  });
+
+  // Matryoshka truncation is an OpenAI feature. Passing it through would leave
+  // the manifest recording a dimensionality the returned vectors do not have.
+  it("drops the Matryoshka dimensions request for a local model", async () => {
+    expect((await resolveEmbedTarget(LOCAL_EMBED_MODEL_ID, 512)).dimensions).toBeUndefined();
+  });
+
+  // Routing follows the model id, never "what is reachable". memorySearch embeds
+  // a query with the model recorded in the manifest, and vectors from two models
+  // are not comparable — quietly answering from a different model would return
+  // confidently wrong rankings instead of a failure the retriever can catch and
+  // fall back to lexical on.
+  it("sends a hosted model id to the hosted provider even when a daemon is up", async () => {
+    ready.value = true;
+    isSignedInMock.mockResolvedValue(true);
+    const target = await resolveEmbedTarget("text-embedding-3-small");
+    expect(target.metered).toBe(true);
+    expect(target.providerConfig.flavor).not.toBe("ollama");
+  });
+
+  it("does not send the OpenAI dimensions option to a non-OpenAI provider", async () => {
+    const embedMany = vi.mocked((await import("ai")).embedMany);
+    embedMany.mockClear();
+    await embedBatch(
+      {
+        metered: false,
+        providerConfig: { flavor: "ollama", baseURL: "http://127.0.0.1:11434" },
+        model: LOCAL_EMBED_MODEL,
+        dimensions: 512,
+      },
+      ["x"],
+    );
+    expect(embedMany.mock.calls[0]?.[0]).not.toHaveProperty("providerOptions");
+  });
+});
+
+describe("resolveEmbedModel", () => {
+  it("prefers on-device when the daemon can serve it", async () => {
+    ready.value = true;
+    expect(await resolveEmbedModel("text-embedding-3-small")).toBe(LOCAL_EMBED_MODEL_ID);
+  });
+
+  it("stays hosted when no daemon can serve it", async () => {
+    ready.value = false;
+    expect(await resolveEmbedModel("text-embedding-3-small")).toBe("text-embedding-3-small");
+  });
+
+  // Someone who set a non-default model in index.json meant it. Silently
+  // overriding a deliberate choice is worse than missing the optimisation.
+  it("leaves an explicitly configured model alone", async () => {
+    ready.value = true;
+    expect(await resolveEmbedModel("text-embedding-3-large")).toBe("text-embedding-3-large");
+  });
+
+  it("honours the off switch", async () => {
+    ready.value = true;
+    process.env.SOLOMON_MEMORY_LOCAL_EMBEDDINGS = "off";
+    try {
+      expect(await resolveEmbedModel("text-embedding-3-small")).toBe("text-embedding-3-small");
+    } finally {
+      delete process.env.SOLOMON_MEMORY_LOCAL_EMBEDDINGS;
+    }
+  });
+
+  it("keeps an already-local id local", async () => {
+    ready.value = false;
+    expect(await resolveEmbedModel(LOCAL_EMBED_MODEL_ID)).toBe(LOCAL_EMBED_MODEL_ID);
   });
 });
 

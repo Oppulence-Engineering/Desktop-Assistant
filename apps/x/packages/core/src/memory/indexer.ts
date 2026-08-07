@@ -71,6 +71,9 @@ const KNOWN_DIMS: Record<string, number> = {
     'text-embedding-3-small': 1536,
     'text-embedding-3-large': 3072,
     'text-embedding-ada-002': 1536,
+    // On-device (Ollama). Namespaced so the manifest records which provider
+    // produced the vectors — see LOCAL_EMBED_MODEL_ID in memory/ollama.ts.
+    'ollama/nomic-embed-text': 768,
 };
 
 /**
