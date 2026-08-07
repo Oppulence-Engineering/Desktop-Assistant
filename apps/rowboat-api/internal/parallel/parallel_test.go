@@ -168,7 +168,7 @@ func TestRunTaskFailedRun(t *testing.T) {
 // domain. Callers log errors, so the error text must carry the status and
 // nothing else.
 func TestUpstreamErrorDoesNotLeakBody(t *testing.T) {
-	c := testClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := testClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, `{"error":"bad input for Sarah Chen at acme.com"}`, http.StatusBadRequest)
 	}))
 
@@ -183,7 +183,7 @@ func TestUpstreamErrorDoesNotLeakBody(t *testing.T) {
 
 func TestUnsupportedProcessorIsRefusedBeforeCalling(t *testing.T) {
 	called := false
-	c := testClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	c := testClient(t, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		called = true
 	}))
 	req := personTask()
