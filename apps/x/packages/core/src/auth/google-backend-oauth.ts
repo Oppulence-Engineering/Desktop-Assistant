@@ -170,6 +170,15 @@ export async function claimTokensViaBackend(state: string): Promise<OAuthTokens>
     throw new Error(`claim failed: ${res.status} ${err.error ?? ""}`.trim());
   }
   const body = (await res.json()) as ApiTokenResponse;
+  // An empty bundle means the browser half has not finished, whatever the
+  // status said. Older api builds answered an early claim with 200 and a
+  // zero-valued bundle, which got stored as a connection and then failed on
+  // first use with "Missing refresh token. Please reconnect." — a dead end the
+  // user could not tell from a real authorization failure. Newer builds return
+  // 409 not_ready instead; this keeps the desktop safe against both.
+  if (!body.access_token) {
+    throw new Error("claim failed: authorization is not complete yet");
+  }
   return toOAuthTokens(body);
 }
 

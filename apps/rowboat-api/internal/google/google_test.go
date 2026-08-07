@@ -220,6 +220,37 @@ func TestClaimExpiredTicket(t *testing.T) {
 	}
 }
 
+// A ticket minted by start carries the PKCE verifier and the owning user but no
+// tokens until the browser callback parks them. Claiming in that window must not
+// look like success, and must leave the ticket alone: consuming it here kills the
+// authorization the user is still completing in the browser.
+func TestClaimBeforeCallbackIsNotReadyAndKeepsTicket(t *testing.T) {
+	client, ctx, _, sealer, h := setup(t)
+	parkTicket(t, client, sealer, "pending-1", time.Now().Add(5*time.Minute), map[string]any{
+		"workos_user_id": "user_1",
+		"pkce_verifier":  "verifier",
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/google-oauth/claim", strings.NewReader(`{"session":"pending-1"}`)).WithContext(ctx)
+	rec := httptest.NewRecorder()
+	h.Claim(rec, req)
+
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("want 409, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "not_ready") {
+		t.Errorf("body = %s", rec.Body.String())
+	}
+	// The bundle must not leak through as an empty-but-successful payload.
+	if strings.Contains(rec.Body.String(), `"access_token"`) {
+		t.Errorf("empty bundle returned to caller: %s", rec.Body.String())
+	}
+	// Still claimable once the callback fills it in.
+	if n := client.OAuthPending.Query().CountX(context.Background()); n != 1 {
+		t.Fatalf("ticket was consumed: %d remaining, want 1", n)
+	}
+}
+
 func TestRefreshSuccess(t *testing.T) {
 	_, ctx, _, _, h := setup(t)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

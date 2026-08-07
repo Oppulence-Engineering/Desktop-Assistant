@@ -160,3 +160,45 @@ describe("authorize url scheme guard", () => {
     await expect(startGoogleConnectViaBackend()).resolves.toContain("https://accounts.google.com/");
   });
 });
+
+/**
+ * A claim can land before the browser half has finished — the desktop polls for
+ * the tokens because the deep link cannot be relied on to arrive.
+ *
+ * Older api builds answered that early claim with 200 and a zero-valued bundle.
+ * Storing it produced a connection whose access token was the empty string,
+ * which failed on first use as "Missing refresh token. Please reconnect." — a
+ * dead end indistinguishable from a genuine authorization failure, and by then
+ * the one-shot ticket was gone, so the real callback failed too.
+ *
+ * The api now returns 409 not_ready. This pins the client half, which has to
+ * hold against an api that has not been upgraded yet.
+ */
+describe("claimTokensViaBackend", () => {
+  it("rejects an empty bundle returned as 200", async () => {
+    mockResponse(200, { access_token: "", expires_at: 0 });
+    const { claimTokensViaBackend } = await import("./google-backend-oauth.js");
+    await expect(claimTokensViaBackend("state-1")).rejects.toThrow(/not complete yet/i);
+  });
+
+  it("rejects a 409 not_ready", async () => {
+    mockResponse(409, { error: "authorization is not complete yet", code: "not_ready" });
+    const { claimTokensViaBackend } = await import("./google-backend-oauth.js");
+    await expect(claimTokensViaBackend("state-1")).rejects.toThrow(/claim failed/i);
+  });
+
+  it("returns the tokens once the callback has parked them", async () => {
+    mockResponse(200, {
+      access_token: "ya29.real",
+      refresh_token: "1//refresh",
+      expires_at: 1786134880,
+      scope: "openid https://www.googleapis.com/auth/gmail.readonly",
+    });
+    const { claimTokensViaBackend } = await import("./google-backend-oauth.js");
+    const tokens = await claimTokensViaBackend("state-1");
+
+    expect(tokens.access_token).toBe("ya29.real");
+    expect(tokens.refresh_token).toBe("1//refresh");
+    expect(tokens.scopes).toContain("https://www.googleapis.com/auth/gmail.readonly");
+  });
+});
