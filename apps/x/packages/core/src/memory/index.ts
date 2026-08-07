@@ -207,7 +207,10 @@ export function runMemoryIndex(): Promise<IndexStats | { disabled: true }> {
  * never touched. An active incremental pass is allowed to finish before cleanup.
  */
 export async function rebuildMemoryIndex(): Promise<IndexStats | { disabled: true }> {
-    if (inFlight) await inFlight;
+    // Wait for an active pass, but do not adopt its outcome: a rejected
+    // incremental pass would surface here as the *rebuild* failing, and the
+    // rebuild the user asked for would never run.
+    if (inFlight) await inFlight.catch(() => {});
     if (!loadMemoryConfig().enabled) return { disabled: true };
     fs.rmSync(indexDir(), { recursive: true, force: true });
     cached = null;

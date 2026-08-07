@@ -206,35 +206,63 @@ async function startManaged(): Promise<boolean> {
     if (await daemonResponds(managedURL)) return true; // ours from a previous tick
 
     if (!(await exists(binaryPath()))) return false;
-    await fs.mkdir(modelsDir(), { recursive: true });
+    // Everything from here can throw — mkdir on a full disk, spawn on a
+    // corrupt binary — and this module promises the caller a boolean, not an
+    // exception. A rejection propagates through ensureOllamaRuntime and
+    // localEmbedModelReady into resolveEmbedModel and fails the whole index
+    // pass, when the correct outcome is simply "no local runtime, stay hosted".
+    try {
+      await fs.mkdir(modelsDir(), { recursive: true });
 
-    child = spawn(binaryPath(), ["serve"], {
-      env: {
-        ...process.env,
-        OLLAMA_HOST: `127.0.0.1:${MANAGED_PORT}`,
-        OLLAMA_MODELS: modelsDir(),
-        // One small embedding model, unloaded promptly. Without these an idle
-        // daemon sits on hundreds of MB of RSS for a feature the user is not
-        // actively using.
-        OLLAMA_MAX_LOADED_MODELS: "1",
-        OLLAMA_KEEP_ALIVE: "60s",
-      },
-      stdio: "ignore",
-      detached: false,
-    });
-    child.once("exit", () => {
-      child = null;
-    });
-    installExitHook();
+      child = spawn(binaryPath(), ["serve"], {
+        env: {
+          ...process.env,
+          OLLAMA_HOST: `127.0.0.1:${MANAGED_PORT}`,
+          OLLAMA_MODELS: modelsDir(),
+          // One small embedding model, unloaded promptly. Without these an idle
+          // daemon sits on hundreds of MB of RSS for a feature the user is not
+          // actively using.
+          OLLAMA_MAX_LOADED_MODELS: "1",
+          OLLAMA_KEEP_ALIVE: "60s",
+        },
+        stdio: "ignore",
+        detached: false,
+      });
+      child.once("exit", () => {
+        child = null;
+      });
+      // spawn reports failure asynchronously, on the child, not by throwing: a
+      // non-executable or missing binary arrives here as EACCES/ENOENT. With no
+      // listener Node promotes it to an uncaught exception — in the Electron
+      // main process, a crash — and the try/catch around this block never sees
+      // it, because it is not on the promise at all.
+      let spawnFailed = false;
+      child.once("error", (error) => {
+        console.log("[Memory] Local embedding runtime failed to start:", error.message);
+        spawnFailed = true;
+        child = null;
+      });
+      installExitHook();
 
-    const deadline = Date.now() + HEALTH_TIMEOUT_MS;
-    while (Date.now() < deadline) {
-      if (await daemonResponds(managedURL)) return true;
-      await new Promise((r) => setTimeout(r, 500));
+      const deadline = Date.now() + HEALTH_TIMEOUT_MS;
+      while (Date.now() < deadline) {
+        // Fail fast rather than waiting out the health timeout for a process we
+        // already know never started.
+        if (spawnFailed) return false;
+        if (await daemonResponds(managedURL)) return true;
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      console.log("[Memory] Local embedding runtime did not become healthy; staying hosted.");
+      stopOllamaRuntime();
+      return false;
+    } catch (error) {
+      console.log(
+        "[Memory] Could not start the local embedding runtime:",
+        error instanceof Error ? error.message : error,
+      );
+      stopOllamaRuntime();
+      return false;
     }
-    console.log("[Memory] Local embedding runtime did not become healthy; staying hosted.");
-    stopOllamaRuntime();
-    return false;
   })().finally(() => {
     startInFlight = null;
   });

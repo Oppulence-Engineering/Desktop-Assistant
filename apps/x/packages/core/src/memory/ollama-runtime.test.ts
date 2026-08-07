@@ -139,3 +139,24 @@ describe("daemonResponds", () => {
     expect(await daemonResponds("http://127.0.0.1:11434")).toBe(false);
   });
 });
+
+/**
+ * This module promises a boolean, never an exception.
+ *
+ * A rejection propagates through ensureOllamaRuntime and localEmbedModelReady
+ * into resolveEmbedModel and fails the whole index pass — when the correct
+ * outcome is simply "no local runtime, stay hosted". Everything past the
+ * binary check can throw: mkdir on a full disk, spawn on a corrupt file.
+ */
+describe("ensureOllamaRuntime — failure containment", () => {
+    it("resolves to null rather than throwing when the runtime cannot start", async () => {
+        // A binary that exists but is not executable: exists() passes, spawn fails.
+        const runtimeDir = path.join(TEST_WORKDIR, "runtime", "ollama", "0.32.6");
+        await fs.mkdir(runtimeDir, { recursive: true });
+        await fs.writeFile(path.join(runtimeDir, "ollama"), "not a binary");
+        await fs.chmod(path.join(runtimeDir, "ollama"), 0o644);
+        stubDaemons([]);
+
+        await expect(ensureOllamaRuntime()).resolves.toBeNull();
+    });
+});
