@@ -35,6 +35,7 @@ const packagerConfig = {
   extraResource: [
     path.join(__dirname, ".package", "whisper"),
     path.join(__dirname, ".package", "audiocap"),
+    path.join(__dirname, ".package", "embeddings"),
   ],
   // Since we bundle everything with esbuild, we don't need node_modules at all.
   // These settings prevent Forge's dependency walker (flora-colossus) from trying
@@ -276,6 +277,27 @@ module.exports = {
             `[audiocap] no binary for ${platform}-${arch} at ${audiocapSrc} — shipping without native meeting capture`,
           );
         }
+      }
+
+      // Ship the embedding model itself, so semantic memory works on first
+      // launch with no download and no dependency on Hugging Face being
+      // reachable. Architecture-independent, so unlike whisper/audiocap there
+      // is one directory rather than one per platform-arch. Absent in a plain
+      // dev checkout — the app then downloads it into WorkDir on first use, so
+      // the build still succeeds.
+      const embeddingsSrc = path.join(__dirname, "..", "..", "vendor", "embeddings");
+      const embeddingsDest = path.join(packageDir, "embeddings");
+      fs.mkdirSync(embeddingsDest, { recursive: true });
+      if (fs.existsSync(path.join(embeddingsSrc, "model.onnx"))) {
+        for (const name of ["model.onnx", "vocab.txt"]) {
+          fs.copyFileSync(path.join(embeddingsSrc, name), path.join(embeddingsDest, name));
+        }
+        console.log("✅ Staged the on-device embedding model");
+      } else {
+        console.warn(
+          "[embeddings] vendor/embeddings is empty — shipping without the model; " +
+            "run `node apps/x/scripts/embeddings-fetch.mjs` to bundle it",
+        );
       }
 
       // onnxruntime-node powers on-device embeddings (memory/onnx). It is

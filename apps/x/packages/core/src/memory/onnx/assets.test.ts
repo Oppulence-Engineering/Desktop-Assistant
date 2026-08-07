@@ -5,7 +5,15 @@ import * as path from "node:path";
 const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-onnx-assets-test");
 vi.mock("../../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 
-import { assetsInstalled, installAssets, modelDir, type EmbedModelSpec } from "./assets.js";
+import {
+  MINILM,
+  assetsInstalled,
+  configureBundledEmbeddings,
+  installAssets,
+  modelDir,
+  resolveAssetDir,
+  type EmbedModelSpec,
+} from "./assets.js";
 
 /** sha256 of "good bytes", so one file can be made to verify and another not. */
 const GOOD = "good bytes";
@@ -91,5 +99,86 @@ describe("assetsInstalled", () => {
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(path.join(dir, "model.onnx"), GOOD);
     expect(await assetsInstalled(s)).toBe(true);
+  });
+});
+
+/**
+ * The model ships inside the app bundle, so semantic memory works on first
+ * launch with no download and no dependency on Hugging Face being reachable.
+ * A plain dev checkout has an empty vendor/embeddings, so the runtime download
+ * still has to cover that case — these pin both halves.
+ */
+describe("bundled model", () => {
+  const BUNDLED = path.join(TEST_WORKDIR, "bundled");
+
+  beforeEach(async () => {
+    configureBundledEmbeddings("");
+    await fs.mkdir(BUNDLED, { recursive: true });
+  });
+
+  afterEach(() => configureBundledEmbeddings(""));
+
+  async function plantBundled(): Promise<void> {
+    for (const file of MINILM.files) {
+      await fs.writeFile(path.join(BUNDLED, file.name), "bundled bytes");
+    }
+    configureBundledEmbeddings(BUNDLED);
+  }
+
+  it("resolves to the bundled copy when the app shipped with one", async () => {
+    await plantBundled();
+    expect(await resolveAssetDir(MINILM)).toBe(BUNDLED);
+    expect(await assetsInstalled(MINILM)).toBe(true);
+  });
+
+  // The whole point: no first-launch download, and no first-launch Ollama
+  // provisioning either, since resolveEmbedModel short-circuits on installed.
+  it("downloads nothing when the model is bundled", async () => {
+    await plantBundled();
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+
+    expect(await installAssets(MINILM)).toBe(true);
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the downloaded copy when nothing is bundled", async () => {
+    const dir = modelDir(MINILM);
+    await fs.mkdir(dir, { recursive: true });
+    for (const file of MINILM.files) {
+      await fs.writeFile(path.join(dir, file.name), "downloaded bytes");
+    }
+    expect(await resolveAssetDir(MINILM)).toBe(dir);
+  });
+
+  it("reports nothing available when neither exists", async () => {
+    expect(await resolveAssetDir(MINILM)).toBeNull();
+    expect(await assetsInstalled(MINILM)).toBe(false);
+  });
+
+  it("ignores a bundled directory that is missing a file", async () => {
+    await fs.writeFile(path.join(BUNDLED, "vocab.txt"), "only half");
+    configureBundledEmbeddings(BUNDLED);
+    expect(await resolveAssetDir(MINILM)).toBeNull();
+  });
+});
+
+/**
+ * The fetch script carries its own copy of the URLs and checksums so it can run
+ * standalone, before anything is built. Two lists that must agree is exactly how
+ * a build ends up shipping a model the app will not accept, so pin them.
+ */
+describe("fetch script stays in sync with the pinned catalog", () => {
+  it("declares the same files and checksums as MINILM", async () => {
+    const script = await fs.readFile(
+      new URL("../../../../../scripts/embeddings-fetch.mjs", import.meta.url),
+      "utf8",
+    );
+    for (const file of MINILM.files) {
+      expect(script, `${file.name} missing from the fetch script`).toContain(file.name);
+      expect(script, `${file.name} checksum drifted`).toContain(file.sha256);
+      expect(script, `${file.name} url drifted`).toContain(file.url.replace(/^.*\/main/, ""));
+    }
   });
 });

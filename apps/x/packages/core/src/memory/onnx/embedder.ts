@@ -7,7 +7,7 @@
 // architecture and packaging prunes to the target.
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { MINILM, modelDir, type EmbedModelSpec } from "./assets.js";
+import { MINILM, resolveAssetDir, type EmbedModelSpec } from "./assets.js";
 import { WordPieceTokenizer } from "./tokenizer.js";
 
 /** Minimal shape of the bits of onnxruntime-node this module uses. */
@@ -47,7 +47,9 @@ export async function ensureEmbedder(spec: EmbedModelSpec = MINILM): Promise<boo
   if (loadInFlight) return loadInFlight;
   loadInFlight = (async () => {
     try {
-      const dir = modelDir(spec);
+      // Bundled copy if the app shipped with one, else the downloaded copy.
+      const dir = await resolveAssetDir(spec);
+      if (!dir) return false;
       const vocab = await fs.readFile(path.join(dir, "vocab.txt"), "utf8");
       const ort = (await import("onnxruntime-node")) as unknown as {
         InferenceSession: { create(p: string): Promise<OrtSession> };

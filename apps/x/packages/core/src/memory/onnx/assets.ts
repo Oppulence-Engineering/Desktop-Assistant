@@ -63,8 +63,56 @@ export const MINILM: EmbedModelSpec = {
   ],
 };
 
+/** Where a runtime download lands, when the app did not ship with the model. */
 export function modelDir(spec: EmbedModelSpec = MINILM): string {
   return path.join(WorkDir, "models", "embeddings", spec.id.replace("/", "_"));
+}
+
+// --- bundled copy -----------------------------------------------------------
+//
+// The model ships with the app, so semantic memory works on first launch with
+// no download and no dependency on Hugging Face being reachable. Core stays
+// Electron-free, so the main process injects the directory at startup — the
+// same arrangement whisper uses for its binary (voice/whisper/bin.ts), for the
+// same reason: only main knows `app.isPackaged` and `process.resourcesPath`.
+//
+// A plain dev checkout has an empty vendor/embeddings, so nothing is injected
+// and the runtime download below still covers it.
+
+let bundledDir: string | null = null;
+
+/** Called once by the main process with the absolute path to the bundled model. */
+export function configureBundledEmbeddings(absoluteDir: string): void {
+  bundledDir = absoluteDir;
+}
+
+function bundledCandidate(): string | null {
+  if (bundledDir) return bundledDir;
+  // For tests, scripts and anything running outside Electron.
+  return process.env.OPPULENCE_EMBEDDINGS_DIR ?? null;
+}
+
+async function hasEveryFile(dir: string, spec: EmbedModelSpec): Promise<boolean> {
+  for (const file of spec.files) {
+    if (!(await exists(path.join(dir, file.name)))) return false;
+  }
+  return true;
+}
+
+/**
+ * Directory actually holding the model, or null if it is nowhere yet.
+ *
+ * Bundled copy wins: it is inside the signed application bundle, so its
+ * integrity is already covered by code signing, and re-hashing 23MB on every
+ * start would buy nothing. Downloaded copies are checksum-verified on the way
+ * in instead (see {@link installAssets}).
+ */
+export async function resolveAssetDir(spec: EmbedModelSpec = MINILM): Promise<string | null> {
+  const bundled = bundledCandidate();
+  if (bundled && (await hasEveryFile(bundled, spec))) return bundled;
+  const downloaded = modelDir(spec);
+  if (await hasEveryFile(downloaded, spec)) return downloaded;
+  return null;
 }
 
 async function exists(p: string): Promise<boolean> {
@@ -76,13 +124,9 @@ async function exists(p: string): Promise<boolean> {
   }
 }
 
-/** True when every file of `spec` is already installed. */
+/** True when the model is available — bundled with the app or downloaded. */
 export async function assetsInstalled(spec: EmbedModelSpec = MINILM): Promise<boolean> {
-  const dir = modelDir(spec);
-  for (const file of spec.files) {
-    if (!(await exists(path.join(dir, file.name)))) return false;
-  }
-  return true;
+  return (await resolveAssetDir(spec)) !== null;
 }
 
 async function downloadVerified(file: AssetFile, dest: string): Promise<void> {
@@ -125,6 +169,8 @@ let installInFlight: Promise<boolean> | null = null;
 export async function installAssets(spec: EmbedModelSpec = MINILM): Promise<boolean> {
   if (installInFlight) return installInFlight;
   installInFlight = (async () => {
+    // Shipped with the app — nothing to fetch.
+    if (await resolveAssetDir(spec)) return true;
     const dir = modelDir(spec);
     try {
       await fs.mkdir(dir, { recursive: true });
