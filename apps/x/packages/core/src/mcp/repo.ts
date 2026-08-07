@@ -3,6 +3,7 @@ import { McpServerConfig, McpServerDefinition } from "@x/shared/dist/mcp.js";
 import fs from "fs/promises";
 import path from "path";
 import z from "zod";
+import { ensureJsonConfig, readJsonConfig } from "../config/json_config.js";
 
 const DEFAULT_MCP_SERVERS = {
 };
@@ -14,20 +15,28 @@ export interface IMcpConfigRepo {
     delete(serverName: string): Promise<void>;
 }
 
+const defaults = (): z.infer<typeof McpServerConfig> => ({ mcpServers: DEFAULT_MCP_SERVERS });
+
 export class FSMcpConfigRepo implements IMcpConfigRepo {
     private readonly configPath = path.join(WorkDir, "config", "mcp.json");
+    /** Last problem reported, so a broken file warns once and not once per read. */
+    private reportedProblem: string | null = null;
+
 
     async ensureConfig(): Promise<void> {
-        try {
-            await fs.access(this.configPath);
-        } catch {
-            await fs.writeFile(this.configPath, JSON.stringify({ mcpServers: DEFAULT_MCP_SERVERS }, null, 2));
-        }
+        // Validity, not just existence. A file that parses to the wrong shape
+        // used to pass this check and then throw on every read for the life of
+        // the install — see config/json_config.ts.
+        await ensureJsonConfig(this.configPath, McpServerConfig, defaults, "Mcp");
     }
 
     async getConfig(): Promise<z.infer<typeof McpServerConfig>> {
-        const config = await fs.readFile(this.configPath, "utf8");
-        return McpServerConfig.parse(JSON.parse(config));
+        const { config, problem } = await readJsonConfig(this.configPath, McpServerConfig, defaults);
+        if (problem && problem !== this.reportedProblem) {
+            console.error(`[Mcp] ${this.configPath} is invalid (${problem}); using defaults.`);
+        }
+        this.reportedProblem = problem;
+        return config;
     }
 
     async upsert(serverName: string, config: z.infer<typeof McpServerDefinition>): Promise<void> {

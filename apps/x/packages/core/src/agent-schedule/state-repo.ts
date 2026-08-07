@@ -3,6 +3,7 @@ import { AgentScheduleState, AgentScheduleStateEntry } from "@x/shared/dist/agen
 import fs from "fs/promises";
 import path from "path";
 import z from "zod";
+import { ensureJsonConfig, readJsonConfig } from "../config/json_config.js";
 
 const DEFAULT_AGENT_SCHEDULE_STATE: z.infer<typeof AgentScheduleState>["agents"] = {};
 
@@ -15,20 +16,28 @@ export interface IAgentScheduleStateRepo {
     deleteAgentState(agentName: string): Promise<void>;
 }
 
+const defaults = (): z.infer<typeof AgentScheduleState> => ({ agents: DEFAULT_AGENT_SCHEDULE_STATE });
+
 export class FSAgentScheduleStateRepo implements IAgentScheduleStateRepo {
     private readonly statePath = path.join(WorkDir, "config", "agent-schedule-state.json");
+    /** Last problem reported, so a broken file warns once and not once per read. */
+    private reportedProblem: string | null = null;
+
 
     async ensureState(): Promise<void> {
-        try {
-            await fs.access(this.statePath);
-        } catch {
-            await fs.writeFile(this.statePath, JSON.stringify({ agents: DEFAULT_AGENT_SCHEDULE_STATE }, null, 2));
-        }
+        // Validity, not just existence. A file that parses to the wrong shape
+        // used to pass this check and then throw on every read for the life of
+        // the install — see config/json_config.ts.
+        await ensureJsonConfig(this.statePath, AgentScheduleState, defaults, "AgentScheduleState");
     }
 
     async getState(): Promise<z.infer<typeof AgentScheduleState>> {
-        const state = await fs.readFile(this.statePath, "utf8");
-        return AgentScheduleState.parse(JSON.parse(state));
+        const { config, problem } = await readJsonConfig(this.statePath, AgentScheduleState, defaults);
+        if (problem && problem !== this.reportedProblem) {
+            console.error(`[AgentScheduleState] ${this.statePath} is invalid (${problem}); using defaults.`);
+        }
+        this.reportedProblem = problem;
+        return config;
     }
 
     async getAgentState(agentName: string): Promise<z.infer<typeof AgentScheduleStateEntry> | null> {
