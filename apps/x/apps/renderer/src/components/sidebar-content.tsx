@@ -49,6 +49,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@oppulence/ui/components/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
+import { openBillingFlow } from "@/lib/billing-flow";
 import { dominantServiceFault, explainServiceError } from "@/lib/service-error-copy";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { updatePending, useUpdateStatus } from "@/hooks/use-update-prompt";
@@ -240,13 +241,10 @@ function SyncStatusBar({ voiceRecording }: { voiceRecording?: VoiceNoteStatus | 
   const [upgradePending, setUpgradePending] = useState(false);
   const runTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-  // Same checkout the billing dialog opens, so the two entry points cannot
-  // drift onto different plans.
   const openUpgrade = useCallback(async () => {
     setUpgradePending(true);
     try {
-      const checkout = await window.ipc.invoke("billing:getCheckoutUrl", { plan: "starter" });
-      window.open(checkout.url);
+      await openBillingFlow();
     } catch (error) {
       console.error("Failed to open billing flow:", error);
       toast("Could not open the upgrade page.", "error");
@@ -644,7 +642,6 @@ export function SidebarContentPanel({
   const connectorsButtonRef = useRef<HTMLButtonElement | null>(null);
   const [isSolomonConnected, setIsSolomonConnected] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
-  const [appUrl, setAppUrl] = useState<string | null>(null);
   const { billing } = useBilling(isSolomonConnected);
   const { state: sidebarState } = useSidebar();
   const isCollapsed = sidebarState === "collapsed";
@@ -924,14 +921,6 @@ export function SidebarContentPanel({
           setIsSolomonConnected(connected);
           if (!hasError) {
             setShowOauthAlert(true);
-          }
-        }
-        if (connected && mounted) {
-          try {
-            const account = await window.ipc.invoke("account:getSolomon", null);
-            if (mounted) setAppUrl(account.config?.appUrl ?? null);
-          } catch {
-            /* ignore */
           }
         }
       } catch (error) {
@@ -1336,7 +1325,12 @@ export function SidebarContentPanel({
                 })()}
             </div>
             <button
-              onClick={() => appUrl && window.open(`${appUrl}?intent=upgrade`)}
+              onClick={() => {
+                void openBillingFlow().catch((error) => {
+                  console.error("Failed to open billing flow:", error);
+                  toast("Could not open billing.", "error");
+                });
+              }}
               className="shrink-0 rounded-none bg-sidebar-foreground/10 px-2.5 py-1 text-[11px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-foreground/20"
             >
               {!billing.subscriptionPlan ||
