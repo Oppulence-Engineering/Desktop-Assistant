@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { WorkDir } from '../config/config.js';
+import { abandoned, clearFailure, recordFailure, shouldRetry, type RetryMap } from './retry_state.js';
 
 /**
  * State tracking for knowledge graph processing
@@ -18,7 +19,26 @@ export interface FileState {
 
 export interface GraphState {
     processedFiles: Record<string, FileState>; // filepath -> FileState
+    /**
+     * Per-file failure history. Optional so existing state files load.
+     *
+     * A batch that throws deliberately does not save state for its files, which
+     * is right — but with nothing recording the failure they are detected as
+     * "changed" again on the very next tick, forever. Seen live: the same four
+     * notes re-selected on eight consecutive syncs, each one an LLM call.
+     */
+    failures?: RetryMap;
     lastBuildTime: string; // ISO timestamp of last successful build
+}
+
+/** Record that processing `filePath` failed, so it backs off instead of looping. */
+export function markGraphAttemptFailed(filePath: string, state: GraphState, now = new Date()): void {
+    state.failures = recordFailure(filePath, state.failures, now);
+}
+
+/** Files that have exhausted their attempts and are no longer selected. */
+export function abandonedGraphFiles(state: GraphState): string[] {
+    return abandoned(state.failures);
 }
 
 /**
@@ -97,6 +117,9 @@ export function markFileAsProcessed(filePath: string, state: GraphState): void {
         hash: hash,
         lastProcessed: new Date().toISOString(),
     };
+    // Succeeded — do not carry an earlier failure forward, or an intermittent
+    // file would creep toward abandonment across unrelated edits.
+    clearFailure(filePath, state.failures);
 }
 
 /**
@@ -125,7 +148,10 @@ export function getFilesToProcess(
                 // Recurse into subdirectories
                 traverseDirectory(fullPath);
             } else if (stat.isFile() && entry.endsWith('.md')) {
-                if (hasFileChanged(fullPath, state)) {
+                // A changed file still has to be eligible: without the retry
+                // check a file whose batch always fails is re-selected on every
+                // sync, indefinitely.
+                if (hasFileChanged(fullPath, state) && shouldRetry(fullPath, state.failures)) {
                     filesToProcess.push(fullPath);
                 }
             }

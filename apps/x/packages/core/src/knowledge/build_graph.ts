@@ -11,6 +11,7 @@ import {
     saveState,
     getFilesToProcess,
     markFileAsProcessed,
+    markGraphAttemptFailed,
     resetState,
     type GraphState,
 } from './graph_state.js';
@@ -439,7 +440,13 @@ async function buildGraphWithFiles(
                     context: { batchNumber },
                 });
             }
-            // Continue with next batch (without saving state for failed batch)
+            // Continue with next batch (without saving state for failed batch),
+            // but record the failure so these files back off instead of being
+            // re-detected as changed on every subsequent sync.
+            for (const file of batch) {
+                markGraphAttemptFailed(file.path, state);
+            }
+            saveState(state);
         }
     }
 

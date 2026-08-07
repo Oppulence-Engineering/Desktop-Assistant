@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { WorkDir } from '../config/config.js';
+import { MAX_ATTEMPTS, abandoned, clearFailure, recordFailure, shouldRetry, type RetryMap } from './retry_state.js';
 
 const STATE_FILE = path.join(WorkDir, 'labeling_state.json');
 
@@ -17,33 +18,20 @@ export interface LabelingState {
      * against a 10,000/day allowance. The account was exhausted twice over by a
      * single sweep, and the sweep restarted immediately.
      */
-    failures?: Record<string, { count: number; lastAttemptAt: string }>;
+    failures?: RetryMap;
     lastRunTime: string;
 }
 
 /** Give up on a file after this many failed attempts. */
-export const MAX_LABEL_ATTEMPTS = 5;
+export const MAX_LABEL_ATTEMPTS = MAX_ATTEMPTS;
 
-const BACKOFF_BASE_MS = 5 * 60 * 1000;
-const BACKOFF_CAP_MS = 6 * 60 * 60 * 1000;
-
-/**
- * Whether a file is eligible for another attempt.
- *
- * Exponential backoff rather than a bare attempt cap: most failures here are
- * transient (an expired bearer, an exhausted balance, a 502 from the vendor),
- * and those files should come back — just not four times a minute.
- */
+/** Whether a file is eligible for another attempt. See retry_state.ts. */
 export function shouldAttempt(
     filePath: string,
     state: LabelingState,
     now: number = Date.now(),
 ): boolean {
-    const failure = state.failures?.[filePath];
-    if (!failure) return true;
-    if (failure.count >= MAX_LABEL_ATTEMPTS) return false;
-    const wait = Math.min(BACKOFF_BASE_MS * 2 ** (failure.count - 1), BACKOFF_CAP_MS);
-    return now - new Date(failure.lastAttemptAt).getTime() >= wait;
+    return shouldRetry(filePath, state.failures, now);
 }
 
 /** Record that an attempt on `filePath` did not produce a labeled file. */
@@ -52,16 +40,12 @@ export function markAttemptFailed(
     state: LabelingState,
     now: Date = new Date(),
 ): void {
-    state.failures ??= {};
-    const prior = state.failures[filePath]?.count ?? 0;
-    state.failures[filePath] = { count: prior + 1, lastAttemptAt: now.toISOString() };
+    state.failures = recordFailure(filePath, state.failures, now);
 }
 
 /** Files that have exhausted their attempts and are no longer retried. */
 export function abandonedFiles(state: LabelingState): string[] {
-    return Object.entries(state.failures ?? {})
-        .filter(([, f]) => f.count >= MAX_LABEL_ATTEMPTS)
-        .map(([path]) => path);
+    return abandoned(state.failures);
 }
 
 export function loadLabelingState(): LabelingState {
@@ -93,7 +77,7 @@ export function markFileAsLabeled(filePath: string, state: LabelingState): void 
         labeledAt: new Date().toISOString(),
     };
     // A file that eventually succeeded carries no failure history forward.
-    delete state.failures?.[filePath];
+    clearFailure(filePath, state.failures);
 }
 
 export function resetLabelingState(): void {
