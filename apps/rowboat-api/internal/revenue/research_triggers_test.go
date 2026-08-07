@@ -85,6 +85,11 @@ func TestAccountTriggerWritesCitedMilestoneAndRaisesAttention(t *testing.T) {
 	if !strings.Contains(item.Explanation, "Sarah Chen") {
 		t.Fatalf("explanation did not name the contact: %q", item.Explanation)
 	}
+	// Carries the source, so "why now?" is checkable. An evidence ref alone is
+	// not enough: nothing resolves assertion refs to a URL.
+	if !strings.Contains(item.Explanation, "https://techpress.example/acme-series-b") {
+		t.Fatalf("explanation carried no clickable source: %q", item.Explanation)
+	}
 }
 
 // An uncited event is a rumour. It must not become a milestone and must not
@@ -123,9 +128,11 @@ func TestNoEventMeansNoTrigger(t *testing.T) {
 	if outcome.Found {
 		t.Fatal(`"none" was stored as a milestone`)
 	}
-	// The vendor still ran, so the run is still paid for.
-	if spent := creditsSpent(t, rf.fixture); spent != 250 {
-		t.Fatalf("a core trigger run spent %d credits, want 250", spent)
+	// The vendor still ran, so the run is still paid for — at the lite rate.
+	// Guarded because the tier is the difference between ~$37 and ~$187 a month
+	// at the advertised 250-account limit, on a $249 plan.
+	if spent := creditsSpent(t, rf.fixture); spent != 50 {
+		t.Fatalf("a trigger run spent %d credits, want 50 (lite)", spent)
 	}
 }
 
@@ -166,12 +173,27 @@ func TestTriggerRefusesAccountWithoutADomain(t *testing.T) {
 }
 
 func TestTriggerExplanation(t *testing.T) {
-	got := triggerExplanation("Acme announced a Series B", "Sarah Chen (VP Engineering)")
-	want := "Acme announced a Series B. Your last contact there was Sarah Chen (VP Engineering)."
+	got := triggerExplanation(
+		"Acme announced a Series B", "Sarah Chen (VP Engineering)", "https://press.example/acme",
+	)
+	want := "Acme announced a Series B. Your last contact there was Sarah Chen (VP Engineering). " +
+		"Source: https://press.example/acme"
 	if got != want {
 		t.Fatalf("explanation = %q, want %q", got, want)
 	}
-	if got := triggerExplanation("Acme launched v2.", ""); got != "Acme launched v2." {
-		t.Fatalf("explanation without a contact = %q", got)
+	if got := triggerExplanation("Acme launched v2.", "", ""); got != "Acme launched v2." {
+		t.Fatalf("explanation without a contact or source = %q", got)
+	}
+}
+
+func TestFirstCitationURL(t *testing.T) {
+	if got := firstCitationURL(`[{"url":"https://a.example"},{"url":"https://b.example"}]`); got != "https://a.example" {
+		t.Fatalf("firstCitationURL = %q", got)
+	}
+	// A malformed or empty column must not break the queue item.
+	for _, encoded := range []string{"", "not json", "[]", `[{"url":"  "}]`} {
+		if got := firstCitationURL(encoded); got != "" {
+			t.Fatalf("firstCitationURL(%q) = %q, want empty", encoded, got)
+		}
 	}
 }

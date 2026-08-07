@@ -179,21 +179,32 @@ func (s *Service) pendingResearchPersonIDs(
 	if err != nil {
 		return nil, err
 	}
+	// Everyone already enriched at this task-spec version, in ONE query.
+	//
+	// This ran per-person before, which is a query per contact on an endpoint the
+	// settings pane calls whenever it opens — 5,001 round trips for a workspace
+	// with 5,000 people, to compute a number shown above a button.
 	version := personTaskSpecVersion()
+	enriched, err := s.client.PersonAttribute.Query().
+		Where(
+			personattribute.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+			personattribute.SourceTypeEQ(researchSourceType),
+			personattribute.ExtractorVersionEQ(version),
+		).
+		QueryPerson().
+		IDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	done := make(map[uuid.UUID]struct{}, len(enriched))
+	for _, id := range enriched {
+		done[id] = struct{}{}
+	}
 	ids := make([]uuid.UUID, 0, len(people))
 	for _, p := range people {
-		// Already enriched at this task-spec version: re-running would return the
-		// same fields from the same task and pay for them again.
-		done, err := s.client.PersonAttribute.Query().
-			Where(
-				personattribute.HasPersonWith(person.IDEQ(p.ID)),
-				personattribute.SourceTypeEQ(researchSourceType),
-				personattribute.ExtractorVersionEQ(version),
-			).Exist(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if !done {
+		// Re-running an already-enriched person would ask the same task the same
+		// question and pay for the same answer.
+		if _, seen := done[p.ID]; !seen {
 			ids = append(ids, p.ID)
 		}
 	}

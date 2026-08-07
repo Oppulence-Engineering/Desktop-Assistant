@@ -37,10 +37,16 @@ import (
 // correction, and the attention item inherits acknowledge/snooze/dismiss for
 // free.
 const (
-	// triggerProcessor is `core`: this task reads several sources and has to
-	// distinguish a material event from a blog post, which is exactly the depth
-	// `lite` does not buy.
-	triggerProcessor = parallel.ProcessorCore
+	// triggerProcessor is `lite`, and the choice is a cost decision, not a
+	// quality one.
+	//
+	// This task asks for two fields, which is exactly what `lite` is priced for
+	// (~2 fields at $5/1k). `core` costs 5x for depth a two-field question cannot
+	// spend. That difference is invisible on one call and decisive on the sweep:
+	// at the advertised 250-account limit, polled daily, `core` is ~$187/month
+	// against a $249 plan — three quarters of the revenue, and nothing like the
+	// ~$4.50 this document budgeted for the surface. `lite` is ~$37.
+	triggerProcessor = parallel.ProcessorLite
 
 	// triggerEventField and triggerDateField are the task's output fields.
 	triggerEventField = "material_event"
@@ -255,19 +261,46 @@ func (s *Service) activeAccountTriggers(
 	return latest, nil
 }
 
-// triggerExplanation is the sentence the user reads in the queue. It names the
-// event and the last person they spoke to there, because "Acme raised a Series
-// B" is information and "…and your last contact there was their VP Eng" is a
-// next step.
-func triggerExplanation(event string, contact string) string {
+// triggerExplanation is the sentence the user reads in the queue.
+//
+// Three parts, each earning its place: the event, because that is the reason to
+// write today; the person, because "Acme raised a Series B" is information and
+// "your last contact there was their VP Eng" is a next step; and the source,
+// because a claim about the outside world that the user cannot check is worth
+// less than silence. The source goes in the sentence rather than behind an
+// evidence ref: there is no resolver for assertion refs, and a citation nobody
+// can reach is the same as no citation.
+func triggerExplanation(event string, contact string, source string) string {
 	event = strings.TrimSpace(event)
 	if !strings.HasSuffix(event, ".") {
 		event += "."
 	}
 	if contact = strings.TrimSpace(contact); contact != "" {
-		return event + " Your last contact there was " + contact + "."
+		event += " Your last contact there was " + contact + "."
+	}
+	if source = strings.TrimSpace(source); source != "" {
+		event += " Source: " + source
 	}
 	return event
+}
+
+// firstCitationURL returns the link stored with an external_research assertion.
+// Empty when the column is absent or malformed — the explanation then simply
+// omits the source clause rather than rendering a broken one.
+func firstCitationURL(encoded string) string {
+	if strings.TrimSpace(encoded) == "" {
+		return ""
+	}
+	var citations []parallel.Citation
+	if err := json.Unmarshal([]byte(encoded), &citations); err != nil {
+		return ""
+	}
+	for _, citation := range citations {
+		if url := strings.TrimSpace(citation.URL); url != "" {
+			return url
+		}
+	}
+	return ""
 }
 
 // contactNamesForRelationships names the people the user actually knows at each

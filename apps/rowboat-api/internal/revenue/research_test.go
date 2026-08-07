@@ -105,7 +105,7 @@ func newResearchFixture(t *testing.T, vendor *vendorStub) *researchFixture {
 			ResultPollAttempts: 3,
 		}),
 		Gate:  quota.New(f.client, zap.NewNop()),
-		Costs: map[string]int{parallel.ProcessorBase: 100},
+		Costs: map[string]int{parallel.ProcessorBase: 100, parallel.ProcessorLite: 50},
 	})
 	return &researchFixture{fixture: f, vendor: vendor, person: seedResearchPerson(t, f)}
 }
@@ -611,5 +611,42 @@ func TestReplayReportsWhatIsStoredNotThatItWasPaidFor(t *testing.T) {
 	}
 	if vendor.runs != 1 {
 		t.Fatalf("vendor was called %d times", vendor.runs)
+	}
+}
+
+// The whole promise of this tier is that an enriched fact carries a link you can
+// click. Storing the citation and never serving it would ship the cost without
+// the capability — the exact failure this codebase has been bitten by before.
+func TestCitationsReachTheClient(t *testing.T) {
+	vendor := &vendorStub{
+		content: map[string]any{researchMatchField: "high", "title": "VP Engineering"},
+		basis:   []map[string]any{citedBasis("title", "high")},
+	}
+	rf := newResearchFixture(t, vendor)
+
+	if _, err := rf.svc.EnrichPerson(rf.ctx, rf.user, rf.person.ID); err != nil {
+		t.Fatalf("EnrichPerson: %v", err)
+	}
+	rows := rf.attributes(t)
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 research attribute, got %d", len(rows))
+	}
+
+	dto := personAttributeToDTO(rows[0])
+	if len(dto.Citations) != 1 {
+		t.Fatalf("the attribute DTO carried no citation: %+v", dto)
+	}
+	if dto.Citations[0].URL != "https://acme.example/team" {
+		t.Fatalf("citation url = %q", dto.Citations[0].URL)
+	}
+	if len(dto.Citations[0].Excerpts) != 1 {
+		t.Fatalf("citation carried no excerpt: %+v", dto.Citations[0])
+	}
+
+	// An owned-data attribute has nothing to cite and must not grow an empty
+	// array in the payload.
+	owned := personAttributeToDTO(&ent.PersonAttribute{SourceType: "source_fact"})
+	if owned.Citations != nil {
+		t.Fatalf("owned-data attribute carried citations: %+v", owned.Citations)
 	}
 }

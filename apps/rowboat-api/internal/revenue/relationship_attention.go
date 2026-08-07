@@ -242,7 +242,11 @@ func (s *Service) RefreshRelationshipAttention(ctx context.Context, u *ent.User)
 			contacts := triggerContacts[rel.ID]
 			candidates = append(candidates, attentionCandidate{
 				Relationship: rel, ReasonCode: "external_trigger",
-				Explanation:         triggerExplanation(trigger.Value, strings.Join(contacts, " and ")),
+				Explanation: triggerExplanation(
+					trigger.Value,
+					strings.Join(contacts, " and "),
+					firstCitationURL(trigger.CitationsJSON),
+				),
 				TriggeringObjectRef: "relationship-assertion:" + trigger.ID.String(),
 				EvidenceRefs:        []string{"relationship-assertion:" + trigger.ID.String()},
 				RankScore:           triggerRankScore, UrgencyBand: urgencyBand(triggerRankScore),

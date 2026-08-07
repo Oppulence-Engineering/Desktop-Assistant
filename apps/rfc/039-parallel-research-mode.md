@@ -216,14 +216,16 @@ A well-used single seat with cloud mode on:
 
 | Surface | Volume | Cost |
 | --- | --- | --- |
-| Monitor, 50 accounts daily @ `lite` | 1,500 runs | $4.50 |
+| Account triggers, 50 accounts daily @ Task `lite` | 1,500 runs | $7.50 |
 | Meeting prep, 20 meetings @ `core` | 20 | $0.50 |
 | Person enrichment, 300 people @ `base`, one-off | 300 | $3.00 |
 | Departure recovery, ~5/mo @ `base` | 5 | $0.05 |
 | Ad-hoc Search in copilot | 200 | $0.20 |
-| | | **≈ $8/month** |
+| | | **≈ $11/month** |
 
-Against $99 that is ~8% of revenue: meaningful, not structural. The tail is where it breaks — 5,000 people enriched at `base` is $50 in one action, and 500 monitored accounts is $45/month. Bulk needs the cost estimate, confirmation and credit reservation described above; that is a correctness requirement, not a nicety.
+Against $99 that is ~11% of revenue: meaningful, not structural. (The trigger
+line is Task `lite` rather than Monitor `lite` — $5/1k against $3/1k — which is
+the price of the Monitor departure recorded under [Implementation](#implementation).) The tail is where it breaks — 5,000 people enriched at `base` is $50 in one action, and 500 monitored accounts is $45/month. Bulk needs the cost estimate, confirmation and credit reservation described above; that is a correctness requirement, not a nicety.
 
 Note the offset: replacing the agent web-search loop *reduces* LLM spend, so net marginal cost is lower than the table suggests.
 
@@ -362,6 +364,40 @@ a low confidence still wins a dimension nothing else asserts.
    `valid_to = observed + 30 days`, because a funding round announced six weeks
    ago is no longer a reason to write today. Person attributes still have no
    expiry and are kept until contradicted — the question stands for those.
+
+### What three adversarial review passes found
+
+Recorded because the defects are more instructive than the design, and two of
+them were the kind that ship silently.
+
+- **Citations were written and read by nothing.** `citations_json` was populated,
+  migrated, and enforced — and absent from `personAttributeDTO`, from every
+  desktop type, and from every surface. The tier's entire promise ("a URL you can
+  click") was unshipped while every test passed, which is exactly the
+  fully-built-and-unreachable failure this repo already has a lint-style test
+  for. Fixed on the API, and the trigger's source URL now goes into the queue
+  item's own sentence, because nothing resolves an assertion evidence ref.
+- **The trigger sweep was priced at `core`.** Daily, at the advertised 250-account
+  limit, that is ~$187/month against a $249 plan — 75% of revenue, versus the
+  ~$4.50 this document budgeted. The task asks two questions, which is what
+  `lite` is priced for. A test now pins the per-run credit cost, because this is
+  a one-constant mistake with a four-figure annual consequence.
+- **The privacy receipt could lie.** Consent granted on one machine left another
+  machine's routing receipt reporting "nothing is sent" while the server swept
+  daily. The desktop mirror now reconciles to the server on every status read.
+- **Two strict `z.enum`s were missing the new values** — the attention reason code
+  and the contradiction source type — including one whose own comment claimed it
+  was open-ended. It is not.
+- **The pending-people query was N+1**, one round trip per contact on an endpoint
+  the settings pane opens with.
+- **Consent became unwithdrawable if the vendor key was removed**, because the UI
+  gated the whole section on the provider being configured.
+
+Two things were left alone deliberately. Revoking consent does not purge already
+-stored research attributes, and no copy claims it does — that belongs with open
+question 2 on retention. And the `intelligence` credit grant is $500 against a
+$249 plan, which is loose, but it matches the existing `pro` convention ($200
+against $99) and tightening one tier alone would be arbitrary.
 
 ### The manual check this cannot automate
 

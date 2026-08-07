@@ -610,7 +610,17 @@ export const ComparableRelationshipValueSchema = z.discriminatedUnion("kind", [
 
 export const ContradictionEvidenceSideSchema = z.object({
   assertionId: z.string().min(1),
-  sourceType: z.enum(["user_correction", "source_fact", "deterministic", "ai_inference"]),
+  // Mirrors the server's provenance ladder, including the external_research
+  // rung (RFC 039). A contradiction between a user correction and a cited
+  // vendor claim is exactly the case a reviewer needs to see, so the tier has to
+  // survive the parse.
+  sourceType: z.enum([
+    "user_correction",
+    "source_fact",
+    "deterministic",
+    "external_research",
+    "ai_inference",
+  ]),
   source: z.string().min(1),
   value: ComparableRelationshipValueSchema,
   validFrom: z.string(),
@@ -1097,6 +1107,11 @@ export const RelationshipAttentionItemSchema = z.object({
     // server that learns a new reason code must not break the client's parse of
     // every other item in the list.
     "contact_departed",
+    // Something happened at the account that the user did not tell us about
+    // (RFC 039). Cloud research only. Listed here because this IS a strict
+    // z.enum despite the note above — the comment describes an intent the type
+    // does not enforce, so every server-side reason code has to be mirrored.
+    "external_trigger",
   ]),
   explanation: z.string(),
   triggeringObjectRef: z.string(),

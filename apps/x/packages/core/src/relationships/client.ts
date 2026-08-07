@@ -517,9 +517,6 @@ export const getResearchEstimate = () =>
 export const listPendingResearchPeople = () =>
   call<{ personIds: string[] }>("/v1/research/people/pending");
 
-export const enrichPerson = (personId: string) =>
-  call<PersonResearchOutcome>(`/v1/research/people/${personId}`, { method: "POST" });
-
 /**
  * Enrich one chunk of a bulk run.
  *

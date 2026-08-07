@@ -482,6 +482,16 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
     try {
       const status = await window.ipc.invoke("research:status", null);
       setResearch(status);
+      // Reconcile the local mirror with the server, which is authoritative.
+      //
+      // Without this, consent granted on another machine leaves this one's
+      // privacy receipt saying "Off. Nothing about the people or companies you
+      // correspond with is sent to a research provider" while the server sweeps
+      // those accounts daily. A receipt that disagrees with what is actually
+      // happening is the specific bug this page exists to make impossible.
+      if (relationships && relationships.cloudResearch !== status.consent.consented) {
+        await changeRelationships({ cloudResearch: status.consent.consented });
+      }
       if (status.allowed && status.consent.consented) {
         await refreshResearchEstimate();
       } else {
@@ -494,7 +504,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       setResearch(null);
       setResearchEstimate(null);
     }
-  }, [refreshResearchEstimate]);
+  }, [changeRelationships, refreshResearchEstimate, relationships]);
 
   const changeResearchConsent = useCallback(
     async (consented: boolean) => {
@@ -1630,7 +1640,12 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
             </SettingsSection>
           )}
 
-          {research?.available && (
+          {/* Shown when research is configured OR when this workspace has already
+              consented. The second half matters: if an operator removes the
+              vendor key, a workspace that agreed must still be able to see and
+              withdraw that agreement. Hiding the switch would strand consent in
+              the "on" position with no way to reach it. */}
+          {research && (research.available || research.consent.consented) && (
             <SettingsSection
               title="Cloud research"
               description="Everything above discloses your own data. This one discloses someone else's, so it is a separate decision and it is off until you make it."

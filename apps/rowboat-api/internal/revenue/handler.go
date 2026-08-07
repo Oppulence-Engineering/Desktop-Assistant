@@ -315,6 +315,18 @@ type personAttributeDTO struct {
 	ObservedAt string  `json:"observedAt"`
 	ValidFrom  string  `json:"validFrom"`
 	ValidTo    *string `json:"validTo,omitempty"`
+	// The evidence behind an external_research claim (RFC 039). Present only for
+	// that source type, and the whole point of it: a vendor fact the user cannot
+	// check is indistinguishable from a guess, so the citation travels with the
+	// claim to every surface that shows it.
+	Citations []attributeCitationDTO `json:"citations,omitempty"`
+}
+
+// attributeCitationDTO mirrors the stored {title, url, excerpts[]} shape.
+type attributeCitationDTO struct {
+	Title    string   `json:"title,omitempty"`
+	URL      string   `json:"url"`
+	Excerpts []string `json:"excerpts,omitempty"`
 }
 
 func personAttributeToDTO(attribute *ent.PersonAttribute) personAttributeDTO {
@@ -335,7 +347,25 @@ func personAttributeToDTO(attribute *ent.PersonAttribute) personAttributeDTO {
 		value := attribute.ValidTo.UTC().Format(time.RFC3339)
 		dto.ValidTo = &value
 	}
+	dto.Citations = decodeAttributeCitations(attribute.CitationsJSON)
 	return dto
+}
+
+// decodeAttributeCitations parses the stored citation array.
+//
+// Unparseable JSON yields no citations rather than an error: a malformed
+// citation column must not make a person's whole attribute list unreadable. The
+// writer rejects uncited external_research claims, so an empty result here means
+// either an owned-data source or a row that predates this column.
+func decodeAttributeCitations(encoded string) []attributeCitationDTO {
+	if strings.TrimSpace(encoded) == "" {
+		return nil
+	}
+	var citations []attributeCitationDTO
+	if err := json.Unmarshal([]byte(encoded), &citations); err != nil {
+		return nil
+	}
+	return citations
 }
 
 type personInteractionDTO struct {
