@@ -21,12 +21,22 @@
 // without creating a cycle. No implicit mkdir — call sites own their
 // directories, and a typo'd path should fail loudly here rather than
 // materialize a new tree.
+import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 
-/** Tmp path beside the target; pid-suffixed so two processes cannot collide. */
+/**
+ * Tmp path beside the target, unique per call.
+ *
+ * The pid alone is not enough. Two concurrent writers *in the same process* —
+ * two permission grants approved in one tick, two scheduled agents updating
+ * their state — would share one tmp path, interleave their writes into it, and
+ * both rename it into place, splicing two JSON documents into one. That is the
+ * exact corruption this module exists to prevent. voice/voice.ts:250 already
+ * got this right; the shared helper was weaker than one of its own call sites.
+ */
 function tmpPathFor(file: string): string {
-  return `${file}.${process.pid}.tmp`;
+  return `${file}.${process.pid}.${randomUUID()}.tmp`;
 }
 
 /**

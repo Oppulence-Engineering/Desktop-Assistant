@@ -71,3 +71,42 @@ describe.each([
     expect(fs.readFileSync(FILE, "utf8")).toBe('{"a":1}');
   });
 });
+
+/**
+ * Two writers to one path, in one process, is the case the pid-only tmp path
+ * got wrong: both would open `${file}.${pid}.tmp`, interleave into it, and both
+ * rename it into place — splicing two JSON documents into one file. Concurrent
+ * writers are not hypothetical here (two permission grants approved in the same
+ * tick, several scheduled agents updating state), which is why the helper needs
+ * a per-call tmp rather than a per-process one.
+ */
+describe("concurrent writers to the same path", () => {
+  it("leaves exactly one of the two documents, intact", async () => {
+    const a = { writer: "a", filler: "a".repeat(20_000) };
+    const b = { writer: "b", filler: "b".repeat(20_000) };
+
+    await Promise.all([writeJsonAtomic(FILE, a), writeJsonAtomic(FILE, b)]);
+
+    // Parses at all — a spliced file would throw here.
+    const result = JSON.parse(fs.readFileSync(FILE, "utf8"));
+    expect(["a", "b"]).toContain(result.writer);
+    expect(result).toEqual(result.writer === "a" ? a : b);
+  });
+
+  it("leaves no tmp files behind after concurrent writes", async () => {
+    await Promise.all(
+      Array.from({ length: 8 }, (_, i) => writeJsonAtomic(FILE, { n: i, filler: "x".repeat(5_000) })),
+    );
+    expect(fs.readdirSync(DIR)).toEqual(["state.json"]);
+  });
+
+  it("gives each call its own tmp path", async () => {
+    // Two writes to *different* targets must not collide either; a shared tmp
+    // would show up as a leftover or a lost file.
+    const other = path.join(DIR, "other.json");
+    await Promise.all([writeJsonAtomic(FILE, { a: 1 }), writeJsonAtomic(other, { b: 2 })]);
+    expect(JSON.parse(fs.readFileSync(FILE, "utf8"))).toEqual({ a: 1 });
+    expect(JSON.parse(fs.readFileSync(other, "utf8"))).toEqual({ b: 2 });
+    expect(fs.readdirSync(DIR).sort()).toEqual(["other.json", "state.json"]);
+  });
+});
