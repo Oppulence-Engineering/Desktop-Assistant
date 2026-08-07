@@ -58,7 +58,6 @@ import { HomeView } from "@/components/home-view";
 import { MeetingsView } from "@/components/meetings-view";
 import { RelationshipsView } from "@/components/relationships-view";
 import { ProductTour, type ProductTourVariant, type TourStep } from "@/components/product-tour";
-import { PRODUCT_TOUR_AUTOSTART, USE_PRODUCT_TOUR } from "@/lib/product-tour-config";
 import {
   clearProductTourCompletion,
   getProductTourStorage,
@@ -4956,7 +4955,6 @@ function App() {
   );
 
   const startProductTour = useCallback((variant: ProductTourVariant = "main") => {
-    if (!USE_PRODUCT_TOUR) return;
     clearProductTourCompletion(getProductTourStorage());
     setProductTourVariant(variant);
     setProductTourForceStart(true);
@@ -5000,8 +4998,10 @@ function App() {
     [navigateToView, openBgTasksView, openEmailView, openMeetingsView, productTourVariant],
   );
 
+  // First-run autostart. The completion flag below is the only thing that stops
+  // it, so the tour shows once per install and never again unless the user asks
+  // for it from the sidebar or Settings -> Help.
   useEffect(() => {
-    if (!USE_PRODUCT_TOUR || !PRODUCT_TOUR_AUTOSTART) return;
     try {
       if (getProductTourStorage()?.getItem(PRODUCT_TOUR_STORAGE_KEY) === "true") return;
     } catch {
@@ -6843,7 +6843,7 @@ function App() {
                   void navigateToView({ type: "relationships", section });
                 }}
                 onOpenHome={() => void navigateToView({ type: "home" })}
-                onOpenTour={USE_PRODUCT_TOUR ? () => startProductTour("main") : undefined}
+                onOpenTour={() => startProductTour("main")}
                 onNewChat={handleNewChatTab}
                 onToggleBrowser={handleToggleBrowser}
                 onVoiceNoteCreated={handleVoiceNoteCreated}
@@ -7939,19 +7939,17 @@ function App() {
         />
       </SidebarSectionProvider>
       <Toaster />
-      {USE_PRODUCT_TOUR ? (
-        <ProductTour
-          open={isProductTourOpen}
-          variant={productTourVariant}
-          forceStart={productTourForceStart}
-          onClose={() => {
-            setIsProductTourOpen(false);
-            setProductTourForceStart(false);
-          }}
-          onStepChange={handleProductTourStepChange}
-          onStartVariant={(variant) => startProductTour(variant)}
-        />
-      ) : null}
+      <ProductTour
+        open={isProductTourOpen}
+        variant={productTourVariant}
+        forceStart={productTourForceStart}
+        onClose={() => {
+          setIsProductTourOpen(false);
+          setProductTourForceStart(false);
+        }}
+        onStepChange={handleProductTourStepChange}
+        onStartVariant={(variant) => startProductTour(variant)}
+      />
       <BillingErrorDialog
         open={billingErrorOpen}
         match={billingErrorMatch}
