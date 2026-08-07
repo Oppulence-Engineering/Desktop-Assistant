@@ -13,3 +13,8 @@ data/
 
 # Root tooling package (git hooks / formatter / commit linting)
 /node_modules/
+
+# Local secret drop for vendor keys (RFC 039 and friends). Never committed:
+# a key in the working tree is one `git add -A` away from being published.
+tok.txt
+*.key.txt
