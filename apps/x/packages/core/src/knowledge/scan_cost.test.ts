@@ -6,6 +6,13 @@ import path from "path";
 const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-scan-cost-test");
 vi.mock("../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 
+// These tests dynamically import label_emails and agent_notes, which pull in the
+// DI container and the agent runtime — around three seconds of module graph
+// before the first assertion runs. That is not what is under test, but against
+// the 5s default it made this file fail on a loaded machine and, being a
+// timeout, look exactly like a hang in the code it covers.
+vi.setConfig({ testTimeout: 30_000 });
+
 /**
  * These scanners run on 10- and 15-second polls over every unprocessed email,
  * and both read each file in full to answer a question that needs far less.
@@ -39,17 +46,17 @@ afterEach(() => {
 
 describe("startsWithFrontmatter", () => {
   it("detects a frontmatter fence", async () => {
-    const { startsWithFrontmatter } = await import("./label_emails.js");
+    const { hasFrontmatter: startsWithFrontmatter } = await import("./frontmatter.js");
     expect(startsWithFrontmatter(writeEmail("a.md", "---\nlabel: x\n---\nbody"))).toBe(true);
   });
 
   it("passes a file that has none", async () => {
-    const { startsWithFrontmatter } = await import("./label_emails.js");
+    const { hasFrontmatter: startsWithFrontmatter } = await import("./frontmatter.js");
     expect(startsWithFrontmatter(writeEmail("b.md", "### From: a@b.com\nhi"))).toBe(false);
   });
 
   it("reads bytes, not the file", async () => {
-    const { startsWithFrontmatter } = await import("./label_emails.js");
+    const { hasFrontmatter: startsWithFrontmatter } = await import("./frontmatter.js");
     const big = writeEmail("big.md", "x".repeat(2_000_000));
     const slurp = vi.spyOn(fs, "readFileSync");
 
@@ -59,6 +66,8 @@ describe("startsWithFrontmatter", () => {
   });
 
   it("treats an unreadable file as skippable rather than throwing", async () => {
+    // Deliberately the labeler's wrapper, not the leaf: the two want opposite
+    // fallbacks for an unreadable file, and this pins the labeler's ("skip").
     const { startsWithFrontmatter } = await import("./label_emails.js");
     expect(startsWithFrontmatter(path.join(GMAIL, "does-not-exist.md"))).toBe(true);
   });

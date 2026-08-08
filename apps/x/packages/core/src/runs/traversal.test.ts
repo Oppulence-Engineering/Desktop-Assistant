@@ -2,7 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "fs";
 import path from "path";
 
-const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-runs-traversal-test");
+// Unique per run. A fixed /tmp path is shared by every concurrent vitest worker
+// and by any other process on the machine, so one run's afterEach cleanup could
+// delete a directory another was still using. Built from globals only: vi.hoisted
+// runs before the imports above are initialised, so it cannot use fs or os.
+const TEST_WORKDIR = vi.hoisted(
+  () => `/tmp/rowboat-runs-traversal-${process.pid}-${Math.random().toString(36).slice(2)}`,
+);
 vi.mock("../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 
 import { FSRunsRepo } from "./repo.js";

@@ -90,8 +90,16 @@ export class FSRunsRepo implements IRunsRepo {
         idGenerator: IMonotonicallyIncreasingIdGenerator;
     }) {
         this.idGenerator = idGenerator;
-        // ensure default runs directory exists
-        fsp.mkdir(path.join(WorkDir, 'runs'), { recursive: true });
+        // Ensure the default runs directory exists.
+        //
+        // Deliberately not awaited — a constructor cannot be async, and every
+        // write path creates the directory again anyway. But an un-awaited
+        // promise with no rejection handler is an unhandled rejection, and this
+        // one does reject in practice: the parent disappearing between the call
+        // and the mkdir gives ENOENT. Losing the race is harmless here and the
+        // next write recreates the directory, so swallow it rather than let it
+        // reach the process-level handler.
+        fsp.mkdir(path.join(WorkDir, 'runs'), { recursive: true }).catch(() => {});
     }
 
     private extractTitle(events: z.infer<typeof RunEvent>[]): string | undefined {
