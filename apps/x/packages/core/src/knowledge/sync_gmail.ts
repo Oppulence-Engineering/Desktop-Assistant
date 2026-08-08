@@ -56,6 +56,10 @@ const nhm = new NodeHtmlMarkdown();
 // short-circuit in buildAndCacheSnapshot only reuses a cache whose version matches,
 // so stale entries are transparently rebuilt on the next sync.
 const SNAPSHOT_PARSER_VERSION = 3;
+// Total base64 image bytes any one message may embed in its snapshot. 128KB is
+// far above a signature logo or avatar (single-digit KB) and far below a pasted
+// screenshot, which is what actually drove the cache to 103MB in a week.
+const MAX_INLINE_IMAGE_BYTES_PER_MESSAGE = 128 * 1024;
 
 interface SnapshotCacheEntry {
   historyId: string;
@@ -418,7 +422,7 @@ function extractAttachments(
   return out;
 }
 
-async function inlineCidImages(
+export async function inlineCidImages(
   gmailClient: gmail.Gmail,
   messageId: string,
   payload: gmail.Schema$MessagePart,
@@ -463,10 +467,31 @@ async function inlineCidImages(
     }),
   );
 
+  // Inline only as much as fits the per-message budget, smallest first.
+  //
+  // These data URLs are persisted inside the thread snapshot, so every embedded
+  // image is paid for on every read of that thread, forever. On a real mailbox
+  // this made the average snapshot 110KB and the seven-day cache 103MB — mostly
+  // pictures, re-parsed on each inbox list load.
+  //
+  // Smallest-first is what makes a plain cap acceptable: signature logos,
+  // avatars and tracking pixels are the overwhelming majority and are all a few
+  // KB, so they still render. What gets dropped is the occasional large pasted
+  // screenshot, which keeps its cid: reference and shows as a missing image
+  // rather than costing a megabyte of cache on every future read.
+  const ordered = [...dataUrls.entries()].sort((a, b) => a[1].length - b[1].length);
+  let budget = MAX_INLINE_IMAGE_BYTES_PER_MESSAGE;
   let rewritten = html;
-  for (const [cid, url] of dataUrls) {
+  for (const [cid, url] of ordered) {
+    if (url.length > budget) continue;
+    budget -= url.length;
     const escaped = cid.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    rewritten = rewritten.replace(new RegExp(`cid:${escaped}`, "gi"), url);
+    // The trailing guard matters: without it `cid:img1` also rewrites
+    // `cid:img10`, so a message with more than nine inline images renders the
+    // wrong picture in place of several of them. The character class is the set
+    // RFC 2392 allows in a Content-ID, so the match ends only where the id
+    // genuinely ends (a quote, `>`, or whitespace in practice).
+    rewritten = rewritten.replace(new RegExp(`cid:${escaped}(?![A-Za-z0-9._@+-])`, "gi"), url);
   }
   return rewritten;
 }
