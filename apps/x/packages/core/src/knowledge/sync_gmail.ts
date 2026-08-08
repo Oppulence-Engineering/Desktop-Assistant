@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { google, gmail_v1 as gmail } from "googleapis";
+import { gmail_v1 as gmail } from "googleapis";
 import { createGmailClient } from "./gmail_client.js";
 import { NodeHtmlMarkdown } from "node-html-markdown";
 import { OAuth2Client } from "google-auth-library";

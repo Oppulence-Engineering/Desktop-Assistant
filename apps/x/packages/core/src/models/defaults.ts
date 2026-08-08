@@ -9,31 +9,36 @@ import {
   isProductProvider,
 } from "@x/shared/dist/branding.js";
 
-// Signed-in defaults must be ids the gateway actually serves *and can reach*.
+// Signed-in defaults must be ids the gateway actually serves *and can reach*,
+// which means three things have to agree: this constant, the rate table in
+// rowboat-api internal/pricing/pricing.go, and LLM_ALLOWED_MODELS in
+// charts/rowboat-api/values-production.yaml. Miss the allowlist and every
+// signed-in call returns model_not_allowed; miss the rate table and rate()
+// falls back to DefaultModel — 30/150 per 1K, the sonnet rate — so the customer
+// is billed roughly 10x what the model costs.
 //
-// These were openai/gpt-4.1-mini. On the deployed gateway that prefix is the
-// one model family routed direct to OpenAI rather than through OpenRouter, and
-// that leg is returning 502 upstream_error for every request — so every
-// signed-in LLM feature was failing: Copilot chat, email labeling, note
-// tagging, live notes. anthropic/* reaches its provider through OpenRouter and
-// answers normally, which is the whole of why it works and openai/* does not.
+// These were openai/gpt-4.1-mini, then anthropic/claude-haiku-4-5 when the
+// direct-to-OpenAI leg started returning 502 for every request. Everything now
+// routes through OpenRouter, so that constraint is gone.
 //
-// This costs more, and the number is worth knowing rather than assuming.
-// Against the gateway's own table (internal/pricing/pricing.go) haiku is 8/40
-// per 1K where gpt-4.1-mini is 4/16 — 2x input, 2.5x output. It is still the
-// cheapest model that currently works, and far below sonnet at 30/150, but it
-// is not the like-for-like swap it looks like.
+// gemini-3.1-flash-lite is $0.25/$1.50 per 1M against haiku's $1/$5: 4x cheaper
+// input, 3.3x cheaper output, on the highest-volume work we run (email
+// labelling, note tagging, live notes) — which is where the spend actually is,
+// since those run per-thread and per-note without anyone asking for them.
 //
-// TEMPORARY, and the price is the reason to mean it. rowboat-api already routes
-// every model through OpenRouter on main (internal/llm/router.go) — once that
-// is deployed, openai/gpt-4.1-mini works again and reverting halves the cost of
-// every background run. Revert all four together; there is no reason to keep
-// them split across providers.
-const SIGNED_IN_DEFAULT_MODEL = "anthropic/claude-haiku-4-5";
+// It also emits no reasoning tokens, which is worth more than it sounds. A
+// measured "reply with PONG" on gemini-3.5-flash cost $0.000669 for an 8-token
+// prompt because 71 of its 73 output tokens were reasoning, billed at the
+// output rate; the identical call on flash-lite cost $0.000019. Prefer a
+// non-reasoning model for anything that runs on a loop.
+//
+// Change all four together, and update the two server-side files above in the
+// same commit.
+const SIGNED_IN_DEFAULT_MODEL = "google/gemini-3.1-flash-lite";
 const SIGNED_IN_DEFAULT_PROVIDER = PRODUCT_PROVIDER_ID;
-const SIGNED_IN_KG_MODEL = "anthropic/claude-haiku-4-5";
-const SIGNED_IN_LIVE_NOTE_AGENT_MODEL = "anthropic/claude-haiku-4-5";
-const SIGNED_IN_AUTO_PERMISSION_DECISION_MODEL = "anthropic/claude-haiku-4-5";
+const SIGNED_IN_KG_MODEL = "google/gemini-3.1-flash-lite";
+const SIGNED_IN_LIVE_NOTE_AGENT_MODEL = "google/gemini-3.1-flash-lite";
+const SIGNED_IN_AUTO_PERMISSION_DECISION_MODEL = "google/gemini-3.1-flash-lite";
 
 // ... (ERRORS.md E52) Only honor a signed-in user's saved model when it's a real
 // gateway-served id. Gateway ids are namespaced ("openai/…", "anthropic/…",
