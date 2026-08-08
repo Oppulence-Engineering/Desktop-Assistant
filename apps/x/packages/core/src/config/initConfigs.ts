@@ -4,6 +4,10 @@ import type { IMcpConfigRepo } from "../mcp/repo.js";
 import type { IAgentScheduleRepo } from "../agent-schedule/repo.js";
 import type { IAgentScheduleStateRepo } from "../agent-schedule/state-repo.js";
 import { ensureSecurityConfig } from "./security.js";
+import path from "path";
+import { pruneRunLogs } from "../runs/repo.js";
+import { reapStalePartials } from "../voice/whisper/model-manager.js";
+import { WorkDir } from "./config.js";
 
 /**
  * Initialize all config files at app startup.
@@ -22,5 +26,22 @@ export async function initConfigs(): Promise<void> {
         agentScheduleRepo.ensureConfig(),
         agentScheduleStateRepo.ensureState(),
         ensureSecurityConfig(),
+        // Startup is the natural moment: the directory only grows during a
+        // session, and nothing else ever removed a run log. Best-effort — a
+        // failure here must not stop the app from starting.
+        pruneRunLogs()
+            .then((removed) => {
+                if (removed > 0) console.log(`[Runs] Pruned ${removed} run logs older than 30 days.`);
+            })
+            .catch((error) => console.error("[Runs] Could not prune run logs:", error)),
+        // Abandoned model downloads: neither remove() nor gc() can see a .part
+        // file, because a partial only reaches the ledger once it finishes.
+        reapStalePartials(path.join(WorkDir, "models"))
+            .then((freed) => {
+                if (freed > 0) {
+                    console.log(`[Whisper] Reclaimed ${(freed / 1e6).toFixed(0)}MB of abandoned downloads.`);
+                }
+            })
+            .catch((error) => console.error("[Whisper] Could not reap partial downloads:", error)),
     ]);
 }

@@ -9,6 +9,7 @@ import { serviceLogger, type ServiceRunContext } from "../services/service_logge
 import { limitEventItems } from "./limit_event_items.js";
 import { createEvent } from "../events/producer.js";
 import { classifyThread, getUserEmail } from "./classify_thread.js";
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 
 // Configuration
 const SYNC_DIR = path.join(WorkDir, "gmail_sync");
@@ -55,6 +56,10 @@ const nhm = new NodeHtmlMarkdown();
 // short-circuit in buildAndCacheSnapshot only reuses a cache whose version matches,
 // so stale entries are transparently rebuilt on the next sync.
 const SNAPSHOT_PARSER_VERSION = 3;
+// Total base64 image bytes any one message may embed in its snapshot. 128KB is
+// far above a signature logo or avatar (single-digit KB) and far below a pasted
+// screenshot, which is what actually drove the cache to 103MB in a week.
+const MAX_INLINE_IMAGE_BYTES_PER_MESSAGE = 128 * 1024;
 
 interface SnapshotCacheEntry {
   historyId: string;
@@ -89,7 +94,7 @@ function writeCachedSnapshot(
       parserVersion: SNAPSHOT_PARSER_VERSION,
       snapshot,
     };
-    fs.writeFileSync(cachePath(threadId), JSON.stringify(entry), "utf-8");
+    writeJsonAtomicSync(cachePath(threadId), entry, 0);
   } catch (err) {
     console.warn(`[Gmail cache] write failed for ${threadId}:`, err);
   }
@@ -112,7 +117,7 @@ export function saveMessageBodyHeight(threadId: string, messageId: string, heigh
   if (message.bodyHeight === height) return;
   message.bodyHeight = height;
   try {
-    fs.writeFileSync(cachePath(threadId), JSON.stringify(cached), "utf-8");
+    writeJsonAtomicSync(cachePath(threadId), cached, 0);
   } catch (err) {
     console.warn(`[Gmail cache] height write failed for ${threadId}/${messageId}:`, err);
   }
@@ -197,7 +202,7 @@ export async function markThreadRead(threadId: string): Promise<ThreadActionResu
       for (const m of cached.snapshot.messages) m.unread = false;
       cached.snapshot.unread = false;
       try {
-        fs.writeFileSync(cachePath(threadId), JSON.stringify(cached), "utf-8");
+        writeJsonAtomicSync(cachePath(threadId), cached, 0);
       } catch (err) {
         console.warn(`[Gmail cache] markRead write failed for ${threadId}:`, err);
       }
@@ -417,7 +422,7 @@ function extractAttachments(
   return out;
 }
 
-async function inlineCidImages(
+export async function inlineCidImages(
   gmailClient: gmail.Gmail,
   messageId: string,
   payload: gmail.Schema$MessagePart,
@@ -462,10 +467,31 @@ async function inlineCidImages(
     }),
   );
 
+  // Inline only as much as fits the per-message budget, smallest first.
+  //
+  // These data URLs are persisted inside the thread snapshot, so every embedded
+  // image is paid for on every read of that thread, forever. On a real mailbox
+  // this made the average snapshot 110KB and the seven-day cache 103MB — mostly
+  // pictures, re-parsed on each inbox list load.
+  //
+  // Smallest-first is what makes a plain cap acceptable: signature logos,
+  // avatars and tracking pixels are the overwhelming majority and are all a few
+  // KB, so they still render. What gets dropped is the occasional large pasted
+  // screenshot, which keeps its cid: reference and shows as a missing image
+  // rather than costing a megabyte of cache on every future read.
+  const ordered = [...dataUrls.entries()].sort((a, b) => a[1].length - b[1].length);
+  let budget = MAX_INLINE_IMAGE_BYTES_PER_MESSAGE;
   let rewritten = html;
-  for (const [cid, url] of dataUrls) {
+  for (const [cid, url] of ordered) {
+    if (url.length > budget) continue;
+    budget -= url.length;
     const escaped = cid.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    rewritten = rewritten.replace(new RegExp(`cid:${escaped}`, "gi"), url);
+    // The trailing guard matters: without it `cid:img1` also rewrites
+    // `cid:img10`, so a message with more than nine inline images renders the
+    // wrong picture in place of several of them. The character class is the set
+    // RFC 2392 allows in a Content-ID, so the match ends only where the id
+    // genuinely ends (a quote, `>`, or whitespace in practice).
+    rewritten = rewritten.replace(new RegExp(`cid:${escaped}(?![A-Za-z0-9._@+-])`, "gi"), url);
   }
   return rewritten;
 }
@@ -1115,8 +1141,18 @@ function loadState(stateFile: string): {
   last_sync?: string;
   last_recent_backfill?: string;
 } {
+  // A corrupt or truncated state file must read as "no state", not throw.
+  // This is called at the top of every sync pass, so an unguarded parse made
+  // one bad file fail every Gmail tick forever — the loop's catch just logged
+  // the same error each interval with no path to recovery. Fresh state costs a
+  // full re-sync, which is exactly what a new install does anyway. Every
+  // sibling state loader (labeling, tagging, agent notes) already does this.
   if (fs.existsSync(stateFile)) {
-    return JSON.parse(fs.readFileSync(stateFile, "utf-8"));
+    try {
+      return JSON.parse(fs.readFileSync(stateFile, "utf-8"));
+    } catch (err) {
+      console.warn("[Gmail] State file unreadable; starting from a full sync:", err);
+    }
   }
   return {};
 }
@@ -1127,19 +1163,13 @@ function saveState(
   extra: { last_recent_backfill?: string } = {},
 ) {
   const previous = loadState(stateFile);
-  fs.writeFileSync(
-    stateFile,
-    JSON.stringify(
-      {
-        historyId,
-        last_sync: new Date().toISOString(),
-        last_recent_backfill: extra.last_recent_backfill ?? previous.last_recent_backfill,
-        ...extra,
-      },
-      null,
-      2,
-    ),
-  );
+  // Atomic: a torn state file reads as corrupt and costs a full re-sync.
+  writeJsonAtomicSync(stateFile, {
+    historyId,
+    last_sync: new Date().toISOString(),
+    last_recent_backfill: extra.last_recent_backfill ?? previous.last_recent_backfill,
+    ...extra,
+  });
 }
 
 function getErrorStatus(error: unknown): number | undefined {

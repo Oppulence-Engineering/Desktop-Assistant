@@ -1,3 +1,4 @@
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 import fs from 'fs';
 import path from 'path';
 import { WorkDir } from './config.js';
@@ -43,7 +44,7 @@ function writeConfig(config: NoteCreationConfig): void {
     if (!fs.existsSync(configDir)) {
         fs.mkdirSync(configDir, { recursive: true });
     }
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+    writeJsonAtomicSync(CONFIG_FILE, config);
 }
 
 /**
@@ -136,5 +137,5 @@ export function markOnboardingComplete(): void {
     }
 
     config.onboardingComplete = true;
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+    writeJsonAtomicSync(CONFIG_FILE, config);
 }

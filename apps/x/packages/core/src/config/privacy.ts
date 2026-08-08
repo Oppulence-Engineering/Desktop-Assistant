@@ -1,3 +1,4 @@
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import fs from "fs/promises";
 import path from "path";
 import { PrivacyConfigSchema, type PrivacyConfig } from "@x/shared/dist/privacy.js";
@@ -33,7 +34,8 @@ export async function setPrivacyConfig(patch: PrivacyConfigPatch): Promise<Priva
     ...(patch.shareUsageData !== undefined ? { shareUsageData: patch.shareUsageData } : {}),
   });
   await fs.mkdir(path.dirname(privacyConfigPath()), { recursive: true });
-  await fs.writeFile(privacyConfigPath(), JSON.stringify(next, null, 2));
+  // Atomic: a torn file reads as defaults — the privacy opt-out reverts.
+  await writeJsonAtomic(privacyConfigPath(), next);
   // Apply immediately. Waiting for a restart would mean the next event after
   // opting out still ships, which is the behaviour this whole change exists to
   // remove.

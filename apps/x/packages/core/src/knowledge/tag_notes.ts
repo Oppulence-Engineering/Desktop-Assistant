@@ -11,6 +11,10 @@ import {
     loadNoteTaggingState,
     saveNoteTaggingState,
     markNoteAsTagged,
+    markAttemptFailed,
+    shouldAttempt,
+    abandonedNotes,
+    MAX_TAG_ATTEMPTS,
     type NoteTaggingState,
 } from './note_tagging_state.js';
 import { getNoteTypeDefinitions } from './note_system.js';
@@ -49,6 +53,13 @@ function getUntaggedNotes(state: NoteTaggingState): string[] {
 
             // Skip if already tracked in state
             if (state.processedFiles[fullPath]) {
+                continue;
+            }
+
+            // Skip notes that failed recently or have exhausted their attempts.
+            // Without this a note the agent cannot tag is re-sent to the model
+            // every poll, forever, at full token cost.
+            if (!shouldAttempt(fullPath, state)) {
                 continue;
             }
 
@@ -148,6 +159,16 @@ export async function processUntaggedNotes(): Promise<void> {
         return;
     }
 
+    const abandoned = abandonedNotes(state);
+    if (abandoned.length > 0) {
+        // Say it out loud. These notes are silently absent from every future
+        // pass, and "nothing happened" is indistinguishable from "all done".
+        console.log(
+            `[NoteTagging] ${abandoned.length} note${abandoned.length === 1 ? '' : 's'} ` +
+            `gave up after ${MAX_TAG_ATTEMPTS} attempts and will not be retried.`,
+        );
+    }
+
     console.log(`[NoteTagging] Found ${untagged.length} untagged notes`);
 
     const run = await serviceLogger.startRun({
@@ -209,11 +230,15 @@ export async function processUntaggedNotes(): Promise<void> {
             const result = await tagNoteBatch(files);
             totalEdited += result.filesEdited.size;
 
-            // Only mark files that were actually edited by the agent
+            // Only mark files that were actually edited by the agent. The rest
+            // count as a failed attempt — a batch that "succeeds" while editing
+            // nothing is the common case, and it is what made notes immortal.
             for (const file of files) {
                 const relativePath = path.relative(WorkDir, file.path);
                 if (result.filesEdited.has(relativePath)) {
                     markNoteAsTagged(file.path, state);
+                } else {
+                    markAttemptFailed(file.path, state);
                 }
             }
 
@@ -222,6 +247,12 @@ export async function processUntaggedNotes(): Promise<void> {
         } catch (error) {
             hadError = true;
             failedBatches++;
+            for (const filePath of batchPaths) {
+                markAttemptFailed(filePath, state);
+            }
+            // The success path saves after marking; a thrown batch must persist
+            // its failures too or they evaporate on restart.
+            saveNoteTaggingState(state);
             const errorDetails = getErrorDetails(error);
             console.error(`[NoteTagging] Error processing batch ${batchNumber}:`, error);
             await serviceLogger.log({
@@ -253,6 +284,9 @@ export async function processUntaggedNotes(): Promise<void> {
             totalNotes: untagged.length,
             notesTagged: totalEdited,
             failedBatches,
+            // Visible on purpose: notes we have stopped retrying are the ones a
+            // person has to decide about, and silence would read as success.
+            abandonedNotes: abandonedNotes(state).length,
         },
     });
 
@@ -266,8 +300,13 @@ export async function init() {
     console.log('[NoteTagging] Starting Note Tagging Service...');
     console.log(`[NoteTagging] Will check for untagged notes every ${SYNC_INTERVAL_MS / 1000} seconds`);
 
-    // Initial run
-    await processUntaggedNotes();
+    // Initial run, guarded like every later tick — a bare first run that threw
+    // killed the service until app restart (init() is a floating promise).
+    try {
+        await processUntaggedNotes();
+    } catch (error) {
+        console.error('[NoteTagging] Initial run failed:', error);
+    }
 
     // Periodic polling
     while (true) {

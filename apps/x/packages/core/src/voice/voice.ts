@@ -1,3 +1,5 @@
+import { withFileLock } from '../knowledge/file-lock.js';
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { randomUUID } from "node:crypto";
@@ -196,6 +198,11 @@ export interface TranscriptionConfigPatch {
 export async function setTranscriptionConfig(
   patch: TranscriptionConfigPatch,
 ): Promise<TranscriptionConfig> {
+  // Locked: three independent writers reach this — the settings UI, the
+  // flow-bar dock drag (fire-and-forget) and the dictation language change —
+  // and the merge below reads the whole config first. A lost update here is a
+  // silent revocation of the five relationship-consent flags noted below.
+  return withFileLock(transcriptionConfigPath(), async () => {
   const current = await getTranscriptionConfig();
   // Only override keys the caller explicitly set — a patch field left `undefined`
   // (the common case when the settings UI changes one thing) must NOT clobber the
@@ -220,8 +227,11 @@ export async function setTranscriptionConfig(
   });
   const configPath = transcriptionConfigPath();
   await fs.mkdir(path.dirname(configPath), { recursive: true });
-  await fs.writeFile(configPath, JSON.stringify(next, null, 2));
+  // Atomic — this file carries the five relationship consent flags, and the
+  // benchmarks a few lines down were already written atomically.
+  await writeJsonAtomic(configPath, next);
   return next;
+  });
 }
 
 export async function readWhisperBenchmarks(): Promise<WhisperBenchmarkProfile[]> {

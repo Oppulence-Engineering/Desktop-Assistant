@@ -707,8 +707,13 @@ export async function init() {
     console.log('[InlineTasks] Starting Inline Task Service...');
     console.log(`[InlineTasks] Will check for task blocks every ${SYNC_INTERVAL_MS / 1000} seconds`);
 
-    // Initial run
-    await processInlineTasks();
+    // Initial run, guarded like every later tick — a bare first run that threw
+    // killed the service until app restart (init() is a floating promise).
+    try {
+        await processInlineTasks();
+    } catch (error) {
+        console.error('[InlineTasks] Initial run failed:', error);
+    }
 
     // Periodic polling
     while (true) {

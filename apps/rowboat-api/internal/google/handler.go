@@ -257,6 +257,22 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusForbidden, "ticket does not belong to this user", "forbidden")
 		return
 	}
+	// A ticket exists from the moment start mints it, but until the browser
+	// callback runs it carries only the PKCE verifier and the owning user — no
+	// tokens. Claiming inside that window used to "succeed": the ticket was
+	// consumed and the zero-valued bundle went back as 200, so the caller stored
+	// blank credentials and surfaced "Missing refresh token. Please reconnect.",
+	// while the real callback arriving moments later found no ticket and failed.
+	// The user saw a connect that broke itself.
+	//
+	// Any early claim does this — a stale deep link, a retry, a client that
+	// polls. Report not-ready and leave the ticket alone so the flow the user is
+	// still completing in the browser can finish.
+	if payload.AccessToken == "" {
+		httpx.Error(w, http.StatusConflict, "authorization is not complete yet", "not_ready")
+		return
+	}
+
 	if payload.RefreshToken != "" && payload.AccountEmail != "" {
 		if err := h.ensureGoogleAccountAvailable(ctx, u, payload.AccountEmail); err != nil {
 			if errors.Is(err, errGoogleAccountOwned) {

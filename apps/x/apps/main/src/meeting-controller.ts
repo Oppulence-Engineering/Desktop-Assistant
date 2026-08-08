@@ -1,3 +1,4 @@
+import { writeJsonAtomic } from "@x/core/dist/filesystem/atomic_write.js";
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import { app, BrowserWindow } from "electron";
@@ -534,7 +535,10 @@ export class MeetingController {
   }
 
   async retranscribe(sessionId: string): Promise<{ queued: boolean; error?: string }> {
-    const dir = path.join(await this.root(), sessionId);
+    // Via sessionPath, like every other session-scoped method — this one built
+    // the path by hand and so skipped the traversal check its six siblings do.
+    const dir = await this.sessionPath(sessionId);
+    if (!dir) return { queued: false, error: "session not found" };
     const meta = await readMeta(dir);
     if (!meta) return { queued: false, error: "session not found" };
     if (meta.audio_deleted_at) {
@@ -1345,9 +1349,9 @@ export class MeetingController {
     this.stopGuardianWatch();
     const health = this.guardianSnapshot;
     if (health) {
-      await fs
-        .writeFile(path.join(dir, "capture-health.json"), JSON.stringify(health, null, 2), "utf8")
-        .catch((err) => console.warn("[meeting] could not persist capture health:", err));
+      await writeJsonAtomic(path.join(dir, "capture-health.json"), health).catch((err) =>
+        console.warn("[meeting] could not persist capture health:", err),
+      );
     }
     this.sessionDir = null;
     this.sessionStartedAt = null;

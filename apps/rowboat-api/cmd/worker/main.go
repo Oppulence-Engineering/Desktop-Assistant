@@ -524,11 +524,12 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 	}
 	llmH.SetOutboundPolicy(llmPolicy)
 	llmH.SetPolicy(llm.Policy{
-		AllowedModels:       cfg.LLMAllowedModels,
-		MaxPromptBytes:      cfg.LLMMaxPromptBytes,
-		MaxToolPayloadBytes: cfg.LLMMaxToolPayloadBytes,
-		MaxMessages:         cfg.LLMMaxMessages,
-		SpendLimits:         quota.SpendLimits{Daily: cfg.DailyCreditLimit, Monthly: cfg.MonthlyCreditLimit},
+		AllowedModels:          cfg.LLMAllowedModels,
+		MaxPromptBytes:         cfg.LLMMaxPromptBytes,
+		MaxToolPayloadBytes:    cfg.LLMMaxToolPayloadBytes,
+		MaxMessages:            cfg.LLMMaxMessages,
+		DefaultMaxOutputTokens: cfg.LLMDefaultMaxOutput,
+		SpendLimits:            quota.SpendLimits{Daily: cfg.DailyCreditLimit, Monthly: cfg.MonthlyCreditLimit},
 	})
 
 	return &workerDeps{

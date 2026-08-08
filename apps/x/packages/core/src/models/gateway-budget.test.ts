@@ -214,27 +214,14 @@ describe("circuit breaker", () => {
   });
 });
 
-describe("interactive traffic bypasses the queue", () => {
-  // The bypass lives in authedFetch, which is module-private and needs a live
-  // token and a real provider to exercise. Asserted against the source instead:
-  // the alternative is no check at all on the one property whose absence would
-  // make a person wait minutes for a chat reply.
-  const source = fs.readFileSync(new URL("./gateway.ts", import.meta.url), "utf8");
-
-  it("returns fetch directly for an interactive use case", () => {
-    const guard = source.indexOf("if (isInteractive(ctx?.useCase, ctx?.subUseCase))");
-    expect(guard, "authedFetch must branch on isInteractive, passing both fields").toBeGreaterThan(-1);
-
-    const queued = source.indexOf("throughBackgroundBudget", guard);
-    const bypass = source.indexOf("return fetch(", guard);
-    expect(bypass, "the interactive branch returns fetch directly").toBeGreaterThan(-1);
-    expect(bypass, "the bypass comes before the queued path").toBeLessThan(queued);
-  });
-
-  it("still queues everything else", () => {
-    expect(source).toMatch(/return throughBackgroundBudget\(\(\) => fetch\(/);
-  });
-});
+// Interactive bypass and background queueing are asserted behaviourally in
+// gateway-auth.test.ts, which drives the exported authedFetch directly.
+//
+// They used to be checked here by matching the text of gateway.ts, because
+// authedFetch was module-private. That check broke the first time the function
+// was restructured — the property still held, the substring did not — which is
+// the failure mode source-scraping tests always have. authedFetch is exported
+// now precisely so the real behaviour can be observed instead.
 
 describe("background leaves the server ceiling a reserve", () => {
   // The client cap and the server cap live in different languages in different

@@ -3,12 +3,33 @@ import path from 'path';
 import { LiveNoteSchema, type LiveNote } from '@x/shared/dist/live-note.js';
 import { WorkDir } from '../../config/config.js';
 import { withFileLock } from '../file-lock.js';
+import { assertSafeRelPath } from '../../workspace/workspace.js';
 import { splitFrontmatter, joinFrontmatter } from '../../application/lib/parse-frontmatter.js';
 
 const KNOWLEDGE_DIR = path.join(WorkDir, 'knowledge');
 
+/**
+ * Resolve a knowledge-relative note path.
+ *
+ * Reached from the `live-note:*` IPC channels and from the `run-live-note-agent`
+ * builtin tool, both of which supply the path as an unconstrained string, and
+ * every operation here reads or rewrites the target's frontmatter.
+ *
+ * Nested paths with spaces are the norm ("Organizations/Healthie.md",
+ * "Projects/Super Life v3.md"), so a basename or single-segment rule would
+ * break the scheduler, the event consumer, and every nested note. The workspace
+ * rule is the right shape: reject absolute and "..", then confirm the resolved
+ * path is still inside the knowledge directory.
+ */
 function absPath(filePath: string): string {
-    return path.join(KNOWLEDGE_DIR, filePath);
+    assertSafeRelPath(filePath);
+    const resolved = path.resolve(KNOWLEDGE_DIR, filePath);
+    // The root itself is legitimate: listLiveNotes' walk starts at absPath('').
+    // resolveWorkspacePath carries the same clause for the same reason.
+    if (!resolved.startsWith(KNOWLEDGE_DIR + path.sep) && resolved !== KNOWLEDGE_DIR) {
+        throw new Error('Path outside knowledge boundary');
+    }
+    return resolved;
 }
 
 function getLiveBlock(fm: Record<string, unknown>): unknown {

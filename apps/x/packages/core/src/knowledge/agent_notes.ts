@@ -16,6 +16,8 @@ import {
   saveAgentNotesState,
   markEmailProcessed,
   markRunProcessed,
+  markSourceFailed,
+  shouldAttemptSource,
   type AgentNotesState,
 } from "./agent_notes_state.js";
 
@@ -39,12 +41,12 @@ function ensureAgentNotesDir(): void {
 
 // --- Email scanning ---
 
-function findUserSentEmails(state: AgentNotesState, userEmail: string, limit: number): string[] {
+export function findUserSentEmails(state: AgentNotesState, userEmail: string, limit: number): string[] {
   if (!fs.existsSync(GMAIL_SYNC_DIR)) {
     return [];
   }
 
-  const results: { path: string; mtime: number }[] = [];
+  const candidates: { path: string; mtime: number }[] = [];
   const userEmailLower = userEmail.toLowerCase();
 
   function traverse(dir: string) {
@@ -61,24 +63,41 @@ function findUserSentEmails(state: AgentNotesState, userEmail: string, limit: nu
         if (state.processedEmails[fullPath]) {
           continue;
         }
-
-        try {
-          const content = fs.readFileSync(fullPath, "utf-8");
-          const fromLines = content.match(/^### From:.*$/gm);
-          if (fromLines?.some((line) => line.toLowerCase().includes(userEmailLower))) {
-            results.push({ path: fullPath, mtime: stat.mtimeMs });
-          }
-        } catch {
+        // Skip emails whose processing failed recently — without this the same
+        // batch is re-sent to the LLM every 10 seconds until it happens to work.
+        if (!shouldAttemptSource(fullPath, state)) {
           continue;
         }
+        candidates.push({ path: fullPath, mtime: stat.mtimeMs });
       }
     }
   }
 
   traverse(GMAIL_SYNC_DIR);
 
-  results.sort((a, b) => b.mtime - a.mtime);
-  return results.slice(0, limit).map((r) => r.path);
+  // Sort by mtime first, then read only as far as needed.
+  //
+  // This used to read every unprocessed email in full, on a 10-second poll,
+  // to find the newest `limit` the user had sent — ~1,400 files and 40MB per
+  // tick on a real workspace, all to keep five of them. The mtime ordering
+  // does not depend on the contents, so the newest matches are the same either
+  // way; the difference is how much gets read to find them.
+  candidates.sort((a, b) => b.mtime - a.mtime);
+
+  const results: string[] = [];
+  for (const candidate of candidates) {
+    if (results.length >= limit) break;
+    try {
+      const content = fs.readFileSync(candidate.path, "utf-8");
+      const fromLines = content.match(/^### From:.*$/gm);
+      if (fromLines?.some((line) => line.toLowerCase().includes(userEmailLower))) {
+        results.push(candidate.path);
+      }
+    } catch {
+      continue;
+    }
+  }
+  return results;
 }
 
 function extractUserPartsFromEmail(content: string, userEmail: string): string | null {
@@ -159,7 +178,7 @@ async function shouldSkipForProductAuth(): Promise<boolean> {
 
 // --- Copilot run scanning ---
 
-function findNewCopilotRuns(state: AgentNotesState): string[] {
+export function findNewCopilotRuns(state: AgentNotesState): string[] {
   if (!fs.existsSync(RUNS_DIR)) {
     return [];
   }
@@ -169,6 +188,9 @@ function findNewCopilotRuns(state: AgentNotesState): string[] {
 
   for (const file of files) {
     if (state.processedRuns[file]) {
+      continue;
+    }
+    if (!shouldAttemptSource(file, state)) {
       continue;
     }
 
@@ -263,7 +285,7 @@ async function ensureUserEmail(): Promise<string | null> {
 
 // --- Main processing ---
 
-async function processAgentNotes(): Promise<void> {
+export async function processAgentNotes(): Promise<void> {
   ensureAgentNotesDir();
   const state = loadAgentNotesState();
   const userEmail = await ensureUserEmail();
@@ -336,11 +358,16 @@ async function processAgentNotes(): Promise<void> {
     await createMessage(agentRun.id, message);
     await waitForRunCompletion(agentRun.id, { throwOnError: true });
 
-    // Mark everything as processed
+    // Mark what was actually sent to the agent.
+    //
+    // This used to mark ALL of newRuns, but only runsToProcess — the last
+    // RUNS_BATCH_SIZE of them — went into the prompt. With 40 runs pending, 35
+    // were recorded as learned-from having never been sent, and were never
+    // revisited. The overflow must stay eligible for the next pass.
     for (const p of emailPaths) {
       markEmailProcessed(p, state);
     }
-    for (const r of newRuns) {
+    for (const r of runsToProcess) {
       markRunProcessed(r, state);
     }
     if (inboxEntries.length > 0) {
@@ -366,6 +393,15 @@ async function processAgentNotes(): Promise<void> {
     });
   } catch (error) {
     console.error("[AgentNotes] Error processing:", error);
+    // Back off everything that was in this failed pass; only successes were
+    // recorded before, so the identical batch returned every 10 seconds.
+    for (const p of emailPaths) {
+      markSourceFailed(p, state);
+    }
+    for (const r of runsToProcess) {
+      markSourceFailed(r, state);
+    }
+    saveAgentNotesState(state);
     await serviceLogger.log({
       type: "error",
       service: serviceRun.service,
@@ -392,8 +428,13 @@ export async function init() {
   console.log("[AgentNotes] Starting Agent Notes Service...");
   console.log(`[AgentNotes] Will process every ${SYNC_INTERVAL_MS / 1000} seconds`);
 
-  // Initial run
-  await processAgentNotes();
+  // Initial run, guarded like every later tick — a bare first run that threw
+  // killed the service until app restart (init() is a floating promise).
+  try {
+    await processAgentNotes();
+  } catch (error) {
+    console.error("[AgentNotes] Initial run failed:", error);
+  }
 
   // Periodic polling
   while (true) {

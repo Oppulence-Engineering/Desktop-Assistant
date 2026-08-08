@@ -219,6 +219,7 @@ type Config struct {
 	LLMMaxPromptBytes      int
 	LLMMaxToolPayloadBytes int
 	LLMMaxMessages         int
+	LLMDefaultMaxOutput    int
 
 	// LLM upstream base URLs. Empty → provider defaults (api.openai.com /
 	// openrouter.ai). Override to target a self-hosted gateway or a local mock.
@@ -619,6 +620,7 @@ func Load() Config {
 		LLMMaxPromptBytes:          getint("LLM_MAX_PROMPT_BYTES", 2<<20),
 		LLMMaxToolPayloadBytes:     getint("LLM_MAX_TOOL_PAYLOAD_BYTES", 1<<20),
 		LLMMaxMessages:             getint("LLM_MAX_MESSAGES", 128),
+		LLMDefaultMaxOutput:        getint("LLM_DEFAULT_MAX_OUTPUT_TOKENS", 0),
 		OpenAIBaseURL:              getenv("OPENAI_BASE_URL", ""),
 		OpenRouterBaseURL:          getenv("OPENROUTER_BASE_URL", ""),
 		GraphQLIntrospection:       getbool("GRAPHQL_INTROSPECTION_ENABLED", !production),

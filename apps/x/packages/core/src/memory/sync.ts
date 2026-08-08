@@ -90,7 +90,12 @@ async function logMemoryTick(trigger: "startup" | "timer"): Promise<void> {
       service: run.service,
       runId: run.runId,
       level: "error",
-      message: "Memory index failed",
+      // Distinct from the error line above. Both said "Memory index failed",
+      // so Data health showed the same sentence twice per run — 48 lines for
+      // 24 runs — where the sibling services pair a detailed error with a
+      // separate outcome ("Error processing agent notes" / "Agent notes
+      // processing failed"). Duplicate lines read as two problems.
+      message: "Memory index run ended with errors",
       durationMs: Date.now() - run.startedAt,
       outcome: "error",
     });

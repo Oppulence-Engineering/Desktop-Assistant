@@ -27,6 +27,7 @@ import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import type { blocks } from "@x/shared";
 import { cn } from "@/lib/utils";
+import { previewText } from "@/lib/preview-text";
 import { toast } from "@/lib/toast";
 import { useTheme } from "@/contexts/theme-context";
 import { SettingsDialog } from "@/components/settings-dialog";
@@ -92,7 +93,10 @@ function extractAddress(from?: string): string {
 }
 
 function snippet(text?: string): string {
-  return (text || "").replace(/\s+/g, " ").trim().slice(0, 180);
+  // Collapsing whitespace is not enough: these bodies are markdown converted
+  // from HTML mail, so a row would lead with a tracking pixel or a preheader
+  // padded with zero-width characters. See previewText.
+  return previewText(text, 180);
 }
 
 function isReplyQuoteBoundary(lines: string[], index: number): boolean {
@@ -1743,28 +1747,30 @@ export function EmailView({ initialThreadId, threadIdVersion }: EmailViewProps =
   return (
     <div className="gmail-shell">
       <div className="gmail-main">
-        {!needsEmailConnect && !needsEmailReconnect ? <div className="gmail-topbar">
-          <div className="gmail-search">
-            <Search size={18} />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search loaded mail"
-            />
+        {!needsEmailConnect && !needsEmailReconnect ? (
+          <div className="gmail-topbar">
+            <div className="gmail-search">
+              <Search size={18} />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search loaded mail"
+              />
+            </div>
+            <button
+              type="button"
+              className="gmail-icon-button"
+              onClick={() => void refresh()}
+              aria-label="Refresh"
+            >
+              {refreshing ? (
+                <LoaderIcon size={18} className="animate-spin" />
+              ) : (
+                <RefreshCw size={18} />
+              )}
+            </button>
           </div>
-          <button
-            type="button"
-            className="gmail-icon-button"
-            onClick={() => void refresh()}
-            aria-label="Refresh"
-          >
-            {refreshing ? (
-              <LoaderIcon size={18} className="animate-spin" />
-            ) : (
-              <RefreshCw size={18} />
-            )}
-          </button>
-        </div> : null}
+        ) : null}
 
         {error && !hasAny ? (
           <div className="gmail-empty-state">Could not load mail: {error}</div>
@@ -1818,10 +1824,7 @@ export function EmailView({ initialThreadId, threadIdVersion }: EmailViewProps =
                 ? "Reconnect your email to enable Gmail sync and actions."
                 : "Connect your email to see your inbox here."}
             </p>
-            <Button
-              onClick={() => setSettingsOpen(true)}
-              size="sm"
-            >
+            <Button onClick={() => setSettingsOpen(true)} size="sm">
               <Mail size={15} />
               {needsEmailReconnect ? "Reconnect your email" : "Connect your email"}
             </Button>

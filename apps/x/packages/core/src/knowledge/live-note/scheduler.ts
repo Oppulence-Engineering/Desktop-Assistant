@@ -83,7 +83,13 @@ async function processScheduledLiveNotes(): Promise<void> {
 export async function init(): Promise<void> {
     log.log(`starting, polling every ${POLL_INTERVAL_MS / 1000}s`);
 
-    await processScheduledLiveNotes();
+    // Guarded like every later tick — a bare first run that threw killed the
+    // service until app restart (init() is a floating promise).
+    try {
+        await processScheduledLiveNotes();
+    } catch (error) {
+        log.log(`initial run failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
 
     while (true) {
         await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));

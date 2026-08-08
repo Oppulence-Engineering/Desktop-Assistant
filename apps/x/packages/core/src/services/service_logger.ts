@@ -14,6 +14,19 @@ const LOG_DIR = path.join(WorkDir, "logs");
 const LOG_FILE = path.join(LOG_DIR, "services.jsonl");
 const MAX_LOG_BYTES = 10 * 1024 * 1024;
 
+/**
+ * Rotated logs to keep, newest first. Ten of them plus the live file caps this
+ * directory at ~110MB.
+ *
+ * Rotation existed; deletion did not. On a real install that had left 52 files
+ * and 516MB behind — and during an incident, when every poll writes errors,
+ * this rotates roughly every half hour, so the directory grew about half a
+ * gigabyte a day for as long as the fault lasted. A log directory that grows
+ * without bound is a second failure stacked on the first.
+ */
+const KEEP_ROTATED_LOGS = 10;
+const ROTATED_PATTERN = /^services\..+\.jsonl$/;
+
 export type ServiceRunContext = {
     runId: string;
     service: ServiceNameType;
@@ -24,12 +37,60 @@ function safeTimestampForFile(ts: string): string {
     return ts.replace(/[:.]/g, "-");
 }
 
+/**
+ * Delete all but the newest {@link KEEP_ROTATED_LOGS} rotated logs.
+ *
+ * Sorted by mtime rather than filename: the names are timestamped and do sort
+ * lexically today, but that is a property of the current format, and losing
+ * the wrong file here is not worth the coupling.
+ *
+ * Best-effort throughout — pruning must never be able to stop the app logging.
+ *
+ * @returns Paths that were removed.
+ */
+export async function pruneRotatedLogs(dir: string = LOG_DIR): Promise<string[]> {
+    let entries: string[];
+    try {
+        entries = await fsp.readdir(dir);
+    } catch {
+        return [];
+    }
+
+    const rotated = entries.filter((name) => ROTATED_PATTERN.test(name) && name !== "services.jsonl");
+    if (rotated.length <= KEEP_ROTATED_LOGS) return [];
+
+    const withTime = await Promise.all(
+        rotated.map(async (name) => {
+            const full = path.join(dir, name);
+            try {
+                return { full, mtime: (await fsp.stat(full)).mtimeMs };
+            } catch {
+                return { full, mtime: 0 };
+            }
+        }),
+    );
+    withTime.sort((a, b) => b.mtime - a.mtime);
+
+    const removed: string[] = [];
+    for (const { full } of withTime.slice(KEEP_ROTATED_LOGS)) {
+        try {
+            await fsp.rm(full, { force: true });
+            removed.push(full);
+        } catch {
+            // Leave it; the next rotation tries again.
+        }
+    }
+    return removed;
+}
+
 export class ServiceLogger {
     private idGen = new IdGen();
     private stream: fs.WriteStream | null = null;
     private currentSize = 0;
     private initialized = false;
     private writeQueue: Promise<void> = Promise.resolve();
+    /** One console line per outage, not one per dropped event. */
+    private warnedWriteFailure = false;
 
     private async ensureReady(): Promise<void> {
         if (this.initialized) return;
@@ -40,8 +101,27 @@ export class ServiceLogger {
         } catch {
             this.currentSize = 0;
         }
-        this.stream = fs.createWriteStream(LOG_FILE, { flags: "a", encoding: "utf8" });
+        this.stream = this.openStream();
         this.initialized = true;
+    }
+
+    /**
+     * The only place a log stream is created.
+     *
+     * A stream that dies (disk full, the file removed underneath us) stays an
+     * object that accepts write() and drops it, so it needs an error handler to
+     * force a reopen. Rotation creates a second stream, and attaching the
+     * handler at only one of the two call sites meant every log after the first
+     * rotation was back to discarding silently.
+     */
+    private openStream(): fs.WriteStream {
+        const stream = fs.createWriteStream(LOG_FILE, { flags: "a", encoding: "utf8" });
+        stream.on("error", (error) => {
+            console.error("[ServiceLogger] Log stream error; reopening:", error);
+            this.stream = null;
+            this.initialized = false;
+        });
+        return stream;
     }
 
     private async rotateIfNeeded(nextBytes: number): Promise<void> {
@@ -68,7 +148,10 @@ export class ServiceLogger {
             // Ignore if file doesn't exist or rename fails
         }
         this.currentSize = 0;
-        this.stream = fs.createWriteStream(LOG_FILE, { flags: "a", encoding: "utf8" });
+        this.stream = this.openStream();
+        // Rotation is the only moment the count changes, so it is the only
+        // moment worth checking.
+        await pruneRotatedLogs();
     }
 
     async log(event: ServiceEventInput): Promise<void> {
@@ -79,17 +162,38 @@ export class ServiceLogger {
         const line = JSON.stringify(payload) + "\n";
         const bytes = Buffer.byteLength(line, "utf8");
 
-        this.writeQueue = this.writeQueue.then(async () => {
-            await this.ensureReady();
-            await this.rotateIfNeeded(bytes);
-            this.stream?.write(line);
-            this.currentSize += bytes;
-            try {
-                await serviceBus.publish(payload);
-            } catch {
-                // Ignore publish errors to avoid blocking log writes
-            }
-        });
+        // The queue must never be left rejected.
+        //
+        // `writeQueue.then(fn)` on a rejected promise does not run fn — it
+        // propagates the rejection — so a single failure here (a full disk, a
+        // transient EMFILE opening the stream) would make every later log()
+        // skip its work and reject as well. Service logging would be dead for
+        // the rest of the process from one bad moment, and the Data health
+        // panel would simply stop updating with nothing to say why.
+        //
+        // Callers do `await serviceLogger.log(...)` inside their own try/catch,
+        // so a rejection here would also be reported as a failure of the work
+        // being logged. Diagnostics must not become the thing that breaks the
+        // job they are describing.
+        this.writeQueue = this.writeQueue
+            .then(async () => {
+                await this.ensureReady();
+                await this.rotateIfNeeded(bytes);
+                this.stream?.write(line);
+                this.currentSize += bytes;
+                this.warnedWriteFailure = false;
+                try {
+                    await serviceBus.publish(payload);
+                } catch {
+                    // Ignore publish errors to avoid blocking log writes
+                }
+            })
+            .catch((error) => {
+                if (!this.warnedWriteFailure) {
+                    this.warnedWriteFailure = true;
+                    console.error("[ServiceLogger] Could not write service log:", error);
+                }
+            });
 
         return this.writeQueue;
     }

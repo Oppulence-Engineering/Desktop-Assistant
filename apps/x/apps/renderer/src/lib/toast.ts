@@ -1,59 +1,33 @@
 /**
- * Simple toast notification system
+ * Toast notifications.
+ *
+ * This module used to keep its own array of toasts and its own listener set,
+ * and nothing ever rendered them. App.tsx mounts <Toaster /> from
+ * @oppulence/ui/components/sonner, which draws sonner's store — not this one —
+ * and no component imported subscribe() or getToasts(). Every toast raised
+ * through here across seven view components was therefore invisible: pushed
+ * onto an array, auto-removed three seconds later, never once on screen.
+ * Found while dogfooding on 2026-08-07, when an error toast for a failed
+ * billing click produced no feedback of any kind.
+ *
+ * The wrapper stays so the seven existing call sites keep working, but the
+ * store behind it is now the one that is actually mounted.
  */
+import { toast as sonner } from "sonner";
 
-type ToastType = 'success' | 'error' | 'info';
+export type ToastType = "success" | "error" | "info";
 
-interface Toast {
-  id: string;
-  message: string;
-  type: ToastType;
+export function toast(message: string, type: ToastType = "info"): void {
+  switch (type) {
+    case "success":
+      sonner.success(message);
+      return;
+    case "error":
+      // Errors hold longer than the default: they are the ones worth reading,
+      // and the old implementation's fixed 3s was not enough for a sentence.
+      sonner.error(message, { duration: 6000 });
+      return;
+    default:
+      sonner(message);
+  }
 }
-
-let toasts: Toast[] = [];
-const listeners: Set<() => void> = new Set();
-
-/**
- * Show a toast notification
- */
-export function toast(message: string, type: ToastType = 'info'): void {
-  const id = `${Date.now()}-${Math.random()}`;
-  toasts.push({ id, message, type });
-  notifyListeners();
-
-  // Auto-remove after 3 seconds
-  setTimeout(() => {
-    toasts = toasts.filter(t => t.id !== id);
-    notifyListeners();
-  }, 3000);
-}
-
-/**
- * Get current toasts
- */
-export function getToasts(): Toast[] {
-  return [...toasts];
-}
-
-/**
- * Subscribe to toast changes
- */
-export function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-function notifyListeners(): void {
-  listeners.forEach(listener => listener());
-}
-
-/**
- * Remove a toast by ID
- */
-export function removeToast(id: string): void {
-  toasts = toasts.filter(t => t.id !== id);
-  notifyListeners();
-}
-

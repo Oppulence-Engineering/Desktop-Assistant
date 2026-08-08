@@ -1,3 +1,4 @@
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 import path from "path";
 import fs from "fs";
 import { WorkDir } from "../config/config.js";
@@ -171,11 +172,7 @@ let cachedMtimeMs: number | null = null;
 
 function ensureNotesConfigSync(): void {
   if (!fs.existsSync(NOTES_CONFIG_PATH)) {
-    fs.writeFileSync(
-      NOTES_CONFIG_PATH,
-      JSON.stringify(DEFAULT_NOTE_TYPE_DEFINITIONS, null, 2) + "\n",
-      "utf8",
-    );
+    writeJsonAtomicSync(NOTES_CONFIG_PATH, DEFAULT_NOTE_TYPE_DEFINITIONS);
   }
 }
 

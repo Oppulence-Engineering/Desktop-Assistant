@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import { ModelManager, coremlSidecarDirNameForModelFile } from "./model-manager.js";
+import { ModelManager, coremlSidecarDirNameForModelFile, reapStalePartials } from "./model-manager.js";
 import type { ModelEntry } from "./catalog.js";
 
 const sha256 = (buf: Buffer) => createHash("sha256").update(buf).digest("hex");
@@ -410,5 +410,59 @@ describe("ModelManager", () => {
     expect(coremlSidecarDirNameForModelFile("ggml-large-v3-turbo-q5_0.bin")).toBe(
       "ggml-large-v3-turbo-encoder.mlmodelc",
     );
+  });
+});
+
+/**
+ * Abandoned downloads were never reaped by anything.
+ *
+ * `.part` files are how resume works, so they cannot be deleted eagerly — but
+ * `remove()` and `gc()` both iterate the ledger, and a partial is only written
+ * there once it completes. That makes an unfinished download invisible to both.
+ * Found on a real install: a 913MB `ggml-large-v3-q5_0.bin.part` sitting
+ * untouched, larger than every model actually in use put together.
+ */
+describe("reapStalePartials", () => {
+  const WEEK = 7 * 24 * 3600 * 1000;
+
+  async function partial(dir: string, name: string, bytes: number, ageMs: number, now: number) {
+    const p = path.join(dir, name);
+    await fs.writeFile(p, Buffer.alloc(bytes));
+    const t = (now - ageMs) / 1000;
+    await fs.utimes(p, t, t);
+    return p;
+  }
+
+  it("removes a partial older than the window and reports the bytes", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-reap-test-"));
+    const now = Date.now();
+    const stale = await partial(dir, "ggml-large-v3-q5_0.bin.part", 2048, WEEK + 60_000, now);
+    expect(await reapStalePartials(dir, WEEK, now)).toBe(2048);
+    await expect(fs.access(stale)).rejects.toBeTruthy();
+  });
+
+  // Resume has to keep working; a download paused this morning is not garbage.
+  it("keeps a partial that is still within the window", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-reap-test-"));
+    const now = Date.now();
+    const fresh = await partial(dir, "ggml-base.en-q5_1.bin.part", 1024, 60_000, now);
+    expect(await reapStalePartials(dir, WEEK, now)).toBe(0);
+    await expect(fs.access(fresh)).resolves.toBeUndefined();
+  });
+
+  it("never touches installed models, however old", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "rowboat-reap-test-"));
+    const now = Date.now();
+    const model = path.join(dir, "ggml-base.en-q5_1.bin");
+    await fs.writeFile(model, "weights");
+    const old = (now - 400 * 24 * 3600 * 1000) / 1000;
+    await fs.utimes(model, old, old);
+    await reapStalePartials(dir, WEEK, now);
+
+    expect(await fs.readFile(model, "utf8")).toBe("weights");
+  });
+
+  it("returns zero when the models directory is absent", async () => {
+    expect(await reapStalePartials("/tmp/rowboat-no-such-models-dir")).toBe(0);
   });
 });

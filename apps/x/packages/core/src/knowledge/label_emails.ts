@@ -7,10 +7,16 @@ import { bus } from '../runs/bus.js';
 import { getErrorDetails, waitForRunCompletion } from '../agents/utils.js';
 import { serviceLogger } from '../services/service_logger.js';
 import { limitEventItems } from './limit_event_items.js';
+import { readsAsFrontmatter } from './frontmatter.js';
+import { hasPaidSubscription } from '../billing/entitlements.js';
 import {
     loadLabelingState,
     saveLabelingState,
     markFileAsLabeled,
+    markAttemptFailed,
+    shouldAttempt,
+    abandonedFiles,
+    MAX_LABEL_ATTEMPTS,
     type LabelingState,
 } from './labeling_state.js';
 
@@ -20,6 +26,18 @@ const DEFAULT_CONCURRENCY = 3;
 const LABELING_AGENT = 'labeling_agent';
 const GMAIL_SYNC_DIR = path.join(WorkDir, 'gmail_sync');
 const MAX_CONTENT_LENGTH = 8000;
+
+/** Whether the "paid subscription required" line has already been logged. */
+let warnedUnentitled = false;
+
+/**
+ * Whether a file begins with a YAML frontmatter fence, read without slurping it.
+ * An unreadable file counts as "skip", matching the previous behaviour: the
+ * labeler cannot do anything useful with a file it cannot open.
+ */
+export function startsWithFrontmatter(filePath: string): boolean {
+    return readsAsFrontmatter(filePath) ?? true;
+}
 
 /**
  * Find email files that haven't been labeled yet
@@ -45,13 +63,21 @@ function getUnlabeledEmails(state: LabelingState): string[] {
                     continue;
                 }
 
-                // Skip if file already has frontmatter
-                try {
-                    const content = fs.readFileSync(fullPath, 'utf-8');
-                    if (content.startsWith('---')) {
-                        continue;
-                    }
-                } catch {
+                // Skip files that failed recently or have exhausted their
+                // attempts. Without this a file the agent cannot label is
+                // re-sent to the model every poll, forever, at full token cost.
+                if (!shouldAttempt(fullPath, state)) {
+                    continue;
+                }
+
+                // Skip if file already has frontmatter.
+                //
+                // Reads the first bytes, not the file. This runs over every
+                // unlabeled email on a 15-second poll, and reading each one in
+                // full to look at three characters cost 41MB per pass on a real
+                // workspace — about 10GB an hour of disk traffic to answer a
+                // question the first line already answers.
+                if (startsWithFrontmatter(fullPath)) {
                     continue;
                 }
 
@@ -125,6 +151,20 @@ async function labelEmailBatch(
  * Process all unlabeled emails in batches
  */
 export async function processUnlabeledEmails(concurrency: number = DEFAULT_CONCURRENCY): Promise<void> {
+    // Labeling is a paid feature. It is also the most expensive thing the app
+    // does on a user's behalf: an agent run over every synced email, billed to
+    // us in managed mode. Checked before the directory walk so an unentitled
+    // install does no work at all rather than scanning the mailbox each tick.
+    if (!(await hasPaidSubscription())) {
+        if (!warnedUnentitled) {
+            // Once per transition, not once per 15-second tick.
+            console.log('[EmailLabeling] Paid subscription required; labeling is off.');
+            warnedUnentitled = true;
+        }
+        return;
+    }
+    warnedUnentitled = false;
+
     console.log('[EmailLabeling] Checking for unlabeled emails...');
 
     const state = loadLabelingState();
@@ -142,6 +182,16 @@ export async function processUnlabeledEmails(concurrency: number = DEFAULT_CONCU
         message: `Labeling ${unlabeled.length} email${unlabeled.length === 1 ? '' : 's'}`,
         trigger: 'timer',
     });
+
+    const abandoned = abandonedFiles(state);
+    if (abandoned.length > 0) {
+        // Say it out loud. These files are silently absent from every future
+        // pass, and "nothing happened" is indistinguishable from "all done".
+        console.log(
+            `[EmailLabeling] ${abandoned.length} email${abandoned.length === 1 ? '' : 's'} ` +
+            `gave up after ${MAX_LABEL_ATTEMPTS} attempts and will not be retried.`,
+        );
+    }
 
     const relativeFiles = unlabeled.map(f => path.relative(WorkDir, f));
     const limitedFiles = limitEventItems(relativeFiles);
@@ -201,11 +251,16 @@ export async function processUnlabeledEmails(concurrency: number = DEFAULT_CONCU
 
                 const result = await labelEmailBatch(files);
 
-                // Only mark files that were actually edited by the agent
+                // Only mark files that were actually edited by the agent. The
+                // rest count as a failed attempt — a batch that "succeeds" while
+                // silently labeling nothing is the common case here, and it is
+                // what made these files immortal.
                 for (const file of files) {
                     const relativePath = path.relative(WorkDir, file.path);
                     if (result.filesEdited.has(relativePath)) {
                         markFileAsLabeled(file.path, state);
+                    } else {
+                        markAttemptFailed(file.path, state);
                     }
                 }
 
@@ -214,6 +269,9 @@ export async function processUnlabeledEmails(concurrency: number = DEFAULT_CONCU
             } catch (error) {
                 hadError = true;
                 failedBatches++;
+                for (const file of files) {
+                    markAttemptFailed(file.path, state);
+                }
                 const errorDetails = getErrorDetails(error);
                 console.error(`[EmailLabeling] Error processing batch ${batchNumber}:`, error);
                 await serviceLogger.log({
@@ -253,6 +311,9 @@ export async function processUnlabeledEmails(concurrency: number = DEFAULT_CONCU
             totalEmails: unlabeled.length,
             filesLabeled: totalEdited,
             failedBatches,
+            // Visible on purpose: files we have stopped retrying are the ones a
+            // person has to decide about, and silence would read as success.
+            abandonedFiles: abandonedFiles(state).length,
         },
     });
 
@@ -266,8 +327,17 @@ export async function init() {
     console.log('[EmailLabeling] Starting Email Labeling Service...');
     console.log(`[EmailLabeling] Will check for unlabeled emails every ${SYNC_INTERVAL_MS / 1000} seconds`);
 
-    // Initial run
-    await processUnlabeledEmails();
+    // Initial run. Guarded like every later tick: this line used to be bare,
+    // so a first run that threw rejected init() before the loop ever started —
+    // and init() is called as a floating promise from startBackgroundServices,
+    // so the service was simply dead until the next app launch. During the
+    // models.json incident every run threw, meaning any app started in that
+    // window lost email labeling entirely.
+    try {
+        await processUnlabeledEmails();
+    } catch (error) {
+        console.error('[EmailLabeling] Initial run failed:', error);
+    }
 
     // Periodic polling
     while (true) {

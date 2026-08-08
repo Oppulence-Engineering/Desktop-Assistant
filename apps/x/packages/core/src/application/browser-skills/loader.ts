@@ -1,3 +1,4 @@
+import { writeJsonAtomic } from "../../filesystem/atomic_write.js";
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { WorkDir } from '../../config/config.js';
@@ -52,7 +53,7 @@ async function readManifest(): Promise<SkillsIndex | null> {
 
 async function writeManifest(index: SkillsIndex): Promise<void> {
   await ensureCacheDir();
-  await fs.writeFile(manifestPath(), JSON.stringify(index, null, 2), 'utf8');
+  await writeJsonAtomic(manifestPath(), index);
 }
 
 function extractTitle(markdown: string, fallback: string): string {

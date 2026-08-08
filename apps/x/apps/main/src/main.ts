@@ -63,6 +63,7 @@ import {
 import { shutdown as shutdownAnalytics, captureException } from "@x/core/dist/analytics/posthog.js";
 import { identifyIfSignedIn } from "@x/core/dist/analytics/identify.js";
 
+import { configureBundledEmbeddings } from "@x/core/dist/memory/onnx/assets.js";
 import { initConfigs } from "@x/core/dist/config/initConfigs.js";
 import { applyPrivacyConfig } from "@x/core/dist/config/privacy.js";
 import { resolveWorkspacePath } from "@x/core/dist/workspace/workspace.js";
@@ -100,6 +101,19 @@ import { disconnectGoogleIfScopesStale } from "./oauth-handler.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+/**
+ * Directory holding the bundled on-device embedding model.
+ *
+ * Packaged: Resources/embeddings/ (staged by forge from vendor/embeddings).
+ * Dev: apps/x/vendor/embeddings — empty until `scripts/embeddings-fetch.mjs`
+ * runs, in which case core falls back to downloading into WorkDir on first use.
+ */
+function bundledEmbeddingsDir(): string {
+  if (process.env.OPPULENCE_EMBEDDINGS_DIR) return process.env.OPPULENCE_EMBEDDINGS_DIR;
+  if (app.isPackaged) return path.join(process.resourcesPath, "embeddings");
+  return path.join(app.getAppPath(), "..", "..", "vendor", "embeddings");
+}
 
 // Capture uncaught exceptions and unhandled promise rejections in the main
 // process and forward them to PostHog. This must be registered as early as
@@ -572,6 +586,12 @@ app.whenReady().then(async () => {
   // (packaged, and a platform Squirrel serves) and reports "unsupported"
   // otherwise, so the renderer always has a status to render.
   initUpdates();
+
+  // Point core at the embedding model that ships in the app bundle. Core stays
+  // Electron-free, so only main can resolve this — same arrangement as
+  // configureWhisperBinary. Before initConfigs, because the memory index reads
+  // it on its very first pass.
+  configureBundledEmbeddings(bundledEmbeddingsDir());
 
   // Initialize all config files before UI can access them
   await initConfigs();

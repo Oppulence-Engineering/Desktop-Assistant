@@ -34,6 +34,12 @@ export const MemoryConfig = z.object({
     embedDimensions: z.number().int().nonnegative().default(0).catch(0),
     /** LLM query expansion / HyDE before retrieval; off by default (adds an LLM call). */
     queryExpansion: z.boolean().default(false).catch(false),
+    /** On-device embeddings. `auto` (default) uses a running Ollama if there is
+     *  one and otherwise provisions a private managed runtime; `system` uses a
+     *  daemon the user already runs but never downloads one; `off` always uses
+     *  the hosted provider. Switching between local and hosted forces an index
+     *  rebuild, because the vectors are not interchangeable. */
+    localEmbeddings: z.enum(['auto', 'system', 'off']).default('auto').catch('auto'),
 });
 export type MemoryConfig = z.infer<typeof MemoryConfig>;
 
@@ -57,6 +63,8 @@ function configPath(): string {
  * - `SOLOMON_MEMORY_MODEL` → override the embedding model.
  * - `SOLOMON_MEMORY_QUERY_EXPANSION=1|true` → force `queryExpansion: true`.
  * - `SOLOMON_MEMORY_RECENCY_WEIGHT` → override `recencyWeight` (parsed as a number).
+ * - `SOLOMON_MEMORY_LOCAL_EMBEDDINGS=auto|system|off` → override `localEmbeddings`
+ *   (`0` is accepted as `off`).
  *
  * @returns A fully-populated, validated {@link MemoryConfig}.
  */
@@ -73,6 +81,10 @@ export function loadMemoryConfig(): MemoryConfig {
     if (process.env.SOLOMON_MEMORY_QUERY_EXPANSION === '1' || process.env.SOLOMON_MEMORY_QUERY_EXPANSION === 'true') {
         cfg.queryExpansion = true;
     }
+    const local = process.env.SOLOMON_MEMORY_LOCAL_EMBEDDINGS;
+    if (local === 'off' || local === '0') cfg.localEmbeddings = 'off';
+    else if (local === 'system') cfg.localEmbeddings = 'system';
+    else if (local === 'auto') cfg.localEmbeddings = 'auto';
     const rw = Number(process.env.SOLOMON_MEMORY_RECENCY_WEIGHT);
     if (Number.isFinite(rw) && rw >= 0 && rw <= 1) cfg.recencyWeight = rw;
     return cfg;

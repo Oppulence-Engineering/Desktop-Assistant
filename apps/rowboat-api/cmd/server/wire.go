@@ -227,11 +227,12 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	llmPolicy.MaxConcurrent = cfg.LLMMaxConcurrent
 	llmH.SetOutboundPolicy(llmPolicy)
 	llmH.SetPolicy(llm.Policy{
-		AllowedModels:       cfg.LLMAllowedModels,
-		MaxPromptBytes:      cfg.LLMMaxPromptBytes,
-		MaxToolPayloadBytes: cfg.LLMMaxToolPayloadBytes,
-		MaxMessages:         cfg.LLMMaxMessages,
-		SpendLimits:         spendLimits,
+		AllowedModels:          cfg.LLMAllowedModels,
+		MaxPromptBytes:         cfg.LLMMaxPromptBytes,
+		MaxToolPayloadBytes:    cfg.LLMMaxToolPayloadBytes,
+		MaxMessages:            cfg.LLMMaxMessages,
+		DefaultMaxOutputTokens: cfg.LLMDefaultMaxOutput,
+		SpendLimits:            spendLimits,
 	})
 	voiceH := voice.New(prices, gate, sec, log)
 	voiceH.SetOutboundPolicy(vendorPolicy)

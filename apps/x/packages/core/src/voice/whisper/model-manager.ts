@@ -656,6 +656,55 @@ async function isDirectory(p: string): Promise<boolean> {
   }
 }
 
+/**
+ * Delete `.part` files left behind by downloads that were never finished.
+ *
+ * Partials are how resume works, so they cannot be reaped eagerly — but nothing
+ * reaped them at all. `remove()` and `gc()` both iterate the ledger, and a
+ * partial is only written there once it completes, which makes an abandoned
+ * download invisible to both. Found on a real install: a 913MB
+ * `ggml-large-v3-q5_0.bin.part`, larger than every model actually in use put
+ * together.
+ *
+ * A free function on a directory rather than a ModelManager method: this is
+ * startup housekeeping, it needs no ledger, and putting it in the constructor
+ * broke every partially-stubbed ModelManager in the test suite.
+ *
+ * A week is far longer than any real resume window and short enough that a
+ * cancelled download does not outlive the decision to cancel it.
+ *
+ * @param dir - The models directory.
+ * @param maxAgeMs - Age past which a partial counts as abandoned.
+ * @param now - Injectable clock.
+ * @returns Bytes reclaimed.
+ */
+export async function reapStalePartials(
+  dir: string,
+  maxAgeMs: number = 7 * 24 * 3600 * 1000,
+  now: number = Date.now(),
+): Promise<number> {
+  let names: string[];
+  try {
+    names = await fs.readdir(dir);
+  } catch {
+    return 0;
+  }
+
+  let freed = 0;
+  for (const name of names.filter((n) => n.endsWith(".part"))) {
+    const full = path.join(dir, name);
+    try {
+      const stat = await fs.stat(full);
+      if (now - stat.mtimeMs <= maxAgeMs) continue;
+      await rmQuiet(full);
+      freed += stat.size;
+    } catch {
+      // Unreadable or already gone — nothing to reclaim.
+    }
+  }
+  return freed;
+}
+
 async function rmQuiet(p: string, opts: { recursive?: boolean } = {}): Promise<void> {
   try {
     await fs.rm(p, { force: true, ...opts });
