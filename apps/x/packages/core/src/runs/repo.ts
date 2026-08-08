@@ -90,16 +90,21 @@ export class FSRunsRepo implements IRunsRepo {
         idGenerator: IMonotonicallyIncreasingIdGenerator;
     }) {
         this.idGenerator = idGenerator;
-        // Ensure the default runs directory exists.
+        // Ensure the runs directory exists. This is the only mkdir in the repo
+        // — the write paths below assume it — so it cannot be skipped.
         //
-        // Deliberately not awaited — a constructor cannot be async, and every
-        // write path creates the directory again anyway. But an un-awaited
-        // promise with no rejection handler is an unhandled rejection, and this
-        // one does reject in practice: the parent disappearing between the call
-        // and the mkdir gives ENOENT. Losing the race is harmless here and the
-        // next write recreates the directory, so swallow it rather than let it
-        // reach the process-level handler.
-        fsp.mkdir(path.join(WorkDir, 'runs'), { recursive: true }).catch(() => {});
+        // Synchronous on purpose. It used to be an un-awaited fsp.mkdir, which
+        // left a pending filesystem operation with no owner: it could land
+        // after the caller had torn the directory down, recreating it, and it
+        // rejected into the process-level handler when the parent vanished
+        // first. Both showed up as test flake that read as a bug in whatever
+        // ran next — an ENOTEMPTY from a cleanup racing the recreate, and a run
+        // that failed with every test passing.
+        //
+        // One recursive mkdir at construction (once per process through the DI
+        // singleton) is not worth an async hazard, and config.ts already
+        // creates the workspace directories synchronously for the same reason.
+        fs.mkdirSync(path.join(WorkDir, 'runs'), { recursive: true });
     }
 
     private extractTitle(events: z.infer<typeof RunEvent>[]): string | undefined {

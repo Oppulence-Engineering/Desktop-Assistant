@@ -6,12 +6,6 @@ import path from "path";
 const TEST_WORKDIR = vi.hoisted(() => "/tmp/rowboat-scan-cost-test");
 vi.mock("../config/config.js", () => ({ WorkDir: TEST_WORKDIR }));
 
-// These tests dynamically import label_emails and agent_notes, which pull in the
-// DI container and the agent runtime — around three seconds of module graph
-// before the first assertion runs. That is not what is under test, but against
-// the 5s default it made this file fail on a loaded machine and, being a
-// timeout, look exactly like a hang in the code it covers.
-vi.setConfig({ testTimeout: 30_000 });
 
 /**
  * These scanners run on 10- and 15-second polls over every unprocessed email,
