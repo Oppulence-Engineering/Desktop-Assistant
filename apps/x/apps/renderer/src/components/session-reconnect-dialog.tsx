@@ -78,7 +78,7 @@ export function SessionReconnectDialog({
       */}
       <DialogContent
         showCloseButton={false}
-        className="app-shell inset-0 top-0 left-0 flex h-svh w-screen max-w-none translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-none border-0 bg-[#09090b] p-0 text-white shadow-none data-[state=closed]:zoom-out-100 data-[state=open]:zoom-in-100 sm:max-w-none"
+        className="app-shell inset-0 top-0 left-0 flex h-svh w-screen max-w-none translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-none border-0 bg-[#09090b] p-0 text-white shadow-none sm:max-w-none"
         onEscapeKeyDown={(event) => event.preventDefault()}
         onPointerDownOutside={(event) => event.preventDefault()}
         onInteractOutside={(event) => event.preventDefault()}

@@ -1671,8 +1671,18 @@ export function SettingsDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
+      {/*
+        Full page, matching sign-in. Settings is a place you go, not a panel you
+        peek at over your work: the rail alone carries eleven sections, and an
+        85vw card left a strip of unusable app around the edge that invited
+        clicking back out mid-change.
+
+        Safe to make full-bleed because it stays dismissible — the rail's "Back
+        to app" button calls setOpen(false), and unlike the session dialog this
+        one does not block Escape.
+      */}
       <DialogContent
-        className="rowboat-settings settings-workspace h-[85vh] max-h-[85vh] w-[85vw]! max-w-[85vw]! gap-0 overflow-hidden p-0"
+        className="rowboat-settings settings-workspace inset-0 top-0 left-0 h-svh w-screen max-w-none translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-none border-0 p-0 shadow-none sm:max-w-none"
         showCloseButton={false}
       >
         <DialogTitle className="sr-only">Settings</DialogTitle>
