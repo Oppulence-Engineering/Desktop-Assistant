@@ -84,6 +84,9 @@ config:
   OTEL_EXPORTER_OTLP_ENDPOINT: ""
 
   OPENAI_BASE_URL: http://rowboat-api-devstack:8090/v1
+  # Overridden per-deploy by rowboat-api-kind.sh: empty (live OpenRouter) by
+  # default, the devstack mock when ROWBOAT_KIND_MOCK_LLM is set. Kept pointed at
+  # the mock here so a bare `helm install` with these values stays free.
   OPENROUTER_BASE_URL: http://rowboat-api-devstack:8090/v1
   GOOGLE_AUTHORIZE_URL: http://localhost:18090/o/oauth2/v2/auth
   GOOGLE_TOKEN_URL: http://rowboat-api-devstack:8090/v1/google-oauth-mock/token

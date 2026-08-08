@@ -23,8 +23,12 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"math"
@@ -40,7 +44,15 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const kid = "devstack-1"
+// kid is derived from the signing key rather than fixed.
+//
+// devstack mints a fresh RSA key on every start, and a constant kid made that
+// invisible to callers: the resource server refreshes its JWKS on an UNKNOWN
+// kid, so a stable kid meant it kept using the cached, now-wrong key and
+// rejected every freshly minted token until the API itself was restarted.
+// Restarting devstack silently logged the whole stack out. Deriving the kid from
+// the key means a new key announces itself and the kid-miss refresh fires.
+var kid string
 
 var (
 	signKey  *rsa.PrivateKey
@@ -76,11 +88,12 @@ func main() {
 	issuer = getenv("ISSUER", "http://localhost:8090")
 	audience = getenv("AUDIENCE", "rowboat-api")
 
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	key, err := devSigningKey()
 	if err != nil {
 		log.Fatal(err)
 	}
 	signKey = key
+	kid = keyThumbprint(&key.PublicKey)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/.well-known/jwks.json", handleJWKS)
@@ -102,6 +115,9 @@ func main() {
 	mux.HandleFunc("/v1/google-oauth-mock/token", handleGoogleTokenMock)
 	// Google OAuth consent mock: auto-approves and redirects back with a code.
 	mux.HandleFunc("/o/oauth2/v2/auth", handleGoogleAuthorizeMock)
+	// Gmail API mock, reached by pointing the desktop's googleapis client at
+	// this origin via its rootUrl option. See gmail.go.
+	registerGmailMock(mux)
 
 	log.Printf("devstack OIDC+mock listening on %s (issuer=%s aud=%s)", addr, issuer, audience)
 	srv := &http.Server{
@@ -617,6 +633,34 @@ func mockJSONCompletion(messages []struct {
 }
 
 // --- helpers ---------------------------------------------------------------
+
+// devSigningKey returns the fixed dev key (see devkey.go), or a throwaway one
+// when DEVSTACK_EPHEMERAL_KEY is set.
+func devSigningKey() (*rsa.PrivateKey, error) {
+	if os.Getenv("DEVSTACK_EPHEMERAL_KEY") != "" {
+		return rsa.GenerateKey(rand.Reader, 2048)
+	}
+	block, _ := pem.Decode([]byte(devSigningKeyPEM))
+	if block == nil {
+		return nil, errors.New("devstack: embedded signing key is not valid PEM")
+	}
+	parsed, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("devstack: parse embedded signing key: %w", err)
+	}
+	key, ok := parsed.(*rsa.PrivateKey)
+	if !ok {
+		return nil, fmt.Errorf("devstack: embedded signing key is %T, want RSA", parsed)
+	}
+	return key, nil
+}
+
+// keyThumbprint is a stable fingerprint of the public key, in the spirit of the
+// RFC 7638 JWK thumbprint. It only has to change when the key does.
+func keyThumbprint(pub *rsa.PublicKey) string {
+	sum := sha256.Sum256(append(pub.N.Bytes(), byte(pub.E)))
+	return "devstack-" + base64.RawURLEncoding.EncodeToString(sum[:8])
+}
 
 func signToken(claims jwt.MapClaims) string {
 	tok := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)

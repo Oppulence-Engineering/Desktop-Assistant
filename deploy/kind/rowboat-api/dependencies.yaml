@@ -224,6 +224,15 @@ spec:
       labels:
         app.kubernetes.io/name: rowboat-api-devstack
         app.kubernetes.io/part-of: rowboat-api-local
+      annotations:
+        # Stamped with the built image ID by rowboat-api-kind.sh before apply.
+        #
+        # devstack shares the rowboat-api:kind tag with the API, and the tag never
+        # changes. Without something per-build in the pod template, `kubectl apply`
+        # saw an identical spec, reported "unchanged", and left the pod running
+        # whatever it started with — so `make api-up` silently ran stale devstack
+        # code and rebuilding the mock appeared to do nothing.
+        rowboat.dev/image-id: "__ROWBOAT_IMAGE_ID__"
     spec:
       containers:
         - name: devstack
