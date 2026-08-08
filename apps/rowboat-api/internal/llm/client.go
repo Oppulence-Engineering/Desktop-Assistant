@@ -153,10 +153,12 @@ func (h *Handler) Complete(ctx context.Context, req CompleteRequest) (CompleteRe
 	content := parsed.Choices[0].Message.Content
 
 	inTok, outTok := inputEst, estimateTextTokens(content)
+	cachedTok := 0
 	if parsed.Usage != nil {
 		inTok, outTok = parsed.Usage.PromptTokens, parsed.Usage.CompletionTokens
+		cachedTok = cachedFrom(parsed.Usage)
 	}
-	h.finalize(ctx, charge, u, req.RequestID, req.Model, inTok, outTok, telemetry{
+	h.finalize(ctx, charge, u, req.RequestID, req.Model, inTok, cachedTok, outTok, telemetry{
 		useCase:    req.UseCase,
 		subUseCase: req.SubUseCase,
 	})

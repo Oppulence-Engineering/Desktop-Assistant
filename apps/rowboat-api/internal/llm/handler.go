@@ -145,6 +145,21 @@ type usage struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
 	TotalTokens      int `json:"total_tokens"`
+	// PromptTokensDetails carries the cache-read subset of PromptTokens. Absent
+	// from providers that do not support prompt caching, in which case
+	// CachedTokens stays zero and pricing is unchanged.
+	PromptTokensDetails struct {
+		CachedTokens int `json:"cached_tokens"`
+	} `json:"prompt_tokens_details"`
+}
+
+// cachedFrom reads the cache-read token count from a usage payload, tolerating
+// providers that omit the details object entirely.
+func cachedFrom(u *usage) int {
+	if u == nil {
+		return 0
+	}
+	return u.PromptTokensDetails.CachedTokens
 }
 
 type telemetry struct {
@@ -348,13 +363,13 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 		return
 	}
 
-	var inTok, outTok int
+	var inTok, cachedTok, outTok int
 	var relayErr error
 	streamed := streaming && isEventStream(resp)
 	if streamed {
-		inTok, outTok, relayErr = h.streamThrough(w, resp)
+		inTok, cachedTok, outTok, relayErr = h.streamThrough(w, resp)
 	} else {
-		inTok, outTok, relayErr = h.bufferThrough(w, resp)
+		inTok, cachedTok, outTok, relayErr = h.bufferThrough(w, resp)
 	}
 	if inTok == 0 {
 		inTok = inputEst
@@ -366,7 +381,7 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 			// instead of refunding: a full refund here would let anyone who can
 			// induce a mid-stream failure (e.g. by requesting a completion large
 			// enough to trip the response cap) collect free inference.
-			h.finalize(r.Context(), charge, u, requestID, model, inTok, outTok, telemetryFrom(r))
+			h.finalize(r.Context(), charge, u, requestID, model, inTok, cachedTok, outTok, telemetryFrom(r))
 		} else {
 			// Buffered path: nothing but an error envelope was written; refund.
 			h.refund(r.Context(), charge)
@@ -376,15 +391,15 @@ func (h *Handler) proxy(w http.ResponseWriter, r *http.Request, path string) {
 
 	// Settle + record on a detached context so accounting completes even if the
 	// client disconnected mid-stream.
-	h.finalize(r.Context(), charge, u, requestID, model, inTok, outTok, telemetryFrom(r))
+	h.finalize(r.Context(), charge, u, requestID, model, inTok, cachedTok, outTok, telemetryFrom(r))
 }
 
 // finalize settles the reservation against the actual cost and records usage.
-func (h *Handler) finalize(reqCtx context.Context, charge *quota.Charge, u *ent.User, requestID uuid.UUID, model string, inTok, outTok int, tel telemetry) {
+func (h *Handler) finalize(reqCtx context.Context, charge *quota.Charge, u *ent.User, requestID uuid.UUID, model string, inTok, cachedTok, outTok int, tel telemetry) {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(reqCtx), 10*time.Second)
 	defer cancel()
 
-	cost := h.prices.LLMCost(model, inTok, outTok)
+	cost := h.prices.LLMCostCached(model, inTok, cachedTok, outTok)
 	if err := charge.Settle(ctx, cost); err != nil {
 		h.log.Error("quota settle", zap.Error(err), zap.String("request_id", requestID.String()))
 	}

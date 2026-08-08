@@ -39,7 +39,12 @@ func DefaultTable() *Table {
 		Models: map[string]ModelRate{
 			"anthropic/claude-sonnet-4-5": {InputPer1K: 30, OutputPer1K: 150},
 			"anthropic/claude-opus-4-1":   {InputPer1K: 150, OutputPer1K: 750},
-			"anthropic/claude-haiku-4-5":  {InputPer1K: 8, OutputPer1K: 40},
+			// List is $1/$5 per 1M = 10/50 credits per 1K. This was 8/40, i.e.
+			// 80% of list: every signed-in call lost money before the upstream
+			// fee, and haiku is the desktop's default for knowledge-graph work
+			// (label_emails), which is the highest-volume workload we run.
+			// TestNoModelPricedBelowVendorList keeps this from recurring.
+			"anthropic/claude-haiku-4-5":  {InputPer1K: 10, OutputPer1K: 50},
 			"openai/gpt-4.1":              {InputPer1K: 20, OutputPer1K: 80},
 			"openai/gpt-4.1-mini":         {InputPer1K: 4, OutputPer1K: 16},
 			"openai/o4-mini":              {InputPer1K: 11, OutputPer1K: 44},
@@ -153,10 +158,45 @@ const maxBillableTokens = 100_000_000 // 100M tokens
 
 // LLMCost is the actual cost for a completed call.
 func (t *Table) LLMCost(model string, inputTokens, outputTokens int) int {
+	return t.LLMCostCached(model, inputTokens, 0, outputTokens)
+}
+
+// cachedInputRateNum/Den is what a prompt-cache READ costs relative to fresh
+// input. Anthropic bills cache reads at 1/10 of the base input rate, and
+// OpenRouter passes that through, so a cached token must not be charged as if
+// it were fresh: an agent loop that re-sends a large stable prefix every step
+// is exactly the shape caching exists for, and billing it at full rate would
+// make the customer's credits fall as though nothing had been cached.
+//
+// Cache WRITES cost more than fresh input (1.25x at Anthropic). They are not
+// modelled separately: the vendor reports them inside prompt_tokens, so they
+// are already billed at the full input rate here, which under-charges the
+// write by 25% and over-charges nothing. Erring toward the customer on the
+// smaller half of the ledger is the right direction for a rate we cannot see.
+const (
+	cachedInputRateNum = 1
+	cachedInputRateDen = 10
+)
+
+// LLMCostCached prices a call whose prompt was partly served from the vendor's
+// prompt cache. cachedTokens is the subset of inputTokens that was a cache read
+// (OpenAI-compatible `usage.prompt_tokens_details.cached_tokens`); zero means
+// no caching, which is the plain LLMCost case.
+func (t *Table) LLMCostCached(model string, inputTokens, cachedTokens, outputTokens int) int {
 	r := t.rate(model)
 	inputTokens = clampTokens(inputTokens)
 	outputTokens = clampTokens(outputTokens)
-	cost := ceilDiv(inputTokens*r.InputPer1K, 1000) + ceilDiv(outputTokens*r.OutputPer1K, 1000)
+	cachedTokens = clampTokens(cachedTokens)
+	// A vendor reporting more cached than total prompt tokens would otherwise
+	// drive `fresh` negative and refund the call.
+	if cachedTokens > inputTokens {
+		cachedTokens = inputTokens
+	}
+	fresh := inputTokens - cachedTokens
+
+	cost := ceilDiv(fresh*r.InputPer1K, 1000) +
+		ceilDiv(cachedTokens*r.InputPer1K*cachedInputRateNum, 1000*cachedInputRateDen) +
+		ceilDiv(outputTokens*r.OutputPer1K, 1000)
 	if cost < 0 {
 		return 0
 	}
