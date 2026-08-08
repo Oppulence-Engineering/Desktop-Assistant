@@ -27,6 +27,7 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"math"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -484,31 +485,100 @@ func mockCompletions(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// mockEmbeddings returns deterministic pseudo-embeddings.
+//
+// It used to answer every request with the same four numbers. That made the
+// vector half of hybrid search inert locally — cosine similarity between any
+// query and any document was exactly 1.0, so ranking fell back entirely to the
+// text score and nobody could tell. It also returned 4 dimensions where callers
+// expect the model's width, so a dimension bug would not show up either.
+//
+// These vectors carry no semantic meaning — a mock cannot — but they are
+// DISCRIMINATIVE and STABLE: derived from the input bytes, so the same text
+// always embeds the same way and different text embeds differently. That is
+// enough to exercise ranking, dedup, cache hits, and the dimension contract.
 func mockEmbeddings(w http.ResponseWriter, r *http.Request) {
 	body, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	var req struct {
-		Model string `json:"model"`
-		Input any    `json:"input"`
+		Model      string `json:"model"`
+		Input      any    `json:"input"`
+		Dimensions int    `json:"dimensions"`
 	}
 	_ = json.Unmarshal(body, &req)
-	inputCount := 1
-	if inputs, ok := req.Input.([]any); ok && len(inputs) > 0 {
-		inputCount = len(inputs)
+
+	inputs := []string{""}
+	switch v := req.Input.(type) {
+	case string:
+		inputs = []string{v}
+	case []any:
+		inputs = make([]string, 0, len(v))
+		for _, item := range v {
+			text, _ := item.(string)
+			inputs = append(inputs, text)
+		}
 	}
-	data := make([]any, 0, inputCount)
-	for i := 0; i < inputCount; i++ {
+	if len(inputs) == 0 {
+		inputs = []string{""}
+	}
+
+	dims := req.Dimensions
+	if dims <= 0 {
+		dims = mockEmbeddingDims(req.Model)
+	}
+
+	data := make([]any, 0, len(inputs))
+	totalTokens := 0
+	for i, text := range inputs {
+		totalTokens += len(text)/4 + 1
 		data = append(data, map[string]any{
 			"object":    "embedding",
 			"index":     i,
-			"embedding": []float64{0.01, 0.02, 0.03, 0.04},
+			"embedding": deterministicEmbedding(text, dims),
 		})
 	}
 	writeJSON(w, map[string]any{
 		"object": "list",
 		"model":  req.Model,
 		"data":   data,
-		"usage":  map[string]int{"prompt_tokens": 4 * inputCount, "total_tokens": 4 * inputCount},
+		"usage":  map[string]int{"prompt_tokens": totalTokens, "total_tokens": totalTokens},
 	})
+}
+
+// mockEmbeddingDims mirrors the real widths so a caller that hardcodes one
+// notices a mismatch here rather than in production.
+func mockEmbeddingDims(model string) int {
+	switch {
+	case strings.Contains(model, "text-embedding-3-large"):
+		return 3072
+	case strings.Contains(model, "embedding"):
+		return 1536
+	default:
+		return 1536
+	}
+}
+
+// deterministicEmbedding hashes the input into a unit-length vector. Same text
+// in, same vector out; different text, different direction.
+func deterministicEmbedding(text string, dims int) []float64 {
+	sum := sha256.Sum256([]byte(text))
+	out := make([]float64, dims)
+	var norm float64
+	for i := 0; i < dims; i++ {
+		// Re-hash per block so the whole vector varies, not just the first 32.
+		if i%32 == 0 && i > 0 {
+			sum = sha256.Sum256(sum[:])
+		}
+		v := (float64(sum[i%32]) / 255.0) - 0.5
+		out[i] = v
+		norm += v * v
+	}
+	if norm > 0 {
+		norm = math.Sqrt(norm)
+		for i := range out {
+			out[i] /= norm
+		}
+	}
+	return out
 }
 
 func mockJSONCompletion(messages []struct {
