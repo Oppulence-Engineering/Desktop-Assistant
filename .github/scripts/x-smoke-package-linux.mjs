@@ -22,7 +22,20 @@ if (forgeConfig.hooks?.generateAssets) {
   await forgeConfig.hooks.generateAssets(forgeConfig, platform, arch);
 }
 
+// Spread the real packagerConfig rather than re-listing the fields we think
+// matter. The hand-picked list silently omitted `extraResource`, so every app
+// packaged by this script shipped without whisper-cli, the audiocap helper and
+// the embedding model — the three things staged immediately above it. The
+// whisper spec had been failing on all three platforms for weeks with
+// "staging failed", while staging was in fact succeeding and this was dropping
+// the result; the audiocap spec skipped for the same reason.
+//
+// Signing is the one thing deliberately not inherited: this script exists to
+// produce an unsigned build for e2e, and the runner has no APPLE_* secrets.
+const { osxSign: _osxSign, osxNotarize: _osxNotarize, ...sharedPackagerConfig } = packagerConfig;
+
 const outputPaths = await packager({
+  ...sharedPackagerConfig,
   dir: appDir,
   name: appName,
   platform,
@@ -30,12 +43,6 @@ const outputPaths = await packager({
   out: path.join(appDir, 'out'),
   overwrite: true,
   executableName,
-  icon: packagerConfig.icon,
-  appBundleId: packagerConfig.appBundleId,
-  appCategoryType: packagerConfig.appCategoryType,
-  protocols: packagerConfig.protocols,
-  prune: packagerConfig.prune,
-  ignore: packagerConfig.ignore,
 });
 
 for (const outputPath of outputPaths) {
