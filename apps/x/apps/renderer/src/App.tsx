@@ -4998,10 +4998,20 @@ function App() {
     [navigateToView, openBgTasksView, openEmailView, openMeetingsView, productTourVariant],
   );
 
-  // First-run autostart. The completion flag below is the only thing that stops
-  // it, so the tour shows once per install and never again unless the user asks
-  // for it from the sidebar or Settings -> Help.
+  // First-run autostart, once the app is actually usable.
+  //
+  // The completion flag is what makes this happen once per install; the two
+  // conditions are what stop it happening at the wrong moment. Onboarding and
+  // the session-reconnect dialog are both modal, and a tour that opens on top of
+  // "Sign back in to Oppulence" walks someone through features they are signed
+  // out of, over the dialog that would fix that. Waiting costs nothing: these
+  // are React state, so the effect re-runs and the tour opens the moment the
+  // user is through.
   useEffect(() => {
+    // solomonAccount.isLoading matters as much as the two flags. shouldShowSessionReconnect
+    // returns false while loading, so without this the tour opens in the gap before auth
+    // settles and the dialog then stacks on top of it — which is exactly what it did.
+    if (showOnboarding || sessionReconnectRequired || solomonAccount.isLoading) return;
     try {
       if (getProductTourStorage()?.getItem(PRODUCT_TOUR_STORAGE_KEY) === "true") return;
     } catch {
@@ -5013,7 +5023,7 @@ function App() {
       setIsProductTourOpen(true);
     }, 600);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [showOnboarding, sessionReconnectRequired, solomonAccount.isLoading]);
 
   // Move the maximized/full-screen chat into the right side pane: restore the
   // view we expanded from (or fall back to Home) and dock the chat on the right.
@@ -7940,7 +7950,10 @@ function App() {
       </SidebarSectionProvider>
       <Toaster />
       <ProductTour
-        open={isProductTourOpen}
+        // Gated at render as well as at open. A tour that started legitimately
+        // and then had a session expire under it would otherwise sit on top of
+        // the dialog that fixes it.
+        open={isProductTourOpen && !showOnboarding && !sessionReconnectRequired}
         variant={productTourVariant}
         forceStart={productTourForceStart}
         onClose={() => {
