@@ -910,3 +910,41 @@ func TestSpoofedCitationHostIsRefused(t *testing.T) {
 		t.Fatalf("rejections = %v", rejected)
 	}
 }
+
+// Cloud research projects seniority and location onto Person. Both were stored,
+// projected, and then dropped on the way out because personDTO had no field for
+// them — the same shape as the citations defect: written correctly, invisible to
+// every client. Found by enriching a real person and reading the API back.
+func TestPersonDTOCarriesResearchProjectedFields(t *testing.T) {
+	vendor := &vendorStub{
+		content: map[string]any{
+			researchMatchField: "high",
+			"seniority":        "executive",
+			"location":         "San Francisco, United States",
+		},
+		basis: []map[string]any{
+			citedBasis("seniority", "high"),
+			citedBasis("location", "medium"),
+		},
+	}
+	rf := newResearchFixture(t, vendor)
+
+	if _, err := rf.svc.EnrichPerson(rf.ctx, rf.user, rf.person.ID); err != nil {
+		t.Fatalf("EnrichPerson: %v", err)
+	}
+	p, err := rf.client.Person.Get(rf.ctx, rf.person.ID)
+	if err != nil {
+		t.Fatalf("reload person: %v", err)
+	}
+	if p.Seniority != "executive" || p.Location != "San Francisco, United States" {
+		t.Fatalf("projection failed: seniority=%q location=%q", p.Seniority, p.Location)
+	}
+
+	dto := personToDTO(p)
+	if dto.Seniority != "executive" {
+		t.Fatalf("personDTO dropped seniority: %q", dto.Seniority)
+	}
+	if dto.Location != "San Francisco, United States" {
+		t.Fatalf("personDTO dropped location: %q", dto.Location)
+	}
+}
