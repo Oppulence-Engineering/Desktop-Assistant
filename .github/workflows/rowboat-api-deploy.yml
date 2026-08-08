@@ -173,6 +173,14 @@ jobs:
     environment: staging
     env:
       KUBE_NAMESPACE: rowboat-staging
+      # The workflow-level default is `prod`, and this job overrode only the
+      # namespace. Any step here that resolved secrets would have pulled
+      # production credentials into the staging namespace — including
+      # DATABASE_URL, which the migration step downstream runs against. Nothing
+      # has exercised that path yet only because the staging secret has never
+      # existed, so the job fails before reaching it. Pinning the environment
+      # here means it cannot be reached by accident later.
+      INFISICAL_ENVIRONMENT: staging
       RELEASE_NAME: rowboat-api
       VALUES_FILE: charts/rowboat-api/values-staging.yaml
       STAGING_API_URL: https://api.x.staging.solomon-ai.co
@@ -210,6 +218,19 @@ jobs:
           done
           if (( ${#missing[@]} > 0 )); then
             echo "staging rowboat-api-secrets is missing: ${missing[*]}"
+            echo
+            echo "This job only verifies the secret; nothing creates it. The"
+            echo "production job syncs from Infisical, this one has no such step,"
+            echo "and ${KUBE_NAMESPACE} has never held rowboat-api-secrets — so"
+            echo "this gate has failed on every run since it was added, blocking"
+            echo "production deploys behind it."
+            echo
+            echo "Unblocking it needs a staging environment that does not exist"
+            echo "yet: its own database, Redis, Temporal, WorkOS application and"
+            echo "Google OAuth client, with the values stored in Infisical under"
+            echo "env=${INFISICAL_ENVIRONMENT} path=${INFISICAL_PATH}. Copying the"
+            echo "production values here is not a shortcut — the migration step"
+            echo "below would then run against the production database."
             exit 1
           fi
       - name: Record staging migration decision
