@@ -1,3 +1,4 @@
+import { writeJsonAtomicSync } from "../../../filesystem/atomic_write.js";
 import express from 'express';
 import cors from 'cors';
 import crypto from 'crypto';
@@ -181,7 +182,7 @@ function loadConfig(): Config {
 }
 
 function saveConfig(config: Config): void {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
+    writeJsonAtomicSync(CONFIG_FILE, config);
 }
 
 function validateConfig(data: unknown): data is Config {

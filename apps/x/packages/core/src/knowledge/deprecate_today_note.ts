@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { LiveNoteSchema } from '@x/shared/dist/live-note.js';
 import { WorkDir } from '../config/config.js';
 import { splitFrontmatter, joinFrontmatter } from '../application/lib/parse-frontmatter.js';
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 
 const KNOWLEDGE_DIR = path.join(WorkDir, 'knowledge');
 const TODAY_NOTE_PATH = path.join(KNOWLEDGE_DIR, 'Today.md');
@@ -47,7 +48,8 @@ async function loadState(): Promise<State> {
 async function saveState(state: State): Promise<void> {
     const dir = path.dirname(STATE_FILE);
     await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2), 'utf-8');
+    // Atomic: a torn marker re-runs the one-shot migration.
+    await writeJsonAtomic(STATE_FILE, state);
 }
 
 async function markProcessed(): Promise<void> {

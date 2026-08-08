@@ -177,10 +177,12 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 	}
 
 	inTok, outTok := inputBytes/4, estimateOutputTokens(choice.Message)
+	cachedTok := 0
 	if parsed.Usage != nil {
 		inTok, outTok = parsed.Usage.PromptTokens, parsed.Usage.CompletionTokens
+		cachedTok = cachedFrom(parsed.Usage)
 	}
-	h.finalize(ctx, charge, u, req.RequestID, req.Model, inTok, outTok, telemetry{
+	h.finalize(ctx, charge, u, req.RequestID, req.Model, inTok, cachedTok, outTok, telemetry{
 		useCase:    req.UseCase,
 		subUseCase: req.SubUseCase,
 		agentName:  req.AgentName,

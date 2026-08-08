@@ -1,3 +1,5 @@
+import { withFileLock } from '../knowledge/file-lock.js';
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import fs from "fs/promises";
 import path from "path";
 import {
@@ -37,6 +39,8 @@ export interface NotificationsConfigPatch {
 export async function setNotificationsConfig(
   patch: NotificationsConfigPatch,
 ): Promise<NotificationsConfig> {
+  // Two independent writers: the settings IPC and the quit-reminder dialog.
+  return withFileLock(notificationsConfigPath(), async () => {
   const current = await getNotificationsConfig();
   const next = NotificationsConfigSchema.parse({
     ...current,
@@ -49,6 +53,7 @@ export async function setNotificationsConfig(
   });
   const configPath = notificationsConfigPath();
   await fs.mkdir(path.dirname(configPath), { recursive: true });
-  await fs.writeFile(configPath, JSON.stringify(next, null, 2));
+  await writeJsonAtomic(configPath, next);
   return next;
+  });
 }

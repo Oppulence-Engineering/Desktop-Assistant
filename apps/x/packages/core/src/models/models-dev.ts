@@ -1,3 +1,4 @@
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import z from "zod";
@@ -106,7 +107,7 @@ async function writeCache(data: unknown): Promise<void> {
     fetchedAt: new Date().toISOString(),
     data,
   };
-  await fs.writeFile(CACHE_PATH, JSON.stringify(payload, null, 2));
+  await writeJsonAtomic(CACHE_PATH, payload);
 }
 
 async function fetchModelsDev(): Promise<unknown> {

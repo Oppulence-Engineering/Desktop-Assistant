@@ -9,6 +9,8 @@ import { z } from 'zod';
 import { chunkMarkdown } from './chunker.js';
 import { MemoryIndex, type IndexChunk } from './store.js';
 import type { Chunk } from './types.js';
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
+import { hasFrontmatter } from '../knowledge/frontmatter.js';
 
 /**
  * Embeds a batch of texts and reports the token cost. Injected into {@link Indexer}
@@ -29,6 +31,16 @@ export interface IndexerOptions {
     dir: string;
     /** Vault root to index (`WorkDir/knowledge`). */
     knowledgeDir: string;
+    /**
+     * Labeled-email root (`WorkDir/gmail_sync`). Optional: absent leaves the
+     * index exactly as it was, covering the vault only.
+     *
+     * Only files carrying frontmatter are taken, which is precisely the set the
+     * labeler has finished with. That is what makes the labels searchable — the
+     * chunker emits frontmatter as its own entity card, so an email is findable
+     * by the labels the model assigned and not only by its prose.
+     */
+    mailDir?: string;
     /** Embedding model identity; a change vs the manifest forces a full rebuild. */
     model: string;
     /** Vector dimensionality hint; `0` = infer from the first embedding. */
@@ -71,6 +83,11 @@ const KNOWN_DIMS: Record<string, number> = {
     'text-embedding-3-small': 1536,
     'text-embedding-3-large': 3072,
     'text-embedding-ada-002': 1536,
+    // On-device (Ollama). Namespaced so the manifest records which provider
+    // produced the vectors — see LOCAL_EMBED_MODEL_ID in memory/ollama.ts.
+    'ollama/nomic-embed-text': 768,
+    // In-process ONNX — see memory/onnx/assets.ts.
+    'local/all-MiniLM-L6-v2': 384,
 };
 
 /**
@@ -81,6 +98,32 @@ const KNOWN_DIMS: Record<string, number> = {
  */
 export class Indexer {
     constructor(private readonly opts: IndexerOptions) {}
+
+    /**
+     * Every file this pass should cover, with the id it is stored under.
+     *
+     * The vault is taken whole. Mail is filtered to files carrying frontmatter,
+     * which is exactly the set the labeler has finished with: an unlabeled
+     * email would be indexed on its prose alone and then never re-indexed once
+     * labels arrived, because the manifest keys on content hash and the labels
+     * are what changes. Waiting for the fence means the first embedding already
+     * contains them.
+     */
+    private collectFiles(): IndexFile[] {
+        const files: IndexFile[] = walkMarkdown(this.opts.knowledgeDir).map((abs) => ({
+            abs,
+            rel: path.relative(this.opts.knowledgeDir, abs),
+        }));
+        if (!this.opts.mailDir) return files;
+        for (const abs of walkMarkdown(this.opts.mailDir)) {
+            if (!hasFrontmatter(abs)) continue;
+            files.push({
+                abs,
+                rel: path.join(MAIL_ID_PREFIX, path.relative(this.opts.mailDir, abs)),
+            });
+        }
+        return files;
+    }
 
     /**
      * Run one indexing pass.
@@ -105,7 +148,7 @@ export class Indexer {
             chunkCount: 0,
         };
 
-        const files = walkMarkdown(this.opts.knowledgeDir);
+        const files = this.collectFiles();
         const manifest = MemoryIndex.readManifest(this.opts.dir);
         const modelMismatch = !!manifest && manifest.model !== this.opts.model;
         // A partial/corrupt prior write (manifest ⟂ vectors/corpus) forces a clean
@@ -116,14 +159,13 @@ export class Indexer {
         stats.rebuilt = modelMismatch || corrupt;
 
         // Diff: which files are new/changed, which were deleted.
-        const changed: string[] = [];
-        for (const abs of files) {
-            const rel = path.relative(this.opts.knowledgeDir, abs);
-            const hash = hashFile(abs);
-            const prior = manifest?.files[rel];
-            if (fresh || !prior || prior.hash !== hash) changed.push(abs);
+        const changed: IndexFile[] = [];
+        for (const file of files) {
+            const hash = hashFile(file.abs);
+            const prior = manifest?.files[file.rel];
+            if (fresh || !prior || prior.hash !== hash) changed.push(file);
         }
-        const presentRel = new Set(files.map((f) => path.relative(this.opts.knowledgeDir, f)));
+        const presentRel = new Set(files.map((f) => f.rel));
         const deleted = manifest ? Object.keys(manifest.files).filter((rel) => !presentRel.has(rel)) : [];
 
         if (!fresh && changed.length === 0 && deleted.length === 0) {
@@ -145,13 +187,12 @@ export class Indexer {
                 return stats;
             }
             const idx = MemoryIndex.open(this.opts.dir, this.opts.model, dims); // rebuild on mismatch
-            for (const abs of files) {
+            for (const { abs, rel } of files) {
                 if (budget.exhausted()) {
                     stats.paused = true;
                     log('[memory] monthly embed token cap hit; pausing index build');
                     break;
                 }
-                const rel = path.relative(this.opts.knowledgeDir, abs);
                 const chunks = chunkMarkdown(rel, fs.readFileSync(abs, 'utf-8'));
                 const indexChunks = await this.embedChunks(chunks, idx, false, budget, stats);
                 idx.setFile(rel, mtimeOf(abs), hashFile(abs), indexChunks);
@@ -166,13 +207,12 @@ export class Indexer {
 
         // Incremental: only changed files; reuse unchanged chunk vectors.
         const idx = MemoryIndex.open(this.opts.dir, this.opts.model, manifest!.dims);
-        for (const abs of changed) {
+        for (const { abs, rel } of changed) {
             if (budget.exhausted()) {
                 stats.paused = true;
                 log('[memory] monthly embed token cap hit; pausing incremental index');
                 break;
             }
-            const rel = path.relative(this.opts.knowledgeDir, abs);
             const chunks = chunkMarkdown(rel, fs.readFileSync(abs, 'utf-8'));
             const indexChunks = await this.embedChunks(chunks, idx, true, budget, stats);
             idx.setFile(rel, mtimeOf(abs), hashFile(abs), indexChunks);
@@ -227,7 +267,7 @@ export class Indexer {
 
     /** resolveFreshDims picks the embedding dimensionality for a fresh build:
      *  the configured hint, the known-model table, else a one-text probe. */
-    private async resolveFreshDims(files: string[], log: (m: string) => void): Promise<number> {
+    private async resolveFreshDims(files: IndexFile[], log: (m: string) => void): Promise<number> {
         if (this.opts.dimsHint > 0) return this.opts.dimsHint;
         if (KNOWN_DIMS[this.opts.model]) return KNOWN_DIMS[this.opts.model];
         if (files.length === 0) return 0;
@@ -278,7 +318,9 @@ class TokenBudget {
     persist(): void {
         try {
             fs.mkdirSync(this.dir, { recursive: true });
-            fs.writeFileSync(this.path(), JSON.stringify({ month: this.month, tokens: this.tokens }));
+            // Atomic: a torn file reads as corrupt, the loader answers with
+            // tokens = 0, and the monthly embed-token cap silently resets.
+            writeJsonAtomicSync(this.path(), { month: this.month, tokens: this.tokens });
         } catch {
             // best-effort
         }
@@ -287,6 +329,22 @@ class TokenBudget {
         return path.join(this.dir, 'embed_usage.json');
     }
 }
+
+/** A file to index: where it lives, and the id it is stored under. */
+interface IndexFile {
+    abs: string;
+    rel: string;
+}
+
+/**
+ * Path prefix for mail chunk ids.
+ *
+ * Ids stay relative to their own root, so vault ids are byte-identical to what
+ * previous versions wrote and adding mail does not invalidate a single existing
+ * embedding. Mail ids are namespaced instead, which also keeps a note and an
+ * email of the same name apart.
+ */
+const MAIL_ID_PREFIX = 'gmail_sync';
 
 function walkMarkdown(root: string): string[] {
     const out: string[] = [];

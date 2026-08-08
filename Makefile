@@ -8,7 +8,7 @@ ROWBOAT_WWW_PUBLIC_API_BASE_URL ?= http://localhost:18080
 ROWBOAT_WWW_API_PROXY_URL ?= http://host.docker.internal:18080
 ROWBOAT_WWW_SESSION_SECRET ?= dev-only-rowboat-www-session-secret-change-me
 
-.PHONY: help all stack api-up desktop www-up www-down www-smoke www-capture-screenshots product-screenshots smoke-desktop perf-desktop perf-desktop-full perf-desktop-deep perf-desktop-baseline perf-desktop-quick helm-validate infisical-validate validate validate-full validate-all status logs down delete-cluster
+.PHONY: help ports all stack api-up desktop www-up www-down www-smoke www-capture-screenshots product-screenshots smoke-desktop perf-desktop perf-desktop-full perf-desktop-deep perf-desktop-baseline perf-desktop-quick helm-validate infisical-validate validate validate-full validate-all status logs down delete-cluster
 
 help:
 	@printf "%s\n" \
@@ -32,12 +32,31 @@ help:
 	  "  make infisical-validate Validate Infisical sync for kind secrets" \
 	  "  make validate       Run API smoke checks against the kind stack" \
 	  "  make validate-full  Run Helm, Kubernetes, API, and desktop smoke checks" \
+	  "  make ports          Show the live API/devstack/www ports" \
 	  "  make status         Show kind resources and local stack state" \
 	  "  make logs           Tail rowboat-api logs" \
 	  "  make down           Remove the Helm release and local dependencies" \
 	  "  make delete-cluster Delete the kind cluster" \
 	  "" \
-	  "The kind API is exposed at http://localhost:18080, rowboat-www at http://localhost:18082, and devstack at http://localhost:18090."
+	  "Ports below are the live ones when the stack is up (see 'make ports')."
+	@$(MAKE) --no-print-directory ports
+
+# The kind API port is not fixed. Docker can hold a published host port whose
+# forwarding is dead — the node still serves the NodePort internally while the
+# host side routes nowhere — so rowboat-api-kind.sh falls back to 18081 and
+# writes the port it actually chose to .rowboat-kind/ports.env. Hardcoding
+# 18080 here sent readers to a dead port and produced connection errors that
+# looked like a broken backend rather than a wrong address.
+ports:
+	@if [ -f .rowboat-kind/ports.env ]; then \
+	  . ./.rowboat-kind/ports.env; \
+	  printf "  API:      http://localhost:%s (live)\n" "$$ROWBOAT_API_PORT"; \
+	  printf "  Devstack: http://localhost:%s (live)\n" "$$ROWBOAT_DEVSTACK_PORT"; \
+	else \
+	  printf "  API:      http://localhost:18080 (default; not running — may fall back to 18081)\n"; \
+	  printf "  Devstack: http://localhost:18090 (default; not running — may fall back to 18091)\n"; \
+	fi
+	@printf "  rowboat-www: http://localhost:$(ROWBOAT_WWW_PORT)\n"
 
 all: stack
 

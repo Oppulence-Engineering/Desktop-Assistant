@@ -1,3 +1,4 @@
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import fs from 'fs/promises';
 import path from 'path';
 import { WorkDir } from '../config/config.js';
@@ -20,7 +21,7 @@ export class FSSlackConfigRepo implements ISlackConfigRepo {
         try {
             await fs.access(this.configPath);
         } catch {
-            await fs.writeFile(this.configPath, JSON.stringify(this.defaultConfig, null, 2));
+            await writeJsonAtomic(this.configPath, this.defaultConfig);
         }
     }
 
@@ -36,6 +37,7 @@ export class FSSlackConfigRepo implements ISlackConfigRepo {
 
     async setConfig(config: SlackConfig): Promise<void> {
         const validated = SlackConfig.parse(config);
-        await fs.writeFile(this.configPath, JSON.stringify(validated, null, 2));
+        // Atomic: a torn file reads as { workspaces: [] } — Slack disconnected.
+        await writeJsonAtomic(this.configPath, validated);
     }
 }

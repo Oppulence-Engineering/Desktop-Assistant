@@ -35,6 +35,7 @@ const packagerConfig = {
   extraResource: [
     path.join(__dirname, ".package", "whisper"),
     path.join(__dirname, ".package", "audiocap"),
+    path.join(__dirname, ".package", "embeddings"),
   ],
   // Since we bundle everything with esbuild, we don't need node_modules at all.
   // These settings prevent Forge's dependency walker (flora-colossus) from trying
@@ -276,6 +277,74 @@ module.exports = {
             `[audiocap] no binary for ${platform}-${arch} at ${audiocapSrc} — shipping without native meeting capture`,
           );
         }
+      }
+
+      // Ship the embedding model itself, so semantic memory works on first
+      // launch with no download and no dependency on Hugging Face being
+      // reachable. Architecture-independent, so unlike whisper/audiocap there
+      // is one directory rather than one per platform-arch. Absent in a plain
+      // dev checkout — the app then downloads it into WorkDir on first use, so
+      // the build still succeeds.
+      const embeddingsSrc = path.join(__dirname, "..", "..", "vendor", "embeddings");
+      const embeddingsDest = path.join(packageDir, "embeddings");
+      fs.mkdirSync(embeddingsDest, { recursive: true });
+      if (fs.existsSync(path.join(embeddingsSrc, "model.onnx"))) {
+        for (const name of ["model.onnx", "vocab.txt"]) {
+          fs.copyFileSync(path.join(embeddingsSrc, name), path.join(embeddingsDest, name));
+        }
+        console.log("✅ Staged the on-device embedding model");
+      } else {
+        console.warn(
+          "[embeddings] vendor/embeddings is empty — shipping without the model; " +
+            "run `node apps/x/scripts/embeddings-fetch.mjs` to bundle it",
+        );
+      }
+
+      // onnxruntime-node powers on-device embeddings (memory/onnx). It is
+      // marked external in bundle.mjs because a native binding cannot be
+      // inlined, so it has to exist as a real package next to the bundle:
+      // .package/dist/main.cjs resolves "onnxruntime-node" up to
+      // .package/node_modules/onnxruntime-node by ordinary Node lookup.
+      //
+      // Two packages, dereferenced out of pnpm's symlinked store. Its other two
+      // declared deps (adm-zip, global-agent) are used only by the install
+      // script that downloads binaries; requiring the module with just
+      // onnxruntime-common present was verified to load and run inference.
+      //
+      // Pruned to one arch on the way in. The published package carries every
+      // platform's binaries — 210MB installed — of which the target needs ~35MB
+      // (darwin/linux) or ~60MB (win32). Shipping the other four would be most
+      // of the app's download for code that can never run on it.
+      // realpath first: pnpm links the package into packages/core/node_modules
+      // but keeps its dependencies nested beside the *real* directory under
+      // .pnpm. Resolving the sibling of the resolved path works for that layout
+      // and for a flat npm one, where the sibling is simply the shared root.
+      const ortLink = path.join(
+        __dirname, "..", "..", "packages", "core", "node_modules", "onnxruntime-node",
+      );
+      const ortSrc = fs.existsSync(ortLink) ? fs.realpathSync(ortLink) : ortLink;
+      // realpath again: pnpm links dependencies *between* store entries too, and
+      // fs.cpSync copies a symlink as a symlink — which staged an empty
+      // directory and would have made require("onnxruntime-node") fail in the
+      // packaged app, where the link target does not exist.
+      const ortCommonLink = path.join(path.dirname(ortSrc), "onnxruntime-common");
+      const ortCommonSrc = fs.existsSync(ortCommonLink)
+        ? fs.realpathSync(ortCommonLink)
+        : ortCommonLink;
+      const ortBinSrc = path.join(ortSrc, "bin", "napi-v6", platform, arch);
+      if (fs.existsSync(ortBinSrc) && fs.existsSync(ortCommonSrc)) {
+        const modulesDest = path.join(packageDir, "node_modules");
+        const ortDest = path.join(modulesDest, "onnxruntime-node");
+        fs.mkdirSync(ortDest, { recursive: true });
+        fs.copyFileSync(path.join(ortSrc, "package.json"), path.join(ortDest, "package.json"));
+        copyDirectory(path.join(ortSrc, "dist"), path.join(ortDest, "dist"));
+        copyDirectory(ortBinSrc, path.join(ortDest, "bin", "napi-v6", platform, arch));
+        copyDirectory(ortCommonSrc, path.join(modulesDest, "onnxruntime-common"));
+        console.log(`✅ Staged onnxruntime-node for ${platform}-${arch}`);
+      } else {
+        console.warn(
+          `[onnx] no runtime for ${platform}-${arch} at ${ortBinSrc} — shipping without on-device embeddings`,
+        );
       }
 
       console.log("✅ All assets staged in .package/");

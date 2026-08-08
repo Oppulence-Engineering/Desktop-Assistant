@@ -1,3 +1,4 @@
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 import path from "path";
 import fs from "fs";
 import { homedir } from "os";
@@ -56,17 +57,10 @@ function ensureDefaultConfigs() {
   // Create note_creation.json with default strictness if it doesn't exist
   const noteCreationConfig = path.join(WorkDir, "config", "note_creation.json");
   if (!fs.existsSync(noteCreationConfig)) {
-    fs.writeFileSync(
-      noteCreationConfig,
-      JSON.stringify(
-        {
-          strictness: "medium",
-          configured: false,
-        },
-        null,
-        2,
-      ),
-    );
+    writeJsonAtomicSync(noteCreationConfig, {
+      strictness: "medium",
+      configured: false,
+    });
   }
 }
 

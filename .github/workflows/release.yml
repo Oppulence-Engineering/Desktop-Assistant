@@ -158,6 +158,20 @@ jobs:
           .github/scripts/stage-audiocap-bin.sh darwin arm64
           .github/scripts/stage-audiocap-bin.sh darwin x64
 
+      # Bundle the on-device embedding model so semantic memory works on first
+      # launch — no download, no wait, and no dependency on Hugging Face being
+      # reachable from a user's machine. Architecture-independent, so one step
+      # rather than one per arch.
+      #
+      # Hard gate, like whisper-cli and unlike audiocap. Without it generateAssets
+      # warns and ships a build whose every user must fetch the model themselves
+      # on first use, which is the thing bundling exists to avoid. The script
+      # verifies both files against the checksums pinned in
+      # packages/core/src/memory/onnx/assets.ts and exits non-zero on a mismatch,
+      # so a compromised mirror fails the release rather than shipping.
+      - name: Stage on-device embedding model
+        run: node apps/x/scripts/embeddings-fetch.mjs
+
       - name: Build electron distributables
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -373,6 +387,20 @@ jobs:
           .github/scripts/stage-whisper-bin.sh linux x64
           .github/scripts/stage-whisper-bin.sh linux arm64
 
+      # Bundle the on-device embedding model so semantic memory works on first
+      # launch — no download, no wait, and no dependency on Hugging Face being
+      # reachable from a user's machine. Architecture-independent, so one step
+      # rather than one per arch.
+      #
+      # Hard gate, like whisper-cli and unlike audiocap. Without it generateAssets
+      # warns and ships a build whose every user must fetch the model themselves
+      # on first use, which is the thing bundling exists to avoid. The script
+      # verifies both files against the checksums pinned in
+      # packages/core/src/memory/onnx/assets.ts and exits non-zero on a mismatch,
+      # so a compromised mirror fails the release rather than shipping.
+      - name: Stage on-device embedding model
+        run: node apps/x/scripts/embeddings-fetch.mjs
+
       - name: Build electron distributables
         env:
           VITE_PUBLIC_POSTHOG_KEY: ${{ secrets.VITE_PUBLIC_POSTHOG_KEY }}
@@ -499,6 +527,21 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: .github/scripts/stage-whisper-bin.sh win32 x64
+
+      # Bundle the on-device embedding model so semantic memory works on first
+      # launch — no download, no wait, and no dependency on Hugging Face being
+      # reachable from a user's machine. Architecture-independent, so one step
+      # rather than one per arch.
+      #
+      # Hard gate, like whisper-cli and unlike audiocap. Without it generateAssets
+      # warns and ships a build whose every user must fetch the model themselves
+      # on first use, which is the thing bundling exists to avoid. The script
+      # verifies both files against the checksums pinned in
+      # packages/core/src/memory/onnx/assets.ts and exits non-zero on a mismatch,
+      # so a compromised mirror fails the release rather than shipping.
+      - name: Stage on-device embedding model
+        shell: bash
+        run: node apps/x/scripts/embeddings-fetch.mjs
 
       - name: Build electron distributables
         env:

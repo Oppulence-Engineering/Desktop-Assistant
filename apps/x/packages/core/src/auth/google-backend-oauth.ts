@@ -118,10 +118,48 @@ export async function startGoogleConnectViaBackend(): Promise<string> {
   } catch {
     throw new Error("Couldn't start Google setup: the server returned a malformed URL.");
   }
-  if (parsed.protocol !== "https:") {
+  if (!isSafeAuthorizeUrl(parsed)) {
     throw new Error("Couldn't start Google setup: refusing to open a non-https URL.");
   }
   return parsed.toString();
+}
+
+/** Loopback hosts, the only ones where plain http is not a network exposure. */
+function isLoopback(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]" || hostname === "::1";
+}
+
+/**
+ * Whether an authorize URL from the api is safe to hand to the OS opener.
+ *
+ * https is the rule. The guard exists because this URL goes straight to the
+ * system browser, so a hostile or MITM'd api could otherwise aim the OS at
+ * anything — `file:///…` being the obvious one.
+ *
+ * The one carve-out is plain http on loopback, and only when this app is
+ * *itself* pointed at a loopback http api. The local kind stack mocks Google's
+ * authorize endpoint on http://localhost:18090, so without this the mock is
+ * unreachable and Google connect simply cannot be exercised locally — the
+ * error reads "refusing to open a non-https URL", which sounds like a bug in
+ * the app rather than a property of the dev stack.
+ *
+ * Both halves of the condition matter. Keying off the authorize URL alone
+ * would let a compromised production api point the browser at a service on the
+ * user's own machine; requiring API_URL to be loopback http means the app is
+ * by construction talking to a server the user started locally, where there is
+ * no network attacker to defend against. A packaged build pointed at
+ * https://api.oppulence.io can never take this branch.
+ */
+function isSafeAuthorizeUrl(url: URL): boolean {
+  if (url.protocol === "https:") return true;
+  if (url.protocol !== "http:") return false;
+  if (!isLoopback(url.hostname)) return false;
+  try {
+    const api = new URL(API_URL);
+    return api.protocol === "http:" && isLoopback(api.hostname);
+  } catch {
+    return false;
+  }
 }
 
 /** Claim the tokens parked under `state` after the api finished its callback. */
@@ -132,6 +170,15 @@ export async function claimTokensViaBackend(state: string): Promise<OAuthTokens>
     throw new Error(`claim failed: ${res.status} ${err.error ?? ""}`.trim());
   }
   const body = (await res.json()) as ApiTokenResponse;
+  // An empty bundle means the browser half has not finished, whatever the
+  // status said. Older api builds answered an early claim with 200 and a
+  // zero-valued bundle, which got stored as a connection and then failed on
+  // first use with "Missing refresh token. Please reconnect." — a dead end the
+  // user could not tell from a real authorization failure. Newer builds return
+  // 409 not_ready instead; this keeps the desktop safe against both.
+  if (!body.access_token) {
+    throw new Error("claim failed: authorization is not complete yet");
+  }
   return toOAuthTokens(body);
 }
 

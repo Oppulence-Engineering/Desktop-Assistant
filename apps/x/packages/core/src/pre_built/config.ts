@@ -1,3 +1,4 @@
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 import fs from 'fs';
 import path from 'path';
 import { WorkDir } from '../config/config.js';
@@ -22,7 +23,7 @@ function ensureDir(dirPath: string): void {
 function ensureConfigFile(): void {
     if (!fs.existsSync(CONFIG_PATH)) {
         ensureDir(path.dirname(CONFIG_PATH));
-        fs.writeFileSync(CONFIG_PATH, JSON.stringify(getDefaultConfig(), null, 2));
+        writeJsonAtomicSync(CONFIG_PATH, getDefaultConfig());
     }
 }
 
@@ -54,7 +55,7 @@ export function loadConfig(): PreBuiltConfig {
 export function saveConfig(config: PreBuiltConfig): void {
     ensureDir(path.dirname(CONFIG_PATH));
     const validated = PreBuiltConfig.parse(config);
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(validated, null, 2));
+    writeJsonAtomicSync(CONFIG_PATH, validated);
 }
 
 export function getAgentConfig(agentName: string): PreBuiltAgentConfig {
@@ -88,7 +89,8 @@ export function loadState(): PreBuiltState {
 
 export function saveState(state: PreBuiltState): void {
     ensureDir(path.dirname(STATE_PATH));
-    fs.writeFileSync(STATE_PATH, JSON.stringify(state, null, 2));
+    // Atomic: a torn state file resets every agent's lastRunTime.
+    writeJsonAtomicSync(STATE_PATH, state);
 }
 
 export function getLastRunTime(agentName: string): Date | null {
@@ -136,7 +138,7 @@ export function loadUserConfig(): UserConfig | null {
 export function saveUserConfig(config: UserConfig): void {
     ensureDir(path.dirname(USER_CONFIG_PATH));
     const validated = UserConfig.parse(config);
-    fs.writeFileSync(USER_CONFIG_PATH, JSON.stringify(validated, null, 2));
+    writeJsonAtomicSync(USER_CONFIG_PATH, validated);
 }
 
 export function getUserConfigPath(): string {

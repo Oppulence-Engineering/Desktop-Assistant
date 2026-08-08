@@ -1,3 +1,4 @@
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 import path from "path";
 import fs from "fs";
 import { WorkDir } from "../config/config.js";
@@ -120,11 +121,7 @@ let cachedMtimeMs: number | null = null;
 
 function ensureTagsConfigSync(): void {
   if (!fs.existsSync(TAGS_CONFIG_PATH)) {
-    fs.writeFileSync(
-      TAGS_CONFIG_PATH,
-      JSON.stringify(DEFAULT_TAG_DEFINITIONS, null, 2) + "\n",
-      "utf8",
-    );
+    writeJsonAtomicSync(TAGS_CONFIG_PATH, DEFAULT_TAG_DEFINITIONS);
   }
 }
 

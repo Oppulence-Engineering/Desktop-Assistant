@@ -1,4 +1,5 @@
 import { jsonSchema, ModelMessage } from "ai";
+import { withPromptCaching } from "./prompt-caching.js";
 import fs from "fs";
 import path from "path";
 import { WorkDir } from "../config/config.js";
@@ -597,6 +598,9 @@ export class RunLogger {
     }
   }
 
+  /** Cleared when the stream errors; writes become no-ops rather than throwing. */
+  private writable = true;
+
   constructor(runId: string) {
     this.ensureRunsDir();
     this.logFile = path.join(WorkDir, "runs", `${runId}.jsonl`);
@@ -604,9 +608,18 @@ export class RunLogger {
       flags: "a",
       encoding: "utf8",
     });
+    // One of these exists per agent run. An unhandled 'error' on a write stream
+    // is an uncaught exception, so a full disk — or the run file being pruned
+    // or deleted underneath us — would take the whole process down rather than
+    // cost us the transcript of one run.
+    this.fileHandle.on("error", (error) => {
+      console.error(`[RunLog] ${this.logFile} is no longer writable:`, error);
+      this.writable = false;
+    });
   }
 
   log(event: z.infer<typeof RunEvent>) {
+    if (!this.writable) return;
     if (event.type !== "llm-stream-event") {
       this.fileHandle.write(JSON.stringify(event) + "\n");
     }
@@ -1792,8 +1805,18 @@ async function* streamLlm(
   signal?: AbortSignal,
   analytics?: StreamLlmAnalytics,
 ): AsyncGenerator<z.infer<typeof LlmStepStreamEvent>, void, unknown> {
-  const converted = convertFromMessages(messages);
-  console.log(`! SENDING payload to model: `, JSON.stringify(converted));
+  const converted = withPromptCaching(convertFromMessages(messages));
+  // The payload carries whole email bodies and note contents. Dumping it on
+  // every step wrote that to disk in the clear and cost hundreds of MB of log
+  // churn per session; the shape is what is useful when debugging, not the
+  // contents.
+  if (process.env.ROWBOAT_LOG_LLM_PAYLOAD === "1") {
+    console.log(`! SENDING payload to model: `, JSON.stringify(converted));
+  } else {
+    console.log(
+      `! SENDING payload to model: ${converted.length} messages, ~${JSON.stringify(converted).length} bytes`,
+    );
+  }
   const streamResult = analytics
     ? withUseCase(
         {
@@ -1823,7 +1846,12 @@ async function* streamLlm(
   for await (const event of fullStream) {
     // Check abort on every chunk for responsiveness
     signal?.throwIfAborted();
-    console.log("-> \t\tstream event", JSON.stringify(event));
+    // One line per stream chunk, each carrying the model's text. Same reason as
+    // the payload dump above: this is the model's output written to disk in the
+    // clear, thousands of lines per run, behind the same opt-in flag.
+    if (process.env.ROWBOAT_LOG_LLM_PAYLOAD === "1") {
+      console.log("-> \t\tstream event", JSON.stringify(event));
+    }
     switch (event.type) {
       case "start":
       case "start-step":

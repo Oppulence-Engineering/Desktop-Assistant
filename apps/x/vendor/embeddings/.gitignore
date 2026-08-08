@@ -1,0 +1,10 @@
+# The on-device embedding model is a build artifact, not committed to git —
+# same convention as vendor/whisper and vendor/audiocap. Populate it with
+# `node apps/x/scripts/embeddings-fetch.mjs`; the release job runs that before
+# packaging and forge stages the result into Resources/embeddings/.
+#
+# Architecture-independent, so unlike whisper/audiocap there is no per-arch
+# subdirectory.
+model.onnx
+vocab.txt
+*.tmp

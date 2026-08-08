@@ -1,6 +1,8 @@
 package pricing_test
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/pricing"
@@ -118,5 +120,146 @@ func TestHaikuIsPricedAboveGPT41Mini(t *testing.T) {
 	if haiku >= sonnet {
 		t.Errorf("haiku (%d) is no longer clearly below sonnet (%d); it was chosen "+
 			"as the cheapest working model", haiku, sonnet)
+	}
+}
+
+// Every model the production gateway allows must be priced here.
+//
+// LLM_ALLOWED_MODELS and this table are two lists that have to agree on the
+// same strings, kept in different files by different people. They drifted in
+// both directions at once: text-embedding-3-small was priced nowhere and
+// allowed nowhere, so the desktop's memory index got a 400 model_not_allowed
+// on every pass — and had someone fixed only the allowlist, rate() would have
+// silently billed embeddings at DefaultModel's 30/150 per 1K, roughly 1500x
+// their real cost.
+//
+// Reads the chart rather than restating the list, because a copy would drift too.
+func TestProductionAllowlistIsFullyPriced(t *testing.T) {
+	const chart = "../../../../charts/rowboat-api/values-production.yaml"
+	raw, err := os.ReadFile(chart)
+	if err != nil {
+		t.Fatalf("read %s: %v", chart, err)
+	}
+
+	var models []string
+	for _, line := range strings.Split(string(raw), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, "LLM_ALLOWED_MODELS:") {
+			continue
+		}
+		value := strings.TrimSpace(strings.TrimPrefix(trimmed, "LLM_ALLOWED_MODELS:"))
+		value = strings.Trim(value, `"'`)
+		for _, m := range strings.Split(value, ",") {
+			if m = strings.TrimSpace(m); m != "" {
+				models = append(models, m)
+			}
+		}
+	}
+	if len(models) == 0 {
+		t.Fatalf("no LLM_ALLOWED_MODELS found in %s; the key moved and this test is now vacuous", chart)
+	}
+
+	table := pricing.DefaultTable()
+	for _, model := range models {
+		if _, ok := table.Models[model]; !ok {
+			t.Errorf("%q is allowed in production but absent from the pricing table, "+
+				"so it bills at the DefaultModel fallback rate", model)
+		}
+	}
+}
+
+// vendorListCredits is public list price expressed in this table's unit
+// (credits per 1,000 tokens, 1 credit = $0.0001). A rate below its entry means
+// we pay the vendor more than we charge the customer, so every call at that
+// model loses money and volume makes it worse — the failure mode a usage
+// report shows only after the month closes.
+//
+// Sourced from the providers' published per-1M prices:
+//
+//	sonnet-4-5   $3/$15     opus-4-1  $15/$75    haiku-4-5 $1/$5
+//	gpt-4.1      $2/$8      4.1-mini  $0.40/$1.60  o4-mini $1.10/$4.40
+//	gemini-2.5-pro $1.25/$10           2.5-flash $0.30/$2.50
+//
+// Update alongside the table when a vendor changes list price.
+var vendorListCredits = map[string]pricing.ModelRate{
+	"anthropic/claude-sonnet-4-5": {InputPer1K: 30, OutputPer1K: 150},
+	"anthropic/claude-opus-4-1":   {InputPer1K: 150, OutputPer1K: 750},
+	"anthropic/claude-haiku-4-5":  {InputPer1K: 10, OutputPer1K: 50},
+	"openai/gpt-4.1":              {InputPer1K: 20, OutputPer1K: 80},
+	"openai/gpt-4.1-mini":         {InputPer1K: 4, OutputPer1K: 16},
+	"openai/o4-mini":              {InputPer1K: 11, OutputPer1K: 44},
+	"google/gemini-2.5-flash":     {InputPer1K: 3, OutputPer1K: 25},
+}
+
+// The margin policy itself is a product decision and stays where it is — this
+// only asserts the floor. Selling at list is a choice; selling below it is a
+// bug, and it shipped: haiku sat at 8/40 against a 10/50 list.
+func TestNoModelPricedBelowVendorList(t *testing.T) {
+	table := pricing.DefaultTable()
+
+	for model, list := range vendorListCredits {
+		rate, ok := table.Models[model]
+		if !ok {
+			// Removing a model from the catalog is fine; it just cannot be
+			// silently under-priced while still routable.
+			continue
+		}
+		if rate.InputPer1K < list.InputPer1K {
+			t.Errorf("%s input %d credits/1K is below vendor list %d: every call loses money",
+				model, rate.InputPer1K, list.InputPer1K)
+		}
+		if rate.OutputPer1K < list.OutputPer1K {
+			t.Errorf("%s output %d credits/1K is below vendor list %d: every call loses money",
+				model, rate.OutputPer1K, list.OutputPer1K)
+		}
+	}
+}
+
+// An agent loop re-sends a large stable prefix on every step. That is what
+// prompt caching is for, and the gateway now reads
+// usage.prompt_tokens_details.cached_tokens — so a cache read must cost a
+// fraction of fresh input. Billing it at the full rate would mean enabling
+// caching cut our vendor bill while the customer's credits fell exactly as
+// before, which is both wrong and invisible.
+func TestCachedInputIsDiscounted(t *testing.T) {
+	table := pricing.DefaultTable()
+	const model = "anthropic/claude-haiku-4-5" // 10 credits/1K input
+
+	// 100k prompt tokens, no output. Fresh: 100 * 10 = 1000 credits.
+	fresh := table.LLMCostCached(model, 100_000, 0, 0)
+	if fresh != 1000 {
+		t.Fatalf("fresh input cost = %d, want 1000", fresh)
+	}
+
+	// Same call with 90% served from cache: 10k fresh (100) + 90k cached at
+	// one tenth (90) = 190.
+	cached := table.LLMCostCached(model, 100_000, 90_000, 0)
+	if cached != 190 {
+		t.Errorf("90%% cached cost = %d, want 190", cached)
+	}
+	if cached >= fresh {
+		t.Errorf("caching did not reduce cost: cached %d vs fresh %d", cached, fresh)
+	}
+
+	// Zero cached tokens must be identical to the uncached path, so providers
+	// without prompt caching are unaffected.
+	if got, want := table.LLMCostCached(model, 12_345, 0, 678), table.LLMCost(model, 12_345, 678); got != want {
+		t.Errorf("zero-cached path diverged: %d vs %d", got, want)
+	}
+}
+
+// A provider reporting more cached tokens than total prompt tokens must not
+// drive the fresh count negative and refund the call.
+func TestCachedTokensCannotExceedPrompt(t *testing.T) {
+	table := pricing.DefaultTable()
+	const model = "anthropic/claude-haiku-4-5"
+
+	got := table.LLMCostCached(model, 1_000, 999_999, 0)
+	want := table.LLMCostCached(model, 1_000, 1_000, 0)
+	if got != want {
+		t.Errorf("over-reported cache = %d, want it clamped to %d", got, want)
+	}
+	if got <= 0 {
+		t.Errorf("cost collapsed to %d; a bogus cache count must not make calls free", got)
 	}
 }

@@ -18,6 +18,34 @@ vi.mock("../models/repo.js", async (io) => ({
 }));
 vi.mock("../account/account.js", () => ({ isSignedIn: isSignedInMock }));
 
+// Daemon availability is exercised in ollama.test.ts; here it is an input, so
+// these tests never depend on whether the machine running them has Ollama.
+const ready = vi.hoisted(() => ({ value: false }));
+vi.mock("./ollama.js", async (io) => ({
+  ...(await io<typeof import("./ollama.js")>()),
+  localEmbedModelReady: async () => ready.value,
+}));
+
+// The ONNX backend is exercised in onnx/*.test.ts; here it is an input, so
+// these tests never load a 35MB native runtime or need a downloaded model.
+const onDevice = vi.hoisted(() => ({ installed: false, loads: true, installs: 0 }));
+vi.mock("./onnx/assets.js", async (io) => ({
+  ...(await io<typeof import("./onnx/assets.js")>()),
+  assetsInstalled: async () => onDevice.installed,
+  installAssets: async () => {
+    onDevice.installs += 1;
+    return true;
+  },
+}));
+vi.mock("./onnx/embedder.js", async (io) => ({
+  ...(await io<typeof import("./onnx/embedder.js")>()),
+  ensureEmbedder: async () => onDevice.loads,
+  embedLocally: async (texts: string[]) => ({
+    vectors: texts.map(() => [0.1, 0.2, 0.3]),
+    tokens: texts.length,
+  }),
+}));
+
 // BYOK path: stub the ai-sdk embedder and the provider factory (keep every other
 // real export via importOriginal so module loading isn't disturbed).
 vi.mock("ai", async (importOriginal) => {
@@ -32,7 +60,9 @@ vi.mock("../models/models.js", async (importOriginal) => {
   return { ...actual, createProvider: () => ({ textEmbeddingModel: (m: string) => m }) };
 });
 
-import { embedBatch, resolveEmbedTarget, type EmbedTarget } from "./embed.js";
+import { embedBatch, resolveEmbedModel, resolveEmbedTarget, type EmbedTarget } from "./embed.js";
+import { LOCAL_EMBED_MODEL, LOCAL_EMBED_MODEL_ID } from "./ollama.js";
+import { MINILM } from "./onnx/assets.js";
 
 const metered: EmbedTarget = { metered: true, providerConfig: { flavor: "solomon" }, model: "m" };
 const byok: EmbedTarget = {
@@ -70,6 +100,10 @@ beforeEach(() => {
   // the next window and the test times out — a property of the pacing, not of
   // the code under test here.
   resetBackgroundBudgetForTests();
+  ready.value = false;
+  onDevice.installed = false;
+  onDevice.loads = true;
+  onDevice.installs = 0;
 });
 
 describe("embedBatch — empty input", () => {
@@ -236,6 +270,85 @@ describe("resolveEmbedTarget", () => {
   });
 });
 
+describe("resolveEmbedTarget — on-device", () => {
+  it("routes a local model id to the Ollama daemon", async () => {
+    const target = await resolveEmbedTarget(LOCAL_EMBED_MODEL_ID);
+    expect(target.metered).toBe(false);
+    expect(target.providerConfig.flavor).toBe("ollama");
+    expect(target.providerConfig.baseURL).toContain("11434");
+    // The provider takes the bare name; the namespace is our bookkeeping.
+    expect(target.model).toBe(LOCAL_EMBED_MODEL);
+  });
+
+  // Matryoshka truncation is an OpenAI feature. Passing it through would leave
+  // the manifest recording a dimensionality the returned vectors do not have.
+  it("drops the Matryoshka dimensions request for a local model", async () => {
+    expect((await resolveEmbedTarget(LOCAL_EMBED_MODEL_ID, 512)).dimensions).toBeUndefined();
+  });
+
+  // Routing follows the model id, never "what is reachable". memorySearch embeds
+  // a query with the model recorded in the manifest, and vectors from two models
+  // are not comparable — quietly answering from a different model would return
+  // confidently wrong rankings instead of a failure the retriever can catch and
+  // fall back to lexical on.
+  it("sends a hosted model id to the hosted provider even when a daemon is up", async () => {
+    ready.value = true;
+    isSignedInMock.mockResolvedValue(true);
+    const target = await resolveEmbedTarget("text-embedding-3-small");
+    expect(target.metered).toBe(true);
+    expect(target.providerConfig.flavor).not.toBe("ollama");
+  });
+
+  it("does not send the OpenAI dimensions option to a non-OpenAI provider", async () => {
+    const embedMany = vi.mocked((await import("ai")).embedMany);
+    embedMany.mockClear();
+    await embedBatch(
+      {
+        metered: false,
+        providerConfig: { flavor: "ollama", baseURL: "http://127.0.0.1:11434" },
+        model: LOCAL_EMBED_MODEL,
+        dimensions: 512,
+      },
+      ["x"],
+    );
+    expect(embedMany.mock.calls[0]?.[0]).not.toHaveProperty("providerOptions");
+  });
+});
+
+describe("resolveEmbedModel", () => {
+  it("prefers on-device when the daemon can serve it", async () => {
+    ready.value = true;
+    expect(await resolveEmbedModel("text-embedding-3-small")).toBe(LOCAL_EMBED_MODEL_ID);
+  });
+
+  it("stays hosted when no daemon can serve it", async () => {
+    ready.value = false;
+    expect(await resolveEmbedModel("text-embedding-3-small")).toBe("text-embedding-3-small");
+  });
+
+  // Someone who set a non-default model in index.json meant it. Silently
+  // overriding a deliberate choice is worse than missing the optimisation.
+  it("leaves an explicitly configured model alone", async () => {
+    ready.value = true;
+    expect(await resolveEmbedModel("text-embedding-3-large")).toBe("text-embedding-3-large");
+  });
+
+  it("honours the off switch", async () => {
+    ready.value = true;
+    process.env.SOLOMON_MEMORY_LOCAL_EMBEDDINGS = "off";
+    try {
+      expect(await resolveEmbedModel("text-embedding-3-small")).toBe("text-embedding-3-small");
+    } finally {
+      delete process.env.SOLOMON_MEMORY_LOCAL_EMBEDDINGS;
+    }
+  });
+
+  it("keeps an already-local id local", async () => {
+    ready.value = false;
+    expect(await resolveEmbedModel(LOCAL_EMBED_MODEL_ID)).toBe(LOCAL_EMBED_MODEL_ID);
+  });
+});
+
 describe("embedBatch — queue wait vs request timeout", () => {
   afterEach(() => vi.useRealTimers());
 
@@ -309,5 +422,65 @@ describe("embedBatch — draws on the shared gateway budget", () => {
 
     resetBackgroundBudgetForTests();
     vi.unstubAllGlobals();
+  });
+});
+
+describe("on-device (ONNX) backend", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("is preferred over Ollama once its assets are installed", async () => {
+    onDevice.installed = true;
+    ready.value = true; // a daemon is up too — ONNX should still win
+    expect(await resolveEmbedModel("text-embedding-3-small")).toBe(MINILM.id);
+  });
+
+  // A 23MB download must not hold up an index pass, so the first sight of a
+  // missing model starts the fetch and this pass uses whatever else is around.
+  it("starts the asset download without blocking, and falls through meanwhile", async () => {
+    onDevice.installed = false;
+    ready.value = true;
+    expect(await resolveEmbedModel("text-embedding-3-small")).toBe(LOCAL_EMBED_MODEL_ID);
+    expect(onDevice.installs).toBe(1);
+  });
+
+  // Assets on disk are not the same as a working native runtime: onnxruntime-node
+  // is absent on an unsupported arch, and a model we cannot execute must not be
+  // written into the manifest.
+  it("does not claim the model when the native runtime will not load", async () => {
+    onDevice.installed = true;
+    onDevice.loads = false;
+    expect(await resolveEmbedModel("text-embedding-3-small")).toBe("text-embedding-3-small");
+  });
+
+  it("routes a local/* id in-process, with no provider and no HTTP", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const target = await resolveEmbedTarget(MINILM.id);
+    expect(target.metered).toBe(false);
+    expect(target.dimensions).toBeUndefined();
+
+    const out = await embedBatch(target, ["hello", "world"]);
+    expect(out.vectors).toHaveLength(2);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  // memorySearch reaches embedBatch via resolveEmbedTarget(manifest.model)
+  // without going through model selection, so after a restart the session is
+  // cold. An embedder that only loaded during indexing would make every search
+  // fall back to lexical for the life of the process.
+  it("loads the embedder on demand rather than assuming indexing ran", async () => {
+    onDevice.loads = false;
+    const target = await resolveEmbedTarget(MINILM.id);
+    await expect(embedBatch(target, ["hello"])).rejects.toThrow(/unavailable/);
+  });
+
+  it("honours the off switch even with everything installed", async () => {
+    onDevice.installed = true;
+    process.env.SOLOMON_MEMORY_LOCAL_EMBEDDINGS = "off";
+    try {
+      expect(await resolveEmbedModel("text-embedding-3-small")).toBe("text-embedding-3-small");
+    } finally {
+      delete process.env.SOLOMON_MEMORY_LOCAL_EMBEDDINGS;
+    }
   });
 });

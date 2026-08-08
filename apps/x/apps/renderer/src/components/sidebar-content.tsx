@@ -49,6 +49,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@oppulence/ui/components/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
+import { BillingUnavailableError, openBillingFlow } from "@/lib/billing-flow";
+import { dominantServiceFault, explainServiceError } from "@/lib/service-error-copy";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { updatePending, useUpdateStatus } from "@/hooks/use-update-prompt";
 import { extractConferenceLink } from "@/lib/calendar-event";
@@ -158,6 +160,16 @@ const SERVICE_LABELS: Record<string, string> = {
   memory: "Indexing memory",
 };
 
+/**
+ * "Try again" is the wrong thing to say when the deployment has no Stripe
+ * credentials at all — no retry will ever succeed.
+ */
+function billingFailureMessage(error: unknown): string {
+  return error instanceof BillingUnavailableError
+    ? "Upgrading isn't available yet. Reach out and we'll sort it out."
+    : "Could not open billing. Please try again.";
+}
+
 function summarizeServiceError(error: string): string {
   const firstLine = error.split("\n").find((line) => line.trim().length > 0);
   return firstLine?.trim() || error.trim();
@@ -236,7 +248,20 @@ function SyncStatusBar({ voiceRecording }: { voiceRecording?: VoiceNoteStatus | 
   const [logEvents, setLogEvents] = useState<ServiceEventType[]>([]);
   const [logLoading, setLogLoading] = useState(false);
   const [relationshipSources, setRelationshipSources] = useState<RelationshipSourceStatus[]>([]);
+  const [upgradePending, setUpgradePending] = useState(false);
   const runTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  const openUpgrade = useCallback(async () => {
+    setUpgradePending(true);
+    try {
+      await openBillingFlow();
+    } catch (error) {
+      console.error("Failed to open billing flow:", error);
+      toast(billingFailureMessage(error), "error");
+    } finally {
+      setUpgradePending(false);
+    }
+  }, []);
 
   const refreshRelationshipSources = useCallback(async () => {
     try {
@@ -357,6 +382,7 @@ function SyncStatusBar({ voiceRecording }: { voiceRecording?: VoiceNoteStatus | 
   const errorEntries = Array.from(serviceErrors.entries());
   const primaryErrorService = errorEntries[0]?.[0] ?? null;
   const hasServiceErrors = errorEntries.length > 0;
+  const dominantFault = dominantServiceFault(serviceErrors.values());
   const sourceHealth = relationshipSourceHealthSummary(relationshipSources);
   const hasSourceAttention = sourceHealth.needsAttention.length > 0;
   const hasSourceSyncing = sourceHealth.syncing.length > 0;
@@ -367,21 +393,37 @@ function SyncStatusBar({ voiceRecording }: { voiceRecording?: VoiceNoteStatus | 
     return event.type === "run_complete" && event.outcome === "ok";
   });
 
-  // Build status label from active services
+  // Build status label from active services.
+  //
+  // A service that polls every 10-15s and fails every pass still produces a
+  // steady stream of run_start events, so activeServices is essentially never
+  // empty for it. Ranking "syncing" above "failing" therefore pinned the label
+  // to "Labeling emails, Updating knowledge, Indexing memory" for eleven hours
+  // while 100% of those batches were erroring on insufficient_credits — the
+  // failure branch below was unreachable in exactly the case it exists for.
+  // Retrying is not progress: a service that is both active and failing is
+  // reported as failing.
   const activeServiceNames = [...new Set(activeServices.values())];
-  const statusLabel = isSyncing
-    ? activeServiceNames.map((s) => SERVICE_LABELS[s] || s).join(", ")
-    : hasSourceAttention
-      ? `${sourceHealth.needsAttention.length} source${sourceHealth.needsAttention.length === 1 ? "" : "s"} need attention`
-      : hasServiceErrors
-        ? errorEntries.length === 1
-          ? `${SERVICE_LABELS[primaryErrorService ?? ""] || primaryErrorService} failed`
-          : "Recent sync issues"
-        : hasSourceSyncing
-          ? `${sourceHealth.syncing.length} source${sourceHealth.syncing.length === 1 ? "" : "s"} building history`
-          : relationshipSources.length > 0
-            ? "Evidence sources healthy"
-            : "Connect evidence sources";
+  const failingActive = activeServiceNames.filter((s) => serviceErrors.has(s));
+  const progressingServices = activeServiceNames.filter((s) => !serviceErrors.has(s));
+  const isProgressing = progressingServices.length > 0;
+  const statusLabel = failingActive.length
+    ? failingActive.length === 1
+      ? `${SERVICE_LABELS[failingActive[0]] || failingActive[0]} failing`
+      : `${failingActive.length} services failing`
+    : isProgressing
+      ? progressingServices.map((s) => SERVICE_LABELS[s] || s).join(", ")
+      : hasSourceAttention
+        ? `${sourceHealth.needsAttention.length} source${sourceHealth.needsAttention.length === 1 ? "" : "s"} need attention`
+        : hasServiceErrors
+          ? errorEntries.length === 1
+            ? `${SERVICE_LABELS[primaryErrorService ?? ""] || primaryErrorService} failed`
+            : "Recent sync issues"
+          : hasSourceSyncing
+            ? `${sourceHealth.syncing.length} source${sourceHealth.syncing.length === 1 ? "" : "s"} building history`
+            : relationshipSources.length > 0
+              ? "Evidence sources healthy"
+              : "Connect evidence sources";
 
   return (
     <SidebarFooter className="border-t border-sidebar-border px-2 py-2">
@@ -431,7 +473,9 @@ function SyncStatusBar({ voiceRecording }: { voiceRecording?: VoiceNoteStatus | 
               aria-label={statusLabel}
               className="flex h-8 w-8 items-center justify-center border border-border bg-background"
             >
-              {isSyncing ? (
+              {/* Spinner only for work that is actually getting somewhere —
+                  a failing retry loop shows the warning, matching the label. */}
+              {isProgressing ? (
                 <LoaderIcon className="h-4 w-4 animate-spin text-muted-foreground" />
               ) : (
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
@@ -446,13 +490,13 @@ function SyncStatusBar({ voiceRecording }: { voiceRecording?: VoiceNoteStatus | 
             type="button"
             className={cn(
               "flex w-full items-center justify-between rounded-none px-2 py-1 text-xs hover:bg-sidebar-accent",
-              (hasSourceAttention || hasServiceErrors) && !isSyncing
+              (hasSourceAttention || hasServiceErrors) && !isProgressing
                 ? "text-amber-700 dark:text-amber-400"
                 : "text-muted-foreground",
             )}
           >
             <span className="flex items-center gap-2 min-w-0">
-              {isSyncing ? (
+              {isProgressing ? (
                 <LoaderIcon className="h-3 w-3 shrink-0 animate-spin" />
               ) : hasSourceAttention || hasServiceErrors ? (
                 <AlertTriangle className="h-3 w-3 shrink-0" />
@@ -468,6 +512,27 @@ function SyncStatusBar({ voiceRecording }: { voiceRecording?: VoiceNoteStatus | 
           <div className="p-3 border-b">
             <h4 className="font-semibold text-sm">Data health</h4>
             <p className="text-xs text-muted-foreground mt-0.5">{statusLabel}</p>
+            {/* One line naming the cause behind the failures below, plus the
+                way out of it. When credits run out every service fails at once,
+                and the panel previously listed twenty identical red codes with
+                nothing saying what to do — while an Upgrade button sat unused
+                in this same sidebar. */}
+            {dominantFault && (
+              <div className="mt-2 flex items-start justify-between gap-2">
+                <p className="text-xs text-amber-700 dark:text-amber-400">{dominantFault.text}</p>
+                {dominantFault.fault === "billing" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-6 shrink-0 px-2 text-xs"
+                    disabled={upgradePending}
+                    onClick={openUpgrade}
+                  >
+                    Upgrade
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
           <div className="max-h-80 overflow-y-auto p-2">
             {relationshipSources.length > 0 ? (
@@ -533,11 +598,13 @@ function SyncStatusBar({ voiceRecording }: { voiceRecording?: VoiceNoteStatus | 
                     <div className="min-w-0 flex-1">
                       <p className="leading-4 text-foreground/80">{event.message}</p>
                       {event.type === "error" && (
+                        // The raw code stays on the title attribute: it is what
+                        // makes a bug report actionable, but it is not copy.
                         <p
                           className="truncate text-[11px] leading-4 text-red-600/90 dark:text-red-400/90"
                           title={event.error}
                         >
-                          {summarizeServiceError(event.error)}
+                          {explainServiceError(event.error).text}
                         </p>
                       )}
                     </div>
@@ -585,7 +652,6 @@ export function SidebarContentPanel({
   const connectorsButtonRef = useRef<HTMLButtonElement | null>(null);
   const [isSolomonConnected, setIsSolomonConnected] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
-  const [appUrl, setAppUrl] = useState<string | null>(null);
   const { billing } = useBilling(isSolomonConnected);
   const { state: sidebarState } = useSidebar();
   const isCollapsed = sidebarState === "collapsed";
@@ -865,14 +931,6 @@ export function SidebarContentPanel({
           setIsSolomonConnected(connected);
           if (!hasError) {
             setShowOauthAlert(true);
-          }
-        }
-        if (connected && mounted) {
-          try {
-            const account = await window.ipc.invoke("account:getSolomon", null);
-            if (mounted) setAppUrl(account.config?.appUrl ?? null);
-          } catch {
-            /* ignore */
           }
         }
       } catch (error) {
@@ -1277,7 +1335,12 @@ export function SidebarContentPanel({
                 })()}
             </div>
             <button
-              onClick={() => appUrl && window.open(`${appUrl}?intent=upgrade`)}
+              onClick={() => {
+                void openBillingFlow().catch((error) => {
+                  console.error("Failed to open billing flow:", error);
+                  toast(billingFailureMessage(error), "error");
+                });
+              }}
               className="shrink-0 rounded-none bg-sidebar-foreground/10 px-2.5 py-1 text-[11px] font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-foreground/20"
             >
               {!billing.subscriptionPlan ||

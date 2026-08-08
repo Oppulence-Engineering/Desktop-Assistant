@@ -21,6 +21,7 @@ const DEFAULTS = {
     snippetChars: 600,
     embedDimensions: 0,
     queryExpansion: false,
+    localEmbeddings: 'auto',
 };
 
 describe('MemoryConfig schema', () => {
@@ -51,6 +52,7 @@ describe('MemoryConfig schema', () => {
             snippetChars: 800,
             embedDimensions: 512,
             queryExpansion: true,
+            localEmbeddings: 'off',
         });
         expect(cfg).toEqual({
             enabled: false,
@@ -63,6 +65,7 @@ describe('MemoryConfig schema', () => {
             snippetChars: 800,
             embedDimensions: 512,
             queryExpansion: true,
+            localEmbeddings: 'off',
         });
     });
 

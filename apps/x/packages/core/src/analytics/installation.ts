@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { WorkDir } from '../config/config.js';
+import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";
 
 const INSTALLATION_PATH = path.join(WorkDir, 'config', 'installation.json');
 
@@ -28,7 +29,8 @@ export function getInstallationId(): string {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(INSTALLATION_PATH, JSON.stringify({ installationId: id }, null, 2));
+    // Atomic: a torn file reads as corrupt and mints a new install identity.
+    writeJsonAtomicSync(INSTALLATION_PATH, { installationId: id });
   } catch (err) {
     console.error('[Analytics] Failed to write installation.json:', err);
   }

@@ -4,6 +4,7 @@ import type { BackgroundTaskOfflineRunsEventType } from "@x/shared/dist/backgrou
 import { PrefixLogger } from "@x/shared/dist/prefix-logger.js";
 import { WorkDir } from "../config/config.js";
 import type { RemoteRun } from "./cloud-sync.js";
+import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 
 const log = new PrefixLogger("BgTask:OfflineReturn");
 
@@ -42,14 +43,12 @@ export async function readCloudRunsSeenState(): Promise<CloudRunsSeenState | nul
 export async function writeCloudRunsSeenState(state: CloudRunsSeenState): Promise<void> {
   try {
     await fs.mkdir(path.dirname(STATE_FILE), { recursive: true });
-    await fs.writeFile(
-      STATE_FILE,
-      JSON.stringify({
-        ...state,
-        lastNotifiedRunIds: state.lastNotifiedRunIds.slice(-MAX_NOTIFIED_IDS),
-      }),
-      "utf-8",
-    );
+    // Atomic: a torn file reads as corrupt, and the loader answers that by
+    // re-initializing the marker — silently dropping the offline-run window.
+    await writeJsonAtomic(STATE_FILE, {
+      ...state,
+      lastNotifiedRunIds: state.lastNotifiedRunIds.slice(-MAX_NOTIFIED_IDS),
+    });
   } catch (err) {
     // Advisory state; a write failure must not break the boot sequence.
     log.log(`seen-state write failed: ${err instanceof Error ? err.message : String(err)}`);

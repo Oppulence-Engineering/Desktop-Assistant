@@ -39,8 +39,26 @@ export type CreateRunRepoOptions = {
     subUseCase?: string;
 };
 
+const RUNS_DIR = path.join(WorkDir, 'runs');
+
+/**
+ * Log path for one run. All three uses — appendEvents, fetch, delete — take a
+ * runId that can come straight from the renderer (`runs:createMessage`,
+ * `runs:fetch`, `runs:delete`), so the check belongs here rather than at any
+ * one handler.
+ *
+ * Same basename rule the sibling `runs:downloadLog` channel already applies;
+ * that one was guarded while fetch and delete were not. Deliberately NOT an
+ * IdGen-format regex: `list()` derives run ids from any `*.jsonl` basename, so
+ * a stricter rule would produce runs that appear in the list and then fail to
+ * open.
+ */
 function runLogPath(runId: string): string {
-    return path.join(WorkDir, 'runs', `${runId}.jsonl`);
+    const fileName = `${runId}.jsonl`;
+    if (path.basename(fileName) !== fileName) {
+        throw new Error(`Invalid run id: ${runId}`);
+    }
+    return path.join(RUNS_DIR, fileName);
 }
 
 export interface IRunsRepo {
@@ -72,8 +90,21 @@ export class FSRunsRepo implements IRunsRepo {
         idGenerator: IMonotonicallyIncreasingIdGenerator;
     }) {
         this.idGenerator = idGenerator;
-        // ensure default runs directory exists
-        fsp.mkdir(path.join(WorkDir, 'runs'), { recursive: true });
+        // Ensure the runs directory exists. This is the only mkdir in the repo
+        // — the write paths below assume it — so it cannot be skipped.
+        //
+        // Synchronous on purpose. It used to be an un-awaited fsp.mkdir, which
+        // left a pending filesystem operation with no owner: it could land
+        // after the caller had torn the directory down, recreating it, and it
+        // rejected into the process-level handler when the parent vanished
+        // first. Both showed up as test flake that read as a bug in whatever
+        // ran next — an ENOTEMPTY from a cleanup racing the recreate, and a run
+        // that failed with every test passing.
+        //
+        // One recursive mkdir at construction (once per process through the DI
+        // singleton) is not worth an async hazard, and config.ts already
+        // creates the workspace directories synchronously for the same reason.
+        fs.mkdirSync(path.join(WorkDir, 'runs'), { recursive: true });
     }
 
     private extractTitle(events: z.infer<typeof RunEvent>[]): string | undefined {
@@ -116,6 +147,18 @@ export class FSRunsRepo implements IRunsRepo {
         return new Promise((resolve) => {
             const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
             const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+
+            // readline does not forward input errors when driven by events (it
+            // does under `for await`, which is why the file-reading code is
+            // safe and this is not). Unhandled, an ENOENT here is an uncaught
+            // exception, and listing runs walks the directory first — so a run
+            // deleted between readdir and open, by pruneRunLogs or by the user,
+            // took the process down. A metadata read that fails is a run we
+            // cannot describe, not a fatal condition.
+            stream.on('error', () => {
+                rl.close();
+                resolve(null);
+            });
 
             let start: z.infer<typeof LegacyStartEvent> | null = null;
             let title: string | undefined;
@@ -227,9 +270,27 @@ export class FSRunsRepo implements IRunsRepo {
     async fetch(id: string): Promise<z.infer<typeof Run>> {
         const contents = await fsp.readFile(runLogPath(id), 'utf8');
         // Parse with the lenient schema so legacy start events (no model/provider) load.
+        //
+        // Malformed lines are skipped, not fatal. A crash mid-write leaves a
+        // truncated final line, and one such line used to make the run
+        // permanently unopenable — including for authorizePermission, which
+        // fetches the run to decide a pending tool call. A run missing one
+        // event beats a run that cannot be opened at all; the sibling
+        // readRunMetadata already tolerates malformed lines the same way.
+        let skipped = 0;
         const rawEvents = contents.split('\n')
             .filter(line => line.trim() !== '')
-            .map(line => ReadRunEvent.parse(JSON.parse(line)));
+            .flatMap(line => {
+                try {
+                    return [ReadRunEvent.parse(JSON.parse(line))];
+                } catch {
+                    skipped += 1;
+                    return [];
+                }
+            });
+        if (skipped > 0) {
+            console.warn(`[Runs] ${id}: skipped ${skipped} malformed line${skipped === 1 ? '' : 's'}`);
+        }
         if (rawEvents.length === 0 || rawEvents[0].type !== 'start') {
             throw new Error('Corrupt run data');
         }
@@ -331,4 +392,62 @@ export class FSRunsRepo implements IRunsRepo {
     async delete(id: string): Promise<void> {
         await fsp.unlink(runLogPath(id));
     }
+}
+
+/**
+ * Runs kept regardless of age. A light user with a few hundred runs over two
+ * years keeps all of them; the cap only bites on machines producing thousands.
+ */
+const MIN_RUNS_KEPT = 500;
+const MAX_RUN_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Delete run logs older than 30 days, past the first {@link MIN_RUNS_KEPT}.
+ *
+ * Nothing pruned these. `delete` exists but is only reachable from the IPC a
+ * person clicks, so the directory grew for the life of the install — every
+ * background batch writes one, and email labeling alone writes ~90 per sweep.
+ * The evidence is on disk: 22,830 files and 2.4GB in runs-archive from an
+ * earlier era of the same directory.
+ *
+ * Age *and* a floor, deliberately. A pure count cap would delete a careful
+ * user's history the moment a background backlog outnumbered it; a pure age
+ * cap would wipe a machine that had been offline for a month.
+ *
+ * Best-effort: a run that will not delete is left for the next start.
+ *
+ * @returns Number of run logs removed.
+ */
+export async function pruneRunLogs(now: number = Date.now()): Promise<number> {
+    let names: string[];
+    try {
+        names = (await fsp.readdir(RUNS_DIR)).filter((n) => n.endsWith(".jsonl"));
+    } catch {
+        return 0;
+    }
+    if (names.length <= MIN_RUNS_KEPT) return 0;
+
+    const stated = await Promise.all(
+        names.map(async (name) => {
+            const full = path.join(RUNS_DIR, name);
+            try {
+                return { full, mtime: (await fsp.stat(full)).mtimeMs };
+            } catch {
+                return { full, mtime: now };
+            }
+        }),
+    );
+    stated.sort((a, b) => b.mtime - a.mtime);
+
+    let removed = 0;
+    for (const { full, mtime } of stated.slice(MIN_RUNS_KEPT)) {
+        if (now - mtime <= MAX_RUN_AGE_MS) continue;
+        try {
+            await fsp.rm(full, { force: true });
+            removed += 1;
+        } catch {
+            // Leave it; the next start tries again.
+        }
+    }
+    return removed;
 }

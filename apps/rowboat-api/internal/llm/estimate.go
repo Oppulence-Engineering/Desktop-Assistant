@@ -75,6 +75,40 @@ func requestedMaxOutput(body map[string]any) int {
 	return 0
 }
 
+// isCompletionPath reports whether an upstream path takes max_tokens.
+// /embeddings goes through the same proxy and would reject the field.
+func isCompletionPath(path string) bool {
+	return path == "/chat/completions" || path == "/completions"
+}
+
+// effectiveMaxOutput is the largest completion this request can be billed for:
+// the caller's own cap when it set one, the gateway's default when it did not
+// (proxy() supplies that same default upstream), and zero on paths with no
+// completion at all.
+//
+// The reservation has to be sized on this rather than on requestedMaxOutput,
+// which is 0 for every caller that omits max_tokens. Holding input-only while
+// the vendor was free to bill 16K of output meant Settle — which performs no
+// balance check, by design, because the work is already done — debited past the
+// end of the balance on essentially every completion. Observed 2026-08-07: a
+// 10,000-credit account finished the day at -948.
+//
+// A caller that wants a small hold can still have one by sending its own
+// max_tokens; only an uncapped request reserves for the full cap, which is the
+// only honest quote for a request that may legitimately emit that much.
+func effectiveMaxOutput(body map[string]any, path string, defaultMax int) int {
+	if !isCompletionPath(path) {
+		return 0
+	}
+	if n := requestedMaxOutput(body); n > 0 {
+		return n
+	}
+	if defaultMax < 0 {
+		return 0
+	}
+	return defaultMax
+}
+
 func isStream(body map[string]any) bool {
 	s, _ := body["stream"].(bool)
 	return s

@@ -26,7 +26,7 @@ type chunk struct {
 // sniffing token usage (OpenAI emits it in the final chunk when
 // stream_options.include_usage is set). Falls back to a length-based estimate
 // of output tokens if the upstream omits usage.
-func (h *Handler) streamThrough(w http.ResponseWriter, resp *http.Response) (inTok, outTok int, relayErr error) {
+func (h *Handler) streamThrough(w http.ResponseWriter, resp *http.Response) (inTok, cachedTok, outTok int, relayErr error) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -50,6 +50,7 @@ func (h *Handler) streamThrough(w http.ResponseWriter, resp *http.Response) (inT
 			if u, c, ok := parseSSELine(line); ok {
 				if u != nil {
 					inTok, outTok = u.PromptTokens, u.CompletionTokens
+					cachedTok = cachedFrom(u)
 				}
 				contentChars += c
 			}
@@ -76,7 +77,7 @@ func (h *Handler) streamThrough(w http.ResponseWriter, resp *http.Response) (inT
 	if outTok == 0 {
 		outTok = estimateTextTokensFromBytes(contentChars)
 	}
-	return inTok, outTok, relayErr
+	return inTok, cachedTok, outTok, relayErr
 }
 
 // parseSSELine extracts usage and content length from a `data: {...}` line.
@@ -104,15 +105,15 @@ func parseSSELine(line []byte) (*usage, int, bool) {
 }
 
 // bufferThrough relays a non-streamed JSON response and reads usage from it.
-func (h *Handler) bufferThrough(w http.ResponseWriter, resp *http.Response) (inTok, outTok int, relayErr error) {
+func (h *Handler) bufferThrough(w http.ResponseWriter, resp *http.Response) (inTok, cachedTok, outTok int, relayErr error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		if errors.Is(err, outbound.ErrResponseTooLarge) {
 			httpx.Error(w, http.StatusBadGateway, "upstream response too large", "upstream_response_too_large")
-			return 0, 0, err
+			return 0, 0, 0, err
 		}
 		httpx.Error(w, http.StatusBadGateway, "could not read upstream response", "upstream_error")
-		return 0, 0, err
+		return 0, 0, 0, err
 	}
 
 	var parsed struct {
@@ -124,6 +125,7 @@ func (h *Handler) bufferThrough(w http.ResponseWriter, resp *http.Response) (inT
 	if json.Unmarshal(body, &parsed) == nil {
 		if parsed.Usage != nil {
 			inTok, outTok = parsed.Usage.PromptTokens, parsed.Usage.CompletionTokens
+			cachedTok = cachedFrom(parsed.Usage)
 		} else {
 			// Upstream omitted usage: estimate output from the message content
 			// length so output isn't billed as free (mirrors streamThrough's
@@ -148,7 +150,7 @@ func (h *Handler) bufferThrough(w http.ResponseWriter, resp *http.Response) (inT
 	w.Header().Set("Content-Type", contentTypeOr(resp, "application/json"))
 	w.WriteHeader(resp.StatusCode)
 	_, _ = w.Write(body)
-	return inTok, outTok, nil
+	return inTok, cachedTok, outTok, nil
 }
 
 func estimateOutputTokens(v any) int {

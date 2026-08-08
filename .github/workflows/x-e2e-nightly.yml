@@ -93,6 +93,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: .github/scripts/stage-whisper-bin.sh ${{ matrix.platform }} ${{ matrix.arch }}
 
+      # Stage the embedding model too, so the packaged app under test matches
+      # the one that ships. Without it the build falls back to fetching the
+      # model at runtime, which is a different code path from the released
+      # artifact's.
+      - name: Stage on-device embedding model
+        shell: bash
+        run: node apps/x/scripts/embeddings-fetch.mjs
+
       - name: Package electron app (unsigned)
         run: node .github/scripts/x-smoke-package-linux.mjs
 
