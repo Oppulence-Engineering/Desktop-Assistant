@@ -7,6 +7,8 @@ import { bus } from '../runs/bus.js';
 import { getErrorDetails, waitForRunCompletion } from '../agents/utils.js';
 import { serviceLogger } from '../services/service_logger.js';
 import { limitEventItems } from './limit_event_items.js';
+import { readsAsFrontmatter } from './frontmatter.js';
+import { hasPaidSubscription } from '../billing/entitlements.js';
 import {
     loadLabelingState,
     saveLabelingState,
@@ -25,20 +27,16 @@ const LABELING_AGENT = 'labeling_agent';
 const GMAIL_SYNC_DIR = path.join(WorkDir, 'gmail_sync');
 const MAX_CONTENT_LENGTH = 8000;
 
-/** Whether a file begins with a YAML frontmatter fence, read without slurping it. */
+/** Whether the "paid subscription required" line has already been logged. */
+let warnedUnentitled = false;
+
+/**
+ * Whether a file begins with a YAML frontmatter fence, read without slurping it.
+ * An unreadable file counts as "skip", matching the previous behaviour: the
+ * labeler cannot do anything useful with a file it cannot open.
+ */
 export function startsWithFrontmatter(filePath: string): boolean {
-    let fd: number | undefined;
-    try {
-        fd = fs.openSync(filePath, 'r');
-        const buf = Buffer.alloc(3);
-        const read = fs.readSync(fd, buf, 0, 3, 0);
-        return read === 3 && buf.toString('utf-8') === '---';
-    } catch {
-        // Unreadable — treat as "skip", matching the previous behaviour.
-        return true;
-    } finally {
-        if (fd !== undefined) fs.closeSync(fd);
-    }
+    return readsAsFrontmatter(filePath) ?? true;
 }
 
 /**
@@ -153,6 +151,20 @@ async function labelEmailBatch(
  * Process all unlabeled emails in batches
  */
 export async function processUnlabeledEmails(concurrency: number = DEFAULT_CONCURRENCY): Promise<void> {
+    // Labeling is a paid feature. It is also the most expensive thing the app
+    // does on a user's behalf: an agent run over every synced email, billed to
+    // us in managed mode. Checked before the directory walk so an unentitled
+    // install does no work at all rather than scanning the mailbox each tick.
+    if (!(await hasPaidSubscription())) {
+        if (!warnedUnentitled) {
+            // Once per transition, not once per 15-second tick.
+            console.log('[EmailLabeling] Paid subscription required; labeling is off.');
+            warnedUnentitled = true;
+        }
+        return;
+    }
+    warnedUnentitled = false;
+
     console.log('[EmailLabeling] Checking for unlabeled emails...');
 
     const state = loadLabelingState();

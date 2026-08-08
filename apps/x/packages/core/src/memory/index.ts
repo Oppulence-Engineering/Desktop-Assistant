@@ -20,6 +20,18 @@ function knowledgeDir(): string {
     return path.join(WorkDir, 'knowledge');
 }
 
+/**
+ * Where the Gmail sync writes labeled emails.
+ *
+ * Indexed alongside the vault so the labels the model assigns are searchable:
+ * the chunker emits frontmatter as its own entity card, so an email becomes
+ * findable by its labels and not only by its prose. Only labeled files are
+ * taken — see Indexer.collectFiles.
+ */
+function mailDir(): string {
+    return path.join(WorkDir, 'gmail_sync');
+}
+
 // --- query-embedding LRU cache -----------------------------------------------
 // Repeated/agent-retry queries skip a network round-trip. Keyed by model+dims+text;
 // small + bounded (correctness doesn't depend on it — purely a latency/cost saver).
@@ -230,6 +242,7 @@ async function runMemoryIndexOnce(): Promise<IndexStats | { disabled: true }> {
     const indexer = new Indexer({
         dir: indexDir(),
         knowledgeDir: knowledgeDir(),
+        mailDir: mailDir(),
         model,
         // A requested Matryoshka size pins the dims (and the stored vectors are that size);
         // otherwise fall back to the configured/inferred dims. Not applicable
