@@ -1705,9 +1705,27 @@ export function SettingsDialog({
           Manage account, connections, models, transcription, tags, notifications, appearance,
           security, tools, memory, and support settings.
         </DialogDescription>
+        {/*
+          A drag strip across the top. The window is titleBarStyle:"hiddenInset",
+          so the only draggable area is the title bar — which a full-page surface
+          covers. Without this the window cannot be moved while settings is open.
+          It sits behind the rail (pointer-events pass through to the buttons
+          below it) and is purely for dragging.
+        */}
+        <div
+          className="titlebar-drag-region pointer-events-none absolute inset-x-0 top-0 z-0 h-9"
+          aria-hidden="true"
+        />
         <div className="flex h-full overflow-hidden">
           <div className="settings-rail flex w-60 shrink-0 flex-col border-r">
-            <nav className="settings-rail-scroll flex-1 overflow-y-auto px-2 pb-3 pt-2">
+            {/*
+              pt-9 clears the macOS traffic lights. They are overlaid at
+              (12, 12) by trafficLightPosition, and this rail starts at y=0 now
+              that settings is full-page — so at the old pt-2 the "Back to app"
+              button rendered underneath the close/minimise/zoom buttons and was
+              both unreadable and partly unclickable.
+            */}
+            <nav className="settings-rail-scroll flex-1 overflow-y-auto px-2 pb-3 pt-9">
               <button className="settings-back" onClick={() => setOpen(false)} type="button">
                 <ArrowLeft className="size-3.5" />
                 <span>Back to app</span>
