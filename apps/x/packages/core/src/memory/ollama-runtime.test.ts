@@ -59,7 +59,10 @@ describe("ensureOllamaRuntime", () => {
     process.env.OLLAMA_HOST = "box.local:11434";
     const seen = stubDaemons(["http://box.local:11434"]);
     expect(await ensureOllamaRuntime()).toBe("http://box.local:11434");
-    expect(seen.every((u) => u.startsWith("http://box.local"))).toBe(true);
+    // Compare the parsed host, not a string prefix: "http://box.local" is
+    // also a prefix of "http://box.local.example.com", so a prefix check would
+    // pass for a probe that went somewhere else entirely.
+    expect(seen.every((u) => new URL(u).host === "box.local:11434")).toBe(true);
   });
 
   it("reports nothing usable when a configured OLLAMA_HOST is down", async () => {
@@ -81,7 +84,10 @@ describe("ensureOllamaRuntime", () => {
     process.env.SOLOMON_MEMORY_LOCAL_EMBEDDINGS = "system";
     const seen = stubDaemons([]);
     expect(await ensureOllamaRuntime()).toBeNull();
-    expect(seen.some((u) => u.includes("github.com"))).toBe(false);
+    // Parsed hostname rather than a substring: "github.com" appears inside
+    // plenty of URLs that are not GitHub (a path, a query parameter, or a
+    // lookalike host), so a substring test asserts less than it appears to.
+    expect(seen.some((u) => new URL(u).hostname === "github.com")).toBe(false);
   });
 });
 

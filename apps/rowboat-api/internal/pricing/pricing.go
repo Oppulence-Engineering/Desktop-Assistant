@@ -44,12 +44,12 @@ func DefaultTable() *Table {
 			// fee, and haiku is the desktop's default for knowledge-graph work
 			// (label_emails), which is the highest-volume workload we run.
 			// TestNoModelPricedBelowVendorList keeps this from recurring.
-			"anthropic/claude-haiku-4-5":  {InputPer1K: 10, OutputPer1K: 50},
-			"openai/gpt-4.1":              {InputPer1K: 20, OutputPer1K: 80},
-			"openai/gpt-4.1-mini":         {InputPer1K: 4, OutputPer1K: 16},
-			"openai/o4-mini":              {InputPer1K: 11, OutputPer1K: 44},
-			"google/gemini-2.5-pro":       {InputPer1K: 13, OutputPer1K: 100},
-			"google/gemini-2.5-flash":     {InputPer1K: 3, OutputPer1K: 25},
+			"anthropic/claude-haiku-4-5": {InputPer1K: 10, OutputPer1K: 50},
+			"openai/gpt-4.1":             {InputPer1K: 20, OutputPer1K: 80},
+			"openai/gpt-4.1-mini":        {InputPer1K: 4, OutputPer1K: 16},
+			"openai/o4-mini":             {InputPer1K: 11, OutputPer1K: 44},
+			"google/gemini-2.5-pro":      {InputPer1K: 13, OutputPer1K: 100},
+			"google/gemini-2.5-flash":    {InputPer1K: 3, OutputPer1K: 25},
 			// Embeddings for the desktop's semantic memory index (RFC 021).
 			// Priced here because it must be: LLM_ALLOWED_MODELS and this table
 			// have to agree on the same string, and rate() falls back to
