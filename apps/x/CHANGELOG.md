@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.30](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.29...v0.1.30) (2026-08-07)
+
+
+### Features
+
+* **mailbox:** stop discarding the departure signal in bounces and autoreplies ([311b0d9](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/311b0d93b8a4f8a61e0086fe7818db9a0d7980a3))
+* promote develop to main (cloud research, Starter tier) ([#222](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/222)) ([c36539a](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/c36539ab94440ba7b105a4ebb376c27522db45f0))
+* **relationships:** expose person deletion, and make the departure signal do something ([5d4d5a6](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/5d4d5a6c9f9f8cf60c2e21c31b380f6bc93694a3))
+* **relationships:** person deletion, departure signals, and a Research Mode RFC ([00b6811](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/00b6811a3db596608e222fe4b154bf161f254a1d))
+
+
+### Bug Fixes
+
+* **privacy:** stop the privacy receipt describing a flag nothing writes ([669933b](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/669933bc2bde10d504eab4a2b29ea213d02c7eb2))
+* unblock background LLM work, and make settings mean what they say ([#214](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/214)) ([89cb072](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/89cb072dd514b53465540f17ccbff880d2bef2da))
+* unblock background LLM work, and make settings mean what they say ([#215](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/215)) ([f94ab73](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/f94ab7344757d26223dec7782e94fd6adbd47c72))
+
 ## [0.1.29](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.28...v0.1.29) (2026-08-06)
 
 
