@@ -290,8 +290,8 @@ func gmailThreadsGet(w http.ResponseWriter, r *http.Request) {
 
 func gmailThreadsModify(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		AddLabelIds    []string `json:"addLabelIds"`
-		RemoveLabelIds []string `json:"removeLabelIds"`
+		AddLabelIDs    []string `json:"addLabelIds"`
+		RemoveLabelIDs []string `json:"removeLabelIds"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		gmailError(w, http.StatusBadRequest, "malformed request body")
@@ -307,14 +307,14 @@ func gmailThreadsModify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for _, m := range t.Messages {
-		for _, l := range body.RemoveLabelIds {
+		for _, l := range body.RemoveLabelIDs {
 			m.LabelIDs = removeLabel(m.LabelIDs, l)
 		}
-		for _, l := range body.AddLabelIds {
+		for _, l := range body.AddLabelIDs {
 			m.LabelIDs = addLabel(m.LabelIDs, l)
 		}
 	}
-	log.Printf("gmail-mock: thread %s labels +%v -%v", t.ID, body.AddLabelIds, body.RemoveLabelIds)
+	log.Printf("gmail-mock: thread %s labels +%v -%v", t.ID, body.AddLabelIDs, body.RemoveLabelIDs)
 	writeJSON(w, map[string]any{"id": t.ID, "historyId": t.HistoryID})
 }
 

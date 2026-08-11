@@ -27,7 +27,7 @@ func getJSON(t *testing.T, srv *httptest.Server, path string) map[string]any {
 	if err != nil {
 		t.Fatalf("GET %s: %v", path, err)
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("GET %s: status %d", path, res.StatusCode)
 	}
@@ -101,7 +101,7 @@ func TestUnsupportedQueryTermIsRejected(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET: %v", err)
 	}
-	defer res.Body.Close()
+	_ = res.Body.Close()
 	if res.StatusCode != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400 for an unimplemented query term", res.StatusCode)
 	}
@@ -157,7 +157,7 @@ func TestModifyRemovingInboxArchivesTheThread(t *testing.T) {
 	if err != nil {
 		t.Fatalf("modify: %v", err)
 	}
-	res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("modify status = %d", res.StatusCode)
 	}
@@ -178,7 +178,7 @@ func TestModifyUnknownThreadIs404(t *testing.T) {
 	if err != nil {
 		t.Fatalf("modify: %v", err)
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 	if res.StatusCode != http.StatusNotFound {
 		t.Fatalf("status = %d, want 404", res.StatusCode)
 	}
@@ -192,7 +192,7 @@ func TestSendRejectsMalformedRawAndAcceptsValid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("send: %v", err)
 	}
-	bad.Body.Close()
+	_ = bad.Body.Close()
 	if bad.StatusCode != http.StatusBadRequest {
 		t.Fatalf("malformed raw: status = %d, want 400", bad.StatusCode)
 	}
@@ -205,7 +205,7 @@ func TestSendRejectsMalformedRawAndAcceptsValid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("send: %v", err)
 	}
-	defer good.Body.Close()
+	defer func() { _ = good.Body.Close() }()
 	if good.StatusCode != http.StatusOK {
 		t.Fatalf("valid send: status = %d", good.StatusCode)
 	}
