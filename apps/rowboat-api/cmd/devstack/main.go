@@ -597,7 +597,12 @@ func deterministicEmbedding(text string, dims int) []float64 {
 		dims = maxEmbeddingDims
 	}
 	sum := sha256.Sum256([]byte(text))
-	out := make([]float64, dims)
+	// Capacity is the constant, not dims. Clamping dims first is enough to be
+	// correct, but it leaves the allocation textually sized by a value that
+	// began life in a request body — which static analysis flags, and which is
+	// only safe for as long as the clamp above stays put. Sizing on the
+	// constant makes the bound structural instead of a thing to remember.
+	out := make([]float64, 0, maxEmbeddingDims)
 	var norm float64
 	for i := 0; i < dims; i++ {
 		// Re-hash per block so the whole vector varies, not just the first 32.
@@ -605,7 +610,7 @@ func deterministicEmbedding(text string, dims int) []float64 {
 			sum = sha256.Sum256(sum[:])
 		}
 		v := (float64(sum[i%32]) / 255.0) - 0.5
-		out[i] = v
+		out = append(out, v)
 		norm += v * v
 	}
 	if norm > 0 {
