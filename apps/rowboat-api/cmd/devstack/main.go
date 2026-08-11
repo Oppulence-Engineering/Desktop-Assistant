@@ -580,9 +580,22 @@ func mockEmbeddingDims(model string) int {
 	}
 }
 
+// maxEmbeddingDims is the widest vector this mock will allocate, a little above
+// the widest real model (3072). It exists so the bound lives next to the
+// allocation instead of only in the caller: dims originates in a request body,
+// and a function that sizes a slice from a parameter should not depend on every
+// present and future caller having checked it first.
+const maxEmbeddingDims = 4096
+
 // deterministicEmbedding hashes the input into a unit-length vector. Same text
 // in, same vector out; different text, different direction.
 func deterministicEmbedding(text string, dims int) []float64 {
+	if dims < 0 {
+		dims = 0
+	}
+	if dims > maxEmbeddingDims {
+		dims = maxEmbeddingDims
+	}
 	sum := sha256.Sum256([]byte(text))
 	out := make([]float64, dims)
 	var norm float64
