@@ -224,3 +224,50 @@ func contains(haystack []string, needle string) bool {
 	}
 	return false
 }
+
+// A caller-supplied "dimensions" sizes an allocation, so it must be clamped to
+// the model's own width rather than trusted. Without this, one request asking
+// for a billion dimensions OOMs devstack for everyone sharing the cluster.
+func TestEmbeddingDimensionsAreClampedToModelWidth(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/embeddings", mockEmbeddings)
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	for _, tc := range []struct {
+		name     string
+		asked    int
+		wantDims int
+	}{
+		{"absurd request is clamped", 1_000_000_000, 1536},
+		{"unset falls back to model width", 0, 1536},
+		{"a smaller width is honoured", 256, 256},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			body, _ := json.Marshal(map[string]any{
+				"model": "text-embedding-3-small", "input": "hello", "dimensions": tc.asked,
+			})
+			res, err := srv.Client().Post(srv.URL+"/v1/embeddings",
+				"application/json", strings.NewReader(string(body)))
+			if err != nil {
+				t.Fatalf("embeddings: %v", err)
+			}
+			defer func() { _ = res.Body.Close() }()
+
+			var out struct {
+				Data []struct {
+					Embedding []float64 `json:"embedding"`
+				} `json:"data"`
+			}
+			if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if len(out.Data) != 1 {
+				t.Fatalf("data entries = %d, want 1", len(out.Data))
+			}
+			if got := len(out.Data[0].Embedding); got != tc.wantDims {
+				t.Fatalf("dimensions = %d, want %d", got, tc.wantDims)
+			}
+		})
+	}
+}

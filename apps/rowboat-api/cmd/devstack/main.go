@@ -537,9 +537,16 @@ func mockEmbeddings(w http.ResponseWriter, r *http.Request) {
 		inputs = []string{""}
 	}
 
+	// dims is clamped to the model's native width, never taken on trust. It
+	// arrives straight off the request body and sizes an allocation, so an
+	// unbounded value ("dimensions": 1e9) would let any caller on the cluster
+	// OOM devstack with one request. The real API also refuses to expand a
+	// model past its own width, so clamping is the faithful behaviour rather
+	// than a defensive deviation.
+	width := mockEmbeddingDims(req.Model)
 	dims := req.Dimensions
-	if dims <= 0 {
-		dims = mockEmbeddingDims(req.Model)
+	if dims <= 0 || dims > width {
+		dims = width
 	}
 
 	data := make([]any, 0, len(inputs))
