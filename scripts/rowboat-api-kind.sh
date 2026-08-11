@@ -262,12 +262,38 @@ validate_infisical_secret_keys() {
   fi
 }
 
+# The image ID (a content digest) of the locally built API image, or the empty
+# string if it has not been built yet.
+local_image_id() {
+  docker image inspect "$IMAGE" --format '{{.Id}}' 2>/dev/null || true
+}
+
+# devstack runs out of $IMAGE, and $IMAGE is a fixed tag. Applying the manifest
+# unchanged left kubectl reporting "unchanged" and the old pod running, so a
+# rebuilt devstack never actually reached the cluster and `make api-up` silently
+# served stale mocks. Stamping the image ID into the pod template makes the spec
+# genuinely differ whenever the image content does, which is what tells the
+# deployment controller to roll.
+rendered_deps_manifest() {
+  local image_id
+  image_id="$(local_image_id)"
+  [[ -n "$image_id" ]] || image_id="unbuilt"
+  ROWBOAT_RENDER_IMAGE_ID="$image_id" python3 -c '
+import os, sys
+sys.stdout.write(
+    open(os.environ["ROWBOAT_DEPS_FILE"]).read().replace(
+        "__ROWBOAT_IMAGE_ID__", os.environ["ROWBOAT_RENDER_IMAGE_ID"]
+    )
+)
+'
+}
+
 deploy_dependencies() {
   ensure_cluster
   ensure_namespace
   local postgres_pod_before
   postgres_pod_before="$(pod_uid_for_label app.kubernetes.io/name=rowboat-api-postgres)"
-  kubectl apply -n "$NAMESPACE" -f "$DEPS_FILE"
+  ROWBOAT_DEPS_FILE="$DEPS_FILE" rendered_deps_manifest | kubectl apply -n "$NAMESPACE" -f -
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-postgres --timeout=180s
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-redis --timeout=180s
   kubectl rollout status -n "$NAMESPACE" deployment/rowboat-api-temporal --timeout=240s
@@ -320,6 +346,26 @@ deploy_chart() {
     )
   fi
 
+  # LLM upstream: real OpenRouter by default, devstack mock only on request.
+  #
+  # The mock returns canned JSON, which is fine for smoke-testing plumbing but
+  # useless for anything that depends on what the model actually decides —
+  # thread classification labelled newsletters and real correspondence
+  # identically, so a "passing" local run said nothing about the feature. An
+  # empty OPENROUTER_BASE_URL makes the gateway use OpenRouter's own default
+  # endpoint with OPENROUTER_API_KEY from the cluster secret.
+  #
+  # This spends real money per call. Set ROWBOAT_KIND_MOCK_LLM=1 to go back to
+  # the free mock.
+  local llm_args=()
+  if [[ -n "${ROWBOAT_KIND_MOCK_LLM:-}" ]]; then
+    echo "LLM upstream: devstack mock (ROWBOAT_KIND_MOCK_LLM set)"
+    llm_args+=(--set-string "config.OPENROUTER_BASE_URL=http://rowboat-api-devstack:8090/v1")
+  else
+    echo "LLM upstream: live OpenRouter (set ROWBOAT_KIND_MOCK_LLM=1 to use the mock)"
+    llm_args+=(--set-string "config.OPENROUTER_BASE_URL=")
+  fi
+
   helm upgrade --install "$RELEASE_NAME" "$CHART_DIR" \
     --namespace "$NAMESPACE" \
     --values "$VALUES_FILE" \
@@ -334,6 +380,7 @@ deploy_chart() {
     --set-string "config.WORKOS_AUTHORIZE_BASE_URL=${devstack_origin}" \
     --set-string "config.ORY_PUBLIC_URL=${devstack_origin}" \
     "${google_args[@]}" \
+    "${llm_args[@]}" \
     --wait \
     --timeout 5m
   # Helm may prune a previously chart-managed Secret during the migration to
@@ -1410,7 +1457,16 @@ show_status() {
 run_desktop() {
   ensure_host_access
   cd "${ROOT_DIR}/apps/x"
+  # Point Gmail at the devstack mock unless the caller is deliberately running
+  # against a real mailbox. REAL_GOOGLE already means "use Google for OAuth", so
+  # it means "use Google for mail" too — silently mocking mail in that mode would
+  # make a real-account dogfooding session quietly read fixtures instead.
+  local gmail_root=""
+  if [[ -z "$REAL_GOOGLE" ]]; then
+    gmail_root="http://localhost:${DEVSTACK_PORT}"
+  fi
   API_URL="http://localhost:${API_PORT}" \
+    ROWBOAT_GMAIL_ROOT_URL="$gmail_root" \
     ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT="${ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT:-9222}" \
     npm run dev
 }
@@ -1435,7 +1491,7 @@ down() {
   stop_port_forwards
   helm uninstall "$RELEASE_NAME" -n "$NAMESPACE" >/dev/null 2>&1 || true
   kubectl delete secret -n "$NAMESPACE" "$INFISICAL_SYNC_SECRET" --ignore-not-found >/dev/null 2>&1 || true
-  kubectl delete -n "$NAMESPACE" -f "$DEPS_FILE" --ignore-not-found
+  ROWBOAT_DEPS_FILE="$DEPS_FILE" rendered_deps_manifest | kubectl delete -n "$NAMESPACE" -f - --ignore-not-found
 }
 
 delete_cluster() {

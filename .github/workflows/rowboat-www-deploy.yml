@@ -149,7 +149,7 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
-          context: apps/rowboat-www
+          context: .
           file: apps/rowboat-www/Dockerfile
           platforms: linux/amd64
           push: true

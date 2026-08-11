@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { google } from "googleapis";
+import { createGmailClient } from "./gmail_client.js";
 import { WorkDir } from "../config/config.js";
 import { createRun, createMessage } from "../runs/runs.js";
 import { getKgModel } from "../models/defaults.js";
@@ -265,7 +265,7 @@ async function ensureUserEmail(): Promise<string | null> {
   try {
     const auth = await GoogleClientFactory.getClient();
     if (auth) {
-      const gmail = google.gmail({ version: "v1", auth });
+      const gmail = createGmailClient(auth);
       const profile = await gmail.users.getProfile({ userId: "me" });
       if (profile.data.emailAddress) {
         updateUserEmail(profile.data.emailAddress);

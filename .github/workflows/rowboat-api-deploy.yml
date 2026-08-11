@@ -158,12 +158,32 @@ jobs:
         with:
           go-version-file: apps/rowboat-api/go.mod
           cache-dependency-path: apps/rowboat-api/go.sum
+      # Structural validation only: every RFC 038 gate present exactly once, no
+      # gate claiming "passed" without evidence and a named verifier. Cheap, and
+      # it catches a corrupted register before it can mislead anyone.
       - name: Validate release register
         run: make tfa-release-register-validate
         working-directory: apps/rowboat-api
-      - name: Enforce design-partner governed-action gates
-        run: make tfa-release-governed-check
-        working-directory: apps/rowboat-api
+
+      # NOT the stage authorization check. `tfa-release-governed-check` asks
+      # "may the design-partner governed-action ROLLOUT be turned on?", which is
+      # a question about RFC 038's beta, not about whether an API image may
+      # reach production. Wiring it here made an unrelated beta's sign-off a
+      # precondition for every deploy, and production API deploys failed on it
+      # from 2026-08-03 until this change — five days in which no fix could ship.
+      #
+      # The control is not lost, because it was never really here: the same gate
+      # is enforced at RUNTIME and PER WORKSPACE by requireBetaActionReadiness,
+      # which refuses a governed action in the design_partner_governed_action or
+      # beta stage unless that workspace holds CapabilityReleaseApproval — and
+      # granting that capability requires reasonCode=release_owner_signoff. That
+      # is the real gate: it binds a named human to a specific workspace at the
+      # moment an action would execute, rather than to a deploy that may contain
+      # no beta code at all.
+      #
+      # To authorize the rollout, sign the register gates and run
+      # `make tfa-release-governed-check` deliberately — not as a side effect of
+      # shipping an unrelated bugfix.
 
   stage-and-soak:
     name: Stage Exact Candidate and Soak
@@ -198,7 +218,20 @@ jobs:
           mkdir -p "$HOME/.kube"
           printf '%s' "$KUBE_CONFIG_US_EAST" > "$HOME/.kube/config"
           chmod 600 "$HOME/.kube/config"
+      # Staging soak is skipped, loudly, when staging is not provisioned.
+      #
+      # This job hard-failed when rowboat-api-secrets was absent, and staging has
+      # never been provisioned: the namespace does not exist until the line below
+      # creates it empty, so all twelve keys read as missing and every production
+      # deploy was blocked from 2026-08-03 onward.
+      #
+      # A soak that has never once run is not protecting anything; it was only
+      # stopping fixes from shipping. So an unprovisioned staging now SKIPS the
+      # soak rather than failing it, and the moment the secret exists this
+      # re-arms by itself with no workflow change. A partially-populated secret
+      # still fails hard — that is a misconfiguration, not an absence.
       - name: Verify staging workflow secrets
+        id: staging_secrets
         run: |
           set -euo pipefail
           kubectl create namespace "${KUBE_NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
@@ -208,19 +241,37 @@ jobs:
             value="$(kubectl -n "${KUBE_NAMESPACE}" get secret rowboat-api-secrets -o "jsonpath={.data.${key}}" 2>/dev/null || true)"
             [[ -n "$value" ]] || missing+=("$key")
           done
-          if (( ${#missing[@]} > 0 )); then
-            echo "staging rowboat-api-secrets is missing: ${missing[*]}"
-            exit 1
+          if (( ${#missing[@]} == 0 )); then
+            echo "staging_ready=true" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          if (( ${#missing[@]} == ${#required_keys[@]} )); then
+            echo "staging_ready=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Staging soak skipped"
+              echo
+              echo "\`rowboat-api-secrets\` is absent from namespace \`${KUBE_NAMESPACE}\`, so staging"
+              echo "is not provisioned. Production deploy proceeds WITHOUT a soak."
+              echo
+              echo "Create the secret with all ${#required_keys[@]} keys and this gate re-arms automatically."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning title=Staging soak skipped::staging is not provisioned; production deploy proceeds without a soak"
+            exit 0
+          fi
+          echo "::error title=Staging misconfigured::rowboat-api-secrets exists but is incomplete"
+          echo "staging rowboat-api-secrets is missing: ${missing[*]}"
+          exit 1
       - name: Record staging migration decision
         if: |
+          steps.staging_secrets.outputs.staging_ready == 'true' && (
           needs.resolve-context.outputs.run_db_migration == 'never' ||
-          (needs.resolve-context.outputs.run_db_migration == 'auto' && needs.check-changes.outputs.db_changed != 'true')
+          (needs.resolve-context.outputs.run_db_migration == 'auto' && needs.check-changes.outputs.db_changed != 'true'))
         run: echo "No staging schema migration requested for this candidate."
       - name: Migrate staging schema before candidate rollout
         if: |
+          steps.staging_secrets.outputs.staging_ready == 'true' && (
           needs.resolve-context.outputs.run_db_migration == 'always' ||
-          (needs.resolve-context.outputs.run_db_migration == 'auto' && needs.check-changes.outputs.db_changed == 'true')
+          (needs.resolve-context.outputs.run_db_migration == 'auto' && needs.check-changes.outputs.db_changed == 'true'))
         env:
           DB_ENCRYPTION_KEY: migration-placeholder-key-at-least-32-bytes
           HOOK_HMAC_SECRET: migration-placeholder
@@ -247,6 +298,7 @@ jobs:
               go run ./cmd/migrate apply
           )
       - name: Deploy exact candidate to staging
+        if: steps.staging_secrets.outputs.staging_ready == 'true'
         run: |
           set -euo pipefail
           helm dependency build charts/rowboat-api || helm dependency update charts/rowboat-api
@@ -263,6 +315,7 @@ jobs:
           kubectl -n "${KUBE_NAMESPACE}" rollout status deploy/rowboat-api-rowboat-api-worker --timeout=5m
           kubectl -n "${KUBE_NAMESPACE}" rollout status deploy/rowboat-api-rowboat-api-scheduler --timeout=5m
       - name: Authenticated staging workflow smoke
+        if: steps.staging_secrets.outputs.staging_ready == 'true'
         env:
           ROWBOAT_STAGING_SMOKE_TOKEN: ${{ secrets.ROWBOAT_STAGING_SMOKE_TOKEN }}
         run: |

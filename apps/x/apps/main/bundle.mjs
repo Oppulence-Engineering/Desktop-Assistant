@@ -11,6 +11,7 @@
 
 import * as esbuild from "esbuild";
 import { readFile } from "node:fs/promises";
+import { stageOnnxRuntime } from "../../scripts/stage-onnxruntime.mjs";
 
 // In CommonJS, import.meta.url doesn't exist. We need to polyfill it.
 // The banner defines __import_meta_url at the top of the bundle,
@@ -93,5 +94,16 @@ await esbuild.build({
   },
 });
 
+// Stage the native embedding runtime beside the bundle, exactly as packaging
+// does. Without this, `npm run dev` left .package/node_modules empty and the
+// on-device embedder reported "Cannot find package 'onnxruntime-node'" on every
+// index tick, silently routing all embeddings through the cloud proxy.
+if (stageOnnxRuntime("./.package")) {
+  console.log(`✅ Staged onnxruntime-node for ${process.platform}-${process.arch}`);
+} else {
+  console.warn(
+    `[onnx] no runtime for ${process.platform}-${process.arch} — dev runs without on-device embeddings`,
+  );
+}
 console.log("✅ Main process bundled to .package/dist/main.cjs");
 console.log("✅ Whisper utility bundled to .package/dist/whisper-utility.cjs");

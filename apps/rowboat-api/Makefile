@@ -92,11 +92,23 @@ sdk-generate:
 	npm --prefix "$(SDK_TS_DIR)" run build
 
 # Install the protoc plugins the proto-generate target needs.
+#
+# Pinned, not @latest. These plugins stamp their own version into the files
+# they generate, so floating them means the committed output drifts the moment
+# upstream publishes — generate-drift then fails on every PR, including ones
+# that touch nothing near the protos, and the diff is a version comment nobody
+# changed. protoc-gen-go tracks the protobuf runtime in go.mod so the generator
+# and the library it generates against can never disagree; the other two are
+# versioned independently of anything in go.mod and are pinned by hand.
+PROTOC_GEN_GO_VERSION := $(shell go list -m -f '{{.Version}}' google.golang.org/protobuf)
+PROTOC_GEN_GO_GRPC_VERSION := v1.6.2
+PROTOC_GEN_ENTGRPC_VERSION := v0.7.0
+
 .PHONY: install-tools
 install-tools:
-	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	go install entgo.io/contrib/entproto/cmd/protoc-gen-entgrpc@latest
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@$(PROTOC_GEN_GO_VERSION)
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(PROTOC_GEN_GO_GRPC_VERSION)
+	go install entgo.io/contrib/entproto/cmd/protoc-gen-entgrpc@$(PROTOC_GEN_ENTGRPC_VERSION)
 
 # ---- database migrations (Atlas, via ent) ----------------------------------
 

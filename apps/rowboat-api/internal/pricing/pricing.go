@@ -50,6 +50,18 @@ func DefaultTable() *Table {
 			"openai/o4-mini":             {InputPer1K: 11, OutputPer1K: 44},
 			"google/gemini-2.5-pro":      {InputPer1K: 13, OutputPer1K: 100},
 			"google/gemini-2.5-flash":    {InputPer1K: 3, OutputPer1K: 25},
+			// The desktop's default for signed-in work. List is $0.25/$1.50 per
+			// 1M = 2.5/15 credits per 1K; input rounds up to 3 because rates are
+			// whole numbers.
+			//
+			// It has to be priced here, not just allowed: rate() falls back to
+			// DefaultModel (30/150) for anything it doesn't recognise, so a
+			// routable-but-unpriced id bills the customer at the sonnet rate —
+			// 12x input and 10x output over what this model actually costs.
+			// Nothing validates the id on the way through when LLM_ALLOWED_MODELS
+			// is unset, so any model the desktop can name is routable; pricing is
+			// the only thing standing between that and a sonnet-rate bill.
+			"google/gemini-3.1-flash-lite": {InputPer1K: 3, OutputPer1K: 15},
 			// Embeddings for the desktop's semantic memory index (RFC 021).
 			// Priced here because it must be: LLM_ALLOWED_MODELS and this table
 			// have to agree on the same string, and rate() falls back to
