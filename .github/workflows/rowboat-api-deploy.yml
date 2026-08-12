@@ -193,6 +193,15 @@ jobs:
     environment: staging
     env:
       KUBE_NAMESPACE: rowboat-staging
+      # The workflow-level default is `prod`, and this job overrode only the
+      # namespace. Any step here that resolves secrets would pull PRODUCTION
+      # credentials into the staging namespace — including DATABASE_URL, which
+      # the staging migration step below runs against. Nothing has exercised
+      # that path yet only because the staging secret has never existed, so the
+      # job skips before reaching it: unreached rather than safe. Pinning the
+      # environment here means it cannot be reached later by someone creating
+      # the secret and assuming the rest was already correct.
+      INFISICAL_ENVIRONMENT: staging
       RELEASE_NAME: rowboat-api
       VALUES_FILE: charts/rowboat-api/values-staging.yaml
       STAGING_API_URL: https://api.x.staging.solomon-ai.co
