@@ -1,19 +1,19 @@
 # RFC 019: Google Push Infrastructure for Cloud Event Ingestion
 
-|                  |                                                                                                                                                                  |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RFC**          | 019                                                                                                                                                              |
-| **Status**       | Accepted — code side implemented with RFC 003; GCP side is operator-provisioned per this RFC                                                                     |
-| **Track**        | Cloud-native background workflows                                                                                                                                |
-| **Owners**       | `apps/rowboat-api` (watch manager, webhook) · Platform/Infra (GCP project, Pub/Sub)                                                                              |
-| **Created**      | 2026-06-09                                                                                                                                                       |
-| **Last updated** | 2026-06-09                                                                                                                                                       |
-| **Depends on**   | [RFC 003](./complete-003-cloud-event-ingestion.md) (webhook + router), [RFC 007](./007-production-cloud-enablement.md) (production rollout gates)                         |
-| **Related**      | [`docs/BACKEND_DEPLOYMENT.md`](../../docs/BACKEND_DEPLOYMENT.md) (operator prerequisites index)                                                                  |
+|                  |                                                                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**          | 019                                                                                                                                               |
+| **Status**       | Accepted — code complete; Calendar push live in staging + production; **Gmail push still blocked** on the Pub/Sub topic (see Deployment state)    |
+| **Track**        | Cloud-native background workflows                                                                                                                 |
+| **Owners**       | `apps/rowboat-api` (watch manager, webhook) · Platform/Infra (GCP project, Pub/Sub)                                                               |
+| **Created**      | 2026-06-09                                                                                                                                        |
+| **Last updated** | 2026-08-12                                                                                                                                        |
+| **Depends on**   | [RFC 003](./complete-003-cloud-event-ingestion.md) (webhook + router), [RFC 007](./007-production-cloud-enablement.md) (production rollout gates) |
+| **Related**      | [`docs/BACKEND_DEPLOYMENT.md`](../../docs/BACKEND_DEPLOYMENT.md) (operator prerequisites index)                                                   |
 
 ## Summary
 
-[RFC 003](./complete-003-cloud-event-ingestion.md) shipped the *receiving* half of Google
+[RFC 003](./complete-003-cloud-event-ingestion.md) shipped the _receiving_ half of Google
 event ingestion: `POST /v1/webhooks/google` verifies and ingests Gmail Pub/Sub
 pushes and Calendar channel notifications, and `internal/googlewatch` registers
 and renews the per-account subscriptions that make Google send them. What
@@ -24,20 +24,55 @@ RFC specifies those resources, the configuration matrix that wires them into
 the deployment, the verification procedure, and the security decisions
 (shared-token verification now, Pub/Sub OIDC as the committed follow-up).
 
+**Status note (2026-08-12):** watches are now enabled in staging and production
+and the Calendar path is live, but `GMAIL_PUBSUB_TOPIC` is unset everywhere, so
+Gmail push still does not run. See [Deployment state](#deployment-state-updated-2026-08-12).
+
 ## Current state (grounded)
 
-| Fact                                                                            | Evidence                                                                  |
-| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Webhook verifies a shared token (query param or `X-Goog-Channel-Token`)         | `apps/rowboat-api/internal/cloudevents/webhooks_google.go` (`verifyGoogleToken`) |
-| Gmail pushes decode `{emailAddress, historyId}`; dedupe key is history-anchored | `webhooks_google.go` (`handleGmailPush`)                                  |
-| Calendar channel ids are Rowboat-minted as `gcal:{email}:{uuid}`                | `apps/rowboat-api/internal/googlewatch/manager.go` (`registerCalendar`)   |
-| Watch manager runs in the scheduler pod, gated by `GOOGLE_WATCH_ENABLED`        | `apps/rowboat-api/cmd/scheduler/main.go` (`buildWatchManager`)            |
-| Boot validation requires `PUBLIC_BASE_URL` + `GOOGLE_WEBHOOK_TOKEN` when on     | `apps/rowboat-api/internal/appconfig/config.go` (`Validate`)              |
-| Unresolvable pushes are acked (200) and counted, never stored                   | `webhooks_google.go`; `cloud_events_unresolved_total{source}`             |
-| OAuth scopes already cover `users.watch` / `events.watch`                       | `apps/rowboat-api/internal/google/handler.go` (scopes incl. `gmail.readonly`, `calendar.events.readonly`) |
+| Fact                                                                                             | Evidence                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Webhook verifies a shared token (query param or `X-Goog-Channel-Token`)                          | `apps/rowboat-api/internal/cloudevents/webhooks_google.go` (`verifyGoogleToken`)                                                         |
+| Gmail pushes decode `{emailAddress, historyId}`; dedupe key is history-anchored                  | `webhooks_google.go` (`handleGmailPush`)                                                                                                 |
+| Calendar channel ids are Rowboat-minted as `gcal:{email}:{uuid}`                                 | `apps/rowboat-api/internal/googlewatch/manager.go` (`registerCalendar`)                                                                  |
+| Watch manager runs in the scheduler pod, gated by `GOOGLE_WATCH_ENABLED`                         | `apps/rowboat-api/cmd/scheduler/main.go` (`buildWatchManager`)                                                                           |
+| Boot validation requires `PUBLIC_BASE_URL` + `GOOGLE_WEBHOOK_TOKEN` when on                      | `apps/rowboat-api/internal/appconfig/config.go` (`Validate`)                                                                             |
+| Unresolvable pushes are acked (200) and counted, never stored                                    | `webhooks_google.go`; `cloud_events_unresolved_total{source}`                                                                            |
+| Watch manager registers Calendar + Drive always, Gmail **only** when `GMAIL_PUBSUB_TOPIC` is set | `googlewatch/manager.go` (`RenewDue`, `GmailPubSubTopic string // empty → skip Gmail watches`); proven by `TestGmailSkippedWithoutTopic` |
+| OAuth scopes already cover `users.watch` / `events.watch`                                        | `apps/rowboat-api/internal/google/handler.go` (scopes incl. `gmail.readonly`, `calendar.events.readonly`)                                |
 
-No GCP resources exist in any environment; without them the webhook is a
-working endpoint Google never calls.
+### Deployment state (updated 2026-08-12)
+
+The original text of this section read "No GCP resources exist in any
+environment". That is no longer accurate, and the correction matters because it
+changes what is actually blocking:
+
+| Environment             | `GOOGLE_WATCH_ENABLED` | `PUBLIC_BASE_URL`                     | `GMAIL_PUBSUB_TOPIC` | Effective behavior    |
+| ----------------------- | ---------------------- | ------------------------------------- | -------------------- | --------------------- |
+| default (`values.yaml`) | `false`                | —                                     | `""`                 | watches off           |
+| staging                 | `true`                 | `https://api.x.staging.solomon-ai.co` | **unset**            | Calendar + Drive only |
+| production              | `true`                 | `https://api.oppulence.io`            | **unset**            | Calendar + Drive only |
+
+So the Calendar half of this RFC is wired and enabled, while **Gmail push does
+not run in any environment**. It fails silently rather than loudly: with an
+empty topic the manager simply omits `KindGmail` from the kinds it ensures, so
+there is no error, no warning, and no Gmail watch row — only an absence.
+`TestGmailSkippedWithoutTopic` asserts exactly this (calendar + drive rows,
+`gmailCalls == 0`), and it passes.
+
+Remaining work is therefore narrower than this RFC originally implied:
+
+1. Create the Pub/Sub topic and grant `gmail-api-push@system.gserviceaccount.com`
+   the publish role (§Provisioning playbook).
+2. Create the push subscription targeting
+   `/v1/webhooks/google?token=<GOOGLE_WEBHOOK_TOKEN>`.
+3. Set `GMAIL_PUBSUB_TOPIC` in the staging and production values files.
+4. The committed Pub/Sub OIDC follow-up (§Decisions) is still open; verification
+   remains shared-token only.
+
+None of the GCP resources are captured as infrastructure-as-code — the
+repository contains no Terraform — so steps 1 and 2 are console/CLI actions and
+their existence cannot be verified from this repo.
 
 ## Goals
 
@@ -122,7 +157,7 @@ Why this is safe under Pub/Sub's at-least-once delivery:
   counted in `cloud_events_unresolved_total{source="gmail"}`) so Pub/Sub does
   not retry them for the 7-day retention.
 - Optional hardening: `--dead-letter-topic=gmail-push-dlq
-  --max-delivery-attempts=10` parks messages during a persistent webhook 5xx.
+--max-delivery-attempts=10` parks messages during a persistent webhook 5xx.
 
 ### 3. Calendar: domain verification
 
@@ -139,7 +174,7 @@ which Google echoes back as `X-Goog-Channel-Token` for verification.
 ## Configuration matrix
 
 | Key                         | Where     | Value                                                                                    |
-| --------------------------- | --------- | ----------------------------------------------------------------------------------------- |
+| --------------------------- | --------- | ---------------------------------------------------------------------------------------- |
 | `GOOGLE_WATCH_ENABLED`      | configmap | `"true"` (only the scheduler binary runs the loop; validation fails fast elsewhere-safe) |
 | `GMAIL_PUBSUB_TOPIC`        | configmap | `projects/<PROJECT>/topics/gmail-push`; empty skips Gmail watches (Calendar still works) |
 | `GOOGLE_WATCH_INTERVAL`     | configmap | `15m` (default)                                                                          |
@@ -171,15 +206,15 @@ task with `eventMatchCriteria`, the event links a `trigger=event` run
 
 ## Failure modes
 
-| Symptom                                                       | Cause / fix                                                                                                                                              |
-| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Webhook 401s every push                                       | Token mismatch (subscription URL / channel token vs `GOOGLE_WEBHOOK_TOKEN`). Channels minted before a rotation carry the old token until renewal — force by deleting their watch rows (re-registered next tick). |
-| Webhook 500 `webhook_unconfigured`                            | `GOOGLE_WEBHOOK_TOKEN` unset on the API pods (fails closed by design).                                                                                     |
-| `cloud_events_unresolved_total{source="gmail"}` climbing      | Account not resolvable: connected before `external_account_id` existed (reconnect once; WorkOS-email fallback covers same-email cases) or disconnected (sweep removes the watch within one interval; pushes stop at expiry). |
-| `google_watch_failures_total{stage="invalid_grant"}`          | Dead refresh token, recorded as `last_error` on the watch row; self-heals when the user reconnects Google.                                                 |
-| `google_watch_failures_total{stage="register"}`               | Gmail/Calendar API rejected the call — API not enabled (step 1) or domain not verified (step 3). Details in scheduler logs.                                |
-| Calendar `events.watch` → `push.webhookUrlUnauthorized`       | Domain verification incomplete for the exact `PUBLIC_BASE_URL` host.                                                                                       |
-| Events ingest but `routingStatus=skipped`                     | Routing disabled (`CLOUD_EVENTS_ROUTING_ENABLED=false`) — expected until the router is on (requires Temporal).                                             |
+| Symptom                                                  | Cause / fix                                                                                                                                                                                                                  |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Webhook 401s every push                                  | Token mismatch (subscription URL / channel token vs `GOOGLE_WEBHOOK_TOKEN`). Channels minted before a rotation carry the old token until renewal — force by deleting their watch rows (re-registered next tick).             |
+| Webhook 500 `webhook_unconfigured`                       | `GOOGLE_WEBHOOK_TOKEN` unset on the API pods (fails closed by design).                                                                                                                                                       |
+| `cloud_events_unresolved_total{source="gmail"}` climbing | Account not resolvable: connected before `external_account_id` existed (reconnect once; WorkOS-email fallback covers same-email cases) or disconnected (sweep removes the watch within one interval; pushes stop at expiry). |
+| `google_watch_failures_total{stage="invalid_grant"}`     | Dead refresh token, recorded as `last_error` on the watch row; self-heals when the user reconnects Google.                                                                                                                   |
+| `google_watch_failures_total{stage="register"}`          | Gmail/Calendar API rejected the call — API not enabled (step 1) or domain not verified (step 3). Details in scheduler logs.                                                                                                  |
+| Calendar `events.watch` → `push.webhookUrlUnauthorized`  | Domain verification incomplete for the exact `PUBLIC_BASE_URL` host.                                                                                                                                                         |
+| Events ingest but `routingStatus=skipped`                | Routing disabled (`CLOUD_EVENTS_ROUTING_ENABLED=false`) — expected until the router is on (requires Temporal).                                                                                                               |
 
 ## Token rotation
 
