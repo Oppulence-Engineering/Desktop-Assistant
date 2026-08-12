@@ -16,6 +16,9 @@ vi.mock("./billing.js", () => ({
   getBillingInfo: billing.get,
 }));
 
+const account = vi.hoisted(() => ({ signedIn: vi.fn() }));
+vi.mock("../account/account.js", () => ({ isSignedIn: account.signedIn }));
+
 function info(plan: string | null, status: string | null) {
   return { subscriptionPlan: plan, subscriptionStatus: status };
 }
@@ -25,6 +28,8 @@ let entitlements: typeof import("./entitlements.js");
 beforeEach(async () => {
   vi.resetModules();
   billing.get.mockReset();
+  account.signedIn.mockReset();
+  account.signedIn.mockResolvedValue(true);
   entitlements = await import("./entitlements.js");
   entitlements.resetEntitlementCache();
 });
@@ -108,5 +113,40 @@ describe("hasPaidSubscription", () => {
 
     billing.get.mockResolvedValue(info("pro", "active"));
     await expect(entitlements.hasPaidSubscription(2_000)).resolves.toBe(true);
+  });
+});
+
+/**
+ * The gate exists because unpaid use of labeling costs us money. That only
+ * holds when the tokens are ours: a signed-in run goes through the product
+ * gateway regardless of what models.json says, while a BYOK install spends the
+ * user's own key. Gating BYOK would withhold a feature that costs us nothing
+ * and that the user is already paying for on the other side.
+ */
+describe("labelingEntitled", () => {
+  it("allows BYOK — not signed in, so the tokens are not ours", async () => {
+    account.signedIn.mockResolvedValue(false);
+    // Billing is unreachable for a BYOK install; that must not matter.
+    billing.get.mockRejectedValue(new Error("not signed in"));
+    await expect(entitlements.labelingEntitled()).resolves.toBe(true);
+  });
+
+  it("does not even ask billing when not signed in", async () => {
+    account.signedIn.mockResolvedValue(false);
+    billing.get.mockResolvedValue(info("free", "active"));
+    await entitlements.labelingEntitled();
+    expect(billing.get).not.toHaveBeenCalled();
+  });
+
+  it("requires a paid plan when signed in", async () => {
+    account.signedIn.mockResolvedValue(true);
+    billing.get.mockResolvedValue(info("free", "active"));
+    await expect(entitlements.labelingEntitled()).resolves.toBe(false);
+  });
+
+  it("allows a signed-in paid plan", async () => {
+    account.signedIn.mockResolvedValue(true);
+    billing.get.mockResolvedValue(info("pro", "active"));
+    await expect(entitlements.labelingEntitled()).resolves.toBe(true);
   });
 });
