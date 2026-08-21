@@ -1,7 +1,7 @@
 [
-  "ANALYTICS.md",
+  "docs/ANALYTICS.md",
   "CHANGELOG.md",
-  "LIVE_NOTE.md",
+  "docs/LIVE_NOTE.md",
   "apps/main/e2e/desktop-dictation.spec.ts",
   "apps/main/forge.config.cjs",
   "apps/main/src/browser/control-service.ts",

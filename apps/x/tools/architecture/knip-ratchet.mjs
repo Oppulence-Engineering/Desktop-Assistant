@@ -4,10 +4,19 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
-const baselinePath = path.resolve("knip-baseline.json");
+const baselinePath = path.resolve("config/baselines/knip.json");
 const result = spawnSync(
   "pnpm",
-  ["exec", "knip", "--no-progress", "--no-exit-code", "--reporter", "json"],
+  [
+    "exec",
+    "knip",
+    "--config",
+    "config/knip.json",
+    "--no-progress",
+    "--no-exit-code",
+    "--reporter",
+    "json",
+  ],
   { cwd: process.cwd(), encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
 );
 

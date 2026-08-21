@@ -229,7 +229,6 @@
   "apps/renderer/src/lib/service-error-copy.ts|types||ServiceErrorFault",
   "apps/renderer/src/lib/terminal-output.ts|types||StyledSpan",
   "apps/renderer/src/lib/textarea-caret.ts|exports||getCaretAbsoluteCoordinates",
-  "package.json|devDependencies||lefthook",
   "packages/core/package.json|dependencies||@agentclientprotocol/claude-agent-acp",
   "packages/core/package.json|dependencies||@agentclientprotocol/codex-acp",
   "packages/core/package.json|dependencies||@google-cloud/local-auth",

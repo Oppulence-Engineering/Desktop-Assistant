@@ -120,10 +120,12 @@ pnpm uses symlinks for workspace packages. Electron Forge's dependency walker ca
 
 Long-form docs for specific features. Read the relevant file before making changes in that area — it has the full product flow, technical flows, and (where applicable) a catalog of the LLM prompts involved with exact file:line pointers.
 
-| Feature                                                                                                                                                                                                | Doc                   |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------- |
-| Live Notes — single `live:` frontmatter block (one objective + optional cron / windows / eventMatchCriteria) that turns a note into a self-updating artifact, panel UI, Copilot skill, prompts catalog | `apps/x/LIVE_NOTE.md` |
-| Analytics — PostHog event catalog, person properties, use-case taxonomy, how to add a new event                                                                                                        | `apps/x/ANALYTICS.md` |
+| Feature                                                                                                                                                                                                | Doc                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| Live Notes — single `live:` frontmatter block (one objective + optional cron / windows / eventMatchCriteria) that turns a note into a self-updating artifact, panel UI, Copilot skill, prompts catalog | `apps/x/docs/LIVE_NOTE.md`             |
+| Analytics — PostHog event catalog, person properties, use-case taxonomy, how to add a new event                                                                                                        | `apps/x/docs/ANALYTICS.md`             |
+| Meeting capture — local dual-track recording, transcription, recovery, and packaging                                                                                                                   | `apps/x/docs/MEETING_CAPTURE.md`       |
+| Architecture enforcement — executable rules, ratchets, package boundaries, and security checks                                                                                                         | `apps/x/docs/ARCHITECTURE_GAUNTLET.md` |
 
 ## Common Tasks
 

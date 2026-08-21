@@ -5,7 +5,7 @@ import process from "node:process";
 import ts from "typescript";
 
 const root = process.cwd();
-const baselinePath = path.join(root, "architecture-baseline.json");
+const baselinePath = path.join(root, "config/baselines/architecture.json");
 const sourceRoots = ["apps/main/src", "packages/core/src"];
 
 function rootIdentifier(expression) {

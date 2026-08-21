@@ -39,25 +39,25 @@ Emitted whenever ai-sdk returns token usage (one event per LLM call, not per run
 
 Every `llm_usage` emit point in the codebase:
 
-| `use_case`        | `sub_use_case`         | `agent_name`? | Where                                                                       | File:line                                                                                |
-| ----------------- | ---------------------- | ------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `copilot_chat`    | (none)                 | yes           | User chat in renderer (default for any `createRun` without `useCase`)       | `packages/core/src/agents/runtime.ts:1313` (finish-step in `streamLlm`)                  |
-| `copilot_chat`    | `scheduled`            | yes           | Background scheduled agent runner                                           | `packages/core/src/agent-schedule/runner.ts:167`                                         |
-| `copilot_chat`    | `file_parse`           | inherits      | `parseFile` builtin tool inside any chat                                    | `packages/core/src/application/lib/builtin-tools.ts:770`                                 |
-| `live_note_agent` | `routing`              | no            | Pass 1 routing classifier (`generateObject`)                                | `packages/core/src/knowledge/live-note/routing.ts:93`                                    |
-| `live_note_agent` | `manual`               | yes           | Pass 2 agent run — user clicked Run / called the `run-live-note-agent` tool | `packages/core/src/knowledge/live-note/runner.ts:140` (createRun, `subUseCase: trigger`) |
-| `live_note_agent` | `cron`                 | yes           | Pass 2 agent run — cron expression matched                                  | same call site                                                                           |
-| `live_note_agent` | `window`               | yes           | Pass 2 agent run — fired inside a configured time-of-day window             | same call site                                                                           |
-| `live_note_agent` | `event`                | yes           | Pass 2 agent run — Pass 1 routing flagged the note for an incoming event    | same call site                                                                           |
-| `meeting_note`    | (none)                 | no            | Meeting transcript summarizer (`generateText`)                              | `packages/core/src/knowledge/summarize_meeting.ts:161`                                   |
-| `knowledge_sync`  | `agent_notes`          | yes           | Agent notes learning service                                                | `packages/core/src/knowledge/agent_notes.ts:309` (createRun)                             |
-| `knowledge_sync`  | `tag_notes`            | yes           | Note tagging                                                                | `packages/core/src/knowledge/tag_notes.ts:86` (createRun)                                |
-| `knowledge_sync`  | `build_graph`          | yes           | Knowledge graph note creation                                               | `packages/core/src/knowledge/build_graph.ts:253` (createRun)                             |
-| `knowledge_sync`  | `label_emails`         | yes           | Email labeling                                                              | `packages/core/src/knowledge/label_emails.ts:73` (createRun)                             |
-| `knowledge_sync`  | `inline_task_run`      | yes           | Inline `@rowboat` task execution (two call sites)                           | `packages/core/src/knowledge/inline_tasks.ts:471, 552` (createRun)                       |
-| `knowledge_sync`  | `inline_task_classify` | no            | Inline task scheduling classifier (`generateText`)                          | `packages/core/src/knowledge/inline_tasks.ts:673`                                        |
-| `knowledge_sync`  | `pre_built`            | yes           | Pre-built scheduled agents                                                  | `packages/core/src/pre_built/runner.ts:43` (createRun)                                   |
-| `knowledge_sync`  | `memory_query_expand`  | no            | Memory-search query expansion / HyDE (`generateObject`); only when query expansion is enabled | `packages/core/src/memory/expand.ts` (`expandQuery`)                  |
+| `use_case`        | `sub_use_case`         | `agent_name`? | Where                                                                                         | File:line                                                                                |
+| ----------------- | ---------------------- | ------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `copilot_chat`    | (none)                 | yes           | User chat in renderer (default for any `createRun` without `useCase`)                         | `packages/core/src/agents/runtime.ts:1313` (finish-step in `streamLlm`)                  |
+| `copilot_chat`    | `scheduled`            | yes           | Background scheduled agent runner                                                             | `packages/core/src/agent-schedule/runner.ts:167`                                         |
+| `copilot_chat`    | `file_parse`           | inherits      | `parseFile` builtin tool inside any chat                                                      | `packages/core/src/application/lib/builtin-tools.ts:770`                                 |
+| `live_note_agent` | `routing`              | no            | Pass 1 routing classifier (`generateObject`)                                                  | `packages/core/src/knowledge/live-note/routing.ts:93`                                    |
+| `live_note_agent` | `manual`               | yes           | Pass 2 agent run — user clicked Run / called the `run-live-note-agent` tool                   | `packages/core/src/knowledge/live-note/runner.ts:140` (createRun, `subUseCase: trigger`) |
+| `live_note_agent` | `cron`                 | yes           | Pass 2 agent run — cron expression matched                                                    | same call site                                                                           |
+| `live_note_agent` | `window`               | yes           | Pass 2 agent run — fired inside a configured time-of-day window                               | same call site                                                                           |
+| `live_note_agent` | `event`                | yes           | Pass 2 agent run — Pass 1 routing flagged the note for an incoming event                      | same call site                                                                           |
+| `meeting_note`    | (none)                 | no            | Meeting transcript summarizer (`generateText`)                                                | `packages/core/src/knowledge/summarize_meeting.ts:161`                                   |
+| `knowledge_sync`  | `agent_notes`          | yes           | Agent notes learning service                                                                  | `packages/core/src/knowledge/agent_notes.ts:309` (createRun)                             |
+| `knowledge_sync`  | `tag_notes`            | yes           | Note tagging                                                                                  | `packages/core/src/knowledge/tag_notes.ts:86` (createRun)                                |
+| `knowledge_sync`  | `build_graph`          | yes           | Knowledge graph note creation                                                                 | `packages/core/src/knowledge/build_graph.ts:253` (createRun)                             |
+| `knowledge_sync`  | `label_emails`         | yes           | Email labeling                                                                                | `packages/core/src/knowledge/label_emails.ts:73` (createRun)                             |
+| `knowledge_sync`  | `inline_task_run`      | yes           | Inline `@rowboat` task execution (two call sites)                                             | `packages/core/src/knowledge/inline_tasks.ts:471, 552` (createRun)                       |
+| `knowledge_sync`  | `inline_task_classify` | no            | Inline task scheduling classifier (`generateText`)                                            | `packages/core/src/knowledge/inline_tasks.ts:673`                                        |
+| `knowledge_sync`  | `pre_built`            | yes           | Pre-built scheduled agents                                                                    | `packages/core/src/pre_built/runner.ts:43` (createRun)                                   |
+| `knowledge_sync`  | `memory_query_expand`  | no            | Memory-search query expansion / HyDE (`generateObject`); only when query expansion is enabled | `packages/core/src/memory/expand.ts` (`expandQuery`)                                     |
 
 ##### `live_note_agent` sub-use-case shape
 
@@ -106,15 +106,15 @@ Emitted by the local semantic memory index (RFC 021) after an incremental pass t
 
 Emitted once per `memory-search` retrieval (RFC 021), on every path including fallbacks. Main-process only, via `capture()` from `packages/core/src/memory/index.ts`. Powers retrieval-health dashboards (mode mix, latency, zero-result rate).
 
-| Property       | Type    | Notes                                                                       |
-| -------------- | ------- | --------------------------------------------------------------------------- |
-| `mode`         | enum    | `hybrid` / `lexical_fallback` / `vector_only` (see `SearchMode`)            |
-| `result_count` | number  | Number of results returned                                                  |
-| `zero_result`  | boolean | `true` when nothing was returned (a recall-quality signal)                  |
-| `k`            | number  | Requested result count                                                      |
-| `scoped`       | boolean | `true` when a `pathPrefix` scoped the search                                |
+| Property       | Type    | Notes                                                                         |
+| -------------- | ------- | ----------------------------------------------------------------------------- |
+| `mode`         | enum    | `hybrid` / `lexical_fallback` / `vector_only` (see `SearchMode`)              |
+| `result_count` | number  | Number of results returned                                                    |
+| `zero_result`  | boolean | `true` when nothing was returned (a recall-quality signal)                    |
+| `k`            | number  | Requested result count                                                        |
+| `scoped`       | boolean | `true` when a `pathPrefix` scoped the search                                  |
 | `expanded`     | boolean | `true` when LLM query expansion / HyDE ran (also emits `memory_query_expand`) |
-| `duration_ms`  | number  | Wall-clock of the search                                                     |
+| `duration_ms`  | number  | Wall-clock of the search                                                      |
 
 ### Other events (pre-existing, not added by the LLM-usage work)
 

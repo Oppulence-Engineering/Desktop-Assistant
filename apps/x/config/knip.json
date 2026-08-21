@@ -9,8 +9,8 @@
   "workspaces": {
     ".": {
       "entry": [
-        "eslint.config.mts",
-        "dependency-cruiser.config.mjs",
+        "config/eslint.config.mts",
+        "config/dependency-cruiser.config.mjs",
         "scripts/**/*.mjs",
         "tools/**/*.mjs"
       ],

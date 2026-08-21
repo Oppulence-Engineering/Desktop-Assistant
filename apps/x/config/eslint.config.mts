@@ -10,9 +10,9 @@ import tseslint from "typescript-eslint";
 import { defineConfig, globalIgnores } from "eslint/config";
 import xArchitecture from "@x/eslint-plugin-x-architecture";
 
-const repoRoot = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const baseline = JSON.parse(
-  fs.readFileSync(path.join(repoRoot, "architecture-baseline.json"), "utf8"),
+  fs.readFileSync(path.join(repoRoot, "config/baselines/architecture.json"), "utf8"),
 ) as {
   containerResolve: Record<string, number>;
   unsafeFsWrites: Record<string, number>;

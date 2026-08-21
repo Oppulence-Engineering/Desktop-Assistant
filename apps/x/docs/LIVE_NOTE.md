@@ -6,7 +6,7 @@ A live note has exactly **one** `live:` block in its YAML frontmatter. The block
 
 **Example** (a note that shows the current Chicago time, refreshed hourly):
 
-~~~markdown
+```markdown
 ---
 live:
   objective: |
@@ -25,7 +25,7 @@ live:
 # Chicago time
 
 3:00 PM, Central Time
-~~~
+```
 
 ## Table of Contents
 
@@ -47,17 +47,17 @@ live:
 
 A live note has at most one `live:` block. The block has exactly one `objective`. The objective can be long and cover multiple sub-topics — the agent treats the note holistically and is free to lay out the body however the objective suggests. **There is no second objective per note.** When the user asks Copilot to "also keep an eye on X" in an already-live note, Copilot is trained to extend the existing objective in natural language rather than fork a second block.
 
-This is intentional: the user is *delegating awareness*, not configuring automations. Multiple agents per note led to ownership confusion, scope boundaries, and orchestration concerns that don't fit a personal-knowledge tool.
+This is intentional: the user is _delegating awareness_, not configuring automations. Multiple agents per note led to ownership confusion, scope boundaries, and orchestration concerns that don't fit a personal-knowledge tool.
 
 ### Triggers
 
 The `triggers` object has three independently optional sub-fields. Each one is its own channel; mix freely.
 
-| Field | When it fires | Shape |
-|---|---|---|
-| **`cronExpr`** | At exact cron times | `cronExpr: "0 * * * *"` |
-| **`windows`** | Once per day per window, anywhere inside a time-of-day band | `windows: [{ startTime: "09:00", endTime: "12:00" }]` |
-| **`eventMatchCriteria`** | When a matching event arrives (e.g. new Gmail thread) | `eventMatchCriteria: "Emails about Q3 planning"` |
+| Field                    | When it fires                                               | Shape                                                 |
+| ------------------------ | ----------------------------------------------------------- | ----------------------------------------------------- |
+| **`cronExpr`**           | At exact cron times                                         | `cronExpr: "0 * * * *"`                               |
+| **`windows`**            | Once per day per window, anywhere inside a time-of-day band | `windows: [{ startTime: "09:00", endTime: "12:00" }]` |
+| **`eventMatchCriteria`** | When a matching event arrives (e.g. new Gmail thread)       | `eventMatchCriteria: "Emails about Q3 planning"`      |
 
 A `triggers` block with no fields (or no `triggers` key at all) is **manual-only** — the agent fires only when the user clicks Run in the panel.
 
@@ -87,11 +87,13 @@ Every mutation goes through IPC to the backend — the renderer never writes the
 ### What the runtime agent does
 
 When a trigger fires, the live-note agent receives a short message:
+
 - The workspace-relative path to the note and a localized timestamp.
 - The objective.
 - For event runs only: the matching `eventMatchCriteria` text and the event payload, with a Pass-2 decision directive ("only edit if the event genuinely warrants it").
 
 The agent's system prompt tells it to:
+
 1. Call `file-readText` to read the current note (the body may be long; no body snapshot is passed in the message — fetch fresh).
 2. Make small, **patch-style** edits with `file-editText` — change one region, re-read, change the next region — rather than one-shot rewrites.
 3. Follow default body structure unless the objective overrides: H1 stays the title; a 1-3 sentence rolling summary at the top; H2 sub-topic sections below, freshest first.
@@ -136,22 +138,24 @@ Backend (main process)
 - Each tick: `workspace.readdir('knowledge', { recursive: true })`, filter `.md`, `fetchLiveNote(relPath)` for each.
 - For each note with a `live:` block where `active !== false`, `dueTimedTrigger(triggers, lastRunAt)` returns `'cron'`, `'window'`, or `null` — pure cycle check, no backoff. The scheduler then calls `backoffRemainingMs(lastAttemptAt)` separately so it can log "matched cron, backoff 4m remaining" rather than collapse the two reasons.
 - When due AND not in backoff, fire `runLiveNoteAgent(relPath, source)` where `source` is `'cron'` or `'window'` (the granular trigger surfaces all the way to the agent message — see Trigger granularity).
-- **Cycle anchoring** — anchored on `lastRunAt`, which is bumped only on *successful* completions. A failed run leaves the cycle unfired so the scheduler retries.
+- **Cycle anchoring** — anchored on `lastRunAt`, which is bumped only on _successful_ completions. A failed run leaves the cycle unfired so the scheduler retries.
 - **Backoff** — `RETRY_BACKOFF_MS = 5 min`. If `lastAttemptAt` is within that window, the scheduler skips the note. Covers both in-flight runs (the in-memory concurrency guard handles the common case; backoff is the disk-persistent backstop) and post-failure storming. Manual runs (clicked Run) bypass this — they don't go through the scheduler.
 - **Cron grace** — `cronExpr` enforces a 2-minute grace; missed schedules are skipped, not replayed.
 - **Windows** have no grace — anywhere inside the band counts. A failed run inside the band leaves the window unfired; the next eligible tick (after backoff) retries.
-- **Window cycle anchor** — a window's daily cycle starts at `startTime`. Once a *successful* fire lands strictly after today's `startTime`, that window is done for the day. The strict comparison handles the boundary case (e.g. an 08:00–12:00 + a 12:00–15:00 window each get to fire even when the morning fire happens exactly at 12:00:00).
+- **Window cycle anchor** — a window's daily cycle starts at `startTime`. Once a _successful_ fire lands strictly after today's `startTime`, that window is done for the day. The strict comparison handles the boundary case (e.g. an 08:00–12:00 + a 12:00–15:00 window each get to fire even when the morning fire happens exactly at 12:00:00).
 - **Startup** — `initLiveNoteScheduler()` is called in `apps/main/src/main.ts` at app-ready, alongside `initLiveNoteEventProcessor()`.
 
 ### Event pipeline
 
 **Producers** — any data source that should feed live notes emits events:
+
 - **Gmail** (`packages/core/src/knowledge/sync_gmail.ts`) — call sites after a successful thread sync invoke `createEvent({ source: 'gmail', type: 'email.synced', payload: <thread markdown> })`.
 - **Calendar** (`packages/core/src/knowledge/sync_calendar.ts`) — one bundled event per sync, with a markdown digest payload built by `summarizeCalendarSync()`.
 
 **Storage** — `packages/core/src/knowledge/live-note/events.ts` writes each event as a JSON file under `~/.rowboat/events/pending/<id>.json`. IDs come from the DI-resolved `IdGen` (ISO-based, lexicographically sortable) — so `readdirSync(...).sort()` is strict FIFO.
 
 **Consumer loop** — same file, `init()` polls every **5 seconds**, then `processPendingEvents()` walks sorted filenames. For each event:
+
 1. Parse via `KnowledgeEventSchema`; malformed files go to `done/` with `error` set (the loop stays alive).
 2. `listEventEligibleLiveNotes()` scans every `.md` under `knowledge/`. Only notes where `live.active !== false` and `live.triggers?.eventMatchCriteria` is set are event-eligible.
 3. `findCandidates(event, eligible)` runs Pass 1 LLM routing (below).
@@ -159,6 +163,7 @@ Backend (main process)
 5. Enrich the event JSON with `processedAt`, `candidateFilePaths`, `runIds`, `error?`, then move to `events/done/<id>.json`.
 
 **Pass 1 routing** (`routing.ts`):
+
 - **Short-circuit** — if `event.targetFilePath` is set (manual re-run events), skip the LLM and return that note directly.
 - Batches of `BATCH_SIZE = 20`.
 - Per batch, `generateObject()` with `ROUTING_SYSTEM_PROMPT` + `buildRoutingPrompt()` and `Pass1OutputSchema` → `{ filePaths: string[] }`. Direct path-based dedup (no composite key needed since live-note is one-per-file).
@@ -173,7 +178,7 @@ Internal trigger enum (`LiveNoteTriggerType`) is `'manual' | 'cron' | 'window' |
 - The **event processor** always passes `'event'`.
 - The **panel Run button** and the **`run-live-note-agent` builtin tool** both pass `'manual'`.
 
-`buildMessage` always emits a `**Trigger:**` paragraph in the agent's run message — one paragraph per kind. `manual` and the two timed variants (`cron`, `window`) include any optional `context` as a `**Context:**` block. `event` includes the eventMatchCriteria + payload + Pass 2 decision directive (no `**Context:**`; the payload *is* the context).
+`buildMessage` always emits a `**Trigger:**` paragraph in the agent's run message — one paragraph per kind. `manual` and the two timed variants (`cron`, `window`) include any optional `context` as a `**Context:**` block. `event` includes the eventMatchCriteria + payload + Pass 2 decision directive (no `**Context:**`; the payload _is_ the context).
 
 This lets the user-authored objective branch on trigger kind when warranted (for example, an email digest can scan `gmail_sync/` from scratch on cron/window runs, while event runs integrate just the new thread). The skill teaches the pattern under "Per-trigger guidance (advanced)".
 
@@ -201,16 +206,16 @@ Returned to callers: `{ filePath, runId, action, contentBefore, contentAfter, su
 
 ### IPC surface
 
-| Channel | Caller → handler | Purpose |
-|---|---|---|
-| `live-note:run` | Renderer (panel Run button) | Fires `runLiveNoteAgent(..., 'manual')` |
-| `live-note:get` | Panel on open | Returns the parsed `LiveNote \| null` from frontmatter |
-| `live-note:set` | Panel save | Validates + writes the whole `live:` block |
-| `live-note:setActive` | Panel toggle | Flips `active` |
-| `live-note:delete` | Panel "Make passive" | Removes the entire `live:` block |
-| `live-note:stop` | Panel Stop button | Resolves the live block's `lastRunId` and calls `runsCore.stop(runId)` |
-| `live-note:listNotes` | Background-agents view | Lists all live notes with summary fields |
-| `live-note-agent:events` | Server → renderer (`webContents.send`) | Forwards `liveNoteBus` events to `useLiveNoteAgentStatus` |
+| Channel                  | Caller → handler                       | Purpose                                                                |
+| ------------------------ | -------------------------------------- | ---------------------------------------------------------------------- |
+| `live-note:run`          | Renderer (panel Run button)            | Fires `runLiveNoteAgent(..., 'manual')`                                |
+| `live-note:get`          | Panel on open                          | Returns the parsed `LiveNote \| null` from frontmatter                 |
+| `live-note:set`          | Panel save                             | Validates + writes the whole `live:` block                             |
+| `live-note:setActive`    | Panel toggle                           | Flips `active`                                                         |
+| `live-note:delete`       | Panel "Make passive"                   | Removes the entire `live:` block                                       |
+| `live-note:stop`         | Panel Stop button                      | Resolves the live block's `lastRunId` and calls `runsCore.stop(runId)` |
+| `live-note:listNotes`    | Background-agents view                 | Lists all live notes with summary fields                               |
+| `live-note-agent:events` | Server → renderer (`webContents.send`) | Forwards `liveNoteBus` events to `useLiveNoteAgentStatus`              |
 
 Request/response schemas live in `packages/shared/src/ipc.ts`; handlers in `apps/main/src/ipc.ts`; backend helpers in `packages/core/src/knowledge/live-note/fileops.ts`.
 
@@ -220,7 +225,7 @@ Request/response schemas live in `packages/shared/src/ipc.ts`; handlers in `apps
 - **Backend is single writer for `live:`** — all editing goes through fileops; the renderer's FrontmatterProperties UI explicitly preserves `live:` byte-for-byte across saves.
 - **File lock** — every fileops mutation runs under `withFileLock(absPath)` so the runner, scheduler, and IPC handlers serialize on the file.
 - **Event FIFO** — monotonic `IdGen` IDs → lexicographic filenames → `sort()` in `processPendingEvents()`. Candidates within one event are processed sequentially.
-- **No retry storms** — `lastRunAt` is set at the *start* of a run, not the end. A crash mid-run leaves the note marked as ran; the scheduler's next tick computes the next occurrence from that point.
+- **No retry storms** — `lastRunAt` is set at the _start_ of a run, not the end. A crash mid-run leaves the note marked as ran; the scheduler's next tick computes the next occurrence from that point.
 
 ---
 
@@ -273,7 +278,7 @@ Rowboat no longer creates a default `Today.md` live dashboard for new users. Liv
   - `idle` → "Live · 5 m" using `formatRelativeTime(lastRunAt)`.
   - `running` → "Updating…" with `animate-pulse` and a soft `bg-primary/10` highlight.
   - `error` → "Live · failed 5 m" in amber, off `lastAttemptAt`.
-  Click dispatches `rowboat:open-live-note-panel` with `{ filePath }`. The hook ticks once a minute so the relative-time label stays fresh while the user has the editor open.
+    Click dispatches `rowboat:open-live-note-panel` with `{ filePath }`. The hook ticks once a minute so the relative-time label stays fresh while the user has the editor open.
 - **Panel** — `apps/renderer/src/components/live-note-sidebar.tsx`. Right-anchored, mounted once in `App.tsx`. Self-listens for `rowboat:open-live-note-panel`; on open, calls `live-note:get` and renders. All mutations go through IPC.
   - Constant top header: Radio icon, "Live note" title, note name subtitle, X close.
   - Empty state (passive): "Make this note live" CTA — hands off to Copilot via `rowboat:open-copilot-edit-live-note`.
@@ -291,7 +296,7 @@ Every LLM-facing prompt in the feature, with file pointers. After any edit: `cd 
 
 ### 1. Routing system prompt (Pass 1 classifier)
 
-- **Purpose**: decide which live notes *might* be relevant to an incoming event. Liberal — prefers false positives; the live-note agent does Pass 2.
+- **Purpose**: decide which live notes _might_ be relevant to an incoming event. Liberal — prefers false positives; the live-note agent does Pass 2.
 - **File**: `packages/core/src/knowledge/live-note/routing.ts` (`ROUTING_SYSTEM_PROMPT`).
 - **Output**: structured `Pass1OutputSchema` — `{ filePaths: string[] }`.
 - **Invoked by**: `findCandidates()` per batch of 20 notes via `generateObject({ model, system, prompt, schema })`.
@@ -319,6 +324,7 @@ Every LLM-facing prompt in the feature, with file pointers. After any edit: `cd 
 - **Behavior**: tells the agent to call `file-readText` itself (no body snapshot included, since the body can be long and may have been edited by a concurrent run) and to make patch-style edits.
 
 Three branches by `trigger`:
+
 - **`manual`** — base message. If `context` is passed, it's appended as a `**Context:**` section. The `run-live-note-agent` tool uses this path for both plain refreshes and context-biased backfills.
 - **`timed`** — same as `manual`. Called by the scheduler with no `context`.
 - **`event`** — adds a Pass 2 decision block listing the note's `eventMatchCriteria` and the event payload, with the directive to skip the edit if the event isn't truly relevant.
@@ -333,7 +339,7 @@ Three branches by `trigger`:
 
 ### 6. Copilot trigger paragraph
 
-- **Purpose**: tells Copilot *when* to load the `live-note` skill, and frames how aggressively to act once loaded.
+- **Purpose**: tells Copilot _when_ to load the `live-note` skill, and frames how aggressively to act once loaded.
 - **File**: `packages/core/src/application/assistant/instructions.ts` (look for the "Live Notes" paragraph).
 - **Strong signals (load + act without asking)**: cadence words ("every morning / daily / hourly…"), living-document verbs ("keep a running summary of…", "maintain a digest of…"), watch/monitor verbs, pin-live framings ("always show the latest X here"), direct ("track / follow X"), event-conditional ("whenever a relevant email comes in…").
 - **Medium signals (load + answer the one-off + offer)**: time-decaying questions ("what's the weather?", "USD/INR right now?", "service X status?"), note-anchored snapshots ("show me my schedule here"), recurring artifacts ("morning briefing", "weekly review", "Acme dashboard"), topic-following / catch-up.
@@ -361,48 +367,49 @@ Three branches by `trigger`:
 
 All live-note logs use the `PrefixLogger` with the prefix `LiveNote:<Component>` so they're greppable as a group. Every component logs lifecycle events at one consistent level.
 
-| Component | Prefix | What it logs |
-|---|---|---|
-| Scheduler | `LiveNote:Scheduler` | One tick summary per tick when work happened (`tick — scanned N md, K live, fired J, backoff M`). Per-note `<path> — firing (matched cron)` and `<path> — skip (matched window, backoff 4m remaining)`. Quiet when no live notes or none due. |
-| Agent (runner) | `LiveNote:Agent` | `<path> — start trigger=cron runId=…`, `<path> — done action=replace summary="…"` (truncated to 120 chars), `<path> — failed: <msg>`, `<path> — skip: already running`. |
-| Routing | `LiveNote:Routing` | `event:<id> — routing against N live notes`, `event:<id> — Pass1 → K candidates: a.md, b.md`, `event:<id> — Pass1 batch X failed: …`. |
-| Events | `LiveNote:Events` | `event:<id> — received source=gmail type=email.synced`, `event:<id> — dispatching to K candidates: …`, `event:<id> — processed ok=2 errors=0`. |
-| Fileops | (only logs failures) | Lock contention or write errors. Otherwise silent. |
+| Component      | Prefix               | What it logs                                                                                                                                                                                                                                  |
+| -------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scheduler      | `LiveNote:Scheduler` | One tick summary per tick when work happened (`tick — scanned N md, K live, fired J, backoff M`). Per-note `<path> — firing (matched cron)` and `<path> — skip (matched window, backoff 4m remaining)`. Quiet when no live notes or none due. |
+| Agent (runner) | `LiveNote:Agent`     | `<path> — start trigger=cron runId=…`, `<path> — done action=replace summary="…"` (truncated to 120 chars), `<path> — failed: <msg>`, `<path> — skip: already running`.                                                                       |
+| Routing        | `LiveNote:Routing`   | `event:<id> — routing against N live notes`, `event:<id> — Pass1 → K candidates: a.md, b.md`, `event:<id> — Pass1 batch X failed: …`.                                                                                                         |
+| Events         | `LiveNote:Events`    | `event:<id> — received source=gmail type=email.synced`, `event:<id> — dispatching to K candidates: …`, `event:<id> — processed ok=2 errors=0`.                                                                                                |
+| Fileops        | (only logs failures) | Lock contention or write errors. Otherwise silent.                                                                                                                                                                                            |
 
 Conventions:
+
 - Lower-case verbs (`firing`, `skip`, `done`, `failed`) so lines scan visually.
 - File path is always the second token where applicable.
 - Run summaries truncated to 120 chars with a single `…` so log lines stay under terminal-width.
-- Scheduler emits *one* tick summary per tick, not a row per note. Per-note rows only when something fires or hits a notable skip.
+- Scheduler emits _one_ tick summary per tick, not a row per note. Per-note rows only when something fires or hits a notable skip.
 
 ## File Map
 
-| Purpose | File |
-|---|---|
-| Zod schemas (live note, triggers, events, Pass1) | `packages/shared/src/live-note.ts` |
-| IPC channel schemas | `packages/shared/src/ipc.ts` |
-| IPC handlers (main process) | `apps/main/src/ipc.ts` |
-| Frontmatter helpers (parse / split / join) | `packages/core/src/application/lib/parse-frontmatter.ts` |
-| File operations (`fetchLiveNote`, `setLiveNote`, `patchLiveNote`, `deleteLiveNote`, `setLiveNoteActive`, `readNoteBody`, `listLiveNotes`) | `packages/core/src/knowledge/live-note/fileops.ts` |
-| Scheduler (cron / windows) | `packages/core/src/knowledge/live-note/scheduler.ts` |
-| Trigger due-check helper (`computeNextDue` / `dueTimedTrigger`) | `packages/core/src/knowledge/live-note/schedule-utils.ts` |
-| Event producer + consumer loop | `packages/core/src/knowledge/live-note/events.ts` |
-| Pass 1 routing (LLM classifier) | `packages/core/src/knowledge/live-note/routing.ts` |
-| Run orchestrator (`runLiveNoteAgent`, `buildMessage`) | `packages/core/src/knowledge/live-note/runner.ts` |
-| Live-note agent definition (`LIVE_NOTE_AGENT_INSTRUCTIONS`, `buildLiveNoteAgent`) | `packages/core/src/knowledge/live-note/agent.ts` |
-| Live-note bus (pub-sub for lifecycle events) | `packages/core/src/knowledge/live-note/bus.ts` |
-| Deprecated Today.md one-time migration | `packages/core/src/knowledge/deprecate_today_note.ts` |
-| Gmail event producer | `packages/core/src/knowledge/sync_gmail.ts` |
-| Calendar event producer + digest | `packages/core/src/knowledge/sync_calendar.ts` |
-| Copilot skill | `packages/core/src/application/assistant/skills/live-note/skill.ts` |
-| Skill registration | `packages/core/src/application/assistant/skills/index.ts` |
-| Copilot trigger paragraph | `packages/core/src/application/assistant/instructions.ts` |
-| `run-live-note-agent` builtin tool | `packages/core/src/application/lib/builtin-tools.ts` |
-| Editor toolbar (Radio button → panel) | `apps/renderer/src/components/editor-toolbar.tsx` |
-| Live Note panel (single-view editor) | `apps/renderer/src/components/live-note-sidebar.tsx` |
-| Status hook (`useLiveNoteAgentStatus`) | `apps/renderer/src/hooks/use-live-note-agent-status.ts` |
-| Renderer frontmatter helper (preserves `live:`) | `apps/renderer/src/lib/frontmatter.ts` |
-| App-level listeners (panel open + Copilot edit) | `apps/renderer/src/App.tsx` |
-| Live Notes view (sidebar nav target) | `apps/renderer/src/components/live-notes-view.tsx` |
-| CSS (panel styles, legacy filenames) | `apps/renderer/src/styles/live-note-panel.css`, `apps/renderer/src/styles/editor.css` |
-| Main process startup (schedulers & processors) | `apps/main/src/main.ts` |
+| Purpose                                                                                                                                   | File                                                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Zod schemas (live note, triggers, events, Pass1)                                                                                          | `packages/shared/src/live-note.ts`                                                    |
+| IPC channel schemas                                                                                                                       | `packages/shared/src/ipc.ts`                                                          |
+| IPC handlers (main process)                                                                                                               | `apps/main/src/ipc.ts`                                                                |
+| Frontmatter helpers (parse / split / join)                                                                                                | `packages/core/src/application/lib/parse-frontmatter.ts`                              |
+| File operations (`fetchLiveNote`, `setLiveNote`, `patchLiveNote`, `deleteLiveNote`, `setLiveNoteActive`, `readNoteBody`, `listLiveNotes`) | `packages/core/src/knowledge/live-note/fileops.ts`                                    |
+| Scheduler (cron / windows)                                                                                                                | `packages/core/src/knowledge/live-note/scheduler.ts`                                  |
+| Trigger due-check helper (`computeNextDue` / `dueTimedTrigger`)                                                                           | `packages/core/src/knowledge/live-note/schedule-utils.ts`                             |
+| Event producer + consumer loop                                                                                                            | `packages/core/src/knowledge/live-note/events.ts`                                     |
+| Pass 1 routing (LLM classifier)                                                                                                           | `packages/core/src/knowledge/live-note/routing.ts`                                    |
+| Run orchestrator (`runLiveNoteAgent`, `buildMessage`)                                                                                     | `packages/core/src/knowledge/live-note/runner.ts`                                     |
+| Live-note agent definition (`LIVE_NOTE_AGENT_INSTRUCTIONS`, `buildLiveNoteAgent`)                                                         | `packages/core/src/knowledge/live-note/agent.ts`                                      |
+| Live-note bus (pub-sub for lifecycle events)                                                                                              | `packages/core/src/knowledge/live-note/bus.ts`                                        |
+| Deprecated Today.md one-time migration                                                                                                    | `packages/core/src/knowledge/deprecate_today_note.ts`                                 |
+| Gmail event producer                                                                                                                      | `packages/core/src/knowledge/sync_gmail.ts`                                           |
+| Calendar event producer + digest                                                                                                          | `packages/core/src/knowledge/sync_calendar.ts`                                        |
+| Copilot skill                                                                                                                             | `packages/core/src/application/assistant/skills/live-note/skill.ts`                   |
+| Skill registration                                                                                                                        | `packages/core/src/application/assistant/skills/index.ts`                             |
+| Copilot trigger paragraph                                                                                                                 | `packages/core/src/application/assistant/instructions.ts`                             |
+| `run-live-note-agent` builtin tool                                                                                                        | `packages/core/src/application/lib/builtin-tools.ts`                                  |
+| Editor toolbar (Radio button → panel)                                                                                                     | `apps/renderer/src/components/editor-toolbar.tsx`                                     |
+| Live Note panel (single-view editor)                                                                                                      | `apps/renderer/src/components/live-note-sidebar.tsx`                                  |
+| Status hook (`useLiveNoteAgentStatus`)                                                                                                    | `apps/renderer/src/hooks/use-live-note-agent-status.ts`                               |
+| Renderer frontmatter helper (preserves `live:`)                                                                                           | `apps/renderer/src/lib/frontmatter.ts`                                                |
+| App-level listeners (panel open + Copilot edit)                                                                                           | `apps/renderer/src/App.tsx`                                                           |
+| Live Notes view (sidebar nav target)                                                                                                      | `apps/renderer/src/components/live-notes-view.tsx`                                    |
+| CSS (panel styles, legacy filenames)                                                                                                      | `apps/renderer/src/styles/live-note-panel.css`, `apps/renderer/src/styles/editor.css` |
+| Main process startup (schedulers & processors)                                                                                            | `apps/main/src/main.ts`                                                               |

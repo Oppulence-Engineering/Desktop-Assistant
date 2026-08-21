@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
-const baselinePath = path.resolve("prettier-baseline.json");
+const baselinePath = path.resolve("config/baselines/prettier.json");
 const result = spawnSync(
   "pnpm",
   [

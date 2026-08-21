@@ -47,10 +47,10 @@ local warnings but are failures in CI.
 The repository contains legacy debt that cannot safely be rewritten as one mechanical
 change. Ratchets record exact existing findings and reject new ones:
 
-- `architecture-baseline.json`: direct writes, raw reads, service-location, and pollers.
-- `.dependency-cruiser-known-violations.json`: existing dependency cycles.
-- `knip-baseline.json`: existing unused files and symbols.
-- `prettier-baseline.json`: existing formatting debt.
+- `config/baselines/architecture.json`: direct writes, raw reads, service-location, and pollers.
+- `config/baselines/dependency-cruiser-known-violations.json`: existing dependency cycles.
+- `config/baselines/knip.json`: existing unused files and symbols.
+- `config/baselines/prettier.json`: existing formatting debt.
 
 Only update a baseline after reviewing every added fingerprint. Removing a fingerprint
 is encouraged; reintroducing it fails the gate.

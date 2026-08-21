@@ -114,6 +114,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb
 
+      - name: Verify packaged Electron fuses
+        run: pnpm fuses:verify -- "${{ steps.packaged-binary.outputs.bin }}"
+        working-directory: apps/x
+
       - name: Playwright-Electron smoke (xvfb)
         run: xvfb-run -a pnpm exec playwright test
         working-directory: apps/x/apps/main
