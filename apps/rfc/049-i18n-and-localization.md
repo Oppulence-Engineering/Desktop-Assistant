@@ -1,33 +1,32 @@
 # RFC 049: Internationalization and Localization
 
-|                    |                                                                                                 |
-| ------------------ | ----------------------------------------------------------------------------------------------- |
-| **RFC**            | 049                                                                                             |
-| **Status**         | Draft                                                                                           |
-| **Track**          | Reach — OpenWhispr parity                                                                       |
-| **Owners**         | `apps/x` renderer, `apps/rowboat-www`, product                                                  |
-| **Created**        | 2026-08-12                                                                                      |
-| **Depends on**     | —                                                                                               |
-| **Related**        | [RFC 041](./041-dictation-translation.md), [RFC 046](./046-windows-linux-native-voice-stack.md) |
-| **Reference impl** | OpenWhispr (MIT) — see §5                                                                       |
+|                    |                                                                      |
+| ------------------ | -------------------------------------------------------------------- |
+| **RFC**            | 049                                                                  |
+| **Status**         | Draft                                                                |
+| **Track**          | Rowboat reach · web and desktop localization                         |
+| **Owners**         | `apps/x` renderer, `apps/rowboat-www`, product                       |
+| **Created**        | 2026-08-12                                                           |
+| **Depends on**     | —                                                                    |
+| **Related**        | [RFC 055](./055-capture-product-boundary-and-rowboat-integration.md) |
+| **Reference impl** | OpenWhispr (MIT) — see §5                                            |
 
 ## 1. Decision
 
 Externalize all user-facing strings and ship localized builds. The reference
 implementation ships 10 locales (de, en, es, fr, it, ja, pt, ru, zh-CN, zh-TW); we support
-English only, with strings hardcoded inline throughout the renderer.
+English only, with strings hardcoded inline throughout the renderer. The
+capture product owns and ships its localization independently.
 
 ## 2. Why now rather than later
 
 i18n cost scales with the number of hardcoded strings, and that number only
-grows. Doing it after RFCs 040 through 047 add several new settings surfaces
-means paying meaningfully more. The right moment to externalize strings is
-before a wave of UI work, not after it.
+grows. The right moment to externalize strings is before another wave of
+relationship, connector, and collaboration UI work, not after it.
 
-There is also a product argument specific to us: dictation and meeting
-transcription are inherently multilingual. A user dictating German into a
-purely English UI is a visible mismatch, and RFC 041's translation feature makes
-that mismatch sharper.
+There is also a product argument specific to us: relationships span languages,
+regions, currencies, and date conventions. Capture-language and dictation-
+translation behavior remain independently owned by the capture product.
 
 ## 3. Scope
 
@@ -66,7 +65,7 @@ that mismatch sharper.
 | Main-process i18n | `src/helpers/i18nMain.js`                                                                                  | —     | Translating outside React, per §3.4.                                                 |
 | CI enforcement    | `scripts/check-i18n.js`                                                                                    | 92    | Missing/orphaned key detection. Copy this early; it is what keeps i18n from rotting. |
 | Date formatting   | `src/utils/dateFormatting.ts`, `dateGrouping.ts`, `formatDuration.ts`, `formatAmount.ts`, `formatBytes.ts` | —     | Locale-aware formatting helpers.                                                     |
-| Language metadata | `src/utils/languageSupport.ts`                                                                             | —     | Shared with RFC 041.                                                                 |
+| Language metadata | `src/utils/languageSupport.ts`                                                                             | —     | Reference for locale metadata; capture translation remains out of Rowboat scope.     |
 
 MIT-licensed; carry the notice on any adapted file.
 

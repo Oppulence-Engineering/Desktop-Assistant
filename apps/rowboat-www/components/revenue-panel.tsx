@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   AddressBook,
   ChartLineUp,
@@ -88,34 +89,34 @@ export function RevenuePanel({ onOpenConnectors }: { onOpenConnectors?: () => vo
     setError(null);
   }, []);
 
-  // Poll a running scan until it finishes; refresh the queue on completion.
+  const activeScanIsRunning = activeScan?.status === "running" || activeScan?.status === "pending";
+  const scanQuery = useQuery({
+    queryKey: ["revenue-scan", activeScan?.id],
+    queryFn: ({ signal }) => getScan(activeScan!.id, signal),
+    enabled: Boolean(activeScan?.id && activeScanIsRunning),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "completed" || status === "failed" ? false : 2_000;
+    },
+  });
+
+  // Reconcile query data into the existing panel state while this feature is
+  // incrementally migrated from local state to query-owned server state.
   React.useEffect(() => {
-    if (!activeScan || (activeScan.status !== "running" && activeScan.status !== "pending")) return;
-    let alive = true;
-    const timer = setInterval(async () => {
-      try {
-        const next = await getScan(activeScan.id);
-        if (!alive) return;
-        setActiveScan(next);
-        setScans((prev) => {
-          const map = new Map(prev.map((s) => [s.id, s]));
-          map.set(next.id, next);
-          return [...map.values()];
-        });
-        if (next.status === "completed" || next.status === "failed") {
-          setScanning(false);
-          if (next.status === "failed") setError(next.error || "The scan failed.");
-          else setRefreshKey((k) => k + 1);
-        }
-      } catch {
-        // transient; keep polling
-      }
-    }, 2000);
-    return () => {
-      alive = false;
-      clearInterval(timer);
-    };
-  }, [activeScan]);
+    const next = scanQuery.data;
+    if (!next) return;
+    setActiveScan(next);
+    setScans((previous) => {
+      const scansById = new Map(previous.map((scan) => [scan.id, scan]));
+      scansById.set(next.id, next);
+      return [...scansById.values()];
+    });
+    if (next.status === "completed" || next.status === "failed") {
+      setScanning(false);
+      if (next.status === "failed") setError(next.error || "The scan failed.");
+      else setRefreshKey((key) => key + 1);
+    }
+  }, [scanQuery.data]);
 
   const runScan = React.useCallback(async () => {
     setError(null);

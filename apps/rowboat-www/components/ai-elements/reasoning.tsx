@@ -1,7 +1,11 @@
 "use client";
 
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@oppulence/ui/components/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@oppulence/ui/components/collapsible";
 import { cn } from "@/lib/utils";
 import { Brain, CaretDown } from "@phosphor-icons/react";
 import type { ComponentProps, ReactNode } from "react";

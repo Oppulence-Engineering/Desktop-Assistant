@@ -2,6 +2,32 @@
 
 Marketing site plus the authenticated Oppulence dashboard.
 
+## Repository Map
+
+```text
+app/          Next.js routes, layouts, and route-private components
+components/   Reusable product components and component conventions
+config/       Architecture, contract-generation, and quality policy
+docs/         Application-specific design and engineering records
+e2e/          Playwright end-to-end and accessibility coverage
+hooks/        Shared React hooks
+lib/          Auth, API, storage, and domain integration code
+public/       Static assets
+quality/      Repository policy and architecture tests
+scripts/      Contributor automation and container entrypoints
+types/        Cross-cutting application types
+```
+
+Files kept at the application root are either contributor entry points
+(`README.md`, `AGENTS.md`, and `package.json`) or files discovered there by
+Next.js and its standard tooling. Repository-owned policy belongs under
+`config/`; executable automation belongs under `scripts/`; engineering records
+belong under `docs/`.
+
+Read `AGENTS.md` before making architectural changes, `components/README.md`
+before adding React components, and `quality/README.md` before changing a
+verification baseline.
+
 ## Getting Started
 
 First, run rowboat-api with WorkOS configured, then start the web app:
@@ -50,5 +76,9 @@ to seal or verify auth cookies without `ROWBOAT_WWW_SESSION_SECRET`.
 ## Verification
 
 ```bash
-ROWBOAT_WWW_SESSION_SECRET=dev-only-rowboat-www-session-secret-change-me npm run build
+npm run verify:fast
+npm run verify
 ```
+
+`verify:fast` is the development feedback loop. Run the complete `verify`
+gauntlet before opening or updating a pull request.

@@ -2,7 +2,11 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { Button } from "@oppulence/ui/components/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@oppulence/ui/components/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@oppulence/ui/components/collapsible";
 import { ScrollArea } from "@oppulence/ui/components/scroll-area";
 import { cn } from "@/lib/utils";
 import { CaretDown, Paperclip } from "@phosphor-icons/react";

@@ -32,7 +32,8 @@
   border-right: 1px solid hsl(var(--border) / 0.3);
   background: hsl(var(--muted) / 0.03);
   padding: 1rem 0.75rem 1rem 0.5rem;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   font-size: 0.875rem;
   line-height: 1.75;
   user-select: none;
@@ -64,7 +65,7 @@
     background: hsl(var(--muted) / 0.15);
     border-right-color: hsl(var(--border) / 0.5);
   }
-  
+
   .json-editor-line-number {
     color: hsl(var(--muted-foreground) / 0.7);
   }
@@ -93,7 +94,8 @@
   white-space: pre;
   word-wrap: normal;
   tab-size: 2;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   font-size: 0.875rem;
   line-height: 1.75;
   position: relative;
@@ -194,4 +196,3 @@
     color: #8b949e;
   }
 }
-

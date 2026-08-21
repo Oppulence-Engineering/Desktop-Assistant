@@ -10,6 +10,7 @@ export async function GET(): Promise<NextResponse> {
     const upstream = await fetch(publicRowboatApiURL("/openapi.json"), {
       cache: "no-store",
       headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!upstream.ok) {

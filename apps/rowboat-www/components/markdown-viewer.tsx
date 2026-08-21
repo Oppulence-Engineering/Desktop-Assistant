@@ -11,11 +11,7 @@ interface MarkdownViewerProps {
 export function MarkdownViewer({ content }: MarkdownViewerProps) {
   return (
     <div className="markdown-viewer-wrapper markdown-content">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-        {content}
-      </ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
     </div>
   );
 }
-
-

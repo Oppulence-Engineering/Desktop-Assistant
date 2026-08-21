@@ -1183,11 +1183,7 @@ function ImportedTranscriptPublisher({
         placeholder="Conversation title"
         aria-label="Imported transcript title"
       />
-      <DateTimePicker
-        value={occurredAt}
-        onChange={setOccurredAt}
-        aria-label="Conversation time"
-      />
+      <DateTimePicker value={occurredAt} onChange={setOccurredAt} aria-label="Conversation time" />
       <Textarea
         value={transcript}
         onChange={(event) => setTranscript(event.target.value)}
@@ -1195,7 +1191,10 @@ function ImportedTranscriptPublisher({
         aria-label="Imported transcript text"
         className="min-h-40"
       />
-      <label htmlFor={disclosureId} className="flex cursor-pointer items-start gap-2 text-xs text-primary/60">
+      <label
+        htmlFor={disclosureId}
+        className="flex cursor-pointer items-start gap-2 text-xs text-primary/60"
+      >
         <Checkbox
           id={disclosureId}
           className="mt-0.5"

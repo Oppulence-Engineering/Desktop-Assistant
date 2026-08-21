@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - "apps/rowboat-www/**"
+      - "packages/ui/**"
+      - "packages/relationship-contract/**"
+      - "packages/eslint-plugin-oppulence-web/**"
       - "charts/rowboat-www/**"
       - "scripts/rowboat-www-smoke.sh"
       - ".github/workflows/rowboat-www-deploy.yml"
@@ -109,6 +112,9 @@ jobs:
           filters: |
             app:
               - 'apps/rowboat-www/**'
+              - 'packages/ui/**'
+              - 'packages/relationship-contract/**'
+              - 'packages/eslint-plugin-oppulence-web/**'
               - 'charts/rowboat-www/**'
               - 'scripts/rowboat-www-smoke.sh'
               - '.github/workflows/rowboat-www-deploy.yml'
@@ -156,6 +162,17 @@ jobs:
           tags: |
             ${{ env.IMAGE_REPOSITORY }}:${{ needs.resolve-context.outputs.image_tag }}
             ${{ env.IMAGE_REPOSITORY }}:${{ needs.resolve-context.outputs.latest_tag }}
+
+      - name: Setup Go for container scanning
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.26.x"
+
+      - name: Scan the built container with OSV-Scanner
+        run: >-
+          go run github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.5.1
+          scan image
+          "${IMAGE_REPOSITORY}:${{ needs.resolve-context.outputs.image_tag }}"
 
   deploy:
     name: Deploy to ${{ needs.resolve-context.outputs.deploy_environment }}

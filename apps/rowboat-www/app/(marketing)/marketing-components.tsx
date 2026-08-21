@@ -1380,6 +1380,7 @@ function ApiReferenceEmbed() {
           className="h-[680px] w-full bg-background md:h-[780px]"
           loading="lazy"
           referrerPolicy="no-referrer"
+          sandbox="allow-downloads allow-forms allow-popups allow-scripts"
           src="/api/reference"
           title="Oppulence API reference"
         />
@@ -1426,7 +1427,8 @@ export function PricingPage({ page }: { page: MarketingPage }) {
         ))}
       </section>
       <p className="linear-cta-note mt-6">
-        [flat monthly price · never per seat, per email, or per lookup · one saved deal pays for years]
+        [flat monthly price · never per seat, per email, or per lookup · one saved deal pays for
+        years]
       </p>
     </div>
   );

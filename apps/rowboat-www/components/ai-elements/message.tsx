@@ -3,7 +3,12 @@
 /* eslint-disable @next/next/no-img-element */
 import { Button } from "@oppulence/ui/components/button";
 import { ButtonGroup, ButtonGroupText } from "@oppulence/ui/components/button-group";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@oppulence/ui/components/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
 import type { FileUIPart, UIMessage } from "ai";
 import { CaretLeft, CaretRight, Paperclip, X } from "@phosphor-icons/react";

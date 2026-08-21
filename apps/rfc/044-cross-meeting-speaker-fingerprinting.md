@@ -1,126 +1,109 @@
-# RFC 044: Cross-Meeting Speaker Fingerprinting
+# RFC 044: Capture Voice-Profile Hints to Canonical Relationship Identity
 
-|                    |                                                                                                                                                     |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RFC**            | 044                                                                                                                                                 |
-| **Status**         | Draft                                                                                                                                               |
-| **Track**          | Meeting intelligence — OpenWhispr parity                                                                                                            |
-| **Owners**         | `apps/x` core voice, meetings, relationship graph                                                                                                   |
-| **Created**        | 2026-08-12                                                                                                                                          |
-| **Depends on**     | [RFC 017](./complete-017-on-device-meeting-diarization.md)                                                                                          |
-| **Related**        | [RFC 035](./035-meeting-intelligence-commitment-ledger.md), [RFC 036](./036-relationship-state-engine.md), [RFC 022](./022-unified-entity-graph.md) |
-| **Reference impl** | OpenWhispr (MIT) — see §6                                                                                                                           |
+|                |                                                                                                                                                                            |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**        | 044                                                                                                                                                                        |
+| **Status**     | Draft — rescoped by RFC 055                                                                                                                                                |
+| **Track**      | Meeting evidence · identity resolution · capture integration                                                                                                               |
+| **Owners**     | `apps/rowboat-api`, `apps/x` meeting ingestion, relationship graph, privacy                                                                                                |
+| **Created**    | 2026-08-12                                                                                                                                                                 |
+| **Updated**    | 2026-08-21                                                                                                                                                                 |
+| **Depends on** | [RFC 022](./022-unified-entity-graph.md), [RFC 035](./035-meeting-intelligence-commitment-ledger.md), [RFC 055](./055-capture-product-boundary-and-rowboat-integration.md) |
+| **Related**    | [RFC 036](./036-relationship-state-engine.md)                                                                                                                              |
+| **Supersedes** | The Rowboat-owned embedding, enrollment, and voice-profile store scope in the original RFC 044                                                                             |
 
 ## 1. Decision
 
-Promote speaker identity from a per-meeting label to a **persistent voice
-fingerprint**. Once a user confirms "Speaker 2 is Dana", every future meeting
-recognizes Dana's voice automatically and binds her to the same person in the
-entity graph.
+The capture product owns speaker embeddings, persistent local voice profiles,
+enrollment, correction, merge/split, and profile deletion. Rowboat accepts a
+voice-profile reference only as an identity **hint** and combines it with
+calendar, email, CRM, and prior evidence to resolve a canonical person.
 
-## 2. Why this matters more for us than for them
+A capture voice-profile ID is never a Rowboat person ID, and a high-confidence
+voice match alone cannot silently assert a consequential commitment against a
+person without provenance.
 
-For a dictation product this is a nice transcript-readability feature. For us it
-is a **relationship-graph input**. RFC 036 asks "what is the state of this
-relationship?" and RFC 035 attributes spoken commitments to people. Both are
-materially stronger when speaker turns resolve to a real person identity rather
-than to an anonymous per-meeting index.
+## 2. Why Rowboat still needs this RFC
 
-A confirmed voice fingerprint is also unusually high-quality evidence: it is
-first-party, on-device, and does not depend on a calendar invite being accurate.
+RFC 035 attributes spoken commitments and RFC 036 projects relationship state.
+Those systems need durable identity across meetings, but the correct Rowboat
+problem is evidence-backed identity binding—not running a second biometric
+profile system.
 
-## 3. What we have
+Separating the systems also preserves a legible privacy boundary: biometric
+vectors can remain on-device while Rowboat receives a pseudonymous profile
+reference, confidence, and user-confirmation state.
 
-`packages/core/src/voice/diarization/` is well built and already anticipates
-this work:
+## 3. Capture identity hint
 
-- `embedder.ts` (137) — `SpeakerEmbedder` interface, injected native inference,
-  with `EnergyProfileEmbedder` as a deterministic fallback. Its own docstring is
-  explicit that the energy-profile embedder is **not a learned speaker model**
-  and "must not graduate diarization out of beta on its own".
-- `clustering.ts` (219), `alignment.ts`, `metrics.ts`, `provenance.ts`, `diarizer.ts` (257).
-- `packages/core/src/meetings/attendees.ts` for roster binding.
+The versioned `CaptureArtifact` envelope defined by RFC 055 adds, per speaker:
 
-So the interface exists. What is missing is a real embedding model plus
-persistence across meetings.
+```text
+CaptureSpeakerHint
+├── source_profile_id
+├── source_profile_version
+├── segment references
+├── match confidence band: confirmed | high | proposed | unknown
+├── confirmation provenance
+├── calendar/roster hints
+├── biometric-transfer classification
+└── deletion or split/merge tombstone references
+```
 
-## 4. Design
+Raw embeddings are excluded by default. Transferring an embedding requires a
+separate explicit policy and consent decision; it is not implied by connecting
+the capture product to Rowboat.
 
-### 4.1 Real embedding model
+## 4. Resolution policy
 
-Install a pyannote-family ONNX speaker encoder through the existing model
-manager and wire it as the injected `EmbedInfer`. The energy-profile embedder
-stays as the fixture/fallback path.
+Rowboat's identity resolver combines the hint with:
 
-### 4.2 Voice profile store
+- a user-confirmed speaker assignment;
+- calendar attendee identity;
+- verified email or CRM identity;
+- organization membership;
+- prior source mappings; and
+- contradictory evidence.
 
-A new store keyed by person id holding one or more centroid embeddings per
-person, plus enrollment metadata (sample count, last updated, confirmation
-source). Multiple centroids per person matter: the same voice over a phone, a
-headset, and a conference mic clusters differently.
+Rules:
 
-### 4.3 Re-identification at ingest
+1. A user-confirmed mapping may bind the source profile to a canonical person.
+2. A high voice confidence plus an independently matching calendar/roster hint
+   may auto-resolve under organization policy.
+3. A voice-only proposed match remains unresolved and is shown for confirmation.
+4. Conflicts preserve both candidates and surface the contradiction.
+5. Commitments derived from an unresolved speaker remain attached to an
+   anonymous participant until resolution.
 
-During diarization, each cluster centroid is matched against the profile store
-by cosine distance with two thresholds:
+Every resolved speaker label records whether it came from user confirmation,
+voice profile, calendar roster, another connector, or a combination.
 
-- Above the high threshold: auto-assign the person.
-- Between thresholds: propose the assignment and require confirmation.
-- Below: leave anonymous.
+## 5. Consent and deletion
 
-Never auto-assign on a single weak match. A misattributed commitment is worse
-than an unattributed one, because it enters the relationship graph as a false
-claim.
+Voice profiles are biometric data. Rowboat must ingest the capture product's
+consent classification, policy version, and deletion events. When a source
+profile is deleted, split, or merged, Rowboat invalidates the source mapping and
+reprojects affected assertions according to policy.
 
-### 4.4 Enrollment and correction
+Rowboat settings must show linked capture profiles without implying that
+Rowboat stores their embeddings. Disconnecting the capture product revokes
+future access; deletion behavior follows the user's selected retention policy.
 
-Confirmation comes from the user renaming a speaker in the meeting UI. That
-action enrolls the embedding. Corrections must be able to un-enroll and to split
-a profile that absorbed two people.
+## 6. Definition of done
 
-### 4.5 Consent and deletion
+- Rowboat ingests pseudonymous profile hints without requiring embeddings.
+- Source profile IDs are scoped by product, installation/account, and version.
+- Identity binding uses at least one independent signal or explicit user
+  confirmation before automatic canonical assignment.
+- Unresolved speakers cannot silently create person-attributed commitments.
+- Split, merge, deletion, and correction events trigger deterministic
+  re-resolution.
+- Every speaker-to-person binding is explainable from its evidence.
+- Biometric consent and retention policy are enforced before production use.
 
-Voice fingerprints are biometric data. They stay **on-device**, are never
-uploaded, and must be individually deletable. Meeting retention
-(`packages/core/src/meetings/retention.ts`) must cover profiles, and deleting a
-person deletes their fingerprint.
+## 7. Capture implementation reference
 
-## 5. Definition of done
-
-- A real ONNX speaker embedder is installed and used, with the energy-profile
-  embedder demoted to fallback.
-- Confirming a speaker once causes automatic recognition in later meetings.
-- Auto-assignment only occurs above the high-confidence threshold; the middle
-  band asks.
-- Diarization error rate is measured before and after on our fixture set
-  (`diarization/fixtures.ts`, `metrics.ts`), and improves.
-- Fingerprints never leave the device, are listed in privacy settings, and are
-  deletable individually and in bulk.
-- Provenance records whether a speaker label came from a fingerprint, a roster
-  binding, or a human.
-
-## 6. OpenWhispr code references
-
-| Concern              | File                                     | Lines | Notes                                                                     |
-| -------------------- | ---------------------------------------- | ----- | ------------------------------------------------------------------------- |
-| Embedding extraction | `src/helpers/speakerEmbeddings.js`       | 160   | Segment selection and embedding computation. Directly relevant to §4.1.   |
-| Profile merging      | `src/helpers/speakerMerge.js`            | 110   | Merging clusters into a persistent identity — the heart of §4.2.          |
-| Assignment policy    | `src/helpers/speakerAssignmentPolicy.js` | 76    | Threshold policy for auto-assign vs propose. Small and directly portable. |
-| Diarization pipeline | `src/helpers/diarization.js`             | 603   | End-to-end orchestration.                                                 |
-| Diarization gating   | `src/helpers/diarizationPolicy.js`       | 63    | When diarization is worth running at all.                                 |
-| Speaker count        | `src/helpers/speakerCount.js`            | 12    | Cluster-count estimation.                                                 |
-| ONNX runtime host    | `src/helpers/onnxWorkerClient.js`        | 248   | Running ONNX off the main thread.                                         |
-| Vector storage       | `src/helpers/vectorIndex.js`             | 226   | Local vector search for profile matching.                                 |
-| Model download       | `scripts/download-diarization-models.js` | 143   | Fetching and verifying encoder weights.                                   |
-| Completion UX        | `src/utils/diarizationCompletion.ts`     | 41    | Progress reporting.                                                       |
-
-MIT-licensed; carry the notice on any adapted file.
-
-## 7. Risks
-
-- **Biometric data raises the compliance stakes.** On-device only, explicit
-  consent, and real deletion are hard requirements, not follow-ups.
-- Family members and colleagues with similar voices will collide. The
-  propose-band and split-profile flows are what keep that recoverable.
-- ONNX Runtime has no macOS x86_64 binaries after 1.24, so Intel Macs will not
-  get this. State that in the UI rather than failing silently.
+Persistent embeddings, profile matching, threshold policy, and local profile
+management remain in the capture repository, including its RFC 0001. MIT code
+may inform the integration, but Rowboat ports only protocol types, validators,
+and evidence-resolution logic required by this RFC.

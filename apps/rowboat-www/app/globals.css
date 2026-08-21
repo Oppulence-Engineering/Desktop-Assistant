@@ -2054,7 +2054,7 @@
   .linear-footer-note {
     grid-column: 2 / 5;
     margin-top: 80px;
-    color: var(--linear-text-quaternary);
+    color: var(--linear-text-tertiary);
     font-size: 12px;
     line-height: 1.6;
   }
@@ -4303,6 +4303,11 @@
   .marketing-polar :is(h1, h2, h3, h4) {
     font-weight: 500;
     letter-spacing: -0.15px;
+  }
+
+  .linear-footer-column a,
+  .linear-footer-note {
+    color: var(--linear-text-secondary);
   }
 
   /* Display type: everything above body collapses to 24px medium. */

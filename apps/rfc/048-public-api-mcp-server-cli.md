@@ -1,106 +1,94 @@
-# RFC 048: Public API, MCP Server, and CLI Bridge
+# RFC 048: Relationship API, MCP Server, and Capture-Artifact Ingestion
 
-|                    |                                                                                                                       |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| **RFC**            | 048                                                                                                                   |
-| **Status**         | Draft                                                                                                                 |
-| **Track**          | Ecosystem — OpenWhispr parity                                                                                         |
-| **Owners**         | `apps/rowboat-api`, `apps/x` desktop, security                                                                        |
-| **Created**        | 2026-08-12                                                                                                            |
-| **Depends on**     | [RFC 010](./complete-010-rowboat-api-service-plane.md), [RFC 011](./complete-011-identity-and-authorization-plane.md) |
-| **Related**        | [RFC 020](./020-native-third-party-action-engine.md), [RFC 018](./018-a2a-delegation-and-agent-identity.md)           |
-| **Reference impl** | OpenWhispr (MIT) — see §6                                                                                             |
+|                |                                                                                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RFC**        | 048                                                                                                                                                                       |
+| **Status**     | Draft — rescoped by RFC 055                                                                                                                                               |
+| **Track**      | Rowboat ecosystem · graph distribution · capture integration                                                                                                              |
+| **Owners**     | `apps/rowboat-api`, `apps/x`, SDK/CLI, security                                                                                                                           |
+| **Created**    | 2026-08-12                                                                                                                                                                |
+| **Updated**    | 2026-08-21                                                                                                                                                                |
+| **Depends on** | [RFC 010](./complete-010-rowboat-api-service-plane.md), [RFC 011](./complete-011-identity-and-authorization-plane.md)                                                     |
+| **Related**    | [RFC 020](./020-native-third-party-action-engine.md), [RFC 036](./036-relationship-state-engine.md), [RFC 055](./055-capture-product-boundary-and-rowboat-integration.md) |
 
 ## 1. Decision
 
-Make the product programmable through three surfaces:
+Make Rowboat's relationship system programmable through three surfaces:
 
-1. **Public API** — documented, versioned, token-authenticated access to notes,
-   transcriptions, meetings, and relationships.
-2. **MCP server** — expose our data to the user's AI assistant (Claude, Cursor,
-   others) as tools.
-3. **CLI bridge** — drive dictation and note capture from the terminal.
+1. a documented, versioned public API for relationships, evidence,
+   recommendations, and governed actions;
+2. an MCP server that exposes authorized relationship tools to user-selected AI
+   clients; and
+3. a versioned capture-artifact ingestion API implementing RFC 055.
 
-## 2. Direction of travel matters
+Dictation control, capture-note CRUD, and the local dictation CLI belong to the
+capture product. Rowboat's CLI may inspect graph state and submit or approve
+Rowboat actions, but it does not become a second controller for capture internals.
 
-We are an **MCP client** today: `packages/core/src/mcp/mcp.ts` connects to
-external MCP servers and lists their tools. That is the opposite direction from
-what this RFC proposes. Being an MCP _server_ means a user's Claude can ask "what
-did Dana commit to last week?" and get an answer from our relationship graph.
+## 2. Existing foundation
 
-For us this is strategically more valuable than for a dictation app. Our moat is
-the graph (RFC 022, RFC 036); exposing it through MCP makes every AI assistant a
-distribution channel for it, rather than a competitor for the same attention.
+`apps/rowboat-api` already supplies authenticated REST surfaces, OpenAPI
+generation, organization/project authorization, relationship objects, evidence,
+background tasks, and governed action proposals. `apps/x` already consumes MCP
+servers as a client.
 
-## 3. What we have
+The missing product surfaces are a stable external graph contract, a Rowboat
+MCP server, and the explicit capture-ingestion seam.
 
-- `apps/rowboat-api` — a real service plane with GraphQL, Ent, and an OpenAPI
-  document (`apps/rowboat-api/api/openapi.json`).
-- `packages/rowboat-api-client-ts` — a generated client.
-- Auth via WorkOS (`internal/workosauth`).
+## 3. Public relationship API
 
-We have the backend; we lack a user-facing, token-scoped, documented product API
-and the two local bridges.
+The API exposes opaque IDs, cursor pagination, idempotency keys, deterministic
+error envelopes, rate-limit headers, and audit correlation IDs for:
 
-## 4. Design
+- people, organizations, relationships, and source mappings;
+- evidence and exact source spans;
+- commitments, risks, milestones, and recommendations;
+- action proposals, approvals, executions, and audit history; and
+- capture-artifact ingestion status and deletion propagation.
 
-### 4.1 Public API
+Raw provider credentials and internal model prompts are never exposed.
 
-Scope to nouns users understand: notes, meetings, transcriptions, people,
-commitments. Requirements: API tokens with per-scope grants, per-token rate
-limits, revocation, an audit trail, and semantic versioning with a deprecation
-policy. Personal tokens and workspace tokens are distinct.
+## 4. MCP server
 
-### 4.2 MCP server
+The MCP server is a thin adapter over the same authorization and service layer,
+not a privileged parallel backend. Read tools may search relationships, inspect
+evidence, and retrieve timelines. Write tools create typed proposals; they do
+not bypass approval or execute consequential actions directly.
 
-Ship an MCP server (stdio for local, HTTP for remote) exposing read tools first:
-search notes, get meeting, list commitments, get relationship state. Writes come
-later and only behind explicit approval, consistent with RFC 023's
-propose/approve/execute discipline.
+Tool output includes source and freshness metadata so clients can distinguish
+facts, projections, recommendations, and unresolved identity hypotheses.
 
-Key constraint: **an MCP tool result is untrusted input to the caller's model.**
-Content returned from our graph can contain text an attacker put in an email.
-Tool descriptions and results must be structured to avoid becoming an injection
-channel into the user's assistant.
+## 5. Capture ingestion
 
-### 4.3 CLI bridge
+The ingestion endpoint accepts the versioned `CaptureArtifact` envelope from
+RFC 055 and provides:
 
-A local socket protocol so a terminal command can start dictation, capture a
-note, or query recent transcriptions. Auth is process-ownership-based on a
-user-scoped socket path. This is genuinely useful for our own dogfooding, and
-cheap given the IPC layer already exists.
+- schema negotiation and compatibility errors;
+- idempotency by source product, artifact ID, and version;
+- content-hash verification;
+- asynchronous processing status;
+- exact transcript-span preservation;
+- consent and retention enforcement;
+- source profile and participant hints; and
+- deletion, merge, and correction tombstones.
 
-## 5. Definition of done
+Continuous sync uses an outbox on the capture side and idempotent acknowledgement
+on the Rowboat side. Neither product reads the other's database.
 
-- Public API documented from the OpenAPI source, with scoped tokens, rate
-  limits, revocation, and an audit trail.
-- MCP server exposes read tools, installable with a documented config snippet,
-  tested against at least two MCP clients.
-- CLI can start dictation and create a note on macOS.
-- Tokens never appear in logs; scope violations are tested.
+## 6. Security
 
-## 6. OpenWhispr code references
+- Tokens are scoped by organization, project, capability, and product.
+- Capture ingestion cannot invoke external actions.
+- MCP tools use the same FGA decisions as HTTP handlers.
+- Sensitive fields are excluded from logs and traces.
+- Revocation fails closed and is testable without relying on token expiration.
+- Schema downgrade cannot discard consent or deletion fields silently.
 
-Their API and MCP server are documented at `docs.openwhispr.com`; the local
-checkout carries the desktop-side bridges.
+## 7. Definition of done
 
-| Concern             | File                                                                        | Lines | Notes                                                                                     |
-| ------------------- | --------------------------------------------------------------------------- | ----- | ----------------------------------------------------------------------------------------- |
-| CLI bridge          | `src/helpers/cliBridge.js`                                                  | 429   | Local socket protocol, command dispatch, and lifecycle. The most directly reusable piece. |
-| CLI onboarding      | `src/components/CliIntegrationCard.tsx`                                     | 122   | Install flow and copyable commands.                                                       |
-| MCP setup UI        | `src/components/McpIntegrationCard.tsx`                                     | 102   | How they present MCP config to non-technical users.                                       |
-| API key management  | `src/services/ApiKeysService.ts`, `src/services/WorkspaceApiKeysService.ts` | —     | Personal vs workspace token split, matching §4.1.                                         |
-| Session headers     | `src/helpers/sessionHeaders.js`                                             | —     | Auth header construction.                                                                 |
-| Cloud request layer | `src/helpers/cloudApiRequest.js`                                            | —     | Retry and error normalization.                                                            |
-
-MIT-licensed; carry the notice on any adapted file. Their public API shape is
-also worth reading as a product-design reference at `docs.openwhispr.com/api/overview`.
-
-## 7. Risks
-
-- A public API is a permanent compatibility commitment. Version from day one and
-  keep the initial surface deliberately small.
-- MCP write tools are a significant authority delegation. Reads first; writes
-  only through the RFC 023 approval path.
-- The CLI socket is a local privilege boundary. Scope the socket path per user
-  and verify peer credentials.
+- The published OpenAPI contract covers the relationship and ingestion surfaces.
+- An MCP conformance suite proves auth parity with the HTTP API.
+- Capture sync is idempotent, retryable, observable, and deletion-aware.
+- Every derived evidence record links to the source artifact and exact span.
+- MCP and CLI writes create proposals rather than bypassing governance.
+- No Rowboat API or CLI reaches into the capture product's local database.

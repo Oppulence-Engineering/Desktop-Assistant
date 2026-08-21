@@ -1,3 +1,5 @@
+import "server-only";
+
 import { WorkOSAccessTokenClaimsSchema, type WorkOSAccessTokenClaims } from "@/lib/auth/schemas";
 
 /**

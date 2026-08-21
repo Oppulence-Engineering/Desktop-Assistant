@@ -1,116 +1,88 @@
-# RFC 051: Note Sharing and Team Spaces
+# RFC 051: Relationship Sharing and Team Workspaces
 
-|                    |                                                                                                                                |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| **RFC**            | 051                                                                                                                            |
-| **Status**         | Draft                                                                                                                          |
-| **Track**          | Collaboration — OpenWhispr parity                                                                                              |
-| **Owners**         | `apps/rowboat-api`, `apps/rowboat-www`, `apps/x`, security                                                                     |
-| **Created**        | 2026-08-12                                                                                                                     |
-| **Depends on**     | [RFC 011](./complete-011-identity-and-authorization-plane.md), [RFC 015](./015-rowboat-platform-workos-fga-and-widget-auth.md) |
-| **Related**        | [RFC 050](./050-enterprise-controls.md), [RFC 048](./048-public-api-mcp-server-cli.md)                                         |
-| **Reference impl** | OpenWhispr (MIT) — see §6                                                                                                      |
+|                |                                                                                                                                                                                |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **RFC**        | 051                                                                                                                                                                            |
+| **Status**     | Draft — rescoped by RFC 055                                                                                                                                                    |
+| **Track**      | Rowboat collaboration · relationship evidence                                                                                                                                  |
+| **Owners**     | `apps/rowboat-api`, web, desktop, authorization, product                                                                                                                       |
+| **Created**    | 2026-08-12                                                                                                                                                                     |
+| **Updated**    | 2026-08-21                                                                                                                                                                     |
+| **Depends on** | [RFC 011](./complete-011-identity-and-authorization-plane.md), [RFC 036](./036-relationship-state-engine.md)                                                                   |
+| **Related**    | [RFC 015](./015-rowboat-platform-workos-fga-and-widget-auth.md), [RFC 050](./050-enterprise-controls.md), [RFC 055](./055-capture-product-boundary-and-rowboat-integration.md) |
 
 ## 1. Decision
 
-Let a note leave one person's machine: shareable web links with link,
-domain-restricted, or invite-only visibility, plus team spaces with roles,
-invitations, and server-enforced membership.
+Rowboat shares relationship workspaces, evidence-backed views, decisions,
+recommendations, and action history. Generic capture-note and transcript sharing
+belongs to the capture product.
 
-## 2. Why
+A capture transcript may be referenced as source evidence inside a Rowboat
+workspace only when its consent and sharing policy permit it. Connecting the
+capture product does not automatically make every transcript visible to a team.
 
-Meeting notes are inherently multiplayer. A note that cannot be shared forces
-users into copy-paste, which means the canonical version leaves our product and
-the relationship graph stops seeing the follow-up. Sharing keeps the artifact,
-and therefore the evidence, inside the system.
+## 2. Collaboration model
 
-It is also the natural pull-based growth loop: a shared note is a product demo
-sent by a customer to a colleague.
+The authorization resource is a relationship workspace, not a local Markdown
+file or capture note. Roles are:
 
-## 3. What we have
+- `owner` — manages membership, policy, deletion, and export;
+- `editor` — corrects identity, evidence, and relationship state;
+- `operator` — reviews and approves allowed actions;
+- `viewer` — reads authorized projections and evidence; and
+- `external_viewer` — sees a deliberately published, redacted view.
 
-- `apps/rowboat-www` — the web app that would render shared notes, with WorkOS
-  auth routes already present.
-- RFC 015 covers organization identity and FGA, which is the authorization
-  substrate this needs.
-- Desktop notes and version history (`packages/core/src/knowledge/version_history.ts`).
+Permissions are enforced server-side through the same FGA model used by API,
+web, desktop, MCP, and action execution.
 
-The gap is the sharing model itself and the public rendering surface.
+## 3. Evidence visibility
 
-## 4. Design
+Visibility is evaluated independently for:
 
-### 4.1 Visibility model
+- the relationship projection;
+- each evidence item;
+- exact transcript or message spans;
+- attachments and raw source artifacts;
+- identity hypotheses; and
+- action/audit records.
 
-Four levels, server-enforced:
+A projection may be shareable while a sensitive source span is withheld. The UI
+must state that evidence exists but is unavailable rather than silently making a
+claim appear unsupported.
 
-| Level       | Who can read                                  |
-| ----------- | --------------------------------------------- |
-| Private     | Owner only                                    |
-| Invite-only | Explicitly invited accounts                   |
-| Domain      | Anyone signed in with an allowed email domain |
-| Link        | Anyone with the URL                           |
+## 4. Capture-product sources
 
-**Authorization must be evaluated server-side on every request.** A share token
-in the URL is a bearer credential: it must be high-entropy, revocable,
-independently rotatable, and excluded from referrers and logs.
+Capture artifacts enter under RFC 055 with consent, retention, and transfer
+classifications. Rowboat must preserve those restrictions when deriving and
+sharing evidence.
 
-### 4.2 Team spaces
+- Raw audio is never shared merely because a relationship workspace is shared.
+- Transcript access requires an allowed capture-artifact policy.
+- Source deletion or revoked consent retracts or tombstones affected evidence.
+- A user may publish a redacted excerpt without publishing the whole transcript.
+- Capture-product team spaces remain distinct from Rowboat relationship
+  workspaces; cross-product membership is not assumed.
 
-Spaces hold notes with membership and roles (owner, editor, viewer). Membership
-is enforced at the API, not by hiding UI. Invitations are tokenized, expiring,
-and single-use.
+## 5. Sharing surfaces
 
-### 4.3 The privacy tension
+Rowboat may support:
 
-This is the part that deserves genuine care. Meeting notes contain transcripts
-of people who never consented to publication, and with RFC 044 they may carry
-speaker identity. Requirements:
+- direct member invitations;
+- organization and domain policy;
+- expiring external views;
+- project-level relationship workspaces;
+- revocation and access audit; and
+- exported evidence packets with provenance.
 
-- Link sharing is **off by default** and requires an explicit action per note.
-- Sharing a meeting note warns that it contains a transcript of other people.
-- Org policy (RFC 050) can disable public link sharing entirely.
-- Revocation is immediate and verifiable.
-- Shared notes are excluded from search-engine indexing.
+Public unauthenticated links default to disabled. Enabling them requires an
+organization policy, explicit artifact selection, expiration, and revocation.
 
-### 4.4 Sync semantics
+## 6. Definition of done
 
-Shared notes need a defined conflict model. Last-write-wins on a whole note is
-unacceptable for collaborative editing; scope initial sharing to **read-only
-publication** plus comments, and defer collaborative editing to a later RFC.
-That single decision removes most of the complexity here.
-
-## 5. Definition of done
-
-- A note can be shared at each visibility level, with authorization enforced
-  server-side (tested, including direct API access with a revoked token).
-- Revocation takes effect immediately.
-- Team spaces enforce roles at the API layer.
-- Invitations expire and cannot be replayed.
-- Sharing a meeting note surfaces a third-party-content warning.
-- Shared pages carry `noindex`, and tokens never appear in logs or referrers.
-
-## 6. OpenWhispr code references
-
-| Concern               | File                                                                                            | Lines | Notes                                                                                                 |
-| --------------------- | ----------------------------------------------------------------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------- |
-| Sharing service       | `src/services/NoteSharingService.ts`                                                            | 156   | Visibility levels and token lifecycle. The core reference for §4.1.                                   |
-| Share UI              | `src/components/notes/ShareNoteDialog.tsx`                                                      | 1078  | Full sharing surface; large because the states (link, domain, invite, revoked) each need explanation. |
-| Visibility menu       | `src/components/notes/ShareVisibilityMenu.tsx`                                                  | —     | Compact visibility switcher.                                                                          |
-| Spaces service        | `src/services/SpacesService.ts`                                                                 | 96    | Space CRUD and membership.                                                                            |
-| Space actions         | `src/services/spaceActions.ts`, `spaceActionsCore.ts`                                           | —     | Role-gated operations, split for testability.                                                         |
-| Teams                 | `src/services/TeamsService.ts`                                                                  | 45    | Team model.                                                                                           |
-| Invitations           | `src/services/InvitationsService.ts`                                                            | 62    | Token issuance and acceptance.                                                                        |
-| Membership validation | `src/services/accountSpaceValidation.ts`, `membershipActions.ts`                                | —     | Server-enforced membership checks.                                                                    |
-| Invite UX             | `src/components/AcceptInvitationModal.tsx`, `InviteTeammateDialog.tsx`, `JoinYourTeamModal.tsx` | —     | The full invite loop.                                                                                 |
-| Sync guards           | `src/helpers/cloudSyncGuards.js`, `src/services/syncPassPolicy.ts`                              | —     | Preventing sync of content that policy forbids leaving the device.                                    |
-| Participants          | `src/components/notes/NoteParticipants.tsx`, `src/utils/participants.ts`                        | —     | Displaying who is on a note.                                                                          |
-
-MIT-licensed; carry the notice on any adapted file.
-
-## 7. Risks
-
-- **A sharing bug is a data breach**, not a defect. This RFC needs a security
-  review and explicit negative tests before any public link ships.
-- Publishing transcripts of third parties has legal exposure in two-party-consent
-  jurisdictions. Warnings are necessary but may not be sufficient; get counsel
-  input before enabling link sharing on meeting notes specifically.
+- Every relationship workspace has server-enforced roles and audit history.
+- Evidence and projection visibility can differ without leaking source content.
+- Capture consent and retention restrictions survive derivation and sharing.
+- Raw audio and full transcripts are never shared by implication.
+- Revocation takes effect across API, web, desktop, MCP, and cached views.
+- External views expire and can be revoked immediately.
+- Capture-product collaboration remains separately owned and documented.

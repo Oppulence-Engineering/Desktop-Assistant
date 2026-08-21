@@ -1,14 +1,19 @@
 "use client";
 
+import "client-only";
+
 /**
- * Device-local chat session history. Each session stores its transcript so
- * conversations survive reloads and can be reopened from the sidebar; turns
- * keep flowing through the server session identified by runId.
+ * Sensitive chat history is intentionally memory-only. A full navigation,
+ * logout, or account switch destroys it; transcripts never enter Web Storage.
+ * Durable history should come from an organization-scoped server endpoint.
  */
 
-const INDEX_KEY = "oppulence:chat-sessions";
-const SESSION_PREFIX = "oppulence:chat-session:";
 const MAX_SESSIONS = 30;
+
+export type SessionScope = {
+  organizationId?: string;
+  userId: string;
+};
 
 export type SessionMeta = {
   runId: string;
@@ -21,67 +26,36 @@ export type StoredSession = SessionMeta & {
   items: unknown[];
 };
 
-function readIndex(): string[] {
-  try {
-    const raw = localStorage.getItem(INDEX_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === "string") : [];
-  } catch {
-    return [];
-  }
+const sessionsByScope = new Map<string, Map<string, StoredSession>>();
+
+function scopeKey(scope: SessionScope): string {
+  return `${scope.organizationId ?? "personal"}:${scope.userId}`;
 }
 
-function writeIndex(ids: string[]) {
-  localStorage.setItem(INDEX_KEY, JSON.stringify(ids.slice(0, MAX_SESSIONS)));
+function sessionsFor(scope: SessionScope): Map<string, StoredSession> {
+  const key = scopeKey(scope);
+  const existing = sessionsByScope.get(key);
+  if (existing) return existing;
+  const created = new Map<string, StoredSession>();
+  sessionsByScope.set(key, created);
+  return created;
 }
 
-export function listSessions(): SessionMeta[] {
-  if (typeof window === "undefined") return [];
-  const metas: SessionMeta[] = [];
-  for (const id of readIndex()) {
-    const stored = loadSession(id);
-    if (stored) {
-      metas.push({
-        runId: stored.runId,
-        title: stored.title,
-        agent: stored.agent,
-        updatedAt: stored.updatedAt,
-      });
-    }
-  }
-  return metas;
+export function listSessions(scope: SessionScope): SessionMeta[] {
+  return [...sessionsFor(scope).values()]
+    .sort((left, right) => right.updatedAt - left.updatedAt)
+    .map(({ runId, title, agent, updatedAt }) => ({ runId, title, agent, updatedAt }));
 }
 
-export function loadSession(runId: string): StoredSession | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(SESSION_PREFIX + runId);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed.runId !== "string" || !Array.isArray(parsed.items)) return null;
-    return parsed as StoredSession;
-  } catch {
-    return null;
-  }
+export function loadSession(scope: SessionScope, runId: string): StoredSession | null {
+  return sessionsFor(scope).get(runId) ?? null;
 }
 
-export function saveSession(session: StoredSession) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(SESSION_PREFIX + session.runId, JSON.stringify(session));
-  } catch {
-    return; // storage full — skip persisting rather than breaking chat
-  }
-  const ids = readIndex().filter((id) => id !== session.runId);
-  ids.unshift(session.runId);
-  for (const evicted of ids.slice(MAX_SESSIONS)) {
-    localStorage.removeItem(SESSION_PREFIX + evicted);
-  }
-  writeIndex(ids);
-}
-
-export function deleteSession(runId: string) {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(SESSION_PREFIX + runId);
-  writeIndex(readIndex().filter((id) => id !== runId));
+export function saveSession(scope: SessionScope, session: StoredSession): void {
+  const sessions = sessionsFor(scope);
+  sessions.set(session.runId, session);
+  const overflow = [...sessions.values()]
+    .sort((left, right) => right.updatedAt - left.updatedAt)
+    .slice(MAX_SESSIONS);
+  for (const stale of overflow) sessions.delete(stale.runId);
 }

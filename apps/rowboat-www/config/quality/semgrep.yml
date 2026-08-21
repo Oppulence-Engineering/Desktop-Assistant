@@ -1,0 +1,60 @@
+rules:
+  - id: oppulence.web009.upstream-html-proxy
+    message: WEB009 Remote HTML must not be fetched and re-served from the application origin.
+    severity: ERROR
+    languages: [typescript]
+    patterns:
+      - pattern-inside: |
+          $RESPONSE = await fetch(...)
+          ...
+      - pattern: $BODY = await $RESPONSE.text()
+      - pattern-inside: |
+          ...
+          new Response($BODY, {headers: {..., $KEY: "text/html", ...}, ...})
+          ...
+
+  - id: oppulence.web012.raw-error-redirect
+    message: WEB012 Redirects must expose stable public error codes, not raw exception text.
+    severity: ERROR
+    languages: [typescript]
+    patterns:
+      - pattern-either:
+          - pattern: $URL.searchParams.set("error", $ERR.message)
+          - pattern: $URL.searchParams.set("error", String($ERR))
+
+  - id: oppulence.web013.sensitive-auth-console
+    message: WEB013 Authentication credentials and authorization headers must not be logged.
+    severity: ERROR
+    languages: [typescript, javascript]
+    patterns:
+      - pattern-either:
+          - pattern: console.$METHOD(..., $TOKEN, ...)
+          - pattern: console.$METHOD(..., $HEADERS.authorization, ...)
+          - pattern: console.$METHOD(..., $HEADERS["authorization"], ...)
+      - metavariable-regex:
+          metavariable: $TOKEN
+          regex: (?i).*(access.?token|refresh.?token|authorization).*
+
+  - id: oppulence.web-security.unreviewed-dangerous-html
+    message: Untrusted HTML sinks require a documented security review.
+    severity: ERROR
+    languages: [typescript]
+    pattern: |
+      <$ELEMENT ... dangerouslySetInnerHTML={{ __html: $VALUE }} ... />
+    paths:
+      exclude:
+        - "**/app/(marketing)/page.tsx"
+        - "**/components/ai-elements/code-block.tsx"
+
+  - id: oppulence.web014.private-env-in-client
+    message: WEB014 Client modules may only read NEXT_PUBLIC_* environment variables.
+    severity: ERROR
+    languages: [typescript]
+    patterns:
+      - pattern-inside: |
+          "use client"
+          ...
+      - pattern: process.env.$NAME
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: ^(?!NEXT_PUBLIC_).+

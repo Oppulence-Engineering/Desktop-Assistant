@@ -1,5 +1,7 @@
 "use client";
 
+import "client-only";
+
 import { BrowserSessionResponseSchema, type BrowserSessionResponse } from "@/lib/auth/schemas";
 
 /**
@@ -12,6 +14,7 @@ export async function loadBrowserSession(): Promise<BrowserSessionResponse> {
     credentials: "include",
     cache: "no-store",
     headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(10_000),
   });
   if (res.status === 401) return { authenticated: false };
   if (!res.ok) throw new Error(`Session check failed: ${res.status}`);
@@ -29,10 +32,14 @@ export function loginURL(returnTo = "/app"): string {
  * server-side and redirect the browser back through WorkOS when the session
  * expires.
  */
-export async function dashboardFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+export async function dashboardFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
   const res = await fetch(input, {
     ...init,
     credentials: "include",
+    signal: init?.signal ?? AbortSignal.timeout(30_000),
     headers: {
       ...(init?.headers || {}),
     },

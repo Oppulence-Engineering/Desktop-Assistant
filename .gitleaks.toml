@@ -1,0 +1,11 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Documented local-only identity-provider key and deterministic test marker"
+paths = [
+  '''^apps/rowboat-api/cmd/devstack/devkey\.go$''',
+]
+regexes = [
+  '''idem-hubspot-1''',
+]

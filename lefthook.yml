@@ -31,6 +31,26 @@ pre-commit:
       glob: "*.{ts,tsx,mts,cts}"
       run: pnpm exec eslint --config config/eslint.config.mts --fix --no-warn-ignored {staged_files}
       stage_fixed: true
+    rowboat-www-eslint:
+      priority: 10
+      root: "apps/rowboat-www/"
+      glob: "*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"
+      run: npm exec eslint -- --fix --no-warn-ignored {staged_files}
+      stage_fixed: true
+    rowboat-www-component-contracts:
+      priority: 30
+      root: "apps/rowboat-www/"
+      glob:
+        - "components/**/*.{ts,tsx}"
+        - "app/**/_components/**/*.{ts,tsx}"
+        - "component-architecture.json"
+        - "components.json"
+      run: npm test
+    # Scan only the staged diff for immediate credential feedback. CI scans
+    # full history independently.
+    gitleaks-staged:
+      priority: 30
+      run: go run github.com/zricethezav/gitleaks/v8@v8.30.1 git --staged --gitleaks-ignore-path .gitleaksignore --redact --no-banner .
     # Format every staged file Prettier understands (TS/JS/JSON/CSS/MD/YAML…),
     # using the root Prettier + .prettierignore. --ignore-unknown skips the rest.
     prettier:
@@ -38,11 +58,12 @@ pre-commit:
       glob: "*.{ts,tsx,js,jsx,mjs,cjs,mts,cts,json,jsonc,css,scss,md,mdx,yml,yaml,html}"
       run: pnpm exec prettier --write --ignore-unknown {staged_files}
       stage_fixed: true
-    # Go: gofmt staged files, then vet the perf tool if it changed.
-    gofmt:
+    # Go: goimports includes gofmt and canonical import grouping. The tool is
+    # version-pinned to the rowboat-api Makefile/toolchain.
+    goimports:
       priority: 10
       glob: "*.go"
-      run: gofmt -w {staged_files}
+      run: go run golang.org/x/tools/cmd/goimports@v0.49.0 -w {staged_files}
       stage_fixed: true
     # rowboat-api codegen: when ent schemas or gqlgen inputs are staged, run
     # the generators and stage their output, so CI's generate-drift check
@@ -94,3 +115,9 @@ pre-push:
     desktop-checks:
       root: "apps/x/"
       run: pnpm run verify
+    rowboat-api-checks:
+      root: "apps/rowboat-api/"
+      run: make verify
+    rowboat-www-checks:
+      root: "apps/rowboat-www/"
+      run: npm run verify

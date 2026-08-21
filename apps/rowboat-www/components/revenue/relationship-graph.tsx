@@ -818,7 +818,9 @@ function GraphTable({
               <TableCell className="px-3 py-2 text-primary/45">
                 {edges.filter((edge) => edge.source === node.id || edge.target === node.id).length}
               </TableCell>
-              <TableCell className="px-3 py-2 text-primary/45">{node.evidenceRefs.length}</TableCell>
+              <TableCell className="px-3 py-2 text-primary/45">
+                {node.evidenceRefs.length}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

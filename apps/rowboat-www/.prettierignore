@@ -1,0 +1,7 @@
+.next/
+coverage/
+lib/api/generated/
+node_modules/
+playwright-report/
+test-results/
+.rowboat-contracts-*/

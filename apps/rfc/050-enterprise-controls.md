@@ -4,11 +4,11 @@
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
 | **RFC**            | 050                                                                                                                            |
 | **Status**         | Draft                                                                                                                          |
-| **Track**          | Enterprise readiness — OpenWhispr parity                                                                                       |
+| **Track**          | Rowboat enterprise readiness · shared company policy                                                                           |
 | **Owners**         | `apps/rowboat-api`, `apps/x` desktop, security, product                                                                        |
 | **Created**        | 2026-08-12                                                                                                                     |
 | **Depends on**     | [RFC 011](./complete-011-identity-and-authorization-plane.md), [RFC 015](./015-rowboat-platform-workos-fga-and-widget-auth.md) |
-| **Related**        | [RFC 052](./052-transcription-provider-breadth.md), [RFC 051](./051-note-sharing-and-team-spaces.md)                           |
+| **Related**        | [RFC 051](./051-note-sharing-and-team-spaces.md), [RFC 055](./055-capture-product-boundary-and-rowboat-integration.md)         |
 | **Reference impl** | OpenWhispr (MIT) — see §6                                                                                                      |
 
 ## 1. Decision
@@ -46,9 +46,9 @@ inside the customer's own cloud account and audit boundary.
 
 An organization policy document, fetched and cached by the client, that can:
 
-- force local-only transcription (no cloud audio egress);
+- force local-only relationship inference (no cloud evidence egress);
 - restrict which model providers are selectable;
-- disable screen-context capture (RFC 042) and audio retention;
+- disable screen-context capture (RFC 042) and capture-artifact retention;
 - set retention limits;
 - disable public link sharing (RFC 051).
 
@@ -68,7 +68,7 @@ generates support tickets; explained restriction does not.
 - SSO and SCIM provision and deprovision users, with deprovisioning reflected on
   the desktop within a stated window.
 - An admin configures Bedrock or Azure OpenAI centrally and no user holds a key.
-- Local-only transcription policy is enforced in the main process and cannot be
+- Local-only relationship-inference policy is enforced in the main process and cannot be
   bypassed by the renderer (tested).
 - Policy fetch failure fails closed to the cached restrictive state.
 - Restricted features are visibly explained to end users.
@@ -76,9 +76,11 @@ generates support tickets; explained restriction does not.
 
 ## 5. Sequencing note
 
-This RFC should not precede RFC 040 through 047. Enterprise controls govern
-features; governing features we have not built is premature. The exception is
-§3.3 policy plumbing, which is cheaper to add before the feature surface grows.
+SSO/SCIM can proceed independently because the backend foundation already
+exists. Cross-product organization policy uses a shared vocabulary, but each
+product enforces it fail-closed at its own boundary. Capture-provider policy
+belongs to the capture product; Rowboat governs relationship models,
+connectors, evidence visibility, retention, and actions.
 
 ## 6. OpenWhispr code references
 

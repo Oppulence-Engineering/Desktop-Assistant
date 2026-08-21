@@ -8,6 +8,9 @@ on:
       - "packages/rowboat-api-client-ts/**"
       - "docs/trustworthy-first-account-beta/**"
       - "scripts/rowboat-api-kind.sh"
+      - ".gitleaks.toml"
+      - ".gitleaksignore"
+      - "lefthook.yml"
       - ".github/workflows/rowboat-api-quality.yml"
       - ".github/workflows/rowboat-api-deploy.yml"
   push:
@@ -18,6 +21,9 @@ on:
       - "packages/rowboat-api-client-ts/**"
       - "docs/trustworthy-first-account-beta/**"
       - "scripts/rowboat-api-kind.sh"
+      - ".gitleaks.toml"
+      - ".gitleaksignore"
+      - "lefthook.yml"
       - ".github/workflows/rowboat-api-quality.yml"
       - ".github/workflows/rowboat-api-deploy.yml"
 
@@ -34,6 +40,12 @@ jobs:
         with:
           go-version-file: apps/rowboat-api/go.mod
           cache-dependency-path: apps/rowboat-api/go.sum
+      - name: Formatting, module, and architecture checks
+        run: make fmt-check architecture mod-verify
+        working-directory: apps/rowboat-api
+      - name: Verify quality workflow policy
+        run: make policy
+        working-directory: apps/rowboat-api
       - name: Test with race detector
         run: go test ./... -race -count=1
         working-directory: apps/rowboat-api
@@ -83,6 +95,7 @@ jobs:
           cache-dependency-path: apps/rowboat-api/go.sum
       - uses: golangci/golangci-lint-action@v8
         with:
+          version: v2.12.2
           working-directory: apps/rowboat-api
 
   generate-drift:
@@ -139,9 +152,18 @@ jobs:
           cache-dependency-path: apps/rowboat-api/go.sum
       - name: govulncheck
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
           govulncheck ./...
         working-directory: apps/rowboat-api
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Gitleaks repository history
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 git /repo --gitleaks-ignore-path /repo/.gitleaksignore --redact --no-banner
 
   container:
     runs-on: ubuntu-latest

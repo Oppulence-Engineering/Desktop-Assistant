@@ -217,37 +217,28 @@ follow-through. Each RFC carries its own current status.
 | [034](./034-floating-overlay-assistant.md)             | Floating Overlay Assistant (Hummingbird-class)           | apps/x                | A global summonable Ask/Capture/Approve panel with consented per-invocation context; it is one desktop affordance over the shared RFC 036 intelligence and action loop. |
 | [035](./035-meeting-intelligence-commitment-ledger.md) | Meeting Intelligence — Parity Plus the Commitment Ledger | apps/x + rowboat-api  | Composes local transcription, diarization, and meeting context into evidence-backed participants, commitments, risks, and follow-through in RFC 036.                    |
 
-## OpenWhispr parity track
+## Capture-product boundary and integration
 
-RFCs 040–054 answer the dictation-and-meeting comparison against
-[OpenWhispr](https://github.com/OpenWhispr/openwhispr) (MIT, v1.8.2).
-[RFC 054](./054-openwhispr-parity-program.md) is the index: it sequences the
-track into waves, records two corrections to the initial comparison (we already
-ship Parakeet on Apple silicon, and our desktop dictation is more complete than
-a feature list suggests), names the one item worth declining, and sets the
-licensing rules for reusing MIT code in this Apache-2.0 repository.
+[RFC 055](./055-capture-product-boundary-and-rowboat-integration.md) replaces
+the former OpenWhispr parity program. The OpenWhispr fork remains a separate,
+independently useful Oppulence capture product; Rowboat remains the canonical
+relationship-intelligence, evidence, and governed-action system.
 
-Every RFC in this track carries a §"OpenWhispr code references" table pointing
-at the specific upstream files that solve each problem, so implementation starts
-from working reference code rather than a blank page.
+Capture-only RFCs 040, 041, 043, 045, 046, 047, and 052 were removed from this
+active roadmap and preserved in the capture repository as RFCs 0010–0016.
+RFC 054 was superseded. Split concerns remain here only for their Rowboat-owned
+behavior:
 
-| #                                                                | Title                                            | Size | What it adds                                                                                                      |
-| ---------------------------------------------------------------- | ------------------------------------------------ | ---- | ----------------------------------------------------------------------------------------------------------------- |
-| [040](./040-dictation-core-ux.md)                                | Dictation as a Core Surface                      | M    | Push-to-talk and Globe-key capture, a single hotkey registry with conflict detection, and paste hardening.        |
-| [041](./041-dictation-translation.md)                            | Dictation Translation                            | S    | A dedicated hotkey to speak one language and paste another. Highest value per line in the set.                    |
-| [042](./042-voice-agent-screen-context-and-selection-editing.md) | Voice Agent Screen Context and Selection Editing | M    | Edit highlighted text by voice with an injection-resistant prompt contract, plus opt-in screenshot context.       |
-| [043](./043-gpu-whisper-and-parakeet-engines.md)                 | GPU Whisper and Parakeet Engines                 | L    | CUDA/Vulkan local Whisper and a cross-platform Parakeet path; our Core ML engine stays the macOS default.         |
-| [044](./044-cross-meeting-speaker-fingerprinting.md)             | Cross-Meeting Speaker Fingerprinting             | M    | Persistent on-device voice identity as a first-class relationship-graph input for RFC 035 and RFC 036.            |
-| [045](./045-audio-video-import.md)                               | Audio and Video Import                           | M    | Drag-drop, batch, and URL transcription with hard SSRF controls; the fastest way to populate the graph.           |
-| [046](./046-windows-linux-native-voice-stack.md)                 | Windows and Linux Native Voice Stack             | XL   | Native key listeners, paste, and capture off macOS. We currently ship installers that cannot dictate.             |
-| [047](./047-snippets-dictionary-correction-learner.md)           | Snippets, Dictionary, Correction Learner         | S    | Surfaces vocabulary config we already persist, and learns dictionary entries from repeated user corrections.      |
-| [048](./048-public-api-mcp-server-cli.md)                        | Public API, MCP Server, and CLI Bridge           | L    | Become an MCP _server_, not only a client, so every AI assistant becomes distribution for the relationship graph. |
-| [049](./049-i18n-and-localization.md)                            | Internationalization and Localization            | M    | String externalization and locale support, deliberately sequenced before the 040–047 UI surface lands.            |
-| [050](./050-enterprise-controls.md)                              | Enterprise Controls                              | L    | SSO/SCIM lifecycle, org-managed Bedrock/Azure access without user keys, and fail-closed client policy.            |
-| [051](./051-note-sharing-and-team-spaces.md)                     | Note Sharing and Team Spaces                     | L    | Server-enforced link/domain/invite visibility and team spaces, with third-party-transcript safeguards.            |
-| [052](./052-transcription-provider-breadth.md)                   | Transcription Provider Breadth                   | M    | A formal provider interface, a self-hosted endpoint, and visible failover — for resilience and procurement.       |
-| [053](./053-local-llm-runtime.md)                                | Local LLM Runtime and Local Vector Index         | L    | Completes an honest local-only mode without letting a weak local model write low-confidence claims to the graph.  |
-| [054](./054-openwhispr-parity-program.md)                        | OpenWhispr Parity Program                        | —    | Index, sequencing, corrections, and the MIT-to-Apache-2.0 code-reuse rules for the whole track.                   |
+| #                                                                | Rowboat-owned scope                                                                                       |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [042](./042-voice-agent-screen-context-and-selection-editing.md) | Consented desktop context for relationship-aware commands; local selection editing belongs to capture.    |
+| [044](./044-cross-meeting-speaker-fingerprinting.md)             | Bind capture-owned voice-profile hints to canonical people with evidence and confidence.                  |
+| [048](./048-public-api-mcp-server-cli.md)                        | Relationship APIs, MCP distribution, and the versioned capture-artifact ingestion surface.                |
+| [049](./049-i18n-and-localization.md)                            | Rowboat localization; the capture product localizes independently.                                        |
+| [050](./050-enterprise-controls.md)                              | Shared organization identity and policy, enforced fail-closed by Rowboat.                                 |
+| [051](./051-note-sharing-and-team-spaces.md)                     | Relationship/evidence collaboration; transcript sharing belongs to capture.                               |
+| [053](./053-local-llm-runtime.md)                                | Local relationship inference and quality gates, not capture-model management.                             |
+| [055](./055-capture-product-boundary-and-rowboat-integration.md) | Product ownership, integration contract, privacy boundary, code-reuse policy, rollout, and success gates. |
 
 ## Email feature RFCs
 

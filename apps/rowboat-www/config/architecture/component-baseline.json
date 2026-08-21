@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "standardPaths": ["components/features/", "/_components/"],
+  "managedPaths": ["components/ai-elements/", "components/providers/"],
+  "legacyFiles": [
+    "components/actions/actions-view.tsx",
+    "components/actions/audit-sheet.tsx",
+    "components/agents/agent-configuration-form.tsx",
+    "components/agents/agents-view.tsx",
+    "components/app-settings.tsx",
+    "components/app-shell.tsx",
+    "components/auth-gate.tsx",
+    "components/auth/auth-shell.tsx",
+    "components/command-palette.tsx",
+    "components/json-editor.tsx",
+    "components/legal/current-year.tsx",
+    "components/legal/legal-document.tsx",
+    "components/markdown-viewer.tsx",
+    "components/revenue-panel.tsx",
+    "components/revenue/audit-sheet.tsx",
+    "components/revenue/impact-view.tsx",
+    "components/revenue/queue-view.tsx",
+    "components/revenue/relationship-graph.tsx",
+    "components/revenue/relationships-view.tsx",
+    "components/revenue/review-sheet.tsx",
+    "components/revenue/scans-view.tsx",
+    "components/revenue/shared.tsx",
+    "components/revenue/workspace-view.tsx",
+    "components/tiptap-markdown-editor.tsx",
+    "components/ui/app-icon.tsx",
+    "components/workflows/cloud-workflows-view.tsx"
+  ]
+}
