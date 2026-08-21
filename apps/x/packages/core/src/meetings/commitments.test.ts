@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { MeetingTranscriptSegment } from "@x/shared/dist/meetings.js";
+import type { MeetingTranscriptSegment } from "@x/shared/meetings";
 import {
   COMMITMENT_GUARD,
   MIN_CONFIDENCE,

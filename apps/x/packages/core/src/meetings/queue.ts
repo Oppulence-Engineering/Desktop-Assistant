@@ -6,7 +6,7 @@ import {
   type MeetingSessionMeta,
   type MeetingTranscript,
   type MeetingTranscriptionProgress,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 import type { AudioCodec } from "./codec.js";
 import { recoverOrphanedSessions } from "./recover.js";
 import { applyRetention } from "./retention.js";

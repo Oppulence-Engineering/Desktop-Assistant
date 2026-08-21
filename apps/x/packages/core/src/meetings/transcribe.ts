@@ -5,7 +5,7 @@ import type {
   MeetingTrackMeta,
   MeetingTranscript,
   MeetingTranscriptSegment,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 import { isNonSpeech, pcmStats } from "../voice/whisper/index.js";
 import { decodedName, isCompressed, type AudioCodec } from "./codec.js";
 import { appendLog } from "./session.js";

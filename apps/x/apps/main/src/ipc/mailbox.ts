@@ -1,5 +1,5 @@
 import { ipc } from "@x/shared";
-import { getMailboxService } from "@x/core/dist/mailbox/mailbox.js";
+import { getMailboxService } from "@x/core/mailbox/mailbox";
 
 type IPCChannels = ipc.IPCChannels;
 

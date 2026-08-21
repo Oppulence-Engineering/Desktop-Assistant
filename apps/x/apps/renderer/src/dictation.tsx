@@ -6,7 +6,7 @@ import {
   DICTATION_LANGUAGE_LABELS,
   type DictationFlowBarDock,
   type DictationLanguage,
-} from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
 
 type DictationState = "idle" | "listening" | "transcribing" | "success" | "error";
 type DictationMode = "push-to-talk" | "hands-free";

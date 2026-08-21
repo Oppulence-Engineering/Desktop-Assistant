@@ -9,8 +9,9 @@ import {
   type InstallDecision,
   type UpdateEvent,
   type UpdateStatus,
-} from "@x/core/dist/updates/update-policy.js";
+} from "@x/core/updates/update-policy";
 import { peekMeetingController } from "./meeting-controller.js";
+import { sendRendererEvent } from "./renderer-events.js";
 
 /**
  * Auto-update, surfaced in the app instead of in an OS dialog.
@@ -37,7 +38,7 @@ let initialized = false;
 
 function broadcast(): void {
   for (const win of BrowserWindow.getAllWindows()) {
-    if (!win.isDestroyed()) win.webContents.send("app:updateStatus", status);
+    if (!win.isDestroyed()) sendRendererEvent(win.webContents, "app:updateStatus", status);
   }
 }
 

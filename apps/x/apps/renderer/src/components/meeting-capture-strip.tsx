@@ -10,7 +10,7 @@ import type {
   MeetingSessionSummary,
   MeetingTrackId,
   MeetingTranscriptionProgress,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 
 /**
  * Live state for native dual-track capture: what is being recorded right now, what is

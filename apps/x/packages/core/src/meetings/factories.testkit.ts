@@ -1,6 +1,6 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import type { MeetingSessionMeta, MeetingTrackMeta } from "@x/shared/dist/meetings.js";
+import type { MeetingSessionMeta, MeetingTrackMeta } from "@x/shared/meetings";
 import type { MeetingTranscriber } from "./transcribe.js";
 
 /** Fixtures for the meetings module. Kept out of `*.test.ts` so several suites can

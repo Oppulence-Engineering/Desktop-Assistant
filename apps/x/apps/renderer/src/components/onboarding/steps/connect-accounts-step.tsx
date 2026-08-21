@@ -7,7 +7,7 @@ import {
   Plug,
   ShieldCheck,
 } from "@/lib/icons";
-import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME } from "@x/shared/branding";
 import {
   GOOGLE_BRAND_ICON,
   HUBSPOT_BRAND_ICON,

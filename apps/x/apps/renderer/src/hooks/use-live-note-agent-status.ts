@@ -1,6 +1,6 @@
 import z from 'zod';
 import { useSyncExternalStore } from 'react';
-import { LiveNoteAgentEvent } from '@x/shared/dist/live-note.js';
+import { LiveNoteAgentEvent } from '@x/shared/live-note';
 
 export type LiveNoteAgentStatus = 'idle' | 'running' | 'done' | 'error';
 

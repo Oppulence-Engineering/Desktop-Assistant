@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import { BrowserWindow, WebContentsView, session, shell, type Session } from 'electron';
+import { BrowserWindow, WebContentsView, session, type Session } from 'electron';
 import type {
   BrowserPageElement,
   BrowserPageSnapshot,
   BrowserState,
   BrowserTabState,
-} from '@x/shared/dist/browser-control.js';
+} from '@x/shared/browser-control';
 import { normalizeNavigationTarget } from './navigation.js';
+import { openTrustedExternal } from '../external-url.js';
 import {
   buildClickScript,
   buildFocusScript,
@@ -270,7 +271,7 @@ export class BrowserViewManager extends EventEmitter {
       if (this.isEmbeddedTabUrl(url)) {
         void this.newTab(url);
       } else {
-        void shell.openExternal(url);
+        void openTrustedExternal(url);
       }
       return { action: 'deny' };
     });

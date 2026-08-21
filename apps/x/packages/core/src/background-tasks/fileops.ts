@@ -5,7 +5,7 @@ import {
     BackgroundTaskSchema,
     type BackgroundTask,
     type BackgroundTaskSummary,
-} from '@x/shared/dist/background-task.js';
+} from '@x/shared/background-task';
 import { WorkDir } from '../config/config.js';
 import { withFileLock } from '../knowledge/file-lock.js';
 import { writeJsonAtomic } from "../filesystem/atomic_write.js";

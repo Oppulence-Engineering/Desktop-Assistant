@@ -4,8 +4,9 @@ import { mergeAttributes, Node } from "@tiptap/react";
 import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import { Sparkles } from "@/lib/icons";
 import { parse as parseYaml } from "yaml";
-import { PromptBlockSchema } from "@x/shared/dist/prompt-block.js";
+import { PromptBlockSchema } from "@x/shared/prompt-block";
 import { Button } from "@oppulence/ui/components/button";
+import { emitRendererEvent } from "@/lib/renderer-events";
 
 function truncate(text: string, maxLen: number): string {
   const clean = text.replace(/\s+/g, " ").trim();
@@ -35,15 +36,11 @@ function PromptBlockView({
   const handleRun = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!prompt) return;
-    window.dispatchEvent(
-      new CustomEvent("rowboat:open-copilot-prompt", {
-        detail: {
-          instruction: prompt.instruction,
-          label: prompt.label,
-          filePath: notePath,
-        },
-      }),
-    );
+    emitRendererEvent("rowboat:open-copilot-prompt", {
+      instruction: prompt.instruction,
+      label: prompt.label,
+      filePath: notePath,
+    });
   };
 
   const handleKey = (e: React.KeyboardEvent) => {

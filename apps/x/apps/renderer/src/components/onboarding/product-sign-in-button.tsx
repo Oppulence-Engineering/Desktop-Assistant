@@ -1,6 +1,6 @@
 import { ArrowRight, CheckCircle2, Loader2 } from "@/lib/icons";
 import { Button } from "@oppulence/ui/components/button";
-import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME } from "@x/shared/branding";
 
 interface ProductSignInButtonProps {
   connected?: boolean;

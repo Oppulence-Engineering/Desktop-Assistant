@@ -1,4 +1,4 @@
-import type { LiveNoteAgentEventType } from '@x/shared/dist/live-note.js';
+import type { LiveNoteAgentEventType } from '@x/shared/live-note';
 
 type Handler = (event: LiveNoteAgentEventType) => void;
 

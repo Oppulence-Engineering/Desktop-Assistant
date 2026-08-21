@@ -4,8 +4,8 @@ import { Badge } from "@oppulence/ui/components/badge";
 import { cn } from "@/lib/utils";
 import { CheckCircle2Icon, ShieldAlertIcon, Terminal } from "@/lib/icons";
 import type { ComponentProps } from "react";
-import { ToolCallPart } from "@x/shared/dist/message.js";
-import { ToolPermissionMetadata } from "@x/shared/dist/runs.js";
+import { ToolCallPart } from "@x/shared/message";
+import { ToolPermissionMetadata } from "@x/shared/runs";
 import z from "zod";
 
 export type AutoPermissionDecisionProps = ComponentProps<"div"> & {

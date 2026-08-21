@@ -5,12 +5,12 @@ import { IAgentScheduleStateRepo } from "./state-repo.js";
 import { IRunsRepo } from "../runs/repo.js";
 import { IAgentRuntime } from "../agents/runtime.js";
 import { IMonotonicallyIncreasingIdGenerator } from "../application/lib/id-gen.js";
-import { AgentScheduleConfig, AgentScheduleEntry } from "@x/shared/dist/agent-schedule.js";
+import { AgentScheduleConfig, AgentScheduleEntry } from "@x/shared/agent-schedule";
 import {
   AgentScheduleState,
   AgentScheduleStateEntry,
-} from "@x/shared/dist/agent-schedule-state.js";
-import { MessageEvent } from "@x/shared/dist/runs.js";
+} from "@x/shared/agent-schedule-state";
+import { MessageEvent } from "@x/shared/runs";
 import { createRun } from "../runs/runs.js";
 import z from "zod";
 

@@ -7,7 +7,7 @@ import { getAccountEmail } from "../knowledge/sync_gmail.js";
 import { buildMeetingRoster, resolveRosterBinding } from "../meetings/roster.js";
 import { getTranscriptionConfig } from "../voice/voice.js";
 import { enqueueRelationshipEvidence, flushRelationshipEvidence } from "./evidence-outbox.js";
-import type { RelationshipObservationInput } from "@x/shared/dist/relationships.js";
+import type { RelationshipObservationInput } from "@x/shared/relationships";
 
 /**
  * Attendance for meetings that were never recorded.

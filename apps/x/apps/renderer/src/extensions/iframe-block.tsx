@@ -2,7 +2,7 @@ import { mergeAttributes, Node } from '@tiptap/react'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
 import { Globe, X } from '@/lib/icons'
 import { blocks } from '@x/shared'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 const IFRAME_HEIGHT_MESSAGE = 'rowboat:iframe-height'
 const IFRAME_HEIGHT_CACHE_PREFIX = 'rowboat:iframe-height:'
@@ -63,30 +63,21 @@ function parseIframeHeightMessage(event: MessageEvent): { height: number } | nul
 
 function IframeBlockView({ node, deleteNode }: { node: { attrs: Record<string, unknown> }; deleteNode: () => void }) {
   const raw = node.attrs.data as string
-  let config: blocks.IframeBlock | null = null
+  const config = useMemo(() => {
+    try {
+      const parsed = blocks.IframeBlockSchema.safeParse(JSON.parse(raw) as unknown)
+      return parsed.success ? parsed.data : null
+    } catch {
+      return null
+    }
+  }, [raw])
 
-  try {
-    config = blocks.IframeBlockSchema.parse(JSON.parse(raw))
-  } catch {
-    // fallback below
-  }
-
-  if (!config) {
-    return (
-      <NodeViewWrapper className="iframe-block-wrapper" data-type="iframe-block">
-        <div className="iframe-block-card iframe-block-error">
-          <Globe size={16} />
-          <span>Invalid iframe block</span>
-        </div>
-      </NodeViewWrapper>
-    )
-  }
-
-  const visibleTitle = config.title?.trim() || ''
+  const url = config?.url ?? ''
+  const visibleTitle = config?.title?.trim() || ''
   const title = visibleTitle || 'Embedded page'
-  const allow = config.allow || DEFAULT_IFRAME_ALLOW
-  const initialHeight = config.height ?? DEFAULT_IFRAME_HEIGHT
-  const [frameHeight, setFrameHeight] = useState(() => readCachedIframeHeight(config.url, initialHeight))
+  const allow = config?.allow || DEFAULT_IFRAME_ALLOW
+  const initialHeight = config?.height ?? DEFAULT_IFRAME_HEIGHT
+  const [frameHeight, setFrameHeight] = useState(() => readCachedIframeHeight(url, initialHeight))
   const [frameReady, setFrameReady] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const loadFallbackTimerRef = useRef<number | null>(null)
@@ -94,7 +85,8 @@ function IframeBlockView({ node, deleteNode }: { node: { attrs: Record<string, u
   const frameReadyRef = useRef(false)
 
   useEffect(() => {
-    setFrameHeight(readCachedIframeHeight(config.url, initialHeight))
+    if (!config) return
+    setFrameHeight(readCachedIframeHeight(url, initialHeight))
     setFrameReady(false)
     frameReadyRef.current = false
     if (loadFallbackTimerRef.current !== null) {
@@ -105,13 +97,14 @@ function IframeBlockView({ node, deleteNode }: { node: { attrs: Record<string, u
       window.clearTimeout(autoResizeReadyTimerRef.current)
       autoResizeReadyTimerRef.current = null
     }
-  }, [config.url, initialHeight, raw])
+  }, [config, initialHeight, raw, url])
 
   useEffect(() => {
     frameReadyRef.current = frameReady
   }, [frameReady])
 
   useEffect(() => {
+    if (!config) return
     const handleMessage = (event: MessageEvent) => {
       const iframeWindow = iframeRef.current?.contentWindow
       if (!iframeWindow || event.source !== iframeWindow) return
@@ -126,7 +119,7 @@ function IframeBlockView({ node, deleteNode }: { node: { attrs: Record<string, u
       if (autoResizeReadyTimerRef.current !== null) {
         window.clearTimeout(autoResizeReadyTimerRef.current)
       }
-      writeCachedIframeHeight(config.url, message.height)
+      writeCachedIframeHeight(url, message.height)
       setFrameHeight((currentHeight) => (
         Math.abs(currentHeight - message.height) < HEIGHT_UPDATE_THRESHOLD ? currentHeight : message.height
       ))
@@ -142,7 +135,7 @@ function IframeBlockView({ node, deleteNode }: { node: { attrs: Record<string, u
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [config.url])
+  }, [config, url])
 
   useEffect(() => {
     return () => {
@@ -154,6 +147,17 @@ function IframeBlockView({ node, deleteNode }: { node: { attrs: Record<string, u
       }
     }
   }, [])
+
+  if (!config) {
+    return (
+      <NodeViewWrapper className="iframe-block-wrapper" data-type="iframe-block">
+        <div className="iframe-block-card iframe-block-error">
+          <Globe size={16} />
+          <span>Invalid iframe block</span>
+        </div>
+      </NodeViewWrapper>
+    )
+  }
 
   return (
     <NodeViewWrapper className="iframe-block-wrapper" data-type="iframe-block">
@@ -178,7 +182,7 @@ function IframeBlockView({ node, deleteNode }: { node: { attrs: Record<string, u
           )}
           <iframe
             ref={iframeRef}
-            src={config.url}
+            src={url}
             title={title}
             className="iframe-block-frame"
             loading="lazy"

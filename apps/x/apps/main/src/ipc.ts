@@ -20,66 +20,69 @@ import {
   listProviders,
 } from "./oauth-handler.js";
 import { watcher as watcherCore, workspace } from "@x/core";
-import { WorkDir } from "@x/core/dist/config/config.js";
+import { WorkDir } from "@x/core/config/config";
 import {
   getNotificationsConfig,
   setNotificationsConfig,
-} from "@x/core/dist/config/notifications.js";
+} from "@x/core/config/notifications";
 import { workspace as workspaceShared } from "@x/shared";
-import * as mcpCore from "@x/core/dist/mcp/mcp.js";
-import * as runsCore from "@x/core/dist/runs/runs.js";
-import { bus } from "@x/core/dist/runs/bus.js";
-import { serviceBus } from "@x/core/dist/services/service_bus.js";
+import * as mcpCore from "@x/core/mcp/mcp";
+import * as runsCore from "@x/core/runs/runs";
+import { bus } from "@x/core/runs/bus";
+import { serviceBus } from "@x/core/services/service_bus";
 import type { FSWatcher } from "chokidar";
 import fs from "node:fs/promises";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import z from "zod";
+import { sendRendererEvent } from "./renderer-events.js";
+import { assertTrustedIpcSender } from "./ipc-security.js";
+import { MACOS_SYSTEM_SETTINGS_PROTOCOLS, openTrustedExternal } from "./external-url.js";
 
 const execAsync = promisify(exec);
-import { RunEvent } from "@x/shared/dist/runs.js";
-import { ServiceEvent } from "@x/shared/dist/service-events.js";
-import container from "@x/core/dist/di/container.js";
-import { listOnboardingModels } from "@x/core/dist/models/models-dev.js";
-import { testModelConnection } from "@x/core/dist/models/models.js";
+import { RunEvent } from "@x/shared/runs";
+import { ServiceEvent } from "@x/shared/service-events";
+import container from "@x/core/di/container";
+import { listOnboardingModels } from "@x/core/models/models-dev";
+import { testModelConnection } from "@x/core/models/models";
 import {
   getDefaultModelAndProvider,
   getMeetingNotesModel,
   resolveProviderConfig,
-} from "@x/core/dist/models/defaults.js";
-import { isSignedIn } from "@x/core/dist/account/account.js";
-import { listGatewayModels } from "@x/core/dist/models/gateway.js";
-import type { IModelConfigRepo } from "@x/core/dist/models/repo.js";
-import type { IOAuthRepo } from "@x/core/dist/auth/repo.js";
-import { IGranolaConfigRepo } from "@x/core/dist/knowledge/granola/repo.js";
-import { ICodeModeConfigRepo } from "@x/core/dist/code-mode/repo.js";
-import { CodePermissionRegistry } from "@x/core/dist/code-mode/acp/permission-registry.js";
-import { checkCodeModeAgentStatus } from "@x/core/dist/code-mode/status.js";
-import { invalidateCopilotInstructionsCache } from "@x/core/dist/application/assistant/instructions.js";
-import { triggerSync as triggerGranolaSync } from "@x/core/dist/knowledge/granola/sync.js";
-import { ISlackConfigRepo } from "@x/core/dist/slack/repo.js";
+} from "@x/core/models/defaults";
+import { isSignedIn } from "@x/core/account/account";
+import { listGatewayModels } from "@x/core/models/gateway";
+import type { IModelConfigRepo } from "@x/core/models/repo";
+import type { IOAuthRepo } from "@x/core/auth/repo";
+import { IGranolaConfigRepo } from "@x/core/knowledge/granola/repo";
+import { ICodeModeConfigRepo } from "@x/core/code-mode/repo";
+import { CodePermissionRegistry } from "@x/core/code-mode/acp/permission-registry";
+import { checkCodeModeAgentStatus } from "@x/core/code-mode/status";
+import { invalidateCopilotInstructionsCache } from "@x/core/application/assistant/instructions";
+import { triggerSync as triggerGranolaSync } from "@x/core/knowledge/granola/sync";
+import { ISlackConfigRepo } from "@x/core/slack/repo";
 import {
   isOnboardingComplete,
   markOnboardingComplete,
-} from "@x/core/dist/config/note_creation_config.js";
+} from "@x/core/config/note_creation_config";
 import { consumePendingDeepLink } from "./deeplink.js";
 import { checkForUpdates, getUpdateStatus, installUpdate } from "./update-manager.js";
-import { getPrivacyConfig, setPrivacyConfig } from "@x/core/dist/config/privacy.js";
-import { IAgentScheduleRepo } from "@x/core/dist/agent-schedule/repo.js";
-import { IAgentScheduleStateRepo } from "@x/core/dist/agent-schedule/state-repo.js";
+import { getPrivacyConfig, setPrivacyConfig } from "@x/core/config/privacy";
+import { IAgentScheduleRepo } from "@x/core/agent-schedule/repo";
+import { IAgentScheduleStateRepo } from "@x/core/agent-schedule/state-repo";
 import {
   triggerRun as triggerAgentScheduleRun,
   calculateNextRunAt as calculateAgentNextRunAt,
-} from "@x/core/dist/agent-schedule/runner.js";
-import { loadAgent } from "@x/core/dist/agents/runtime.js";
-import { search } from "@x/core/dist/search/search.js";
+} from "@x/core/agent-schedule/runner";
+import { loadAgent } from "@x/core/agents/runtime";
+import { search } from "@x/core/search/search";
 import {
   memorySearch,
   relatedNotes,
   memoryStatus,
   rebuildMemoryIndex,
-} from "@x/core/dist/memory/index.js";
-import { memoryBus } from "@x/core/dist/memory/bus.js";
+} from "@x/core/memory/index";
+import { memoryBus } from "@x/core/memory/bus";
 import { versionHistory, voice } from "@x/core";
 import {
   WhisperService,
@@ -89,47 +92,47 @@ import {
   probeCapability,
   codeOf as whisperCodeOf,
   type StreamPort,
-} from "@x/core/dist/voice/whisper/index.js";
-import { parseVoiceCommand } from "@x/core/dist/voice/commands/parser.js";
-import { transformDictationCommand } from "@x/core/dist/voice/command-mode.js";
+} from "@x/core/voice/whisper/index";
+import { parseVoiceCommand } from "@x/core/voice/commands/parser";
+import { transformDictationCommand } from "@x/core/voice/command-mode";
 import {
   executeVoiceCommand,
   type VoiceEmailActions,
-} from "@x/core/dist/voice/commands/executor.js";
-import { buildTranscriptionRouting, providerDataLocation } from "@x/core/dist/voice/routing.js";
+} from "@x/core/voice/commands/executor";
+import { buildTranscriptionRouting, providerDataLocation } from "@x/core/voice/routing";
 import { WhisperUtilityRunner } from "./whisper-utility-client.js";
 import type {
   DictationLanguage,
   TranscriptionConfig,
   TranscriptionDataLocation,
   TranscriptionProvider,
-} from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
 import {
   classifySchedule,
   processSolomonInstruction,
-} from "@x/core/dist/knowledge/inline_tasks.js";
+} from "@x/core/knowledge/inline_tasks";
 import {
   createBillingCheckoutSession,
   getBillingInfo,
   getBillingPortalUrl,
   syncBilling,
-} from "@x/core/dist/billing/billing.js";
-import { submitFeedback } from "@x/core/dist/feedback/feedback.js";
-import { AuthUnavailableError } from "@x/core/dist/auth/refresh-errors.js";
+} from "@x/core/billing/billing";
+import { submitFeedback } from "@x/core/feedback/feedback";
+import { AuthUnavailableError } from "@x/core/auth/refresh-errors";
 import {
   deleteConnectorViaBackend,
   listConnectorsViaBackend,
   saveConnectorAPIKeyViaBackend,
-} from "@x/core/dist/connectors/connectors-backend.js";
+} from "@x/core/connectors/connectors-backend";
 import {
   deleteSlackWorkspaceViaBackend,
   listSlackWorkspacesViaBackend,
   postSlackThreadReplyViaBackend,
-} from "@x/core/dist/auth/slack-backend-oauth.js";
-import { summarizeMeeting } from "@x/core/dist/knowledge/summarize_meeting.js";
-import { getAccessToken } from "@x/core/dist/auth/tokens.js";
-import { getSolomonConfig } from "@x/core/dist/config/solomon.js";
-import { runLiveNoteAgent } from "@x/core/dist/knowledge/live-note/runner.js";
+} from "@x/core/auth/slack-backend-oauth";
+import { summarizeMeeting } from "@x/core/knowledge/summarize_meeting";
+import { getAccessToken } from "@x/core/auth/tokens";
+import { getSolomonConfig } from "@x/core/config/solomon";
+import { runLiveNoteAgent } from "@x/core/knowledge/live-note/runner";
 import {
   listImportantThreads,
   listEverythingElseThreads,
@@ -141,10 +144,10 @@ import {
   markThreadRead,
   getAccountEmail,
   getConnectionStatus as getGmailConnectionStatus,
-} from "@x/core/dist/knowledge/sync_gmail.js";
-import { liveNoteBus } from "@x/core/dist/knowledge/live-note/bus.js";
-import { getInstallationId } from "@x/core/dist/analytics/installation.js";
-import { API_URL } from "@x/core/dist/config/env.js";
+} from "@x/core/knowledge/sync_gmail";
+import { liveNoteBus } from "@x/core/knowledge/live-note/bus";
+import { getInstallationId } from "@x/core/analytics/installation";
+import { API_URL } from "@x/core/config/env";
 import {
   approveRelationshipRecommendation,
   acknowledgeMissionControl,
@@ -194,15 +197,15 @@ import {
   requestConversationDeletion,
   retractRelationshipAssertion,
   searchRelationships,
-} from "@x/core/dist/relationships/client.js";
+} from "@x/core/relationships/client";
 import {
   fetchLiveNote,
   setLiveNote,
   setLiveNoteActive,
   deleteLiveNote,
   listLiveNotes,
-} from "@x/core/dist/knowledge/live-note/fileops.js";
-import { runBackgroundTask } from "@x/core/dist/background-tasks/runner.js";
+} from "@x/core/knowledge/live-note/fileops";
+import { runBackgroundTask } from "@x/core/background-tasks/runner";
 import {
   cancelCloudRun,
   getArtifactSyncState,
@@ -217,8 +220,8 @@ import {
   signalCloudRun,
   syncArtifactFromCloud,
   triggerCloudRun,
-} from "@x/core/dist/background-tasks/cloud-sync.js";
-import { backgroundTaskBus } from "@x/core/dist/background-tasks/bus.js";
+} from "@x/core/background-tasks/cloud-sync";
+import { backgroundTaskBus } from "@x/core/background-tasks/bus";
 import {
   fetchTask,
   patchTask,
@@ -226,7 +229,7 @@ import {
   deleteTask,
   listTasks,
   readRunIds as readTaskRunIds,
-} from "@x/core/dist/background-tasks/fileops.js";
+} from "@x/core/background-tasks/fileops";
 import { browserIpcHandlers } from "./browser/ipc.js";
 import { mailboxIpcHandlers } from "./ipc/mailbox.js";
 import { createMeetingIpcHandlers } from "./ipc/meetings.js";
@@ -370,6 +373,7 @@ export function registerIpcHandlers(handlers: InvokeHandlers) {
     InvokeHandler<InvokeChannels>,
   ][]) {
     ipcMain.handle(channel, async (event, rawArgs) => {
+      assertTrustedIpcSender(event, app.isPackaged);
       // Validate request payload
       const args = ipc.validateRequest(channel, rawArgs);
 
@@ -419,7 +423,7 @@ function emitKnowledgeCommitEvent(): void {
   const windows = BrowserWindow.getAllWindows();
   for (const win of windows) {
     if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send("knowledge:didCommit", {});
+      sendRendererEvent(win.webContents, "knowledge:didCommit", {});
     }
   }
 }
@@ -433,7 +437,7 @@ function emitWorkspaceChangeEvent(
   const windows = BrowserWindow.getAllWindows();
   for (const win of windows) {
     if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send("workspace:didChange", event);
+      sendRendererEvent(win.webContents, "workspace:didChange", event);
     }
   }
 }
@@ -524,7 +528,7 @@ export async function startWorkspaceWatcher(): Promise<void> {
  */
 export function stopWorkspaceWatcher(): void {
   if (watcher) {
-    watcher.close();
+    void watcher.close();
     watcher = null;
   }
   if (debounceTimer) {
@@ -538,7 +542,7 @@ function emitRunEvent(event: z.infer<typeof RunEvent>): void {
   const windows = BrowserWindow.getAllWindows();
   for (const win of windows) {
     if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send("runs:events", event);
+      sendRendererEvent(win.webContents, "runs:events", event);
     }
   }
 }
@@ -547,7 +551,7 @@ function emitServiceEvent(event: z.infer<typeof ServiceEvent>): void {
   const windows = BrowserWindow.getAllWindows();
   for (const win of windows) {
     if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send("services:events", event);
+      sendRendererEvent(win.webContents, "services:events", event);
     }
   }
 }
@@ -563,7 +567,7 @@ export function emitOAuthEvent(event: {
   const windows = BrowserWindow.getAllWindows();
   for (const win of windows) {
     if (!win.isDestroyed() && win.webContents) {
-      win.webContents.send("oauth:didConnect", event);
+      sendRendererEvent(win.webContents, "oauth:didConnect", event);
     }
   }
 }
@@ -595,7 +599,7 @@ export function startLiveNoteAgentWatcher(): void {
     const windows = BrowserWindow.getAllWindows();
     for (const win of windows) {
       if (!win.isDestroyed() && win.webContents) {
-        win.webContents.send("live-note-agent:events", event);
+        sendRendererEvent(win.webContents, "live-note-agent:events", event);
       }
     }
   });
@@ -608,7 +612,7 @@ export function startBackgroundTaskAgentWatcher(): void {
     const windows = BrowserWindow.getAllWindows();
     for (const win of windows) {
       if (!win.isDestroyed() && win.webContents) {
-        win.webContents.send("bg-task-agent:events", event);
+        sendRendererEvent(win.webContents, "bg-task-agent:events", event);
       }
     }
   });
@@ -621,7 +625,7 @@ export function startMemoryWatcher(): void {
     const windows = BrowserWindow.getAllWindows();
     for (const win of windows) {
       if (!win.isDestroyed() && win.webContents) {
-        win.webContents.send("memory:indexProgress", event);
+        sendRendererEvent(win.webContents, "memory:indexProgress", event);
       }
     }
   });
@@ -712,7 +716,7 @@ function getWhisper(): WhisperService {
     (progress) => {
       for (const win of BrowserWindow.getAllWindows()) {
         if (!win.isDestroyed() && win.webContents) {
-          win.webContents.send("whisper:modelProgress", progress);
+          sendRendererEvent(win.webContents, "whisper:modelProgress", progress);
         }
       }
     },
@@ -1761,8 +1765,9 @@ export function setupIpcHandlers() {
       return { granted: statusAfter === "granted" };
     },
     "meeting:openScreenRecordingSettings": async () => {
-      await shell.openExternal(
+      await openTrustedExternal(
         "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
+        MACOS_SYSTEM_SETTINGS_PROTOCOLS,
       );
       return { success: true };
     },

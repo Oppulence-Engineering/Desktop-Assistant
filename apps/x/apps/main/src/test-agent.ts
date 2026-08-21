@@ -1,5 +1,5 @@
-import * as runsCore from '@x/core/dist/runs/runs.js';
-import { bus } from '@x/core/dist/runs/bus.js';
+import * as runsCore from '@x/core/runs/runs';
+import { bus } from '@x/core/runs/bus';
 
 async function main() {
     const { id } = await runsCore.createRun({
@@ -16,4 +16,7 @@ async function main() {
     console.log(`created message: ${msgId}`);
 }
 
-main();
+void main().catch((error: unknown) => {
+    console.error(error);
+    process.exitCode = 1;
+});

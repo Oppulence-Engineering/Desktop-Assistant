@@ -9,7 +9,7 @@ import type {
   DictationSettings,
   DictationStyle,
   DictationStyleSettings,
-} from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
 import { BookOpen, Plus, Sparkles, Trash2 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";

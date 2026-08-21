@@ -2,7 +2,7 @@ import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { normalizeMeetingEvent } from "@x/shared/dist/meetings.js";
+import { normalizeMeetingEvent } from "@x/shared/meetings";
 import { sessionMeta } from "./factories.testkit.js";
 
 let tmpDir: string;

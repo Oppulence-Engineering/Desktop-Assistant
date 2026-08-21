@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
-import { TranscriptionConfig } from "@x/shared/dist/transcription.js";
+import { TranscriptionConfig } from "@x/shared/transcription";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";

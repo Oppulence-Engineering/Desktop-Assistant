@@ -3,7 +3,7 @@ import {
   formatMeetingNote,
   mergeSummaryIntoNote,
   segmentsToEntries,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 import { nativeProvenance } from "./note.js";
 
 describe("a summarized group-call note keeps every claim it makes", () => {

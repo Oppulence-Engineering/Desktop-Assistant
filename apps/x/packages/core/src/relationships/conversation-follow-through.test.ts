@@ -5,7 +5,7 @@ import type {
   ConversationDeletionReceipt,
   ConversationPolicyLayer,
   MutualActionPlan,
-} from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
 import { detectContradictionCase, resolveContradictionCase } from "./contradiction-cases.js";
 import { evaluateCommitmentRecovery } from "./commitment-recovery.js";
 import { detectLiveCoachingSignals, generateLiveCoachingCues } from "./live-coaching.js";

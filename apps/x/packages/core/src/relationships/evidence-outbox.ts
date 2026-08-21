@@ -4,8 +4,8 @@ import { z } from "zod";
 import type {
   RelationshipObservationIngestResult,
   RelationshipObservationInput,
-} from "@x/shared/dist/relationships.js";
-import { RelationshipObservationInputSchema } from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
+import { RelationshipObservationInputSchema } from "@x/shared/relationships";
 import { WorkDir } from "../config/config.js";
 import { RelationshipApiError, ingestRelationshipObservations } from "./client.js";
 

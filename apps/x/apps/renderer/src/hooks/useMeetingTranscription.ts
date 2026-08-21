@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { onRendererEvent } from "@/lib/renderer-events";
 import { buildDeepgramListenUrl } from "@/lib/deepgram-listen-url";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
 import { openWhisperStream, type WhisperStreamHandle } from "@/lib/whisper-stream";
 import * as analytics from "@/lib/analytics";
-import type { TranscriptionProvider } from "@x/shared/dist/transcription.js";
+import type { TranscriptionProvider } from "@x/shared/transcription";
 import {
   formatMeetingNote,
   type MeetingCalendarEvent,
   type MeetingRelationshipTarget,
   type MeetingResolvedEngine,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 
 export type MeetingTranscriptionState = "idle" | "connecting" | "recording" | "stopping";
 
@@ -26,7 +27,6 @@ const DEEPGRAM_PARAMS = new URLSearchParams({
   language: "en",
 });
 const DEEPGRAM_LISTEN_URL = `wss://api.deepgram.com/v1/listen?${DEEPGRAM_PARAMS.toString()}`;
-const TRANSCRIPTION_CONFIG_CHANGED_EVENT = "transcription-config-changed";
 
 // RMS threshold: system audio above this = "active" (speakers playing)
 const SYSTEM_AUDIO_GATE_THRESHOLD = 0.005;
@@ -197,8 +197,10 @@ export function useMeetingTranscription(
   }, []);
 
   useEffect(() => {
-    const closeCloudTransportForLocalOnly = (event: Event) => {
-      if (!(event instanceof CustomEvent) || event.detail?.privacy?.localOnly !== true) return;
+    const closeCloudTransportForLocalOnly = (
+      detail: { privacy?: { localOnly?: boolean } } | undefined,
+    ) => {
+      if (detail?.privacy?.localOnly !== true) return;
       privacyGenerationRef.current += 1;
       if (!useLocalRef.current || wsRef.current) {
         useLocalRef.current = true;
@@ -207,13 +209,7 @@ export function useMeetingTranscription(
       }
     };
 
-    window.addEventListener(TRANSCRIPTION_CONFIG_CHANGED_EVENT, closeCloudTransportForLocalOnly);
-    return () => {
-      window.removeEventListener(
-        TRANSCRIPTION_CONFIG_CHANGED_EVENT,
-        closeCloudTransportForLocalOnly,
-      );
-    };
+    return onRendererEvent("transcription-config-changed", closeCloudTransportForLocalOnly);
   }, [cleanup]);
 
   // Native capture lives in main, so main is the authority on whether a session is

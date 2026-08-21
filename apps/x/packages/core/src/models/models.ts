@@ -6,7 +6,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOllama } from "ollama-ai-provider-v2";
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { LlmModelConfig, LlmProvider } from "@x/shared/dist/models.js";
+import { LlmModelConfig, LlmProvider } from "@x/shared/models";
 import z from "zod";
 import { getGatewayProvider } from "./gateway.js";
 

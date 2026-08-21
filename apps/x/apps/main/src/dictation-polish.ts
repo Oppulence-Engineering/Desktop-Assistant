@@ -4,7 +4,7 @@ import type {
   DictationPolishChange,
   DictationSettings,
   DictationStyle,
-} from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
 
 import type { DesktopTextContext } from "./desktop-context.js";
 

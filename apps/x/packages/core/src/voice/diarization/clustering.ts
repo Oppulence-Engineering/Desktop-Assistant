@@ -3,7 +3,7 @@ import {
   speakerDisplayName,
   UNKNOWN_SPEAKER_LABEL,
   type DiarizationAssignmentMethod,
-} from "@x/shared/dist/diarization.js";
+} from "@x/shared/diarization";
 
 /**
  * Online speaker clustering (RFC 017 §"Embedding and clustering details").

@@ -1,5 +1,5 @@
 import { BrainIcon, CheckCircle2, Mail, Network, ShieldCheck, Sparkles } from "@/lib/icons";
-import { PRODUCT_NAME, isProductProvider } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME, isProductProvider } from "@x/shared/branding";
 import type { OnboardingState } from "./use-onboarding-state";
 import { VerticalStepper } from "./vertical-stepper";
 

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import posthog from 'posthog-js'
 import { identifyUser, resetAnalyticsIdentity } from '@/lib/analytics'
-import { LEGACY_PRODUCT_PROVIDER_ID, PRODUCT_PROVIDER_ID, getProductProviderState, isProductProvider } from '@x/shared/dist/branding.js'
+import { LEGACY_PRODUCT_PROVIDER_ID, PRODUCT_PROVIDER_ID, getProductProviderState, isProductProvider } from '@x/shared/branding'
 
 const MAX_NOTE_COUNT_DIRECTORY_READS = 50
 

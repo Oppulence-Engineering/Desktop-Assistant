@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MeetingSessionMeta, MeetingTranscript } from "@x/shared/dist/meetings.js";
+import type { MeetingSessionMeta, MeetingTranscript } from "@x/shared/meetings";
 import type { LedgerCommitment } from "../meetings/meetings.js";
 import {
   commitmentStatusObservation,

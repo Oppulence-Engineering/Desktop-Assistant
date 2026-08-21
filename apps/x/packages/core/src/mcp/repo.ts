@@ -1,7 +1,7 @@
 import { withFileLock } from "../knowledge/file-lock.js";
 import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import { WorkDir } from "../config/config.js";
-import { McpServerConfig, McpServerDefinition } from "@x/shared/dist/mcp.js";
+import { McpServerConfig, McpServerDefinition } from "@x/shared/mcp";
 import path from "path";
 import z from "zod";
 import { ensureJsonConfig, readJsonConfig } from "../config/json_config.js";

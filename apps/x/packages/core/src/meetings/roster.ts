@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import type { MeetingRelationshipTarget } from "@x/shared/dist/meetings.js";
-import { organizationDomain } from "@x/shared/dist/email-domain.js";
+import type { MeetingRelationshipTarget } from "@x/shared/meetings";
+import { organizationDomain } from "@x/shared/email-domain";
 import type { AttendeeRecord, AttendeeSource, KnownPerson } from "./attendees.js";
 import { partitionAttendees } from "./attendees.js";
 

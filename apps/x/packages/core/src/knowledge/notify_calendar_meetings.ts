@@ -2,10 +2,10 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { WorkDir } from "../config/config.js";
 import { CALENDAR_SYNC_DIR, filterUpcoming, listCalendarEvents } from "./calendar_events.js";
-import type { ResolvedCalendarEvent } from "@x/shared/dist/calendar.js";
+import type { ResolvedCalendarEvent } from "@x/shared/calendar";
 import container from "../di/container.js";
 import type { INotificationService } from "../application/notification/service.js";
-import { DEEP_LINK_SCHEME } from "@x/shared/dist/branding.js";
+import { DEEP_LINK_SCHEME } from "@x/shared/branding";
 
 const TICK_INTERVAL_MS = 30_000;
 // Notify when an event is between 30s in the past (started just now) and

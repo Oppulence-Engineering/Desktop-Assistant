@@ -1,4 +1,4 @@
-import type { ServiceEventType } from "@x/shared/dist/service-events.js";
+import type { ServiceEventType } from "@x/shared/service-events";
 
 type ServiceEventHandler = (event: ServiceEventType) => Promise<void> | void;
 

@@ -6,7 +6,7 @@ import {
 } from "./refresh-errors.js";
 import { IOAuthRepo, ProviderConnection } from "./repo.js";
 import { OAuthTokens } from "./types.js";
-import { PRODUCT_NAME, PRODUCT_PROVIDER_ID } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME, PRODUCT_PROVIDER_ID } from "@x/shared/branding";
 
 export type AuthStateName = "idle" | "refreshing" | "backoff" | "reconnect_required";
 

@@ -3,7 +3,7 @@ import type {
   ConversationExtractionRequest,
   ConversationExtractionResult,
   ConversationNormalizedValue,
-} from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
 import type { ConversationExtractor } from "../conversation-extractor.js";
 import { duePhrase } from "../conversation-dates.js";
 import { validateConversationCandidates } from "../conversation-validator.js";

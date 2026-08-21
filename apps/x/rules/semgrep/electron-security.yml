@@ -1,0 +1,30 @@
+rules:
+  - id: xelectron-dangerous-web-preference
+    message: Dangerous Electron webPreference weakens the renderer trust boundary.
+    severity: ERROR
+    languages: [typescript, javascript]
+    patterns:
+      - pattern-either:
+          - pattern: "{..., nodeIntegration: true, ...}"
+          - pattern: "{..., contextIsolation: false, ...}"
+          - pattern: "{..., sandbox: false, ...}"
+          - pattern: "{..., webSecurity: false, ...}"
+          - pattern: "{..., allowRunningInsecureContent: true, ...}"
+    paths:
+      include: [/apps/main/**]
+  - id: xelectron-raw-open-external
+    message: Validate protocol and origin before opening an external URL.
+    severity: ERROR
+    languages: [typescript, javascript]
+    pattern: shell.openExternal(...)
+    paths:
+      include: [/apps/main/src/**]
+      exclude: [/apps/main/src/external-url.ts]
+  - id: xipc-raw-webcontents-send
+    message: Main-to-renderer events require registry lookup and runtime payload validation.
+    severity: ERROR
+    languages: [typescript, javascript]
+    pattern: $W.webContents.send(...)
+    paths:
+      include: [/apps/main/src/**]
+      exclude: [/apps/main/src/renderer-events.ts]

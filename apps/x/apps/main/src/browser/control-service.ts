@@ -1,6 +1,6 @@
-import type { IBrowserControlService } from '@x/core/dist/application/browser-control/service.js';
-import type { BrowserControlAction, BrowserControlInput, BrowserControlResult, SuggestedBrowserSkill } from '@x/shared/dist/browser-control.js';
-import { ensureLoaded, matchSkillsForUrl } from '@x/core/dist/application/browser-skills/index.js';
+import type { IBrowserControlService } from '@x/core/application/browser-control/service';
+import type { BrowserControlAction, BrowserControlInput, BrowserControlResult, SuggestedBrowserSkill } from '@x/shared/browser-control';
+import { ensureLoaded, matchSkillsForUrl } from '@x/core/application/browser-skills/index';
 import { browserViewManager } from './view.js';
 import { normalizeNavigationTarget } from './navigation.js';
 

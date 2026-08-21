@@ -1,4 +1,4 @@
-import type { VoiceCommandIntent } from "@x/shared/dist/transcription.js";
+import type { VoiceCommandIntent } from "@x/shared/transcription";
 
 export type VoiceCommandSurface = "global" | "chat" | "email" | "meeting";
 

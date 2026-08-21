@@ -20,6 +20,7 @@ import {
   Run,
   ListRunsOptions,
   ListRunsResponse,
+  RunEvent,
   ToolPermissionAuthorizePayload,
 } from "./runs.js";
 import { LlmModelConfig } from "./models.js";
@@ -586,7 +587,7 @@ const ipcSchemas = {
     }),
   },
   "runs:events": {
-    req: z.null(),
+    req: RunEvent,
     res: z.null(),
   },
   "services:events": {

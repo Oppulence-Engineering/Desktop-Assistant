@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { stringify as stringifyYaml } from 'yaml';
-import { LiveNoteSchema } from '@x/shared/dist/live-note.js';
+import { LiveNoteSchema } from '@x/shared/live-note';
 
 const schemaYaml = stringifyYaml(z.toJSONSchema(LiveNoteSchema)).trimEnd();
 

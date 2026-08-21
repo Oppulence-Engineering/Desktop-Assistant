@@ -6,7 +6,7 @@ import {
   type DiarizationSettings,
   type DiarizationState,
   type SpeakerCorrection,
-} from "@x/shared/dist/diarization.js";
+} from "@x/shared/diarization";
 import { OnlineSpeakerClusterer, cosineSimilarity, normalizeVector } from "./clustering.js";
 import type { SpeakerEmbedder } from "./embedder.js";
 import type { DiarizationTurn } from "./alignment.js";

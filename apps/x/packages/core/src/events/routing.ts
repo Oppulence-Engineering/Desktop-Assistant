@@ -1,7 +1,7 @@
 import { generateObject } from 'ai';
 import type { LanguageModel } from 'ai';
 import { events, PrefixLogger } from '@x/shared';
-import type { RowboatEvent } from '@x/shared/dist/events.js';
+import type { RowboatEvent } from '@x/shared/events';
 import { captureLlmUsage } from '../analytics/usage.js';
 import { withUseCase, type UseCase } from '../analytics/use_case.js';
 import type { EventConsumerTarget } from './consumer.js';

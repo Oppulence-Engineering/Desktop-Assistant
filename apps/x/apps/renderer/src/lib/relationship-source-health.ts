@@ -1,4 +1,4 @@
-import type { RelationshipSourceStatus } from "@x/shared/src/relationships.js";
+import type { RelationshipSourceStatus } from "@x/shared/relationships";
 
 export type RelationshipSourceHealth = "healthy" | "syncing" | "needs_attention";
 

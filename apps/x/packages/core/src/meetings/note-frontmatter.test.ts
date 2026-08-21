@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMeetingNote } from "@x/shared/dist/meetings.js";
+import { formatMeetingNote } from "@x/shared/meetings";
 
 /**
  * Meeting titles come from calendar invites, so anyone who can send the user one

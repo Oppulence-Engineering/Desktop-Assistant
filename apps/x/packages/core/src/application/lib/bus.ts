@@ -1,4 +1,4 @@
-import { RunEvent } from "@x/shared/dist/runs.js";
+import { RunEvent } from "@x/shared/runs";
 import z from "zod";
 
 export interface IBus {

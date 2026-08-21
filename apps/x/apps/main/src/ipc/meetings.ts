@@ -1,6 +1,6 @@
 import { ipc } from "@x/shared";
-import type { MeetingCalendarEvent } from "@x/shared/dist/meetings.js";
-import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
+import type { MeetingCalendarEvent } from "@x/shared/meetings";
+import { getTranscriptionConfig } from "@x/core/voice/voice";
 import { BrowserWindow } from "electron";
 import {
   nativeCaptureAvailable,
@@ -14,11 +14,12 @@ import {
 } from "../meeting-engines.js";
 import { warmFastDictationEngine } from "../parakeet-dictation-runner.js";
 import { getMeetingController, type MeetingControllerDeps } from "../meeting-controller.js";
-import { getUiState, setUiState } from "@x/core/dist/config/ui_state.js";
+import { getUiState, setUiState } from "@x/core/config/ui_state";
 import { runMeetingPreflight } from "../meeting-preflight.js";
 import path from "node:path";
-import { recordingsRoot } from "@x/core/dist/meetings/session.js";
-import { readRelationshipCandidates } from "@x/core/dist/meetings/relationship-candidates.js";
+import { recordingsRoot } from "@x/core/meetings/session";
+import { readRelationshipCandidates } from "@x/core/meetings/relationship-candidates";
+import { sendRendererEvent } from "../renderer-events.js";
 
 type IPCChannels = ipc.IPCChannels;
 
@@ -250,7 +251,7 @@ export function createMeetingIpcHandlers(deps: MeetingControllerDeps): MeetingCa
         const status = await ensureParakeetModels(await parakeetModel(), (fraction, phase) => {
           for (const win of BrowserWindow.getAllWindows()) {
             if (!win.isDestroyed() && win.webContents) {
-              win.webContents.send("meeting:modelProgress", { fraction, phase });
+              sendRendererEvent(win.webContents, "meeting:modelProgress", { fraction, phase });
             }
           }
         });

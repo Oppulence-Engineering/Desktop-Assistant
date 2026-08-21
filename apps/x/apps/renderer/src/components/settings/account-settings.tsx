@@ -6,13 +6,13 @@ import { Button } from "@oppulence/ui/components/button";
 import { Separator } from "@oppulence/ui/components/separator";
 import { useBilling } from "@/hooks/useBilling";
 import { toast } from "sonner";
-import type { BillingUsageBucket } from "@x/shared/dist/billing.js";
+import type { BillingUsageBucket } from "@x/shared/billing";
 import {
   PRODUCT_NAME,
   PRODUCT_PROVIDER_ID,
   getProductProviderState,
   isProductProvider,
-} from "@x/shared/dist/branding.js";
+} from "@x/shared/branding";
 
 interface AccountSettingsProps {
   dialogOpen: boolean;

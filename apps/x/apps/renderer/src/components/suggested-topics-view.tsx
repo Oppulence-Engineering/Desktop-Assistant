@@ -3,7 +3,7 @@ import { ArrowRight, Lightbulb, Loader2 } from "@/lib/icons";
 import {
   SuggestedTopicBlockSchema,
   type SuggestedTopicBlock,
-} from "@x/shared/dist/blocks.js";
+} from "@x/shared/blocks";
 
 const SUGGESTED_TOPICS_PATH = "suggested-topics.md";
 const LEGACY_SUGGESTED_TOPICS_PATHS = [

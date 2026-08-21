@@ -1,5 +1,5 @@
 import { ArrowRight, CheckCircle2, ShieldCheck } from "@/lib/icons";
-import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME } from "@x/shared/branding";
 import { MinimalOnboardingLayout } from "../minimal-layout";
 import type { OnboardingState } from "../use-onboarding-state";
 

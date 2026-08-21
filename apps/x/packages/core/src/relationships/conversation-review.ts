@@ -5,8 +5,8 @@ import type {
   ConversationReviewBatchItem,
   ConversationReviewDecision,
   ConversationReviewDecisionKind,
-} from "@x/shared/dist/relationships.js";
-import { ConversationNormalizedValueSchema } from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
+import { ConversationNormalizedValueSchema } from "@x/shared/relationships";
 import { conversationFingerprint } from "./conversation-utils.js";
 
 export class StaleConversationReviewError extends Error {

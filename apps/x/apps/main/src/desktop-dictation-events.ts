@@ -1,4 +1,4 @@
-import type { DictationFlowBarDock } from "@x/shared/dist/transcription.js";
+import type { DictationFlowBarDock } from "@x/shared/transcription";
 
 export type NativeHotkeyPhase = "ready" | "pressed" | "released" | "hands-free-toggle";
 export type HotkeyEvent = { type: "hotkey"; phase: NativeHotkeyPhase };

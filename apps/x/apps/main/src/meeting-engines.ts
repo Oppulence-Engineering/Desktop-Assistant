@@ -2,9 +2,9 @@ import { spawn } from "node:child_process";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { AudioCodec, MeetingTranscriber } from "@x/core/dist/meetings/meetings.js";
-import type { ParakeetModel as SharedParakeetModel } from "@x/shared/dist/meetings.js";
-import { pcm16ToWav } from "@x/core/dist/voice/whisper/wav.js";
+import type { AudioCodec, MeetingTranscriber } from "@x/core/meetings/meetings";
+import type { ParakeetModel as SharedParakeetModel } from "@x/shared/meetings";
+import { pcm16ToWav } from "@x/core/voice/whisper/wav";
 import { audiocapBinaryPath, nativeCaptureAvailable } from "./meeting-capture.js";
 
 /**

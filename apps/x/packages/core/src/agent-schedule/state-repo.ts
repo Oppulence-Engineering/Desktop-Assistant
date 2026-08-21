@@ -1,7 +1,7 @@
 import { withFileLock } from '../knowledge/file-lock.js';
 import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import { WorkDir } from "../config/config.js";
-import { AgentScheduleState, AgentScheduleStateEntry } from "@x/shared/dist/agent-schedule-state.js";
+import { AgentScheduleState, AgentScheduleStateEntry } from "@x/shared/agent-schedule-state";
 import path from "path";
 import z from "zod";
 import { ensureJsonConfig, readJsonConfig } from "../config/json_config.js";

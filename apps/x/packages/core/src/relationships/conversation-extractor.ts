@@ -4,8 +4,8 @@ import type {
   ConversationExtractionProvenance,
   ConversationExtractionRequest,
   ConversationExtractionResult,
-} from "@x/shared/dist/relationships.js";
-import { ConversationExtractionRequestSchema } from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
+import { ConversationExtractionRequestSchema } from "@x/shared/relationships";
 import { untrustedContentGuard } from "../mailbox/privacy/prompt-injection.js";
 import {
   getDefaultModelAndProvider,

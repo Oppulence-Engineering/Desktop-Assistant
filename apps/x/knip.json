@@ -1,0 +1,51 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignore": [
+    "**/dist/**",
+    "packages/core/vendor/**",
+    "packages/core/src/knowledge/chrome-extension/**"
+  ],
+  "ignoreBinaries": ["ditto", "otool"],
+  "workspaces": {
+    ".": {
+      "entry": [
+        "eslint.config.mts",
+        "dependency-cruiser.config.mjs",
+        "scripts/**/*.mjs",
+        "tools/**/*.mjs"
+      ],
+      "project": ["scripts/**/*.mjs", "tools/**/*.mjs"]
+    },
+    "apps/main": {
+      "entry": [
+        "src/main.ts",
+        "src/whisper-utility.ts",
+        "forge.config.cjs",
+        "fuse-policy.cjs",
+        "playwright.config.ts",
+        "e2e/**/*.spec.ts"
+      ],
+      "project": ["src/**/*.ts", "e2e/**/*.ts", "*.{ts,cjs,mjs}"]
+    },
+    "apps/preload": {
+      "entry": ["src/preload.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "apps/renderer": {
+      "entry": ["src/main.tsx", "src/dictation.tsx", "src/indicator.tsx"],
+      "project": ["src/**/*.{ts,tsx}"]
+    },
+    "packages/core": {
+      "entry": ["src/index.ts", "src/**/*.test.ts", "vitest.config.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/shared": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    },
+    "packages/eslint-plugin-x-architecture": {
+      "entry": ["src/index.ts", "src/**/*.test.ts"],
+      "project": ["src/**/*.ts"]
+    }
+  }
+}

@@ -1,15 +1,16 @@
-import { BrowserWindow, Notification, shell } from "electron";
+import { BrowserWindow, Notification } from "electron";
 import type {
   INotificationService,
   NotifyInput,
-} from "@x/core/dist/application/notification/service.js";
+} from "@x/core/application/notification/service";
 import { dispatchUrl } from "../deeplink.js";
+import { openTrustedExternal } from "../external-url.js";
 import {
   DEEP_LINK_SCHEME,
   LEGACY_DEEP_LINK_SCHEME,
   OLDEST_DEEP_LINK_SCHEME,
   PRODUCT_NAME,
-} from "@x/shared/dist/branding.js";
+} from "@x/shared/branding";
 
 const HTTP_URL = /^https?:\/\//i;
 const APP_URL = new RegExp(
@@ -67,7 +68,7 @@ export class ElectronNotificationService implements INotificationService {
       if (target && APP_URL.test(target)) {
         dispatchUrl(target);
       } else if (target && HTTP_URL.test(target)) {
-        shell.openExternal(target).catch((err) => {
+        openTrustedExternal(target).catch((err) => {
           console.error("[notification] failed to open link:", err);
         });
       } else {

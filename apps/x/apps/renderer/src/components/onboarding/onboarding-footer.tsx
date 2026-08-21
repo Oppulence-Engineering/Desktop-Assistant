@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { Loader2, CheckCircle2, ArrowLeft, ArrowRight } from "@/lib/icons";
 import { Button } from "@oppulence/ui/components/button";
-import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME } from "@x/shared/branding";
 import type { OnboardingState } from "./use-onboarding-state";
 
 interface OnboardingFooterProps {

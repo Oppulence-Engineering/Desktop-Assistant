@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron';
 import { ipc } from '@x/shared';
 import { browserViewManager, type BrowserState } from './view.js';
+import { sendRendererEvent } from '../renderer-events.js';
 
 type IPCChannels = ipc.IPCChannels;
 
@@ -74,7 +75,7 @@ export function setupBrowserEventForwarding(): void {
     const windows = BrowserWindow.getAllWindows();
     for (const win of windows) {
       if (!win.isDestroyed() && win.webContents) {
-        win.webContents.send('browser:didUpdateState', state);
+        sendRendererEvent(win.webContents, 'browser:didUpdateState', state);
       }
     }
   });

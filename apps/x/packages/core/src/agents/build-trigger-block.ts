@@ -1,4 +1,4 @@
-import type { Triggers } from '@x/shared/dist/live-note.js';
+import type { Triggers } from '@x/shared/live-note';
 
 export type TriggerType = 'manual' | 'cron' | 'window' | 'event';
 

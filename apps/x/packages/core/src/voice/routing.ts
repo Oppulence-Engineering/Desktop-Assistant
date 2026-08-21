@@ -4,9 +4,9 @@ import type {
   TranscriptionDataLocation,
   TranscriptionProvider,
   TranscriptionRouting,
-} from "@x/shared/dist/transcription.js";
-import type { MeetingResolvedEngine, MeetingTranscriptionEngine } from "@x/shared/dist/meetings.js";
-import { isCloudProvider } from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
+import type { MeetingResolvedEngine, MeetingTranscriptionEngine } from "@x/shared/meetings";
+import { isCloudProvider } from "@x/shared/transcription";
 
 /**
  * Data-routing truth for speech features.

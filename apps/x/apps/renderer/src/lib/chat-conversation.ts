@@ -1,7 +1,7 @@
 import type { ToolUIPart } from 'ai'
 import z from 'zod'
-import { AskHumanRequestEvent, ToolPermissionAutoDecisionEvent, ToolPermissionRequestEvent } from '@x/shared/src/runs.js'
-import type { CodeRunEvent, PermissionAsk } from '@x/shared/src/code-mode.js'
+import { AskHumanRequestEvent, ToolPermissionAutoDecisionEvent, ToolPermissionRequestEvent } from '@x/shared/runs'
+import type { CodeRunEvent, PermissionAsk } from '@x/shared/code-mode'
 
 export interface MessageAttachment {
   path: string

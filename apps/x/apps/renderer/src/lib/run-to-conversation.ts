@@ -1,5 +1,5 @@
 import type z from 'zod'
-import type { RunEvent } from '@x/shared/dist/runs.js'
+import type { RunEvent } from '@x/shared/runs'
 import {
   type ChatMessage,
   type ConversationItem,

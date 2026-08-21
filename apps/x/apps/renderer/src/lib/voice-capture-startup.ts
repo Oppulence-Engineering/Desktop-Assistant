@@ -1,4 +1,4 @@
-import type { TranscriptionProvider } from "@x/shared/dist/transcription.js";
+import type { TranscriptionProvider } from "@x/shared/transcription";
 
 interface VoiceCaptureStartupOptions<TStream> {
   openMicrophone: () => Promise<TStream | null>;

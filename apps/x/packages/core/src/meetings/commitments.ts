@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { MeetingTranscriptSegment } from "@x/shared/dist/meetings.js";
+import type { MeetingTranscriptSegment } from "@x/shared/meetings";
 import { untrustedContentGuard } from "../mailbox/privacy/prompt-injection.js";
 
 /**

@@ -1,0 +1,26 @@
+rules:
+  - id: xfs-path-traversal-delete
+    message: Destructive filesystem operations on externally-derived paths require a containment guard.
+    severity: ERROR
+    languages: [typescript, javascript]
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern: $SOURCE.$FIELD
+          - metavariable-regex:
+              metavariable: $SOURCE
+              regex: ^(req|request|input|params|payload)$
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: assertPathContained(...)
+          - pattern: resolveContainedPath(...)
+          - pattern: ensurePathWithin(...)
+    pattern-sinks:
+      - pattern-either:
+          - pattern: fs.rm($PATH, ...)
+          - pattern: fs.rmSync($PATH, ...)
+          - pattern: fs.unlink($PATH, ...)
+          - pattern: fs.unlinkSync($PATH, ...)
+    paths:
+      include: [/apps/main/src/**, /packages/core/src/**]
+      exclude: ["**/*.test.ts", "**/*.testkit.ts"]

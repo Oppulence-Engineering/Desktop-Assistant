@@ -6,7 +6,7 @@ import {
   type MeetingCalendarEvent,
   type MeetingSessionMeta,
   type MeetingTranscript,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { WorkDir } from "../config/config.js";

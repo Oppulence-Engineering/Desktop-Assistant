@@ -1,6 +1,6 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { MeetingSessionMeta } from "@x/shared/dist/meetings.js";
+import { MeetingSessionMeta } from "@x/shared/meetings";
 import { WorkDir } from "../config/config.js";
 
 /**

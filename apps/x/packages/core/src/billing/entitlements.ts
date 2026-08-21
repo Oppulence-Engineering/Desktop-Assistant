@@ -1,4 +1,4 @@
-import type { BillingPlan } from "@x/shared/dist/billing.js";
+import type { BillingPlan } from "@x/shared/billing";
 import { isSignedIn } from "../account/account.js";
 import { getBillingInfo } from "./billing.js";
 

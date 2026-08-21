@@ -1,0 +1,2038 @@
+[
+  {
+    "type": "cycle",
+    "from": "apps/main/src/deeplink.ts",
+    "to": "apps/main/src/ipc.ts",
+    "unresolvedTo": "./ipc.js",
+    "dependencyTypes": ["local", "dynamic-import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "apps/main/src/ipc.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "apps/main/src/deeplink.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "apps/main/src/deeplink.ts",
+    "to": "apps/main/src/oauth-handler.ts",
+    "unresolvedTo": "./oauth-handler.js",
+    "dependencyTypes": ["local", "dynamic-import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "apps/main/src/oauth-handler.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "apps/main/src/ipc.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "apps/main/src/deeplink.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "apps/main/src/ipc.ts",
+    "to": "apps/main/src/oauth-handler.ts",
+    "unresolvedTo": "./oauth-handler.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "apps/main/src/oauth-handler.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "apps/main/src/ipc.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/account/account.ts",
+    "to": "packages/core/src/di/container.ts",
+    "unresolvedTo": "../di/container.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/agents/runtime.ts",
+    "to": "packages/core/src/application/lib/builtin-tools.ts",
+    "unresolvedTo": "../application/lib/builtin-tools.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/agents/runtime.ts",
+    "to": "packages/core/src/application/lib/exec-tool.ts",
+    "unresolvedTo": "../application/lib/exec-tool.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/application/lib/exec-tool.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/mcp/mcp.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/agents/runtime.ts",
+    "to": "packages/core/src/background-tasks/agent.ts",
+    "unresolvedTo": "../background-tasks/agent.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/background-tasks/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/agents/runtime.ts",
+    "to": "packages/core/src/di/container.ts",
+    "unresolvedTo": "../di/container.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/agents/runtime.ts",
+    "to": "packages/core/src/knowledge/inline_task_agent.ts",
+    "unresolvedTo": "../knowledge/inline_task_agent.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/knowledge/inline_task_agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/agents/runtime.ts",
+    "to": "packages/core/src/knowledge/live-note/agent.ts",
+    "unresolvedTo": "../knowledge/live-note/agent.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/knowledge/live-note/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/agents/runtime.ts",
+    "to": "packages/core/src/models/defaults.ts",
+    "unresolvedTo": "../models/defaults.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/models/defaults.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/agents/runtime.ts",
+    "to": "packages/core/src/models/models.ts",
+    "unresolvedTo": "../models/models.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/models/models.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/models/gateway.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/agents/runtime.ts",
+    "to": "packages/core/src/security/auto-permission-classifier.ts",
+    "unresolvedTo": "../security/auto-permission-classifier.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/security/auto-permission-classifier.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/models/defaults.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/agents/utils.ts",
+    "to": "packages/core/src/runs/bus.ts",
+    "unresolvedTo": "../runs/bus.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/runs/bus.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/fileops.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/cloud-sync.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/runner.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/utils.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/agents/utils.ts",
+    "to": "packages/core/src/runs/runs.ts",
+    "unresolvedTo": "../runs/runs.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/runs/runs.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/fileops.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/cloud-sync.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/runner.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/utils.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/assistant/agent.ts",
+    "to": "packages/core/src/application/assistant/instructions.ts",
+    "unresolvedTo": "./instructions.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/application/assistant/instructions.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/connectors/connectors-backend.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/assistant/instructions.ts",
+    "to": "packages/core/src/di/container.ts",
+    "unresolvedTo": "../../di/container.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/instructions.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/lib/builtin-tools.ts",
+    "to": "packages/core/src/auth/slack-backend-oauth.ts",
+    "unresolvedTo": "../../auth/slack-backend-oauth.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/auth/slack-backend-oauth.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/lib/builtin-tools.ts",
+    "to": "packages/core/src/auth/tokens.ts",
+    "unresolvedTo": "../../auth/tokens.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/lib/builtin-tools.ts",
+    "to": "packages/core/src/background-tasks/fileops.ts",
+    "unresolvedTo": "../../background-tasks/fileops.js",
+    "dependencyTypes": ["local", "dynamic-import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/background-tasks/fileops.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/cloud-sync.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/lib/builtin-tools.ts",
+    "to": "packages/core/src/background-tasks/runner.ts",
+    "unresolvedTo": "../../background-tasks/runner.js",
+    "dependencyTypes": ["local", "dynamic-import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/background-tasks/runner.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/agents/utils.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/runs/bus.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/lib/builtin-tools.ts",
+    "to": "packages/core/src/connectors/connectors-backend.ts",
+    "unresolvedTo": "../../connectors/connectors-backend.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/connectors/connectors-backend.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/lib/builtin-tools.ts",
+    "to": "packages/core/src/di/container.ts",
+    "unresolvedTo": "../../di/container.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/lib/builtin-tools.ts",
+    "to": "packages/core/src/knowledge/live-note/runner.ts",
+    "unresolvedTo": "../../knowledge/live-note/runner.js",
+    "dependencyTypes": ["local", "dynamic-import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/knowledge/live-note/runner.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/agents/utils.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/runs/bus.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/lib/builtin-tools.ts",
+    "to": "packages/core/src/mcp/mcp.ts",
+    "unresolvedTo": "../../mcp/mcp.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/mcp/mcp.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/lib/builtin-tools.ts",
+    "to": "packages/core/src/memory/index.ts",
+    "unresolvedTo": "../../memory/index.js",
+    "dependencyTypes": ["local", "dynamic-import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/memory/index.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/memory/embed.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/lib/builtin-tools.ts",
+    "to": "packages/core/src/models/defaults.ts",
+    "unresolvedTo": "../../models/defaults.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/models/defaults.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/lib/builtin-tools.ts",
+    "to": "packages/core/src/models/models.ts",
+    "unresolvedTo": "../../models/models.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/models/models.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/models/gateway.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/lib/builtin-tools.ts",
+    "to": "packages/core/src/relationships/client.ts",
+    "unresolvedTo": "../../relationships/client.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/relationships/client.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/application/lib/exec-tool.ts",
+    "to": "packages/core/src/application/lib/builtin-tools.ts",
+    "unresolvedTo": "./builtin-tools.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/exec-tool.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/auth/slack-backend-oauth.ts",
+    "to": "packages/core/src/auth/tokens.ts",
+    "unresolvedTo": "./tokens.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/auth/slack-backend-oauth.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/auth/tokens.ts",
+    "to": "packages/core/src/di/container.ts",
+    "unresolvedTo": "../di/container.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/background-tasks/cloud-sync.ts",
+    "to": "packages/core/src/auth/tokens.ts",
+    "unresolvedTo": "../auth/tokens.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/fileops.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/cloud-sync.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/background-tasks/cloud-sync.ts",
+    "to": "packages/core/src/background-tasks/fileops.ts",
+    "unresolvedTo": "./fileops.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/background-tasks/fileops.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/cloud-sync.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/background-tasks/cloud-sync.ts",
+    "to": "packages/core/src/background-tasks/runner.ts",
+    "unresolvedTo": "./runner.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/background-tasks/runner.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/cloud-sync.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/background-tasks/cloud-sync.ts",
+    "to": "packages/core/src/runs/runs.ts",
+    "unresolvedTo": "../runs/runs.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/runs/runs.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/fileops.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/cloud-sync.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/background-tasks/runner.ts",
+    "to": "packages/core/src/agents/utils.ts",
+    "unresolvedTo": "../agents/utils.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/agents/utils.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/runs/bus.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/runner.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/background-tasks/runner.ts",
+    "to": "packages/core/src/background-tasks/fileops.ts",
+    "unresolvedTo": "./fileops.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/background-tasks/fileops.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/cloud-sync.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/runner.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/background-tasks/runner.ts",
+    "to": "packages/core/src/models/defaults.ts",
+    "unresolvedTo": "../models/defaults.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/models/defaults.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/runner.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/background-tasks/runner.ts",
+    "to": "packages/core/src/runs/runs.ts",
+    "unresolvedTo": "../runs/runs.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/runs/runs.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/runner.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/config/config.ts",
+    "to": "packages/core/src/knowledge/deprecate_today_note.ts",
+    "unresolvedTo": "../knowledge/deprecate_today_note.js",
+    "dependencyTypes": ["local", "dynamic-import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/knowledge/deprecate_today_note.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/config/config.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/config/config.ts",
+    "to": "packages/core/src/knowledge/version_history.ts",
+    "unresolvedTo": "../knowledge/version_history.js",
+    "dependencyTypes": ["local", "dynamic-import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/knowledge/version_history.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/config/config.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/connectors/connectors-backend.ts",
+    "to": "packages/core/src/auth/tokens.ts",
+    "unresolvedTo": "../auth/tokens.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/connectors/connectors-backend.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/di/container.ts",
+    "to": "packages/core/src/runs/repo.ts",
+    "unresolvedTo": "../runs/repo.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/runs/repo.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/models/defaults.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/knowledge/live-note/runner.ts",
+    "to": "packages/core/src/agents/utils.ts",
+    "unresolvedTo": "../../agents/utils.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/agents/utils.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/runs/bus.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/knowledge/live-note/runner.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/knowledge/live-note/runner.ts",
+    "to": "packages/core/src/models/defaults.ts",
+    "unresolvedTo": "../../models/defaults.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/models/defaults.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/knowledge/live-note/runner.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/knowledge/live-note/runner.ts",
+    "to": "packages/core/src/runs/runs.ts",
+    "unresolvedTo": "../../runs/runs.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/runs/runs.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/knowledge/live-note/runner.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/mcp/mcp.ts",
+    "to": "packages/core/src/di/container.ts",
+    "unresolvedTo": "../di/container.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/mcp/mcp.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/memory/embed.ts",
+    "to": "packages/core/src/account/account.ts",
+    "unresolvedTo": "../account/account.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/memory/index.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/memory/embed.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/memory/embed.ts",
+    "to": "packages/core/src/auth/tokens.ts",
+    "unresolvedTo": "../auth/tokens.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/memory/index.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/memory/embed.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/memory/embed.ts",
+    "to": "packages/core/src/models/models.ts",
+    "unresolvedTo": "../models/models.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/models/models.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/models/gateway.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/memory/index.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/memory/embed.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/memory/expand.ts",
+    "to": "packages/core/src/models/defaults.ts",
+    "unresolvedTo": "../models/defaults.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/models/defaults.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/memory/index.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/memory/expand.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/memory/expand.ts",
+    "to": "packages/core/src/models/models.ts",
+    "unresolvedTo": "../models/models.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/models/models.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/models/gateway.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/memory/index.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/memory/expand.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/models/defaults.ts",
+    "to": "packages/core/src/di/container.ts",
+    "unresolvedTo": "../di/container.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/models/defaults.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/relationships/client.ts",
+    "to": "packages/core/src/auth/tokens.ts",
+    "unresolvedTo": "../auth/tokens.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/relationships/client.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/runs/repo.ts",
+    "to": "packages/core/src/models/defaults.ts",
+    "unresolvedTo": "../models/defaults.js",
+    "dependencyTypes": ["local", "dynamic-import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/models/defaults.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/runs/repo.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/runs/runs.ts",
+    "to": "packages/core/src/di/container.ts",
+    "unresolvedTo": "../di/container.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/fileops.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/cloud-sync.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/runs/runs.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/runs/runs.ts",
+    "to": "packages/core/src/mcp/mcp.ts",
+    "unresolvedTo": "../mcp/mcp.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/mcp/mcp.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/fileops.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/cloud-sync.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/runs/runs.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/runs/runs.ts",
+    "to": "packages/core/src/models/defaults.ts",
+    "unresolvedTo": "../models/defaults.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/models/defaults.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/account/account.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/assistant/agent.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/application/lib/builtin-tools.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/fileops.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/background-tasks/cloud-sync.ts",
+        "dependencyTypes": ["local", "dynamic-import"]
+      },
+      {
+        "name": "packages/core/src/runs/runs.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "packages/core/src/security/auto-permission-classifier.ts",
+    "to": "packages/core/src/models/models.ts",
+    "unresolvedTo": "../models/models.js",
+    "dependencyTypes": ["local", "import"],
+    "rule": {
+      "severity": "error",
+      "name": "XARCH-no-cycles"
+    },
+    "cycle": [
+      {
+        "name": "packages/core/src/models/models.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/models/gateway.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/auth/tokens.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/di/container.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/agents/runtime.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "packages/core/src/security/auto-permission-classifier.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
+  }
+]

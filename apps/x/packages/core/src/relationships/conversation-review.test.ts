@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ConversationClaimCandidate } from "@x/shared/dist/relationships.js";
+import type { ConversationClaimCandidate } from "@x/shared/relationships";
 import {
   createConversationReviewBatch,
   decideConversationReviewItem,

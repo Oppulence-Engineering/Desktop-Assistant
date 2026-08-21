@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@oppulence/ui/components/dialog";
 import { ProductLoginExperience } from "@/components/onboarding/product-login-experience";
-import { PRODUCT_NAME, PRODUCT_PROVIDER_ID, isProductProvider } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME, PRODUCT_PROVIDER_ID, isProductProvider } from "@x/shared/branding";
 
 interface SessionReconnectDialogProps {
   open: boolean;

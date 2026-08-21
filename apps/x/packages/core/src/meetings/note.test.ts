@@ -5,7 +5,7 @@ import {
   renderTranscriptMarkdown,
   segmentsToEntries,
   type MeetingTranscriptSegment,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 import {
   meetingNotePath,
   nativeProvenance,

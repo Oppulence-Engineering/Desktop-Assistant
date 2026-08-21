@@ -7,7 +7,7 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { CATALOG, VAD_MODEL_ID, type ModelEntry } from "./catalog.js";
 import { WhisperError } from "./errors.js";
-import type { WhisperModelHealth, WhisperModelProgress } from "@x/shared/dist/transcription.js";
+import type { WhisperModelHealth, WhisperModelProgress } from "@x/shared/transcription";
 
 /**
  * Model catalog manager (RFC 009 §9, Appendix P): resumable + checksum-verified

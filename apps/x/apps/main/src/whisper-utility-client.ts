@@ -8,7 +8,7 @@ import {
   type RunResult,
   type WhisperErrorCode,
   type WhisperPcmRunner,
-} from "@x/core/dist/voice/whisper/index.js";
+} from "@x/core/voice/whisper/index";
 
 type UtilityChild = ReturnType<typeof utilityProcess.fork>;
 

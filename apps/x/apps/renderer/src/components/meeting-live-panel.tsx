@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Send, Sparkles, X } from "@/lib/icons";
 import { Button } from "@oppulence/ui/components/button";
-import type { MeetingTranscriptSegment } from "@x/shared/dist/meetings.js";
-import type { RelationshipLiveCue } from "@x/shared/dist/relationships.js";
+import type { MeetingTranscriptSegment } from "@x/shared/meetings";
+import type { RelationshipLiveCue } from "@x/shared/relationships";
 
 /**
  * The meeting, as it happens — and a box to ask it questions.

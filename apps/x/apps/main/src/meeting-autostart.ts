@@ -1,7 +1,7 @@
-import type { CalendarNotifyHooks } from "@x/core/dist/knowledge/notify_calendar_meetings.js";
-import type { ResolvedCalendarEvent } from "@x/shared/dist/calendar.js";
-import type { MeetingCalendarEvent } from "@x/shared/dist/meetings.js";
-import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
+import type { CalendarNotifyHooks } from "@x/core/knowledge/notify_calendar_meetings";
+import type { ResolvedCalendarEvent } from "@x/shared/calendar";
+import type { MeetingCalendarEvent } from "@x/shared/meetings";
+import { getTranscriptionConfig } from "@x/core/voice/voice";
 import { peekMeetingController } from "./meeting-controller.js";
 import { runMeetingPreflight, preflightSummary } from "./meeting-preflight.js";
 import { osSupportsNativeCapture } from "./meeting-capture.js";

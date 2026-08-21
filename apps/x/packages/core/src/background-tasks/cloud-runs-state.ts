@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
-import type { BackgroundTaskOfflineRunsEventType } from "@x/shared/dist/background-task.js";
-import { PrefixLogger } from "@x/shared/dist/prefix-logger.js";
+import type { BackgroundTaskOfflineRunsEventType } from "@x/shared/background-task";
+import { PrefixLogger } from "@x/shared/prefix-logger";
 import { WorkDir } from "../config/config.js";
 import type { RemoteRun } from "./cloud-sync.js";
 import { writeJsonAtomic } from "../filesystem/atomic_write.js";

@@ -6,8 +6,8 @@ import type {
   DictationHistoryEntry,
   DictationHistoryRetention,
   DictationHistoryStats,
-} from "@x/shared/dist/transcription.js";
-import { DICTATION_LANGUAGE_LABELS } from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
+import { DICTATION_LANGUAGE_LABELS } from "@x/shared/transcription";
 
 const EMPTY_STATS: DictationHistoryStats = {
   totalWords: 0,

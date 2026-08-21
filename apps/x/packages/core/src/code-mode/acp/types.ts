@@ -8,4 +8,4 @@ export type {
     PermissionAsk,
     CodeRunEvent,
     RunPromptResult,
-} from '@x/shared/dist/code-mode.js';
+} from '@x/shared/code-mode';

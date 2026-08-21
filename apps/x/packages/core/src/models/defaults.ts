@@ -1,5 +1,5 @@
 import z from "zod";
-import { LlmProvider } from "@x/shared/dist/models.js";
+import { LlmProvider } from "@x/shared/models";
 import { IModelConfigRepo } from "./repo.js";
 import { isSignedIn } from "../account/account.js";
 import container from "../di/container.js";
@@ -7,7 +7,7 @@ import {
   PRODUCT_PROVIDER_ID,
   LEGACY_PRODUCT_PROVIDER_ID,
   isProductProvider,
-} from "@x/shared/dist/branding.js";
+} from "@x/shared/branding";
 
 // Signed-in defaults must be ids the gateway actually serves *and can reach*,
 // which means three things have to agree: this constant, the rate table in

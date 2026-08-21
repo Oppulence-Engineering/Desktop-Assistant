@@ -227,7 +227,7 @@ describe("legacy `never` config", () => {
   it("reads as untilTranscribed instead of failing to parse", async () => {
     // Installed users may have it persisted. It must still load — and land on the safe
     // behaviour, not the one that deleted recordings that were never transcribed.
-    const { MeetingKeepAudio } = await import("@x/shared/dist/meetings.js");
+    const { MeetingKeepAudio } = await import("@x/shared/meetings");
     expect(MeetingKeepAudio.parse("never")).toBe("untilTranscribed");
     expect(MeetingKeepAudio.parse("always")).toBe("always");
     expect(MeetingKeepAudio.parse("untilTranscribed")).toBe("untilTranscribed");

@@ -6,7 +6,7 @@ import { FirefliesClientFactory } from './fireflies-client-factory.js';
 import { serviceLogger, type ServiceRunContext } from '../services/service_logger.js';
 import { limitEventItems } from './limit_event_items.js';
 import { getTranscriptionConfig } from '../voice/voice.js';
-import { organizationDomain } from '@x/shared/dist/email-domain.js';
+import { organizationDomain } from '@x/shared/email-domain';
 import {
     enqueueRelationshipEvidence,
     flushRelationshipEvidence,

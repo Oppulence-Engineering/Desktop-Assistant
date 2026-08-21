@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@oppulence/ui/components/dialog";
 import { cn } from "@/lib/utils";
-import type { MeetingLevels, MeetingTrackId } from "@x/shared/dist/meetings.js";
+import type { MeetingLevels, MeetingTrackId } from "@x/shared/meetings";
 
 /**
  * The ten seconds that prove dual-track capture works.

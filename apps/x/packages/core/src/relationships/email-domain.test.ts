@@ -9,7 +9,7 @@ import {
   isPublicMailboxDomain,
   normalizeEmail,
   organizationDomain,
-} from "@x/shared/dist/email-domain.js";
+} from "@x/shared/email-domain";
 
 describe("emailDomain", () => {
   it("returns the host for an ordinary address", () => {

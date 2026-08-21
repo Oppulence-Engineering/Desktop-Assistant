@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { useCallback, useEffect, useState } from "react";
-import { SolomonApiConfig } from "@x/shared/dist/solomon-account.js";
-import { PRODUCT_PROVIDER_ID } from "@x/shared/dist/branding.js";
+import { SolomonApiConfig } from "@x/shared/solomon-account";
+import { PRODUCT_PROVIDER_ID } from "@x/shared/branding";
 
 interface SolomonAccountState {
   signedIn: boolean;

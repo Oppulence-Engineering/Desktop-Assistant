@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getSolomonConfig } from '../config/solomon.js';
-import { PRODUCT_PROVIDER_ID, isProductProvider } from '@x/shared/dist/branding.js';
+import { PRODUCT_PROVIDER_ID, isProductProvider } from '@x/shared/branding';
 
 /**
  * Discovery configuration - how to get OAuth endpoints

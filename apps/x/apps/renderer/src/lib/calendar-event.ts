@@ -11,4 +11,4 @@ export {
   startsWithin,
   type CalendarEvent,
   type ResolvedCalendarEvent,
-} from "@x/shared/dist/calendar.js";
+} from "@x/shared/calendar";

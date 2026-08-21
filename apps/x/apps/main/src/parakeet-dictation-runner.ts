@@ -4,11 +4,11 @@ import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 
-import { pcm16ToWav } from "@x/core/dist/voice/whisper/wav.js";
+import { pcm16ToWav } from "@x/core/voice/whisper/wav";
 import {
   DictationLanguage as DictationLanguageSchema,
   type DictationLanguage,
-} from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
 import { audiocapBinaryPath } from "./meeting-capture.js";
 import { parakeetModelStatus } from "./meeting-engines.js";
 

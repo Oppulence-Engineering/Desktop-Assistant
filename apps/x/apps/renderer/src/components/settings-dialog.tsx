@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { emitRendererEvent } from "@/lib/renderer-events";
 import {
   Server,
   Key,
@@ -68,8 +69,8 @@ import { FeedbackDialog } from "@/components/feedback-dialog";
 import { IntegrationApiKeyModal } from "@/components/integration-api-key-modal";
 import { useConnectors } from "@/hooks/useConnectors";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
-import { PRODUCT_NAME, getProductProviderState } from "@x/shared/dist/branding.js";
-import type { ApprovalPolicy } from "@x/shared/src/code-mode.js";
+import { PRODUCT_NAME, getProductProviderState } from "@x/shared/branding";
+import type { ApprovalPolicy } from "@x/shared/code-mode";
 
 type ConfigTab =
   | "overview"
@@ -1069,7 +1070,7 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
           enabled: next,
           approvalPolicy,
         });
-        window.dispatchEvent(new Event("code-mode-config-changed"));
+        emitRendererEvent("code-mode-config-changed");
         toast.success(next ? "Code mode enabled" : "Code mode disabled");
       } catch {
         setEnabled(!next);
@@ -1091,7 +1092,7 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
           enabled,
           approvalPolicy: next,
         });
-        window.dispatchEvent(new Event("code-mode-config-changed"));
+        emitRendererEvent("code-mode-config-changed");
       } catch {
         setApprovalPolicy(prev);
         toast.error("Failed to update approval policy");

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { emitRendererEvent, onRendererEvent } from "@/lib/renderer-events";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@oppulence/ui/components/tooltip";
 import {
   ArrowUp,
@@ -66,7 +67,7 @@ import {
   PRODUCT_NAME,
   PRODUCT_PROVIDER_ID,
   getProductProviderState,
-} from "@x/shared/dist/branding.js";
+} from "@x/shared/branding";
 
 export type StagedAttachment = {
   id: string;
@@ -84,7 +85,6 @@ const MAX_STORED_RECENT_WORK_DIRS = 8;
 // Stored in the workspace (~/.rowboat/config) so it travels with the workspace and
 // stays consistent with the other config/*.json files (e.g. coding-agents.json).
 const RECENT_WORK_DIRS_CONFIG_PATH = "config/recent-work-dirs.json";
-const RECENT_WORK_DIRS_CHANGED_EVENT = "rowboat-chat-recent-work-dirs-changed";
 
 const providerDisplayNames: Record<string, string> = {
   openai: "OpenAI",
@@ -201,7 +201,7 @@ async function writeRecentWorkDirs(dirs: RecentWorkDir[]) {
     console.error("Failed to persist recent work directories", err);
   }
   // Notify other mounted chat inputs in this window to re-read.
-  window.dispatchEvent(new CustomEvent(RECENT_WORK_DIRS_CHANGED_EVENT));
+  emitRendererEvent("rowboat-chat-recent-work-dirs-changed");
 }
 
 function formatRecentWorkDirTime(lastUsedAt: number) {
@@ -411,10 +411,7 @@ function ChatInputInner({
       void readRecentWorkDirs().then(setRecentWorkDirs);
     };
     syncRecentWorkDirs();
-    window.addEventListener(RECENT_WORK_DIRS_CHANGED_EVENT, syncRecentWorkDirs);
-    return () => {
-      window.removeEventListener(RECENT_WORK_DIRS_CHANGED_EVENT, syncRecentWorkDirs);
-    };
+    return onRendererEvent("rowboat-chat-recent-work-dirs-changed", syncRecentWorkDirs);
   }, []);
 
   // Check Solomon AI sign-in state
@@ -502,8 +499,7 @@ function ChatInputInner({
     const handler = () => {
       loadModelConfig();
     };
-    window.addEventListener("models-config-changed", handler);
-    return () => window.removeEventListener("models-config-changed", handler);
+    return onRendererEvent("models-config-changed", handler);
   }, [loadModelConfig]);
 
   // Load the global code-mode feature flag (from settings) and stay in sync.
@@ -515,8 +511,7 @@ function ChatInputInner({
         .catch(() => setCodeModeFeatureEnabled(false));
     };
     load();
-    window.addEventListener("code-mode-config-changed", load);
-    return () => window.removeEventListener("code-mode-config-changed", load);
+    return onRendererEvent("code-mode-config-changed", load);
   }, []);
 
   // If the feature is turned off in settings, also turn off any per-conversation chip.

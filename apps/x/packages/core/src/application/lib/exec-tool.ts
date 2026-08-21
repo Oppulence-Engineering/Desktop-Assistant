@@ -1,5 +1,5 @@
-import { ToolAttachment } from "@x/shared/dist/agent.js";
-import { RunEvent } from "@x/shared/dist/runs.js";
+import { ToolAttachment } from "@x/shared/agent";
+import { RunEvent } from "@x/shared/runs";
 import { z } from "zod";
 import { BuiltinTools } from "./builtin-tools.js";
 import { executeTool } from "../../mcp/mcp.js";

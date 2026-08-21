@@ -1,6 +1,6 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import type { MeetingKeepAudio, MeetingSessionMeta } from "@x/shared/dist/meetings.js";
+import type { MeetingKeepAudio, MeetingSessionMeta } from "@x/shared/meetings";
 import { compressedName, isCompressed, type AudioCodec } from "./codec.js";
 import { appendLog, patchMeta } from "./session.js";
 

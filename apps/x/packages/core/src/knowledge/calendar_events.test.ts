@@ -8,7 +8,7 @@ import {
   isEventNow,
   resolveCalendarEvent,
   startsWithin,
-} from "@x/shared/dist/calendar.js";
+} from "@x/shared/calendar";
 import { listCalendarEvents, listEventsInProgress, listUpcomingEvents } from "./calendar_events.js";
 
 const T0 = Date.parse("2026-07-30T15:00:00.000Z");

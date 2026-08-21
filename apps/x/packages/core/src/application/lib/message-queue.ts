@@ -1,5 +1,5 @@
 import { IMonotonicallyIncreasingIdGenerator } from "./id-gen.js";
-import { UserMessageContent } from "@x/shared/dist/message.js";
+import { UserMessageContent } from "@x/shared/message";
 import z from "zod";
 
 export type UserMessageContentType = z.infer<typeof UserMessageContent>;

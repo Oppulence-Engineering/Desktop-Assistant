@@ -3,9 +3,9 @@ import type {
   MeetingSessionMeta,
   MeetingTranscript,
   MeetingTranscriptSegment,
-} from "@x/shared/dist/meetings.js";
-import type { RelationshipObservationInput } from "@x/shared/dist/relationships.js";
-import { organizationDomain } from "@x/shared/dist/email-domain.js";
+} from "@x/shared/meetings";
+import type { RelationshipObservationInput } from "@x/shared/relationships";
+import { organizationDomain } from "@x/shared/email-domain";
 import type {
   Counterparty,
   LedgerCommitment,
@@ -271,7 +271,7 @@ export async function meetingTranscriptObservationWithExtraction(
   const observation = meetingTranscriptObservation(args);
   const envelope = (
     observation.payload as {
-      envelope: import("@x/shared/dist/relationships.js").CanonicalTranscriptEnvelope;
+      envelope: import("@x/shared/relationships").CanonicalTranscriptEnvelope;
     }
   ).envelope;
   const extractor = args.extractor ?? new HybridConversationExtractor();

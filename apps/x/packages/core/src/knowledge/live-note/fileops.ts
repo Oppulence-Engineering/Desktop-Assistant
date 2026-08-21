@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { LiveNoteSchema, type LiveNote } from '@x/shared/dist/live-note.js';
+import { LiveNoteSchema, type LiveNote } from '@x/shared/live-note';
 import { WorkDir } from '../../config/config.js';
 import { withFileLock } from '../file-lock.js';
 import { assertSafeRelPath } from '../../workspace/workspace.js';

@@ -1,4 +1,4 @@
-import type { VoiceCommandIntent } from "@x/shared/dist/transcription.js";
+import type { VoiceCommandIntent } from "@x/shared/transcription";
 
 export interface VoiceEmailActions {
   archiveByQuery(query?: string): Promise<void>;

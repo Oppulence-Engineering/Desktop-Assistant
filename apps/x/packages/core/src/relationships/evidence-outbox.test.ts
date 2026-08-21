@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type {
   RelationshipObservationIngestResult,
   RelationshipObservationInput,
-} from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
 import { RelationshipEvidenceOutbox } from "./evidence-outbox.js";
 import { RelationshipApiError } from "./client.js";
 

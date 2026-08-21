@@ -1,5 +1,5 @@
 import z from "zod";
-import { ApprovalPolicy } from "@x/shared/dist/code-mode.js";
+import { ApprovalPolicy } from "@x/shared/code-mode";
 
 export const CodeModeConfig = z.object({
     enabled: z.boolean(),

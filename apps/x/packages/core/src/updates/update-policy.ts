@@ -6,10 +6,10 @@
  * about, and whether restarting right now is safe — live here.
  */
 
-import type { UpdateStatus, UpdateStatusName } from "@x/shared/dist/updates.js";
+import type { UpdateStatus, UpdateStatusName } from "@x/shared/updates";
 
 export type { UpdateStatus, UpdateStatusName };
-export { updatePending, updateReady } from "@x/shared/dist/updates.js";
+export { updatePending, updateReady } from "@x/shared/updates";
 
 /**
  * Why updates can't apply here, or null when they can.

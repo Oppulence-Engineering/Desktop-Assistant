@@ -1,9 +1,25 @@
 {
   "name": "@x/core",
+  "version": "0.1.30",
   "private": true,
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "default": "./dist/*.js"
+    }
+  },
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "dev": "tsc -w -p tsconfig.build.json",
@@ -55,6 +71,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.0.3",
+    "fast-check": "^4.9.0",
     "@types/papaparse": "^5.5.2",
     "@types/pdf-parse": "^1.1.5",
     "vitest": "catalog:"

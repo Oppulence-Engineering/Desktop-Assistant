@@ -18,8 +18,8 @@ import {
   XIcon,
 } from "@/lib/icons";
 import { useState, type ComponentProps } from "react";
-import { ToolCallPart } from "@x/shared/dist/message.js";
-import { ToolPermissionMetadata } from "@x/shared/dist/runs.js";
+import { ToolCallPart } from "@x/shared/message";
+import { ToolPermissionMetadata } from "@x/shared/runs";
 import z from "zod";
 
 export type PermissionRequestProps = ComponentProps<"div"> & {

@@ -1,7 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { WhisperAccel, WhisperBenchmarkProfile } from "@x/shared/dist/transcription.js";
+import type { WhisperAccel, WhisperBenchmarkProfile } from "@x/shared/transcription";
 
 export interface AutoModelInput {
   accel: WhisperAccel;

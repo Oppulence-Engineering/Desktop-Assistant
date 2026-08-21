@@ -5,7 +5,7 @@ import {
   PRODUCT_NAME,
   getProductProviderState,
   isProductProvider,
-} from "@x/shared/dist/branding.js";
+} from "@x/shared/branding";
 
 export interface ProviderState {
   isConnected: boolean;

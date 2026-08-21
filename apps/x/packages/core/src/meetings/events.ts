@@ -2,7 +2,7 @@ import {
   segmentsToEntries,
   type MeetingSessionMeta,
   type MeetingTranscript,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 import { createEvent } from "../events/producer.js";
 
 /**

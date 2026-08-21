@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@oppulence/ui/components/dialog";
-import type { VoiceCommandIntent } from "@x/shared/dist/transcription.js";
+import type { VoiceCommandIntent } from "@x/shared/transcription";
 
 export interface VoiceCommandConfirmationProps {
   intent: VoiceCommandIntent | null;

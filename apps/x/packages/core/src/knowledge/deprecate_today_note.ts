@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { z } from 'zod';
-import { LiveNoteSchema } from '@x/shared/dist/live-note.js';
+import { LiveNoteSchema } from '@x/shared/live-note';
 import { WorkDir } from '../config/config.js';
 import { splitFrontmatter, joinFrontmatter } from '../application/lib/parse-frontmatter.js';
 import { writeJsonAtomic } from "../filesystem/atomic_write.js";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CommitmentEvent } from "@x/shared/dist/relationships.js";
+import type { CommitmentEvent } from "@x/shared/relationships";
 import { projectCommitment, validateCommitmentDependencies } from "./commitment-graph.js";
 
 const event = (version: number, kind: CommitmentEvent["kind"]): CommitmentEvent => ({

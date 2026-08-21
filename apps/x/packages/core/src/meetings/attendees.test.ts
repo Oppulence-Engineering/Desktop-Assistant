@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveCounterparty } from "./attendees.js";
-import { attributionNotice, formatMeetingNote } from "@x/shared/dist/meetings.js";
+import { attributionNotice, formatMeetingNote } from "@x/shared/meetings";
 import { nativeProvenance } from "./note.js";
 
 /**

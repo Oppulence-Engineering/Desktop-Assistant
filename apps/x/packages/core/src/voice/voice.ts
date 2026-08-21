@@ -20,7 +20,7 @@ import {
   type VoicePrivacySettings,
   type WhisperBenchmarkProfile,
   type WhisperSettings,
-} from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
 
 export interface VoiceConfig {
   deepgram: { apiKey: string } | null;
