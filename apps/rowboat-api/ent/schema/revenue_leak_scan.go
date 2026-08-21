@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -17,7 +18,7 @@ import (
 type RevenueLeakScan struct{ ent.Schema }
 
 // Mixin of the RevenueLeakScan.
-func (RevenueLeakScan) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RevenueLeakScan) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields of the RevenueLeakScan.
 func (RevenueLeakScan) Fields() []ent.Field {
@@ -30,7 +31,7 @@ func (RevenueLeakScan) Fields() []ent.Field {
 		// the database-enforced cross-replica mutex: two scheduler replicas may
 		// race, but only one can own a workspace claim. NULL permits unlimited
 		// historical terminal scans without a partial-index portability trap.
-		field.String("active_claim").Optional().Nillable().Unique(),
+		field.String("active_claim").Optional().Nillable(),
 		// mode records the workspace mode at scan time: local scans observe
 		// only; linked scans can feed preflight downstream.
 		field.String("mode").
@@ -55,8 +56,8 @@ func (RevenueLeakScan) Fields() []ent.Field {
 func (RevenueLeakScan) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("scans").Unique().Required(),
-		edge.From("user", User.Type).Ref("revenue_leak_scans").Unique().Required(),
+			Ref("scans").Unique().Required().Immutable(),
+		edge.From("user", User.Type).Ref("revenue_leak_scans").Unique().Required().Immutable(),
 	}
 }
 
@@ -64,5 +65,7 @@ func (RevenueLeakScan) Edges() []ent.Edge {
 func (RevenueLeakScan) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("workspace").Fields("status"),
+		index.Fields("active_claim").Unique().
+			Annotations(entsql.IndexWhere("active_claim IS NOT NULL")),
 	}
 }

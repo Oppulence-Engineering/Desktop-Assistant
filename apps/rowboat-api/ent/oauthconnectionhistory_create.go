@@ -140,7 +140,9 @@ func (_c *OAuthConnectionHistoryCreate) Mutation() *OAuthConnectionHistoryMutati
 
 // Save creates the OAuthConnectionHistory in the database.
 func (_c *OAuthConnectionHistoryCreate) Save(ctx context.Context) (*OAuthConnectionHistory, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -167,23 +169,36 @@ func (_c *OAuthConnectionHistoryCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *OAuthConnectionHistoryCreate) defaults() {
+func (_c *OAuthConnectionHistoryCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if oauthconnectionhistory.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized oauthconnectionhistory.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := oauthconnectionhistory.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if oauthconnectionhistory.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized oauthconnectionhistory.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := oauthconnectionhistory.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
 	if _, ok := _c.mutation.HistoryTime(); !ok {
+		if oauthconnectionhistory.DefaultHistoryTime == nil {
+			return fmt.Errorf("ent: uninitialized oauthconnectionhistory.DefaultHistoryTime (forgotten import ent/runtime?)")
+		}
 		v := oauthconnectionhistory.DefaultHistoryTime()
 		_c.mutation.SetHistoryTime(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if oauthconnectionhistory.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized oauthconnectionhistory.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := oauthconnectionhistory.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

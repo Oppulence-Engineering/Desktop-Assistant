@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -438,6 +439,12 @@ func (_q *ConversationIntelligenceArtifactQuery) prepareQuery(ctx context.Contex
 			return err
 		}
 		_q.sql = prev
+	}
+	if conversationintelligenceartifact.Policy == nil {
+		return errors.New("ent: uninitialized conversationintelligenceartifact.Policy (forgotten import ent/runtime?)")
+	}
+	if err := conversationintelligenceartifact.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

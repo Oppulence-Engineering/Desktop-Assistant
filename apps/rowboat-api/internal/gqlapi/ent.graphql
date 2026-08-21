@@ -9401,7 +9401,6 @@ type RelationshipAttentionItem implements Node {
   evidenceRefs: [String!]!
   urgencyBand: String!
   rankScore: Int!
-  rankFactorsJSON: String!
   sourceRequirements: [String!]!
   recommendationID: UUID
   recommendationRevision: Int!
@@ -9566,22 +9565,6 @@ input RelationshipAttentionItemWhereInput {
   rankScoreGTE: Int
   rankScoreLT: Int
   rankScoreLTE: Int
-  """
-  rank_factors_json field predicates
-  """
-  rankFactorsJSON: String
-  rankFactorsJSONNEQ: String
-  rankFactorsJSONIn: [String!]
-  rankFactorsJSONNotIn: [String!]
-  rankFactorsJSONGT: String
-  rankFactorsJSONGTE: String
-  rankFactorsJSONLT: String
-  rankFactorsJSONLTE: String
-  rankFactorsJSONContains: String
-  rankFactorsJSONHasPrefix: String
-  rankFactorsJSONHasSuffix: String
-  rankFactorsJSONEqualFold: String
-  rankFactorsJSONContainsFold: String
   """
   recommendation_id field predicates
   """

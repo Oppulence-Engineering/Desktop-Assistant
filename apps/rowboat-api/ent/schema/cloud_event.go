@@ -3,6 +3,7 @@ package schema
 import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -18,7 +19,7 @@ import (
 type CloudEvent struct{ ent.Schema }
 
 // Mixin of the CloudEvent.
-func (CloudEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (CloudEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Annotations of the CloudEvent. No enthistory: events are append-mostly audit
 // rows (only routing_* fields mutate, once), matching BackgroundTaskRun.
@@ -71,7 +72,7 @@ func (CloudEvent) Fields() []ent.Field {
 // Edges of the CloudEvent.
 func (CloudEvent) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("cloud_events").Unique().Required(),
+		edge.From("user", User.Type).Ref("cloud_events").Unique().Required().Immutable(),
 		// runs this event triggered (0..N) — the audit link. The FK column lives
 		// on background_task_runs and is exposed there as the field-backed
 		// cloud_event_id (see BackgroundTaskRun).
@@ -83,7 +84,8 @@ func (CloudEvent) Edges() []ent.Edge {
 func (CloudEvent) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("source", "dedupe_key").Edges("user").Unique(), // idempotency guard
-		index.Fields("routing_status"),
+		index.Fields("routing_status", "received_at").
+			Annotations(entsql.IndexWhere("routing_status = 'pending'")),
 		index.Fields("received_at"),
 		index.Fields("correlation_id"), // RFC 023 Watch-leg correlation
 	}

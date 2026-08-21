@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -329,6 +330,12 @@ func (_q *MCPConnectionHistoryQuery) prepareQuery(ctx context.Context) error {
 			return err
 		}
 		_q.sql = prev
+	}
+	if mcpconnectionhistory.Policy == nil {
+		return errors.New("ent: uninitialized mcpconnectionhistory.Policy (forgotten import ent/runtime?)")
+	}
+	if err := mcpconnectionhistory.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

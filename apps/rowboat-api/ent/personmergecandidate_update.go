@@ -15,8 +15,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personmergecandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -357,17 +355,6 @@ func (_u *PersonMergeCandidateUpdate) SetNillablePreviousStateJSON(v *string) *P
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *PersonMergeCandidateUpdate) SetWorkspaceID(id uuid.UUID) *PersonMergeCandidateUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonMergeCandidateUpdate) SetWorkspace(v *RevenueWorkspace) *PersonMergeCandidateUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetProposedPersonID sets the "proposed_person" edge to the Person entity by ID.
 func (_u *PersonMergeCandidateUpdate) SetProposedPersonID(id uuid.UUID) *PersonMergeCandidateUpdate {
 	_u.mutation.SetProposedPersonID(id)
@@ -390,26 +377,9 @@ func (_u *PersonMergeCandidateUpdate) SetExistingPerson(v *Person) *PersonMergeC
 	return _u.SetExistingPersonID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *PersonMergeCandidateUpdate) SetUserID(id uuid.UUID) *PersonMergeCandidateUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *PersonMergeCandidateUpdate) SetUser(v *User) *PersonMergeCandidateUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the PersonMergeCandidateMutation object of the builder.
 func (_u *PersonMergeCandidateUpdate) Mutation() *PersonMergeCandidateMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonMergeCandidateUpdate) ClearWorkspace() *PersonMergeCandidateUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
 }
 
 // ClearProposedPerson clears the "proposed_person" edge to the Person entity.
@@ -424,15 +394,11 @@ func (_u *PersonMergeCandidateUpdate) ClearExistingPerson() *PersonMergeCandidat
 	return _u
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *PersonMergeCandidateUpdate) ClearUser() *PersonMergeCandidateUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *PersonMergeCandidateUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -459,11 +425,15 @@ func (_u *PersonMergeCandidateUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *PersonMergeCandidateUpdate) defaults() {
+func (_u *PersonMergeCandidateUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if personmergecandidate.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized personmergecandidate.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := personmergecandidate.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -637,35 +607,6 @@ func (_u *PersonMergeCandidateUpdate) sqlSave(ctx context.Context) (_node int, e
 	if value, ok := _u.mutation.PreviousStateJSON(); ok {
 		_spec.SetField(personmergecandidate.FieldPreviousStateJSON, field.TypeString, value)
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personmergecandidate.WorkspaceTable,
-			Columns: []string{personmergecandidate.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personmergecandidate.WorkspaceTable,
-			Columns: []string{personmergecandidate.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.ProposedPersonCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -717,35 +658,6 @@ func (_u *PersonMergeCandidateUpdate) sqlSave(ctx context.Context) (_node int, e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personmergecandidate.UserTable,
-			Columns: []string{personmergecandidate.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personmergecandidate.UserTable,
-			Columns: []string{personmergecandidate.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1097,17 +1009,6 @@ func (_u *PersonMergeCandidateUpdateOne) SetNillablePreviousStateJSON(v *string)
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *PersonMergeCandidateUpdateOne) SetWorkspaceID(id uuid.UUID) *PersonMergeCandidateUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonMergeCandidateUpdateOne) SetWorkspace(v *RevenueWorkspace) *PersonMergeCandidateUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetProposedPersonID sets the "proposed_person" edge to the Person entity by ID.
 func (_u *PersonMergeCandidateUpdateOne) SetProposedPersonID(id uuid.UUID) *PersonMergeCandidateUpdateOne {
 	_u.mutation.SetProposedPersonID(id)
@@ -1130,26 +1031,9 @@ func (_u *PersonMergeCandidateUpdateOne) SetExistingPerson(v *Person) *PersonMer
 	return _u.SetExistingPersonID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *PersonMergeCandidateUpdateOne) SetUserID(id uuid.UUID) *PersonMergeCandidateUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *PersonMergeCandidateUpdateOne) SetUser(v *User) *PersonMergeCandidateUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the PersonMergeCandidateMutation object of the builder.
 func (_u *PersonMergeCandidateUpdateOne) Mutation() *PersonMergeCandidateMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonMergeCandidateUpdateOne) ClearWorkspace() *PersonMergeCandidateUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
 }
 
 // ClearProposedPerson clears the "proposed_person" edge to the Person entity.
@@ -1161,12 +1045,6 @@ func (_u *PersonMergeCandidateUpdateOne) ClearProposedPerson() *PersonMergeCandi
 // ClearExistingPerson clears the "existing_person" edge to the Person entity.
 func (_u *PersonMergeCandidateUpdateOne) ClearExistingPerson() *PersonMergeCandidateUpdateOne {
 	_u.mutation.ClearExistingPerson()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *PersonMergeCandidateUpdateOne) ClearUser() *PersonMergeCandidateUpdateOne {
-	_u.mutation.ClearUser()
 	return _u
 }
 
@@ -1185,7 +1063,9 @@ func (_u *PersonMergeCandidateUpdateOne) Select(field string, fields ...string) 
 
 // Save executes the query and returns the updated PersonMergeCandidate entity.
 func (_u *PersonMergeCandidateUpdateOne) Save(ctx context.Context) (*PersonMergeCandidate, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -1212,11 +1092,15 @@ func (_u *PersonMergeCandidateUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *PersonMergeCandidateUpdateOne) defaults() {
+func (_u *PersonMergeCandidateUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if personmergecandidate.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized personmergecandidate.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := personmergecandidate.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -1407,35 +1291,6 @@ func (_u *PersonMergeCandidateUpdateOne) sqlSave(ctx context.Context) (_node *Pe
 	if value, ok := _u.mutation.PreviousStateJSON(); ok {
 		_spec.SetField(personmergecandidate.FieldPreviousStateJSON, field.TypeString, value)
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personmergecandidate.WorkspaceTable,
-			Columns: []string{personmergecandidate.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personmergecandidate.WorkspaceTable,
-			Columns: []string{personmergecandidate.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.ProposedPersonCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -1487,35 +1342,6 @@ func (_u *PersonMergeCandidateUpdateOne) sqlSave(ctx context.Context) (_node *Pe
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personmergecandidate.UserTable,
-			Columns: []string{personmergecandidate.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personmergecandidate.UserTable,
-			Columns: []string{personmergecandidate.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

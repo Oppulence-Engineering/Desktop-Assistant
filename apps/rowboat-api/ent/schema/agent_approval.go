@@ -18,7 +18,7 @@ import (
 type AgentApproval struct{ ent.Schema }
 
 // Mixin of the AgentApproval.
-func (AgentApproval) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (AgentApproval) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Fields of the AgentApproval.
 func (AgentApproval) Fields() []ent.Field {
@@ -46,7 +46,7 @@ func (AgentApproval) Fields() []ent.Field {
 // Edges of the AgentApproval.
 func (AgentApproval) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("agent_approvals").Unique().Required(),
+		edge.From("user", User.Type).Ref("agent_approvals").Unique().Required().Immutable(),
 		edge.From("session", AgentSession.Type).Ref("approvals").Unique().Required(),
 	}
 }

@@ -5,6 +5,7 @@ package relationshipattentionitem
 import (
 	"time"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
@@ -158,7 +159,14 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+// Note that the variables below are initialized by the runtime
+// package on the initialization of the application. Therefore,
+// it should be imported in the main as follows:
+//
+//	import _ "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/runtime"
 var (
+	Hooks  [1]ent.Hook
+	Policy ent.Policy
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
@@ -183,8 +191,8 @@ var (
 	UrgencyBandValidator func(string) error
 	// RankScoreValidator is a validator for the "rank_score" field. It is called by the builders before save.
 	RankScoreValidator func(int) error
-	// RankFactorsJSONValidator is a validator for the "rank_factors_json" field. It is called by the builders before save.
-	RankFactorsJSONValidator func(string) error
+	// DefaultRankFactorsJSON holds the default value on creation for the "rank_factors_json" field.
+	DefaultRankFactorsJSON map[string]int
 	// DefaultSourceRequirements holds the default value on creation for the "source_requirements" field.
 	DefaultSourceRequirements []string
 	// DefaultRecommendationRevision holds the default value on creation for the "recommendation_revision" field.
@@ -264,11 +272,6 @@ func ByUrgencyBand(opts ...sql.OrderTermOption) OrderOption {
 // ByRankScore orders the results by the rank_score field.
 func ByRankScore(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRankScore, opts...).ToFunc()
-}
-
-// ByRankFactorsJSON orders the results by the rank_factors_json field.
-func ByRankFactorsJSON(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldRankFactorsJSON, opts...).ToFunc()
 }
 
 // ByRecommendationID orders the results by the recommendation_id field.

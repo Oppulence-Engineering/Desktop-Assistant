@@ -253,7 +253,9 @@ func (_c *RelationshipProjectionJobCreate) Mutation() *RelationshipProjectionJob
 
 // Save creates the RelationshipProjectionJob in the database.
 func (_c *RelationshipProjectionJobCreate) Save(ctx context.Context) (*RelationshipProjectionJob, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -280,12 +282,18 @@ func (_c *RelationshipProjectionJobCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *RelationshipProjectionJobCreate) defaults() {
+func (_c *RelationshipProjectionJobCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if relationshipprojectionjob.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipprojectionjob.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipprojectionjob.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if relationshipprojectionjob.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipprojectionjob.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipprojectionjob.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -306,9 +314,13 @@ func (_c *RelationshipProjectionJobCreate) defaults() {
 		_c.mutation.SetAttempts(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if relationshipprojectionjob.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized relationshipprojectionjob.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := relationshipprojectionjob.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

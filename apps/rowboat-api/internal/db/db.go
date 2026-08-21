@@ -3,11 +3,9 @@
 // hooks and interceptors that enforce audit logging, append-only ledgers, and
 // per-user tenant isolation.
 //
-// Why client-level (not schema-level) policies: ent's root package imports
-// ent/schema for field stitching, so schemas cannot import ent/hook or
-// ent/privacy without an import cycle. Registering the same behavior on the
-// client here is cycle-free, equally enforced on every query/mutation, and
-// fully testable. See the package README note in the service README.
+// Tenant protection is intentionally dual-layered: native Ent privacy rejects
+// missing viewers, while client interceptors and hooks add the exact row-level
+// predicates for reads and writes.
 package db
 
 import (
@@ -22,6 +20,7 @@ import (
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	_ "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/runtime" // stitch schema defaults, validators, and privacy policies
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	redisv8 "github.com/go-redis/redis/v8"
 	"go.uber.org/zap"
@@ -82,10 +81,18 @@ func Open(ctx context.Context, cfg appconfig.Config, log *zap.Logger) (*DB, erro
 
 	base := entsql.OpenDB(dlct, sqlDB)
 
-	// Auto-migrate on the RAW driver: Atlas's schema introspection type-asserts
-	// query results to *sql.Rows, which entcache wraps in a recorder. Running
-	// migration before/outside entcache avoids that panic entirely.
+	// PostgreSQL schema changes are reviewed, checksummed Atlas migrations. Do
+	// not let an application process silently mutate production DDL because an
+	// environment variable was set incorrectly. SQLite keeps auto-migration for
+	// local development and hermetic tests.
 	if cfg.AutoMigrate {
+		if dlct == dialect.Postgres {
+			_ = sqlDB.Close()
+			return nil, fmt.Errorf("db: PostgreSQL auto-migration is disabled; run cmd/migrate apply")
+		}
+		// Auto-migrate on the RAW driver: Atlas's schema introspection
+		// type-asserts query results to *sql.Rows, which entcache wraps in a
+		// recorder. Running migration before/outside entcache avoids that panic.
 		if err := dropLegacyOAuthProviderUserIndex(ctx, sqlDB); err != nil {
 			_ = sqlDB.Close()
 			return nil, fmt.Errorf("db: drop legacy oauth index: %w", err)

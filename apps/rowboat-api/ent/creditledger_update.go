@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -78,26 +77,9 @@ func (_u *CreditLedgerUpdate) SetNillableRequestID(v *uuid.UUID) *CreditLedgerUp
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *CreditLedgerUpdate) SetUserID(id uuid.UUID) *CreditLedgerUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *CreditLedgerUpdate) SetUser(v *User) *CreditLedgerUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the CreditLedgerMutation object of the builder.
 func (_u *CreditLedgerUpdate) Mutation() *CreditLedgerMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *CreditLedgerUpdate) ClearUser() *CreditLedgerUpdate {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -158,35 +140,6 @@ func (_u *CreditLedgerUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if value, ok := _u.mutation.RequestID(); ok {
 		_spec.SetField(creditledger.FieldRequestID, field.TypeUUID, value)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   creditledger.UserTable,
-			Columns: []string{creditledger.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   creditledger.UserTable,
-			Columns: []string{creditledger.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -257,26 +210,9 @@ func (_u *CreditLedgerUpdateOne) SetNillableRequestID(v *uuid.UUID) *CreditLedge
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *CreditLedgerUpdateOne) SetUserID(id uuid.UUID) *CreditLedgerUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *CreditLedgerUpdateOne) SetUser(v *User) *CreditLedgerUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the CreditLedgerMutation object of the builder.
 func (_u *CreditLedgerUpdateOne) Mutation() *CreditLedgerMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *CreditLedgerUpdateOne) ClearUser() *CreditLedgerUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the CreditLedgerUpdate builder.
@@ -367,35 +303,6 @@ func (_u *CreditLedgerUpdateOne) sqlSave(ctx context.Context) (_node *CreditLedg
 	}
 	if value, ok := _u.mutation.RequestID(); ok {
 		_spec.SetField(creditledger.FieldRequestID, field.TypeUUID, value)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   creditledger.UserTable,
-			Columns: []string{creditledger.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   creditledger.UserTable,
-			Columns: []string{creditledger.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &CreditLedger{config: _u.config}
 	_spec.Assign = _node.assignValues

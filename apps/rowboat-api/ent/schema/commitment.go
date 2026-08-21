@@ -14,7 +14,7 @@ import (
 type Commitment struct{ ent.Schema }
 
 // Mixin of the Commitment.
-func (Commitment) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (Commitment) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields of the Commitment.
 func (Commitment) Fields() []ent.Field {
@@ -47,10 +47,10 @@ func (Commitment) Fields() []ent.Field {
 func (Commitment) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("commitments").Unique().Required(),
+			Ref("commitments").Unique().Required().Immutable(),
 		edge.From("relationship", Relationship.Type).
 			Ref("commitments").Unique().Required(),
-		edge.From("user", User.Type).Ref("commitments").Unique().Required(),
+		edge.From("user", User.Type).Ref("commitments").Unique().Required().Immutable(),
 		edge.To("evidences", RevenueEvidence.Type),
 		edge.To("events", CommitmentEvent.Type).
 			StorageKey(edge.Column("commitment_id")),

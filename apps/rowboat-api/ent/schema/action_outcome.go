@@ -15,7 +15,7 @@ import (
 type ActionOutcome struct{ ent.Schema }
 
 // Mixin of the ActionOutcome.
-func (ActionOutcome) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (ActionOutcome) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields of the ActionOutcome.
 func (ActionOutcome) Fields() []ent.Field {
@@ -39,10 +39,10 @@ func (ActionOutcome) Fields() []ent.Field {
 func (ActionOutcome) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("outcomes").Unique().Required(),
+			Ref("outcomes").Unique().Required().Immutable(),
 		edge.From("action", RevenueAction.Type).
 			Ref("outcomes").Unique().Required(),
-		edge.From("user", User.Type).Ref("action_outcomes").Unique().Required(),
+		edge.From("user", User.Type).Ref("action_outcomes").Unique().Required().Immutable(),
 	}
 }
 

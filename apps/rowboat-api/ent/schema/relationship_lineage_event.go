@@ -15,7 +15,7 @@ import (
 type RelationshipLineageEvent struct{ ent.Schema }
 
 // Mixin adds the common identifier and audit timestamps.
-func (RelationshipLineageEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RelationshipLineageEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields defines a compensatable identity-graph transition and its moved refs.
 func (RelationshipLineageEvent) Fields() []ent.Field {
@@ -35,9 +35,9 @@ func (RelationshipLineageEvent) Fields() []ent.Field {
 // Edges binds lineage to its tenant, reviewed candidate, and acting user.
 func (RelationshipLineageEvent) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("workspace", RevenueWorkspace.Type).Ref("relationship_lineage_events").Unique().Required(),
+		edge.From("workspace", RevenueWorkspace.Type).Ref("relationship_lineage_events").Unique().Required().Immutable(),
 		edge.From("candidate", RelationshipIdentityCandidate.Type).Ref("lineage_events").Unique().Required(),
-		edge.From("user", User.Type).Ref("relationship_lineage_events").Unique().Required(),
+		edge.From("user", User.Type).Ref("relationship_lineage_events").Unique().Required().Immutable(),
 	}
 }
 

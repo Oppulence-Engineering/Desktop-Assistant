@@ -17,7 +17,7 @@ import (
 type RelationshipIdentity struct{ ent.Schema }
 
 // Mixin adds the shared immutable ID and timestamp fields.
-func (RelationshipIdentity) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RelationshipIdentity) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields defines the normalized identity anchor fields.
 func (RelationshipIdentity) Fields() []ent.Field {
@@ -37,11 +37,11 @@ func (RelationshipIdentity) Fields() []ent.Field {
 func (RelationshipIdentity) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("relationship_identities").Unique().Required(),
+			Ref("relationship_identities").Unique().Required().Immutable(),
 		edge.From("relationship", Relationship.Type).
 			Ref("identities").Unique().Required(),
 		edge.From("user", User.Type).
-			Ref("relationship_identities").Unique().Required(),
+			Ref("relationship_identities").Unique().Required().Immutable(),
 	}
 }
 

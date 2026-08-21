@@ -181,7 +181,9 @@ func (_c *PersonIdentityCreate) Mutation() *PersonIdentityMutation {
 
 // Save creates the PersonIdentity in the database.
 func (_c *PersonIdentityCreate) Save(ctx context.Context) (*PersonIdentity, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -208,12 +210,18 @@ func (_c *PersonIdentityCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *PersonIdentityCreate) defaults() {
+func (_c *PersonIdentityCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if personidentity.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized personidentity.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := personidentity.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if personidentity.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized personidentity.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := personidentity.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -222,9 +230,13 @@ func (_c *PersonIdentityCreate) defaults() {
 		_c.mutation.SetConfidence(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if personidentity.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized personidentity.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := personidentity.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

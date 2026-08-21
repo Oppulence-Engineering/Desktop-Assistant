@@ -540,6 +540,14 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{ApprovalTokensColumns[4]},
 			},
+			{
+				Name:    "approvaltoken_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{ApprovalTokensColumns[8]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "consumed = false",
+				},
+			},
 		},
 	}
 	// BackgroundTasksColumns holds the columns for the "background_tasks" table.
@@ -813,6 +821,9 @@ var (
 				Name:    "backgroundtaskschedulestate_lease_expires_at",
 				Unique:  false,
 				Columns: []*schema.Column{BackgroundTaskScheduleStatesColumns[10]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "last_run_id = '' AND lease_owner <> '' AND lease_expires_at IS NOT NULL",
+				},
 			},
 			{
 				Name:    "backgroundtaskschedulestate_last_run_id",
@@ -868,9 +879,12 @@ var (
 				Columns: []*schema.Column{CloudEventsColumns[3], CloudEventsColumns[12], CloudEventsColumns[18]},
 			},
 			{
-				Name:    "cloudevent_routing_status",
+				Name:    "cloudevent_routing_status_received_at",
 				Unique:  false,
-				Columns: []*schema.Column{CloudEventsColumns[13]},
+				Columns: []*schema.Column{CloudEventsColumns[13], CloudEventsColumns[16]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "routing_status = 'pending'",
+				},
 			},
 			{
 				Name:    "cloudevent_received_at",
@@ -2180,7 +2194,7 @@ var (
 		{Name: "evidence_refs", Type: field.TypeJSON},
 		{Name: "urgency_band", Type: field.TypeString},
 		{Name: "rank_score", Type: field.TypeInt},
-		{Name: "rank_factors_json", Type: field.TypeString, Size: 2147483647},
+		{Name: "rank_factors_json", Type: field.TypeJSON},
 		{Name: "source_requirements", Type: field.TypeJSON},
 		{Name: "recommendation_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "recommendation_revision", Type: field.TypeInt, Default: 0},
@@ -2653,9 +2667,20 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "relationshipprojectionjob_status_next_attempt_at_lease_expires_at",
+				Name:    "relationshipprojectionjob_status_next_attempt_at",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipProjectionJobsColumns[4], RelationshipProjectionJobsColumns[9], RelationshipProjectionJobsColumns[11]},
+				Columns: []*schema.Column{RelationshipProjectionJobsColumns[4], RelationshipProjectionJobsColumns[9]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "status IN ('pending', 'failed')",
+				},
+			},
+			{
+				Name:    "relationshipprojectionjob_status_lease_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{RelationshipProjectionJobsColumns[4], RelationshipProjectionJobsColumns[11]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "status = 'running' AND lease_expires_at IS NOT NULL",
+				},
 			},
 			{
 				Name:    "relationshipprojectionjob_status_created_at_relationship_id",
@@ -3012,7 +3037,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "status", Type: field.TypeString, Default: "pending"},
-		{Name: "active_claim", Type: field.TypeString, Unique: true, Nullable: true},
+		{Name: "active_claim", Type: field.TypeString, Nullable: true},
 		{Name: "mode", Type: field.TypeString, Default: "local"},
 		{Name: "lookback_days", Type: field.TypeInt, Default: 90},
 		{Name: "threads_seen", Type: field.TypeInt, Default: 0},
@@ -3051,6 +3076,14 @@ var (
 				Name:    "revenueleakscan_status_revenue_workspace_id",
 				Unique:  false,
 				Columns: []*schema.Column{RevenueLeakScansColumns[3], RevenueLeakScansColumns[16]},
+			},
+			{
+				Name:    "revenueleakscan_active_claim",
+				Unique:  true,
+				Columns: []*schema.Column{RevenueLeakScansColumns[4]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "active_claim IS NOT NULL",
+				},
 			},
 		},
 	}
@@ -3098,6 +3131,9 @@ var (
 				Name:    "revenueoutboxevent_delivery_status_next_attempt_at",
 				Unique:  false,
 				Columns: []*schema.Column{RevenueOutboxEventsColumns[11], RevenueOutboxEventsColumns[13]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "delivery_status IN ('pending', 'failed')",
+				},
 			},
 		},
 	}

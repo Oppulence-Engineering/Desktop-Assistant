@@ -20,7 +20,7 @@ import (
 type GoogleWatch struct{ ent.Schema }
 
 // Mixin of the GoogleWatch.
-func (GoogleWatch) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (GoogleWatch) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Annotations of the GoogleWatch.
 func (GoogleWatch) Annotations() []schema.Annotation {
@@ -58,7 +58,7 @@ func (GoogleWatch) Fields() []ent.Field {
 // Edges of the GoogleWatch.
 func (GoogleWatch) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("google_watches").Unique().Required(),
+		edge.From("user", User.Type).Ref("google_watches").Unique().Required().Immutable(),
 	}
 }
 

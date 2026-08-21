@@ -5,6 +5,7 @@ package creditledger
 import (
 	"time"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
@@ -66,7 +67,14 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+// Note that the variables below are initialized by the runtime
+// package on the initialization of the application. Therefore,
+// it should be imported in the main as follows:
+//
+//	import _ "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/runtime"
 var (
+	Hooks  [1]ent.Hook
+	Policy ent.Policy
 	// DefaultTs holds the default value on creation for the "ts" field.
 	DefaultTs func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.

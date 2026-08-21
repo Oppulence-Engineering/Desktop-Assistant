@@ -18,6 +18,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jackc/pgx/v5 v5.9.2
+	github.com/lib/pq v1.10.9
 	github.com/ogen-go/ogen v1.20.3
 	github.com/prometheus/client_golang v1.23.2
 	github.com/quasilyte/go-ruleguard/dsl v0.3.23
@@ -85,7 +86,7 @@ require (
 )
 
 require (
-	ariga.io/atlas v1.2.0 // indirect
+	ariga.io/atlas v1.2.0
 	github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go v0.0.0
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect

@@ -61,7 +61,7 @@ func (SubscriptionHistory) Annotations() []schema.Annotation {
 	return []schema.Annotation{entgql.Annotation{Skip: entgql.SkipAll}, enthistory.Annotations{IsHistory: true, Triggers: []enthistory.OpType{enthistory.OpTypeInsert, enthistory.OpTypeUpdate, enthistory.OpTypeDelete}}}
 }
 func (SubscriptionHistory) Mixin() []ent.Mixin {
-	return []ent.Mixin{mixin.BaseMixin{}}
+	return []ent.Mixin{mixin.UserTenantMixin{}}
 }
 func (SubscriptionHistory) Indexes() []ent.Index {
 	return []ent.Index{index.Fields("history_time")}

@@ -14,7 +14,7 @@ import (
 type RevenueTrustEvent struct{ ent.Schema }
 
 // Mixin adds the common identifier and audit timestamps.
-func (RevenueTrustEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RevenueTrustEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields defines bounded, content-free trust and activation dimensions.
 func (RevenueTrustEvent) Fields() []ent.Field {
@@ -34,8 +34,8 @@ func (RevenueTrustEvent) Fields() []ent.Field {
 // Edges bind the event to its tenant and actor plus optional governed objects.
 func (RevenueTrustEvent) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("workspace", RevenueWorkspace.Type).Ref("trust_events").Unique().Required(),
-		edge.From("user", User.Type).Ref("revenue_trust_events").Unique().Required(),
+		edge.From("workspace", RevenueWorkspace.Type).Ref("trust_events").Unique().Required().Immutable(),
+		edge.From("user", User.Type).Ref("revenue_trust_events").Unique().Required().Immutable(),
 		edge.From("relationship", Relationship.Type).Ref("trust_events").Unique(),
 		edge.From("action", RevenueAction.Type).Ref("trust_events").Unique(),
 	}

@@ -50,6 +50,7 @@ ARCH_GO_VERSION := v2.1.2
 RULEGUARD_VERSION := v0.4.5
 CONFTEST_VERSION := v0.69.0
 AST_GREP_VERSION := 0.45.1
+ATLAS_VERSION := v1.3.0
 
 GOLANGCI_LINT ?= go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 GOIMPORTS ?= go run golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
@@ -59,6 +60,7 @@ ARCH_GO ?= go run github.com/arch-go/arch-go/v2@$(ARCH_GO_VERSION)
 RULEGUARD ?= go run github.com/quasilyte/go-ruleguard/cmd/ruleguard@$(RULEGUARD_VERSION)
 CONFTEST ?= go run github.com/open-policy-agent/conftest@$(CONFTEST_VERSION)
 AST_GREP ?= npm exec --yes --package=@ast-grep/cli@$(AST_GREP_VERSION) -- ast-grep
+ATLAS ?= atlas
 
 # Handwritten Go only. Generated Ent, gqlgen, protobuf, and OpenAPI output must
 # be changed through its source and generator, never formatted by hand.
@@ -106,7 +108,19 @@ structural:
 .PHONY: policy
 policy:
 	$(CONFTEST) test ../../.github/workflows/rowboat-api-quality.yml --policy policy
+	$(CONFTEST) test ../../.github/workflows/rowboat-api-migrations.yml --policy policy
 	$(CONFTEST) verify --policy policy
+
+.PHONY: migration-validate
+migration-validate:
+	go run ./cmd/migrate validate
+
+.PHONY: migration-lint
+migration-lint:
+	$(ATLAS) migrate lint \
+		--dev-url "docker://postgres/16-alpine/rowboat?search_path=public" \
+		--dir "file://migrations/postgres" \
+		--latest 1
 
 .PHONY: mod-verify
 mod-verify:
@@ -119,10 +133,10 @@ security:
 	$(GITLEAKS) git ../../ --gitleaks-ignore-path ../../.gitleaksignore --redact --no-banner
 
 .PHONY: verify
-verify: fmt-check lint architecture rowboatlint ruleguard structural policy mod-verify test
+verify: fmt-check lint architecture rowboatlint ruleguard structural policy migration-validate mod-verify test
 
 .PHONY: verify-ci
-verify-ci: verify test-race security
+verify-ci: verify migration-lint test-race security
 
 .PHONY: tidy
 tidy:
@@ -198,6 +212,8 @@ install-quality-tools:
 	go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@$(RULEGUARD_VERSION)
 	go install github.com/open-policy-agent/conftest@$(CONFTEST_VERSION)
 	npm install --global @ast-grep/cli@$(AST_GREP_VERSION)
+	curl -sSf https://atlasgo.sh | ATLAS_VERSION=$(ATLAS_VERSION) sh -s -- --community --yes --no-install --output "$(GOBIN)/atlas"
+	chmod +x "$(GOBIN)/atlas"
 
 .PHONY: generate-check
 generate-check: generate
@@ -208,6 +224,15 @@ generate-check: generate
 .PHONY: migrate-dump
 migrate-dump:
 	go run ./cmd/migrate dump $(name)
+
+.PHONY: migrate-diff
+migrate-diff:
+	@test -n "$(name)" || { echo "usage: make migrate-diff name=short_description"; exit 2; }
+	MIGRATION_DEV_URL="$(MIGRATION_DEV_URL)" go run ./cmd/migrate diff "$$(date -u +%Y%m%d%H%M%S)_$(name)"
+
+.PHONY: migrate-hash
+migrate-hash:
+	go run ./cmd/migrate hash
 
 .PHONY: migrate-apply
 migrate-apply:

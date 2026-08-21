@@ -14,8 +14,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipreviewacknowledgement"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -93,17 +91,6 @@ func (_u *RelationshipReviewAcknowledgementUpdate) SetNillableAcknowledgedAt(v *
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RelationshipReviewAcknowledgementUpdate) SetWorkspaceID(id uuid.UUID) *RelationshipReviewAcknowledgementUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipReviewAcknowledgementUpdate) SetWorkspace(v *RevenueWorkspace) *RelationshipReviewAcknowledgementUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetRelationshipID sets the "relationship" edge to the Relationship entity by ID.
 func (_u *RelationshipReviewAcknowledgementUpdate) SetRelationshipID(id uuid.UUID) *RelationshipReviewAcknowledgementUpdate {
 	_u.mutation.SetRelationshipID(id)
@@ -115,26 +102,9 @@ func (_u *RelationshipReviewAcknowledgementUpdate) SetRelationship(v *Relationsh
 	return _u.SetRelationshipID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RelationshipReviewAcknowledgementUpdate) SetUserID(id uuid.UUID) *RelationshipReviewAcknowledgementUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RelationshipReviewAcknowledgementUpdate) SetUser(v *User) *RelationshipReviewAcknowledgementUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RelationshipReviewAcknowledgementMutation object of the builder.
 func (_u *RelationshipReviewAcknowledgementUpdate) Mutation() *RelationshipReviewAcknowledgementMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipReviewAcknowledgementUpdate) ClearWorkspace() *RelationshipReviewAcknowledgementUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
 }
 
 // ClearRelationship clears the "relationship" edge to the Relationship entity.
@@ -143,15 +113,11 @@ func (_u *RelationshipReviewAcknowledgementUpdate) ClearRelationship() *Relation
 	return _u
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RelationshipReviewAcknowledgementUpdate) ClearUser() *RelationshipReviewAcknowledgementUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *RelationshipReviewAcknowledgementUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -178,11 +144,15 @@ func (_u *RelationshipReviewAcknowledgementUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RelationshipReviewAcknowledgementUpdate) defaults() {
+func (_u *RelationshipReviewAcknowledgementUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if relationshipreviewacknowledgement.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipreviewacknowledgement.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipreviewacknowledgement.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -234,35 +204,6 @@ func (_u *RelationshipReviewAcknowledgementUpdate) sqlSave(ctx context.Context) 
 	if value, ok := _u.mutation.AcknowledgedAt(); ok {
 		_spec.SetField(relationshipreviewacknowledgement.FieldAcknowledgedAt, field.TypeTime, value)
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipreviewacknowledgement.WorkspaceTable,
-			Columns: []string{relationshipreviewacknowledgement.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipreviewacknowledgement.WorkspaceTable,
-			Columns: []string{relationshipreviewacknowledgement.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.RelationshipCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -285,35 +226,6 @@ func (_u *RelationshipReviewAcknowledgementUpdate) sqlSave(ctx context.Context) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipreviewacknowledgement.UserTable,
-			Columns: []string{relationshipreviewacknowledgement.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipreviewacknowledgement.UserTable,
-			Columns: []string{relationshipreviewacknowledgement.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -402,17 +314,6 @@ func (_u *RelationshipReviewAcknowledgementUpdateOne) SetNillableAcknowledgedAt(
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RelationshipReviewAcknowledgementUpdateOne) SetWorkspaceID(id uuid.UUID) *RelationshipReviewAcknowledgementUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipReviewAcknowledgementUpdateOne) SetWorkspace(v *RevenueWorkspace) *RelationshipReviewAcknowledgementUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetRelationshipID sets the "relationship" edge to the Relationship entity by ID.
 func (_u *RelationshipReviewAcknowledgementUpdateOne) SetRelationshipID(id uuid.UUID) *RelationshipReviewAcknowledgementUpdateOne {
 	_u.mutation.SetRelationshipID(id)
@@ -424,37 +325,14 @@ func (_u *RelationshipReviewAcknowledgementUpdateOne) SetRelationship(v *Relatio
 	return _u.SetRelationshipID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RelationshipReviewAcknowledgementUpdateOne) SetUserID(id uuid.UUID) *RelationshipReviewAcknowledgementUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RelationshipReviewAcknowledgementUpdateOne) SetUser(v *User) *RelationshipReviewAcknowledgementUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RelationshipReviewAcknowledgementMutation object of the builder.
 func (_u *RelationshipReviewAcknowledgementUpdateOne) Mutation() *RelationshipReviewAcknowledgementMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipReviewAcknowledgementUpdateOne) ClearWorkspace() *RelationshipReviewAcknowledgementUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
 // ClearRelationship clears the "relationship" edge to the Relationship entity.
 func (_u *RelationshipReviewAcknowledgementUpdateOne) ClearRelationship() *RelationshipReviewAcknowledgementUpdateOne {
 	_u.mutation.ClearRelationship()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RelationshipReviewAcknowledgementUpdateOne) ClearUser() *RelationshipReviewAcknowledgementUpdateOne {
-	_u.mutation.ClearUser()
 	return _u
 }
 
@@ -473,7 +351,9 @@ func (_u *RelationshipReviewAcknowledgementUpdateOne) Select(field string, field
 
 // Save executes the query and returns the updated RelationshipReviewAcknowledgement entity.
 func (_u *RelationshipReviewAcknowledgementUpdateOne) Save(ctx context.Context) (*RelationshipReviewAcknowledgement, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -500,11 +380,15 @@ func (_u *RelationshipReviewAcknowledgementUpdateOne) ExecX(ctx context.Context)
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RelationshipReviewAcknowledgementUpdateOne) defaults() {
+func (_u *RelationshipReviewAcknowledgementUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if relationshipreviewacknowledgement.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipreviewacknowledgement.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipreviewacknowledgement.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -573,35 +457,6 @@ func (_u *RelationshipReviewAcknowledgementUpdateOne) sqlSave(ctx context.Contex
 	if value, ok := _u.mutation.AcknowledgedAt(); ok {
 		_spec.SetField(relationshipreviewacknowledgement.FieldAcknowledgedAt, field.TypeTime, value)
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipreviewacknowledgement.WorkspaceTable,
-			Columns: []string{relationshipreviewacknowledgement.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipreviewacknowledgement.WorkspaceTable,
-			Columns: []string{relationshipreviewacknowledgement.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.RelationshipCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -624,35 +479,6 @@ func (_u *RelationshipReviewAcknowledgementUpdateOne) sqlSave(ctx context.Contex
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipreviewacknowledgement.UserTable,
-			Columns: []string{relationshipreviewacknowledgement.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipreviewacknowledgement.UserTable,
-			Columns: []string{relationshipreviewacknowledgement.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

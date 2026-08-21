@@ -15,8 +15,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipstatesnapshot"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -147,17 +145,6 @@ func (_u *RelationshipStateSnapshotUpdate) AppendAssertionIds(v []string) *Relat
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RelationshipStateSnapshotUpdate) SetWorkspaceID(id uuid.UUID) *RelationshipStateSnapshotUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipStateSnapshotUpdate) SetWorkspace(v *RevenueWorkspace) *RelationshipStateSnapshotUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetRelationshipID sets the "relationship" edge to the Relationship entity by ID.
 func (_u *RelationshipStateSnapshotUpdate) SetRelationshipID(id uuid.UUID) *RelationshipStateSnapshotUpdate {
 	_u.mutation.SetRelationshipID(id)
@@ -169,26 +156,9 @@ func (_u *RelationshipStateSnapshotUpdate) SetRelationship(v *Relationship) *Rel
 	return _u.SetRelationshipID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RelationshipStateSnapshotUpdate) SetUserID(id uuid.UUID) *RelationshipStateSnapshotUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RelationshipStateSnapshotUpdate) SetUser(v *User) *RelationshipStateSnapshotUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RelationshipStateSnapshotMutation object of the builder.
 func (_u *RelationshipStateSnapshotUpdate) Mutation() *RelationshipStateSnapshotMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipStateSnapshotUpdate) ClearWorkspace() *RelationshipStateSnapshotUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
 }
 
 // ClearRelationship clears the "relationship" edge to the Relationship entity.
@@ -197,15 +167,11 @@ func (_u *RelationshipStateSnapshotUpdate) ClearRelationship() *RelationshipStat
 	return _u
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RelationshipStateSnapshotUpdate) ClearUser() *RelationshipStateSnapshotUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *RelationshipStateSnapshotUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -232,11 +198,15 @@ func (_u *RelationshipStateSnapshotUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RelationshipStateSnapshotUpdate) defaults() {
+func (_u *RelationshipStateSnapshotUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if relationshipstatesnapshot.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipstatesnapshot.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipstatesnapshot.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -320,35 +290,6 @@ func (_u *RelationshipStateSnapshotUpdate) sqlSave(ctx context.Context) (_node i
 			sqljson.Append(u, relationshipstatesnapshot.FieldAssertionIds, value)
 		})
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipstatesnapshot.WorkspaceTable,
-			Columns: []string{relationshipstatesnapshot.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipstatesnapshot.WorkspaceTable,
-			Columns: []string{relationshipstatesnapshot.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.RelationshipCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -371,35 +312,6 @@ func (_u *RelationshipStateSnapshotUpdate) sqlSave(ctx context.Context) (_node i
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipstatesnapshot.UserTable,
-			Columns: []string{relationshipstatesnapshot.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipstatesnapshot.UserTable,
-			Columns: []string{relationshipstatesnapshot.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -541,17 +453,6 @@ func (_u *RelationshipStateSnapshotUpdateOne) AppendAssertionIds(v []string) *Re
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RelationshipStateSnapshotUpdateOne) SetWorkspaceID(id uuid.UUID) *RelationshipStateSnapshotUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipStateSnapshotUpdateOne) SetWorkspace(v *RevenueWorkspace) *RelationshipStateSnapshotUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetRelationshipID sets the "relationship" edge to the Relationship entity by ID.
 func (_u *RelationshipStateSnapshotUpdateOne) SetRelationshipID(id uuid.UUID) *RelationshipStateSnapshotUpdateOne {
 	_u.mutation.SetRelationshipID(id)
@@ -563,37 +464,14 @@ func (_u *RelationshipStateSnapshotUpdateOne) SetRelationship(v *Relationship) *
 	return _u.SetRelationshipID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RelationshipStateSnapshotUpdateOne) SetUserID(id uuid.UUID) *RelationshipStateSnapshotUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RelationshipStateSnapshotUpdateOne) SetUser(v *User) *RelationshipStateSnapshotUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RelationshipStateSnapshotMutation object of the builder.
 func (_u *RelationshipStateSnapshotUpdateOne) Mutation() *RelationshipStateSnapshotMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipStateSnapshotUpdateOne) ClearWorkspace() *RelationshipStateSnapshotUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
 // ClearRelationship clears the "relationship" edge to the Relationship entity.
 func (_u *RelationshipStateSnapshotUpdateOne) ClearRelationship() *RelationshipStateSnapshotUpdateOne {
 	_u.mutation.ClearRelationship()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RelationshipStateSnapshotUpdateOne) ClearUser() *RelationshipStateSnapshotUpdateOne {
-	_u.mutation.ClearUser()
 	return _u
 }
 
@@ -612,7 +490,9 @@ func (_u *RelationshipStateSnapshotUpdateOne) Select(field string, fields ...str
 
 // Save executes the query and returns the updated RelationshipStateSnapshot entity.
 func (_u *RelationshipStateSnapshotUpdateOne) Save(ctx context.Context) (*RelationshipStateSnapshot, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -639,11 +519,15 @@ func (_u *RelationshipStateSnapshotUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RelationshipStateSnapshotUpdateOne) defaults() {
+func (_u *RelationshipStateSnapshotUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if relationshipstatesnapshot.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipstatesnapshot.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipstatesnapshot.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -744,35 +628,6 @@ func (_u *RelationshipStateSnapshotUpdateOne) sqlSave(ctx context.Context) (_nod
 			sqljson.Append(u, relationshipstatesnapshot.FieldAssertionIds, value)
 		})
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipstatesnapshot.WorkspaceTable,
-			Columns: []string{relationshipstatesnapshot.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipstatesnapshot.WorkspaceTable,
-			Columns: []string{relationshipstatesnapshot.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.RelationshipCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -795,35 +650,6 @@ func (_u *RelationshipStateSnapshotUpdateOne) sqlSave(ctx context.Context) (_nod
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipstatesnapshot.UserTable,
-			Columns: []string{relationshipstatesnapshot.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipstatesnapshot.UserTable,
-			Columns: []string{relationshipstatesnapshot.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

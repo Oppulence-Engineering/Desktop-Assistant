@@ -58966,7 +58966,7 @@ type RelationshipAttentionItemMutation struct {
 	urgency_band                  *string
 	rank_score                    *int
 	addrank_score                 *int
-	rank_factors_json             *string
+	rank_factors_json             *map[string]int
 	source_requirements           *[]string
 	appendsource_requirements     []string
 	recommendation_id             *uuid.UUID
@@ -59521,12 +59521,12 @@ func (m *RelationshipAttentionItemMutation) ResetRankScore() {
 }
 
 // SetRankFactorsJSON sets the "rank_factors_json" field.
-func (m *RelationshipAttentionItemMutation) SetRankFactorsJSON(s string) {
-	m.rank_factors_json = &s
+func (m *RelationshipAttentionItemMutation) SetRankFactorsJSON(value map[string]int) {
+	m.rank_factors_json = &value
 }
 
 // RankFactorsJSON returns the value of the "rank_factors_json" field in the mutation.
-func (m *RelationshipAttentionItemMutation) RankFactorsJSON() (r string, exists bool) {
+func (m *RelationshipAttentionItemMutation) RankFactorsJSON() (r map[string]int, exists bool) {
 	v := m.rank_factors_json
 	if v == nil {
 		return
@@ -59537,7 +59537,7 @@ func (m *RelationshipAttentionItemMutation) RankFactorsJSON() (r string, exists 
 // OldRankFactorsJSON returns the old "rank_factors_json" field's value of the RelationshipAttentionItem entity.
 // If the RelationshipAttentionItem object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RelationshipAttentionItemMutation) OldRankFactorsJSON(ctx context.Context) (v string, err error) {
+func (m *RelationshipAttentionItemMutation) OldRankFactorsJSON(ctx context.Context) (v map[string]int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRankFactorsJSON is only allowed on UpdateOne operations")
 	}
@@ -60825,7 +60825,7 @@ func (m *RelationshipAttentionItemMutation) SetField(name string, value ent.Valu
 		m.SetRankScore(v)
 		return nil
 	case relationshipattentionitem.FieldRankFactorsJSON:
-		v, ok := value.(string)
+		v, ok := value.(map[string]int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}

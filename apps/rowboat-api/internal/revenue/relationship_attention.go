@@ -442,10 +442,6 @@ func (s *Service) persistAttentionCandidates(ctx context.Context, ws *ent.Revenu
 	for _, candidate := range candidates {
 		stableKey := attentionStableKey(candidate)
 		active[stableKey] = true
-		rawFactors, err := json.Marshal(candidate.RankFactors)
-		if err != nil {
-			return err
-		}
 		materialHash, err := attentionMaterialHash(candidate)
 		if err != nil {
 			return err
@@ -458,7 +454,7 @@ func (s *Service) persistAttentionCandidates(ctx context.Context, ws *ent.Revenu
 			create := s.client.RelationshipAttentionItem.Create().SetWorkspace(ws).SetRelationship(candidate.Relationship).SetUser(u).
 				SetStableKey(stableKey).SetReasonCode(candidate.ReasonCode).SetExplanation(candidate.Explanation).
 				SetTriggeringObjectRef(candidate.TriggeringObjectRef).SetEvidenceRefs(normalizeProjectionTriggerRefs(candidate.EvidenceRefs)).
-				SetUrgencyBand(candidate.UrgencyBand).SetRankScore(candidate.RankScore).SetRankFactorsJSON(string(rawFactors)).
+				SetUrgencyBand(candidate.UrgencyBand).SetRankScore(candidate.RankScore).SetRankFactorsJSON(candidate.RankFactors).
 				SetSourceRequirements(normalizeProjectionTriggerRefs(candidate.SourceRequirements)).
 				SetDetectorVersion(relationshipAttentionDetectorVersion).SetProjectorVersion(relationshipProjectorVersion).
 				SetRelationshipStateVersion(candidate.Relationship.StateVersion).SetMaterialHash(materialHash).SetLastDetectedAt(now).
@@ -474,7 +470,7 @@ func (s *Service) persistAttentionCandidates(ctx context.Context, ws *ent.Revenu
 		}
 		update := item.Update().SetLastDetectedAt(now).SetExplanation(candidate.Explanation).
 			SetEvidenceRefs(normalizeProjectionTriggerRefs(candidate.EvidenceRefs)).SetRankScore(candidate.RankScore).
-			SetUrgencyBand(candidate.UrgencyBand).SetRankFactorsJSON(string(rawFactors)).
+			SetUrgencyBand(candidate.UrgencyBand).SetRankFactorsJSON(candidate.RankFactors).
 			SetSourceRequirements(normalizeProjectionTriggerRefs(candidate.SourceRequirements)).
 			SetNillableRecommendationID(candidate.RecommendationID).SetRecommendationRevision(candidate.RecommendationRevision).
 			SetNillableOwnerID(candidate.OwnerID).SetNillableExpiresAt(candidate.ExpiresAt)

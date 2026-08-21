@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/viewer"
 	"github.com/google/uuid"
 )
 
@@ -26,6 +27,7 @@ type revenueWorkspaceAccess struct {
 
 // WithUser returns a context carrying the authenticated user.
 func WithUser(ctx context.Context, u *ent.User) context.Context {
+	ctx = viewer.WithUserID(ctx, u.ID)
 	ctx = context.WithValue(ctx, userKey{}, u)
 	// Workspace authorization is request/actor-specific. Always replace the
 	// grant set when identity changes so inherited contexts cannot leak grants.
@@ -43,6 +45,7 @@ func UserFromCtx(ctx context.Context) (*ent.User, bool) {
 // WithInternal marks a context as an internal (server-to-server) caller,
 // allowing it to bypass the per-user query scope.
 func WithInternal(ctx context.Context) context.Context {
+	ctx = viewer.WithInternal(ctx)
 	return context.WithValue(ctx, internalKey{}, true)
 }
 
@@ -52,6 +55,7 @@ func WithInternal(ctx context.Context) context.Context {
 // authorized the operation. Tenant hooks intentionally let a user identity win
 // over WithInternal, so this separate helper makes the bypass explicit.
 func WithInternalOnly(ctx context.Context) context.Context {
+	ctx = viewer.WithoutUser(ctx)
 	ctx = context.WithValue(ctx, userKey{}, (*ent.User)(nil))
 	return WithInternal(ctx)
 }

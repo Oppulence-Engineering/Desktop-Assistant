@@ -14,8 +14,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -114,17 +112,6 @@ func (_u *ActionOutcomeUpdate) ClearMetadataJSON() *ActionOutcomeUpdate {
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *ActionOutcomeUpdate) SetWorkspaceID(id uuid.UUID) *ActionOutcomeUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *ActionOutcomeUpdate) SetWorkspace(v *RevenueWorkspace) *ActionOutcomeUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetActionID sets the "action" edge to the RevenueAction entity by ID.
 func (_u *ActionOutcomeUpdate) SetActionID(id uuid.UUID) *ActionOutcomeUpdate {
 	_u.mutation.SetActionID(id)
@@ -136,26 +123,9 @@ func (_u *ActionOutcomeUpdate) SetAction(v *RevenueAction) *ActionOutcomeUpdate 
 	return _u.SetActionID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *ActionOutcomeUpdate) SetUserID(id uuid.UUID) *ActionOutcomeUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *ActionOutcomeUpdate) SetUser(v *User) *ActionOutcomeUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the ActionOutcomeMutation object of the builder.
 func (_u *ActionOutcomeUpdate) Mutation() *ActionOutcomeMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *ActionOutcomeUpdate) ClearWorkspace() *ActionOutcomeUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
 }
 
 // ClearAction clears the "action" edge to the RevenueAction entity.
@@ -164,15 +134,11 @@ func (_u *ActionOutcomeUpdate) ClearAction() *ActionOutcomeUpdate {
 	return _u
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *ActionOutcomeUpdate) ClearUser() *ActionOutcomeUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *ActionOutcomeUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -199,11 +165,15 @@ func (_u *ActionOutcomeUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *ActionOutcomeUpdate) defaults() {
+func (_u *ActionOutcomeUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if actionoutcome.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized actionoutcome.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := actionoutcome.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -273,35 +243,6 @@ func (_u *ActionOutcomeUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	if _u.mutation.MetadataJSONCleared() {
 		_spec.ClearField(actionoutcome.FieldMetadataJSON, field.TypeString)
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   actionoutcome.WorkspaceTable,
-			Columns: []string{actionoutcome.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   actionoutcome.WorkspaceTable,
-			Columns: []string{actionoutcome.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.ActionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -324,35 +265,6 @@ func (_u *ActionOutcomeUpdate) sqlSave(ctx context.Context) (_node int, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   actionoutcome.UserTable,
-			Columns: []string{actionoutcome.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   actionoutcome.UserTable,
-			Columns: []string{actionoutcome.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -462,17 +374,6 @@ func (_u *ActionOutcomeUpdateOne) ClearMetadataJSON() *ActionOutcomeUpdateOne {
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *ActionOutcomeUpdateOne) SetWorkspaceID(id uuid.UUID) *ActionOutcomeUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *ActionOutcomeUpdateOne) SetWorkspace(v *RevenueWorkspace) *ActionOutcomeUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetActionID sets the "action" edge to the RevenueAction entity by ID.
 func (_u *ActionOutcomeUpdateOne) SetActionID(id uuid.UUID) *ActionOutcomeUpdateOne {
 	_u.mutation.SetActionID(id)
@@ -484,37 +385,14 @@ func (_u *ActionOutcomeUpdateOne) SetAction(v *RevenueAction) *ActionOutcomeUpda
 	return _u.SetActionID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *ActionOutcomeUpdateOne) SetUserID(id uuid.UUID) *ActionOutcomeUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *ActionOutcomeUpdateOne) SetUser(v *User) *ActionOutcomeUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the ActionOutcomeMutation object of the builder.
 func (_u *ActionOutcomeUpdateOne) Mutation() *ActionOutcomeMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *ActionOutcomeUpdateOne) ClearWorkspace() *ActionOutcomeUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
 // ClearAction clears the "action" edge to the RevenueAction entity.
 func (_u *ActionOutcomeUpdateOne) ClearAction() *ActionOutcomeUpdateOne {
 	_u.mutation.ClearAction()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *ActionOutcomeUpdateOne) ClearUser() *ActionOutcomeUpdateOne {
-	_u.mutation.ClearUser()
 	return _u
 }
 
@@ -533,7 +411,9 @@ func (_u *ActionOutcomeUpdateOne) Select(field string, fields ...string) *Action
 
 // Save executes the query and returns the updated ActionOutcome entity.
 func (_u *ActionOutcomeUpdateOne) Save(ctx context.Context) (*ActionOutcome, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -560,11 +440,15 @@ func (_u *ActionOutcomeUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *ActionOutcomeUpdateOne) defaults() {
+func (_u *ActionOutcomeUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if actionoutcome.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized actionoutcome.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := actionoutcome.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -651,35 +535,6 @@ func (_u *ActionOutcomeUpdateOne) sqlSave(ctx context.Context) (_node *ActionOut
 	if _u.mutation.MetadataJSONCleared() {
 		_spec.ClearField(actionoutcome.FieldMetadataJSON, field.TypeString)
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   actionoutcome.WorkspaceTable,
-			Columns: []string{actionoutcome.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   actionoutcome.WorkspaceTable,
-			Columns: []string{actionoutcome.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.ActionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -702,35 +557,6 @@ func (_u *ActionOutcomeUpdateOne) sqlSave(ctx context.Context) (_node *ActionOut
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   actionoutcome.UserTable,
-			Columns: []string{actionoutcome.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   actionoutcome.UserTable,
-			Columns: []string{actionoutcome.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

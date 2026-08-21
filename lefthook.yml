@@ -76,12 +76,21 @@ pre-commit:
       priority: 1
       root: "apps/rowboat-api/"
       glob:
-        - "apps/rowboat-api/ent/schema/*.go"
-        - "apps/rowboat-api/ent/schema/mixin/*.go"
+        - "apps/rowboat-api/ent/schema/**/*.go"
         - "apps/rowboat-api/internal/gqlapi/gqlgen.yml"
         - "apps/rowboat-api/internal/gqlapi/extra.graphql"
       run: make ent-generate gql-generate sdk-generate
       stage_fixed: true
+    # Cheap API policy checks run on commits that can alter database contracts.
+    # Full verification remains the pre-push gate below.
+    rowboat-api-schema-policy:
+      priority: 30
+      root: "apps/rowboat-api/"
+      glob:
+        - "apps/rowboat-api/ent/schema/**/*.go"
+        - "apps/rowboat-api/migrations/postgres/**"
+        - "apps/rowboat-api/cmd/migrate/**/*.go"
+      run: make fmt-check architecture migration-validate
     perf-tool-vet:
       priority: 30
       glob: "tools/desktop-perf/**/*.go"

@@ -32154,21 +32154,6 @@ type RelationshipAttentionItemWhereInput struct {
 	RankScoreLT    *int  `json:"rankScoreLT,omitempty"`
 	RankScoreLTE   *int  `json:"rankScoreLTE,omitempty"`
 
-	// "rank_factors_json" field predicates.
-	RankFactorsJSON             *string  `json:"rankFactorsJSON,omitempty"`
-	RankFactorsJSONNEQ          *string  `json:"rankFactorsJSONNEQ,omitempty"`
-	RankFactorsJSONIn           []string `json:"rankFactorsJSONIn,omitempty"`
-	RankFactorsJSONNotIn        []string `json:"rankFactorsJSONNotIn,omitempty"`
-	RankFactorsJSONGT           *string  `json:"rankFactorsJSONGT,omitempty"`
-	RankFactorsJSONGTE          *string  `json:"rankFactorsJSONGTE,omitempty"`
-	RankFactorsJSONLT           *string  `json:"rankFactorsJSONLT,omitempty"`
-	RankFactorsJSONLTE          *string  `json:"rankFactorsJSONLTE,omitempty"`
-	RankFactorsJSONContains     *string  `json:"rankFactorsJSONContains,omitempty"`
-	RankFactorsJSONHasPrefix    *string  `json:"rankFactorsJSONHasPrefix,omitempty"`
-	RankFactorsJSONHasSuffix    *string  `json:"rankFactorsJSONHasSuffix,omitempty"`
-	RankFactorsJSONEqualFold    *string  `json:"rankFactorsJSONEqualFold,omitempty"`
-	RankFactorsJSONContainsFold *string  `json:"rankFactorsJSONContainsFold,omitempty"`
-
 	// "recommendation_id" field predicates.
 	RecommendationID       *uuid.UUID  `json:"recommendationID,omitempty"`
 	RecommendationIDNEQ    *uuid.UUID  `json:"recommendationIDNEQ,omitempty"`
@@ -32760,45 +32745,6 @@ func (i *RelationshipAttentionItemWhereInput) P() (predicate.RelationshipAttenti
 	}
 	if i.RankScoreLTE != nil {
 		predicates = append(predicates, relationshipattentionitem.RankScoreLTE(*i.RankScoreLTE))
-	}
-	if i.RankFactorsJSON != nil {
-		predicates = append(predicates, relationshipattentionitem.RankFactorsJSONEQ(*i.RankFactorsJSON))
-	}
-	if i.RankFactorsJSONNEQ != nil {
-		predicates = append(predicates, relationshipattentionitem.RankFactorsJSONNEQ(*i.RankFactorsJSONNEQ))
-	}
-	if len(i.RankFactorsJSONIn) > 0 {
-		predicates = append(predicates, relationshipattentionitem.RankFactorsJSONIn(i.RankFactorsJSONIn...))
-	}
-	if len(i.RankFactorsJSONNotIn) > 0 {
-		predicates = append(predicates, relationshipattentionitem.RankFactorsJSONNotIn(i.RankFactorsJSONNotIn...))
-	}
-	if i.RankFactorsJSONGT != nil {
-		predicates = append(predicates, relationshipattentionitem.RankFactorsJSONGT(*i.RankFactorsJSONGT))
-	}
-	if i.RankFactorsJSONGTE != nil {
-		predicates = append(predicates, relationshipattentionitem.RankFactorsJSONGTE(*i.RankFactorsJSONGTE))
-	}
-	if i.RankFactorsJSONLT != nil {
-		predicates = append(predicates, relationshipattentionitem.RankFactorsJSONLT(*i.RankFactorsJSONLT))
-	}
-	if i.RankFactorsJSONLTE != nil {
-		predicates = append(predicates, relationshipattentionitem.RankFactorsJSONLTE(*i.RankFactorsJSONLTE))
-	}
-	if i.RankFactorsJSONContains != nil {
-		predicates = append(predicates, relationshipattentionitem.RankFactorsJSONContains(*i.RankFactorsJSONContains))
-	}
-	if i.RankFactorsJSONHasPrefix != nil {
-		predicates = append(predicates, relationshipattentionitem.RankFactorsJSONHasPrefix(*i.RankFactorsJSONHasPrefix))
-	}
-	if i.RankFactorsJSONHasSuffix != nil {
-		predicates = append(predicates, relationshipattentionitem.RankFactorsJSONHasSuffix(*i.RankFactorsJSONHasSuffix))
-	}
-	if i.RankFactorsJSONEqualFold != nil {
-		predicates = append(predicates, relationshipattentionitem.RankFactorsJSONEqualFold(*i.RankFactorsJSONEqualFold))
-	}
-	if i.RankFactorsJSONContainsFold != nil {
-		predicates = append(predicates, relationshipattentionitem.RankFactorsJSONContainsFold(*i.RankFactorsJSONContainsFold))
 	}
 	if i.RecommendationID != nil {
 		predicates = append(predicates, relationshipattentionitem.RecommendationIDEQ(*i.RecommendationID))

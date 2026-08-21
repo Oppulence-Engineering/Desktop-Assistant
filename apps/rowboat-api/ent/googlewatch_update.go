@@ -13,8 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/google/uuid"
 )
 
 // GoogleWatchUpdate is the builder for updating GoogleWatch entities.
@@ -178,31 +176,16 @@ func (_u *GoogleWatchUpdate) ClearLastError() *GoogleWatchUpdate {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *GoogleWatchUpdate) SetUserID(id uuid.UUID) *GoogleWatchUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *GoogleWatchUpdate) SetUser(v *User) *GoogleWatchUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the GoogleWatchMutation object of the builder.
 func (_u *GoogleWatchUpdate) Mutation() *GoogleWatchMutation {
 	return _u.mutation
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *GoogleWatchUpdate) ClearUser() *GoogleWatchUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *GoogleWatchUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -229,11 +212,15 @@ func (_u *GoogleWatchUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *GoogleWatchUpdate) defaults() {
+func (_u *GoogleWatchUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if googlewatch.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized googlewatch.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := googlewatch.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -307,35 +294,6 @@ func (_u *GoogleWatchUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if _u.mutation.LastErrorCleared() {
 		_spec.ClearField(googlewatch.FieldLastError, field.TypeString)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   googlewatch.UserTable,
-			Columns: []string{googlewatch.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   googlewatch.UserTable,
-			Columns: []string{googlewatch.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -505,26 +463,9 @@ func (_u *GoogleWatchUpdateOne) ClearLastError() *GoogleWatchUpdateOne {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *GoogleWatchUpdateOne) SetUserID(id uuid.UUID) *GoogleWatchUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *GoogleWatchUpdateOne) SetUser(v *User) *GoogleWatchUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the GoogleWatchMutation object of the builder.
 func (_u *GoogleWatchUpdateOne) Mutation() *GoogleWatchMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *GoogleWatchUpdateOne) ClearUser() *GoogleWatchUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the GoogleWatchUpdate builder.
@@ -542,7 +483,9 @@ func (_u *GoogleWatchUpdateOne) Select(field string, fields ...string) *GoogleWa
 
 // Save executes the query and returns the updated GoogleWatch entity.
 func (_u *GoogleWatchUpdateOne) Save(ctx context.Context) (*GoogleWatch, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -569,11 +512,15 @@ func (_u *GoogleWatchUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *GoogleWatchUpdateOne) defaults() {
+func (_u *GoogleWatchUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if googlewatch.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized googlewatch.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := googlewatch.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -664,35 +611,6 @@ func (_u *GoogleWatchUpdateOne) sqlSave(ctx context.Context) (_node *GoogleWatch
 	}
 	if _u.mutation.LastErrorCleared() {
 		_spec.ClearField(googlewatch.FieldLastError, field.TypeString)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   googlewatch.UserTable,
-			Columns: []string{googlewatch.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   googlewatch.UserTable,
-			Columns: []string{googlewatch.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &GoogleWatch{config: _u.config}
 	_spec.Assign = _node.assignValues

@@ -3,7 +3,9 @@ package db
 import (
 	"context"
 	"errors"
+	"time"
 
+	coreent "entgo.io/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
@@ -195,10 +197,31 @@ var ErrNoViewer = errors.New("db: query on per-user entity without a viewer in c
 // Mutations are independently scoped by tenantMutationHook in hooks.go. The
 // read and write controls are deliberately separate because Ent interceptors
 // never run on mutation execution.
-func registerInterceptors(client *ent.Client, _ *zap.Logger) {
-	client.Intercept(intercept.Func(func(_ context.Context, q intercept.Query) error {
-		entQueriesTotal.WithLabelValues(q.Type()).Inc()
-		return nil
+func registerInterceptors(client *ent.Client, log *zap.Logger) {
+	client.Intercept(coreent.InterceptFunc(func(next coreent.Querier) coreent.Querier {
+		return coreent.QuerierFunc(func(ctx context.Context, query coreent.Query) (coreent.Value, error) {
+			queryType, operation := "unknown", "unknown"
+			if metadata := coreent.QueryFromContext(ctx); metadata != nil {
+				queryType, operation = metadata.Type, metadata.Op
+			}
+			started := time.Now()
+			value, err := next.Query(ctx, query)
+			duration := time.Since(started)
+			entQueriesTotal.WithLabelValues(queryType).Inc()
+			entQueryDuration.WithLabelValues(queryType, operation).Observe(duration.Seconds())
+			if err != nil {
+				entQueryErrorsTotal.WithLabelValues(queryType, operation).Inc()
+			}
+			if duration >= time.Second {
+				log.Warn("slow ent query",
+					zap.String("entity", queryType),
+					zap.String("operation", operation),
+					zap.Duration("duration", duration),
+					zap.Error(err),
+				)
+			}
+			return value, err
+		})
 	}))
 
 	client.CreditLedger.Intercept(intercept.TraverseCreditLedger(

@@ -13,8 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/google/uuid"
 )
 
 // MailBodyCacheUpdate is the builder for updating MailBodyCache entities.
@@ -84,31 +82,16 @@ func (_u *MailBodyCacheUpdate) SetNillableExpiresAt(v *time.Time) *MailBodyCache
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *MailBodyCacheUpdate) SetUserID(id uuid.UUID) *MailBodyCacheUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *MailBodyCacheUpdate) SetUser(v *User) *MailBodyCacheUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the MailBodyCacheMutation object of the builder.
 func (_u *MailBodyCacheUpdate) Mutation() *MailBodyCacheMutation {
 	return _u.mutation
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *MailBodyCacheUpdate) ClearUser() *MailBodyCacheUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *MailBodyCacheUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -135,11 +118,15 @@ func (_u *MailBodyCacheUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *MailBodyCacheUpdate) defaults() {
+func (_u *MailBodyCacheUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if mailbodycache.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized mailbodycache.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := mailbodycache.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -186,35 +173,6 @@ func (_u *MailBodyCacheUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if value, ok := _u.mutation.ExpiresAt(); ok {
 		_spec.SetField(mailbodycache.FieldExpiresAt, field.TypeTime, value)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mailbodycache.UserTable,
-			Columns: []string{mailbodycache.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mailbodycache.UserTable,
-			Columns: []string{mailbodycache.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -290,26 +248,9 @@ func (_u *MailBodyCacheUpdateOne) SetNillableExpiresAt(v *time.Time) *MailBodyCa
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *MailBodyCacheUpdateOne) SetUserID(id uuid.UUID) *MailBodyCacheUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *MailBodyCacheUpdateOne) SetUser(v *User) *MailBodyCacheUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the MailBodyCacheMutation object of the builder.
 func (_u *MailBodyCacheUpdateOne) Mutation() *MailBodyCacheMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *MailBodyCacheUpdateOne) ClearUser() *MailBodyCacheUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the MailBodyCacheUpdate builder.
@@ -327,7 +268,9 @@ func (_u *MailBodyCacheUpdateOne) Select(field string, fields ...string) *MailBo
 
 // Save executes the query and returns the updated MailBodyCache entity.
 func (_u *MailBodyCacheUpdateOne) Save(ctx context.Context) (*MailBodyCache, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -354,11 +297,15 @@ func (_u *MailBodyCacheUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *MailBodyCacheUpdateOne) defaults() {
+func (_u *MailBodyCacheUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if mailbodycache.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized mailbodycache.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := mailbodycache.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -422,35 +369,6 @@ func (_u *MailBodyCacheUpdateOne) sqlSave(ctx context.Context) (_node *MailBodyC
 	}
 	if value, ok := _u.mutation.ExpiresAt(); ok {
 		_spec.SetField(mailbodycache.FieldExpiresAt, field.TypeTime, value)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mailbodycache.UserTable,
-			Columns: []string{mailbodycache.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mailbodycache.UserTable,
-			Columns: []string{mailbodycache.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &MailBodyCache{config: _u.config}
 	_spec.Assign = _node.assignValues

@@ -15,7 +15,7 @@ import (
 type RelationshipObservation struct{ ent.Schema }
 
 // Mixin adds the shared base fields to relationship observations.
-func (RelationshipObservation) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RelationshipObservation) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields defines the relationship observation columns.
 func (RelationshipObservation) Fields() []ent.Field {
@@ -42,11 +42,11 @@ func (RelationshipObservation) Fields() []ent.Field {
 func (RelationshipObservation) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("relationship_observations").Unique().Required(),
+			Ref("relationship_observations").Unique().Required().Immutable(),
 		edge.From("relationship", Relationship.Type).
 			Ref("observations").Unique().Required(),
 		edge.From("user", User.Type).
-			Ref("relationship_observations").Unique().Required(),
+			Ref("relationship_observations").Unique().Required().Immutable(),
 		edge.To("assertions", RelationshipAssertion.Type).
 			StorageKey(edge.Column("observation_id")),
 		edge.To("person_attributes", PersonAttribute.Type).

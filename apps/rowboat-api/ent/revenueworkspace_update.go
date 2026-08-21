@@ -45,7 +45,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 	"github.com/google/uuid"
 )
@@ -249,17 +248,6 @@ func (_u *RevenueWorkspaceUpdate) SetNillableCloudResearchConsentAt(v *time.Time
 func (_u *RevenueWorkspaceUpdate) ClearCloudResearchConsentAt() *RevenueWorkspaceUpdate {
 	_u.mutation.ClearCloudResearchConsentAt()
 	return _u
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RevenueWorkspaceUpdate) SetUserID(id uuid.UUID) *RevenueWorkspaceUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RevenueWorkspaceUpdate) SetUser(v *User) *RevenueWorkspaceUpdate {
-	return _u.SetUserID(v.ID)
 }
 
 // AddMemberIDs adds the "members" edge to the RevenueWorkspaceMember entity by IDs.
@@ -760,12 +748,6 @@ func (_u *RevenueWorkspaceUpdate) AddPersonMergeCandidates(v ...*PersonMergeCand
 // Mutation returns the RevenueWorkspaceMutation object of the builder.
 func (_u *RevenueWorkspaceUpdate) Mutation() *RevenueWorkspaceMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RevenueWorkspaceUpdate) ClearUser() *RevenueWorkspaceUpdate {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // ClearMembers clears all "members" edges to the RevenueWorkspaceMember entity.
@@ -1463,7 +1445,9 @@ func (_u *RevenueWorkspaceUpdate) RemovePersonMergeCandidates(v ...*PersonMergeC
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *RevenueWorkspaceUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -1490,11 +1474,15 @@ func (_u *RevenueWorkspaceUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RevenueWorkspaceUpdate) defaults() {
+func (_u *RevenueWorkspaceUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if revenueworkspace.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueworkspace.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueworkspace.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -1580,35 +1568,6 @@ func (_u *RevenueWorkspaceUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if _u.mutation.CloudResearchConsentAtCleared() {
 		_spec.ClearField(revenueworkspace.FieldCloudResearchConsentAt, field.TypeTime)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueworkspace.UserTable,
-			Columns: []string{revenueworkspace.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueworkspace.UserTable,
-			Columns: []string{revenueworkspace.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.MembersCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -3303,17 +3262,6 @@ func (_u *RevenueWorkspaceUpdateOne) ClearCloudResearchConsentAt() *RevenueWorks
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RevenueWorkspaceUpdateOne) SetUserID(id uuid.UUID) *RevenueWorkspaceUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RevenueWorkspaceUpdateOne) SetUser(v *User) *RevenueWorkspaceUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // AddMemberIDs adds the "members" edge to the RevenueWorkspaceMember entity by IDs.
 func (_u *RevenueWorkspaceUpdateOne) AddMemberIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
 	_u.mutation.AddMemberIDs(ids...)
@@ -3812,12 +3760,6 @@ func (_u *RevenueWorkspaceUpdateOne) AddPersonMergeCandidates(v ...*PersonMergeC
 // Mutation returns the RevenueWorkspaceMutation object of the builder.
 func (_u *RevenueWorkspaceUpdateOne) Mutation() *RevenueWorkspaceMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RevenueWorkspaceUpdateOne) ClearUser() *RevenueWorkspaceUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // ClearMembers clears all "members" edges to the RevenueWorkspaceMember entity.
@@ -4528,7 +4470,9 @@ func (_u *RevenueWorkspaceUpdateOne) Select(field string, fields ...string) *Rev
 
 // Save executes the query and returns the updated RevenueWorkspace entity.
 func (_u *RevenueWorkspaceUpdateOne) Save(ctx context.Context) (*RevenueWorkspace, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -4555,11 +4499,15 @@ func (_u *RevenueWorkspaceUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RevenueWorkspaceUpdateOne) defaults() {
+func (_u *RevenueWorkspaceUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if revenueworkspace.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueworkspace.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueworkspace.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -4662,35 +4610,6 @@ func (_u *RevenueWorkspaceUpdateOne) sqlSave(ctx context.Context) (_node *Revenu
 	}
 	if _u.mutation.CloudResearchConsentAtCleared() {
 		_spec.ClearField(revenueworkspace.FieldCloudResearchConsentAt, field.TypeTime)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueworkspace.UserTable,
-			Columns: []string{revenueworkspace.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueworkspace.UserTable,
-			Columns: []string{revenueworkspace.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.MembersCleared() {
 		edge := &sqlgraph.EdgeSpec{

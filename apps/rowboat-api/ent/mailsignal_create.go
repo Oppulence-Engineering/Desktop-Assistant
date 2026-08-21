@@ -151,7 +151,9 @@ func (_c *MailSignalCreate) Mutation() *MailSignalMutation {
 
 // Save creates the MailSignal in the database.
 func (_c *MailSignalCreate) Save(ctx context.Context) (*MailSignal, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -178,12 +180,18 @@ func (_c *MailSignalCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *MailSignalCreate) defaults() {
+func (_c *MailSignalCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if mailsignal.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized mailsignal.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := mailsignal.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if mailsignal.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized mailsignal.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := mailsignal.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -192,9 +200,13 @@ func (_c *MailSignalCreate) defaults() {
 		_c.mutation.SetClassification(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if mailsignal.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized mailsignal.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := mailsignal.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

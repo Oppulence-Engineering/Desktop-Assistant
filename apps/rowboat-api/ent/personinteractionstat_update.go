@@ -15,7 +15,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/google/uuid"
 )
 
@@ -242,17 +241,6 @@ func (_u *PersonInteractionStatUpdate) ClearLastDirection() *PersonInteractionSt
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *PersonInteractionStatUpdate) SetWorkspaceID(id uuid.UUID) *PersonInteractionStatUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonInteractionStatUpdate) SetWorkspace(v *RevenueWorkspace) *PersonInteractionStatUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetPersonID sets the "person" edge to the Person entity by ID.
 func (_u *PersonInteractionStatUpdate) SetPersonID(id uuid.UUID) *PersonInteractionStatUpdate {
 	_u.mutation.SetPersonID(id)
@@ -280,12 +268,6 @@ func (_u *PersonInteractionStatUpdate) Mutation() *PersonInteractionStatMutation
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonInteractionStatUpdate) ClearWorkspace() *PersonInteractionStatUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
 // ClearPerson clears the "person" edge to the Person entity.
 func (_u *PersonInteractionStatUpdate) ClearPerson() *PersonInteractionStatUpdate {
 	_u.mutation.ClearPerson()
@@ -300,7 +282,9 @@ func (_u *PersonInteractionStatUpdate) ClearRelationship() *PersonInteractionSta
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *PersonInteractionStatUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -327,11 +311,15 @@ func (_u *PersonInteractionStatUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *PersonInteractionStatUpdate) defaults() {
+func (_u *PersonInteractionStatUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if personinteractionstat.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized personinteractionstat.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := personinteractionstat.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -452,35 +440,6 @@ func (_u *PersonInteractionStatUpdate) sqlSave(ctx context.Context) (_node int, 
 	}
 	if _u.mutation.LastDirectionCleared() {
 		_spec.ClearField(personinteractionstat.FieldLastDirection, field.TypeString)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personinteractionstat.WorkspaceTable,
-			Columns: []string{personinteractionstat.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personinteractionstat.WorkspaceTable,
-			Columns: []string{personinteractionstat.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.PersonCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -770,17 +729,6 @@ func (_u *PersonInteractionStatUpdateOne) ClearLastDirection() *PersonInteractio
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *PersonInteractionStatUpdateOne) SetWorkspaceID(id uuid.UUID) *PersonInteractionStatUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonInteractionStatUpdateOne) SetWorkspace(v *RevenueWorkspace) *PersonInteractionStatUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetPersonID sets the "person" edge to the Person entity by ID.
 func (_u *PersonInteractionStatUpdateOne) SetPersonID(id uuid.UUID) *PersonInteractionStatUpdateOne {
 	_u.mutation.SetPersonID(id)
@@ -806,12 +754,6 @@ func (_u *PersonInteractionStatUpdateOne) SetRelationship(v *Relationship) *Pers
 // Mutation returns the PersonInteractionStatMutation object of the builder.
 func (_u *PersonInteractionStatUpdateOne) Mutation() *PersonInteractionStatMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonInteractionStatUpdateOne) ClearWorkspace() *PersonInteractionStatUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
 }
 
 // ClearPerson clears the "person" edge to the Person entity.
@@ -841,7 +783,9 @@ func (_u *PersonInteractionStatUpdateOne) Select(field string, fields ...string)
 
 // Save executes the query and returns the updated PersonInteractionStat entity.
 func (_u *PersonInteractionStatUpdateOne) Save(ctx context.Context) (*PersonInteractionStat, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -868,11 +812,15 @@ func (_u *PersonInteractionStatUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *PersonInteractionStatUpdateOne) defaults() {
+func (_u *PersonInteractionStatUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if personinteractionstat.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized personinteractionstat.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := personinteractionstat.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -1010,35 +958,6 @@ func (_u *PersonInteractionStatUpdateOne) sqlSave(ctx context.Context) (_node *P
 	}
 	if _u.mutation.LastDirectionCleared() {
 		_spec.ClearField(personinteractionstat.FieldLastDirection, field.TypeString)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personinteractionstat.WorkspaceTable,
-			Columns: []string{personinteractionstat.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personinteractionstat.WorkspaceTable,
-			Columns: []string{personinteractionstat.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.PersonCleared() {
 		edge := &sqlgraph.EdgeSpec{

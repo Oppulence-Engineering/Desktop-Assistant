@@ -112,7 +112,7 @@ func (_c *RelationshipAttentionItemCreate) SetRankScore(v int) *RelationshipAtte
 }
 
 // SetRankFactorsJSON sets the "rank_factors_json" field.
-func (_c *RelationshipAttentionItemCreate) SetRankFactorsJSON(v string) *RelationshipAttentionItemCreate {
+func (_c *RelationshipAttentionItemCreate) SetRankFactorsJSON(v map[string]int) *RelationshipAttentionItemCreate {
 	_c.mutation.SetRankFactorsJSON(v)
 	return _c
 }
@@ -385,7 +385,9 @@ func (_c *RelationshipAttentionItemCreate) Mutation() *RelationshipAttentionItem
 
 // Save creates the RelationshipAttentionItem in the database.
 func (_c *RelationshipAttentionItemCreate) Save(ctx context.Context) (*RelationshipAttentionItem, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -412,12 +414,18 @@ func (_c *RelationshipAttentionItemCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *RelationshipAttentionItemCreate) defaults() {
+func (_c *RelationshipAttentionItemCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if relationshipattentionitem.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipattentionitem.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipattentionitem.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if relationshipattentionitem.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipattentionitem.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipattentionitem.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -428,6 +436,10 @@ func (_c *RelationshipAttentionItemCreate) defaults() {
 	if _, ok := _c.mutation.EvidenceRefs(); !ok {
 		v := relationshipattentionitem.DefaultEvidenceRefs
 		_c.mutation.SetEvidenceRefs(v)
+	}
+	if _, ok := _c.mutation.RankFactorsJSON(); !ok {
+		v := relationshipattentionitem.DefaultRankFactorsJSON
+		_c.mutation.SetRankFactorsJSON(v)
 	}
 	if _, ok := _c.mutation.SourceRequirements(); !ok {
 		v := relationshipattentionitem.DefaultSourceRequirements
@@ -454,9 +466,13 @@ func (_c *RelationshipAttentionItemCreate) defaults() {
 		_c.mutation.SetRelationshipStateVersion(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if relationshipattentionitem.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized relationshipattentionitem.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := relationshipattentionitem.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -528,11 +544,6 @@ func (_c *RelationshipAttentionItemCreate) check() error {
 	}
 	if _, ok := _c.mutation.RankFactorsJSON(); !ok {
 		return &ValidationError{Name: "rank_factors_json", err: errors.New(`ent: missing required field "RelationshipAttentionItem.rank_factors_json"`)}
-	}
-	if v, ok := _c.mutation.RankFactorsJSON(); ok {
-		if err := relationshipattentionitem.RankFactorsJSONValidator(v); err != nil {
-			return &ValidationError{Name: "rank_factors_json", err: fmt.Errorf(`ent: validator failed for field "RelationshipAttentionItem.rank_factors_json": %w`, err)}
-		}
 	}
 	if _, ok := _c.mutation.SourceRequirements(); !ok {
 		return &ValidationError{Name: "source_requirements", err: errors.New(`ent: missing required field "RelationshipAttentionItem.source_requirements"`)}
@@ -674,7 +685,7 @@ func (_c *RelationshipAttentionItemCreate) createSpec() (*RelationshipAttentionI
 		_node.RankScore = value
 	}
 	if value, ok := _c.mutation.RankFactorsJSON(); ok {
-		_spec.SetField(relationshipattentionitem.FieldRankFactorsJSON, field.TypeString, value)
+		_spec.SetField(relationshipattentionitem.FieldRankFactorsJSON, field.TypeJSON, value)
 		_node.RankFactorsJSON = value
 	}
 	if value, ok := _c.mutation.SourceRequirements(); ok {
@@ -969,7 +980,7 @@ func (u *RelationshipAttentionItemUpsert) AddRankScore(v int) *RelationshipAtten
 }
 
 // SetRankFactorsJSON sets the "rank_factors_json" field.
-func (u *RelationshipAttentionItemUpsert) SetRankFactorsJSON(v string) *RelationshipAttentionItemUpsert {
+func (u *RelationshipAttentionItemUpsert) SetRankFactorsJSON(v map[string]int) *RelationshipAttentionItemUpsert {
 	u.Set(relationshipattentionitem.FieldRankFactorsJSON, v)
 	return u
 }
@@ -1454,7 +1465,7 @@ func (u *RelationshipAttentionItemUpsertOne) UpdateRankScore() *RelationshipAtte
 }
 
 // SetRankFactorsJSON sets the "rank_factors_json" field.
-func (u *RelationshipAttentionItemUpsertOne) SetRankFactorsJSON(v string) *RelationshipAttentionItemUpsertOne {
+func (u *RelationshipAttentionItemUpsertOne) SetRankFactorsJSON(v map[string]int) *RelationshipAttentionItemUpsertOne {
 	return u.Update(func(s *RelationshipAttentionItemUpsert) {
 		s.SetRankFactorsJSON(v)
 	})
@@ -2155,7 +2166,7 @@ func (u *RelationshipAttentionItemUpsertBulk) UpdateRankScore() *RelationshipAtt
 }
 
 // SetRankFactorsJSON sets the "rank_factors_json" field.
-func (u *RelationshipAttentionItemUpsertBulk) SetRankFactorsJSON(v string) *RelationshipAttentionItemUpsertBulk {
+func (u *RelationshipAttentionItemUpsertBulk) SetRankFactorsJSON(v map[string]int) *RelationshipAttentionItemUpsertBulk {
 	return u.Update(func(s *RelationshipAttentionItemUpsert) {
 		s.SetRankFactorsJSON(v)
 	})

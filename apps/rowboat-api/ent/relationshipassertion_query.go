@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -474,6 +475,12 @@ func (_q *RelationshipAssertionQuery) prepareQuery(ctx context.Context) error {
 			return err
 		}
 		_q.sql = prev
+	}
+	if relationshipassertion.Policy == nil {
+		return errors.New("ent: uninitialized relationshipassertion.Policy (forgotten import ent/runtime?)")
+	}
+	if err := relationshipassertion.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

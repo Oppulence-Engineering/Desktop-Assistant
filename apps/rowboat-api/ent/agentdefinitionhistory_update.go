@@ -41,7 +41,9 @@ func (_u *AgentDefinitionHistoryUpdate) Mutation() *AgentDefinitionHistoryMutati
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *AgentDefinitionHistoryUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -68,11 +70,15 @@ func (_u *AgentDefinitionHistoryUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *AgentDefinitionHistoryUpdate) defaults() {
+func (_u *AgentDefinitionHistoryUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if agentdefinitionhistory.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized agentdefinitionhistory.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := agentdefinitionhistory.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 func (_u *AgentDefinitionHistoryUpdate) sqlSave(ctx context.Context) (_node int, err error) {
@@ -175,7 +181,9 @@ func (_u *AgentDefinitionHistoryUpdateOne) Select(field string, fields ...string
 
 // Save executes the query and returns the updated AgentDefinitionHistory entity.
 func (_u *AgentDefinitionHistoryUpdateOne) Save(ctx context.Context) (*AgentDefinitionHistory, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -202,11 +210,15 @@ func (_u *AgentDefinitionHistoryUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *AgentDefinitionHistoryUpdateOne) defaults() {
+func (_u *AgentDefinitionHistoryUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if agentdefinitionhistory.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized agentdefinitionhistory.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := agentdefinitionhistory.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 func (_u *AgentDefinitionHistoryUpdateOne) sqlSave(ctx context.Context) (_node *AgentDefinitionHistory, err error) {

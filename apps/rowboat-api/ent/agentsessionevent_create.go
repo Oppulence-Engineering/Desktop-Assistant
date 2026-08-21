@@ -151,7 +151,9 @@ func (_c *AgentSessionEventCreate) Mutation() *AgentSessionEventMutation {
 
 // Save creates the AgentSessionEvent in the database.
 func (_c *AgentSessionEventCreate) Save(ctx context.Context) (*AgentSessionEvent, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -178,23 +180,36 @@ func (_c *AgentSessionEventCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *AgentSessionEventCreate) defaults() {
+func (_c *AgentSessionEventCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if agentsessionevent.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized agentsessionevent.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := agentsessionevent.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if agentsessionevent.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized agentsessionevent.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := agentsessionevent.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
 	if _, ok := _c.mutation.ReceivedAt(); !ok {
+		if agentsessionevent.DefaultReceivedAt == nil {
+			return fmt.Errorf("ent: uninitialized agentsessionevent.DefaultReceivedAt (forgotten import ent/runtime?)")
+		}
 		v := agentsessionevent.DefaultReceivedAt()
 		_c.mutation.SetReceivedAt(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if agentsessionevent.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized agentsessionevent.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := agentsessionevent.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

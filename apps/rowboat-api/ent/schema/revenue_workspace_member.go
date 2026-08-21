@@ -15,7 +15,7 @@ import (
 type RevenueWorkspaceMember struct{ ent.Schema }
 
 // Mixin of the RevenueWorkspaceMember.
-func (RevenueWorkspaceMember) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RevenueWorkspaceMember) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields of the RevenueWorkspaceMember.
 func (RevenueWorkspaceMember) Fields() []ent.Field {
@@ -34,8 +34,8 @@ func (RevenueWorkspaceMember) Fields() []ent.Field {
 func (RevenueWorkspaceMember) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("members").Unique().Required(),
-		edge.From("user", User.Type).Ref("revenue_workspace_members").Unique().Required(),
+			Ref("members").Unique().Required().Immutable(),
+		edge.From("user", User.Type).Ref("revenue_workspace_members").Unique().Required().Immutable(),
 	}
 }
 

@@ -17,7 +17,7 @@ import (
 type AgentSession struct{ ent.Schema }
 
 // Mixin of the AgentSession.
-func (AgentSession) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (AgentSession) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Fields of the AgentSession.
 func (AgentSession) Fields() []ent.Field {
@@ -61,7 +61,7 @@ func (AgentSession) Fields() []ent.Field {
 // Edges of the AgentSession.
 func (AgentSession) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("agent_sessions").Unique().Required(),
+		edge.From("user", User.Type).Ref("agent_sessions").Unique().Required().Immutable(),
 		// agent links a session to its tenant AgentDefinition (nullable: builtin
 		// sessions resolve their spec from the embedded registry, no row).
 		edge.From("agent", AgentDefinition.Type).Ref("sessions").Unique(),

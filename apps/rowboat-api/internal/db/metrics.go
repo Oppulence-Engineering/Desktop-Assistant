@@ -14,3 +14,20 @@ var entQueriesTotal = promauto.NewCounterVec(
 	},
 	[]string{"type"},
 )
+
+var entQueryDuration = promauto.NewHistogramVec(
+	prometheus.HistogramOpts{
+		Name:    "rowboat_ent_query_duration_seconds",
+		Help:    "Ent query latency by entity type and operation.",
+		Buckets: prometheus.DefBuckets,
+	},
+	[]string{"type", "operation"},
+)
+
+var entQueryErrorsTotal = promauto.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "rowboat_ent_query_errors_total",
+		Help: "Ent query failures by entity type and operation.",
+	},
+	[]string{"type", "operation"},
+)

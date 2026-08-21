@@ -13,9 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/google/uuid"
 )
 
 // RevenueLeakScanUpdate is the builder for updating RevenueLeakScan entities.
@@ -291,48 +288,16 @@ func (_u *RevenueLeakScanUpdate) ClearSourceFreshnessAt() *RevenueLeakScanUpdate
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RevenueLeakScanUpdate) SetWorkspaceID(id uuid.UUID) *RevenueLeakScanUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueLeakScanUpdate) SetWorkspace(v *RevenueWorkspace) *RevenueLeakScanUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RevenueLeakScanUpdate) SetUserID(id uuid.UUID) *RevenueLeakScanUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RevenueLeakScanUpdate) SetUser(v *User) *RevenueLeakScanUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RevenueLeakScanMutation object of the builder.
 func (_u *RevenueLeakScanUpdate) Mutation() *RevenueLeakScanMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueLeakScanUpdate) ClearWorkspace() *RevenueLeakScanUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RevenueLeakScanUpdate) ClearUser() *RevenueLeakScanUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *RevenueLeakScanUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -359,11 +324,15 @@ func (_u *RevenueLeakScanUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RevenueLeakScanUpdate) defaults() {
+func (_u *RevenueLeakScanUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if revenueleakscan.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueleakscan.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueleakscan.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -503,64 +472,6 @@ func (_u *RevenueLeakScanUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if _u.mutation.SourceFreshnessAtCleared() {
 		_spec.ClearField(revenueleakscan.FieldSourceFreshnessAt, field.TypeTime)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueleakscan.WorkspaceTable,
-			Columns: []string{revenueleakscan.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueleakscan.WorkspaceTable,
-			Columns: []string{revenueleakscan.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueleakscan.UserTable,
-			Columns: []string{revenueleakscan.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueleakscan.UserTable,
-			Columns: []string{revenueleakscan.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -842,43 +753,9 @@ func (_u *RevenueLeakScanUpdateOne) ClearSourceFreshnessAt() *RevenueLeakScanUpd
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RevenueLeakScanUpdateOne) SetWorkspaceID(id uuid.UUID) *RevenueLeakScanUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueLeakScanUpdateOne) SetWorkspace(v *RevenueWorkspace) *RevenueLeakScanUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RevenueLeakScanUpdateOne) SetUserID(id uuid.UUID) *RevenueLeakScanUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RevenueLeakScanUpdateOne) SetUser(v *User) *RevenueLeakScanUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RevenueLeakScanMutation object of the builder.
 func (_u *RevenueLeakScanUpdateOne) Mutation() *RevenueLeakScanMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueLeakScanUpdateOne) ClearWorkspace() *RevenueLeakScanUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RevenueLeakScanUpdateOne) ClearUser() *RevenueLeakScanUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the RevenueLeakScanUpdate builder.
@@ -896,7 +773,9 @@ func (_u *RevenueLeakScanUpdateOne) Select(field string, fields ...string) *Reve
 
 // Save executes the query and returns the updated RevenueLeakScan entity.
 func (_u *RevenueLeakScanUpdateOne) Save(ctx context.Context) (*RevenueLeakScan, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -923,11 +802,15 @@ func (_u *RevenueLeakScanUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RevenueLeakScanUpdateOne) defaults() {
+func (_u *RevenueLeakScanUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if revenueleakscan.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueleakscan.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueleakscan.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -1084,64 +967,6 @@ func (_u *RevenueLeakScanUpdateOne) sqlSave(ctx context.Context) (_node *Revenue
 	}
 	if _u.mutation.SourceFreshnessAtCleared() {
 		_spec.ClearField(revenueleakscan.FieldSourceFreshnessAt, field.TypeTime)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueleakscan.WorkspaceTable,
-			Columns: []string{revenueleakscan.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueleakscan.WorkspaceTable,
-			Columns: []string{revenueleakscan.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueleakscan.UserTable,
-			Columns: []string{revenueleakscan.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueleakscan.UserTable,
-			Columns: []string{revenueleakscan.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &RevenueLeakScan{config: _u.config}
 	_spec.Assign = _node.assignValues

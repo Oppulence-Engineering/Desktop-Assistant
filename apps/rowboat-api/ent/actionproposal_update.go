@@ -13,8 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/google/uuid"
 )
 
 // ActionProposalUpdate is the builder for updating ActionProposal entities.
@@ -332,31 +330,16 @@ func (_u *ActionProposalUpdate) ClearResolvedAt() *ActionProposalUpdate {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *ActionProposalUpdate) SetUserID(id uuid.UUID) *ActionProposalUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *ActionProposalUpdate) SetUser(v *User) *ActionProposalUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the ActionProposalMutation object of the builder.
 func (_u *ActionProposalUpdate) Mutation() *ActionProposalMutation {
 	return _u.mutation
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *ActionProposalUpdate) ClearUser() *ActionProposalUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *ActionProposalUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -383,11 +366,15 @@ func (_u *ActionProposalUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *ActionProposalUpdate) defaults() {
+func (_u *ActionProposalUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if actionproposal.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized actionproposal.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := actionproposal.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -516,35 +503,6 @@ func (_u *ActionProposalUpdate) sqlSave(ctx context.Context) (_node int, err err
 	}
 	if _u.mutation.ResolvedAtCleared() {
 		_spec.ClearField(actionproposal.FieldResolvedAt, field.TypeTime)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   actionproposal.UserTable,
-			Columns: []string{actionproposal.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   actionproposal.UserTable,
-			Columns: []string{actionproposal.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -868,26 +826,9 @@ func (_u *ActionProposalUpdateOne) ClearResolvedAt() *ActionProposalUpdateOne {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *ActionProposalUpdateOne) SetUserID(id uuid.UUID) *ActionProposalUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *ActionProposalUpdateOne) SetUser(v *User) *ActionProposalUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the ActionProposalMutation object of the builder.
 func (_u *ActionProposalUpdateOne) Mutation() *ActionProposalMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *ActionProposalUpdateOne) ClearUser() *ActionProposalUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the ActionProposalUpdate builder.
@@ -905,7 +846,9 @@ func (_u *ActionProposalUpdateOne) Select(field string, fields ...string) *Actio
 
 // Save executes the query and returns the updated ActionProposal entity.
 func (_u *ActionProposalUpdateOne) Save(ctx context.Context) (*ActionProposal, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -932,11 +875,15 @@ func (_u *ActionProposalUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *ActionProposalUpdateOne) defaults() {
+func (_u *ActionProposalUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if actionproposal.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized actionproposal.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := actionproposal.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -1082,35 +1029,6 @@ func (_u *ActionProposalUpdateOne) sqlSave(ctx context.Context) (_node *ActionPr
 	}
 	if _u.mutation.ResolvedAtCleared() {
 		_spec.ClearField(actionproposal.FieldResolvedAt, field.TypeTime)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   actionproposal.UserTable,
-			Columns: []string{actionproposal.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   actionproposal.UserTable,
-			Columns: []string{actionproposal.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &ActionProposal{config: _u.config}
 	_spec.Assign = _node.assignValues

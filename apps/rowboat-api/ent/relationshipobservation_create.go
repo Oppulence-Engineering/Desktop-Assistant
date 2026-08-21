@@ -253,7 +253,9 @@ func (_c *RelationshipObservationCreate) Mutation() *RelationshipObservationMuta
 
 // Save creates the RelationshipObservation in the database.
 func (_c *RelationshipObservationCreate) Save(ctx context.Context) (*RelationshipObservation, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -280,12 +282,18 @@ func (_c *RelationshipObservationCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *RelationshipObservationCreate) defaults() {
+func (_c *RelationshipObservationCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if relationshipobservation.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipobservation.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipobservation.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if relationshipobservation.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipobservation.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipobservation.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -302,9 +310,13 @@ func (_c *RelationshipObservationCreate) defaults() {
 		_c.mutation.SetEncryptionKeyVersion(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if relationshipobservation.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized relationshipobservation.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := relationshipobservation.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

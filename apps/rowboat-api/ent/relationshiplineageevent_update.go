@@ -15,8 +15,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentitycandidate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshiplineageevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -161,17 +159,6 @@ func (_u *RelationshipLineageEventUpdate) SetNillableOccurredAt(v *time.Time) *R
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RelationshipLineageEventUpdate) SetWorkspaceID(id uuid.UUID) *RelationshipLineageEventUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipLineageEventUpdate) SetWorkspace(v *RevenueWorkspace) *RelationshipLineageEventUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetCandidateID sets the "candidate" edge to the RelationshipIdentityCandidate entity by ID.
 func (_u *RelationshipLineageEventUpdate) SetCandidateID(id uuid.UUID) *RelationshipLineageEventUpdate {
 	_u.mutation.SetCandidateID(id)
@@ -183,26 +170,9 @@ func (_u *RelationshipLineageEventUpdate) SetCandidate(v *RelationshipIdentityCa
 	return _u.SetCandidateID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RelationshipLineageEventUpdate) SetUserID(id uuid.UUID) *RelationshipLineageEventUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RelationshipLineageEventUpdate) SetUser(v *User) *RelationshipLineageEventUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RelationshipLineageEventMutation object of the builder.
 func (_u *RelationshipLineageEventUpdate) Mutation() *RelationshipLineageEventMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipLineageEventUpdate) ClearWorkspace() *RelationshipLineageEventUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
 }
 
 // ClearCandidate clears the "candidate" edge to the RelationshipIdentityCandidate entity.
@@ -211,15 +181,11 @@ func (_u *RelationshipLineageEventUpdate) ClearCandidate() *RelationshipLineageE
 	return _u
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RelationshipLineageEventUpdate) ClearUser() *RelationshipLineageEventUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *RelationshipLineageEventUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -246,11 +212,15 @@ func (_u *RelationshipLineageEventUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RelationshipLineageEventUpdate) defaults() {
+func (_u *RelationshipLineageEventUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if relationshiplineageevent.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshiplineageevent.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshiplineageevent.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -342,35 +312,6 @@ func (_u *RelationshipLineageEventUpdate) sqlSave(ctx context.Context) (_node in
 	if value, ok := _u.mutation.OccurredAt(); ok {
 		_spec.SetField(relationshiplineageevent.FieldOccurredAt, field.TypeTime, value)
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshiplineageevent.WorkspaceTable,
-			Columns: []string{relationshiplineageevent.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshiplineageevent.WorkspaceTable,
-			Columns: []string{relationshiplineageevent.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.CandidateCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -393,35 +334,6 @@ func (_u *RelationshipLineageEventUpdate) sqlSave(ctx context.Context) (_node in
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipidentitycandidate.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshiplineageevent.UserTable,
-			Columns: []string{relationshiplineageevent.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshiplineageevent.UserTable,
-			Columns: []string{relationshiplineageevent.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -577,17 +489,6 @@ func (_u *RelationshipLineageEventUpdateOne) SetNillableOccurredAt(v *time.Time)
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RelationshipLineageEventUpdateOne) SetWorkspaceID(id uuid.UUID) *RelationshipLineageEventUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipLineageEventUpdateOne) SetWorkspace(v *RevenueWorkspace) *RelationshipLineageEventUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetCandidateID sets the "candidate" edge to the RelationshipIdentityCandidate entity by ID.
 func (_u *RelationshipLineageEventUpdateOne) SetCandidateID(id uuid.UUID) *RelationshipLineageEventUpdateOne {
 	_u.mutation.SetCandidateID(id)
@@ -599,37 +500,14 @@ func (_u *RelationshipLineageEventUpdateOne) SetCandidate(v *RelationshipIdentit
 	return _u.SetCandidateID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RelationshipLineageEventUpdateOne) SetUserID(id uuid.UUID) *RelationshipLineageEventUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RelationshipLineageEventUpdateOne) SetUser(v *User) *RelationshipLineageEventUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RelationshipLineageEventMutation object of the builder.
 func (_u *RelationshipLineageEventUpdateOne) Mutation() *RelationshipLineageEventMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipLineageEventUpdateOne) ClearWorkspace() *RelationshipLineageEventUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
 // ClearCandidate clears the "candidate" edge to the RelationshipIdentityCandidate entity.
 func (_u *RelationshipLineageEventUpdateOne) ClearCandidate() *RelationshipLineageEventUpdateOne {
 	_u.mutation.ClearCandidate()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RelationshipLineageEventUpdateOne) ClearUser() *RelationshipLineageEventUpdateOne {
-	_u.mutation.ClearUser()
 	return _u
 }
 
@@ -648,7 +526,9 @@ func (_u *RelationshipLineageEventUpdateOne) Select(field string, fields ...stri
 
 // Save executes the query and returns the updated RelationshipLineageEvent entity.
 func (_u *RelationshipLineageEventUpdateOne) Save(ctx context.Context) (*RelationshipLineageEvent, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -675,11 +555,15 @@ func (_u *RelationshipLineageEventUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RelationshipLineageEventUpdateOne) defaults() {
+func (_u *RelationshipLineageEventUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if relationshiplineageevent.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshiplineageevent.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshiplineageevent.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -788,35 +672,6 @@ func (_u *RelationshipLineageEventUpdateOne) sqlSave(ctx context.Context) (_node
 	if value, ok := _u.mutation.OccurredAt(); ok {
 		_spec.SetField(relationshiplineageevent.FieldOccurredAt, field.TypeTime, value)
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshiplineageevent.WorkspaceTable,
-			Columns: []string{relationshiplineageevent.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshiplineageevent.WorkspaceTable,
-			Columns: []string{relationshiplineageevent.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.CandidateCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -839,35 +694,6 @@ func (_u *RelationshipLineageEventUpdateOne) sqlSave(ctx context.Context) (_node
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipidentitycandidate.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshiplineageevent.UserTable,
-			Columns: []string{relationshiplineageevent.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshiplineageevent.UserTable,
-			Columns: []string{relationshiplineageevent.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

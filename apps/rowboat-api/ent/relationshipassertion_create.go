@@ -299,7 +299,9 @@ func (_c *RelationshipAssertionCreate) Mutation() *RelationshipAssertionMutation
 
 // Save creates the RelationshipAssertion in the database.
 func (_c *RelationshipAssertionCreate) Save(ctx context.Context) (*RelationshipAssertion, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -326,12 +328,18 @@ func (_c *RelationshipAssertionCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *RelationshipAssertionCreate) defaults() {
+func (_c *RelationshipAssertionCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if relationshipassertion.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipassertion.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipassertion.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if relationshipassertion.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipassertion.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipassertion.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -356,9 +364,13 @@ func (_c *RelationshipAssertionCreate) defaults() {
 		_c.mutation.SetSupportingObservationIds(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if relationshipassertion.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized relationshipassertion.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := relationshipassertion.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

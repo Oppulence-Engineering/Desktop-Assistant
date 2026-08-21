@@ -3,6 +3,7 @@ package schema
 import (
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -20,7 +21,9 @@ import (
 type BackgroundTaskScheduleState struct{ ent.Schema }
 
 // Mixin gives UUID id + created_at/updated_at, like every other entity.
-func (BackgroundTaskScheduleState) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (BackgroundTaskScheduleState) Mixin() []ent.Mixin {
+	return []ent.Mixin{mixin.UserTenantMixin{}, mixin.OptimisticLockMixin{Field: "revision"}}
+}
 
 // Annotations of the BackgroundTaskScheduleState.
 func (BackgroundTaskScheduleState) Annotations() []schema.Annotation {
@@ -64,7 +67,7 @@ func (BackgroundTaskScheduleState) Fields() []ent.Field {
 // Edges of the BackgroundTaskScheduleState.
 func (BackgroundTaskScheduleState) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("background_task_schedule_states").Unique().Required(),
+		edge.From("user", User.Type).Ref("background_task_schedule_states").Unique().Required().Immutable(),
 		edge.From("task", BackgroundTask.Type).Ref("schedule_states").Unique().Required(),
 	}
 }
@@ -75,7 +78,8 @@ func (BackgroundTaskScheduleState) Indexes() []ent.Index {
 		// The duplicate guard. Scoped by task edge so keys can't collide across tasks.
 		index.Fields("trigger_type", "schedule_key").Edges("task").Unique(),
 		// Operational/runbook support: list held leases by expiry, find by run.
-		index.Fields("lease_expires_at"),
+		index.Fields("lease_expires_at").
+			Annotations(entsql.IndexWhere("last_run_id = '' AND lease_owner <> '' AND lease_expires_at IS NOT NULL")),
 		index.Fields("last_run_id"),
 		// Retention prune scans by created_at (CleanupExpired).
 		index.Fields("created_at"),

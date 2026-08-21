@@ -5,6 +5,7 @@ package ent
 import (
 	"context"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"math"
 
@@ -404,6 +405,12 @@ func (_q *AgentDefinitionQuery) prepareQuery(ctx context.Context) error {
 			return err
 		}
 		_q.sql = prev
+	}
+	if agentdefinition.Policy == nil {
+		return errors.New("ent: uninitialized agentdefinition.Policy (forgotten import ent/runtime?)")
+	}
+	if err := agentdefinition.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

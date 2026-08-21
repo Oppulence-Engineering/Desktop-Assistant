@@ -14,8 +14,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/google/uuid"
 )
 
 // MCPConnectionUpdate is the builder for updating MCPConnection entities.
@@ -167,31 +165,16 @@ func (_u *MCPConnectionUpdate) ClearExpiresAt() *MCPConnectionUpdate {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *MCPConnectionUpdate) SetUserID(id uuid.UUID) *MCPConnectionUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *MCPConnectionUpdate) SetUser(v *User) *MCPConnectionUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the MCPConnectionMutation object of the builder.
 func (_u *MCPConnectionUpdate) Mutation() *MCPConnectionMutation {
 	return _u.mutation
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *MCPConnectionUpdate) ClearUser() *MCPConnectionUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *MCPConnectionUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -218,11 +201,15 @@ func (_u *MCPConnectionUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *MCPConnectionUpdate) defaults() {
+func (_u *MCPConnectionUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if mcpconnection.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized mcpconnection.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := mcpconnection.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -294,35 +281,6 @@ func (_u *MCPConnectionUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if _u.mutation.ExpiresAtCleared() {
 		_spec.ClearField(mcpconnection.FieldExpiresAt, field.TypeTime)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mcpconnection.UserTable,
-			Columns: []string{mcpconnection.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mcpconnection.UserTable,
-			Columns: []string{mcpconnection.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -480,26 +438,9 @@ func (_u *MCPConnectionUpdateOne) ClearExpiresAt() *MCPConnectionUpdateOne {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *MCPConnectionUpdateOne) SetUserID(id uuid.UUID) *MCPConnectionUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *MCPConnectionUpdateOne) SetUser(v *User) *MCPConnectionUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the MCPConnectionMutation object of the builder.
 func (_u *MCPConnectionUpdateOne) Mutation() *MCPConnectionMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *MCPConnectionUpdateOne) ClearUser() *MCPConnectionUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the MCPConnectionUpdate builder.
@@ -517,7 +458,9 @@ func (_u *MCPConnectionUpdateOne) Select(field string, fields ...string) *MCPCon
 
 // Save executes the query and returns the updated MCPConnection entity.
 func (_u *MCPConnectionUpdateOne) Save(ctx context.Context) (*MCPConnection, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -544,11 +487,15 @@ func (_u *MCPConnectionUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *MCPConnectionUpdateOne) defaults() {
+func (_u *MCPConnectionUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if mcpconnection.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized mcpconnection.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := mcpconnection.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -637,35 +584,6 @@ func (_u *MCPConnectionUpdateOne) sqlSave(ctx context.Context) (_node *MCPConnec
 	}
 	if _u.mutation.ExpiresAtCleared() {
 		_spec.ClearField(mcpconnection.FieldExpiresAt, field.TypeTime)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mcpconnection.UserTable,
-			Columns: []string{mcpconnection.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mcpconnection.UserTable,
-			Columns: []string{mcpconnection.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &MCPConnection{config: _u.config}
 	_spec.Assign = _node.assignValues

@@ -17,7 +17,9 @@ import (
 type RevenueActionRevision struct{ ent.Schema }
 
 // Mixin of the RevenueActionRevision.
-func (RevenueActionRevision) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RevenueActionRevision) Mixin() []ent.Mixin {
+	return []ent.Mixin{mixin.ActionWorkspaceTenantMixin{}}
+}
 
 // Fields of the RevenueActionRevision.
 func (RevenueActionRevision) Fields() []ent.Field {
@@ -40,8 +42,8 @@ func (RevenueActionRevision) Fields() []ent.Field {
 func (RevenueActionRevision) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("action", RevenueAction.Type).
-			Ref("revisions").Unique().Required(),
-		edge.From("user", User.Type).Ref("revenue_action_revisions").Unique().Required(),
+			Ref("revisions").Unique().Required().Immutable(),
+		edge.From("user", User.Type).Ref("revenue_action_revisions").Unique().Required().Immutable(),
 	}
 }
 

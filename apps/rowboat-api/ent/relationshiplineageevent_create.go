@@ -171,7 +171,9 @@ func (_c *RelationshipLineageEventCreate) Mutation() *RelationshipLineageEventMu
 
 // Save creates the RelationshipLineageEvent in the database.
 func (_c *RelationshipLineageEventCreate) Save(ctx context.Context) (*RelationshipLineageEvent, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -198,12 +200,18 @@ func (_c *RelationshipLineageEventCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *RelationshipLineageEventCreate) defaults() {
+func (_c *RelationshipLineageEventCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if relationshiplineageevent.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshiplineageevent.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshiplineageevent.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if relationshiplineageevent.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshiplineageevent.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshiplineageevent.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -228,9 +236,13 @@ func (_c *RelationshipLineageEventCreate) defaults() {
 		_c.mutation.SetAfterRelationshipIds(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if relationshiplineageevent.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized relationshiplineageevent.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := relationshiplineageevent.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

@@ -30,7 +30,7 @@ import (
 type PersonSuppression struct{ ent.Schema }
 
 // Mixin adds the shared immutable ID and timestamp fields.
-func (PersonSuppression) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (PersonSuppression) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields defines the suppression anchor columns.
 func (PersonSuppression) Fields() []ent.Field {
@@ -57,9 +57,9 @@ func (PersonSuppression) Fields() []ent.Field {
 func (PersonSuppression) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("person_suppressions").Unique().Required(),
+			Ref("person_suppressions").Unique().Required().Immutable(),
 		edge.From("user", User.Type).
-			Ref("person_suppressions").Unique().Required(),
+			Ref("person_suppressions").Unique().Required().Immutable(),
 	}
 }
 

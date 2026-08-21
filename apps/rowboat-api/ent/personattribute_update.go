@@ -16,8 +16,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -313,17 +311,6 @@ func (_u *PersonAttributeUpdate) AppendSupportingObservationIds(v []string) *Per
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *PersonAttributeUpdate) SetWorkspaceID(id uuid.UUID) *PersonAttributeUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonAttributeUpdate) SetWorkspace(v *RevenueWorkspace) *PersonAttributeUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetPersonID sets the "person" edge to the Person entity by ID.
 func (_u *PersonAttributeUpdate) SetPersonID(id uuid.UUID) *PersonAttributeUpdate {
 	_u.mutation.SetPersonID(id)
@@ -354,26 +341,9 @@ func (_u *PersonAttributeUpdate) SetObservation(v *RelationshipObservation) *Per
 	return _u.SetObservationID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *PersonAttributeUpdate) SetUserID(id uuid.UUID) *PersonAttributeUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *PersonAttributeUpdate) SetUser(v *User) *PersonAttributeUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the PersonAttributeMutation object of the builder.
 func (_u *PersonAttributeUpdate) Mutation() *PersonAttributeMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonAttributeUpdate) ClearWorkspace() *PersonAttributeUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
 }
 
 // ClearPerson clears the "person" edge to the Person entity.
@@ -388,15 +358,11 @@ func (_u *PersonAttributeUpdate) ClearObservation() *PersonAttributeUpdate {
 	return _u
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *PersonAttributeUpdate) ClearUser() *PersonAttributeUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *PersonAttributeUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -423,11 +389,15 @@ func (_u *PersonAttributeUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *PersonAttributeUpdate) defaults() {
+func (_u *PersonAttributeUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if personattribute.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized personattribute.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := personattribute.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -578,35 +548,6 @@ func (_u *PersonAttributeUpdate) sqlSave(ctx context.Context) (_node int, err er
 			sqljson.Append(u, personattribute.FieldSupportingObservationIds, value)
 		})
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personattribute.WorkspaceTable,
-			Columns: []string{personattribute.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personattribute.WorkspaceTable,
-			Columns: []string{personattribute.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.PersonCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -658,35 +599,6 @@ func (_u *PersonAttributeUpdate) sqlSave(ctx context.Context) (_node int, err er
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipobservation.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personattribute.UserTable,
-			Columns: []string{personattribute.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personattribute.UserTable,
-			Columns: []string{personattribute.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -993,17 +905,6 @@ func (_u *PersonAttributeUpdateOne) AppendSupportingObservationIds(v []string) *
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *PersonAttributeUpdateOne) SetWorkspaceID(id uuid.UUID) *PersonAttributeUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonAttributeUpdateOne) SetWorkspace(v *RevenueWorkspace) *PersonAttributeUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetPersonID sets the "person" edge to the Person entity by ID.
 func (_u *PersonAttributeUpdateOne) SetPersonID(id uuid.UUID) *PersonAttributeUpdateOne {
 	_u.mutation.SetPersonID(id)
@@ -1034,26 +935,9 @@ func (_u *PersonAttributeUpdateOne) SetObservation(v *RelationshipObservation) *
 	return _u.SetObservationID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *PersonAttributeUpdateOne) SetUserID(id uuid.UUID) *PersonAttributeUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *PersonAttributeUpdateOne) SetUser(v *User) *PersonAttributeUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the PersonAttributeMutation object of the builder.
 func (_u *PersonAttributeUpdateOne) Mutation() *PersonAttributeMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonAttributeUpdateOne) ClearWorkspace() *PersonAttributeUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
 }
 
 // ClearPerson clears the "person" edge to the Person entity.
@@ -1065,12 +949,6 @@ func (_u *PersonAttributeUpdateOne) ClearPerson() *PersonAttributeUpdateOne {
 // ClearObservation clears the "observation" edge to the RelationshipObservation entity.
 func (_u *PersonAttributeUpdateOne) ClearObservation() *PersonAttributeUpdateOne {
 	_u.mutation.ClearObservation()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *PersonAttributeUpdateOne) ClearUser() *PersonAttributeUpdateOne {
-	_u.mutation.ClearUser()
 	return _u
 }
 
@@ -1089,7 +967,9 @@ func (_u *PersonAttributeUpdateOne) Select(field string, fields ...string) *Pers
 
 // Save executes the query and returns the updated PersonAttribute entity.
 func (_u *PersonAttributeUpdateOne) Save(ctx context.Context) (*PersonAttribute, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -1116,11 +996,15 @@ func (_u *PersonAttributeUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *PersonAttributeUpdateOne) defaults() {
+func (_u *PersonAttributeUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if personattribute.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized personattribute.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := personattribute.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -1288,35 +1172,6 @@ func (_u *PersonAttributeUpdateOne) sqlSave(ctx context.Context) (_node *PersonA
 			sqljson.Append(u, personattribute.FieldSupportingObservationIds, value)
 		})
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personattribute.WorkspaceTable,
-			Columns: []string{personattribute.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personattribute.WorkspaceTable,
-			Columns: []string{personattribute.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.PersonCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -1368,35 +1223,6 @@ func (_u *PersonAttributeUpdateOne) sqlSave(ctx context.Context) (_node *PersonA
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipobservation.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personattribute.UserTable,
-			Columns: []string{personattribute.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personattribute.UserTable,
-			Columns: []string{personattribute.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

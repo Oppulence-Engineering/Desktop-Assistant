@@ -13,8 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/google/uuid"
 )
 
 // SubscriptionUpdate is the builder for updating Subscription entities.
@@ -145,31 +143,16 @@ func (_u *SubscriptionUpdate) ClearStripeSubscriptionID() *SubscriptionUpdate {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *SubscriptionUpdate) SetUserID(id uuid.UUID) *SubscriptionUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *SubscriptionUpdate) SetUser(v *User) *SubscriptionUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the SubscriptionMutation object of the builder.
 func (_u *SubscriptionUpdate) Mutation() *SubscriptionMutation {
 	return _u.mutation
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *SubscriptionUpdate) ClearUser() *SubscriptionUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *SubscriptionUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -196,11 +179,15 @@ func (_u *SubscriptionUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *SubscriptionUpdate) defaults() {
+func (_u *SubscriptionUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if subscription.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized subscription.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := subscription.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -270,35 +257,6 @@ func (_u *SubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if _u.mutation.StripeSubscriptionIDCleared() {
 		_spec.ClearField(subscription.FieldStripeSubscriptionID, field.TypeString)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: true,
-			Table:   subscription.UserTable,
-			Columns: []string{subscription.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: true,
-			Table:   subscription.UserTable,
-			Columns: []string{subscription.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -435,26 +393,9 @@ func (_u *SubscriptionUpdateOne) ClearStripeSubscriptionID() *SubscriptionUpdate
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *SubscriptionUpdateOne) SetUserID(id uuid.UUID) *SubscriptionUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *SubscriptionUpdateOne) SetUser(v *User) *SubscriptionUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the SubscriptionMutation object of the builder.
 func (_u *SubscriptionUpdateOne) Mutation() *SubscriptionMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *SubscriptionUpdateOne) ClearUser() *SubscriptionUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the SubscriptionUpdate builder.
@@ -472,7 +413,9 @@ func (_u *SubscriptionUpdateOne) Select(field string, fields ...string) *Subscri
 
 // Save executes the query and returns the updated Subscription entity.
 func (_u *SubscriptionUpdateOne) Save(ctx context.Context) (*Subscription, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -499,11 +442,15 @@ func (_u *SubscriptionUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *SubscriptionUpdateOne) defaults() {
+func (_u *SubscriptionUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if subscription.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized subscription.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := subscription.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -590,35 +537,6 @@ func (_u *SubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Subscripti
 	}
 	if _u.mutation.StripeSubscriptionIDCleared() {
 		_spec.ClearField(subscription.FieldStripeSubscriptionID, field.TypeString)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: true,
-			Table:   subscription.UserTable,
-			Columns: []string{subscription.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: true,
-			Table:   subscription.UserTable,
-			Columns: []string{subscription.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Subscription{config: _u.config}
 	_spec.Assign = _node.assignValues

@@ -12,10 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
-	"github.com/google/uuid"
 )
 
 // WorkspaceFeatureControlUpdate is the builder for updating WorkspaceFeatureControl entities.
@@ -99,48 +96,16 @@ func (_u *WorkspaceFeatureControlUpdate) ClearReasonCode() *WorkspaceFeatureCont
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *WorkspaceFeatureControlUpdate) SetWorkspaceID(id uuid.UUID) *WorkspaceFeatureControlUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *WorkspaceFeatureControlUpdate) SetWorkspace(v *RevenueWorkspace) *WorkspaceFeatureControlUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *WorkspaceFeatureControlUpdate) SetUserID(id uuid.UUID) *WorkspaceFeatureControlUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *WorkspaceFeatureControlUpdate) SetUser(v *User) *WorkspaceFeatureControlUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the WorkspaceFeatureControlMutation object of the builder.
 func (_u *WorkspaceFeatureControlUpdate) Mutation() *WorkspaceFeatureControlMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *WorkspaceFeatureControlUpdate) ClearWorkspace() *WorkspaceFeatureControlUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *WorkspaceFeatureControlUpdate) ClearUser() *WorkspaceFeatureControlUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *WorkspaceFeatureControlUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -167,11 +132,15 @@ func (_u *WorkspaceFeatureControlUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *WorkspaceFeatureControlUpdate) defaults() {
+func (_u *WorkspaceFeatureControlUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if workspacefeaturecontrol.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized workspacefeaturecontrol.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := workspacefeaturecontrol.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -224,64 +193,6 @@ func (_u *WorkspaceFeatureControlUpdate) sqlSave(ctx context.Context) (_node int
 	}
 	if _u.mutation.ReasonCodeCleared() {
 		_spec.ClearField(workspacefeaturecontrol.FieldReasonCode, field.TypeString)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workspacefeaturecontrol.WorkspaceTable,
-			Columns: []string{workspacefeaturecontrol.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workspacefeaturecontrol.WorkspaceTable,
-			Columns: []string{workspacefeaturecontrol.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workspacefeaturecontrol.UserTable,
-			Columns: []string{workspacefeaturecontrol.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workspacefeaturecontrol.UserTable,
-			Columns: []string{workspacefeaturecontrol.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -371,43 +282,9 @@ func (_u *WorkspaceFeatureControlUpdateOne) ClearReasonCode() *WorkspaceFeatureC
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *WorkspaceFeatureControlUpdateOne) SetWorkspaceID(id uuid.UUID) *WorkspaceFeatureControlUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *WorkspaceFeatureControlUpdateOne) SetWorkspace(v *RevenueWorkspace) *WorkspaceFeatureControlUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *WorkspaceFeatureControlUpdateOne) SetUserID(id uuid.UUID) *WorkspaceFeatureControlUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *WorkspaceFeatureControlUpdateOne) SetUser(v *User) *WorkspaceFeatureControlUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the WorkspaceFeatureControlMutation object of the builder.
 func (_u *WorkspaceFeatureControlUpdateOne) Mutation() *WorkspaceFeatureControlMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *WorkspaceFeatureControlUpdateOne) ClearWorkspace() *WorkspaceFeatureControlUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *WorkspaceFeatureControlUpdateOne) ClearUser() *WorkspaceFeatureControlUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the WorkspaceFeatureControlUpdate builder.
@@ -425,7 +302,9 @@ func (_u *WorkspaceFeatureControlUpdateOne) Select(field string, fields ...strin
 
 // Save executes the query and returns the updated WorkspaceFeatureControl entity.
 func (_u *WorkspaceFeatureControlUpdateOne) Save(ctx context.Context) (*WorkspaceFeatureControl, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -452,11 +331,15 @@ func (_u *WorkspaceFeatureControlUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *WorkspaceFeatureControlUpdateOne) defaults() {
+func (_u *WorkspaceFeatureControlUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if workspacefeaturecontrol.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized workspacefeaturecontrol.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := workspacefeaturecontrol.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -526,64 +409,6 @@ func (_u *WorkspaceFeatureControlUpdateOne) sqlSave(ctx context.Context) (_node 
 	}
 	if _u.mutation.ReasonCodeCleared() {
 		_spec.ClearField(workspacefeaturecontrol.FieldReasonCode, field.TypeString)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workspacefeaturecontrol.WorkspaceTable,
-			Columns: []string{workspacefeaturecontrol.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workspacefeaturecontrol.WorkspaceTable,
-			Columns: []string{workspacefeaturecontrol.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workspacefeaturecontrol.UserTable,
-			Columns: []string{workspacefeaturecontrol.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workspacefeaturecontrol.UserTable,
-			Columns: []string{workspacefeaturecontrol.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &WorkspaceFeatureControl{config: _u.config}
 	_spec.Assign = _node.assignValues

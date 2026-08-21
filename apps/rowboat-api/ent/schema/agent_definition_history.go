@@ -100,7 +100,7 @@ func (AgentDefinitionHistory) Annotations() []schema.Annotation {
 	return []schema.Annotation{entsql.Annotation{Table: "agentdefinition_history"}, enthistory.Annotations{IsHistory: true, Triggers: []enthistory.OpType{enthistory.OpTypeInsert, enthistory.OpTypeUpdate, enthistory.OpTypeDelete}}}
 }
 func (AgentDefinitionHistory) Mixin() []ent.Mixin {
-	return []ent.Mixin{mixin.BaseMixin{}}
+	return []ent.Mixin{mixin.UserTenantMixin{}}
 }
 func (AgentDefinitionHistory) Indexes() []ent.Index {
 	return []ent.Index{index.Fields("history_time")}

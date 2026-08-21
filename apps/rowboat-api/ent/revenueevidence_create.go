@@ -257,7 +257,9 @@ func (_c *RevenueEvidenceCreate) Mutation() *RevenueEvidenceMutation {
 
 // Save creates the RevenueEvidence in the database.
 func (_c *RevenueEvidenceCreate) Save(ctx context.Context) (*RevenueEvidence, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -284,12 +286,18 @@ func (_c *RevenueEvidenceCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *RevenueEvidenceCreate) defaults() {
+func (_c *RevenueEvidenceCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if revenueevidence.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueevidence.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueevidence.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if revenueevidence.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueevidence.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueevidence.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -302,9 +310,13 @@ func (_c *RevenueEvidenceCreate) defaults() {
 		_c.mutation.SetExternalEvidenceRefs(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if revenueevidence.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized revenueevidence.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := revenueevidence.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

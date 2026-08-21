@@ -149,7 +149,9 @@ func (_c *BackgroundTaskRunEventCreate) Mutation() *BackgroundTaskRunEventMutati
 
 // Save creates the BackgroundTaskRunEvent in the database.
 func (_c *BackgroundTaskRunEventCreate) Save(ctx context.Context) (*BackgroundTaskRunEvent, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -176,23 +178,36 @@ func (_c *BackgroundTaskRunEventCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *BackgroundTaskRunEventCreate) defaults() {
+func (_c *BackgroundTaskRunEventCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if backgroundtaskrunevent.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized backgroundtaskrunevent.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := backgroundtaskrunevent.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if backgroundtaskrunevent.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized backgroundtaskrunevent.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := backgroundtaskrunevent.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
 	if _, ok := _c.mutation.ReceivedAt(); !ok {
+		if backgroundtaskrunevent.DefaultReceivedAt == nil {
+			return fmt.Errorf("ent: uninitialized backgroundtaskrunevent.DefaultReceivedAt (forgotten import ent/runtime?)")
+		}
 		v := backgroundtaskrunevent.DefaultReceivedAt()
 		_c.mutation.SetReceivedAt(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if backgroundtaskrunevent.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized backgroundtaskrunevent.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := backgroundtaskrunevent.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

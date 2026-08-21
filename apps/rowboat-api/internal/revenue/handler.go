@@ -649,14 +649,10 @@ func relationshipAttentionToDTO(item *ent.RelationshipAttentionItem) (relationsh
 	if err != nil {
 		return relationshipAttentionDTO{}, err
 	}
-	factors := map[string]int{}
-	if err := json.Unmarshal([]byte(item.RankFactorsJSON), &factors); err != nil {
-		return relationshipAttentionDTO{}, err
-	}
 	return relationshipAttentionDTO{
 		ID: item.ID.String(), Version: item.Version, RelationshipID: rel.ID.String(), RelationshipName: rel.DisplayName,
 		ReasonCode: item.ReasonCode, Explanation: item.Explanation, TriggeringObjectRef: item.TriggeringObjectRef,
-		EvidenceRefs: item.EvidenceRefs, UrgencyBand: item.UrgencyBand, RankScore: item.RankScore, RankFactors: factors,
+		EvidenceRefs: item.EvidenceRefs, UrgencyBand: item.UrgencyBand, RankScore: item.RankScore, RankFactors: item.RankFactorsJSON,
 		SourceRequirements: item.SourceRequirements, RecommendationID: item.RecommendationID,
 		RecommendationRevision: item.RecommendationRevision, OwnerID: item.OwnerID, Status: item.Status,
 		StateReason: item.StateReason, SnoozedUntil: item.SnoozedUntil, ExpiresAt: item.ExpiresAt,

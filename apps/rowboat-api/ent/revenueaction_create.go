@@ -665,7 +665,9 @@ func (_c *RevenueActionCreate) Mutation() *RevenueActionMutation {
 
 // Save creates the RevenueAction in the database.
 func (_c *RevenueActionCreate) Save(ctx context.Context) (*RevenueAction, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -692,12 +694,18 @@ func (_c *RevenueActionCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *RevenueActionCreate) defaults() {
+func (_c *RevenueActionCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if revenueaction.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueaction.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueaction.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if revenueaction.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueaction.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueaction.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -734,9 +742,13 @@ func (_c *RevenueActionCreate) defaults() {
 		_c.mutation.SetReconciliationAttempts(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if revenueaction.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized revenueaction.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := revenueaction.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

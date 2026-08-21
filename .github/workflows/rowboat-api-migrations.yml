@@ -1,0 +1,39 @@
+name: Rowboat API Migrations
+
+on:
+  pull_request:
+    paths:
+      - "apps/rowboat-api/ent/schema/**"
+      - "apps/rowboat-api/migrations/postgres/**"
+      - "apps/rowboat-api/cmd/migrate/**"
+      - "apps/rowboat-api/Makefile"
+      - "apps/rowboat-api/policy/**"
+      - ".github/workflows/rowboat-api-migrations.yml"
+  push:
+    branches: [develop, main]
+    paths:
+      - "apps/rowboat-api/ent/schema/**"
+      - "apps/rowboat-api/migrations/postgres/**"
+      - "apps/rowboat-api/cmd/migrate/**"
+      - "apps/rowboat-api/Makefile"
+      - "apps/rowboat-api/policy/**"
+      - ".github/workflows/rowboat-api-migrations.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  migration-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/rowboat-api/go.mod
+          cache-dependency-path: apps/rowboat-api/go.sum
+      - uses: ariga/setup-atlas@v0
+        with:
+          version: v1.3.0
+      - name: Validate and lint versioned migrations
+        run: make migration-validate migration-lint
+        working-directory: apps/rowboat-api

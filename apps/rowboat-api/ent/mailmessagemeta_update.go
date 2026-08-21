@@ -15,7 +15,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -163,17 +162,6 @@ func (_u *MailMessageMetaUpdate) SetThread(v *MailThread) *MailMessageMetaUpdate
 	return _u.SetThreadID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *MailMessageMetaUpdate) SetUserID(id uuid.UUID) *MailMessageMetaUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *MailMessageMetaUpdate) SetUser(v *User) *MailMessageMetaUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the MailMessageMetaMutation object of the builder.
 func (_u *MailMessageMetaUpdate) Mutation() *MailMessageMetaMutation {
 	return _u.mutation
@@ -185,15 +173,11 @@ func (_u *MailMessageMetaUpdate) ClearThread() *MailMessageMetaUpdate {
 	return _u
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *MailMessageMetaUpdate) ClearUser() *MailMessageMetaUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *MailMessageMetaUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -220,11 +204,15 @@ func (_u *MailMessageMetaUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *MailMessageMetaUpdate) defaults() {
+func (_u *MailMessageMetaUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if mailmessagemeta.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized mailmessagemeta.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := mailmessagemeta.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -320,35 +308,6 @@ func (_u *MailMessageMetaUpdate) sqlSave(ctx context.Context) (_node int, err er
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mailmessagemeta.UserTable,
-			Columns: []string{mailmessagemeta.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mailmessagemeta.UserTable,
-			Columns: []string{mailmessagemeta.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -507,17 +466,6 @@ func (_u *MailMessageMetaUpdateOne) SetThread(v *MailThread) *MailMessageMetaUpd
 	return _u.SetThreadID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *MailMessageMetaUpdateOne) SetUserID(id uuid.UUID) *MailMessageMetaUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *MailMessageMetaUpdateOne) SetUser(v *User) *MailMessageMetaUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the MailMessageMetaMutation object of the builder.
 func (_u *MailMessageMetaUpdateOne) Mutation() *MailMessageMetaMutation {
 	return _u.mutation
@@ -526,12 +474,6 @@ func (_u *MailMessageMetaUpdateOne) Mutation() *MailMessageMetaMutation {
 // ClearThread clears the "thread" edge to the MailThread entity.
 func (_u *MailMessageMetaUpdateOne) ClearThread() *MailMessageMetaUpdateOne {
 	_u.mutation.ClearThread()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *MailMessageMetaUpdateOne) ClearUser() *MailMessageMetaUpdateOne {
-	_u.mutation.ClearUser()
 	return _u
 }
 
@@ -550,7 +492,9 @@ func (_u *MailMessageMetaUpdateOne) Select(field string, fields ...string) *Mail
 
 // Save executes the query and returns the updated MailMessageMeta entity.
 func (_u *MailMessageMetaUpdateOne) Save(ctx context.Context) (*MailMessageMeta, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -577,11 +521,15 @@ func (_u *MailMessageMetaUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *MailMessageMetaUpdateOne) defaults() {
+func (_u *MailMessageMetaUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if mailmessagemeta.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized mailmessagemeta.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := mailmessagemeta.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -694,35 +642,6 @@ func (_u *MailMessageMetaUpdateOne) sqlSave(ctx context.Context) (_node *MailMes
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mailmessagemeta.UserTable,
-			Columns: []string{mailmessagemeta.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mailmessagemeta.UserTable,
-			Columns: []string{mailmessagemeta.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

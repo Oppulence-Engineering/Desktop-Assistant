@@ -12,10 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/google/uuid"
 )
 
 // RevenueWorkspaceMemberUpdate is the builder for updating RevenueWorkspaceMember entities.
@@ -85,48 +82,16 @@ func (_u *RevenueWorkspaceMemberUpdate) SetNillableStatus(v *string) *RevenueWor
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RevenueWorkspaceMemberUpdate) SetWorkspaceID(id uuid.UUID) *RevenueWorkspaceMemberUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueWorkspaceMemberUpdate) SetWorkspace(v *RevenueWorkspace) *RevenueWorkspaceMemberUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RevenueWorkspaceMemberUpdate) SetUserID(id uuid.UUID) *RevenueWorkspaceMemberUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RevenueWorkspaceMemberUpdate) SetUser(v *User) *RevenueWorkspaceMemberUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RevenueWorkspaceMemberMutation object of the builder.
 func (_u *RevenueWorkspaceMemberUpdate) Mutation() *RevenueWorkspaceMemberMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueWorkspaceMemberUpdate) ClearWorkspace() *RevenueWorkspaceMemberUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RevenueWorkspaceMemberUpdate) ClearUser() *RevenueWorkspaceMemberUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *RevenueWorkspaceMemberUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -153,11 +118,15 @@ func (_u *RevenueWorkspaceMemberUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RevenueWorkspaceMemberUpdate) defaults() {
+func (_u *RevenueWorkspaceMemberUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if revenueworkspacemember.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueworkspacemember.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueworkspacemember.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -207,64 +176,6 @@ func (_u *RevenueWorkspaceMemberUpdate) sqlSave(ctx context.Context) (_node int,
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(revenueworkspacemember.FieldStatus, field.TypeString, value)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueworkspacemember.WorkspaceTable,
-			Columns: []string{revenueworkspacemember.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueworkspacemember.WorkspaceTable,
-			Columns: []string{revenueworkspacemember.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueworkspacemember.UserTable,
-			Columns: []string{revenueworkspacemember.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueworkspacemember.UserTable,
-			Columns: []string{revenueworkspacemember.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -340,43 +251,9 @@ func (_u *RevenueWorkspaceMemberUpdateOne) SetNillableStatus(v *string) *Revenue
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RevenueWorkspaceMemberUpdateOne) SetWorkspaceID(id uuid.UUID) *RevenueWorkspaceMemberUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueWorkspaceMemberUpdateOne) SetWorkspace(v *RevenueWorkspace) *RevenueWorkspaceMemberUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RevenueWorkspaceMemberUpdateOne) SetUserID(id uuid.UUID) *RevenueWorkspaceMemberUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RevenueWorkspaceMemberUpdateOne) SetUser(v *User) *RevenueWorkspaceMemberUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RevenueWorkspaceMemberMutation object of the builder.
 func (_u *RevenueWorkspaceMemberUpdateOne) Mutation() *RevenueWorkspaceMemberMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueWorkspaceMemberUpdateOne) ClearWorkspace() *RevenueWorkspaceMemberUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RevenueWorkspaceMemberUpdateOne) ClearUser() *RevenueWorkspaceMemberUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the RevenueWorkspaceMemberUpdate builder.
@@ -394,7 +271,9 @@ func (_u *RevenueWorkspaceMemberUpdateOne) Select(field string, fields ...string
 
 // Save executes the query and returns the updated RevenueWorkspaceMember entity.
 func (_u *RevenueWorkspaceMemberUpdateOne) Save(ctx context.Context) (*RevenueWorkspaceMember, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -421,11 +300,15 @@ func (_u *RevenueWorkspaceMemberUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RevenueWorkspaceMemberUpdateOne) defaults() {
+func (_u *RevenueWorkspaceMemberUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if revenueworkspacemember.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueworkspacemember.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueworkspacemember.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -492,64 +375,6 @@ func (_u *RevenueWorkspaceMemberUpdateOne) sqlSave(ctx context.Context) (_node *
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(revenueworkspacemember.FieldStatus, field.TypeString, value)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueworkspacemember.WorkspaceTable,
-			Columns: []string{revenueworkspacemember.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueworkspacemember.WorkspaceTable,
-			Columns: []string{revenueworkspacemember.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueworkspacemember.UserTable,
-			Columns: []string{revenueworkspacemember.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueworkspacemember.UserTable,
-			Columns: []string{revenueworkspacemember.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &RevenueWorkspaceMember{config: _u.config}
 	_spec.Assign = _node.assignValues

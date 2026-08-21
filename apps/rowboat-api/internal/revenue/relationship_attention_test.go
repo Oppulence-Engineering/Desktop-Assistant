@@ -88,7 +88,7 @@ func TestRelationshipAttentionProjectionIsDeterministicAndMaterialChangesReopenT
 	byReason := map[string]bool{}
 	for _, item := range items {
 		byReason[item.ReasonCode] = true
-		if item.MaterialHash == "" || item.RankFactorsJSON == "" || item.RelationshipStateVersion != 4 {
+		if item.MaterialHash == "" || len(item.RankFactorsJSON) == 0 || item.RelationshipStateVersion != 4 {
 			t.Fatalf("incomplete attention contract: %+v", item)
 		}
 	}

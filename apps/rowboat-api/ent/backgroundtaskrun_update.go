@@ -16,7 +16,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -624,17 +623,6 @@ func (_u *BackgroundTaskRunUpdate) AddRevision(v int) *BackgroundTaskRunUpdate {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *BackgroundTaskRunUpdate) SetUserID(id uuid.UUID) *BackgroundTaskRunUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *BackgroundTaskRunUpdate) SetUser(v *User) *BackgroundTaskRunUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // SetTaskID sets the "task" edge to the BackgroundTask entity by ID.
 func (_u *BackgroundTaskRunUpdate) SetTaskID(id uuid.UUID) *BackgroundTaskRunUpdate {
 	_u.mutation.SetTaskID(id)
@@ -669,12 +657,6 @@ func (_u *BackgroundTaskRunUpdate) AddEvents(v ...*BackgroundTaskRunEvent) *Back
 // Mutation returns the BackgroundTaskRunMutation object of the builder.
 func (_u *BackgroundTaskRunUpdate) Mutation() *BackgroundTaskRunMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *BackgroundTaskRunUpdate) ClearUser() *BackgroundTaskRunUpdate {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // ClearTask clears the "task" edge to the BackgroundTask entity.
@@ -712,7 +694,9 @@ func (_u *BackgroundTaskRunUpdate) RemoveEvents(v ...*BackgroundTaskRunEvent) *B
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *BackgroundTaskRunUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -739,11 +723,15 @@ func (_u *BackgroundTaskRunUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *BackgroundTaskRunUpdate) defaults() {
+func (_u *BackgroundTaskRunUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if backgroundtaskrun.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized backgroundtaskrun.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := backgroundtaskrun.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -971,35 +959,6 @@ func (_u *BackgroundTaskRunUpdate) sqlSave(ctx context.Context) (_node int, err 
 	}
 	if value, ok := _u.mutation.AddedRevision(); ok {
 		_spec.AddField(backgroundtaskrun.FieldRevision, field.TypeInt, value)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   backgroundtaskrun.UserTable,
-			Columns: []string{backgroundtaskrun.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   backgroundtaskrun.UserTable,
-			Columns: []string{backgroundtaskrun.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.TaskCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1715,17 +1674,6 @@ func (_u *BackgroundTaskRunUpdateOne) AddRevision(v int) *BackgroundTaskRunUpdat
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *BackgroundTaskRunUpdateOne) SetUserID(id uuid.UUID) *BackgroundTaskRunUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *BackgroundTaskRunUpdateOne) SetUser(v *User) *BackgroundTaskRunUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // SetTaskID sets the "task" edge to the BackgroundTask entity by ID.
 func (_u *BackgroundTaskRunUpdateOne) SetTaskID(id uuid.UUID) *BackgroundTaskRunUpdateOne {
 	_u.mutation.SetTaskID(id)
@@ -1760,12 +1708,6 @@ func (_u *BackgroundTaskRunUpdateOne) AddEvents(v ...*BackgroundTaskRunEvent) *B
 // Mutation returns the BackgroundTaskRunMutation object of the builder.
 func (_u *BackgroundTaskRunUpdateOne) Mutation() *BackgroundTaskRunMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *BackgroundTaskRunUpdateOne) ClearUser() *BackgroundTaskRunUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // ClearTask clears the "task" edge to the BackgroundTask entity.
@@ -1816,7 +1758,9 @@ func (_u *BackgroundTaskRunUpdateOne) Select(field string, fields ...string) *Ba
 
 // Save executes the query and returns the updated BackgroundTaskRun entity.
 func (_u *BackgroundTaskRunUpdateOne) Save(ctx context.Context) (*BackgroundTaskRun, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -1843,11 +1787,15 @@ func (_u *BackgroundTaskRunUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *BackgroundTaskRunUpdateOne) defaults() {
+func (_u *BackgroundTaskRunUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if backgroundtaskrun.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized backgroundtaskrun.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := backgroundtaskrun.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -2092,35 +2040,6 @@ func (_u *BackgroundTaskRunUpdateOne) sqlSave(ctx context.Context) (_node *Backg
 	}
 	if value, ok := _u.mutation.AddedRevision(); ok {
 		_spec.AddField(backgroundtaskrun.FieldRevision, field.TypeInt, value)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   backgroundtaskrun.UserTable,
-			Columns: []string{backgroundtaskrun.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   backgroundtaskrun.UserTable,
-			Columns: []string{backgroundtaskrun.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.TaskCleared() {
 		edge := &sqlgraph.EdgeSpec{

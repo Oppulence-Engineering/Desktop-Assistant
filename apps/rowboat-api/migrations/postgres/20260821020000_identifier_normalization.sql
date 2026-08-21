@@ -1,0 +1,127 @@
+-- atlas:nolint CD101
+
+-- PostgreSQL truncates identifiers at 63 bytes. Ent/Atlas uses stable hashes
+-- for overlong generated names, so normalize the legacy auto-migration names
+-- once. These are metadata-only renames: indexes are not rebuilt and foreign
+-- keys are not dropped or revalidated. CD101 is suppressed because Atlas
+-- represents constraint renames as drop/add changes during lint inspection.
+
+ALTER INDEX "revenueevidence_source_source_record_id_content_hash_revenue_wo"
+  RENAME TO "revenueevidence_source_source__9c29dc0e2c6e018629a5b95c5f67b4cf";
+ALTER INDEX "mailbodycache_provider_provider_message_id_user_mail_body_cache"
+  RENAME TO "mailbodycache_provider_provide_ae413139c02619b1f1f6a4b8ec947bdb";
+ALTER INDEX "revenueworkspacemember_revenue_workspace_id_user_revenue_worksp"
+  RENAME TO "revenueworkspacemember_revenue_f46244d2fcbd1226a029efb2ccf4c064";
+ALTER INDEX "backgroundtaskschedulestate_trigger_type_schedule_key_backgroun"
+  RENAME TO "backgroundtaskschedulestate_tr_181511ea152b19c130043609babd50ac";
+ALTER INDEX "conversationintelligenceartifact_kind_stable_id_version_revenue"
+  RENAME TO "conversationintelligenceartifa_18e34ca9891cfa2abaab44fce4a8fd9f";
+ALTER INDEX "conversationintelligenceartifact_kind_status_effective_at_relat"
+  RENAME TO "conversationintelligenceartifa_d17a9b4d130d85ad93e5d30c0b807c15";
+ALTER INDEX "relationshipattentionitem_status_rank_score_revenue_workspace_i"
+  RENAME TO "relationshipattentionitem_stat_2de7cf66b5cb84fb7562770b45a97572";
+ALTER INDEX "relationshipidentitycandidate_status_created_at_revenue_workspa"
+  RENAME TO "relationshipidentitycandidate__319f322f23ea306093cb05c6e5044719";
+ALTER INDEX "relationshipidentitydecision_candidate_version_identity_candida"
+  RENAME TO "relationshipidentitydecision_c_961e25e3e13f3a7f04c1192b6b3c826e";
+ALTER INDEX "relationshipidentitydecision_idempotency_key_revenue_workspace_"
+  RENAME TO "relationshipidentitydecision_i_f2b63056b1908df0dc63e581c5fd07b5";
+ALTER INDEX "relationshipobservation_source_external_id_source_version_reven"
+  RENAME TO "relationshipobservation_source_00d9f626f392471f5e836274ccfa36e7";
+ALTER INDEX "relationshipreviewacknowledgement_acknowledged_at_revenue_works"
+  RENAME TO "relationshipreviewacknowledgem_6e26ae93ef39be4c8ad6cbbfb65233b4";
+ALTER INDEX "relationshipreviewacknowledgement_state_version_relationship_id"
+  RENAME TO "relationshipreviewacknowledgem_722bb323c371ca7720376303de1a7b5b";
+ALTER INDEX "relationshipsourcestatus_source_source_account_id_revenue_works"
+  RENAME TO "relationshipsourcestatus_sourc_e9da2ca23700d2dafd7efd04e5a33b03";
+
+ALTER TABLE "background_task_schedule_states"
+  RENAME CONSTRAINT "background_task_schedule_states_background_tasks_schedule_state"
+  TO "background_task_schedule_state_41881d7227518ea10fe18f5f94d3c979";
+ALTER TABLE "background_task_schedule_states"
+  RENAME CONSTRAINT "background_task_schedule_states_users_background_task_schedule_"
+  TO "background_task_schedule_state_2cee65f7000b363b766c694c83fc498a";
+ALTER TABLE "commitment_dependencies"
+  RENAME CONSTRAINT "commitment_dependencies_revenue_workspaces_commitment_dependenc"
+  TO "commitment_dependencies_revenu_92d2eb5a75a66294d280100b545c9de1";
+ALTER TABLE "conversation_intelligence_artifacts"
+  RENAME CONSTRAINT "conversation_intelligence_artifacts_relationships_conversation_"
+  TO "conversation_intelligence_arti_dbc45a86d7780b23c39c20426d3dc5fb";
+ALTER TABLE "conversation_intelligence_artifacts"
+  RENAME CONSTRAINT "conversation_intelligence_artifacts_revenue_workspaces_conversa"
+  TO "conversation_intelligence_arti_1e63f30e8e9419065fc343e9c96e8fcb";
+ALTER TABLE "conversation_intelligence_artifacts"
+  RENAME CONSTRAINT "conversation_intelligence_artifacts_users_conversation_intellig"
+  TO "conversation_intelligence_arti_830936ebd4345e9acc8687a33c237c44";
+ALTER TABLE "person_interaction_stats"
+  RENAME CONSTRAINT "person_interaction_stats_revenue_workspaces_person_interaction_"
+  TO "person_interaction_stats_reven_1a676f2b23db32df6afc400873893086";
+ALTER TABLE "person_merge_candidates"
+  RENAME CONSTRAINT "person_merge_candidates_relationship_persons_existing_merge_can"
+  TO "person_merge_candidates_relati_45e808c38d107cc49fbab0e108ad114e";
+ALTER TABLE "person_merge_candidates"
+  RENAME CONSTRAINT "person_merge_candidates_relationship_persons_proposed_merge_can"
+  TO "person_merge_candidates_relati_7c868c8e12c58a76649e70f51549ebb9";
+ALTER TABLE "person_merge_candidates"
+  RENAME CONSTRAINT "person_merge_candidates_revenue_workspaces_person_merge_candida"
+  TO "person_merge_candidates_revenu_4c3c0c54b5257649793ce552b278651a";
+ALTER TABLE "relationship_assertions"
+  RENAME CONSTRAINT "relationship_assertions_revenue_workspaces_relationship_asserti"
+  TO "relationship_assertions_revenu_cfd12cbb1ca73669db264b0dfd51c59b";
+ALTER TABLE "relationship_attention_items"
+  RENAME CONSTRAINT "relationship_attention_items_revenue_workspaces_relationship_at"
+  TO "relationship_attention_items_r_08f9696c627d891d88bc4d81e117365c";
+ALTER TABLE "relationship_identities"
+  RENAME CONSTRAINT "relationship_identities_revenue_workspaces_relationship_identit"
+  TO "relationship_identities_revenu_e0b8453ee8d90d15355391803ac140cc";
+ALTER TABLE "relationship_identity_candidates"
+  RENAME CONSTRAINT "relationship_identity_candidates_relationships_existing_identit"
+  TO "relationship_identity_candidat_ae88835d2249b6d38bd2f533de654ecf";
+ALTER TABLE "relationship_identity_candidates"
+  RENAME CONSTRAINT "relationship_identity_candidates_relationships_proposed_identit"
+  TO "relationship_identity_candidat_558b8e00693216003504e2b81ecb523f";
+ALTER TABLE "relationship_identity_candidates"
+  RENAME CONSTRAINT "relationship_identity_candidates_revenue_workspaces_identity_ca"
+  TO "relationship_identity_candidat_5df84cd4e08a126f8e3acc4218500a7b";
+ALTER TABLE "relationship_identity_candidates"
+  RENAME CONSTRAINT "relationship_identity_candidates_users_relationship_identity_ca"
+  TO "relationship_identity_candidat_41655d93299b45606450cf3215342f9a";
+ALTER TABLE "relationship_identity_decisions"
+  RENAME CONSTRAINT "relationship_identity_decisions_relationship_identity_candidate"
+  TO "relationship_identity_decision_98a746f78bc1a72238af2e16e0e64297";
+ALTER TABLE "relationship_identity_decisions"
+  RENAME CONSTRAINT "relationship_identity_decisions_revenue_workspaces_relationship"
+  TO "relationship_identity_decision_3358c713811cac11a37178177aa2144a";
+ALTER TABLE "relationship_identity_decisions"
+  RENAME CONSTRAINT "relationship_identity_decisions_users_relationship_identity_dec"
+  TO "relationship_identity_decision_943cf3cec1c94f9e9dac9d6131b3f25b";
+ALTER TABLE "relationship_lineage_events"
+  RENAME CONSTRAINT "relationship_lineage_events_relationship_identity_candidates_li"
+  TO "relationship_lineage_events_re_153de87cb2a9a7540e720323891a5913";
+ALTER TABLE "relationship_lineage_events"
+  RENAME CONSTRAINT "relationship_lineage_events_revenue_workspaces_relationship_lin"
+  TO "relationship_lineage_events_re_0c3d3b5af96265efa66a92bcab3fb986";
+ALTER TABLE "relationship_observations"
+  RENAME CONSTRAINT "relationship_observations_revenue_workspaces_relationship_obser"
+  TO "relationship_observations_reve_5c2e238af69e7038a10e95ab07491e9e";
+ALTER TABLE "relationship_participants"
+  RENAME CONSTRAINT "relationship_participants_revenue_workspaces_relationship_parti"
+  TO "relationship_participants_reve_b92f91fcd1726b66d7b79eb4e2a03861";
+ALTER TABLE "relationship_projection_jobs"
+  RENAME CONSTRAINT "relationship_projection_jobs_revenue_workspaces_relationship_pr"
+  TO "relationship_projection_jobs_r_ee99889c305a24c0a389fdce2a61ab71";
+ALTER TABLE "relationship_review_acknowledgements"
+  RENAME CONSTRAINT "relationship_review_acknowledgements_relationships_review_ackno"
+  TO "relationship_review_acknowledg_bfcfc733623eb171a12a89f7da3916cb";
+ALTER TABLE "relationship_review_acknowledgements"
+  RENAME CONSTRAINT "relationship_review_acknowledgements_revenue_workspaces_relatio"
+  TO "relationship_review_acknowledg_e29235dbcf290bb98a53fdf68fa05970";
+ALTER TABLE "relationship_review_acknowledgements"
+  RENAME CONSTRAINT "relationship_review_acknowledgements_users_relationship_review_"
+  TO "relationship_review_acknowledg_3c0c9190cb433935fda6a82e0a7cb36d";
+ALTER TABLE "relationship_source_status"
+  RENAME CONSTRAINT "relationship_source_status_revenue_workspaces_relationship_sour"
+  TO "relationship_source_status_rev_5d90ff6d5153f9ef9f937c47b30faac3";
+ALTER TABLE "relationship_state_snapshots"
+  RENAME CONSTRAINT "relationship_state_snapshots_revenue_workspaces_relationship_st"
+  TO "relationship_state_snapshots_r_a605a2357bd8e0c0c5dcd8f742af075e";

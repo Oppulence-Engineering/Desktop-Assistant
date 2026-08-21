@@ -207,7 +207,9 @@ func (_c *AgentToolCallCreate) Mutation() *AgentToolCallMutation {
 
 // Save creates the AgentToolCall in the database.
 func (_c *AgentToolCallCreate) Save(ctx context.Context) (*AgentToolCall, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -234,12 +236,18 @@ func (_c *AgentToolCallCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *AgentToolCallCreate) defaults() {
+func (_c *AgentToolCallCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if agenttoolcall.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized agenttoolcall.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := agenttoolcall.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if agenttoolcall.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized agenttoolcall.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := agenttoolcall.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -252,9 +260,13 @@ func (_c *AgentToolCallCreate) defaults() {
 		_c.mutation.SetStatus(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if agenttoolcall.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized agenttoolcall.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := agenttoolcall.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

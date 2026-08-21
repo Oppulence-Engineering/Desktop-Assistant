@@ -14,7 +14,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -194,17 +193,6 @@ func (_u *BackgroundTaskScheduleStateUpdate) AddRevision(v int) *BackgroundTaskS
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *BackgroundTaskScheduleStateUpdate) SetUserID(id uuid.UUID) *BackgroundTaskScheduleStateUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *BackgroundTaskScheduleStateUpdate) SetUser(v *User) *BackgroundTaskScheduleStateUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // SetTaskID sets the "task" edge to the BackgroundTask entity by ID.
 func (_u *BackgroundTaskScheduleStateUpdate) SetTaskID(id uuid.UUID) *BackgroundTaskScheduleStateUpdate {
 	_u.mutation.SetTaskID(id)
@@ -221,12 +209,6 @@ func (_u *BackgroundTaskScheduleStateUpdate) Mutation() *BackgroundTaskScheduleS
 	return _u.mutation
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *BackgroundTaskScheduleStateUpdate) ClearUser() *BackgroundTaskScheduleStateUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // ClearTask clears the "task" edge to the BackgroundTask entity.
 func (_u *BackgroundTaskScheduleStateUpdate) ClearTask() *BackgroundTaskScheduleStateUpdate {
 	_u.mutation.ClearTask()
@@ -235,7 +217,9 @@ func (_u *BackgroundTaskScheduleStateUpdate) ClearTask() *BackgroundTaskSchedule
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *BackgroundTaskScheduleStateUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -262,11 +246,15 @@ func (_u *BackgroundTaskScheduleStateUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *BackgroundTaskScheduleStateUpdate) defaults() {
+func (_u *BackgroundTaskScheduleStateUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if backgroundtaskschedulestate.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized backgroundtaskschedulestate.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := backgroundtaskschedulestate.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -351,35 +339,6 @@ func (_u *BackgroundTaskScheduleStateUpdate) sqlSave(ctx context.Context) (_node
 	}
 	if value, ok := _u.mutation.AddedRevision(); ok {
 		_spec.AddField(backgroundtaskschedulestate.FieldRevision, field.TypeInt, value)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   backgroundtaskschedulestate.UserTable,
-			Columns: []string{backgroundtaskschedulestate.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   backgroundtaskschedulestate.UserTable,
-			Columns: []string{backgroundtaskschedulestate.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.TaskCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -593,17 +552,6 @@ func (_u *BackgroundTaskScheduleStateUpdateOne) AddRevision(v int) *BackgroundTa
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *BackgroundTaskScheduleStateUpdateOne) SetUserID(id uuid.UUID) *BackgroundTaskScheduleStateUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *BackgroundTaskScheduleStateUpdateOne) SetUser(v *User) *BackgroundTaskScheduleStateUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // SetTaskID sets the "task" edge to the BackgroundTask entity by ID.
 func (_u *BackgroundTaskScheduleStateUpdateOne) SetTaskID(id uuid.UUID) *BackgroundTaskScheduleStateUpdateOne {
 	_u.mutation.SetTaskID(id)
@@ -618,12 +566,6 @@ func (_u *BackgroundTaskScheduleStateUpdateOne) SetTask(v *BackgroundTask) *Back
 // Mutation returns the BackgroundTaskScheduleStateMutation object of the builder.
 func (_u *BackgroundTaskScheduleStateUpdateOne) Mutation() *BackgroundTaskScheduleStateMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *BackgroundTaskScheduleStateUpdateOne) ClearUser() *BackgroundTaskScheduleStateUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // ClearTask clears the "task" edge to the BackgroundTask entity.
@@ -647,7 +589,9 @@ func (_u *BackgroundTaskScheduleStateUpdateOne) Select(field string, fields ...s
 
 // Save executes the query and returns the updated BackgroundTaskScheduleState entity.
 func (_u *BackgroundTaskScheduleStateUpdateOne) Save(ctx context.Context) (*BackgroundTaskScheduleState, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -674,11 +618,15 @@ func (_u *BackgroundTaskScheduleStateUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *BackgroundTaskScheduleStateUpdateOne) defaults() {
+func (_u *BackgroundTaskScheduleStateUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if backgroundtaskschedulestate.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized backgroundtaskschedulestate.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := backgroundtaskschedulestate.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -780,35 +728,6 @@ func (_u *BackgroundTaskScheduleStateUpdateOne) sqlSave(ctx context.Context) (_n
 	}
 	if value, ok := _u.mutation.AddedRevision(); ok {
 		_spec.AddField(backgroundtaskschedulestate.FieldRevision, field.TypeInt, value)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   backgroundtaskschedulestate.UserTable,
-			Columns: []string{backgroundtaskschedulestate.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   backgroundtaskschedulestate.UserTable,
-			Columns: []string{backgroundtaskschedulestate.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.TaskCleared() {
 		edge := &sqlgraph.EdgeSpec{

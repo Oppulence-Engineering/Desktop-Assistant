@@ -15,7 +15,7 @@ import (
 type RelationshipSourceStatus struct{ ent.Schema }
 
 // Mixin adds the shared base fields to relationship source statuses.
-func (RelationshipSourceStatus) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RelationshipSourceStatus) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields defines the relationship source status columns.
 func (RelationshipSourceStatus) Fields() []ent.Field {
@@ -62,9 +62,9 @@ func (RelationshipSourceStatus) Fields() []ent.Field {
 func (RelationshipSourceStatus) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("relationship_source_statuses").Unique().Required(),
+			Ref("relationship_source_statuses").Unique().Required().Immutable(),
 		edge.From("user", User.Type).
-			Ref("relationship_source_statuses").Unique().Required(),
+			Ref("relationship_source_statuses").Unique().Required().Immutable(),
 	}
 }
 

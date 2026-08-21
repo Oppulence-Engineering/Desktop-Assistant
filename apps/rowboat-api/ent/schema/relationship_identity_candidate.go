@@ -16,7 +16,7 @@ type RelationshipIdentityCandidate struct{ ent.Schema }
 
 // Mixin adds the common identifier and audit timestamps.
 func (RelationshipIdentityCandidate) Mixin() []ent.Mixin {
-	return []ent.Mixin{mixin.BaseMixin{}}
+	return []ent.Mixin{mixin.WorkspaceTenantMixin{}, mixin.OptimisticLockMixin{Field: "version"}}
 }
 
 // Fields defines the redacted identity signals, impact, and review decision.
@@ -54,10 +54,10 @@ func (RelationshipIdentityCandidate) Fields() []ent.Field {
 // Edges binds both relationship sides and their immutable decision history.
 func (RelationshipIdentityCandidate) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("workspace", RevenueWorkspace.Type).Ref("identity_candidates").Unique().Required(),
+		edge.From("workspace", RevenueWorkspace.Type).Ref("identity_candidates").Unique().Required().Immutable(),
 		edge.From("proposed_relationship", Relationship.Type).Ref("proposed_identity_candidates").Unique().Required(),
 		edge.From("existing_relationship", Relationship.Type).Ref("existing_identity_candidates").Unique().Required(),
-		edge.From("user", User.Type).Ref("relationship_identity_candidates").Unique().Required(),
+		edge.From("user", User.Type).Ref("relationship_identity_candidates").Unique().Required().Immutable(),
 		edge.To("lineage_events", RelationshipLineageEvent.Type).
 			StorageKey(edge.Column("identity_candidate_id")),
 		edge.To("decisions", RelationshipIdentityDecision.Type).

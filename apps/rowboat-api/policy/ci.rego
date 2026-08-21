@@ -21,3 +21,16 @@ deny contains message if {
 	not workflow_contains(fragment)
 	message := sprintf("rowboat-api quality workflow must retain %q", [fragment])
 }
+
+migration_required_fragments := {
+	"ariga/setup-atlas@v0",
+	"v1.3.0",
+	"make migration-validate migration-lint",
+}
+
+deny contains message if {
+	input.name == "Rowboat API Migrations"
+	fragment := migration_required_fragments[_]
+	not workflow_contains(fragment)
+	message := sprintf("rowboat-api migration workflow must retain %q", [fragment])
+}

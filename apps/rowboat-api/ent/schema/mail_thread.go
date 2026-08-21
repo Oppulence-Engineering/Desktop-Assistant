@@ -17,7 +17,7 @@ import (
 type MailThread struct{ ent.Schema }
 
 // Mixin of the MailThread.
-func (MailThread) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (MailThread) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Fields of the MailThread.
 func (MailThread) Fields() []ent.Field {
@@ -49,7 +49,7 @@ func (MailThread) Fields() []ent.Field {
 // Edges of the MailThread.
 func (MailThread) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("mail_threads").Unique().Required(),
+		edge.From("user", User.Type).Ref("mail_threads").Unique().Required().Immutable(),
 		// Resolved link into the revenue graph, when detection matched one.
 		edge.From("relationship", Relationship.Type).Ref("mail_threads").Unique(),
 		edge.To("messages", MailMessageMeta.Type).

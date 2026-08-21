@@ -181,7 +181,9 @@ func (_c *RelationshipIdentityCreate) Mutation() *RelationshipIdentityMutation {
 
 // Save creates the RelationshipIdentity in the database.
 func (_c *RelationshipIdentityCreate) Save(ctx context.Context) (*RelationshipIdentity, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -208,12 +210,18 @@ func (_c *RelationshipIdentityCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *RelationshipIdentityCreate) defaults() {
+func (_c *RelationshipIdentityCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if relationshipidentity.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipidentity.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipidentity.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if relationshipidentity.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipidentity.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipidentity.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -222,9 +230,13 @@ func (_c *RelationshipIdentityCreate) defaults() {
 		_c.mutation.SetConfidence(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if relationshipidentity.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized relationshipidentity.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := relationshipidentity.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

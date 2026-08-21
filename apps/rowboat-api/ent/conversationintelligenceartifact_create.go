@@ -195,7 +195,9 @@ func (_c *ConversationIntelligenceArtifactCreate) Mutation() *ConversationIntell
 
 // Save creates the ConversationIntelligenceArtifact in the database.
 func (_c *ConversationIntelligenceArtifactCreate) Save(ctx context.Context) (*ConversationIntelligenceArtifact, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -222,12 +224,18 @@ func (_c *ConversationIntelligenceArtifactCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *ConversationIntelligenceArtifactCreate) defaults() {
+func (_c *ConversationIntelligenceArtifactCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if conversationintelligenceartifact.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized conversationintelligenceartifact.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := conversationintelligenceartifact.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if conversationintelligenceartifact.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized conversationintelligenceartifact.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := conversationintelligenceartifact.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -240,9 +248,13 @@ func (_c *ConversationIntelligenceArtifactCreate) defaults() {
 		_c.mutation.SetEvidenceRefs(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if conversationintelligenceartifact.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized conversationintelligenceartifact.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := conversationintelligenceartifact.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

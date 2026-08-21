@@ -17,7 +17,7 @@ import (
 type MailBodyCache struct{ ent.Schema }
 
 // Mixin of the MailBodyCache.
-func (MailBodyCache) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (MailBodyCache) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Fields of the MailBodyCache.
 func (MailBodyCache) Fields() []ent.Field {
@@ -36,7 +36,7 @@ func (MailBodyCache) Fields() []ent.Field {
 // Edges of the MailBodyCache.
 func (MailBodyCache) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("mail_body_caches").Unique().Required(),
+		edge.From("user", User.Type).Ref("mail_body_caches").Unique().Required().Immutable(),
 	}
 }
 

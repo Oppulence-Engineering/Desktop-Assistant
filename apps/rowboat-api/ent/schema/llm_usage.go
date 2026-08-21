@@ -17,6 +17,10 @@ import (
 // allocation. The telemetry dimensions come from x-rowboat-* request headers.
 type LLMUsage struct{ ent.Schema }
 
+// Mixin adds tenant metadata/privacy without changing this legacy usage
+// table's id and timestamp columns.
+func (LLMUsage) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantPolicyMixin{}} }
+
 // Annotations of the LLMUsage (GraphQL exposure via entgql).
 func (LLMUsage) Annotations() []schema.Annotation {
 	return []schema.Annotation{
@@ -45,7 +49,7 @@ func (LLMUsage) Fields() []ent.Field {
 // Edges of the LLMUsage.
 func (LLMUsage) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("llm_usages").Unique().Required(),
+		edge.From("user", User.Type).Ref("llm_usages").Unique().Required().Immutable(),
 	}
 }
 

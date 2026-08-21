@@ -26,7 +26,7 @@ import (
 type PersonMergeCandidate struct{ ent.Schema }
 
 // Mixin adds the shared immutable ID and timestamp fields.
-func (PersonMergeCandidate) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (PersonMergeCandidate) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields defines the merge candidate columns.
 func (PersonMergeCandidate) Fields() []ent.Field {
@@ -69,13 +69,13 @@ func (PersonMergeCandidate) Fields() []ent.Field {
 func (PersonMergeCandidate) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("person_merge_candidates").Unique().Required(),
+			Ref("person_merge_candidates").Unique().Required().Immutable(),
 		edge.From("proposed_person", Person.Type).
 			Ref("proposed_merge_candidates").Unique().Required(),
 		edge.From("existing_person", Person.Type).
 			Ref("existing_merge_candidates").Unique().Required(),
 		edge.From("user", User.Type).
-			Ref("person_merge_candidates").Unique().Required(),
+			Ref("person_merge_candidates").Unique().Required().Immutable(),
 	}
 }
 

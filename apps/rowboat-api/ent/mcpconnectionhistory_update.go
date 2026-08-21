@@ -41,7 +41,9 @@ func (_u *MCPConnectionHistoryUpdate) Mutation() *MCPConnectionHistoryMutation {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *MCPConnectionHistoryUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -68,11 +70,15 @@ func (_u *MCPConnectionHistoryUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *MCPConnectionHistoryUpdate) defaults() {
+func (_u *MCPConnectionHistoryUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if mcpconnectionhistory.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized mcpconnectionhistory.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := mcpconnectionhistory.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 func (_u *MCPConnectionHistoryUpdate) sqlSave(ctx context.Context) (_node int, err error) {
@@ -154,7 +160,9 @@ func (_u *MCPConnectionHistoryUpdateOne) Select(field string, fields ...string) 
 
 // Save executes the query and returns the updated MCPConnectionHistory entity.
 func (_u *MCPConnectionHistoryUpdateOne) Save(ctx context.Context) (*MCPConnectionHistory, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -181,11 +189,15 @@ func (_u *MCPConnectionHistoryUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *MCPConnectionHistoryUpdateOne) defaults() {
+func (_u *MCPConnectionHistoryUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if mcpconnectionhistory.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized mcpconnectionhistory.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := mcpconnectionhistory.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 func (_u *MCPConnectionHistoryUpdateOne) sqlSave(ctx context.Context) (_node *MCPConnectionHistory, err error) {

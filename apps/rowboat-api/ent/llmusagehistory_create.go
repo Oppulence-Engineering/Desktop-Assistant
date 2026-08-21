@@ -190,7 +190,9 @@ func (_c *LLMUsageHistoryCreate) Mutation() *LLMUsageHistoryMutation {
 
 // Save creates the LLMUsageHistory in the database.
 func (_c *LLMUsageHistoryCreate) Save(ctx context.Context) (*LLMUsageHistory, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -217,8 +219,11 @@ func (_c *LLMUsageHistoryCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *LLMUsageHistoryCreate) defaults() {
+func (_c *LLMUsageHistoryCreate) defaults() error {
 	if _, ok := _c.mutation.HistoryTime(); !ok {
+		if llmusagehistory.DefaultHistoryTime == nil {
+			return fmt.Errorf("ent: uninitialized llmusagehistory.DefaultHistoryTime (forgotten import ent/runtime?)")
+		}
 		v := llmusagehistory.DefaultHistoryTime()
 		_c.mutation.SetHistoryTime(v)
 	}
@@ -235,13 +240,20 @@ func (_c *LLMUsageHistoryCreate) defaults() {
 		_c.mutation.SetCostUnits(v)
 	}
 	if _, ok := _c.mutation.Ts(); !ok {
+		if llmusagehistory.DefaultTs == nil {
+			return fmt.Errorf("ent: uninitialized llmusagehistory.DefaultTs (forgotten import ent/runtime?)")
+		}
 		v := llmusagehistory.DefaultTs()
 		_c.mutation.SetTs(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if llmusagehistory.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized llmusagehistory.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := llmusagehistory.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

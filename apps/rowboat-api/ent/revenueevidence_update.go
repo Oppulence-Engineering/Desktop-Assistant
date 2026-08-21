@@ -17,8 +17,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -236,28 +234,6 @@ func (_u *RevenueEvidenceUpdate) AppendExternalEvidenceRefs(v []string) *Revenue
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RevenueEvidenceUpdate) SetWorkspaceID(id uuid.UUID) *RevenueEvidenceUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueEvidenceUpdate) SetWorkspace(v *RevenueWorkspace) *RevenueEvidenceUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RevenueEvidenceUpdate) SetUserID(id uuid.UUID) *RevenueEvidenceUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RevenueEvidenceUpdate) SetUser(v *User) *RevenueEvidenceUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // AddRelationshipIDs adds the "relationships" edge to the Relationship entity by IDs.
 func (_u *RevenueEvidenceUpdate) AddRelationshipIDs(ids ...uuid.UUID) *RevenueEvidenceUpdate {
 	_u.mutation.AddRelationshipIDs(ids...)
@@ -306,18 +282,6 @@ func (_u *RevenueEvidenceUpdate) AddActions(v ...*RevenueAction) *RevenueEvidenc
 // Mutation returns the RevenueEvidenceMutation object of the builder.
 func (_u *RevenueEvidenceUpdate) Mutation() *RevenueEvidenceMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueEvidenceUpdate) ClearWorkspace() *RevenueEvidenceUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RevenueEvidenceUpdate) ClearUser() *RevenueEvidenceUpdate {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // ClearRelationships clears all "relationships" edges to the Relationship entity.
@@ -385,7 +349,9 @@ func (_u *RevenueEvidenceUpdate) RemoveActions(v ...*RevenueAction) *RevenueEvid
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *RevenueEvidenceUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -412,11 +378,15 @@ func (_u *RevenueEvidenceUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RevenueEvidenceUpdate) defaults() {
+func (_u *RevenueEvidenceUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if revenueevidence.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueevidence.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueevidence.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -523,64 +493,6 @@ func (_u *RevenueEvidenceUpdate) sqlSave(ctx context.Context) (_node int, err er
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, revenueevidence.FieldExternalEvidenceRefs, value)
 		})
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueevidence.WorkspaceTable,
-			Columns: []string{revenueevidence.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueevidence.WorkspaceTable,
-			Columns: []string{revenueevidence.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueevidence.UserTable,
-			Columns: []string{revenueevidence.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueevidence.UserTable,
-			Columns: []string{revenueevidence.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.RelationshipsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -938,28 +850,6 @@ func (_u *RevenueEvidenceUpdateOne) AppendExternalEvidenceRefs(v []string) *Reve
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RevenueEvidenceUpdateOne) SetWorkspaceID(id uuid.UUID) *RevenueEvidenceUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueEvidenceUpdateOne) SetWorkspace(v *RevenueWorkspace) *RevenueEvidenceUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RevenueEvidenceUpdateOne) SetUserID(id uuid.UUID) *RevenueEvidenceUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RevenueEvidenceUpdateOne) SetUser(v *User) *RevenueEvidenceUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // AddRelationshipIDs adds the "relationships" edge to the Relationship entity by IDs.
 func (_u *RevenueEvidenceUpdateOne) AddRelationshipIDs(ids ...uuid.UUID) *RevenueEvidenceUpdateOne {
 	_u.mutation.AddRelationshipIDs(ids...)
@@ -1008,18 +898,6 @@ func (_u *RevenueEvidenceUpdateOne) AddActions(v ...*RevenueAction) *RevenueEvid
 // Mutation returns the RevenueEvidenceMutation object of the builder.
 func (_u *RevenueEvidenceUpdateOne) Mutation() *RevenueEvidenceMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueEvidenceUpdateOne) ClearWorkspace() *RevenueEvidenceUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RevenueEvidenceUpdateOne) ClearUser() *RevenueEvidenceUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // ClearRelationships clears all "relationships" edges to the Relationship entity.
@@ -1100,7 +978,9 @@ func (_u *RevenueEvidenceUpdateOne) Select(field string, fields ...string) *Reve
 
 // Save executes the query and returns the updated RevenueEvidence entity.
 func (_u *RevenueEvidenceUpdateOne) Save(ctx context.Context) (*RevenueEvidence, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -1127,11 +1007,15 @@ func (_u *RevenueEvidenceUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RevenueEvidenceUpdateOne) defaults() {
+func (_u *RevenueEvidenceUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if revenueevidence.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueevidence.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueevidence.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -1255,64 +1139,6 @@ func (_u *RevenueEvidenceUpdateOne) sqlSave(ctx context.Context) (_node *Revenue
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, revenueevidence.FieldExternalEvidenceRefs, value)
 		})
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueevidence.WorkspaceTable,
-			Columns: []string{revenueevidence.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueevidence.WorkspaceTable,
-			Columns: []string{revenueevidence.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueevidence.UserTable,
-			Columns: []string{revenueevidence.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueevidence.UserTable,
-			Columns: []string{revenueevidence.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.RelationshipsCleared() {
 		edge := &sqlgraph.EdgeSpec{

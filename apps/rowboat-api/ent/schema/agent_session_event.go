@@ -17,7 +17,7 @@ import (
 type AgentSessionEvent struct{ ent.Schema }
 
 // Mixin of the AgentSessionEvent.
-func (AgentSessionEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (AgentSessionEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Fields of the AgentSessionEvent.
 func (AgentSessionEvent) Fields() []ent.Field {
@@ -35,7 +35,7 @@ func (AgentSessionEvent) Fields() []ent.Field {
 // Edges of the AgentSessionEvent.
 func (AgentSessionEvent) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("agent_session_events").Unique().Required(),
+		edge.From("user", User.Type).Ref("agent_session_events").Unique().Required().Immutable(),
 		edge.From("session", AgentSession.Type).Ref("events").Unique().Required(),
 	}
 }

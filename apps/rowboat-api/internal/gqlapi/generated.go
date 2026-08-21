@@ -992,7 +992,6 @@ type ComplexityRoot struct {
 		MaterialHash             func(childComplexity int) int
 		OwnerID                  func(childComplexity int) int
 		ProjectorVersion         func(childComplexity int) int
-		RankFactorsJSON          func(childComplexity int) int
 		RankScore                func(childComplexity int) int
 		ReasonCode               func(childComplexity int) int
 		RecommendationID         func(childComplexity int) int
@@ -6230,12 +6229,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RelationshipAttentionItem.ProjectorVersion(childComplexity), true
-	case "RelationshipAttentionItem.rankFactorsJSON":
-		if e.ComplexityRoot.RelationshipAttentionItem.RankFactorsJSON == nil {
-			break
-		}
-
-		return e.ComplexityRoot.RelationshipAttentionItem.RankFactorsJSON(childComplexity), true
 	case "RelationshipAttentionItem.rankScore":
 		if e.ComplexityRoot.RelationshipAttentionItem.RankScore == nil {
 			break
@@ -10942,8 +10935,6 @@ func (ec *executionContext) childFields_RelationshipAttentionItem(ctx context.Co
 		return ec.fieldContext_RelationshipAttentionItem_urgencyBand(ctx, field)
 	case "rankScore":
 		return ec.fieldContext_RelationshipAttentionItem_rankScore(ctx, field)
-	case "rankFactorsJSON":
-		return ec.fieldContext_RelationshipAttentionItem_rankFactorsJSON(ctx, field)
 	case "sourceRequirements":
 		return ec.fieldContext_RelationshipAttentionItem_sourceRequirements(ctx, field)
 	case "recommendationID":
@@ -31859,29 +31850,6 @@ func (ec *executionContext) _RelationshipAttentionItem_rankScore(ctx context.Con
 }
 func (ec *executionContext) fieldContext_RelationshipAttentionItem_rankScore(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("RelationshipAttentionItem", field, false, false, errors.New("field of type Int does not have child fields"))
-}
-
-func (ec *executionContext) _RelationshipAttentionItem_rankFactorsJSON(ctx context.Context, field graphql.CollectedField, obj *ent.RelationshipAttentionItem) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_RelationshipAttentionItem_rankFactorsJSON(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.RankFactorsJSON, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalNString2string(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_RelationshipAttentionItem_rankFactorsJSON(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("RelationshipAttentionItem", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _RelationshipAttentionItem_sourceRequirements(ctx context.Context, field graphql.CollectedField, obj *ent.RelationshipAttentionItem) (ret graphql.Marshaler) {
@@ -87169,7 +87137,7 @@ func (ec *executionContext) unmarshalInputRelationshipAttentionItemWhereInput(ct
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "stableKey", "stableKeyNEQ", "stableKeyIn", "stableKeyNotIn", "stableKeyGT", "stableKeyGTE", "stableKeyLT", "stableKeyLTE", "stableKeyContains", "stableKeyHasPrefix", "stableKeyHasSuffix", "stableKeyEqualFold", "stableKeyContainsFold", "version", "versionNEQ", "versionIn", "versionNotIn", "versionGT", "versionGTE", "versionLT", "versionLTE", "reasonCode", "reasonCodeNEQ", "reasonCodeIn", "reasonCodeNotIn", "reasonCodeGT", "reasonCodeGTE", "reasonCodeLT", "reasonCodeLTE", "reasonCodeContains", "reasonCodeHasPrefix", "reasonCodeHasSuffix", "reasonCodeEqualFold", "reasonCodeContainsFold", "explanation", "explanationNEQ", "explanationIn", "explanationNotIn", "explanationGT", "explanationGTE", "explanationLT", "explanationLTE", "explanationContains", "explanationHasPrefix", "explanationHasSuffix", "explanationEqualFold", "explanationContainsFold", "triggeringObjectRef", "triggeringObjectRefNEQ", "triggeringObjectRefIn", "triggeringObjectRefNotIn", "triggeringObjectRefGT", "triggeringObjectRefGTE", "triggeringObjectRefLT", "triggeringObjectRefLTE", "triggeringObjectRefContains", "triggeringObjectRefHasPrefix", "triggeringObjectRefHasSuffix", "triggeringObjectRefEqualFold", "triggeringObjectRefContainsFold", "urgencyBand", "urgencyBandNEQ", "urgencyBandIn", "urgencyBandNotIn", "urgencyBandGT", "urgencyBandGTE", "urgencyBandLT", "urgencyBandLTE", "urgencyBandContains", "urgencyBandHasPrefix", "urgencyBandHasSuffix", "urgencyBandEqualFold", "urgencyBandContainsFold", "rankScore", "rankScoreNEQ", "rankScoreIn", "rankScoreNotIn", "rankScoreGT", "rankScoreGTE", "rankScoreLT", "rankScoreLTE", "rankFactorsJSON", "rankFactorsJSONNEQ", "rankFactorsJSONIn", "rankFactorsJSONNotIn", "rankFactorsJSONGT", "rankFactorsJSONGTE", "rankFactorsJSONLT", "rankFactorsJSONLTE", "rankFactorsJSONContains", "rankFactorsJSONHasPrefix", "rankFactorsJSONHasSuffix", "rankFactorsJSONEqualFold", "rankFactorsJSONContainsFold", "recommendationID", "recommendationIDNEQ", "recommendationIDIn", "recommendationIDNotIn", "recommendationIDGT", "recommendationIDGTE", "recommendationIDLT", "recommendationIDLTE", "recommendationIDIsNil", "recommendationIDNotNil", "recommendationRevision", "recommendationRevisionNEQ", "recommendationRevisionIn", "recommendationRevisionNotIn", "recommendationRevisionGT", "recommendationRevisionGTE", "recommendationRevisionLT", "recommendationRevisionLTE", "ownerID", "ownerIDNEQ", "ownerIDIn", "ownerIDNotIn", "ownerIDGT", "ownerIDGTE", "ownerIDLT", "ownerIDLTE", "ownerIDIsNil", "ownerIDNotNil", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "stateReason", "stateReasonNEQ", "stateReasonIn", "stateReasonNotIn", "stateReasonGT", "stateReasonGTE", "stateReasonLT", "stateReasonLTE", "stateReasonContains", "stateReasonHasPrefix", "stateReasonHasSuffix", "stateReasonIsNil", "stateReasonNotNil", "stateReasonEqualFold", "stateReasonContainsFold", "snoozedUntil", "snoozedUntilNEQ", "snoozedUntilIn", "snoozedUntilNotIn", "snoozedUntilGT", "snoozedUntilGTE", "snoozedUntilLT", "snoozedUntilLTE", "snoozedUntilIsNil", "snoozedUntilNotNil", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "expiresAtIsNil", "expiresAtNotNil", "detectorVersion", "detectorVersionNEQ", "detectorVersionIn", "detectorVersionNotIn", "detectorVersionGT", "detectorVersionGTE", "detectorVersionLT", "detectorVersionLTE", "projectorVersion", "projectorVersionNEQ", "projectorVersionIn", "projectorVersionNotIn", "projectorVersionGT", "projectorVersionGTE", "projectorVersionLT", "projectorVersionLTE", "relationshipStateVersion", "relationshipStateVersionNEQ", "relationshipStateVersionIn", "relationshipStateVersionNotIn", "relationshipStateVersionGT", "relationshipStateVersionGTE", "relationshipStateVersionLT", "relationshipStateVersionLTE", "materialHash", "materialHashNEQ", "materialHashIn", "materialHashNotIn", "materialHashGT", "materialHashGTE", "materialHashLT", "materialHashLTE", "materialHashContains", "materialHashHasPrefix", "materialHashHasSuffix", "materialHashEqualFold", "materialHashContainsFold", "lastDetectedAt", "lastDetectedAtNEQ", "lastDetectedAtIn", "lastDetectedAtNotIn", "lastDetectedAtGT", "lastDetectedAtGTE", "lastDetectedAtLT", "lastDetectedAtLTE", "acknowledgedBy", "acknowledgedByNEQ", "acknowledgedByIn", "acknowledgedByNotIn", "acknowledgedByGT", "acknowledgedByGTE", "acknowledgedByLT", "acknowledgedByLTE", "acknowledgedByIsNil", "acknowledgedByNotNil", "acknowledgedAt", "acknowledgedAtNEQ", "acknowledgedAtIn", "acknowledgedAtNotIn", "acknowledgedAtGT", "acknowledgedAtGTE", "acknowledgedAtLT", "acknowledgedAtLTE", "acknowledgedAtIsNil", "acknowledgedAtNotNil", "dismissedBy", "dismissedByNEQ", "dismissedByIn", "dismissedByNotIn", "dismissedByGT", "dismissedByGTE", "dismissedByLT", "dismissedByLTE", "dismissedByIsNil", "dismissedByNotNil", "dismissedAt", "dismissedAtNEQ", "dismissedAtIn", "dismissedAtNotIn", "dismissedAtGT", "dismissedAtGTE", "dismissedAtLT", "dismissedAtLTE", "dismissedAtIsNil", "dismissedAtNotNil", "hasWorkspace", "hasWorkspaceWith", "hasRelationship", "hasRelationshipWith", "hasUser", "hasUserWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "stableKey", "stableKeyNEQ", "stableKeyIn", "stableKeyNotIn", "stableKeyGT", "stableKeyGTE", "stableKeyLT", "stableKeyLTE", "stableKeyContains", "stableKeyHasPrefix", "stableKeyHasSuffix", "stableKeyEqualFold", "stableKeyContainsFold", "version", "versionNEQ", "versionIn", "versionNotIn", "versionGT", "versionGTE", "versionLT", "versionLTE", "reasonCode", "reasonCodeNEQ", "reasonCodeIn", "reasonCodeNotIn", "reasonCodeGT", "reasonCodeGTE", "reasonCodeLT", "reasonCodeLTE", "reasonCodeContains", "reasonCodeHasPrefix", "reasonCodeHasSuffix", "reasonCodeEqualFold", "reasonCodeContainsFold", "explanation", "explanationNEQ", "explanationIn", "explanationNotIn", "explanationGT", "explanationGTE", "explanationLT", "explanationLTE", "explanationContains", "explanationHasPrefix", "explanationHasSuffix", "explanationEqualFold", "explanationContainsFold", "triggeringObjectRef", "triggeringObjectRefNEQ", "triggeringObjectRefIn", "triggeringObjectRefNotIn", "triggeringObjectRefGT", "triggeringObjectRefGTE", "triggeringObjectRefLT", "triggeringObjectRefLTE", "triggeringObjectRefContains", "triggeringObjectRefHasPrefix", "triggeringObjectRefHasSuffix", "triggeringObjectRefEqualFold", "triggeringObjectRefContainsFold", "urgencyBand", "urgencyBandNEQ", "urgencyBandIn", "urgencyBandNotIn", "urgencyBandGT", "urgencyBandGTE", "urgencyBandLT", "urgencyBandLTE", "urgencyBandContains", "urgencyBandHasPrefix", "urgencyBandHasSuffix", "urgencyBandEqualFold", "urgencyBandContainsFold", "rankScore", "rankScoreNEQ", "rankScoreIn", "rankScoreNotIn", "rankScoreGT", "rankScoreGTE", "rankScoreLT", "rankScoreLTE", "recommendationID", "recommendationIDNEQ", "recommendationIDIn", "recommendationIDNotIn", "recommendationIDGT", "recommendationIDGTE", "recommendationIDLT", "recommendationIDLTE", "recommendationIDIsNil", "recommendationIDNotNil", "recommendationRevision", "recommendationRevisionNEQ", "recommendationRevisionIn", "recommendationRevisionNotIn", "recommendationRevisionGT", "recommendationRevisionGTE", "recommendationRevisionLT", "recommendationRevisionLTE", "ownerID", "ownerIDNEQ", "ownerIDIn", "ownerIDNotIn", "ownerIDGT", "ownerIDGTE", "ownerIDLT", "ownerIDLTE", "ownerIDIsNil", "ownerIDNotNil", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "stateReason", "stateReasonNEQ", "stateReasonIn", "stateReasonNotIn", "stateReasonGT", "stateReasonGTE", "stateReasonLT", "stateReasonLTE", "stateReasonContains", "stateReasonHasPrefix", "stateReasonHasSuffix", "stateReasonIsNil", "stateReasonNotNil", "stateReasonEqualFold", "stateReasonContainsFold", "snoozedUntil", "snoozedUntilNEQ", "snoozedUntilIn", "snoozedUntilNotIn", "snoozedUntilGT", "snoozedUntilGTE", "snoozedUntilLT", "snoozedUntilLTE", "snoozedUntilIsNil", "snoozedUntilNotNil", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "expiresAtIsNil", "expiresAtNotNil", "detectorVersion", "detectorVersionNEQ", "detectorVersionIn", "detectorVersionNotIn", "detectorVersionGT", "detectorVersionGTE", "detectorVersionLT", "detectorVersionLTE", "projectorVersion", "projectorVersionNEQ", "projectorVersionIn", "projectorVersionNotIn", "projectorVersionGT", "projectorVersionGTE", "projectorVersionLT", "projectorVersionLTE", "relationshipStateVersion", "relationshipStateVersionNEQ", "relationshipStateVersionIn", "relationshipStateVersionNotIn", "relationshipStateVersionGT", "relationshipStateVersionGTE", "relationshipStateVersionLT", "relationshipStateVersionLTE", "materialHash", "materialHashNEQ", "materialHashIn", "materialHashNotIn", "materialHashGT", "materialHashGTE", "materialHashLT", "materialHashLTE", "materialHashContains", "materialHashHasPrefix", "materialHashHasSuffix", "materialHashEqualFold", "materialHashContainsFold", "lastDetectedAt", "lastDetectedAtNEQ", "lastDetectedAtIn", "lastDetectedAtNotIn", "lastDetectedAtGT", "lastDetectedAtGTE", "lastDetectedAtLT", "lastDetectedAtLTE", "acknowledgedBy", "acknowledgedByNEQ", "acknowledgedByIn", "acknowledgedByNotIn", "acknowledgedByGT", "acknowledgedByGTE", "acknowledgedByLT", "acknowledgedByLTE", "acknowledgedByIsNil", "acknowledgedByNotNil", "acknowledgedAt", "acknowledgedAtNEQ", "acknowledgedAtIn", "acknowledgedAtNotIn", "acknowledgedAtGT", "acknowledgedAtGTE", "acknowledgedAtLT", "acknowledgedAtLTE", "acknowledgedAtIsNil", "acknowledgedAtNotNil", "dismissedBy", "dismissedByNEQ", "dismissedByIn", "dismissedByNotIn", "dismissedByGT", "dismissedByGTE", "dismissedByLT", "dismissedByLTE", "dismissedByIsNil", "dismissedByNotNil", "dismissedAt", "dismissedAtNEQ", "dismissedAtIn", "dismissedAtNotIn", "dismissedAtGT", "dismissedAtGTE", "dismissedAtLT", "dismissedAtLTE", "dismissedAtIsNil", "dismissedAtNotNil", "hasWorkspace", "hasWorkspaceWith", "hasRelationship", "hasRelationshipWith", "hasUser", "hasUserWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -87932,97 +87900,6 @@ func (ec *executionContext) unmarshalInputRelationshipAttentionItemWhereInput(ct
 				return it, err
 			}
 			it.RankScoreLTE = data
-		case "rankFactorsJSON":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rankFactorsJSON"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RankFactorsJSON = data
-		case "rankFactorsJSONNEQ":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rankFactorsJSONNEQ"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RankFactorsJSONNEQ = data
-		case "rankFactorsJSONIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rankFactorsJSONIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RankFactorsJSONIn = data
-		case "rankFactorsJSONNotIn":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rankFactorsJSONNotIn"))
-			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RankFactorsJSONNotIn = data
-		case "rankFactorsJSONGT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rankFactorsJSONGT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RankFactorsJSONGT = data
-		case "rankFactorsJSONGTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rankFactorsJSONGTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RankFactorsJSONGTE = data
-		case "rankFactorsJSONLT":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rankFactorsJSONLT"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RankFactorsJSONLT = data
-		case "rankFactorsJSONLTE":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rankFactorsJSONLTE"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RankFactorsJSONLTE = data
-		case "rankFactorsJSONContains":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rankFactorsJSONContains"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RankFactorsJSONContains = data
-		case "rankFactorsJSONHasPrefix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rankFactorsJSONHasPrefix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RankFactorsJSONHasPrefix = data
-		case "rankFactorsJSONHasSuffix":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rankFactorsJSONHasSuffix"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RankFactorsJSONHasSuffix = data
-		case "rankFactorsJSONEqualFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rankFactorsJSONEqualFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RankFactorsJSONEqualFold = data
-		case "rankFactorsJSONContainsFold":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rankFactorsJSONContainsFold"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RankFactorsJSONContainsFold = data
 		case "recommendationID":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("recommendationID"))
 			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
@@ -123635,11 +123512,6 @@ func (ec *executionContext) _RelationshipAttentionItem(ctx context.Context, sel 
 			}
 		case "rankScore":
 			out.Values[i] = ec._RelationshipAttentionItem_rankScore(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "rankFactorsJSON":
-			out.Values[i] = ec._RelationshipAttentionItem_rankFactorsJSON(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

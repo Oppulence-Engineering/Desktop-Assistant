@@ -994,7 +994,8 @@ func (c *ActionOutcomeClient) QueryUser(_m *ActionOutcome) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *ActionOutcomeClient) Hooks() []Hook {
-	return c.hooks.ActionOutcome
+	hooks := c.hooks.ActionOutcome
+	return append(hooks[:len(hooks):len(hooks)], actionoutcome.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1143,7 +1144,8 @@ func (c *ActionProposalClient) QueryUser(_m *ActionProposal) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *ActionProposalClient) Hooks() []Hook {
-	return c.hooks.ActionProposal
+	hooks := c.hooks.ActionProposal
+	return append(hooks[:len(hooks):len(hooks)], actionproposal.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1308,7 +1310,8 @@ func (c *AgentApprovalClient) QuerySession(_m *AgentApproval) *AgentSessionQuery
 
 // Hooks returns the client hooks.
 func (c *AgentApprovalClient) Hooks() []Hook {
-	return c.hooks.AgentApproval
+	hooks := c.hooks.AgentApproval
+	return append(hooks[:len(hooks):len(hooks)], agentapproval.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1473,7 +1476,8 @@ func (c *AgentDefinitionClient) QuerySessions(_m *AgentDefinition) *AgentSession
 
 // Hooks returns the client hooks.
 func (c *AgentDefinitionClient) Hooks() []Hook {
-	return c.hooks.AgentDefinition
+	hooks := c.hooks.AgentDefinition
+	return append(hooks[:len(hooks):len(hooks)], agentdefinition.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1606,7 +1610,8 @@ func (c *AgentDefinitionHistoryClient) GetX(ctx context.Context, id uuid.UUID) *
 
 // Hooks returns the client hooks.
 func (c *AgentDefinitionHistoryClient) Hooks() []Hook {
-	return c.hooks.AgentDefinitionHistory
+	hooks := c.hooks.AgentDefinitionHistory
+	return append(hooks[:len(hooks):len(hooks)], agentdefinitionhistory.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1819,7 +1824,8 @@ func (c *AgentSessionClient) QueryApprovals(_m *AgentSession) *AgentApprovalQuer
 
 // Hooks returns the client hooks.
 func (c *AgentSessionClient) Hooks() []Hook {
-	return c.hooks.AgentSession
+	hooks := c.hooks.AgentSession
+	return append(hooks[:len(hooks):len(hooks)], agentsession.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1984,7 +1990,8 @@ func (c *AgentSessionEventClient) QuerySession(_m *AgentSessionEvent) *AgentSess
 
 // Hooks returns the client hooks.
 func (c *AgentSessionEventClient) Hooks() []Hook {
-	return c.hooks.AgentSessionEvent
+	hooks := c.hooks.AgentSessionEvent
+	return append(hooks[:len(hooks):len(hooks)], agentsessionevent.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2149,7 +2156,8 @@ func (c *AgentToolCallClient) QueryTurn(_m *AgentToolCall) *AgentTurnQuery {
 
 // Hooks returns the client hooks.
 func (c *AgentToolCallClient) Hooks() []Hook {
-	return c.hooks.AgentToolCall
+	hooks := c.hooks.AgentToolCall
+	return append(hooks[:len(hooks):len(hooks)], agenttoolcall.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2298,7 +2306,8 @@ func (c *AgentToolResultBlobClient) QueryUser(_m *AgentToolResultBlob) *UserQuer
 
 // Hooks returns the client hooks.
 func (c *AgentToolResultBlobClient) Hooks() []Hook {
-	return c.hooks.AgentToolResultBlob
+	hooks := c.hooks.AgentToolResultBlob
+	return append(hooks[:len(hooks):len(hooks)], agenttoolresultblob.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2479,7 +2488,8 @@ func (c *AgentTurnClient) QueryToolCalls(_m *AgentTurn) *AgentToolCallQuery {
 
 // Hooks returns the client hooks.
 func (c *AgentTurnClient) Hooks() []Hook {
-	return c.hooks.AgentTurn
+	hooks := c.hooks.AgentTurn
+	return append(hooks[:len(hooks):len(hooks)], agentturn.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2628,7 +2638,8 @@ func (c *ApprovalTokenClient) QueryUser(_m *ApprovalToken) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *ApprovalTokenClient) Hooks() []Hook {
-	return c.hooks.ApprovalToken
+	hooks := c.hooks.ApprovalToken
+	return append(hooks[:len(hooks):len(hooks)], approvaltoken.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2841,7 +2852,8 @@ func (c *BackgroundTaskClient) QueryScheduleStates(_m *BackgroundTask) *Backgrou
 
 // Hooks returns the client hooks.
 func (c *BackgroundTaskClient) Hooks() []Hook {
-	return c.hooks.BackgroundTask
+	hooks := c.hooks.BackgroundTask
+	return append(hooks[:len(hooks):len(hooks)], backgroundtask.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -3006,7 +3018,8 @@ func (c *BackgroundTaskArtifactClient) QueryTask(_m *BackgroundTaskArtifact) *Ba
 
 // Hooks returns the client hooks.
 func (c *BackgroundTaskArtifactClient) Hooks() []Hook {
-	return c.hooks.BackgroundTaskArtifact
+	hooks := c.hooks.BackgroundTaskArtifact
+	return append(hooks[:len(hooks):len(hooks)], backgroundtaskartifact.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -3203,7 +3216,8 @@ func (c *BackgroundTaskRunClient) QueryEvents(_m *BackgroundTaskRun) *Background
 
 // Hooks returns the client hooks.
 func (c *BackgroundTaskRunClient) Hooks() []Hook {
-	return c.hooks.BackgroundTaskRun
+	hooks := c.hooks.BackgroundTaskRun
+	return append(hooks[:len(hooks):len(hooks)], backgroundtaskrun.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -3384,7 +3398,8 @@ func (c *BackgroundTaskRunEventClient) QueryRun(_m *BackgroundTaskRunEvent) *Bac
 
 // Hooks returns the client hooks.
 func (c *BackgroundTaskRunEventClient) Hooks() []Hook {
-	return c.hooks.BackgroundTaskRunEvent
+	hooks := c.hooks.BackgroundTaskRunEvent
+	return append(hooks[:len(hooks):len(hooks)], backgroundtaskrunevent.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -3549,7 +3564,8 @@ func (c *BackgroundTaskScheduleStateClient) QueryTask(_m *BackgroundTaskSchedule
 
 // Hooks returns the client hooks.
 func (c *BackgroundTaskScheduleStateClient) Hooks() []Hook {
-	return c.hooks.BackgroundTaskScheduleState
+	hooks := c.hooks.BackgroundTaskScheduleState
+	return append(hooks[:len(hooks):len(hooks)], backgroundtaskschedulestate.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -3714,7 +3730,8 @@ func (c *CloudEventClient) QueryRuns(_m *CloudEvent) *BackgroundTaskRunQuery {
 
 // Hooks returns the client hooks.
 func (c *CloudEventClient) Hooks() []Hook {
-	return c.hooks.CloudEvent
+	hooks := c.hooks.CloudEvent
+	return append(hooks[:len(hooks):len(hooks)], cloudevent.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -3959,7 +3976,8 @@ func (c *CommitmentClient) QueryIncomingDependencies(_m *Commitment) *Commitment
 
 // Hooks returns the client hooks.
 func (c *CommitmentClient) Hooks() []Hook {
-	return c.hooks.Commitment
+	hooks := c.hooks.Commitment
+	return append(hooks[:len(hooks):len(hooks)], commitment.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -4172,7 +4190,8 @@ func (c *CommitmentDependencyClient) QueryToCommitment(_m *CommitmentDependency)
 
 // Hooks returns the client hooks.
 func (c *CommitmentDependencyClient) Hooks() []Hook {
-	return c.hooks.CommitmentDependency
+	hooks := c.hooks.CommitmentDependency
+	return append(hooks[:len(hooks):len(hooks)], commitmentdependency.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -4369,7 +4388,8 @@ func (c *CommitmentEventClient) QueryCommitment(_m *CommitmentEvent) *Commitment
 
 // Hooks returns the client hooks.
 func (c *CommitmentEventClient) Hooks() []Hook {
-	return c.hooks.CommitmentEvent
+	hooks := c.hooks.CommitmentEvent
+	return append(hooks[:len(hooks):len(hooks)], commitmentevent.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -4550,7 +4570,8 @@ func (c *ConversationIntelligenceArtifactClient) QueryRelationship(_m *Conversat
 
 // Hooks returns the client hooks.
 func (c *ConversationIntelligenceArtifactClient) Hooks() []Hook {
-	return c.hooks.ConversationIntelligenceArtifact
+	hooks := c.hooks.ConversationIntelligenceArtifact
+	return append(hooks[:len(hooks):len(hooks)], conversationintelligenceartifact.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -4699,7 +4720,8 @@ func (c *CreditLedgerClient) QueryUser(_m *CreditLedger) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *CreditLedgerClient) Hooks() []Hook {
-	return c.hooks.CreditLedger
+	hooks := c.hooks.CreditLedger
+	return append(hooks[:len(hooks):len(hooks)], creditledger.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -4848,7 +4870,8 @@ func (c *GoogleWatchClient) QueryUser(_m *GoogleWatch) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *GoogleWatchClient) Hooks() []Hook {
-	return c.hooks.GoogleWatch
+	hooks := c.hooks.GoogleWatch
+	return append(hooks[:len(hooks):len(hooks)], googlewatch.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -4997,7 +5020,8 @@ func (c *LLMUsageClient) QueryUser(_m *LLMUsage) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *LLMUsageClient) Hooks() []Hook {
-	return c.hooks.LLMUsage
+	hooks := c.hooks.LLMUsage
+	return append(hooks[:len(hooks):len(hooks)], llmusage.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -5130,7 +5154,8 @@ func (c *LLMUsageHistoryClient) GetX(ctx context.Context, id uuid.UUID) *LLMUsag
 
 // Hooks returns the client hooks.
 func (c *LLMUsageHistoryClient) Hooks() []Hook {
-	return c.hooks.LLMUsageHistory
+	hooks := c.hooks.LLMUsageHistory
+	return append(hooks[:len(hooks):len(hooks)], llmusagehistory.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -5279,7 +5304,8 @@ func (c *MCPConnectionClient) QueryUser(_m *MCPConnection) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *MCPConnectionClient) Hooks() []Hook {
-	return c.hooks.MCPConnection
+	hooks := c.hooks.MCPConnection
+	return append(hooks[:len(hooks):len(hooks)], mcpconnection.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -5412,7 +5438,8 @@ func (c *MCPConnectionHistoryClient) GetX(ctx context.Context, id uuid.UUID) *MC
 
 // Hooks returns the client hooks.
 func (c *MCPConnectionHistoryClient) Hooks() []Hook {
-	return c.hooks.MCPConnectionHistory
+	hooks := c.hooks.MCPConnectionHistory
+	return append(hooks[:len(hooks):len(hooks)], mcpconnectionhistory.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -5561,7 +5588,8 @@ func (c *MailBodyCacheClient) QueryUser(_m *MailBodyCache) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *MailBodyCacheClient) Hooks() []Hook {
-	return c.hooks.MailBodyCache
+	hooks := c.hooks.MailBodyCache
+	return append(hooks[:len(hooks):len(hooks)], mailbodycache.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -5726,7 +5754,8 @@ func (c *MailMessageMetaClient) QueryUser(_m *MailMessageMeta) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *MailMessageMetaClient) Hooks() []Hook {
-	return c.hooks.MailMessageMeta
+	hooks := c.hooks.MailMessageMeta
+	return append(hooks[:len(hooks):len(hooks)], mailmessagemeta.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -5891,7 +5920,8 @@ func (c *MailSignalClient) QueryUser(_m *MailSignal) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *MailSignalClient) Hooks() []Hook {
-	return c.hooks.MailSignal
+	hooks := c.hooks.MailSignal
+	return append(hooks[:len(hooks):len(hooks)], mailsignal.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -6088,7 +6118,8 @@ func (c *MailThreadClient) QuerySignal(_m *MailThread) *MailSignalQuery {
 
 // Hooks returns the client hooks.
 func (c *MailThreadClient) Hooks() []Hook {
-	return c.hooks.MailThread
+	hooks := c.hooks.MailThread
+	return append(hooks[:len(hooks):len(hooks)], mailthread.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -6237,7 +6268,8 @@ func (c *MeetingMinuteUsageClient) QueryUser(_m *MeetingMinuteUsage) *UserQuery 
 
 // Hooks returns the client hooks.
 func (c *MeetingMinuteUsageClient) Hooks() []Hook {
-	return c.hooks.MeetingMinuteUsage
+	hooks := c.hooks.MeetingMinuteUsage
+	return append(hooks[:len(hooks):len(hooks)], meetingminuteusage.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -6386,7 +6418,8 @@ func (c *OAuthConnectionClient) QueryUser(_m *OAuthConnection) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *OAuthConnectionClient) Hooks() []Hook {
-	return c.hooks.OAuthConnection
+	hooks := c.hooks.OAuthConnection
+	return append(hooks[:len(hooks):len(hooks)], oauthconnection.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -6519,7 +6552,8 @@ func (c *OAuthConnectionHistoryClient) GetX(ctx context.Context, id uuid.UUID) *
 
 // Hooks returns the client hooks.
 func (c *OAuthConnectionHistoryClient) Hooks() []Hook {
-	return c.hooks.OAuthConnectionHistory
+	hooks := c.hooks.OAuthConnectionHistory
+	return append(hooks[:len(hooks):len(hooks)], oauthconnectionhistory.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -6913,7 +6947,8 @@ func (c *PersonClient) QueryExistingMergeCandidates(_m *Person) *PersonMergeCand
 
 // Hooks returns the client hooks.
 func (c *PersonClient) Hooks() []Hook {
-	return c.hooks.Person
+	hooks := c.hooks.Person
+	return append(hooks[:len(hooks):len(hooks)], person.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -7110,7 +7145,8 @@ func (c *PersonAttributeClient) QueryUser(_m *PersonAttribute) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *PersonAttributeClient) Hooks() []Hook {
-	return c.hooks.PersonAttribute
+	hooks := c.hooks.PersonAttribute
+	return append(hooks[:len(hooks):len(hooks)], personattribute.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -7291,7 +7327,8 @@ func (c *PersonIdentityClient) QueryUser(_m *PersonIdentity) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *PersonIdentityClient) Hooks() []Hook {
-	return c.hooks.PersonIdentity
+	hooks := c.hooks.PersonIdentity
+	return append(hooks[:len(hooks):len(hooks)], personidentity.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -7472,7 +7509,8 @@ func (c *PersonInteractionStatClient) QueryRelationship(_m *PersonInteractionSta
 
 // Hooks returns the client hooks.
 func (c *PersonInteractionStatClient) Hooks() []Hook {
-	return c.hooks.PersonInteractionStat
+	hooks := c.hooks.PersonInteractionStat
+	return append(hooks[:len(hooks):len(hooks)], personinteractionstat.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -7669,7 +7707,8 @@ func (c *PersonMergeCandidateClient) QueryUser(_m *PersonMergeCandidate) *UserQu
 
 // Hooks returns the client hooks.
 func (c *PersonMergeCandidateClient) Hooks() []Hook {
-	return c.hooks.PersonMergeCandidate
+	hooks := c.hooks.PersonMergeCandidate
+	return append(hooks[:len(hooks):len(hooks)], personmergecandidate.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -7834,7 +7873,8 @@ func (c *PersonSuppressionClient) QueryUser(_m *PersonSuppression) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *PersonSuppressionClient) Hooks() []Hook {
-	return c.hooks.PersonSuppression
+	hooks := c.hooks.PersonSuppression
+	return append(hooks[:len(hooks):len(hooks)], personsuppression.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -8015,7 +8055,8 @@ func (c *PolicyDecisionSnapshotClient) QueryUser(_m *PolicyDecisionSnapshot) *Us
 
 // Hooks returns the client hooks.
 func (c *PolicyDecisionSnapshotClient) Hooks() []Hook {
-	return c.hooks.PolicyDecisionSnapshot
+	hooks := c.hooks.PolicyDecisionSnapshot
+	return append(hooks[:len(hooks):len(hooks)], policydecisionsnapshot.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -8484,7 +8525,8 @@ func (c *RelationshipClient) QueryAttentionItems(_m *Relationship) *Relationship
 
 // Hooks returns the client hooks.
 func (c *RelationshipClient) Hooks() []Hook {
-	return c.hooks.Relationship
+	hooks := c.hooks.Relationship
+	return append(hooks[:len(hooks):len(hooks)], relationship.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -8681,7 +8723,8 @@ func (c *RelationshipAssertionClient) QueryUser(_m *RelationshipAssertion) *User
 
 // Hooks returns the client hooks.
 func (c *RelationshipAssertionClient) Hooks() []Hook {
-	return c.hooks.RelationshipAssertion
+	hooks := c.hooks.RelationshipAssertion
+	return append(hooks[:len(hooks):len(hooks)], relationshipassertion.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -8862,7 +8905,8 @@ func (c *RelationshipAttentionItemClient) QueryUser(_m *RelationshipAttentionIte
 
 // Hooks returns the client hooks.
 func (c *RelationshipAttentionItemClient) Hooks() []Hook {
-	return c.hooks.RelationshipAttentionItem
+	hooks := c.hooks.RelationshipAttentionItem
+	return append(hooks[:len(hooks):len(hooks)], relationshipattentionitem.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -9043,7 +9087,8 @@ func (c *RelationshipIdentityClient) QueryUser(_m *RelationshipIdentity) *UserQu
 
 // Hooks returns the client hooks.
 func (c *RelationshipIdentityClient) Hooks() []Hook {
-	return c.hooks.RelationshipIdentity
+	hooks := c.hooks.RelationshipIdentity
+	return append(hooks[:len(hooks):len(hooks)], relationshipidentity.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -9272,7 +9317,8 @@ func (c *RelationshipIdentityCandidateClient) QueryDecisions(_m *RelationshipIde
 
 // Hooks returns the client hooks.
 func (c *RelationshipIdentityCandidateClient) Hooks() []Hook {
-	return c.hooks.RelationshipIdentityCandidate
+	hooks := c.hooks.RelationshipIdentityCandidate
+	return append(hooks[:len(hooks):len(hooks)], relationshipidentitycandidate.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -9453,7 +9499,8 @@ func (c *RelationshipIdentityDecisionClient) QueryUser(_m *RelationshipIdentityD
 
 // Hooks returns the client hooks.
 func (c *RelationshipIdentityDecisionClient) Hooks() []Hook {
-	return c.hooks.RelationshipIdentityDecision
+	hooks := c.hooks.RelationshipIdentityDecision
+	return append(hooks[:len(hooks):len(hooks)], relationshipidentitydecision.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -9634,7 +9681,8 @@ func (c *RelationshipLineageEventClient) QueryUser(_m *RelationshipLineageEvent)
 
 // Hooks returns the client hooks.
 func (c *RelationshipLineageEventClient) Hooks() []Hook {
-	return c.hooks.RelationshipLineageEvent
+	hooks := c.hooks.RelationshipLineageEvent
+	return append(hooks[:len(hooks):len(hooks)], relationshiplineageevent.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -9847,7 +9895,8 @@ func (c *RelationshipObservationClient) QueryPersonAttributes(_m *RelationshipOb
 
 // Hooks returns the client hooks.
 func (c *RelationshipObservationClient) Hooks() []Hook {
-	return c.hooks.RelationshipObservation
+	hooks := c.hooks.RelationshipObservation
+	return append(hooks[:len(hooks):len(hooks)], relationshipobservation.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -10044,7 +10093,8 @@ func (c *RelationshipParticipantClient) QueryPerson(_m *RelationshipParticipant)
 
 // Hooks returns the client hooks.
 func (c *RelationshipParticipantClient) Hooks() []Hook {
-	return c.hooks.RelationshipParticipant
+	hooks := c.hooks.RelationshipParticipant
+	return append(hooks[:len(hooks):len(hooks)], relationshipparticipant.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -10225,7 +10275,8 @@ func (c *RelationshipProjectionJobClient) QueryUser(_m *RelationshipProjectionJo
 
 // Hooks returns the client hooks.
 func (c *RelationshipProjectionJobClient) Hooks() []Hook {
-	return c.hooks.RelationshipProjectionJob
+	hooks := c.hooks.RelationshipProjectionJob
+	return append(hooks[:len(hooks):len(hooks)], relationshipprojectionjob.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -10406,7 +10457,8 @@ func (c *RelationshipReviewAcknowledgementClient) QueryUser(_m *RelationshipRevi
 
 // Hooks returns the client hooks.
 func (c *RelationshipReviewAcknowledgementClient) Hooks() []Hook {
-	return c.hooks.RelationshipReviewAcknowledgement
+	hooks := c.hooks.RelationshipReviewAcknowledgement
+	return append(hooks[:len(hooks):len(hooks)], relationshipreviewacknowledgement.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -10571,7 +10623,8 @@ func (c *RelationshipSourceStatusClient) QueryUser(_m *RelationshipSourceStatus)
 
 // Hooks returns the client hooks.
 func (c *RelationshipSourceStatusClient) Hooks() []Hook {
-	return c.hooks.RelationshipSourceStatus
+	hooks := c.hooks.RelationshipSourceStatus
+	return append(hooks[:len(hooks):len(hooks)], relationshipsourcestatus.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -10752,7 +10805,8 @@ func (c *RelationshipStateSnapshotClient) QueryUser(_m *RelationshipStateSnapsho
 
 // Hooks returns the client hooks.
 func (c *RelationshipStateSnapshotClient) Hooks() []Hook {
-	return c.hooks.RelationshipStateSnapshot
+	hooks := c.hooks.RelationshipStateSnapshot
+	return append(hooks[:len(hooks):len(hooks)], relationshipstatesnapshot.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -11013,7 +11067,8 @@ func (c *RevenueActionClient) QueryTrustEvents(_m *RevenueAction) *RevenueTrustE
 
 // Hooks returns the client hooks.
 func (c *RevenueActionClient) Hooks() []Hook {
-	return c.hooks.RevenueAction
+	hooks := c.hooks.RevenueAction
+	return append(hooks[:len(hooks):len(hooks)], revenueaction.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -11178,7 +11233,8 @@ func (c *RevenueActionRevisionClient) QueryUser(_m *RevenueActionRevision) *User
 
 // Hooks returns the client hooks.
 func (c *RevenueActionRevisionClient) Hooks() []Hook {
-	return c.hooks.RevenueActionRevision
+	hooks := c.hooks.RevenueActionRevision
+	return append(hooks[:len(hooks):len(hooks)], revenueactionrevision.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -11391,7 +11447,8 @@ func (c *RevenueEvidenceClient) QueryActions(_m *RevenueEvidence) *RevenueAction
 
 // Hooks returns the client hooks.
 func (c *RevenueEvidenceClient) Hooks() []Hook {
-	return c.hooks.RevenueEvidence
+	hooks := c.hooks.RevenueEvidence
+	return append(hooks[:len(hooks):len(hooks)], revenueevidence.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -11556,7 +11613,8 @@ func (c *RevenueLeakScanClient) QueryUser(_m *RevenueLeakScan) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *RevenueLeakScanClient) Hooks() []Hook {
-	return c.hooks.RevenueLeakScan
+	hooks := c.hooks.RevenueLeakScan
+	return append(hooks[:len(hooks):len(hooks)], revenueleakscan.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -11721,7 +11779,8 @@ func (c *RevenueOutboxEventClient) QueryUser(_m *RevenueOutboxEvent) *UserQuery 
 
 // Hooks returns the client hooks.
 func (c *RevenueOutboxEventClient) Hooks() []Hook {
-	return c.hooks.RevenueOutboxEvent
+	hooks := c.hooks.RevenueOutboxEvent
+	return append(hooks[:len(hooks):len(hooks)], revenueoutboxevent.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -11918,7 +11977,8 @@ func (c *RevenueTrustEventClient) QueryAction(_m *RevenueTrustEvent) *RevenueAct
 
 // Hooks returns the client hooks.
 func (c *RevenueTrustEventClient) Hooks() []Hook {
-	return c.hooks.RevenueTrustEvent
+	hooks := c.hooks.RevenueTrustEvent
+	return append(hooks[:len(hooks):len(hooks)], revenuetrustevent.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -12595,7 +12655,8 @@ func (c *RevenueWorkspaceClient) QueryPersonMergeCandidates(_m *RevenueWorkspace
 
 // Hooks returns the client hooks.
 func (c *RevenueWorkspaceClient) Hooks() []Hook {
-	return c.hooks.RevenueWorkspace
+	hooks := c.hooks.RevenueWorkspace
+	return append(hooks[:len(hooks):len(hooks)], revenueworkspace.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -12760,7 +12821,8 @@ func (c *RevenueWorkspaceMemberClient) QueryUser(_m *RevenueWorkspaceMember) *Us
 
 // Hooks returns the client hooks.
 func (c *RevenueWorkspaceMemberClient) Hooks() []Hook {
-	return c.hooks.RevenueWorkspaceMember
+	hooks := c.hooks.RevenueWorkspaceMember
+	return append(hooks[:len(hooks):len(hooks)], revenueworkspacemember.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -12909,7 +12971,8 @@ func (c *SubscriptionClient) QueryUser(_m *Subscription) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *SubscriptionClient) Hooks() []Hook {
-	return c.hooks.Subscription
+	hooks := c.hooks.Subscription
+	return append(hooks[:len(hooks):len(hooks)], subscription.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -13042,7 +13105,8 @@ func (c *SubscriptionHistoryClient) GetX(ctx context.Context, id uuid.UUID) *Sub
 
 // Hooks returns the client hooks.
 func (c *SubscriptionHistoryClient) Hooks() []Hook {
-	return c.hooks.SubscriptionHistory
+	hooks := c.hooks.SubscriptionHistory
+	return append(hooks[:len(hooks):len(hooks)], subscriptionhistory.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -13207,7 +13271,8 @@ func (c *TenantEvidenceKeyClient) QueryUser(_m *TenantEvidenceKey) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *TenantEvidenceKeyClient) Hooks() []Hook {
-	return c.hooks.TenantEvidenceKey
+	hooks := c.hooks.TenantEvidenceKey
+	return append(hooks[:len(hooks):len(hooks)], tenantevidencekey.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -14598,7 +14663,8 @@ func (c *WorkspaceFeatureControlClient) QueryUser(_m *WorkspaceFeatureControl) *
 
 // Hooks returns the client hooks.
 func (c *WorkspaceFeatureControlClient) Hooks() []Hook {
-	return c.hooks.WorkspaceFeatureControl
+	hooks := c.hooks.WorkspaceFeatureControl
+	return append(hooks[:len(hooks):len(hooks)], workspacefeaturecontrol.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.

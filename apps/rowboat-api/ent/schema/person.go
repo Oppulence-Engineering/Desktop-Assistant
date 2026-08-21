@@ -29,7 +29,7 @@ import (
 type Person struct{ ent.Schema }
 
 // Mixin adds the shared immutable ID and timestamp fields.
-func (Person) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (Person) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Annotations pins the table name. ent's inflector pluralizes "person" to "people",
 // which would break the relationship_* naming family and silently diverge from the
@@ -89,9 +89,9 @@ func (Person) Fields() []ent.Field {
 func (Person) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("relationship_persons").Unique().Required(),
+			Ref("relationship_persons").Unique().Required().Immutable(),
 		edge.From("user", User.Type).
-			Ref("relationship_persons").Unique().Required(),
+			Ref("relationship_persons").Unique().Required().Immutable(),
 		edge.To("identities", PersonIdentity.Type).
 			StorageKey(edge.Column("person_id")),
 		edge.To("attributes", PersonAttribute.Type).

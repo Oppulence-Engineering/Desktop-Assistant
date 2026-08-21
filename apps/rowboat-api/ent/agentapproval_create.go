@@ -255,7 +255,9 @@ func (_c *AgentApprovalCreate) Mutation() *AgentApprovalMutation {
 
 // Save creates the AgentApproval in the database.
 func (_c *AgentApprovalCreate) Save(ctx context.Context) (*AgentApproval, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -282,12 +284,18 @@ func (_c *AgentApprovalCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *AgentApprovalCreate) defaults() {
+func (_c *AgentApprovalCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if agentapproval.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized agentapproval.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := agentapproval.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if agentapproval.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized agentapproval.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := agentapproval.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -300,13 +308,20 @@ func (_c *AgentApprovalCreate) defaults() {
 		_c.mutation.SetStatus(v)
 	}
 	if _, ok := _c.mutation.RequestedAt(); !ok {
+		if agentapproval.DefaultRequestedAt == nil {
+			return fmt.Errorf("ent: uninitialized agentapproval.DefaultRequestedAt (forgotten import ent/runtime?)")
+		}
 		v := agentapproval.DefaultRequestedAt()
 		_c.mutation.SetRequestedAt(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if agentapproval.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized agentapproval.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := agentapproval.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

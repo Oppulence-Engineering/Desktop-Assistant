@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -402,6 +403,12 @@ func (_q *RevenueLeakScanQuery) prepareQuery(ctx context.Context) error {
 			return err
 		}
 		_q.sql = prev
+	}
+	if revenueleakscan.Policy == nil {
+		return errors.New("ent: uninitialized revenueleakscan.Policy (forgotten import ent/runtime?)")
+	}
+	if err := revenueleakscan.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

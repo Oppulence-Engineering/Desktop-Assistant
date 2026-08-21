@@ -171,7 +171,9 @@ func (_c *TenantEvidenceKeyCreate) Mutation() *TenantEvidenceKeyMutation {
 
 // Save creates the TenantEvidenceKey in the database.
 func (_c *TenantEvidenceKeyCreate) Save(ctx context.Context) (*TenantEvidenceKey, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -198,12 +200,18 @@ func (_c *TenantEvidenceKeyCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *TenantEvidenceKeyCreate) defaults() {
+func (_c *TenantEvidenceKeyCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if tenantevidencekey.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized tenantevidencekey.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := tenantevidencekey.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if tenantevidencekey.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized tenantevidencekey.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := tenantevidencekey.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -212,9 +220,13 @@ func (_c *TenantEvidenceKeyCreate) defaults() {
 		_c.mutation.SetStatus(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if tenantevidencekey.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized tenantevidencekey.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := tenantevidencekey.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
