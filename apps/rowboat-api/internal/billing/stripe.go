@@ -645,7 +645,7 @@ func (h *Handler) stripeGet(ctx context.Context, path string, out any) error {
 func (h *Handler) doStripe(req *http.Request, out any) error {
 	client := h.stripeHTTP
 	if client == nil {
-		client = http.DefaultClient
+		client = &http.Client{Timeout: 15 * time.Second}
 	}
 	resp, err := client.Do(req)
 	if err != nil {

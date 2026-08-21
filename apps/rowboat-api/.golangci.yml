@@ -7,24 +7,74 @@ run:
 linters:
   default: standard # errcheck, govet, ineffassign, staticcheck, unused
   enable:
-    - bodyclose
-    - gocritic
-    - misspell
-    - revive
+    - bodyclose       # response bodies must be closed to preserve connection reuse
+    - depguard        # explicit package dependency boundaries
+    - errorlint       # errors.Is/errors.As and %w preserve error semantics
+    - gocritic        # high-signal correctness and maintainability diagnostics
+    - gosec           # common Go security mistakes; not a substitute for review
+    - misspell        # public API/docs quality
+    - nilerr          # catches accidental nil returns after an error check
+    - noctx           # outbound requests must carry cancellation/deadlines
+    - revive          # exported API and idiomatic package checks
+    - rowserrcheck    # SQL row iteration errors cannot be discarded
+    - sqlclosecheck   # database resources must be deterministically closed
+    - unconvert       # removes conversions that obscure intent
   exclusions:
     generated: lax # auto-skip files with a "Code generated" header (ent, gql, proto)
     paths:
       - bin
       - ent/proto # generated protobuf/gRPC bindings (entproto + protoc)
+      # These analyzers have their own analysistest suite and run as a vettool;
+      # golangci's package loader cannot type-check analyzer testdata stubs.
+      - tools/rowboatlint
     rules:
       # internal/crypto and internal/version intentionally shadow stdlib names;
       # they are internal packages and never imported as the bare stdlib name.
       - linters: [revive]
         text: "avoid package names that conflict with"
+      # Test clients target in-process httptest servers. Production outbound
+      # paths remain subject to noctx.
+      - path: _test\.go
+        linters: [gosec, noctx]
+      # devstack intentionally models redirects and weak/fake credentials;
+      # it is never part of a production binary.
+      - path: ^cmd/devstack/
+        linters: [gosec]
+      - path: ^internal/qualityguard/
+        linters: [gosec]
+      # Provider base URLs are trusted, validated configuration; request input
+      # contributes only an escaped path segment or request body.
+      - path: ^internal/(search|voice)/handler\.go
+        linters: [gosec]
+        text: "G704"
+      # OAuth deep-link state is random, URL-escaped, and JavaScript-encoded;
+      # gosec taint analysis does not model jsString.
+      - path: ^internal/(google|slack)/oauthflow\.go
+        linters: [gosec]
+        text: "G705"
+
+  settings:
+    depguard:
+      rules:
+        internal-does-not-import-commands:
+          list-mode: lax
+          files:
+            - "**/internal/**/*.go"
+          deny:
+            - pkg: "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/cmd"
+              desc: "RB-ARCH-001: internal packages must not import executable composition roots"
+    gosec:
+      # G101/G117 flag secret-shaped constant/JSON field names, including the
+      # encrypted OAuth envelopes this service must marshal. Gitleaks scans
+      # actual values; focused review/tests verify sealing before persistence.
+      excludes:
+        - G101
+        - G117
 
 formatters:
   enable:
     - gofmt
+    - goimports
   exclusions:
     generated: lax
     paths:

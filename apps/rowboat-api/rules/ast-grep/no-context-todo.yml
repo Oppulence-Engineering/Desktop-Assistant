@@ -1,0 +1,12 @@
+id: rb009-no-context-todo
+language: Go
+severity: error
+message: "RB009_AUTH_CONTEXT: replace placeholder contexts before code reaches production"
+note: "Propagate a request, activity, workflow, or lifecycle context instead."
+files:
+  - "internal/**/*.go"
+  - "cmd/**/*.go"
+ignores:
+  - "**/*_test.go"
+rule:
+  pattern: context.TODO()

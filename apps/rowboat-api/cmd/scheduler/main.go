@@ -364,7 +364,7 @@ func dialTemporal(ctx context.Context, cfg appconfig.Config, log *zap.Logger) (c
 			return c, nil
 		}
 		if waitForRetry(ctx, log, "dial temporal", err, retryAfter) != nil {
-			return nil, nil
+			return nil, nil //nolint:nilerr // Context cancellation is a clean shutdown before connection.
 		}
 	}
 }

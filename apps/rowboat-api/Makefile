@@ -24,6 +24,10 @@ run:
 
 .PHONY: test
 test:
+	go test ./... -count=1
+
+.PHONY: test-race
+test-race:
 	go test ./... -race -count=1
 
 .PHONY: vet
@@ -38,13 +42,87 @@ tfa-release-register-validate:
 tfa-release-governed-check:
 	go run ./cmd/tfa-release-check --register ../../docs/trustworthy-first-account-beta/release-evidence.json --stage design_partner_governed_action
 
+GOLANGCI_LINT_VERSION := v2.12.2
+GOIMPORTS_VERSION := v0.49.0
+GOVULNCHECK_VERSION := v1.7.0
+GITLEAKS_VERSION := v8.30.1
+ARCH_GO_VERSION := v2.1.2
+RULEGUARD_VERSION := v0.4.5
+CONFTEST_VERSION := v0.69.0
+AST_GREP_VERSION := 0.45.1
+
+GOLANGCI_LINT ?= go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+GOIMPORTS ?= go run golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
+GOVULNCHECK ?= go run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
+GITLEAKS ?= go run github.com/zricethezav/gitleaks/v8@$(GITLEAKS_VERSION)
+ARCH_GO ?= go run github.com/arch-go/arch-go/v2@$(ARCH_GO_VERSION)
+RULEGUARD ?= go run github.com/quasilyte/go-ruleguard/cmd/ruleguard@$(RULEGUARD_VERSION)
+CONFTEST ?= go run github.com/open-policy-agent/conftest@$(CONFTEST_VERSION)
+AST_GREP ?= npm exec --yes --package=@ast-grep/cli@$(AST_GREP_VERSION) -- ast-grep
+
+# Handwritten Go only. Generated Ent, gqlgen, protobuf, and OpenAPI output must
+# be changed through its source and generator, never formatted by hand.
+GO_FILES := $(shell { \
+	find cmd internal tools -type f -name '*.go' \
+		! -path 'internal/gqlapi/generated.go' 2>/dev/null; \
+	find ent/schema -type f -name '*.go'; \
+	find ent -maxdepth 1 -type f \( -name 'entc.go' -o -name 'generate.go' \); \
+} | sort -u)
+
 .PHONY: lint
 lint:
-	golangci-lint run ./...
+	$(GOLANGCI_LINT) run ./...
 
 .PHONY: fmt
 fmt:
-	gofmt -s -w .
+	$(GOIMPORTS) -w $(GO_FILES)
+
+.PHONY: fmt-check
+fmt-check:
+	@files="$$($(GOIMPORTS) -l $(GO_FILES))"; \
+	if [[ -n "$$files" ]]; then \
+		echo "Go files need goimports:"; echo "$$files"; exit 1; \
+	fi
+
+.PHONY: architecture
+architecture:
+	go test ./internal/qualityguard -run 'TestRepositoryGuard' -count=1
+	$(ARCH_GO) --color=no
+
+.PHONY: rowboatlint
+rowboatlint:
+	go test ./tools/rowboatlint/... -count=1
+	go build -o /tmp/rowboatlint ./tools/rowboatlint
+	go vet -vettool=/tmp/rowboatlint ./internal/... ./cmd/...
+
+.PHONY: ruleguard
+ruleguard:
+	$(RULEGUARD) -test=false -rules rules/ruleguard/rules.go ./internal/... ./cmd/...
+
+.PHONY: structural
+structural:
+	$(AST_GREP) scan --config sgconfig.yml
+
+.PHONY: policy
+policy:
+	$(CONFTEST) test ../../.github/workflows/rowboat-api-quality.yml --policy policy
+	$(CONFTEST) verify --policy policy
+
+.PHONY: mod-verify
+mod-verify:
+	go mod verify
+	go mod tidy -diff
+
+.PHONY: security
+security:
+	$(GOVULNCHECK) ./...
+	$(GITLEAKS) git ../../ --gitleaks-ignore-path ../../.gitleaksignore --redact --no-banner
+
+.PHONY: verify
+verify: fmt-check lint architecture rowboatlint ruleguard structural policy mod-verify test
+
+.PHONY: verify-ci
+verify-ci: verify test-race security
 
 .PHONY: tidy
 tidy:
@@ -109,6 +187,21 @@ install-tools:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@$(PROTOC_GEN_GO_VERSION)
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(PROTOC_GEN_GO_GRPC_VERSION)
 	go install entgo.io/contrib/entproto/cmd/protoc-gen-entgrpc@$(PROTOC_GEN_ENTGRPC_VERSION)
+
+.PHONY: install-quality-tools
+install-quality-tools:
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
+	go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
+	go install github.com/zricethezav/gitleaks/v8@$(GITLEAKS_VERSION)
+	go install github.com/arch-go/arch-go/v2@$(ARCH_GO_VERSION)
+	go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@$(RULEGUARD_VERSION)
+	go install github.com/open-policy-agent/conftest@$(CONFTEST_VERSION)
+	npm install --global @ast-grep/cli@$(AST_GREP_VERSION)
+
+.PHONY: generate-check
+generate-check: generate
+	git diff --exit-code -- ent api/openapi.json internal/gqlapi ../../packages/rowboat-api-client-ts
 
 # ---- database migrations (Atlas, via ent) ----------------------------------
 

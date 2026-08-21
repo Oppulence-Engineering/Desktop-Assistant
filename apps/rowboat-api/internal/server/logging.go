@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"net/http"
 	"runtime/debug"
 	"time"
@@ -56,7 +57,7 @@ func Recoverer(log *zap.Logger) func(http.Handler) http.Handler {
 				if rec == nil {
 					return
 				}
-				if rec == http.ErrAbortHandler {
+				if recoveredErr, ok := rec.(error); ok && errors.Is(recoveredErr, http.ErrAbortHandler) {
 					// Re-panic: net/http relies on this sentinel to abort the
 					// connection without a clean terminating chunk, signalling
 					// truncation to the client. Swallowing it would deliver a

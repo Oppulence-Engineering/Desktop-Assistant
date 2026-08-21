@@ -1,0 +1,17 @@
+id: rb004-no-direct-http
+language: Go
+severity: error
+message: "RB004_DIRECT_HTTP: use NewRequestWithContext and an explicit bounded client"
+note: "Package-level HTTP helpers use the global default client and do not carry repository timeout policy."
+files:
+  - "internal/**/*.go"
+  - "cmd/**/*.go"
+ignores:
+  - "**/*_test.go"
+rule:
+  any:
+    - pattern: http.Get($URL)
+    - pattern: http.Head($URL)
+    - pattern: http.Post($URL, $CONTENT_TYPE, $BODY)
+    - pattern: http.PostForm($URL, $DATA)
+    - pattern: http.DefaultClient

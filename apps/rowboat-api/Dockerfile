@@ -8,7 +8,7 @@
 #   docker build -f apps/rowboat-api/Dockerfile -t rowboat-api .
 # (Dockerfile.dockerignore keeps the context to just the two Go modules.)
 
-FROM golang:1.26.5 AS build
+FROM golang:1.26.6 AS build
 WORKDIR /src
 
 # Module graph first (cache-friendly): both go.mod files, including the local

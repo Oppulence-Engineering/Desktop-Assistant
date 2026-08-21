@@ -50,12 +50,12 @@ func (t *webSearchTool) Invoke(ctx context.Context, _ backgroundtaskruntime.Tool
 	}
 	if strings.TrimSpace(in.Query) == "" {
 		b, _ := json.Marshal(map[string]string{"error": "query is required"})
-		return b, nil
+		return b, nil //nolint:nilerr // Preserve the provider's error body as a successful tool result.
 	}
 	results, err := t.web.Search(ctx, in.Query, in.MaxResults)
 	if err != nil {
 		b, _ := json.Marshal(map[string]string{"error": err.Error()})
-		return b, nil
+		return b, nil //nolint:nilerr // Provider failures are returned as successful tool-result envelopes.
 	}
 	return json.Marshal(map[string]any{"results": results})
 }

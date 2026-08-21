@@ -133,7 +133,7 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 	// Plan is best-effort thread metadata; never block feedback on it.
 	plan := "unknown"
 	if sub, err := h.client.Subscription.Query().Only(ctx); err == nil {
-		plan = string(sub.Plan)
+		plan = sub.Plan
 	}
 	metadata := fmt.Sprintf("App %s · %s · plan: %s · user: %s",
 		clamp(req.AppVersion, "unknown"), clamp(req.Platform, "unknown"), plan, u.ID.String())

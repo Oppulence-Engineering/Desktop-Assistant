@@ -12,7 +12,7 @@ type obj = map[string]any
 
 // EnrichFile loads, enriches, and rewrites an OpenAPI JSON document.
 func EnrichFile(path string) error {
-	raw, err := os.ReadFile(path)
+	raw, err := os.ReadFile(path) //nolint:gosec // Generator path is a maintainer-supplied CLI argument.
 	if err != nil {
 		return fmt.Errorf("read openapi file: %w", err)
 	}
@@ -26,7 +26,7 @@ func EnrichFile(path string) error {
 		return fmt.Errorf("encode openapi file: %w", err)
 	}
 	out = append(out, '\n')
-	if err := os.WriteFile(path, out, 0o644); err != nil {
+	if err := os.WriteFile(path, out, 0o644); err != nil { //nolint:gosec // Generated API contract is intentionally world-readable.
 		return fmt.Errorf("write openapi file: %w", err)
 	}
 	return nil

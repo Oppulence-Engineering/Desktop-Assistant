@@ -178,7 +178,7 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 			Namespace:          cfg.CloudRuntimeSandboxNamespace,
 			ServiceAccountName: cfg.CloudRuntimeSandboxServiceAccount,
 			PollInterval:       cfg.CloudRuntimeSandboxPollInterval,
-			TTLSeconds:         int32(ttlSeconds),
+			TTLSeconds:         int32(ttlSeconds), //nolint:gosec // Explicit MaxInt32 bound above.
 			CPURequest:         cfg.CloudRuntimeSandboxCPURequest,
 			MemoryRequest:      cfg.CloudRuntimeSandboxMemoryRequest,
 			CPULimit:           cfg.CloudRuntimeSandboxCPULimit,

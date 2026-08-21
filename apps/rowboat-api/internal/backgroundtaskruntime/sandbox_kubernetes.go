@@ -113,6 +113,7 @@ func NewKubernetesSandboxExecutor(cfg KubernetesSandboxConfig) (*KubernetesSandb
 		if caFile == "" {
 			caFile = defaultKubernetesCAPath
 		}
+		// #nosec G304 -- CAFile is trusted deployment configuration with an in-cluster default.
 		if raw, err := os.ReadFile(caFile); err == nil && len(raw) > 0 {
 			pool := x509.NewCertPool()
 			if pool.AppendCertsFromPEM(raw) {

@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -100,12 +101,12 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	requestID := httpx.IdempotencyKeyUUID(r, u.ID.String(), raw)
 	charge, err := h.gate.Reserve(r.Context(), "exa_search", cost, requestID, h.limits)
 	if err != nil {
-		switch err {
-		case quota.ErrInsufficientCredits:
+		switch {
+		case errors.Is(err, quota.ErrInsufficientCredits):
 			httpx.Error(w, http.StatusPaymentRequired, "insufficient_credits", "insufficient_credits")
-		case quota.ErrSubscriptionNotActive:
+		case errors.Is(err, quota.ErrSubscriptionNotActive):
 			httpx.Error(w, http.StatusPaymentRequired, "subscription not active", "subscription_not_active")
-		case quota.ErrDailyLimitExceeded, quota.ErrMonthlyLimitExceeded, quota.ErrNoUser:
+		case errors.Is(err, quota.ErrDailyLimitExceeded), errors.Is(err, quota.ErrMonthlyLimitExceeded), errors.Is(err, quota.ErrNoUser):
 			writeQuotaError(w, err)
 		default:
 			httpx.Error(w, http.StatusInternalServerError, "could not reserve credits", "internal_error")
@@ -174,14 +175,14 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 }
 
 func writeQuotaError(w http.ResponseWriter, err error) {
-	switch err {
-	case quota.ErrSubscriptionNotActive:
+	switch {
+	case errors.Is(err, quota.ErrSubscriptionNotActive):
 		httpx.Error(w, http.StatusPaymentRequired, "subscription not active", "subscription_not_active")
-	case quota.ErrDailyLimitExceeded:
+	case errors.Is(err, quota.ErrDailyLimitExceeded):
 		httpx.Error(w, http.StatusTooManyRequests, "daily credit limit exceeded", "daily_credit_limit_exceeded")
-	case quota.ErrMonthlyLimitExceeded:
+	case errors.Is(err, quota.ErrMonthlyLimitExceeded):
 		httpx.Error(w, http.StatusTooManyRequests, "monthly credit limit exceeded", "monthly_credit_limit_exceeded")
-	case quota.ErrNoUser:
+	case errors.Is(err, quota.ErrNoUser):
 		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
 	default:
 		httpx.Error(w, http.StatusInternalServerError, "could not check credit limits", "internal_error")

@@ -133,7 +133,7 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	var resp meResponse
 	resp.User.ID = u.ID.String()
 	resp.User.Email = u.Email
-	plan, status := string(sub.Plan), string(sub.Status)
+	plan, status := sub.Plan, sub.Status
 	resp.Billing.Plan = &plan
 	resp.Billing.Status = &status
 	if sub.TrialExpiresAt != nil {

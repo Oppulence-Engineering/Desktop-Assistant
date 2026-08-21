@@ -62,7 +62,7 @@ func (s *artifactStore) Write(ctx context.Context, body, contentType string) (in
 		Where(backgroundtaskartifact.HasTaskWith(backgroundtask.IDEQ(s.task.ID))).
 		Only(ctx)
 	if err != nil {
-		return 0, nil // write succeeded; revision read-back is best-effort
+		return 0, nil //nolint:nilerr // Write succeeded; revision read-back is best-effort.
 	}
 	return artifact.Revision, nil
 }

@@ -2,6 +2,7 @@ package revenue
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -146,7 +147,7 @@ func TestRelationshipAttentionDecisionUsesOptimisticVersioningAndBoundedSnooze(t
 	}
 	if _, err := f.svc.DecideRelationshipAttention(f.ctx, f.user, item.ID, AttentionDecisionInput{
 		Decision: "acknowledge", ExpectedVersion: item.Version,
-	}); err != ErrConflict {
+	}); !errors.Is(err, ErrConflict) {
 		t.Fatalf("stale decision should conflict: %v", err)
 	}
 }

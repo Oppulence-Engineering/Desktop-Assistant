@@ -2,6 +2,7 @@ package faculties
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -114,7 +115,7 @@ func TestVerifyDelegationRejectsTamperedBody(t *testing.T) {
 	if _, err := c.Call(context.Background(), "user-9", "/v1/query", map[string]any{"operation": "x"}); err != nil {
 		t.Fatalf("Call: %v", err)
 	}
-	if _, err := VerifyDelegation(gotAuth, "signing-secret", []byte(gotBody+"tampered"), time.Now()); err != ErrDelegationBody {
+	if _, err := VerifyDelegation(gotAuth, "signing-secret", []byte(gotBody+"tampered"), time.Now()); !errors.Is(err, ErrDelegationBody) {
 		t.Fatalf("tampered body err = %v, want ErrDelegationBody", err)
 	}
 }
@@ -138,7 +139,7 @@ func TestVerifyDelegationForRejectsWrongEndpoint(t *testing.T) {
 		Audience: "eigen",
 		Method:   http.MethodPost,
 		Path:     "/v1/query",
-	}, []byte(gotBody), time.Now()); err != ErrDelegationAudience {
+	}, []byte(gotBody), time.Now()); !errors.Is(err, ErrDelegationAudience) {
 		t.Fatalf("wrong audience err = %v, want ErrDelegationAudience", err)
 	}
 	if _, err := VerifyDelegationFor(gotAuth, "signing-secret", DelegationExpectation{
@@ -146,7 +147,7 @@ func TestVerifyDelegationForRejectsWrongEndpoint(t *testing.T) {
 		Audience: "conduit",
 		Method:   http.MethodPost,
 		Path:     "/v1/other",
-	}, []byte(gotBody), time.Now()); err != ErrDelegationPath {
+	}, []byte(gotBody), time.Now()); !errors.Is(err, ErrDelegationPath) {
 		t.Fatalf("wrong path err = %v, want ErrDelegationPath", err)
 	}
 }

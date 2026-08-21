@@ -180,7 +180,7 @@ func (f *httpFacade) EvaluateRevenueAction(ctx context.Context, req EvaluateRequ
 	req.SchemaVersion = SchemaVersion
 	body, status, err := f.post(ctx, "/v1/revenue/evaluate", req.IdempotencyKey, req)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrFacadeUnavailable, err)
+		return nil, fmt.Errorf("%w: %w", ErrFacadeUnavailable, err)
 	}
 	if status != http.StatusOK {
 		// A non-200 is "no decision", not a decision. Never map an error
@@ -189,7 +189,7 @@ func (f *httpFacade) EvaluateRevenueAction(ctx context.Context, req EvaluateRequ
 	}
 	var decision PolicyDecision
 	if err := json.Unmarshal(body, &decision); err != nil {
-		return nil, fmt.Errorf("%w: undecodable decision: %v", ErrFacadeUnavailable, err)
+		return nil, fmt.Errorf("%w: undecodable decision: %w", ErrFacadeUnavailable, err)
 	}
 	if decision.DecisionID == "" || decision.Status == "" {
 		return nil, fmt.Errorf("%w: decision missing id or status", ErrFacadeUnavailable)
@@ -203,7 +203,7 @@ func (f *httpFacade) ReportRevenueActionOutcome(ctx context.Context, report Outc
 	report.SchemaVersion = SchemaVersion
 	_, status, err := f.post(ctx, "/v1/revenue/outcomes", report.IdempotencyKey, report)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrFacadeUnavailable, err)
+		return fmt.Errorf("%w: %w", ErrFacadeUnavailable, err)
 	}
 	if status != http.StatusOK && status != http.StatusAccepted && status != http.StatusConflict {
 		// 409 is an idempotent replay: the outcome is already recorded.
@@ -217,6 +217,7 @@ func (f *httpFacade) post(ctx context.Context, path, idempotencyKey string, payl
 	if err != nil {
 		return nil, 0, err
 	}
+	// #nosec G704 -- BaseURL is operator-controlled service configuration; path is a fixed call-site constant.
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, f.cfg.BaseURL+path, bytes.NewReader(raw))
 	if err != nil {
 		return nil, 0, err
@@ -228,6 +229,7 @@ func (f *httpFacade) post(ctx context.Context, path, idempotencyKey string, payl
 	if f.cfg.ServiceToken != "" {
 		httpReq.Header.Set("Authorization", "Bearer "+f.cfg.ServiceToken)
 	}
+	// #nosec G704 -- httpReq targets the operator-configured facade above.
 	resp, err := f.client.Do(httpReq)
 	if err != nil {
 		return nil, 0, err
