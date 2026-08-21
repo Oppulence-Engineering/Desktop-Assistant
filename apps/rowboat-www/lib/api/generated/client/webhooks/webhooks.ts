@@ -37,9 +37,7 @@ export type preConsentResponseSuccess = preConsentResponse200 & {
   headers: Headers;
 };
 export type preConsentResponseError = (
-  | preConsentResponse400
-  | preConsentResponse401
-  | preConsentResponse500
+  preConsentResponse400 | preConsentResponse401 | preConsentResponse500
 ) & {
   headers: Headers;
 };

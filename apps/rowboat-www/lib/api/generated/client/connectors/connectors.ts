@@ -50,16 +50,13 @@ export type deleteConnectionResponseSuccess = deleteConnectionResponse204 & {
   headers: Headers;
 };
 export type deleteConnectionResponseError = (
-  | deleteConnectionResponse401
-  | deleteConnectionResponse500
-  | deleteConnectionResponse503
+  deleteConnectionResponse401 | deleteConnectionResponse500 | deleteConnectionResponse503
 ) & {
   headers: Headers;
 };
 
 export type deleteConnectionResponse =
-  | deleteConnectionResponseSuccess
-  | deleteConnectionResponseError;
+  deleteConnectionResponseSuccess | deleteConnectionResponseError;
 
 export const getDeleteConnectionUrl = (name: string) => {
   return `/v1/connections/${name}`;
@@ -128,8 +125,7 @@ export type setConnectionAPIKeyResponseError = (
 };
 
 export type setConnectionAPIKeyResponse =
-  | setConnectionAPIKeyResponseSuccess
-  | setConnectionAPIKeyResponseError;
+  setConnectionAPIKeyResponseSuccess | setConnectionAPIKeyResponseError;
 
 export const getSetConnectionAPIKeyUrl = (name: string) => {
   return `/v1/connections/${name}/api-key`;
@@ -476,9 +472,7 @@ export type listConnectorsResponseSuccess = listConnectorsResponse200 & {
   headers: Headers;
 };
 export type listConnectorsResponseError = (
-  | listConnectorsResponse401
-  | listConnectorsResponse500
-  | listConnectorsResponse503
+  listConnectorsResponse401 | listConnectorsResponse500 | listConnectorsResponse503
 ) & {
   headers: Headers;
 };

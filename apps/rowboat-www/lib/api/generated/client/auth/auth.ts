@@ -40,16 +40,13 @@ export type exchangeWorkOSTokenResponseSuccess = exchangeWorkOSTokenResponse200 
   headers: Headers;
 };
 export type exchangeWorkOSTokenResponseError = (
-  | exchangeWorkOSTokenResponse400
-  | exchangeWorkOSTokenResponse409
-  | exchangeWorkOSTokenResponse502
+  exchangeWorkOSTokenResponse400 | exchangeWorkOSTokenResponse409 | exchangeWorkOSTokenResponse502
 ) & {
   headers: Headers;
 };
 
 export type exchangeWorkOSTokenResponse =
-  | exchangeWorkOSTokenResponseSuccess
-  | exchangeWorkOSTokenResponseError;
+  exchangeWorkOSTokenResponseSuccess | exchangeWorkOSTokenResponseError;
 
 export const getExchangeWorkOSTokenUrl = () => {
   return `/v1/auth/workos/exchange`;
@@ -95,15 +92,13 @@ export type createWorkOSLoginURLResponseSuccess = createWorkOSLoginURLResponse20
   headers: Headers;
 };
 export type createWorkOSLoginURLResponseError = (
-  | createWorkOSLoginURLResponse400
-  | createWorkOSLoginURLResponse502
+  createWorkOSLoginURLResponse400 | createWorkOSLoginURLResponse502
 ) & {
   headers: Headers;
 };
 
 export type createWorkOSLoginURLResponse =
-  | createWorkOSLoginURLResponseSuccess
-  | createWorkOSLoginURLResponseError;
+  createWorkOSLoginURLResponseSuccess | createWorkOSLoginURLResponseError;
 
 export const getCreateWorkOSLoginURLUrl = (params: CreateWorkOSLoginURLParams) => {
   const normalizedParams = new URLSearchParams();
@@ -164,16 +159,13 @@ export type refreshWorkOSTokenResponseSuccess = refreshWorkOSTokenResponse200 & 
   headers: Headers;
 };
 export type refreshWorkOSTokenResponseError = (
-  | refreshWorkOSTokenResponse400
-  | refreshWorkOSTokenResponse409
-  | refreshWorkOSTokenResponse502
+  refreshWorkOSTokenResponse400 | refreshWorkOSTokenResponse409 | refreshWorkOSTokenResponse502
 ) & {
   headers: Headers;
 };
 
 export type refreshWorkOSTokenResponse =
-  | refreshWorkOSTokenResponseSuccess
-  | refreshWorkOSTokenResponseError;
+  refreshWorkOSTokenResponseSuccess | refreshWorkOSTokenResponseError;
 
 export const getRefreshWorkOSTokenUrl = () => {
   return `/v1/auth/workos/refresh`;

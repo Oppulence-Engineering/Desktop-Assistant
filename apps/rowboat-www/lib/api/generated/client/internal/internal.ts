@@ -47,8 +47,7 @@ export type invalidateConnectionResponseError = (
 };
 
 export type invalidateConnectionResponse =
-  | invalidateConnectionResponseSuccess
-  | invalidateConnectionResponseError;
+  invalidateConnectionResponseSuccess | invalidateConnectionResponseError;
 
 export const getInvalidateConnectionUrl = () => {
   return `/v1/internal/connections/invalidate`;
@@ -101,8 +100,7 @@ export type ingestInternalCloudEventResponse500 = {
 };
 
 export type ingestInternalCloudEventResponseSuccess = (
-  | ingestInternalCloudEventResponse200
-  | ingestInternalCloudEventResponse202
+  ingestInternalCloudEventResponse200 | ingestInternalCloudEventResponse202
 ) & {
   headers: Headers;
 };
@@ -115,8 +113,7 @@ export type ingestInternalCloudEventResponseError = (
 };
 
 export type ingestInternalCloudEventResponse =
-  | ingestInternalCloudEventResponseSuccess
-  | ingestInternalCloudEventResponseError;
+  ingestInternalCloudEventResponseSuccess | ingestInternalCloudEventResponseError;
 
 export const getIngestInternalCloudEventUrl = () => {
   return `/v1/internal/events`;

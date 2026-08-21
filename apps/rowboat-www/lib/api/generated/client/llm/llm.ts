@@ -54,8 +54,7 @@ export type createChatCompletionResponse503 = {
 };
 
 export type createChatCompletionResponseSuccess = (
-  | createChatCompletionResponse200ApplicationJson
-  | createChatCompletionResponse200TextEventStream
+  createChatCompletionResponse200ApplicationJson | createChatCompletionResponse200TextEventStream
 ) & {
   headers: Headers;
 };
@@ -70,8 +69,7 @@ export type createChatCompletionResponseError = (
 };
 
 export type createChatCompletionResponse =
-  | createChatCompletionResponseSuccess
-  | createChatCompletionResponseError;
+  createChatCompletionResponseSuccess | createChatCompletionResponseError;
 
 export const getCreateChatCompletionUrl = () => {
   return `/v1/llm/chat/completions`;
@@ -139,8 +137,7 @@ export type createCompletionResponse503 = {
 };
 
 export type createCompletionResponseSuccess = (
-  | createCompletionResponse200ApplicationJson
-  | createCompletionResponse200TextEventStream
+  createCompletionResponse200ApplicationJson | createCompletionResponse200TextEventStream
 ) & {
   headers: Headers;
 };
@@ -155,8 +152,7 @@ export type createCompletionResponseError = (
 };
 
 export type createCompletionResponse =
-  | createCompletionResponseSuccess
-  | createCompletionResponseError;
+  createCompletionResponseSuccess | createCompletionResponseError;
 
 export const getCreateCompletionUrl = () => {
   return `/v1/llm/completions`;

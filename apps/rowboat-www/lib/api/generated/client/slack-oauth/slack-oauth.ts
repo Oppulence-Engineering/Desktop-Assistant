@@ -44,8 +44,7 @@ export type handleSlackOAuthCallbackResponseError = handleSlackOAuthCallbackResp
 };
 
 export type handleSlackOAuthCallbackResponse =
-  | handleSlackOAuthCallbackResponseSuccess
-  | handleSlackOAuthCallbackResponseError;
+  handleSlackOAuthCallbackResponseSuccess | handleSlackOAuthCallbackResponseError;
 
 export const getHandleSlackOAuthCallbackUrl = (params: HandleSlackOAuthCallbackParams) => {
   const normalizedParams = new URLSearchParams();
@@ -188,9 +187,7 @@ export type startSlackOAuthResponseSuccess = startSlackOAuthResponse200 & {
   headers: Headers;
 };
 export type startSlackOAuthResponseError = (
-  | startSlackOAuthResponse401
-  | startSlackOAuthResponse500
-  | startSlackOAuthResponse502
+  startSlackOAuthResponse401 | startSlackOAuthResponse500 | startSlackOAuthResponse502
 ) & {
   headers: Headers;
 };
@@ -261,8 +258,7 @@ export type postSlackThreadReplyResponseError = (
 };
 
 export type postSlackThreadReplyResponse =
-  | postSlackThreadReplyResponseSuccess
-  | postSlackThreadReplyResponseError;
+  postSlackThreadReplyResponseSuccess | postSlackThreadReplyResponseError;
 
 export const getPostSlackThreadReplyUrl = () => {
   return `/v1/slack-oauth/thread/post`;
@@ -378,15 +374,13 @@ export type listSlackWorkspacesResponseSuccess = listSlackWorkspacesResponse200 
   headers: Headers;
 };
 export type listSlackWorkspacesResponseError = (
-  | listSlackWorkspacesResponse401
-  | listSlackWorkspacesResponse500
+  listSlackWorkspacesResponse401 | listSlackWorkspacesResponse500
 ) & {
   headers: Headers;
 };
 
 export type listSlackWorkspacesResponse =
-  | listSlackWorkspacesResponseSuccess
-  | listSlackWorkspacesResponseError;
+  listSlackWorkspacesResponseSuccess | listSlackWorkspacesResponseError;
 
 export const getListSlackWorkspacesUrl = () => {
   return `/v1/slack-oauth/workspaces`;
@@ -442,8 +436,7 @@ export type deleteSlackWorkspaceResponseError = (
 };
 
 export type deleteSlackWorkspaceResponse =
-  | deleteSlackWorkspaceResponseSuccess
-  | deleteSlackWorkspaceResponseError;
+  deleteSlackWorkspaceResponseSuccess | deleteSlackWorkspaceResponseError;
 
 export const getDeleteSlackWorkspaceUrl = (teamId: string) => {
   return `/v1/slack-oauth/workspaces/${teamId}`;

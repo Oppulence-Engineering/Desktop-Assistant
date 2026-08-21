@@ -53,8 +53,7 @@ export type listRevenueActionsResponseError = listRevenueActionsResponse401 & {
 };
 
 export type listRevenueActionsResponse =
-  | listRevenueActionsResponseSuccess
-  | listRevenueActionsResponseError;
+  listRevenueActionsResponseSuccess | listRevenueActionsResponseError;
 
 export const getListRevenueActionsUrl = (params?: ListRevenueActionsParams) => {
   const normalizedParams = new URLSearchParams();
@@ -115,16 +114,13 @@ export type createRevenueActionResponseSuccess = createRevenueActionResponse201 
   headers: Headers;
 };
 export type createRevenueActionResponseError = (
-  | createRevenueActionResponse400
-  | createRevenueActionResponse401
-  | createRevenueActionResponse404
+  createRevenueActionResponse400 | createRevenueActionResponse401 | createRevenueActionResponse404
 ) & {
   headers: Headers;
 };
 
 export type createRevenueActionResponse =
-  | createRevenueActionResponseSuccess
-  | createRevenueActionResponseError;
+  createRevenueActionResponseSuccess | createRevenueActionResponseError;
 
 export const getCreateRevenueActionUrl = () => {
   return `/v1/revenue-actions`;
@@ -170,15 +166,13 @@ export type getRevenueActionResponseSuccess = getRevenueActionResponse200 & {
   headers: Headers;
 };
 export type getRevenueActionResponseError = (
-  | getRevenueActionResponse401
-  | getRevenueActionResponse404
+  getRevenueActionResponse401 | getRevenueActionResponse404
 ) & {
   headers: Headers;
 };
 
 export type getRevenueActionResponse =
-  | getRevenueActionResponseSuccess
-  | getRevenueActionResponseError;
+  getRevenueActionResponseSuccess | getRevenueActionResponseError;
 
 export const getGetRevenueActionUrl = (actionId: string) => {
   return `/v1/revenue-actions/${actionId}`;
@@ -241,8 +235,7 @@ export type approveRevenueActionResponseError = (
 };
 
 export type approveRevenueActionResponse =
-  | approveRevenueActionResponseSuccess
-  | approveRevenueActionResponseError;
+  approveRevenueActionResponseSuccess | approveRevenueActionResponseError;
 
 export const getApproveRevenueActionUrl = (actionId: string) => {
   return `/v1/revenue-actions/${actionId}/approve`;
@@ -289,15 +282,13 @@ export type getRevenueActionAuditResponseSuccess = getRevenueActionAuditResponse
   headers: Headers;
 };
 export type getRevenueActionAuditResponseError = (
-  | getRevenueActionAuditResponse401
-  | getRevenueActionAuditResponse404
+  getRevenueActionAuditResponse401 | getRevenueActionAuditResponse404
 ) & {
   headers: Headers;
 };
 
 export type getRevenueActionAuditResponse =
-  | getRevenueActionAuditResponseSuccess
-  | getRevenueActionAuditResponseError;
+  getRevenueActionAuditResponseSuccess | getRevenueActionAuditResponseError;
 
 export const getGetRevenueActionAuditUrl = (actionId: string) => {
   return `/v1/revenue-actions/${actionId}/audit`;
@@ -341,15 +332,13 @@ export type dismissRevenueActionResponseSuccess = dismissRevenueActionResponse20
   headers: Headers;
 };
 export type dismissRevenueActionResponseError = (
-  | dismissRevenueActionResponse401
-  | dismissRevenueActionResponse404
+  dismissRevenueActionResponse401 | dismissRevenueActionResponse404
 ) & {
   headers: Headers;
 };
 
 export type dismissRevenueActionResponse =
-  | dismissRevenueActionResponseSuccess
-  | dismissRevenueActionResponseError;
+  dismissRevenueActionResponseSuccess | dismissRevenueActionResponseError;
 
 export const getDismissRevenueActionUrl = (actionId: string) => {
   return `/v1/revenue-actions/${actionId}/dismiss`;
@@ -415,8 +404,7 @@ export type editRevenueActionResponseError = (
 };
 
 export type editRevenueActionResponse =
-  | editRevenueActionResponseSuccess
-  | editRevenueActionResponseError;
+  editRevenueActionResponseSuccess | editRevenueActionResponseError;
 
 export const getEditRevenueActionUrl = (actionId: string) => {
   return `/v1/revenue-actions/${actionId}/edit`;
@@ -476,8 +464,7 @@ export type evaluateRevenueActionResponseError = (
 };
 
 export type evaluateRevenueActionResponse =
-  | evaluateRevenueActionResponseSuccess
-  | evaluateRevenueActionResponseError;
+  evaluateRevenueActionResponseSuccess | evaluateRevenueActionResponseError;
 
 export const getEvaluateRevenueActionUrl = (actionId: string) => {
   return `/v1/revenue-actions/${actionId}/evaluate`;
@@ -540,8 +527,7 @@ export type executeRevenueActionResponseError = (
 };
 
 export type executeRevenueActionResponse =
-  | executeRevenueActionResponseSuccess
-  | executeRevenueActionResponseError;
+  executeRevenueActionResponseSuccess | executeRevenueActionResponseError;
 
 export const getExecuteRevenueActionUrl = (actionId: string) => {
   return `/v1/revenue-actions/${actionId}/execute`;
@@ -598,8 +584,7 @@ export type recordRevenueActionOutcomeResponseError = (
 };
 
 export type recordRevenueActionOutcomeResponse =
-  | recordRevenueActionOutcomeResponseSuccess
-  | recordRevenueActionOutcomeResponseError;
+  recordRevenueActionOutcomeResponseSuccess | recordRevenueActionOutcomeResponseError;
 
 export const getRecordRevenueActionOutcomeUrl = (actionId: string) => {
   return `/v1/revenue-actions/${actionId}/outcomes`;
@@ -651,16 +636,13 @@ export type rejectRevenueActionResponseSuccess = rejectRevenueActionResponse200 
   headers: Headers;
 };
 export type rejectRevenueActionResponseError = (
-  | rejectRevenueActionResponse401
-  | rejectRevenueActionResponse404
-  | rejectRevenueActionResponse409
+  rejectRevenueActionResponse401 | rejectRevenueActionResponse404 | rejectRevenueActionResponse409
 ) & {
   headers: Headers;
 };
 
 export type rejectRevenueActionResponse =
-  | rejectRevenueActionResponseSuccess
-  | rejectRevenueActionResponseError;
+  rejectRevenueActionResponseSuccess | rejectRevenueActionResponseError;
 
 export const getRejectRevenueActionUrl = (actionId: string) => {
   return `/v1/revenue-actions/${actionId}/reject`;
@@ -712,16 +694,13 @@ export type snoozeRevenueActionResponseSuccess = snoozeRevenueActionResponse200 
   headers: Headers;
 };
 export type snoozeRevenueActionResponseError = (
-  | snoozeRevenueActionResponse400
-  | snoozeRevenueActionResponse401
-  | snoozeRevenueActionResponse404
+  snoozeRevenueActionResponse400 | snoozeRevenueActionResponse401 | snoozeRevenueActionResponse404
 ) & {
   headers: Headers;
 };
 
 export type snoozeRevenueActionResponse =
-  | snoozeRevenueActionResponseSuccess
-  | snoozeRevenueActionResponseError;
+  snoozeRevenueActionResponseSuccess | snoozeRevenueActionResponseError;
 
 export const getSnoozeRevenueActionUrl = (actionId: string) => {
   return `/v1/revenue-actions/${actionId}/snooze`;
@@ -768,15 +747,13 @@ export type getRevenueActionSourceBodyResponseSuccess = getRevenueActionSourceBo
   headers: Headers;
 };
 export type getRevenueActionSourceBodyResponseError = (
-  | getRevenueActionSourceBodyResponse401
-  | getRevenueActionSourceBodyResponse404
+  getRevenueActionSourceBodyResponse401 | getRevenueActionSourceBodyResponse404
 ) & {
   headers: Headers;
 };
 
 export type getRevenueActionSourceBodyResponse =
-  | getRevenueActionSourceBodyResponseSuccess
-  | getRevenueActionSourceBodyResponseError;
+  getRevenueActionSourceBodyResponseSuccess | getRevenueActionSourceBodyResponseError;
 
 export const getGetRevenueActionSourceBodyUrl = (actionId: string) => {
   return `/v1/revenue-actions/${actionId}/source-body`;
@@ -819,8 +796,7 @@ export type getRevenueDigestResponseError = getRevenueDigestResponse401 & {
 };
 
 export type getRevenueDigestResponse =
-  | getRevenueDigestResponseSuccess
-  | getRevenueDigestResponseError;
+  getRevenueDigestResponseSuccess | getRevenueDigestResponseError;
 
 export const getGetRevenueDigestUrl = () => {
   return `/v1/revenue-digest`;
@@ -862,8 +838,7 @@ export type getRevenueImpactResponseError = getRevenueImpactResponse401 & {
 };
 
 export type getRevenueImpactResponse =
-  | getRevenueImpactResponseSuccess
-  | getRevenueImpactResponseError;
+  getRevenueImpactResponseSuccess | getRevenueImpactResponseError;
 
 export const getGetRevenueImpactUrl = () => {
   return `/v1/revenue-impact`;
@@ -906,15 +881,13 @@ export type startRevenueLeakScanResponseSuccess = startRevenueLeakScanResponse20
   headers: Headers;
 };
 export type startRevenueLeakScanResponseError = (
-  | startRevenueLeakScanResponse401
-  | startRevenueLeakScanResponse409
+  startRevenueLeakScanResponse401 | startRevenueLeakScanResponse409
 ) & {
   headers: Headers;
 };
 
 export type startRevenueLeakScanResponse =
-  | startRevenueLeakScanResponseSuccess
-  | startRevenueLeakScanResponseError;
+  startRevenueLeakScanResponseSuccess | startRevenueLeakScanResponseError;
 
 export const getStartRevenueLeakScanUrl = () => {
   return `/v1/revenue-leak-scans`;
@@ -960,15 +933,13 @@ export type getRevenueLeakScanResponseSuccess = getRevenueLeakScanResponse200 & 
   headers: Headers;
 };
 export type getRevenueLeakScanResponseError = (
-  | getRevenueLeakScanResponse401
-  | getRevenueLeakScanResponse404
+  getRevenueLeakScanResponse401 | getRevenueLeakScanResponse404
 ) & {
   headers: Headers;
 };
 
 export type getRevenueLeakScanResponse =
-  | getRevenueLeakScanResponseSuccess
-  | getRevenueLeakScanResponseError;
+  getRevenueLeakScanResponseSuccess | getRevenueLeakScanResponseError;
 
 export const getGetRevenueLeakScanUrl = (scanId: string) => {
   return `/v1/revenue-leak-scans/${scanId}`;
@@ -1012,15 +983,13 @@ export type revenueSemanticSearchResponseSuccess = revenueSemanticSearchResponse
   headers: Headers;
 };
 export type revenueSemanticSearchResponseError = (
-  | revenueSemanticSearchResponse400
-  | revenueSemanticSearchResponse401
+  revenueSemanticSearchResponse400 | revenueSemanticSearchResponse401
 ) & {
   headers: Headers;
 };
 
 export type revenueSemanticSearchResponse =
-  | revenueSemanticSearchResponseSuccess
-  | revenueSemanticSearchResponseError;
+  revenueSemanticSearchResponseSuccess | revenueSemanticSearchResponseError;
 
 export const getRevenueSemanticSearchUrl = (params: RevenueSemanticSearchParams) => {
   const normalizedParams = new URLSearchParams();
@@ -1075,8 +1044,7 @@ export type getRevenueWorkspaceResponseError = getRevenueWorkspaceResponse401 & 
 };
 
 export type getRevenueWorkspaceResponse =
-  | getRevenueWorkspaceResponseSuccess
-  | getRevenueWorkspaceResponseError;
+  getRevenueWorkspaceResponseSuccess | getRevenueWorkspaceResponseError;
 
 export const getGetRevenueWorkspaceUrl = () => {
   return `/v1/revenue-workspaces/current`;
@@ -1132,8 +1100,7 @@ export type linkRevenueWorkspaceResponseError = (
 };
 
 export type linkRevenueWorkspaceResponse =
-  | linkRevenueWorkspaceResponseSuccess
-  | linkRevenueWorkspaceResponseError;
+  linkRevenueWorkspaceResponseSuccess | linkRevenueWorkspaceResponseError;
 
 export const getLinkRevenueWorkspaceUrl = () => {
   return `/v1/revenue-workspaces/link`;

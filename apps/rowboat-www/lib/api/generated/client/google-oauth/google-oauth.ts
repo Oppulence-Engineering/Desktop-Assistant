@@ -40,8 +40,7 @@ export type handleGoogleOAuthCallbackResponseError = handleGoogleOAuthCallbackRe
 };
 
 export type handleGoogleOAuthCallbackResponse =
-  | handleGoogleOAuthCallbackResponseSuccess
-  | handleGoogleOAuthCallbackResponseError;
+  handleGoogleOAuthCallbackResponseSuccess | handleGoogleOAuthCallbackResponseError;
 
 export const getHandleGoogleOAuthCallbackUrl = (params: HandleGoogleOAuthCallbackParams) => {
   const normalizedParams = new URLSearchParams();
@@ -97,15 +96,13 @@ export type disconnectGoogleResponseSuccess = disconnectGoogleResponse204 & {
   headers: Headers;
 };
 export type disconnectGoogleResponseError = (
-  | disconnectGoogleResponse401
-  | disconnectGoogleResponse500
+  disconnectGoogleResponse401 | disconnectGoogleResponse500
 ) & {
   headers: Headers;
 };
 
 export type disconnectGoogleResponse =
-  | disconnectGoogleResponseSuccess
-  | disconnectGoogleResponseError;
+  disconnectGoogleResponseSuccess | disconnectGoogleResponseError;
 
 export const getDisconnectGoogleUrl = () => {
   return `/v1/google-oauth`;
@@ -191,8 +188,7 @@ export type claimGoogleOAuthResponseError = (
 };
 
 export type claimGoogleOAuthResponse =
-  | claimGoogleOAuthResponseSuccess
-  | claimGoogleOAuthResponseError;
+  claimGoogleOAuthResponseSuccess | claimGoogleOAuthResponseError;
 
 export const getClaimGoogleOAuthUrl = () => {
   return `/v1/google-oauth/claim`;
@@ -263,8 +259,7 @@ export type refreshGoogleOAuthResponseError = (
 };
 
 export type refreshGoogleOAuthResponse =
-  | refreshGoogleOAuthResponseSuccess
-  | refreshGoogleOAuthResponseError;
+  refreshGoogleOAuthResponseSuccess | refreshGoogleOAuthResponseError;
 
 export const getRefreshGoogleOAuthUrl = () => {
   return `/v1/google-oauth/refresh`;
@@ -315,16 +310,13 @@ export type startGoogleOAuthResponseSuccess = startGoogleOAuthResponse200 & {
   headers: Headers;
 };
 export type startGoogleOAuthResponseError = (
-  | startGoogleOAuthResponse401
-  | startGoogleOAuthResponse500
-  | startGoogleOAuthResponse502
+  startGoogleOAuthResponse401 | startGoogleOAuthResponse500 | startGoogleOAuthResponse502
 ) & {
   headers: Headers;
 };
 
 export type startGoogleOAuthResponse =
-  | startGoogleOAuthResponseSuccess
-  | startGoogleOAuthResponseError;
+  startGoogleOAuthResponseSuccess | startGoogleOAuthResponseError;
 
 export const getStartGoogleOAuthUrl = () => {
   return `/v1/google-oauth/start`;

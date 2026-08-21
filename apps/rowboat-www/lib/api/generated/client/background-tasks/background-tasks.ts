@@ -78,8 +78,7 @@ export type listBackgroundTaskRunsForAccountResponseError = (
 };
 
 export type listBackgroundTaskRunsForAccountResponse =
-  | listBackgroundTaskRunsForAccountResponseSuccess
-  | listBackgroundTaskRunsForAccountResponseError;
+  listBackgroundTaskRunsForAccountResponseSuccess | listBackgroundTaskRunsForAccountResponseError;
 
 export const getListBackgroundTaskRunsForAccountUrl = (
   params?: ListBackgroundTaskRunsForAccountParams,
@@ -141,15 +140,13 @@ export type listBackgroundTaskTemplatesResponseSuccess = listBackgroundTaskTempl
   headers: Headers;
 };
 export type listBackgroundTaskTemplatesResponseError = (
-  | listBackgroundTaskTemplatesResponse401
-  | listBackgroundTaskTemplatesResponse500
+  listBackgroundTaskTemplatesResponse401 | listBackgroundTaskTemplatesResponse500
 ) & {
   headers: Headers;
 };
 
 export type listBackgroundTaskTemplatesResponse =
-  | listBackgroundTaskTemplatesResponseSuccess
-  | listBackgroundTaskTemplatesResponseError;
+  listBackgroundTaskTemplatesResponseSuccess | listBackgroundTaskTemplatesResponseError;
 
 export const getListBackgroundTaskTemplatesUrl = () => {
   return `/v1/background-task-templates`;
@@ -205,8 +202,7 @@ export type getBackgroundTaskTemplateResponseError = (
 };
 
 export type getBackgroundTaskTemplateResponse =
-  | getBackgroundTaskTemplateResponseSuccess
-  | getBackgroundTaskTemplateResponseError;
+  getBackgroundTaskTemplateResponseSuccess | getBackgroundTaskTemplateResponseError;
 
 export const getGetBackgroundTaskTemplateUrl = (templateSlug: string) => {
   return `/v1/background-task-templates/${templateSlug}`;
@@ -276,8 +272,7 @@ export type instantiateBackgroundTaskTemplateResponseError = (
 };
 
 export type instantiateBackgroundTaskTemplateResponse =
-  | instantiateBackgroundTaskTemplateResponseSuccess
-  | instantiateBackgroundTaskTemplateResponseError;
+  instantiateBackgroundTaskTemplateResponseSuccess | instantiateBackgroundTaskTemplateResponseError;
 
 export const getInstantiateBackgroundTaskTemplateUrl = (templateSlug: string) => {
   return `/v1/background-task-templates/${templateSlug}/instantiate`;
@@ -328,15 +323,13 @@ export type listBackgroundTasksResponseSuccess = listBackgroundTasksResponse200 
   headers: Headers;
 };
 export type listBackgroundTasksResponseError = (
-  | listBackgroundTasksResponse401
-  | listBackgroundTasksResponse500
+  listBackgroundTasksResponse401 | listBackgroundTasksResponse500
 ) & {
   headers: Headers;
 };
 
 export type listBackgroundTasksResponse =
-  | listBackgroundTasksResponseSuccess
-  | listBackgroundTasksResponseError;
+  listBackgroundTasksResponseSuccess | listBackgroundTasksResponseError;
 
 export const getListBackgroundTasksUrl = () => {
   return `/v1/background-tasks`;
@@ -398,8 +391,7 @@ export type createBackgroundTaskResponseError = (
 };
 
 export type createBackgroundTaskResponse =
-  | createBackgroundTaskResponseSuccess
-  | createBackgroundTaskResponseError;
+  createBackgroundTaskResponseSuccess | createBackgroundTaskResponseError;
 
 export const getCreateBackgroundTaskUrl = () => {
   return `/v1/background-tasks`;
@@ -446,15 +438,13 @@ export type ensureFirstPartyBackgroundTasksResponseSuccess =
     headers: Headers;
   };
 export type ensureFirstPartyBackgroundTasksResponseError = (
-  | ensureFirstPartyBackgroundTasksResponse401
-  | ensureFirstPartyBackgroundTasksResponse500
+  ensureFirstPartyBackgroundTasksResponse401 | ensureFirstPartyBackgroundTasksResponse500
 ) & {
   headers: Headers;
 };
 
 export type ensureFirstPartyBackgroundTasksResponse =
-  | ensureFirstPartyBackgroundTasksResponseSuccess
-  | ensureFirstPartyBackgroundTasksResponseError;
+  ensureFirstPartyBackgroundTasksResponseSuccess | ensureFirstPartyBackgroundTasksResponseError;
 
 export const getEnsureFirstPartyBackgroundTasksUrl = () => {
   return `/v1/background-tasks/first-party/ensure`;
@@ -526,8 +516,7 @@ export type deleteBackgroundTaskResponseError = (
 };
 
 export type deleteBackgroundTaskResponse =
-  | deleteBackgroundTaskResponseSuccess
-  | deleteBackgroundTaskResponseError;
+  deleteBackgroundTaskResponseSuccess | deleteBackgroundTaskResponseError;
 
 export const getDeleteBackgroundTaskUrl = (slug: string, params: DeleteBackgroundTaskParams) => {
   const normalizedParams = new URLSearchParams();
@@ -589,16 +578,13 @@ export type getBackgroundTaskResponseSuccess = getBackgroundTaskResponse200 & {
   headers: Headers;
 };
 export type getBackgroundTaskResponseError = (
-  | getBackgroundTaskResponse401
-  | getBackgroundTaskResponse404
-  | getBackgroundTaskResponse500
+  getBackgroundTaskResponse401 | getBackgroundTaskResponse404 | getBackgroundTaskResponse500
 ) & {
   headers: Headers;
 };
 
 export type getBackgroundTaskResponse =
-  | getBackgroundTaskResponseSuccess
-  | getBackgroundTaskResponseError;
+  getBackgroundTaskResponseSuccess | getBackgroundTaskResponseError;
 
 export const getGetBackgroundTaskUrl = (slug: string) => {
   return `/v1/background-tasks/${slug}`;
@@ -667,8 +653,7 @@ export type patchBackgroundTaskResponseError = (
 };
 
 export type patchBackgroundTaskResponse =
-  | patchBackgroundTaskResponseSuccess
-  | patchBackgroundTaskResponseError;
+  patchBackgroundTaskResponseSuccess | patchBackgroundTaskResponseError;
 
 export const getPatchBackgroundTaskUrl = (slug: string) => {
   return `/v1/background-tasks/${slug}`;
@@ -728,8 +713,7 @@ export type getBackgroundTaskArtifactResponseError = (
 };
 
 export type getBackgroundTaskArtifactResponse =
-  | getBackgroundTaskArtifactResponseSuccess
-  | getBackgroundTaskArtifactResponseError;
+  getBackgroundTaskArtifactResponseSuccess | getBackgroundTaskArtifactResponseError;
 
 export const getGetBackgroundTaskArtifactUrl = (slug: string) => {
   return `/v1/background-tasks/${slug}/artifact`;
@@ -798,8 +782,7 @@ export type putBackgroundTaskArtifactResponseError = (
 };
 
 export type putBackgroundTaskArtifactResponse =
-  | putBackgroundTaskArtifactResponseSuccess
-  | putBackgroundTaskArtifactResponseError;
+  putBackgroundTaskArtifactResponseSuccess | putBackgroundTaskArtifactResponseError;
 
 export const getPutBackgroundTaskArtifactUrl = (slug: string) => {
   return `/v1/background-tasks/${slug}/artifact`;
@@ -865,8 +848,7 @@ export type listBackgroundTaskRunsResponseError = (
 };
 
 export type listBackgroundTaskRunsResponse =
-  | listBackgroundTaskRunsResponseSuccess
-  | listBackgroundTaskRunsResponseError;
+  listBackgroundTaskRunsResponseSuccess | listBackgroundTaskRunsResponseError;
 
 export const getListBackgroundTaskRunsUrl = (
   slug: string,
@@ -951,8 +933,7 @@ export type createBackgroundTaskRunResponseError = (
 };
 
 export type createBackgroundTaskRunResponse =
-  | createBackgroundTaskRunResponseSuccess
-  | createBackgroundTaskRunResponseError;
+  createBackgroundTaskRunResponseSuccess | createBackgroundTaskRunResponseError;
 
 export const getCreateBackgroundTaskRunUrl = (slug: string) => {
   return `/v1/background-tasks/${slug}/runs`;
@@ -1012,8 +993,7 @@ export type getBackgroundTaskRunResponseError = (
 };
 
 export type getBackgroundTaskRunResponse =
-  | getBackgroundTaskRunResponseSuccess
-  | getBackgroundTaskRunResponseError;
+  getBackgroundTaskRunResponseSuccess | getBackgroundTaskRunResponseError;
 
 export const getGetBackgroundTaskRunUrl = (slug: string, runId: string) => {
   return `/v1/background-tasks/${slug}/runs/${runId}`;
@@ -1083,8 +1063,7 @@ export type patchBackgroundTaskRunResponseError = (
 };
 
 export type patchBackgroundTaskRunResponse =
-  | patchBackgroundTaskRunResponseSuccess
-  | patchBackgroundTaskRunResponseError;
+  patchBackgroundTaskRunResponseSuccess | patchBackgroundTaskRunResponseError;
 
 export const getPatchBackgroundTaskRunUrl = (slug: string, runId: string) => {
   return `/v1/background-tasks/${slug}/runs/${runId}`;
@@ -1157,8 +1136,7 @@ export type cancelBackgroundTaskRunResponseError = (
 };
 
 export type cancelBackgroundTaskRunResponse =
-  | cancelBackgroundTaskRunResponseSuccess
-  | cancelBackgroundTaskRunResponseError;
+  cancelBackgroundTaskRunResponseSuccess | cancelBackgroundTaskRunResponseError;
 
 export const getCancelBackgroundTaskRunUrl = (slug: string, runId: string) => {
   return `/v1/background-tasks/${slug}/runs/${runId}/cancel`;
@@ -1216,8 +1194,7 @@ export type listBackgroundTaskRunEventsResponseError = (
 };
 
 export type listBackgroundTaskRunEventsResponse =
-  | listBackgroundTaskRunEventsResponseSuccess
-  | listBackgroundTaskRunEventsResponseError;
+  listBackgroundTaskRunEventsResponseSuccess | listBackgroundTaskRunEventsResponseError;
 
 export const getListBackgroundTaskRunEventsUrl = (
   slug: string,
@@ -1299,8 +1276,7 @@ export type appendBackgroundTaskRunEventsResponseError = (
 };
 
 export type appendBackgroundTaskRunEventsResponse =
-  | appendBackgroundTaskRunEventsResponseSuccess
-  | appendBackgroundTaskRunEventsResponseError;
+  appendBackgroundTaskRunEventsResponseSuccess | appendBackgroundTaskRunEventsResponseError;
 
 export const getAppendBackgroundTaskRunEventsUrl = (slug: string, runId: string) => {
   return `/v1/background-tasks/${slug}/runs/${runId}/events`;
@@ -1372,8 +1348,7 @@ export type streamBackgroundTaskRunEventsResponseError = (
 };
 
 export type streamBackgroundTaskRunEventsResponse =
-  | streamBackgroundTaskRunEventsResponseSuccess
-  | streamBackgroundTaskRunEventsResponseError;
+  streamBackgroundTaskRunEventsResponseSuccess | streamBackgroundTaskRunEventsResponseError;
 
 export const getStreamBackgroundTaskRunEventsUrl = (
   slug: string,
@@ -1461,8 +1436,7 @@ export type retryBackgroundTaskRunResponseError = (
 };
 
 export type retryBackgroundTaskRunResponse =
-  | retryBackgroundTaskRunResponseSuccess
-  | retryBackgroundTaskRunResponseError;
+  retryBackgroundTaskRunResponseSuccess | retryBackgroundTaskRunResponseError;
 
 export const getRetryBackgroundTaskRunUrl = (slug: string, runId: string) => {
   return `/v1/background-tasks/${slug}/runs/${runId}/retry`;
@@ -1532,8 +1506,7 @@ export type signalBackgroundTaskRunResponseError = (
 };
 
 export type signalBackgroundTaskRunResponse =
-  | signalBackgroundTaskRunResponseSuccess
-  | signalBackgroundTaskRunResponseError;
+  signalBackgroundTaskRunResponseSuccess | signalBackgroundTaskRunResponseError;
 
 export const getSignalBackgroundTaskRunUrl = (slug: string, runId: string) => {
   return `/v1/background-tasks/${slug}/runs/${runId}/signal`;
@@ -1594,8 +1567,7 @@ export type getBackgroundTaskRunStatusResponseError = (
 };
 
 export type getBackgroundTaskRunStatusResponse =
-  | getBackgroundTaskRunStatusResponseSuccess
-  | getBackgroundTaskRunStatusResponseError;
+  getBackgroundTaskRunStatusResponseSuccess | getBackgroundTaskRunStatusResponseError;
 
 export const getGetBackgroundTaskRunStatusUrl = (slug: string, runId: string) => {
   return `/v1/background-tasks/${slug}/runs/${runId}/status`;
@@ -1671,8 +1643,7 @@ export type triggerBackgroundTaskResponseError = (
 };
 
 export type triggerBackgroundTaskResponse =
-  | triggerBackgroundTaskResponseSuccess
-  | triggerBackgroundTaskResponseError;
+  triggerBackgroundTaskResponseSuccess | triggerBackgroundTaskResponseError;
 
 export const getTriggerBackgroundTaskUrl = (slug: string) => {
   return `/v1/background-tasks/${slug}/trigger`;

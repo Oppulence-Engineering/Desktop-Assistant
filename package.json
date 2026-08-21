@@ -15,7 +15,7 @@
     "@commitlint/cli": "^19.6.1",
     "@commitlint/config-conventional": "^19.6.0",
     "lefthook": "^1.10.10",
-    "prettier": "^3.4.2"
+    "prettier": "^3.9.6"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

@@ -47,9 +47,7 @@ export type listCloudEventsResponseSuccess = listCloudEventsResponse200 & {
   headers: Headers;
 };
 export type listCloudEventsResponseError = (
-  | listCloudEventsResponse400
-  | listCloudEventsResponse401
-  | listCloudEventsResponse500
+  listCloudEventsResponse400 | listCloudEventsResponse401 | listCloudEventsResponse500
 ) & {
   headers: Headers;
 };
@@ -120,8 +118,7 @@ export type ingestCloudEventResponse500 = {
 };
 
 export type ingestCloudEventResponseSuccess = (
-  | ingestCloudEventResponse200
-  | ingestCloudEventResponse202
+  ingestCloudEventResponse200 | ingestCloudEventResponse202
 ) & {
   headers: Headers;
 };
@@ -135,8 +132,7 @@ export type ingestCloudEventResponseError = (
 };
 
 export type ingestCloudEventResponse =
-  | ingestCloudEventResponseSuccess
-  | ingestCloudEventResponseError;
+  ingestCloudEventResponseSuccess | ingestCloudEventResponseError;
 
 export const getIngestCloudEventUrl = () => {
   return `/v1/events`;
@@ -187,9 +183,7 @@ export type getCloudEventResponseSuccess = getCloudEventResponse200 & {
   headers: Headers;
 };
 export type getCloudEventResponseError = (
-  | getCloudEventResponse401
-  | getCloudEventResponse404
-  | getCloudEventResponse500
+  getCloudEventResponse401 | getCloudEventResponse404 | getCloudEventResponse500
 ) & {
   headers: Headers;
 };
@@ -243,16 +237,13 @@ export type listCloudEventRunsResponseSuccess = listCloudEventRunsResponse200 & 
   headers: Headers;
 };
 export type listCloudEventRunsResponseError = (
-  | listCloudEventRunsResponse401
-  | listCloudEventRunsResponse404
-  | listCloudEventRunsResponse500
+  listCloudEventRunsResponse401 | listCloudEventRunsResponse404 | listCloudEventRunsResponse500
 ) & {
   headers: Headers;
 };
 
 export type listCloudEventRunsResponse =
-  | listCloudEventRunsResponseSuccess
-  | listCloudEventRunsResponseError;
+  listCloudEventRunsResponseSuccess | listCloudEventRunsResponseError;
 
 export const getListCloudEventRunsUrl = (eventId: string) => {
   return `/v1/events/${eventId}/runs`;
@@ -308,8 +299,7 @@ export type genericWebhookResponse500 = {
 };
 
 export type genericWebhookResponseSuccess = (
-  | genericWebhookResponse200
-  | genericWebhookResponse202
+  genericWebhookResponse200 | genericWebhookResponse202
 ) & {
   headers: Headers;
 };
@@ -378,9 +368,7 @@ export type googleWebhookResponseSuccess = (googleWebhookResponse200 | googleWeb
   headers: Headers;
 };
 export type googleWebhookResponseError = (
-  | googleWebhookResponse400
-  | googleWebhookResponse401
-  | googleWebhookResponse500
+  googleWebhookResponse400 | googleWebhookResponse401 | googleWebhookResponse500
 ) & {
   headers: Headers;
 };
@@ -454,9 +442,7 @@ export type slackWebhookResponseSuccess = (slackWebhookResponse200 | slackWebhoo
   headers: Headers;
 };
 export type slackWebhookResponseError = (
-  | slackWebhookResponse400
-  | slackWebhookResponse401
-  | slackWebhookResponse500
+  slackWebhookResponse400 | slackWebhookResponse401 | slackWebhookResponse500
 ) & {
   headers: Headers;
 };

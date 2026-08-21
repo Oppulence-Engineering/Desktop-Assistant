@@ -94,8 +94,7 @@ export type getPublicMutualActionPlanResponseError = getPublicMutualActionPlanRe
 };
 
 export type getPublicMutualActionPlanResponse =
-  | getPublicMutualActionPlanResponseSuccess
-  | getPublicMutualActionPlanResponseError;
+  getPublicMutualActionPlanResponseSuccess | getPublicMutualActionPlanResponseError;
 
 export const getGetPublicMutualActionPlanUrl = () => {
   return `/v1/public/mutual-action-plan`;
@@ -139,15 +138,13 @@ export type respondPublicMutualActionPlanResponseSuccess =
     headers: Headers;
   };
 export type respondPublicMutualActionPlanResponseError = (
-  | respondPublicMutualActionPlanResponse400
-  | respondPublicMutualActionPlanResponse404
+  respondPublicMutualActionPlanResponse400 | respondPublicMutualActionPlanResponse404
 ) & {
   headers: Headers;
 };
 
 export type respondPublicMutualActionPlanResponse =
-  | respondPublicMutualActionPlanResponseSuccess
-  | respondPublicMutualActionPlanResponseError;
+  respondPublicMutualActionPlanResponseSuccess | respondPublicMutualActionPlanResponseError;
 
 export const getRespondPublicMutualActionPlanUrl = () => {
   return `/v1/public/mutual-action-plan/responses`;
@@ -196,8 +193,7 @@ export type listRelationshipAttentionResponseError = listRelationshipAttentionRe
 };
 
 export type listRelationshipAttentionResponse =
-  | listRelationshipAttentionResponseSuccess
-  | listRelationshipAttentionResponseError;
+  listRelationshipAttentionResponseSuccess | listRelationshipAttentionResponseError;
 
 export const getListRelationshipAttentionUrl = (params?: ListRelationshipAttentionParams) => {
   const normalizedParams = new URLSearchParams();
@@ -272,8 +268,7 @@ export type decideRelationshipAttentionResponseError = (
 };
 
 export type decideRelationshipAttentionResponse =
-  | decideRelationshipAttentionResponseSuccess
-  | decideRelationshipAttentionResponseError;
+  decideRelationshipAttentionResponseSuccess | decideRelationshipAttentionResponseError;
 
 export const getDecideRelationshipAttentionUrl = (attentionId: string) => {
   return `/v1/relationship-attention/${attentionId}/decisions`;
@@ -321,15 +316,13 @@ export type getRelationshipBetaDiagnosticsResponseSuccess =
     headers: Headers;
   };
 export type getRelationshipBetaDiagnosticsResponseError = (
-  | getRelationshipBetaDiagnosticsResponse401
-  | getRelationshipBetaDiagnosticsResponse403
+  getRelationshipBetaDiagnosticsResponse401 | getRelationshipBetaDiagnosticsResponse403
 ) & {
   headers: Headers;
 };
 
 export type getRelationshipBetaDiagnosticsResponse =
-  | getRelationshipBetaDiagnosticsResponseSuccess
-  | getRelationshipBetaDiagnosticsResponseError;
+  getRelationshipBetaDiagnosticsResponseSuccess | getRelationshipBetaDiagnosticsResponseError;
 
 export const getGetRelationshipBetaDiagnosticsUrl = () => {
   return `/v1/relationship-beta/diagnostics`;
@@ -377,8 +370,7 @@ export type listRelationshipIdentityCandidatesResponseSuccess =
     headers: Headers;
   };
 export type listRelationshipIdentityCandidatesResponseError = (
-  | listRelationshipIdentityCandidatesResponse400
-  | listRelationshipIdentityCandidatesResponse401
+  listRelationshipIdentityCandidatesResponse400 | listRelationshipIdentityCandidatesResponse401
 ) & {
   headers: Headers;
 };
@@ -448,15 +440,13 @@ export type getRelationshipIdentityCandidateResponseSuccess =
     headers: Headers;
   };
 export type getRelationshipIdentityCandidateResponseError = (
-  | getRelationshipIdentityCandidateResponse401
-  | getRelationshipIdentityCandidateResponse404
+  getRelationshipIdentityCandidateResponse401 | getRelationshipIdentityCandidateResponse404
 ) & {
   headers: Headers;
 };
 
 export type getRelationshipIdentityCandidateResponse =
-  | getRelationshipIdentityCandidateResponseSuccess
-  | getRelationshipIdentityCandidateResponseError;
+  getRelationshipIdentityCandidateResponseSuccess | getRelationshipIdentityCandidateResponseError;
 
 export const getGetRelationshipIdentityCandidateUrl = (candidateId: string) => {
   return `/v1/relationship-identity-candidates/${candidateId}`;
@@ -590,8 +580,7 @@ export type ingestRelationshipObservationsResponseError = (
 };
 
 export type ingestRelationshipObservationsResponse =
-  | ingestRelationshipObservationsResponseSuccess
-  | ingestRelationshipObservationsResponseError;
+  ingestRelationshipObservationsResponseSuccess | ingestRelationshipObservationsResponseError;
 
 export const getIngestRelationshipObservationsUrl = () => {
   return `/v1/relationship-observations/batch`;
@@ -642,15 +631,13 @@ export type approveRelationshipRecommendationResponseSuccess =
     headers: Headers;
   };
 export type approveRelationshipRecommendationResponseError = (
-  | approveRelationshipRecommendationResponse401
-  | approveRelationshipRecommendationResponse409
+  approveRelationshipRecommendationResponse401 | approveRelationshipRecommendationResponse409
 ) & {
   headers: Headers;
 };
 
 export type approveRelationshipRecommendationResponse =
-  | approveRelationshipRecommendationResponseSuccess
-  | approveRelationshipRecommendationResponseError;
+  approveRelationshipRecommendationResponseSuccess | approveRelationshipRecommendationResponseError;
 
 export const getApproveRelationshipRecommendationUrl = (actionId: string) => {
   return `/v1/relationship-recommendations/${actionId}/approve`;
@@ -715,8 +702,7 @@ export type rejectRelationshipRecommendationResponseError = (
 };
 
 export type rejectRelationshipRecommendationResponse =
-  | rejectRelationshipRecommendationResponseSuccess
-  | rejectRelationshipRecommendationResponseError;
+  rejectRelationshipRecommendationResponseSuccess | rejectRelationshipRecommendationResponseError;
 
 export const getRejectRelationshipRecommendationUrl = (actionId: string) => {
   return `/v1/relationship-recommendations/${actionId}/reject`;
@@ -768,8 +754,7 @@ export type getRelationshipSourceInventoryResponseError =
   };
 
 export type getRelationshipSourceInventoryResponse =
-  | getRelationshipSourceInventoryResponseSuccess
-  | getRelationshipSourceInventoryResponseError;
+  getRelationshipSourceInventoryResponseSuccess | getRelationshipSourceInventoryResponseError;
 
 export const getGetRelationshipSourceInventoryUrl = () => {
   return `/v1/relationship-sources`;
@@ -817,8 +802,7 @@ export type getRelationshipSourceStatusesResponseError =
   };
 
 export type getRelationshipSourceStatusesResponse =
-  | getRelationshipSourceStatusesResponseSuccess
-  | getRelationshipSourceStatusesResponseError;
+  getRelationshipSourceStatusesResponseSuccess | getRelationshipSourceStatusesResponseError;
 
 export const getGetRelationshipSourceStatusesUrl = () => {
   return `/v1/relationship-sources/status`;
@@ -946,8 +930,7 @@ export type resyncRelationshipSourceResponseError = (
 };
 
 export type resyncRelationshipSourceResponse =
-  | resyncRelationshipSourceResponseSuccess
-  | resyncRelationshipSourceResponseError;
+  resyncRelationshipSourceResponseSuccess | resyncRelationshipSourceResponseError;
 
 export const getResyncRelationshipSourceUrl = (source: "google" | "slack" | "hubspot") => {
   return `/v1/relationship-sources/${source}/resync`;
@@ -1008,8 +991,7 @@ export type disconnectRelationshipSourceResponseError = (
 };
 
 export type disconnectRelationshipSourceResponse =
-  | disconnectRelationshipSourceResponseSuccess
-  | disconnectRelationshipSourceResponseError;
+  disconnectRelationshipSourceResponseSuccess | disconnectRelationshipSourceResponseError;
 
 export const getDisconnectRelationshipSourceUrl = (
   source: "google" | "slack" | "hubspot",
@@ -1056,8 +1038,7 @@ export type listRelationshipsResponseError = listRelationshipsResponse401 & {
 };
 
 export type listRelationshipsResponse =
-  | listRelationshipsResponseSuccess
-  | listRelationshipsResponseError;
+  listRelationshipsResponseSuccess | listRelationshipsResponseError;
 
 export const getListRelationshipsUrl = (params?: ListRelationshipsParams) => {
   const normalizedParams = new URLSearchParams();
@@ -1113,15 +1094,13 @@ export type createRelationshipResponseSuccess = createRelationshipResponse201 & 
   headers: Headers;
 };
 export type createRelationshipResponseError = (
-  | createRelationshipResponse400
-  | createRelationshipResponse401
+  createRelationshipResponse400 | createRelationshipResponse401
 ) & {
   headers: Headers;
 };
 
 export type createRelationshipResponse =
-  | createRelationshipResponseSuccess
-  | createRelationshipResponseError;
+  createRelationshipResponseSuccess | createRelationshipResponseError;
 
 export const getCreateRelationshipUrl = () => {
   return `/v1/relationships`;
@@ -1180,8 +1159,7 @@ export type getRelationshipGraphResponseError = (
 };
 
 export type getRelationshipGraphResponse =
-  | getRelationshipGraphResponseSuccess
-  | getRelationshipGraphResponseError;
+  getRelationshipGraphResponseSuccess | getRelationshipGraphResponseError;
 
 export const getGetRelationshipGraphUrl = (params?: GetRelationshipGraphParams) => {
   const normalizedParams = new URLSearchParams();
@@ -1237,8 +1215,7 @@ export type getRelationshipResponseSuccess = getRelationshipResponse200 & {
   headers: Headers;
 };
 export type getRelationshipResponseError = (
-  | getRelationshipResponse401
-  | getRelationshipResponse404
+  getRelationshipResponse401 | getRelationshipResponse404
 ) & {
   headers: Headers;
 };
@@ -1306,8 +1283,7 @@ export type acknowledgeMissionControlResponseError = (
 };
 
 export type acknowledgeMissionControlResponse =
-  | acknowledgeMissionControlResponseSuccess
-  | acknowledgeMissionControlResponseError;
+  acknowledgeMissionControlResponseSuccess | acknowledgeMissionControlResponseError;
 
 export const getAcknowledgeMissionControlUrl = (relationshipId: string) => {
   return `/v1/relationships/${relationshipId}/acknowledgements`;
@@ -1374,8 +1350,7 @@ export type retractRelationshipAssertionResponseError = (
 };
 
 export type retractRelationshipAssertionResponse =
-  | retractRelationshipAssertionResponseSuccess
-  | retractRelationshipAssertionResponseError;
+  retractRelationshipAssertionResponseSuccess | retractRelationshipAssertionResponseError;
 
 export const getRetractRelationshipAssertionUrl = (relationshipId: string, assertionId: string) => {
   return `/v1/relationships/${relationshipId}/assertions/${assertionId}/retract`;
@@ -1423,15 +1398,13 @@ export type getRelationshipChangesResponseSuccess = getRelationshipChangesRespon
   headers: Headers;
 };
 export type getRelationshipChangesResponseError = (
-  | getRelationshipChangesResponse401
-  | getRelationshipChangesResponse404
+  getRelationshipChangesResponse401 | getRelationshipChangesResponse404
 ) & {
   headers: Headers;
 };
 
 export type getRelationshipChangesResponse =
-  | getRelationshipChangesResponseSuccess
-  | getRelationshipChangesResponseError;
+  getRelationshipChangesResponseSuccess | getRelationshipChangesResponseError;
 
 export const getGetRelationshipChangesUrl = (relationshipId: string) => {
   return `/v1/relationships/${relationshipId}/changes`;
@@ -1494,8 +1467,7 @@ export type createCommitmentDependencyResponseError = (
 };
 
 export type createCommitmentDependencyResponse =
-  | createCommitmentDependencyResponseSuccess
-  | createCommitmentDependencyResponseError;
+  createCommitmentDependencyResponseSuccess | createCommitmentDependencyResponseError;
 
 export const getCreateCommitmentDependencyUrl = (relationshipId: string) => {
   return `/v1/relationships/${relationshipId}/commitment-dependencies`;
@@ -1542,15 +1514,13 @@ export type runCommitmentRecoveryResponseSuccess = runCommitmentRecoveryResponse
   headers: Headers;
 };
 export type runCommitmentRecoveryResponseError = (
-  | runCommitmentRecoveryResponse401
-  | runCommitmentRecoveryResponse404
+  runCommitmentRecoveryResponse401 | runCommitmentRecoveryResponse404
 ) & {
   headers: Headers;
 };
 
 export type runCommitmentRecoveryResponse =
-  | runCommitmentRecoveryResponseSuccess
-  | runCommitmentRecoveryResponseError;
+  runCommitmentRecoveryResponseSuccess | runCommitmentRecoveryResponseError;
 
 export const getRunCommitmentRecoveryUrl = (relationshipId: string) => {
   return `/v1/relationships/${relationshipId}/commitment-recovery/run`;
@@ -1597,15 +1567,13 @@ export type getCommitmentEventsResponseSuccess = getCommitmentEventsResponse200 
   headers: Headers;
 };
 export type getCommitmentEventsResponseError = (
-  | getCommitmentEventsResponse401
-  | getCommitmentEventsResponse404
+  getCommitmentEventsResponse401 | getCommitmentEventsResponse404
 ) & {
   headers: Headers;
 };
 
 export type getCommitmentEventsResponse =
-  | getCommitmentEventsResponseSuccess
-  | getCommitmentEventsResponseError;
+  getCommitmentEventsResponseSuccess | getCommitmentEventsResponseError;
 
 export const getGetCommitmentEventsUrl = (relationshipId: string, commitmentId: string) => {
   return `/v1/relationships/${relationshipId}/commitments/${commitmentId}/events`;
@@ -1669,8 +1637,7 @@ export type appendCommitmentTransitionResponseError = (
 };
 
 export type appendCommitmentTransitionResponse =
-  | appendCommitmentTransitionResponseSuccess
-  | appendCommitmentTransitionResponseError;
+  appendCommitmentTransitionResponseSuccess | appendCommitmentTransitionResponseError;
 
 export const getAppendCommitmentTransitionUrl = (relationshipId: string, commitmentId: string) => {
   return `/v1/relationships/${relationshipId}/commitments/${commitmentId}/transitions`;
@@ -1738,8 +1705,7 @@ export type resolveRelationshipContradictionResponseError = (
 };
 
 export type resolveRelationshipContradictionResponse =
-  | resolveRelationshipContradictionResponseSuccess
-  | resolveRelationshipContradictionResponseError;
+  resolveRelationshipContradictionResponseSuccess | resolveRelationshipContradictionResponseError;
 
 export const getResolveRelationshipContradictionUrl = (relationshipId: string, caseId: string) => {
   return `/v1/relationships/${relationshipId}/contradictions/${caseId}/resolve`;
@@ -1804,8 +1770,7 @@ export type correctConversationEvidenceResponseError = (
 };
 
 export type correctConversationEvidenceResponse =
-  | correctConversationEvidenceResponseSuccess
-  | correctConversationEvidenceResponseError;
+  correctConversationEvidenceResponseSuccess | correctConversationEvidenceResponseError;
 
 export const getCorrectConversationEvidenceUrl = (relationshipId: string) => {
   return `/v1/relationships/${relationshipId}/conversation-corrections`;
@@ -1871,8 +1836,7 @@ export type decideConversationChangeResponseError = (
 };
 
 export type decideConversationChangeResponse =
-  | decideConversationChangeResponseSuccess
-  | decideConversationChangeResponseError;
+  decideConversationChangeResponseSuccess | decideConversationChangeResponseError;
 
 export const getDecideConversationChangeUrl = (relationshipId: string) => {
   return `/v1/relationships/${relationshipId}/conversation-decisions`;
@@ -1938,8 +1902,7 @@ export type requestConversationDeletionResponseError = (
 };
 
 export type requestConversationDeletionResponse =
-  | requestConversationDeletionResponseSuccess
-  | requestConversationDeletionResponseError;
+  requestConversationDeletionResponseSuccess | requestConversationDeletionResponseError;
 
 export const getRequestConversationDeletionUrl = (relationshipId: string) => {
   return `/v1/relationships/${relationshipId}/conversation-deletion`;
@@ -1986,15 +1949,13 @@ export type getConversationPolicyResponseSuccess = getConversationPolicyResponse
   headers: Headers;
 };
 export type getConversationPolicyResponseError = (
-  | getConversationPolicyResponse401
-  | getConversationPolicyResponse404
+  getConversationPolicyResponse401 | getConversationPolicyResponse404
 ) & {
   headers: Headers;
 };
 
 export type getConversationPolicyResponse =
-  | getConversationPolicyResponseSuccess
-  | getConversationPolicyResponseError;
+  getConversationPolicyResponseSuccess | getConversationPolicyResponseError;
 
 export const getGetConversationPolicyUrl = (relationshipId: string) => {
   return `/v1/relationships/${relationshipId}/conversation-policy`;
@@ -2051,8 +2012,7 @@ export type putConversationPolicyResponseError = (
 };
 
 export type putConversationPolicyResponse =
-  | putConversationPolicyResponseSuccess
-  | putConversationPolicyResponseError;
+  putConversationPolicyResponseSuccess | putConversationPolicyResponseError;
 
 export const getPutConversationPolicyUrl = (relationshipId: string) => {
   return `/v1/relationships/${relationshipId}/conversation-policy`;
@@ -2104,16 +2064,13 @@ export type correctRelationshipResponseSuccess = correctRelationshipResponse201 
   headers: Headers;
 };
 export type correctRelationshipResponseError = (
-  | correctRelationshipResponse400
-  | correctRelationshipResponse401
-  | correctRelationshipResponse404
+  correctRelationshipResponse400 | correctRelationshipResponse401 | correctRelationshipResponse404
 ) & {
   headers: Headers;
 };
 
 export type correctRelationshipResponse =
-  | correctRelationshipResponseSuccess
-  | correctRelationshipResponseError;
+  correctRelationshipResponseSuccess | correctRelationshipResponseError;
 
 export const getCorrectRelationshipUrl = (relationshipId: string) => {
   return `/v1/relationships/${relationshipId}/corrections`;
@@ -2160,15 +2117,13 @@ export type getRelationshipEvidenceResponseSuccess = getRelationshipEvidenceResp
   headers: Headers;
 };
 export type getRelationshipEvidenceResponseError = (
-  | getRelationshipEvidenceResponse401
-  | getRelationshipEvidenceResponse404
+  getRelationshipEvidenceResponse401 | getRelationshipEvidenceResponse404
 ) & {
   headers: Headers;
 };
 
 export type getRelationshipEvidenceResponse =
-  | getRelationshipEvidenceResponseSuccess
-  | getRelationshipEvidenceResponseError;
+  getRelationshipEvidenceResponseSuccess | getRelationshipEvidenceResponseError;
 
 export const getGetRelationshipEvidenceUrl = (relationshipId: string, evidenceId: string) => {
   return `/v1/relationships/${relationshipId}/evidence/${evidenceId}`;
@@ -2232,8 +2187,7 @@ export type createMutualActionPlanResponseError = (
 };
 
 export type createMutualActionPlanResponse =
-  | createMutualActionPlanResponseSuccess
-  | createMutualActionPlanResponseError;
+  createMutualActionPlanResponseSuccess | createMutualActionPlanResponseError;
 
 export const getCreateMutualActionPlanUrl = (relationshipId: string) => {
   return `/v1/relationships/${relationshipId}/mutual-action-plans`;
@@ -2299,8 +2253,7 @@ export type reviseMutualActionPlanResponseError = (
 };
 
 export type reviseMutualActionPlanResponse =
-  | reviseMutualActionPlanResponseSuccess
-  | reviseMutualActionPlanResponseError;
+  reviseMutualActionPlanResponseSuccess | reviseMutualActionPlanResponseError;
 
 export const getReviseMutualActionPlanUrl = (relationshipId: string, planId: string) => {
   return `/v1/relationships/${relationshipId}/mutual-action-plans/${planId}`;
@@ -2361,8 +2314,7 @@ export type approveMutualActionPlanResponseError = (
 };
 
 export type approveMutualActionPlanResponse =
-  | approveMutualActionPlanResponseSuccess
-  | approveMutualActionPlanResponseError;
+  approveMutualActionPlanResponseSuccess | approveMutualActionPlanResponseError;
 
 export const getApproveMutualActionPlanUrl = (relationshipId: string, planId: string) => {
   return `/v1/relationships/${relationshipId}/mutual-action-plans/${planId}/approve`;
@@ -2423,8 +2375,7 @@ export type shareMutualActionPlanResponseError = (
 };
 
 export type shareMutualActionPlanResponse =
-  | shareMutualActionPlanResponseSuccess
-  | shareMutualActionPlanResponseError;
+  shareMutualActionPlanResponseSuccess | shareMutualActionPlanResponseError;
 
 export const getShareMutualActionPlanUrl = (relationshipId: string, planId: string) => {
   return `/v1/relationships/${relationshipId}/mutual-action-plans/${planId}/share`;
@@ -2472,15 +2423,13 @@ export type getRelationshipTimelineResponseSuccess = getRelationshipTimelineResp
   headers: Headers;
 };
 export type getRelationshipTimelineResponseError = (
-  | getRelationshipTimelineResponse401
-  | getRelationshipTimelineResponse404
+  getRelationshipTimelineResponse401 | getRelationshipTimelineResponse404
 ) & {
   headers: Headers;
 };
 
 export type getRelationshipTimelineResponse =
-  | getRelationshipTimelineResponseSuccess
-  | getRelationshipTimelineResponseError;
+  getRelationshipTimelineResponseSuccess | getRelationshipTimelineResponseError;
 
 export const getGetRelationshipTimelineUrl = (
   relationshipId: string,

@@ -46,12 +46,7 @@ export type QueueStatus = "open" | "snoozed" | "dismissed" | "handled";
 export type PolicyStatus = "pending" | "passed" | "review_required" | "blocked" | "stale";
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 export type ExecutionStatus =
-  | "pending"
-  | "requested"
-  | "sent"
-  | "failed"
-  | "ambiguous"
-  | "cancelled";
+  "pending" | "requested" | "sent" | "failed" | "ambiguous" | "cancelled";
 export type ExecutionMode = "draft" | "send";
 
 export interface RevenueAction {
@@ -103,12 +98,7 @@ export interface RevenueAction {
 }
 
 export type RelationshipKind =
-  | "person"
-  | "company"
-  | "customer"
-  | "opportunity"
-  | "referral"
-  | "partner";
+  "person" | "company" | "customer" | "opportunity" | "referral" | "partner";
 
 export type RelationshipLifecycle =
   | "prospect"

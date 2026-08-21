@@ -11,8 +11,7 @@
  * @nullable
  */
 export type BillingStateStatus =
-  | (typeof BillingStateStatus)[keyof typeof BillingStateStatus]
-  | null;
+  (typeof BillingStateStatus)[keyof typeof BillingStateStatus] | null;
 
 export const BillingStateStatus = {
   active: "active",

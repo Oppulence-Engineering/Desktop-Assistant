@@ -36,8 +36,7 @@ export {
 
 export const getDeleteConnectionMockHandler = (
   overrideResponse?:
-    | void
-    | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void),
+    void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void),
   options?: RequestHandlerOptions,
 ) => {
   return http.delete(
@@ -79,8 +78,7 @@ export const getSetConnectionAPIKeyMockHandler = (
 
 export const getHandleConnectionCallbackMockHandler = (
   overrideResponse?:
-    | unknown
-    | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<unknown> | unknown),
+    unknown | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<unknown> | unknown),
   options?: RequestHandlerOptions,
 ) => {
   return http.get(
