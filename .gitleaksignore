@@ -39,5 +39,7 @@ c004bc5eb65d6706d20f40c1f8f6f7c083995337:apps/cli/src/application/config/config.
 5675cda52b352fa850e2d7c661756b29fe4de3b7:apps/rowboat/src/application/lib/composio/types.ts:generic-api-key:179
 078f785a9e0ca4864fb8cbf50be0e819bd478bd8:apps/rowboat/app/lib/composio/composio.ts:generic-api-key:179
 ad4ea23d79a1a5788233ae8eb3e84e60632bd3b1:.env.example:generic-api-key:7
+c23e31af95badd639d2fd3605275dfa8491a5b0d:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:827
+c23e31af95badd639d2fd3605275dfa8491a5b0d:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:878
 ad4ea23d79a1a5788233ae8eb3e84e60632bd3b1:apps/copilot/README.md:curl-auth-header:45
 10f76ef49f6f14cf9658b49963aef338f6bcd4d2:apps/rowboat/package.json:github-fine-grained-pat:41
