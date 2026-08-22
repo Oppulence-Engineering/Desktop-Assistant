@@ -1,0 +1,63 @@
+name: Deploy rowboat-api to Fly.io
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rowboat-api-fly-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy production Fly App
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      FLY_API_TOKEN: ${{ secrets.ROWBOAT_API_FLY_API_TOKEN }}
+      FLY_APP_NAME: ${{ vars.ROWBOAT_API_FLY_APP_NAME }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Validate deployment inputs
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${FLY_API_TOKEN:-}" ]]; then
+            echo "ROWBOAT_API_FLY_API_TOKEN is required in the production GitHub environment" >&2
+            exit 1
+          fi
+          if [[ -z "${FLY_APP_NAME:-}" ]]; then
+            echo "ROWBOAT_API_FLY_APP_NAME is required in the production GitHub environment" >&2
+            exit 1
+          fi
+
+      - name: Deploy and converge process topology
+        run: apps/rowboat-api/scripts/fly-deploy.sh "${FLY_APP_NAME}"
+
+      - name: Smoke test Fly deployment
+        env:
+          CONFIGURED_SMOKE_URL: ${{ vars.ROWBOAT_API_FLY_SMOKE_URL }}
+        run: |
+          set -euo pipefail
+          SMOKE_URL="${CONFIGURED_SMOKE_URL:-https://${FLY_APP_NAME}.fly.dev}"
+
+          for path in /healthz /readyz; do
+            curl --fail --silent --show-error \
+              --retry 12 \
+              --retry-all-errors \
+              --retry-delay 5 \
+              --max-time 10 \
+              "${SMOKE_URL}${path}" >/dev/null
+          done
+
+      - name: Show Fly diagnostics on failure
+        if: failure()
+        run: |
+          flyctl status --app "${FLY_APP_NAME}" || true
+          flyctl checks list --app "${FLY_APP_NAME}" || true
+          flyctl logs --app "${FLY_APP_NAME}" --no-tail || true
