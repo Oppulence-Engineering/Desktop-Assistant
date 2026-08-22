@@ -365,13 +365,10 @@ function linkifyText(value: string): DescriptionPart[] {
 }
 
 function parseDescriptionParts(value: string): DescriptionPart[] {
-  const withLineBreaks = value
-    .replace(/<\s*br\s*\/?>/gi, "\n")
-    .replace(/<\/\s*(p|div|li|tr|h[1-6])\s*>/gi, "\n");
   if (typeof DOMParser === "undefined") {
-    return normalizeDescriptionParts(linkifyText(withLineBreaks.replace(/<[^>]*>/g, "").trim()));
+    return normalizeDescriptionParts(linkifyText(value.trim()));
   }
-  const doc = new DOMParser().parseFromString(withLineBreaks, "text/html");
+  const doc = new DOMParser().parseFromString(value, "text/html");
   const parts: DescriptionPart[] = [];
 
   const visit = (node: Node) => {
