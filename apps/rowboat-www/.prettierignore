@@ -1,5 +1,6 @@
 .next/
 coverage/
+config/deployment/*.toml
 lib/api/generated/
 node_modules/
 playwright-report/

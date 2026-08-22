@@ -1,0 +1,76 @@
+name: Deploy rowboat-www to Fly.io
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rowboat-www-fly-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy production Fly App
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      FLY_APP_NAME: ${{ vars.FLY_APP_NAME || 'oppulence-rowboat-www' }}
+      FLY_CONFIG: apps/rowboat-www/config/deployment/fly.toml
+      ROWBOAT_WWW_SESSION_SECRET: ${{ secrets.ROWBOAT_WWW_SESSION_SECRET }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Validate deployment inputs
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${FLY_API_TOKEN:-}" ]]; then
+            echo "FLY_API_TOKEN is required in the production GitHub environment" >&2
+            exit 1
+          fi
+          if [[ ${#ROWBOAT_WWW_SESSION_SECRET} -lt 32 ]]; then
+            echo "ROWBOAT_WWW_SESSION_SECRET must contain at least 32 characters" >&2
+            exit 1
+          fi
+
+      - name: Validate Fly configuration
+        run: flyctl config validate --strict --app "${FLY_APP_NAME}" --config "${FLY_CONFIG}"
+
+      - name: Stage session secret
+        run: >-
+          flyctl secrets set --stage --app "${FLY_APP_NAME}"
+          "ROWBOAT_WWW_SESSION_SECRET=${ROWBOAT_WWW_SESSION_SECRET}"
+
+      - name: Deploy from the monorepo root
+        run: >-
+          flyctl deploy . --app "${FLY_APP_NAME}" --config "${FLY_CONFIG}"
+          --remote-only --yes
+
+      - name: Enforce high availability
+        run: flyctl scale count 2 --app "${FLY_APP_NAME}" --yes
+
+      - name: Verify Fly health checks
+        run: |
+          flyctl status --app "${FLY_APP_NAME}"
+          flyctl checks list --app "${FLY_APP_NAME}"
+
+      - name: Smoke test Fly deployment
+        env:
+          CONFIGURED_SMOKE_URL: ${{ vars.ROWBOAT_WWW_FLY_SMOKE_URL }}
+          ROWBOAT_WWW_EXPECTED_API_BASE_URL: https://api.oppulence.io
+        run: |
+          set -euo pipefail
+          SMOKE_URL="${CONFIGURED_SMOKE_URL:-https://${FLY_APP_NAME}.fly.dev}"
+          scripts/rowboat-www-smoke.sh "${SMOKE_URL}"
+
+      - name: Show Fly diagnostics on failure
+        if: failure()
+        run: |
+          flyctl status --app "${FLY_APP_NAME}" || true
+          flyctl checks list --app "${FLY_APP_NAME}" || true
+          flyctl logs --app "${FLY_APP_NAME}" --no-tail || true

@@ -8,6 +8,7 @@ here.
 | --------------- | --------------------------------------------------- | --------------------------------------------- |
 | `architecture/` | Dependency boundaries and exact migration baselines | ESLint and `npm run arch`                     |
 | `contracts/`    | OpenAPI client and runtime-schema generation        | `npm run contracts:generate`                  |
+| `deployment/`   | Platform-specific application deployment settings   | Fly.io CLI and deployment workflows           |
 | `quality/`      | Dead-code and security scanning policy              | `npm run knip` and `npm run security:semgrep` |
 
 Configuration moves must update `package.json`, repository-policy tests, contributor documentation,
