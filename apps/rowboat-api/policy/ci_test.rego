@@ -28,7 +28,7 @@ test_rejects_removed_quality_gate if {
 complete_migration_workflow := {
 	"name": "Rowboat API Migrations",
 	"jobs": {"migration-policy": {"steps": [
-		{"uses": "ariga/setup-atlas@v0", "with": {"version": "v1.3.0"}},
+		{"run": "make install-atlas"},
 		{"run": "make migration-validate migration-lint"},
 	]}},
 }

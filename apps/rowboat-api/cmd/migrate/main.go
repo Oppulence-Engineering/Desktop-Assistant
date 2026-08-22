@@ -9,11 +9,8 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -88,50 +85,7 @@ func apply(ctx context.Context) error {
 	if err := validateDirectory(); err != nil {
 		return err
 	}
-	baseline, err := needsBaseline(ctx, cfg.DatabaseURL)
-	if err != nil {
-		return err
-	}
-	args := []string{"migrate", "apply", "--dir", "file://" + postgresMigrationDir, "--url", cfg.DatabaseURL}
-	if baseline {
-		args = append(args, "--baseline", postgresBaseline)
-	}
-	command := exec.CommandContext(ctx, "atlas", args...) // #nosec G204 -- fixed command/args; URL is not interpreted by a shell
-	command.Stdout = os.Stdout
-	command.Stderr = os.Stderr
-	if err := command.Run(); err != nil {
-		if errors.Is(err, exec.ErrNotFound) {
-			return fmt.Errorf("atlas CLI is required for PostgreSQL migrations; install the pinned repository version: %w", err)
-		}
-		return fmt.Errorf("atlas migrate apply: %w", err)
-	}
-	return nil
-}
-
-// needsBaseline distinguishes an existing auto-migrated Rowboat database from
-// a fresh database. Atlas records the baseline only for the former; a fresh
-// database executes the baseline migration normally.
-func needsBaseline(ctx context.Context, databaseURL string) (bool, error) {
-	database, err := sql.Open("pgx", databaseURL)
-	if err != nil {
-		return false, fmt.Errorf("open PostgreSQL for baseline detection: %w", err)
-	}
-	defer func() { _ = database.Close() }()
-	var revisionTable bool
-	if err := database.QueryRowContext(ctx, `SELECT to_regclass('atlas_schema_revisions') IS NOT NULL`).Scan(&revisionTable); err != nil {
-		return false, fmt.Errorf("inspect Atlas revision table: %w", err)
-	}
-	if revisionTable {
-		return false, nil
-	}
-	var rowboatSchema bool
-	if err := database.QueryRowContext(ctx, `
-		SELECT to_regclass('users') IS NOT NULL
-		    OR to_regclass('subscriptions') IS NOT NULL
-	`).Scan(&rowboatSchema); err != nil {
-		return false, fmt.Errorf("inspect existing PostgreSQL schema: %w", err)
-	}
-	return rowboatSchema, nil
+	return applyPostgres(ctx, cfg.DatabaseURL)
 }
 
 // dumpPostgres renders the current Ent schema using PostgreSQL types. It is

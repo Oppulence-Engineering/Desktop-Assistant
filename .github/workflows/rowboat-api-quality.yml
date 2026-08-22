@@ -80,7 +80,9 @@ jobs:
           go-version-file: apps/rowboat-api/go.mod
           cache-dependency-path: apps/rowboat-api/go.sum
       - name: Schedule-lease concurrency (Postgres)
-        run: go test -tags=pgconcurrency -race -count=1 ./internal/backgroundscheduler/...
+        run: |
+          go test -tags=pgconcurrency -race -count=1 ./cmd/migrate
+          go test -tags=pgconcurrency -race -count=1 ./internal/backgroundscheduler/...
         working-directory: apps/rowboat-api
         env:
           ROWBOAT_TEST_PG_DSN: postgres://rowboat:rowboat@localhost:5432/rowboat_test?sslmode=disable

@@ -824,7 +824,7 @@ func addVoiceCloudSchemas(schemas obj) {
 		"expires_in_days": intSchema("Optional lifetime in days (1-3650).", 30, nullable()),
 	}, "name")
 	schemas["VoiceAPIKey"] = objectSchema("Oppulence Voice API-key metadata. key is returned only on creation.", obj{
-		"id":           uuidSchema("Key id.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
+		"id":           uuidSchema("Key id.", "00000000-0000-4000-8000-000000000001"),
 		"key":          stringSchema("One-time bearer secret.", "opv_live_example", nullable()),
 		"name":         stringSchema("Display name.", "Local automation"),
 		"key_prefix":   stringSchema("Safe display prefix.", "opv_live_example"),
@@ -864,7 +864,7 @@ func addVoiceCloudSchemas(schemas obj) {
 
 func addVoiceCloudPaths(paths obj) {
 	paths["/api/auth/get-session"] = obj{"get": operation("Oppulence Voice", "Get desktop session", "Adapts the authenticated WorkOS identity to the Better Auth session response shape expected by the upstream renderer. It does not mint or rotate credentials.", "getOppulenceVoiceSession", bearer(), nil, nil, obj{
-		"200": jsonResponse("Desktop session.", freeFormSchema("Better Auth-compatible session and user object."), obj{"session": obj{"userId": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"}, "user": obj{"id": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5", "email": "voice@example.com", "emailVerified": true}}),
+		"200": jsonResponse("Desktop session.", freeFormSchema("Better Auth-compatible session and user object."), obj{"session": obj{"userId": "00000000-0000-4000-8000-000000000001"}, "user": obj{"id": "00000000-0000-4000-8000-000000000001", "email": "voice@example.com", "emailVerified": true}}),
 		"401": responseRef("401"),
 	})}
 	paths["/api/v1/keys/create"] = obj{"post": operation("Oppulence Voice", "Create API key", "Creates an Oppulence-owned scoped key and returns its secret once.", "createVoiceAPIKey", bearer(), nil,
@@ -875,7 +875,7 @@ func addVoiceCloudPaths(paths obj) {
 		"200": jsonResponse("Key list.", freeFormSchema("Data-wrapped key array."), obj{"data": []any{}}), "401": responseRef("401"), "500": responseRef("500"),
 	})}
 	paths["/api/v1/keys/{id}/revoke"] = obj{"post": operation("Oppulence Voice", "Revoke API key", "Immediately removes a key from newly issued verifier snapshots.", "revokeVoiceAPIKey", bearer(), []any{
-		pathParam("id", "API key id.", uuidSchema("Key id.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5")),
+		pathParam("id", "API key id.", uuidSchema("Key id.", "00000000-0000-4000-8000-000000000001")),
 	}, nil, obj{"200": jsonResponse("Revoked.", freeFormSchema("Message response."), obj{"message": "API key revoked"}), "401": responseRef("401"), "404": responseRef("404"), "500": responseRef("500")})}
 	paths["/v1/voice/api-key-verifiers"] = obj{"get": operation("Oppulence Voice", "Fetch local API verifier snapshot", "Returns active key digests and scopes with a short fail-closed validity window.", "getVoiceAPIKeyVerifiers", bearer(), nil, nil, obj{
 		"200": jsonResponse("Verifier snapshot.", freeFormSchema("Verifier snapshot."), obj{"data": obj{"verifiers": []any{}, "valid_until": "2026-08-21T23:15:00Z"}}), "401": responseRef("401"), "500": responseRef("500"),

@@ -1,20 +1,22 @@
-import { access } from 'node:fs/promises';
-import { createRequire } from 'node:module';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { access } from "node:fs/promises";
+import { createRequire } from "node:module";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const appDir = path.join(repoRoot, 'apps/x/apps/main');
-const requireFromApp = createRequire(path.join(appDir, 'package.json'));
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const appDir = path.join(repoRoot, "apps/x/apps/main");
+const requireFromApp = createRequire(path.join(appDir, "package.json"));
 
-const packager = requireFromApp('@electron/packager');
-const forgeConfig = requireFromApp('./forge.config.cjs');
+const packager = requireFromApp("@electron/packager");
+const forgeConfig = requireFromApp("./forge.config.cjs");
+const fusePolicy = requireFromApp("./fuse-policy.cjs");
+const { flipFuses } = requireFromApp("@electron/fuses");
 
-const platform = process.env.SMOKE_PACKAGE_PLATFORM ?? 'linux';
-const arch = process.env.SMOKE_PACKAGE_ARCH ?? 'x64';
+const platform = process.env.SMOKE_PACKAGE_PLATFORM ?? "linux";
+const arch = process.env.SMOKE_PACKAGE_ARCH ?? "x64";
 const packagerConfig = forgeConfig.packagerConfig ?? {};
-const executableName = packagerConfig.executableName ?? 'solomon-ai';
-const appName = packagerConfig.name ?? 'Solomon AI';
+const executableName = packagerConfig.executableName ?? "solomon-ai";
+const appName = packagerConfig.name ?? "Solomon AI";
 
 process.chdir(appDir);
 
@@ -40,7 +42,7 @@ const outputPaths = await packager({
   name: appName,
   platform,
   arch,
-  out: path.join(appDir, 'out'),
+  out: path.join(appDir, "out"),
   overwrite: true,
   executableName,
 });
@@ -50,12 +52,14 @@ for (const outputPath of outputPaths) {
 }
 
 if (outputPaths.length === 0) {
-  throw new Error('Packager did not return any output paths');
+  throw new Error("Packager did not return any output paths");
 }
 
-const binaryPath = platform === 'darwin'
-  ? path.join(outputPaths[0], `${appName}.app`, 'Contents', 'MacOS', executableName)
-  : path.join(outputPaths[0], platform === 'win32' ? `${executableName}.exe` : executableName);
+const binaryPath =
+  platform === "darwin"
+    ? path.join(outputPaths[0], `${appName}.app`, "Contents", "MacOS", executableName)
+    : path.join(outputPaths[0], platform === "win32" ? `${executableName}.exe` : executableName);
 
 await access(binaryPath);
+await flipFuses(binaryPath, fusePolicy);
 console.log(`Packaged smoke binary: ${path.relative(repoRoot, binaryPath)}`);

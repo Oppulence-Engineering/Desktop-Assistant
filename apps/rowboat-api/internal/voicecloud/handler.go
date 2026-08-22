@@ -165,7 +165,7 @@ func (h *Handler) CreateKey(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ListKeys(w http.ResponseWriter, r *http.Request) {
 	keys, err := h.client.VoiceAPIKey.Query().Order(ent.Desc(voiceapikey.FieldCreatedAt)).All(r.Context())
 	if err != nil {
-		h.log.Error("list voice API keys", zap.Error(err))
+		h.log.Error("list voice API keys failed")
 		httpx.Error(w, http.StatusInternalServerError, "could not list API keys", "internal_error")
 		return
 	}
@@ -191,7 +191,7 @@ func (h *Handler) RevokeKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		h.log.Error("load voice API key", zap.Error(err))
+		h.log.Error("load voice API key failed")
 		httpx.Error(w, http.StatusInternalServerError, "could not revoke API key", "internal_error")
 		return
 	}
@@ -221,7 +221,7 @@ func (h *Handler) KeyVerifiers(w http.ResponseWriter, r *http.Request) {
 		Where(voiceapikey.RevokedAtIsNil(), voiceapikey.Or(voiceapikey.ExpiresAtIsNil(), voiceapikey.ExpiresAtGT(now))).
 		All(r.Context())
 	if err != nil {
-		h.log.Error("list voice API key verifiers", zap.Error(err))
+		h.log.Error("list voice API key verifiers failed")
 		httpx.Error(w, http.StatusInternalServerError, "could not list key verifiers", "internal_error")
 		return
 	}

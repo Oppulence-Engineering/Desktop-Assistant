@@ -60,7 +60,7 @@ ARCH_GO ?= go run github.com/arch-go/arch-go/v2@$(ARCH_GO_VERSION)
 RULEGUARD ?= go run github.com/quasilyte/go-ruleguard/cmd/ruleguard@$(RULEGUARD_VERSION)
 CONFTEST ?= go run github.com/open-policy-agent/conftest@$(CONFTEST_VERSION)
 AST_GREP ?= npm exec --yes --package=@ast-grep/cli@$(AST_GREP_VERSION) -- ast-grep
-ATLAS ?= atlas
+ATLAS ?= $(GOBIN)/atlas
 
 # Handwritten Go only. Generated Ent, gqlgen, protobuf, and OpenAPI output must
 # be changed through its source and generator, never formatted by hand.
@@ -202,8 +202,13 @@ install-tools:
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(PROTOC_GEN_GO_GRPC_VERSION)
 	go install entgo.io/contrib/entproto/cmd/protoc-gen-entgrpc@$(PROTOC_GEN_ENTGRPC_VERSION)
 
+.PHONY: install-atlas
+install-atlas:
+	curl -sSf https://atlasgo.sh | ATLAS_VERSION=$(ATLAS_VERSION) sh -s -- --community --yes --no-install --output "$(GOBIN)/atlas"
+	chmod +x "$(GOBIN)/atlas"
+
 .PHONY: install-quality-tools
-install-quality-tools:
+install-quality-tools: install-atlas
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
 	go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
@@ -212,8 +217,6 @@ install-quality-tools:
 	go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@$(RULEGUARD_VERSION)
 	go install github.com/open-policy-agent/conftest@$(CONFTEST_VERSION)
 	npm install --global @ast-grep/cli@$(AST_GREP_VERSION)
-	curl -sSf https://atlasgo.sh | ATLAS_VERSION=$(ATLAS_VERSION) sh -s -- --community --yes --no-install --output "$(GOBIN)/atlas"
-	chmod +x "$(GOBIN)/atlas"
 
 .PHONY: generate-check
 generate-check: generate

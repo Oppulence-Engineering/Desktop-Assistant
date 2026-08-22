@@ -83,7 +83,6 @@ func TestFlyImageSupportsProcessAndReleaseCommands(t *testing.T) {
 		`RUN chmod -R a=rX /src/apps/rowboat-api/migrations/postgres`,
 		`-o /out/rowboat-api-migrate ./cmd/migrate`,
 		`COPY --from=build /src/apps/rowboat-api/migrations/postgres /migrations/postgres`,
-		`COPY --from=atlas /atlas /usr/local/bin/atlas`,
 		`CMD ["/rowboat-api"]`,
 	} {
 		if !strings.Contains(dockerfile, required) {
@@ -92,6 +91,9 @@ func TestFlyImageSupportsProcessAndReleaseCommands(t *testing.T) {
 	}
 	if strings.Contains(dockerfile, `ENTRYPOINT ["/rowboat-api"]`) {
 		t.Error("rowboat-api must be CMD so Fly process groups can replace it")
+	}
+	if strings.Contains(dockerfile, `COPY --from=atlas`) {
+		t.Error("rowboat-api runtime image must not bundle the Atlas CLI")
 	}
 }
 

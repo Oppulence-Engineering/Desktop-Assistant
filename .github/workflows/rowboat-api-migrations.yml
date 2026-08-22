@@ -31,9 +31,9 @@ jobs:
         with:
           go-version-file: apps/rowboat-api/go.mod
           cache-dependency-path: apps/rowboat-api/go.sum
-      - uses: ariga/setup-atlas@v0
-        with:
-          version: v1.3.0
+      - name: Install pinned Atlas Community CLI
+        run: make install-atlas
+        working-directory: apps/rowboat-api
       - name: Validate and lint versioned migrations
         run: make migration-validate migration-lint
         working-directory: apps/rowboat-api

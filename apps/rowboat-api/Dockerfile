@@ -8,9 +8,7 @@
 #   docker build -f apps/rowboat-api/Dockerfile -t rowboat-api .
 # (Dockerfile.dockerignore keeps the context to just the two Go modules.)
 
-FROM arigaio/atlas:1.3.0-community-distroless@sha256:57f5560604d8a9595eb2bbd91177a2455e33143842c5691e6cde2fa2c6f1a226 AS atlas
-
-FROM golang:1.26.6 AS build
+FROM golang:1.26.7 AS build
 WORKDIR /src
 
 # Module graph first (cache-friendly): both go.mod files, including the local
@@ -61,7 +59,6 @@ COPY --from=build /out/rowboat-api-scheduler /rowboat-api-scheduler
 COPY --from=build /out/rowboat-api-migrate /rowboat-api-migrate
 COPY --from=build /out/devstack /devstack
 COPY --from=build /src/apps/rowboat-api/migrations/postgres /migrations/postgres
-COPY --from=atlas /atlas /usr/local/bin/atlas
 
 # 8080 = public HTTP/SSE · 8081 = gRPC · 9090 = Prometheus metrics
 EXPOSE 8080 8081 9090

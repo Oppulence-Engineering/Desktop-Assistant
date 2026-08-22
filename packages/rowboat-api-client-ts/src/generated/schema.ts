@@ -10539,12 +10539,12 @@ export interface operations {
           /**
            * @example {
            *       "session": {
-           *         "userId": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"
+           *         "userId": "00000000-0000-4000-8000-000000000001"
            *       },
            *       "user": {
            *         "email": "voice@example.com",
            *         "emailVerified": true,
-           *         "id": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"
+           *         "id": "00000000-0000-4000-8000-000000000001"
            *       }
            *     }
            */

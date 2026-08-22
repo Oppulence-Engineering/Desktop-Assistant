@@ -23,8 +23,7 @@ deny contains message if {
 }
 
 migration_required_fragments := {
-	"ariga/setup-atlas@v0",
-	"v1.3.0",
+	"make install-atlas",
 	"make migration-validate migration-lint",
 }
 

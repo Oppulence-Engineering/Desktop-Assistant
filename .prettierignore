@@ -14,6 +14,7 @@ apps/x/apps/renderer/dist/
 **/yarn.lock
 **/*.min.*
 **/CHANGELOG.md
+packages/rowboat-api-client-ts/src/generated/schema.ts
 .release-please-manifest.json
 
 # Languages Prettier shouldn't own
