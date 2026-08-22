@@ -12,6 +12,8 @@ module.exports = {
   [FuseV1Options.EnableNodeCliInspectArguments]: false,
   [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: false,
   [FuseV1Options.OnlyLoadAppFromAsar]: false,
-  [FuseV1Options.LoadBrowserProcessSpecificV8Snapshot]: true,
+  // Electron's packaged runtime ships v8_context_snapshot.bin, not a custom
+  // browser_v8_context_snapshot.bin. Enabling this fuse makes the app unbootable.
+  [FuseV1Options.LoadBrowserProcessSpecificV8Snapshot]: false,
   [FuseV1Options.GrantFileProtocolExtraPrivileges]: false,
 };
