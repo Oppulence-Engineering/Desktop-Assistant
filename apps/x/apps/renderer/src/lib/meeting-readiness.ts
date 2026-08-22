@@ -1,4 +1,4 @@
-import type { MeetingDoctorCheck } from "@x/shared/dist/meetings.js";
+import type { MeetingDoctorCheck } from "@x/shared/meetings";
 
 const MICROPHONE_CHECK = /microphone|input device|audio input/i;
 

@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -402,6 +403,12 @@ func (_q *BackgroundTaskScheduleStateQuery) prepareQuery(ctx context.Context) er
 			return err
 		}
 		_q.sql = prev
+	}
+	if backgroundtaskschedulestate.Policy == nil {
+		return errors.New("ent: uninitialized backgroundtaskschedulestate.Policy (forgotten import ent/runtime?)")
+	}
+	if err := backgroundtaskschedulestate.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

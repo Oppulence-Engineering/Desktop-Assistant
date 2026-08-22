@@ -1,4 +1,4 @@
-import type { TranscriptSegment, TranscriptWord } from "@x/shared/dist/diarization.js";
+import type { TranscriptSegment, TranscriptWord } from "@x/shared/diarization";
 
 /**
  * Overlap-aware alignment of whisper.cpp transcript segments to diarization

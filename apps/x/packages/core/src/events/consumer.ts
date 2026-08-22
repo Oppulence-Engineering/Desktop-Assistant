@@ -1,4 +1,4 @@
-import type { RowboatEvent } from '@x/shared/dist/events.js';
+import type { RowboatEvent } from '@x/shared/events';
 
 /**
  * A target (live note, bg-task, …) that a consumer might fire on an event.

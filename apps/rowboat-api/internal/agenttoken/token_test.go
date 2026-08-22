@@ -41,7 +41,7 @@ func TestExpiredRejected(t *testing.T) {
 	s, _ := NewSigner("k")
 	now := time.Unix(1_700_000_000, 0)
 	tok, _ := s.MintApproval(ApprovalClaims{ApprovalID: "a1", UserID: "u1", SessionID: "s1", TrustTier: "act"}, now, time.Minute)
-	if _, err := s.VerifyApproval(tok, now.Add(2*time.Minute)); err != ErrExpired {
+	if _, err := s.VerifyApproval(tok, now.Add(2*time.Minute)); !errors.Is(err, ErrExpired) {
 		t.Fatalf("expected ErrExpired, got %v", err)
 	}
 }
@@ -51,7 +51,7 @@ func TestWrongSecretRejected(t *testing.T) {
 	s2, _ := NewSigner("k2")
 	now := time.Unix(1_700_000_000, 0)
 	tok, _ := s1.MintApproval(ApprovalClaims{ApprovalID: "a1", UserID: "u1", SessionID: "s1", TrustTier: "act"}, now, time.Minute)
-	if _, err := s2.VerifyApproval(tok, now); err != ErrSignature {
+	if _, err := s2.VerifyApproval(tok, now); !errors.Is(err, ErrSignature) {
 		t.Fatalf("expected ErrSignature with a different key, got %v", err)
 	}
 }
@@ -61,7 +61,7 @@ func TestKindNotInterchangeable(t *testing.T) {
 	now := time.Unix(1_700_000_000, 0)
 	cont, _ := s.MintContinuation(ContinuationClaims{WorkflowID: "wf", SessionID: "s1", UserID: "u1"}, now, time.Minute)
 	// A continuation token must not verify as an approval token.
-	if _, err := s.VerifyApproval(cont, now); err != ErrKind {
+	if _, err := s.VerifyApproval(cont, now); !errors.Is(err, ErrKind) {
 		t.Fatalf("expected ErrKind for cross-kind use, got %v", err)
 	}
 }
@@ -75,7 +75,7 @@ func TestEmptySecretRejected(t *testing.T) {
 func TestInvalidClaimsAndTTLRejected(t *testing.T) {
 	s, _ := NewSigner("k")
 	now := time.Unix(1_700_000_000, 0)
-	if _, err := s.MintApproval(ApprovalClaims{ApprovalID: "a1"}, now, time.Minute); err != ErrClaims {
+	if _, err := s.MintApproval(ApprovalClaims{ApprovalID: "a1"}, now, time.Minute); !errors.Is(err, ErrClaims) {
 		t.Fatalf("incomplete claims error = %v, want ErrClaims", err)
 	}
 	claims := ApprovalClaims{ApprovalID: "a1", UserID: "u1", SessionID: "s1", TrustTier: "act"}
@@ -92,7 +92,7 @@ func TestFutureIssuedTokenRejected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.VerifyApproval(tok, now); err != ErrNotYetValid {
+	if _, err := s.VerifyApproval(tok, now); !errors.Is(err, ErrNotYetValid) {
 		t.Fatalf("future token error = %v, want ErrNotYetValid", err)
 	}
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
@@ -72,6 +73,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 	"github.com/google/uuid"
 )
@@ -196,6 +199,51 @@ func (_u *UserUpdate) AddMeetingMinuteUsages(v ...*MeetingMinuteUsage) *UserUpda
 		ids[i] = v[i].ID
 	}
 	return _u.AddMeetingMinuteUsageIDs(ids...)
+}
+
+// AddVoiceAPIKeyIDs adds the "voice_api_keys" edge to the VoiceAPIKey entity by IDs.
+func (_u *UserUpdate) AddVoiceAPIKeyIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddVoiceAPIKeyIDs(ids...)
+	return _u
+}
+
+// AddVoiceAPIKeys adds the "voice_api_keys" edges to the VoiceAPIKey entity.
+func (_u *UserUpdate) AddVoiceAPIKeys(v ...*VoiceAPIKey) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddVoiceAPIKeyIDs(ids...)
+}
+
+// AddVoiceSyncItemIDs adds the "voice_sync_items" edge to the VoiceSyncItem entity by IDs.
+func (_u *UserUpdate) AddVoiceSyncItemIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddVoiceSyncItemIDs(ids...)
+	return _u
+}
+
+// AddVoiceSyncItems adds the "voice_sync_items" edges to the VoiceSyncItem entity.
+func (_u *UserUpdate) AddVoiceSyncItems(v ...*VoiceSyncItem) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddVoiceSyncItemIDs(ids...)
+}
+
+// AddCaptureArtifactIDs adds the "capture_artifacts" edge to the CaptureArtifact entity by IDs.
+func (_u *UserUpdate) AddCaptureArtifactIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddCaptureArtifactIDs(ids...)
+	return _u
+}
+
+// AddCaptureArtifacts adds the "capture_artifacts" edges to the CaptureArtifact entity.
+func (_u *UserUpdate) AddCaptureArtifacts(v ...*CaptureArtifact) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCaptureArtifactIDs(ids...)
 }
 
 // AddLlmUsageIDs adds the "llm_usages" edge to the LLMUsage entity by IDs.
@@ -1104,6 +1152,69 @@ func (_u *UserUpdate) RemoveMeetingMinuteUsages(v ...*MeetingMinuteUsage) *UserU
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMeetingMinuteUsageIDs(ids...)
+}
+
+// ClearVoiceAPIKeys clears all "voice_api_keys" edges to the VoiceAPIKey entity.
+func (_u *UserUpdate) ClearVoiceAPIKeys() *UserUpdate {
+	_u.mutation.ClearVoiceAPIKeys()
+	return _u
+}
+
+// RemoveVoiceAPIKeyIDs removes the "voice_api_keys" edge to VoiceAPIKey entities by IDs.
+func (_u *UserUpdate) RemoveVoiceAPIKeyIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveVoiceAPIKeyIDs(ids...)
+	return _u
+}
+
+// RemoveVoiceAPIKeys removes "voice_api_keys" edges to VoiceAPIKey entities.
+func (_u *UserUpdate) RemoveVoiceAPIKeys(v ...*VoiceAPIKey) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveVoiceAPIKeyIDs(ids...)
+}
+
+// ClearVoiceSyncItems clears all "voice_sync_items" edges to the VoiceSyncItem entity.
+func (_u *UserUpdate) ClearVoiceSyncItems() *UserUpdate {
+	_u.mutation.ClearVoiceSyncItems()
+	return _u
+}
+
+// RemoveVoiceSyncItemIDs removes the "voice_sync_items" edge to VoiceSyncItem entities by IDs.
+func (_u *UserUpdate) RemoveVoiceSyncItemIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveVoiceSyncItemIDs(ids...)
+	return _u
+}
+
+// RemoveVoiceSyncItems removes "voice_sync_items" edges to VoiceSyncItem entities.
+func (_u *UserUpdate) RemoveVoiceSyncItems(v ...*VoiceSyncItem) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveVoiceSyncItemIDs(ids...)
+}
+
+// ClearCaptureArtifacts clears all "capture_artifacts" edges to the CaptureArtifact entity.
+func (_u *UserUpdate) ClearCaptureArtifacts() *UserUpdate {
+	_u.mutation.ClearCaptureArtifacts()
+	return _u
+}
+
+// RemoveCaptureArtifactIDs removes the "capture_artifacts" edge to CaptureArtifact entities by IDs.
+func (_u *UserUpdate) RemoveCaptureArtifactIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveCaptureArtifactIDs(ids...)
+	return _u
+}
+
+// RemoveCaptureArtifacts removes "capture_artifacts" edges to CaptureArtifact entities.
+func (_u *UserUpdate) RemoveCaptureArtifacts(v ...*CaptureArtifact) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCaptureArtifactIDs(ids...)
 }
 
 // ClearLlmUsages clears all "llm_usages" edges to the LLMUsage entity.
@@ -2491,6 +2602,141 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(meetingminuteusage.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.VoiceAPIKeysCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.VoiceAPIKeysTable,
+			Columns: []string{user.VoiceAPIKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(voiceapikey.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedVoiceAPIKeysIDs(); len(nodes) > 0 && !_u.mutation.VoiceAPIKeysCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.VoiceAPIKeysTable,
+			Columns: []string{user.VoiceAPIKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(voiceapikey.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.VoiceAPIKeysIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.VoiceAPIKeysTable,
+			Columns: []string{user.VoiceAPIKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(voiceapikey.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.VoiceSyncItemsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.VoiceSyncItemsTable,
+			Columns: []string{user.VoiceSyncItemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(voicesyncitem.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedVoiceSyncItemsIDs(); len(nodes) > 0 && !_u.mutation.VoiceSyncItemsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.VoiceSyncItemsTable,
+			Columns: []string{user.VoiceSyncItemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(voicesyncitem.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.VoiceSyncItemsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.VoiceSyncItemsTable,
+			Columns: []string{user.VoiceSyncItemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(voicesyncitem.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CaptureArtifactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CaptureArtifactsTable,
+			Columns: []string{user.CaptureArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(captureartifact.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCaptureArtifactsIDs(); len(nodes) > 0 && !_u.mutation.CaptureArtifactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CaptureArtifactsTable,
+			Columns: []string{user.CaptureArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(captureartifact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CaptureArtifactsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CaptureArtifactsTable,
+			Columns: []string{user.CaptureArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(captureartifact.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -5192,6 +5438,51 @@ func (_u *UserUpdateOne) AddMeetingMinuteUsages(v ...*MeetingMinuteUsage) *UserU
 	return _u.AddMeetingMinuteUsageIDs(ids...)
 }
 
+// AddVoiceAPIKeyIDs adds the "voice_api_keys" edge to the VoiceAPIKey entity by IDs.
+func (_u *UserUpdateOne) AddVoiceAPIKeyIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddVoiceAPIKeyIDs(ids...)
+	return _u
+}
+
+// AddVoiceAPIKeys adds the "voice_api_keys" edges to the VoiceAPIKey entity.
+func (_u *UserUpdateOne) AddVoiceAPIKeys(v ...*VoiceAPIKey) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddVoiceAPIKeyIDs(ids...)
+}
+
+// AddVoiceSyncItemIDs adds the "voice_sync_items" edge to the VoiceSyncItem entity by IDs.
+func (_u *UserUpdateOne) AddVoiceSyncItemIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddVoiceSyncItemIDs(ids...)
+	return _u
+}
+
+// AddVoiceSyncItems adds the "voice_sync_items" edges to the VoiceSyncItem entity.
+func (_u *UserUpdateOne) AddVoiceSyncItems(v ...*VoiceSyncItem) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddVoiceSyncItemIDs(ids...)
+}
+
+// AddCaptureArtifactIDs adds the "capture_artifacts" edge to the CaptureArtifact entity by IDs.
+func (_u *UserUpdateOne) AddCaptureArtifactIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddCaptureArtifactIDs(ids...)
+	return _u
+}
+
+// AddCaptureArtifacts adds the "capture_artifacts" edges to the CaptureArtifact entity.
+func (_u *UserUpdateOne) AddCaptureArtifacts(v ...*CaptureArtifact) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCaptureArtifactIDs(ids...)
+}
+
 // AddLlmUsageIDs adds the "llm_usages" edge to the LLMUsage entity by IDs.
 func (_u *UserUpdateOne) AddLlmUsageIDs(ids ...uuid.UUID) *UserUpdateOne {
 	_u.mutation.AddLlmUsageIDs(ids...)
@@ -6098,6 +6389,69 @@ func (_u *UserUpdateOne) RemoveMeetingMinuteUsages(v ...*MeetingMinuteUsage) *Us
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMeetingMinuteUsageIDs(ids...)
+}
+
+// ClearVoiceAPIKeys clears all "voice_api_keys" edges to the VoiceAPIKey entity.
+func (_u *UserUpdateOne) ClearVoiceAPIKeys() *UserUpdateOne {
+	_u.mutation.ClearVoiceAPIKeys()
+	return _u
+}
+
+// RemoveVoiceAPIKeyIDs removes the "voice_api_keys" edge to VoiceAPIKey entities by IDs.
+func (_u *UserUpdateOne) RemoveVoiceAPIKeyIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveVoiceAPIKeyIDs(ids...)
+	return _u
+}
+
+// RemoveVoiceAPIKeys removes "voice_api_keys" edges to VoiceAPIKey entities.
+func (_u *UserUpdateOne) RemoveVoiceAPIKeys(v ...*VoiceAPIKey) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveVoiceAPIKeyIDs(ids...)
+}
+
+// ClearVoiceSyncItems clears all "voice_sync_items" edges to the VoiceSyncItem entity.
+func (_u *UserUpdateOne) ClearVoiceSyncItems() *UserUpdateOne {
+	_u.mutation.ClearVoiceSyncItems()
+	return _u
+}
+
+// RemoveVoiceSyncItemIDs removes the "voice_sync_items" edge to VoiceSyncItem entities by IDs.
+func (_u *UserUpdateOne) RemoveVoiceSyncItemIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveVoiceSyncItemIDs(ids...)
+	return _u
+}
+
+// RemoveVoiceSyncItems removes "voice_sync_items" edges to VoiceSyncItem entities.
+func (_u *UserUpdateOne) RemoveVoiceSyncItems(v ...*VoiceSyncItem) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveVoiceSyncItemIDs(ids...)
+}
+
+// ClearCaptureArtifacts clears all "capture_artifacts" edges to the CaptureArtifact entity.
+func (_u *UserUpdateOne) ClearCaptureArtifacts() *UserUpdateOne {
+	_u.mutation.ClearCaptureArtifacts()
+	return _u
+}
+
+// RemoveCaptureArtifactIDs removes the "capture_artifacts" edge to CaptureArtifact entities by IDs.
+func (_u *UserUpdateOne) RemoveCaptureArtifactIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveCaptureArtifactIDs(ids...)
+	return _u
+}
+
+// RemoveCaptureArtifacts removes "capture_artifacts" edges to CaptureArtifact entities.
+func (_u *UserUpdateOne) RemoveCaptureArtifacts(v ...*CaptureArtifact) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCaptureArtifactIDs(ids...)
 }
 
 // ClearLlmUsages clears all "llm_usages" edges to the LLMUsage entity.
@@ -7515,6 +7869,141 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(meetingminuteusage.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.VoiceAPIKeysCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.VoiceAPIKeysTable,
+			Columns: []string{user.VoiceAPIKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(voiceapikey.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedVoiceAPIKeysIDs(); len(nodes) > 0 && !_u.mutation.VoiceAPIKeysCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.VoiceAPIKeysTable,
+			Columns: []string{user.VoiceAPIKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(voiceapikey.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.VoiceAPIKeysIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.VoiceAPIKeysTable,
+			Columns: []string{user.VoiceAPIKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(voiceapikey.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.VoiceSyncItemsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.VoiceSyncItemsTable,
+			Columns: []string{user.VoiceSyncItemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(voicesyncitem.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedVoiceSyncItemsIDs(); len(nodes) > 0 && !_u.mutation.VoiceSyncItemsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.VoiceSyncItemsTable,
+			Columns: []string{user.VoiceSyncItemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(voicesyncitem.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.VoiceSyncItemsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.VoiceSyncItemsTable,
+			Columns: []string{user.VoiceSyncItemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(voicesyncitem.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CaptureArtifactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CaptureArtifactsTable,
+			Columns: []string{user.CaptureArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(captureartifact.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCaptureArtifactsIDs(); len(nodes) > 0 && !_u.mutation.CaptureArtifactsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CaptureArtifactsTable,
+			Columns: []string{user.CaptureArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(captureartifact.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CaptureArtifactsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CaptureArtifactsTable,
+			Columns: []string{user.CaptureArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(captureartifact.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

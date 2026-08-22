@@ -1,5 +1,5 @@
 import { performance } from "node:perf_hooks";
-import type { WhisperAccel, WhisperDiagnosticResult } from "@x/shared/dist/transcription.js";
+import type { WhisperAccel, WhisperDiagnosticResult } from "@x/shared/transcription";
 import { codeOf } from "./errors.js";
 
 export interface DiagnosticTranscript {

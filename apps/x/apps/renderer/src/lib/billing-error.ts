@@ -1,4 +1,4 @@
-import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME } from "@x/shared/branding";
 
 export const BILLING_ERROR_PATTERNS = [
   {

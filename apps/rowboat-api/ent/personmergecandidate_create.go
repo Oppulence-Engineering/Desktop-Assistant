@@ -346,7 +346,9 @@ func (_c *PersonMergeCandidateCreate) Mutation() *PersonMergeCandidateMutation {
 
 // Save creates the PersonMergeCandidate in the database.
 func (_c *PersonMergeCandidateCreate) Save(ctx context.Context) (*PersonMergeCandidate, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -373,12 +375,18 @@ func (_c *PersonMergeCandidateCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *PersonMergeCandidateCreate) defaults() {
+func (_c *PersonMergeCandidateCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if personmergecandidate.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized personmergecandidate.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := personmergecandidate.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if personmergecandidate.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized personmergecandidate.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := personmergecandidate.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -419,9 +427,13 @@ func (_c *PersonMergeCandidateCreate) defaults() {
 		_c.mutation.SetPreviousStateJSON(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if personmergecandidate.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized personmergecandidate.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := personmergecandidate.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

@@ -27,7 +27,7 @@ import (
 type PersonIdentity struct{ ent.Schema }
 
 // Mixin adds the shared immutable ID and timestamp fields.
-func (PersonIdentity) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (PersonIdentity) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields defines the person identity anchor columns.
 func (PersonIdentity) Fields() []ent.Field {
@@ -48,11 +48,11 @@ func (PersonIdentity) Fields() []ent.Field {
 func (PersonIdentity) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("person_identities").Unique().Required(),
+			Ref("person_identities").Unique().Required().Immutable(),
 		edge.From("person", Person.Type).
 			Ref("identities").Unique().Required(),
 		edge.From("user", User.Type).
-			Ref("person_identities").Unique().Required(),
+			Ref("person_identities").Unique().Required().Immutable(),
 	}
 }
 

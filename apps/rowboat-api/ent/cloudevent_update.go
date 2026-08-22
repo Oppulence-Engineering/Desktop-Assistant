@@ -14,7 +14,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -292,17 +291,6 @@ func (_u *CloudEventUpdate) ClearRoutedAt() *CloudEventUpdate {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *CloudEventUpdate) SetUserID(id uuid.UUID) *CloudEventUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *CloudEventUpdate) SetUser(v *User) *CloudEventUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // AddRunIDs adds the "runs" edge to the BackgroundTaskRun entity by IDs.
 func (_u *CloudEventUpdate) AddRunIDs(ids ...uuid.UUID) *CloudEventUpdate {
 	_u.mutation.AddRunIDs(ids...)
@@ -321,12 +309,6 @@ func (_u *CloudEventUpdate) AddRuns(v ...*BackgroundTaskRun) *CloudEventUpdate {
 // Mutation returns the CloudEventMutation object of the builder.
 func (_u *CloudEventUpdate) Mutation() *CloudEventMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *CloudEventUpdate) ClearUser() *CloudEventUpdate {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // ClearRuns clears all "runs" edges to the BackgroundTaskRun entity.
@@ -352,7 +334,9 @@ func (_u *CloudEventUpdate) RemoveRuns(v ...*BackgroundTaskRun) *CloudEventUpdat
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *CloudEventUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -379,11 +363,15 @@ func (_u *CloudEventUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *CloudEventUpdate) defaults() {
+func (_u *CloudEventUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if cloudevent.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized cloudevent.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := cloudevent.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -503,35 +491,6 @@ func (_u *CloudEventUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	}
 	if _u.mutation.RoutedAtCleared() {
 		_spec.ClearField(cloudevent.FieldRoutedAt, field.TypeTime)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   cloudevent.UserTable,
-			Columns: []string{cloudevent.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   cloudevent.UserTable,
-			Columns: []string{cloudevent.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.RunsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -859,17 +818,6 @@ func (_u *CloudEventUpdateOne) ClearRoutedAt() *CloudEventUpdateOne {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *CloudEventUpdateOne) SetUserID(id uuid.UUID) *CloudEventUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *CloudEventUpdateOne) SetUser(v *User) *CloudEventUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // AddRunIDs adds the "runs" edge to the BackgroundTaskRun entity by IDs.
 func (_u *CloudEventUpdateOne) AddRunIDs(ids ...uuid.UUID) *CloudEventUpdateOne {
 	_u.mutation.AddRunIDs(ids...)
@@ -888,12 +836,6 @@ func (_u *CloudEventUpdateOne) AddRuns(v ...*BackgroundTaskRun) *CloudEventUpdat
 // Mutation returns the CloudEventMutation object of the builder.
 func (_u *CloudEventUpdateOne) Mutation() *CloudEventMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *CloudEventUpdateOne) ClearUser() *CloudEventUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // ClearRuns clears all "runs" edges to the BackgroundTaskRun entity.
@@ -932,7 +874,9 @@ func (_u *CloudEventUpdateOne) Select(field string, fields ...string) *CloudEven
 
 // Save executes the query and returns the updated CloudEvent entity.
 func (_u *CloudEventUpdateOne) Save(ctx context.Context) (*CloudEvent, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -959,11 +903,15 @@ func (_u *CloudEventUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *CloudEventUpdateOne) defaults() {
+func (_u *CloudEventUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if cloudevent.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized cloudevent.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := cloudevent.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -1100,35 +1048,6 @@ func (_u *CloudEventUpdateOne) sqlSave(ctx context.Context) (_node *CloudEvent, 
 	}
 	if _u.mutation.RoutedAtCleared() {
 		_spec.ClearField(cloudevent.FieldRoutedAt, field.TypeTime)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   cloudevent.UserTable,
-			Columns: []string{cloudevent.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   cloudevent.UserTable,
-			Columns: []string{cloudevent.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.RunsCleared() {
 		edge := &sqlgraph.EdgeSpec{

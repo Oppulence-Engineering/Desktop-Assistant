@@ -6,11 +6,11 @@ import type {
   ConversationExtractionProvenance,
   ConversationExtractionResult,
   ConversationNormalizedValue,
-} from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
 import {
   ConversationExtractionResultSchema,
   ConversationNormalizedValueSchema,
-} from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
 import { resolveSpokenDueAt } from "./conversation-dates.js";
 import { conversationFingerprint, normalizeConversationText } from "./conversation-utils.js";
 

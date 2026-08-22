@@ -7,7 +7,7 @@ import { Separator } from "@oppulence/ui/components/separator";
 import { GoogleClientIdModal } from "@/components/google-client-id-modal";
 import { IntegrationApiKeyModal } from "@/components/integration-api-key-modal";
 import { useConnectors } from "@/hooks/useConnectors";
-import type { RelationshipSourceStatus } from "@x/shared/src/relationships.js";
+import type { RelationshipSourceStatus } from "@x/shared/relationships";
 import {
   relationshipSourceHealth,
   relationshipSourceStatusLabel,

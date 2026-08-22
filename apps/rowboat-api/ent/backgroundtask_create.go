@@ -423,7 +423,9 @@ func (_c *BackgroundTaskCreate) Mutation() *BackgroundTaskMutation {
 
 // Save creates the BackgroundTask in the database.
 func (_c *BackgroundTaskCreate) Save(ctx context.Context) (*BackgroundTask, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -450,12 +452,18 @@ func (_c *BackgroundTaskCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *BackgroundTaskCreate) defaults() {
+func (_c *BackgroundTaskCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if backgroundtask.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized backgroundtask.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := backgroundtask.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if backgroundtask.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized backgroundtask.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := backgroundtask.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -484,9 +492,13 @@ func (_c *BackgroundTaskCreate) defaults() {
 		_c.mutation.SetRevision(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if backgroundtask.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized backgroundtask.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := backgroundtask.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

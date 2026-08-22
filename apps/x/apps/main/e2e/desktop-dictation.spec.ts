@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { DictationSettings } from "@x/shared/dist/transcription.js";
+import type { DictationSettings } from "@x/shared/transcription";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const EXPECT_FAST_ENGINE = process.env.DICTATION_E2E_EXPECT_FAST === "1";

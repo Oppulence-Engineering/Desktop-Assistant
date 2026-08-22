@@ -11,7 +11,7 @@ import {
     TransientRefreshError,
     refreshTokensViaBackend,
 } from '../auth/google-backend-oauth.js';
-import { LEGACY_PRODUCT_PROVIDER_ID, PRODUCT_PROVIDER_ID } from '@x/shared/dist/branding.js';
+import { LEGACY_PRODUCT_PROVIDER_ID, PRODUCT_PROVIDER_ID } from '@x/shared/branding';
 
 type Mode = 'byok' | typeof PRODUCT_PROVIDER_ID | typeof LEGACY_PRODUCT_PROVIDER_ID;
 

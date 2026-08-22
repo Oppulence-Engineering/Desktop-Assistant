@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { z } from "zod";
+import { readValidatedJson } from "./safe-json-file.js";
 
 export interface RecoveredDictation {
   text: string;
@@ -10,6 +12,12 @@ export interface RecoveredDictation {
 interface StoredDictation extends RecoveredDictation {
   version: 1;
 }
+
+const StoredDictationSchema: z.ZodType<StoredDictation> = z.object({
+  version: z.literal(1),
+  text: z.string().min(1).max(50_000),
+  createdAt: z.iso.datetime(),
+});
 
 /**
  * Durable, local-only storage for the most recent polished transcript.
@@ -42,17 +50,7 @@ export class DictationRecoveryStore {
 
   async read(): Promise<RecoveredDictation | null> {
     try {
-      const value = JSON.parse(await fs.readFile(this.filePath, "utf8")) as Partial<StoredDictation>;
-      if (
-        value.version !== 1 ||
-        typeof value.text !== "string" ||
-        !value.text ||
-        value.text.length > 50_000 ||
-        typeof value.createdAt !== "string" ||
-        !Number.isFinite(Date.parse(value.createdAt))
-      ) {
-        return null;
-      }
+      const value = await readValidatedJson(this.filePath, StoredDictationSchema);
       return { text: value.text, createdAt: value.createdAt };
     } catch {
       return null;

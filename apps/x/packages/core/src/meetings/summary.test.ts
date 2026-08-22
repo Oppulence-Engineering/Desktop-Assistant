@@ -4,7 +4,7 @@ import {
   USER_SECTION_HEADING,
   mergeSummaryIntoNote,
   transcriptTextFromNote,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 import { summarizeMeetingNote } from "./summary.js";
 import { sessionMeta } from "./factories.testkit.js";
 

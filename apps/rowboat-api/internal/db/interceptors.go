@@ -3,7 +3,9 @@ package db
 import (
 	"context"
 	"errors"
+	"time"
 
+	coreent "entgo.io/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
@@ -20,6 +22,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
@@ -68,6 +71,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/google/uuid"
@@ -95,6 +100,7 @@ var tenantUserColumns = map[string]string{
 	ent.TypeBackgroundTaskRunEvent:            backgroundtaskrunevent.UserColumn,
 	ent.TypeBackgroundTaskScheduleState:       backgroundtaskschedulestate.UserColumn,
 	ent.TypeCloudEvent:                        cloudevent.UserColumn,
+	ent.TypeCaptureArtifact:                   captureartifact.UserColumn,
 	ent.TypeCreditLedger:                      creditledger.UserColumn,
 	ent.TypeGoogleWatch:                       googlewatch.UserColumn,
 	ent.TypeLLMUsage:                          llmusage.UserColumn,
@@ -133,6 +139,8 @@ var tenantUserColumns = map[string]string{
 	ent.TypeRevenueWorkspaceMember:            revenueworkspacemember.UserColumn,
 	ent.TypeTenantEvidenceKey:                 tenantevidencekey.UserColumn,
 	ent.TypeWorkspaceFeatureControl:           workspacefeaturecontrol.UserColumn,
+	ent.TypeVoiceAPIKey:                       voiceapikey.UserColumn,
+	ent.TypeVoiceSyncItem:                     voicesyncitem.UserColumn,
 	ent.TypeRevenueTrustEvent:                 revenuetrustevent.UserColumn,
 	ent.TypePerson:                            person.UserColumn,
 	ent.TypePersonIdentity:                    personidentity.UserColumn,
@@ -195,10 +203,31 @@ var ErrNoViewer = errors.New("db: query on per-user entity without a viewer in c
 // Mutations are independently scoped by tenantMutationHook in hooks.go. The
 // read and write controls are deliberately separate because Ent interceptors
 // never run on mutation execution.
-func registerInterceptors(client *ent.Client, _ *zap.Logger) {
-	client.Intercept(intercept.Func(func(_ context.Context, q intercept.Query) error {
-		entQueriesTotal.WithLabelValues(q.Type()).Inc()
-		return nil
+func registerInterceptors(client *ent.Client, log *zap.Logger) {
+	client.Intercept(coreent.InterceptFunc(func(next coreent.Querier) coreent.Querier {
+		return coreent.QuerierFunc(func(ctx context.Context, query coreent.Query) (coreent.Value, error) {
+			queryType, operation := "unknown", "unknown"
+			if metadata := coreent.QueryFromContext(ctx); metadata != nil {
+				queryType, operation = metadata.Type, metadata.Op
+			}
+			started := time.Now()
+			value, err := next.Query(ctx, query)
+			duration := time.Since(started)
+			entQueriesTotal.WithLabelValues(queryType).Inc()
+			entQueryDuration.WithLabelValues(queryType, operation).Observe(duration.Seconds())
+			if err != nil {
+				entQueryErrorsTotal.WithLabelValues(queryType, operation).Inc()
+			}
+			if duration >= time.Second {
+				log.Warn("slow ent query",
+					zap.String("entity", queryType),
+					zap.String("operation", operation),
+					zap.Duration("duration", duration),
+					zap.Error(err),
+				)
+			}
+			return value, err
+		})
 	}))
 
 	client.CreditLedger.Intercept(intercept.TraverseCreditLedger(
@@ -254,6 +283,27 @@ func registerInterceptors(client *ent.Client, _ *zap.Logger) {
 		func(ctx context.Context, q *ent.CloudEventQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(cloudevent.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.CaptureArtifact.Intercept(intercept.TraverseCaptureArtifact(
+		func(ctx context.Context, q *ent.CaptureArtifactQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(captureartifact.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.VoiceAPIKey.Intercept(intercept.TraverseVoiceAPIKey(
+		func(ctx context.Context, q *ent.VoiceAPIKeyQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(voiceapikey.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.VoiceSyncItem.Intercept(intercept.TraverseVoiceSyncItem(
+		func(ctx context.Context, q *ent.VoiceSyncItemQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(voicesyncitem.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

@@ -167,7 +167,9 @@ func (_c *RelationshipStateSnapshotCreate) Mutation() *RelationshipStateSnapshot
 
 // Save creates the RelationshipStateSnapshot in the database.
 func (_c *RelationshipStateSnapshotCreate) Save(ctx context.Context) (*RelationshipStateSnapshot, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -194,12 +196,18 @@ func (_c *RelationshipStateSnapshotCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *RelationshipStateSnapshotCreate) defaults() {
+func (_c *RelationshipStateSnapshotCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if relationshipstatesnapshot.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipstatesnapshot.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipstatesnapshot.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if relationshipstatesnapshot.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipstatesnapshot.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipstatesnapshot.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -220,9 +228,13 @@ func (_c *RelationshipStateSnapshotCreate) defaults() {
 		_c.mutation.SetAssertionIds(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if relationshipstatesnapshot.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized relationshipstatesnapshot.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := relationshipstatesnapshot.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

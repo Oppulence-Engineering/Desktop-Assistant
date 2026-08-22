@@ -1,11 +1,11 @@
 import * as path from "node:path";
-import type { MeetingTrackMeta, MeetingTranscriptSegment } from "@x/shared/dist/meetings.js";
+import type { MeetingTrackMeta, MeetingTranscriptSegment } from "@x/shared/meetings";
 
 /** Only the fields a live pass needs — the rest of `MeetingTrackMeta` is written at
  *  stop and is not known yet. */
 type LiveTrack = Pick<MeetingTrackMeta, "id" | "speaker" | "file">;
-import { readPcmChunk, readWavInfo } from "@x/core/dist/meetings/meetings.js";
-import type { MeetingTranscriber } from "@x/core/dist/meetings/meetings.js";
+import { readPcmChunk, readWavInfo } from "@x/core/meetings/meetings";
+import type { MeetingTranscriber } from "@x/core/meetings/meetings";
 
 /**
  * A transcript of the meeting *while it is still happening*.

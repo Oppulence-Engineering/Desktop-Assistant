@@ -485,7 +485,9 @@ func (_c *RelationshipSourceStatusCreate) Mutation() *RelationshipSourceStatusMu
 
 // Save creates the RelationshipSourceStatus in the database.
 func (_c *RelationshipSourceStatusCreate) Save(ctx context.Context) (*RelationshipSourceStatus, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -512,12 +514,18 @@ func (_c *RelationshipSourceStatusCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *RelationshipSourceStatusCreate) defaults() {
+func (_c *RelationshipSourceStatusCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if relationshipsourcestatus.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipsourcestatus.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipsourcestatus.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if relationshipsourcestatus.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipsourcestatus.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipsourcestatus.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -570,9 +578,13 @@ func (_c *RelationshipSourceStatusCreate) defaults() {
 		_c.mutation.SetCompleteness(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if relationshipsourcestatus.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized relationshipsourcestatus.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := relationshipsourcestatus.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

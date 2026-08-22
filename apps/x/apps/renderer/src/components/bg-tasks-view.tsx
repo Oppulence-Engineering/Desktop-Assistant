@@ -45,8 +45,8 @@ import type {
   BackgroundTaskTriggerType,
   BackgroundTaskSummary,
   Triggers,
-} from "@x/shared/dist/background-task.js";
-import type { Run } from "@x/shared/dist/runs.js";
+} from "@x/shared/background-task";
+import type { Run } from "@x/shared/runs";
 import { Button } from "@oppulence/ui/components/button";
 import { Switch } from "@oppulence/ui/components/switch";
 import { Input } from "@oppulence/ui/components/input";
@@ -3117,8 +3117,6 @@ function TaskDetail({
   useEffect(() => {
     if (!isApiTask || !cloudRunId) return;
     let cancelled = false;
-    let interval: number | undefined;
-
     const poll = async () => {
       const result = await window.ipc.invoke("bg-task:getCloudRunStatus", {
         slug,
@@ -3147,10 +3145,10 @@ function TaskDetail({
       }
     };
 
-    void poll();
-    interval = window.setInterval(() => {
+    const interval = window.setInterval(() => {
       void poll();
     }, 2_000);
+    void poll();
     return () => {
       cancelled = true;
       if (interval) window.clearInterval(interval);

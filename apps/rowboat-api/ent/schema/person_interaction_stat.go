@@ -23,7 +23,7 @@ import (
 type PersonInteractionStat struct{ ent.Schema }
 
 // Mixin adds the shared immutable ID and timestamp fields.
-func (PersonInteractionStat) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (PersonInteractionStat) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields defines the interaction rollup columns.
 func (PersonInteractionStat) Fields() []ent.Field {
@@ -59,7 +59,7 @@ func (PersonInteractionStat) Fields() []ent.Field {
 func (PersonInteractionStat) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("person_interaction_stats").Unique().Required(),
+			Ref("person_interaction_stats").Unique().Required().Immutable(),
 		edge.From("person", Person.Type).
 			Ref("interaction_stats").Unique().Required(),
 		edge.From("relationship", Relationship.Type).

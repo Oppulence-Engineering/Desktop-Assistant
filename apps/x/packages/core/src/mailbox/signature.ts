@@ -1,5 +1,5 @@
 import { stripGmailQuotedReplyText } from "../knowledge/sync_gmail.js";
-import { organizationDomain } from "@x/shared/dist/email-domain.js";
+import { organizationDomain } from "@x/shared/email-domain";
 import type { MailboxParticipant } from "./types.js";
 
 /**

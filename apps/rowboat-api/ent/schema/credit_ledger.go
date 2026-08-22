@@ -14,6 +14,10 @@ import (
 // available_credits = subscription.sanctioned_credits + SUM(ledger.delta).
 type CreditLedger struct{ ent.Schema }
 
+// Mixin adds tenant metadata/privacy without changing the ledger's historical
+// id and timestamp columns.
+func (CreditLedger) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantPolicyMixin{}} }
+
 // Fields of the CreditLedger.
 func (CreditLedger) Fields() []ent.Field {
 	return []ent.Field{
@@ -29,7 +33,7 @@ func (CreditLedger) Fields() []ent.Field {
 // Edges of the CreditLedger.
 func (CreditLedger) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("ledger_entries").Unique().Required(),
+		edge.From("user", User.Type).Ref("ledger_entries").Unique().Required().Immutable(),
 	}
 }
 

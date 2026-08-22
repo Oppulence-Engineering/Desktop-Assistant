@@ -1,7 +1,12 @@
 "use client";
 
 import { Button } from "@oppulence/ui/components/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@oppulence/ui/components/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
 import { type Icon as PhosphorIcon, X } from "@phosphor-icons/react";
 import type { ComponentProps, HTMLAttributes } from "react";

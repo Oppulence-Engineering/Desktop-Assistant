@@ -8,8 +8,8 @@ import type {
   BackgroundTaskRunStatusType,
   BackgroundTaskSignalType,
   BackgroundTaskTriggerType,
-} from "@x/shared/dist/background-task.js";
-import { PrefixLogger } from "@x/shared/dist/prefix-logger.js";
+} from "@x/shared/background-task";
+import { PrefixLogger } from "@x/shared/prefix-logger";
 import { getAccessToken } from "../auth/tokens.js";
 import { AuthUnavailableError } from "../auth/refresh-errors.js";
 import { API_URL } from "../config/env.js";

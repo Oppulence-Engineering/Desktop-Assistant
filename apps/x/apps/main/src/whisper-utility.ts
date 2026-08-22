@@ -4,7 +4,7 @@ import {
   transcribePcm,
   type RunOpts,
   type RunResult,
-} from "@x/core/dist/voice/whisper/index.js";
+} from "@x/core/voice/whisper/index";
 
 interface ParentPort {
   on(event: "message", listener: (event: { data?: unknown } | UtilityRequest) => void): void;

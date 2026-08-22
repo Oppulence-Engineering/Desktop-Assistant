@@ -3,7 +3,7 @@ import {
   type DiarizationMode,
   type DiarizationSettings,
   type TranscriptionProvider,
-} from "@x/shared/dist/diarization.js";
+} from "@x/shared/diarization";
 
 /**
  * Diarization feature-flag resolution (RFC 017 §"Rollback plan"). The four

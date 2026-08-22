@@ -9,7 +9,7 @@ import {
   SOLOMON_WORKDIR_ENV,
   SOLOMON_WORKDIR_NAME,
   WORKDIR_ENV,
-} from "@x/shared/dist/branding.js";
+} from "@x/shared/branding";
 
 function resolveWorkDir(): string {
   const configured =

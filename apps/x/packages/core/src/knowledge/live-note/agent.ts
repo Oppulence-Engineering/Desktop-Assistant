@@ -1,5 +1,5 @@
 import z from 'zod';
-import { Agent, ToolAttachment } from '@x/shared/dist/agent.js';
+import { Agent, ToolAttachment } from '@x/shared/agent';
 import { BuiltinTools } from '../../application/lib/builtin-tools.js';
 import { KNOWLEDGE_NOTE_STYLE_GUIDE } from '../../application/lib/knowledge-note-style.js';
 import { WorkDir } from '../../config/config.js';

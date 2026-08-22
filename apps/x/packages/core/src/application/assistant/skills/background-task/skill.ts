@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { stringify as stringifyYaml } from 'yaml';
-import { BackgroundTaskSchema } from '@x/shared/dist/background-task.js';
+import { BackgroundTaskSchema } from '@x/shared/background-task';
 
 const schemaYaml = stringifyYaml(z.toJSONSchema(BackgroundTaskSchema)).trimEnd();
 

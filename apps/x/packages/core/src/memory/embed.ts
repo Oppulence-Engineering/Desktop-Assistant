@@ -11,7 +11,7 @@ import { API_URL } from "../config/env.js";
 import { throughBackgroundBudget } from "../models/gateway-budget.js";
 import { createProvider, Provider } from "../models/models.js";
 import { FSModelConfigRepo } from "../models/repo.js";
-import { PRODUCT_PROVIDER_ID } from "@x/shared/dist/branding.js";
+import { PRODUCT_PROVIDER_ID } from "@x/shared/branding";
 import { loadMemoryConfig, MemoryConfig } from "./config.js";
 import {
   LOCAL_EMBED_MODEL_ID,

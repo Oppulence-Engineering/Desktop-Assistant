@@ -1,3 +1,5 @@
+import "server-only";
+
 import { rowboatApiBaseURL, rowboatApiURL } from "@/lib/auth/config";
 import { decodeUnverifiedWorkOSClaims } from "@/lib/auth/jwt";
 import {
@@ -29,6 +31,7 @@ async function rowboatFetch(pathname: string, init: RequestInit): Promise<Respon
       ...(init.body ? { "Content-Type": "application/json" } : {}),
       ...(init.headers || {}),
     },
+    signal: init.signal ?? AbortSignal.timeout(15_000),
   });
 }
 
@@ -57,7 +60,11 @@ export async function getWorkOSLoginURL(input: {
 
   let res: Response;
   try {
-    res = await fetch(url, { cache: "no-store", headers: { Accept: "application/json" } });
+    res = await fetch(url, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(15_000),
+    });
   } catch {
     throw new Error(
       `Cannot reach rowboat-api at ${rowboatApiBaseURL()}. Start rowboat-api or set ROWBOAT_WWW_API_PROXY_URL.`,

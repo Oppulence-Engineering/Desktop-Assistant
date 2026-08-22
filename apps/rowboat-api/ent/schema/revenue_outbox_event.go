@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -18,7 +19,7 @@ import (
 type RevenueOutboxEvent struct{ ent.Schema }
 
 // Mixin of the RevenueOutboxEvent.
-func (RevenueOutboxEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RevenueOutboxEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields of the RevenueOutboxEvent.
 func (RevenueOutboxEvent) Fields() []ent.Field {
@@ -44,14 +45,15 @@ func (RevenueOutboxEvent) Fields() []ent.Field {
 func (RevenueOutboxEvent) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("outbox_events").Unique().Required(),
-		edge.From("user", User.Type).Ref("revenue_outbox_events").Unique().Required(),
+			Ref("outbox_events").Unique().Required().Immutable(),
+		edge.From("user", User.Type).Ref("revenue_outbox_events").Unique().Required().Immutable(),
 	}
 }
 
 // Indexes of the RevenueOutboxEvent.
 func (RevenueOutboxEvent) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("delivery_status", "next_attempt_at"),
+		index.Fields("delivery_status", "next_attempt_at").
+			Annotations(entsql.IndexWhere("delivery_status IN ('pending', 'failed')")),
 	}
 }

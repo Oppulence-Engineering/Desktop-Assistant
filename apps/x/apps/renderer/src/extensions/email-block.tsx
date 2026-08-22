@@ -4,7 +4,8 @@ import { X, ExternalLink, Copy, Check, MessageSquare, ChevronDown } from '@/lib/
 import { blocks } from '@x/shared'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTheme } from '@/contexts/theme-context'
-import { PRODUCT_NAME } from '@x/shared/dist/branding.js'
+import { PRODUCT_NAME } from '@x/shared/branding'
+import { emitRendererEvent } from '@/lib/renderer-events'
 
 // --- Helpers ---
 
@@ -95,7 +96,7 @@ function EmailExpandedBody({
     prompt += `.\n\n**From:** ${config.from || 'Unknown'}\n**Subject:** ${config.subject || 'No subject'}\n`
     if (draftBody) prompt += `\n**Current draft:**\n${draftBody}\n`
     window.__pendingEmailDraft = { prompt }
-    window.dispatchEvent(new Event('email-block:draft-with-assistant'))
+    emitRendererEvent('email-block:draft-with-assistant')
   }, [config, draftBody])
 
   const copyDraft = useCallback(() => {

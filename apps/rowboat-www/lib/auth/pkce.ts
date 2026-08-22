@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createHash, randomBytes, randomUUID } from "crypto";
 
 import type { WorkOSPKCECookie } from "@/lib/auth/schemas";

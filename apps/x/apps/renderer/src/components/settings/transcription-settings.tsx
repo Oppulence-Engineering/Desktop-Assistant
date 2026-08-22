@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { emitRendererEvent } from "@/lib/renderer-events";
 import {
   AudioLines,
   Download,
@@ -44,15 +45,14 @@ import type {
   DictationFlowBarDock,
   DictationLanguage,
   RelationshipEvidenceSettings,
-} from "@x/shared/dist/transcription.js";
-import { DICTATION_LANGUAGE_OPTIONS } from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
+import { DICTATION_LANGUAGE_OPTIONS } from "@x/shared/transcription";
 import type {
   MeetingDoctorReport,
   MeetingResolvedEngine,
   MeetingsSettings,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 
-const TRANSCRIPTION_CONFIG_CHANGED_EVENT = "transcription-config-changed";
 
 interface BenchmarkResultState {
   requestedModel: string;
@@ -390,7 +390,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       setVoiceProvider(next);
       await window.ipc.invoke("transcription:setConfig", { voiceProvider: next });
       analytics.transcriptionProviderChanged({ feature: "voice", from, to: next, reason: "user" });
-      window.dispatchEvent(new CustomEvent(TRANSCRIPTION_CONFIG_CHANGED_EVENT));
+      emitRendererEvent("transcription-config-changed");
       await refreshRouting();
     },
     [refreshRouting, voiceProvider],
@@ -407,7 +407,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
         to: next,
         reason: "user",
       });
-      window.dispatchEvent(new CustomEvent(TRANSCRIPTION_CONFIG_CHANGED_EVENT));
+      emitRendererEvent("transcription-config-changed");
       await refreshRouting();
     },
     [meetingProvider, refreshRouting],
@@ -422,11 +422,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
           privacy: { localOnly: next },
         });
         setLocalOnly(cfg.privacy.localOnly);
-        window.dispatchEvent(
-          new CustomEvent(TRANSCRIPTION_CONFIG_CHANGED_EVENT, {
-            detail: { privacy: cfg.privacy },
-          }),
-        );
+        emitRendererEvent("transcription-config-changed", { privacy: cfg.privacy });
         await refreshRouting();
       } catch {
         setLocalOnly(previous);
@@ -445,7 +441,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
         // The engine can change as a result (auto → renderer when forced off).
         const { engine } = await window.ipc.invoke("meeting:captureEngine", null);
         setResolvedEngine(engine);
-        window.dispatchEvent(new CustomEvent(TRANSCRIPTION_CONFIG_CHANGED_EVENT));
+        emitRendererEvent("transcription-config-changed");
         await refreshRouting();
       } catch {
         setMeetings(previous);
@@ -461,7 +457,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       try {
         const cfg = await window.ipc.invoke("transcription:setConfig", { relationships: patch });
         setRelationships(cfg.relationships);
-        window.dispatchEvent(new CustomEvent(TRANSCRIPTION_CONFIG_CHANGED_EVENT));
+        emitRendererEvent("transcription-config-changed");
       } catch {
         setRelationships(previous);
       }
@@ -554,7 +550,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       try {
         const config = await window.ipc.invoke("transcription:setConfig", { dictation: next });
         setDictationSettings(config.dictation);
-        window.dispatchEvent(new CustomEvent(TRANSCRIPTION_CONFIG_CHANGED_EVENT));
+        emitRendererEvent("transcription-config-changed");
         await refreshDictationStatus();
       } catch (error) {
         setDictationSettings(previous);

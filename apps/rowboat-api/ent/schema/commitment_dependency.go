@@ -13,7 +13,7 @@ import (
 type CommitmentDependency struct{ ent.Schema }
 
 // Mixin adds shared identifiers and timestamps.
-func (CommitmentDependency) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (CommitmentDependency) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields defines dependency semantics and evidence references.
 func (CommitmentDependency) Fields() []ent.Field {
@@ -26,9 +26,9 @@ func (CommitmentDependency) Fields() []ent.Field {
 // Edges scopes both endpoints to one tenant and relationship.
 func (CommitmentDependency) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("workspace", RevenueWorkspace.Type).Ref("commitment_dependencies").Unique().Required(),
+		edge.From("workspace", RevenueWorkspace.Type).Ref("commitment_dependencies").Unique().Required().Immutable(),
 		edge.From("relationship", Relationship.Type).Ref("commitment_dependencies").Unique().Required(),
-		edge.From("user", User.Type).Ref("commitment_dependencies").Unique().Required(),
+		edge.From("user", User.Type).Ref("commitment_dependencies").Unique().Required().Immutable(),
 		edge.From("from_commitment", Commitment.Type).Ref("outgoing_dependencies").Unique().Required(),
 		edge.From("to_commitment", Commitment.Type).Ref("incoming_dependencies").Unique().Required(),
 	}

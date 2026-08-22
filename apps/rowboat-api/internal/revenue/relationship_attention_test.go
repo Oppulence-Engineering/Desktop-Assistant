@@ -2,6 +2,7 @@ package revenue
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -87,7 +88,7 @@ func TestRelationshipAttentionProjectionIsDeterministicAndMaterialChangesReopenT
 	byReason := map[string]bool{}
 	for _, item := range items {
 		byReason[item.ReasonCode] = true
-		if item.MaterialHash == "" || item.RankFactorsJSON == "" || item.RelationshipStateVersion != 4 {
+		if item.MaterialHash == "" || len(item.RankFactorsJSON) == 0 || item.RelationshipStateVersion != 4 {
 			t.Fatalf("incomplete attention contract: %+v", item)
 		}
 	}
@@ -146,7 +147,7 @@ func TestRelationshipAttentionDecisionUsesOptimisticVersioningAndBoundedSnooze(t
 	}
 	if _, err := f.svc.DecideRelationshipAttention(f.ctx, f.user, item.ID, AttentionDecisionInput{
 		Decision: "acknowledge", ExpectedVersion: item.Version,
-	}); err != ErrConflict {
+	}); !errors.Is(err, ErrConflict) {
 		t.Fatalf("stale decision should conflict: %v", err)
 	}
 }

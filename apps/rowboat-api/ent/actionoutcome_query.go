@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -438,6 +439,12 @@ func (_q *ActionOutcomeQuery) prepareQuery(ctx context.Context) error {
 			return err
 		}
 		_q.sql = prev
+	}
+	if actionoutcome.Policy == nil {
+		return errors.New("ent: uninitialized actionoutcome.Policy (forgotten import ent/runtime?)")
+	}
+	if err := actionoutcome.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

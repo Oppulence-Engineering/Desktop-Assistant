@@ -8,7 +8,7 @@ import { getErrorDetails, waitForRunCompletion } from '../agents/utils.js';
 import { serviceLogger } from '../services/service_logger.js';
 import { limitEventItems } from './limit_event_items.js';
 import { readsAsFrontmatter } from './frontmatter.js';
-import { hasPaidSubscription } from '../billing/entitlements.js';
+import { labelingEntitled } from '../billing/entitlements.js';
 import {
     loadLabelingState,
     saveLabelingState,
@@ -151,11 +151,12 @@ async function labelEmailBatch(
  * Process all unlabeled emails in batches
  */
 export async function processUnlabeledEmails(concurrency: number = DEFAULT_CONCURRENCY): Promise<void> {
-    // Labeling is a paid feature. It is also the most expensive thing the app
-    // does on a user's behalf: an agent run over every synced email, billed to
-    // us in managed mode. Checked before the directory walk so an unentitled
-    // install does no work at all rather than scanning the mailbox each tick.
-    if (!(await hasPaidSubscription())) {
+    // Labeling is a paid feature when the inference is on us — an agent run
+    // over every synced email, billed to us in managed mode. A BYOK install
+    // spends the user's own key and is not gated. Checked before the directory
+    // walk so an unentitled install does no work at all rather than scanning
+    // the mailbox each tick.
+    if (!(await labelingEntitled())) {
         if (!warnedUnentitled) {
             // Once per transition, not once per 15-second tick.
             console.log('[EmailLabeling] Paid subscription required; labeling is off.');

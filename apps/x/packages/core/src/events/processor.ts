@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { events, PrefixLogger } from '@x/shared';
-import type { RowboatEvent, ConsumerResult } from '@x/shared/dist/events.js';
+import type { RowboatEvent, ConsumerResult } from '@x/shared/events';
 import type { EventConsumer } from './consumer.js';
 import { PENDING_DIR, DONE_DIR, ensureEventDirs } from './producer.js';
 import { writeJsonAtomicSync } from "../filesystem/atomic_write.js";

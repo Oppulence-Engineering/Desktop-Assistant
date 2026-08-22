@@ -173,7 +173,9 @@ func (_c *GoogleWatchCreate) Mutation() *GoogleWatchMutation {
 
 // Save creates the GoogleWatch in the database.
 func (_c *GoogleWatchCreate) Save(ctx context.Context) (*GoogleWatch, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -200,19 +202,29 @@ func (_c *GoogleWatchCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *GoogleWatchCreate) defaults() {
+func (_c *GoogleWatchCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if googlewatch.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized googlewatch.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := googlewatch.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if googlewatch.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized googlewatch.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := googlewatch.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if googlewatch.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized googlewatch.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := googlewatch.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

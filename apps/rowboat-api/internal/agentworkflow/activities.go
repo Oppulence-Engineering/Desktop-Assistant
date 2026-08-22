@@ -160,7 +160,7 @@ func (a *Activities) ToolInvoke(ctx context.Context, in ToolInvokeInput) (ToolIn
 	registry := a.buildToolRegistry(in.AllowedTools, in.UserID)
 	tool, err := registry.Lookup(in.ToolName)
 	if err != nil {
-		return ToolInvokeResult{
+		return ToolInvokeResult{ //nolint:nilerr // Tool failures are data the workflow records and presents.
 			Denied:     true,
 			ErrorCode:  backgroundtaskruntime.CodeToolNotAllowed,
 			ResultJSON: fmt.Sprintf(`{"error":"tool %q is not available"}`, in.ToolName),

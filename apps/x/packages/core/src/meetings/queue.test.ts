@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { MeetingKeepAudio, MeetingTranscriptionProgress } from "@x/shared/dist/meetings.js";
+import type { MeetingKeepAudio, MeetingTranscriptionProgress } from "@x/shared/meetings";
 import { fakeTranscriber, sessionMeta, tone, trackMeta, writeWav } from "./factories.testkit.js";
 
 /**

@@ -17,7 +17,7 @@ import type {
   CodeRunEvent,
   PermissionAsk,
   PermissionDecision,
-} from "@x/shared/src/code-mode.js";
+} from "@x/shared/code-mode";
 import { cn } from "@/lib/utils";
 import { Tool, ToolContent, ToolHeader } from "@/components/ai-elements/tool";
 import { toToolState, type ToolCall } from "@/lib/chat-conversation";

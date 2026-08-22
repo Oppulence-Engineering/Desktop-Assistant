@@ -5,6 +5,7 @@ package ent
 import (
 	"context"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"math"
 
@@ -586,6 +587,12 @@ func (_q *CommitmentQuery) prepareQuery(ctx context.Context) error {
 			return err
 		}
 		_q.sql = prev
+	}
+	if commitment.Policy == nil {
+		return errors.New("ent: uninitialized commitment.Policy (forgotten import ent/runtime?)")
+	}
+	if err := commitment.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

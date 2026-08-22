@@ -5,7 +5,7 @@ import type {
   MeetingSpeaker,
   MeetingTrackId,
   MeetingTrackMeta,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 import { appendLog, exists, writeJsonAtomic, META_FILE } from "./session.js";
 import { readPcmChunk, readWavInfo, recoverWavHeader } from "./wav.js";
 

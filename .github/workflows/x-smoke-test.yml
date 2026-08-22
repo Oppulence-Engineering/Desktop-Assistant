@@ -114,6 +114,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb
 
+      - name: Verify packaged Electron fuses
+        # Playwright requires --inspect=0 for its main-process connection. The
+        # smoke packager enables that single fuse only in this unsigned CI build.
+        run: pnpm fuses:verify -- --allow-node-cli-inspect "${{ steps.packaged-binary.outputs.bin }}"
+        working-directory: apps/x
+
       - name: Playwright-Electron smoke (xvfb)
         run: xvfb-run -a pnpm exec playwright test
         working-directory: apps/x/apps/main

@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { z } from "zod";
+import { readValidatedJson } from "./safe-json-file.js";
 
 const RETENTION_MS = 14 * 24 * 60 * 60 * 1_000;
 
@@ -15,6 +17,18 @@ interface StoredFailedAudio {
   errorMessage?: string;
   historyId?: string;
 }
+
+const StoredFailedAudioSchema: z.ZodType<StoredFailedAudio> = z.object({
+  version: z.literal(1),
+  id: z.string().min(1),
+  audioFile: z.string().refine((value) => path.basename(value) === value),
+  createdAt: z.iso.datetime(),
+  durationMs: z.number().nonnegative(),
+  status: z.enum(["pending", "failed"]),
+  errorCode: z.string().optional(),
+  errorMessage: z.string().optional(),
+  historyId: z.string().optional(),
+});
 
 export interface FailedDictationAudioSummary {
   available: boolean;
@@ -142,21 +156,7 @@ export class DictationAudioRecoveryStore {
 
   private async readMetadata(): Promise<StoredFailedAudio | null> {
     try {
-      const value = JSON.parse(await fs.readFile(this.metadataPath, "utf8")) as Partial<StoredFailedAudio>;
-      if (
-        value.version !== 1 ||
-        typeof value.id !== "string" ||
-        typeof value.audioFile !== "string" ||
-        path.basename(value.audioFile) !== value.audioFile ||
-        typeof value.createdAt !== "string" ||
-        !Number.isFinite(Date.parse(value.createdAt)) ||
-        typeof value.durationMs !== "number" ||
-        (value.historyId !== undefined && typeof value.historyId !== "string") ||
-        (value.status !== "pending" && value.status !== "failed")
-      ) {
-        return null;
-      }
-      return value as StoredFailedAudio;
+      return await readValidatedJson(this.metadataPath, StoredFailedAudioSchema);
     } catch {
       return null;
     }

@@ -1,4 +1,4 @@
-import type { BackgroundTaskAgentEventType } from '@x/shared/dist/background-task.js';
+import type { BackgroundTaskAgentEventType } from '@x/shared/background-task';
 
 type Handler = (event: BackgroundTaskAgentEventType) => void;
 

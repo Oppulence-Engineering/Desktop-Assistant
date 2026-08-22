@@ -5,6 +5,7 @@ package ent
 import (
 	"context"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"math"
 
@@ -514,6 +515,12 @@ func (_q *BackgroundTaskQuery) prepareQuery(ctx context.Context) error {
 			return err
 		}
 		_q.sql = prev
+	}
+	if backgroundtask.Policy == nil {
+		return errors.New("ent: uninitialized backgroundtask.Policy (forgotten import ent/runtime?)")
+	}
+	if err := backgroundtask.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

@@ -1,4 +1,4 @@
-import type { ContradictionCase, ContradictionEvidenceSide } from "@x/shared/dist/relationships.js";
+import type { ContradictionCase, ContradictionEvidenceSide } from "@x/shared/relationships";
 import { conversationFingerprint } from "./conversation-utils.js";
 
 /**

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SolomonApiConfig } from "@x/shared/dist/solomon-account.js";
+import { SolomonApiConfig } from "@x/shared/solomon-account";
 import { API_URL } from "./env.js";
 
 let cached: z.infer<typeof SolomonApiConfig> | null = null;

@@ -2,6 +2,7 @@ package agentworkflow
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -143,7 +144,7 @@ func (s *SessionScheduler) CreateSchedule(ctx context.Context, spec ScheduleSpec
 		},
 		Overlap: enums.SCHEDULE_OVERLAP_POLICY_ALLOW_ALL,
 	})
-	if err != nil && err == temporal.ErrScheduleAlreadyRunning {
+	if errors.Is(err, temporal.ErrScheduleAlreadyRunning) {
 		return nil
 	}
 	return err

@@ -1,0 +1,15 @@
+version: 1
+threshold:
+  compliance: 100
+  # Generated Ent/API packages are outside the handwritten dependency map.
+  # Current meaningful coverage is 43%; keep headroom for generated packages.
+  coverage: 40
+dependenciesRules:
+  - package: "**.internal.**"
+    shouldNotDependsOn:
+      internal:
+        - "**.cmd.**"
+  - package: "**.tools.**"
+    shouldNotDependsOn:
+      internal:
+        - "**.cmd.**"

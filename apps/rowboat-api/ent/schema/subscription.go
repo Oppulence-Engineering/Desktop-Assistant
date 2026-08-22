@@ -27,7 +27,7 @@ func oneOf(field string, allowed ...string) func(string) error {
 type Subscription struct{ ent.Schema }
 
 // Mixin of the Subscription.
-func (Subscription) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (Subscription) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Annotations of the Subscription (GraphQL exposure via entgql). The GraphQL
 // type is renamed to avoid colliding with GraphQL's reserved `Subscription`
@@ -66,6 +66,6 @@ func (Subscription) Fields() []ent.Field {
 // Edges of the Subscription.
 func (Subscription) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("subscription").Unique().Required(),
+		edge.From("user", User.Type).Ref("subscription").Unique().Required().Immutable(),
 	}
 }

@@ -1,6 +1,6 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { MeetingTranscript, type MeetingSessionSummary } from "@x/shared/dist/meetings.js";
+import { MeetingTranscript, type MeetingSessionSummary } from "@x/shared/meetings";
 import { existingNotePath } from "./note.js";
 import { hasAudio } from "./retention.js";
 import { sessionDirs } from "./queue.js";

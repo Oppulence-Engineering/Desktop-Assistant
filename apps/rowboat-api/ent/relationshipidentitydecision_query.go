@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -438,6 +439,12 @@ func (_q *RelationshipIdentityDecisionQuery) prepareQuery(ctx context.Context) e
 			return err
 		}
 		_q.sql = prev
+	}
+	if relationshipidentitydecision.Policy == nil {
+		return errors.New("ent: uninitialized relationshipidentitydecision.Policy (forgotten import ent/runtime?)")
+	}
+	if err := relationshipidentitydecision.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

@@ -60,6 +60,9 @@ func registerHooks(client *ent.Client, log *zap.Logger) {
 	client.BackgroundTaskArtifact.Use(auditHook(log, "background_task_artifact"))
 	client.BackgroundTaskRun.Use(auditHook(log, "background_task_run"))
 	client.BackgroundTaskRunEvent.Use(auditHook(log, "background_task_run_event"))
+	client.VoiceAPIKey.Use(auditHook(log, "voice_api_key"))
+	client.VoiceSyncItem.Use(auditHook(log, "voice_sync_item"))
+	client.CaptureArtifact.Use(auditHook(log, "capture_artifact"))
 	// Identity decisions and lineage are append-only audit records. Corrections
 	// are represented by a new compensating decision, never by rewriting history.
 	client.RelationshipIdentityDecision.Use(

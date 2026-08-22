@@ -596,7 +596,7 @@ func SubagentWorkflow(ctx workflow.Context, in SubagentInput) (SubagentResult, e
 	if err := workflow.ExecuteActivity(projCtx, ActivityResolveSubagent, ResolveSubagentInput{
 		UserID: in.UserID, ParentSlug: in.ParentSlug, ChildSlug: in.ChildSlug,
 	}).Get(ctx, &spec); err != nil {
-		return SubagentResult{Error: err.Error()}, nil // parent decides retry/fallback
+		return SubagentResult{Error: err.Error()}, nil //nolint:nilerr // Parent workflow decides retry/fallback.
 	}
 
 	start := SessionStart{

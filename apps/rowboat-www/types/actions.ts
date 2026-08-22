@@ -4,13 +4,7 @@
 // product's return event arrives.
 
 export type ActionStatus =
-  | "pending"
-  | "approved"
-  | "rejected"
-  | "executed"
-  | "failed"
-  | "executed_unconfirmed"
-  | "expired";
+  "pending" | "approved" | "rejected" | "executed" | "failed" | "executed_unconfirmed" | "expired";
 
 export interface ActionProposal {
   id: string;

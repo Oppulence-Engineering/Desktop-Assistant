@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { onRendererEvent } from "@/lib/renderer-events";
 import { buildDeepgramListenUrl } from "@/lib/deepgram-listen-url";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
 import posthog from "posthog-js";
@@ -12,7 +13,7 @@ import {
   DICTATION_LANGUAGE_CODES,
   type DictationLanguage,
   type TranscriptionProvider,
-} from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
 
 // 'transcribing' is whisper-local only: the mic is released and the on-device engine
 // is producing text (no live interim, unlike Deepgram's per-word partials).
@@ -43,7 +44,6 @@ function deepgramParams(language: DictationLanguage): URLSearchParams {
     no_delay: "true",
   });
 }
-const TRANSCRIPTION_CONFIG_CHANGED_EVENT = "transcription-config-changed";
 // At 16 kHz this is a 32 ms capture quantum. The previous 2,048-frame processor
 // could leave up to 128 ms of the user's final word waiting in Web Audio when the
 // hold shortcut was released. Keep the callback small while the mic is active so
@@ -341,8 +341,10 @@ export function useVoiceMode(options: { surface?: VoiceSurface } = {}) {
   }, [updateState]);
 
   useEffect(() => {
-    const closeCloudTransportForLocalOnly = (event: Event) => {
-      if (!(event instanceof CustomEvent) || event.detail?.privacy?.localOnly !== true) return;
+    const closeCloudTransportForLocalOnly = (
+      detail: { privacy?: { localOnly?: boolean } } | undefined,
+    ) => {
+      if (detail?.privacy?.localOnly !== true) return;
       privacyGenerationRef.current += 1;
       cachedAuth = null;
       if (providerRef.current !== "whisper-local" || wsRef.current) {
@@ -351,13 +353,7 @@ export function useVoiceMode(options: { surface?: VoiceSurface } = {}) {
       }
     };
 
-    window.addEventListener(TRANSCRIPTION_CONFIG_CHANGED_EVENT, closeCloudTransportForLocalOnly);
-    return () => {
-      window.removeEventListener(
-        TRANSCRIPTION_CONFIG_CHANGED_EVENT,
-        closeCloudTransportForLocalOnly,
-      );
-    };
+    return onRendererEvent("transcription-config-changed", closeCloudTransportForLocalOnly);
   }, [stopAudioCapture]);
 
   const start = useCallback(

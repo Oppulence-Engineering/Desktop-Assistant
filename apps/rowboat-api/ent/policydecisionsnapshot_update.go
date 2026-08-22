@@ -15,8 +15,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -254,17 +252,6 @@ func (_u *PolicyDecisionSnapshotUpdate) SetNillableResponseHash(v *string) *Poli
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *PolicyDecisionSnapshotUpdate) SetWorkspaceID(id uuid.UUID) *PolicyDecisionSnapshotUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PolicyDecisionSnapshotUpdate) SetWorkspace(v *RevenueWorkspace) *PolicyDecisionSnapshotUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetActionID sets the "action" edge to the RevenueAction entity by ID.
 func (_u *PolicyDecisionSnapshotUpdate) SetActionID(id uuid.UUID) *PolicyDecisionSnapshotUpdate {
 	_u.mutation.SetActionID(id)
@@ -276,26 +263,9 @@ func (_u *PolicyDecisionSnapshotUpdate) SetAction(v *RevenueAction) *PolicyDecis
 	return _u.SetActionID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *PolicyDecisionSnapshotUpdate) SetUserID(id uuid.UUID) *PolicyDecisionSnapshotUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *PolicyDecisionSnapshotUpdate) SetUser(v *User) *PolicyDecisionSnapshotUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the PolicyDecisionSnapshotMutation object of the builder.
 func (_u *PolicyDecisionSnapshotUpdate) Mutation() *PolicyDecisionSnapshotMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PolicyDecisionSnapshotUpdate) ClearWorkspace() *PolicyDecisionSnapshotUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
 }
 
 // ClearAction clears the "action" edge to the RevenueAction entity.
@@ -304,15 +274,11 @@ func (_u *PolicyDecisionSnapshotUpdate) ClearAction() *PolicyDecisionSnapshotUpd
 	return _u
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *PolicyDecisionSnapshotUpdate) ClearUser() *PolicyDecisionSnapshotUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *PolicyDecisionSnapshotUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -339,11 +305,15 @@ func (_u *PolicyDecisionSnapshotUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *PolicyDecisionSnapshotUpdate) defaults() {
+func (_u *PolicyDecisionSnapshotUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if policydecisionsnapshot.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized policydecisionsnapshot.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := policydecisionsnapshot.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -482,35 +452,6 @@ func (_u *PolicyDecisionSnapshotUpdate) sqlSave(ctx context.Context) (_node int,
 	if value, ok := _u.mutation.ResponseHash(); ok {
 		_spec.SetField(policydecisionsnapshot.FieldResponseHash, field.TypeString, value)
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   policydecisionsnapshot.WorkspaceTable,
-			Columns: []string{policydecisionsnapshot.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   policydecisionsnapshot.WorkspaceTable,
-			Columns: []string{policydecisionsnapshot.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.ActionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -533,35 +474,6 @@ func (_u *PolicyDecisionSnapshotUpdate) sqlSave(ctx context.Context) (_node int,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   policydecisionsnapshot.UserTable,
-			Columns: []string{policydecisionsnapshot.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   policydecisionsnapshot.UserTable,
-			Columns: []string{policydecisionsnapshot.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -810,17 +722,6 @@ func (_u *PolicyDecisionSnapshotUpdateOne) SetNillableResponseHash(v *string) *P
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *PolicyDecisionSnapshotUpdateOne) SetWorkspaceID(id uuid.UUID) *PolicyDecisionSnapshotUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PolicyDecisionSnapshotUpdateOne) SetWorkspace(v *RevenueWorkspace) *PolicyDecisionSnapshotUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetActionID sets the "action" edge to the RevenueAction entity by ID.
 func (_u *PolicyDecisionSnapshotUpdateOne) SetActionID(id uuid.UUID) *PolicyDecisionSnapshotUpdateOne {
 	_u.mutation.SetActionID(id)
@@ -832,37 +733,14 @@ func (_u *PolicyDecisionSnapshotUpdateOne) SetAction(v *RevenueAction) *PolicyDe
 	return _u.SetActionID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *PolicyDecisionSnapshotUpdateOne) SetUserID(id uuid.UUID) *PolicyDecisionSnapshotUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *PolicyDecisionSnapshotUpdateOne) SetUser(v *User) *PolicyDecisionSnapshotUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the PolicyDecisionSnapshotMutation object of the builder.
 func (_u *PolicyDecisionSnapshotUpdateOne) Mutation() *PolicyDecisionSnapshotMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PolicyDecisionSnapshotUpdateOne) ClearWorkspace() *PolicyDecisionSnapshotUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
 // ClearAction clears the "action" edge to the RevenueAction entity.
 func (_u *PolicyDecisionSnapshotUpdateOne) ClearAction() *PolicyDecisionSnapshotUpdateOne {
 	_u.mutation.ClearAction()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *PolicyDecisionSnapshotUpdateOne) ClearUser() *PolicyDecisionSnapshotUpdateOne {
-	_u.mutation.ClearUser()
 	return _u
 }
 
@@ -881,7 +759,9 @@ func (_u *PolicyDecisionSnapshotUpdateOne) Select(field string, fields ...string
 
 // Save executes the query and returns the updated PolicyDecisionSnapshot entity.
 func (_u *PolicyDecisionSnapshotUpdateOne) Save(ctx context.Context) (*PolicyDecisionSnapshot, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -908,11 +788,15 @@ func (_u *PolicyDecisionSnapshotUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *PolicyDecisionSnapshotUpdateOne) defaults() {
+func (_u *PolicyDecisionSnapshotUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if policydecisionsnapshot.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized policydecisionsnapshot.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := policydecisionsnapshot.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -1068,35 +952,6 @@ func (_u *PolicyDecisionSnapshotUpdateOne) sqlSave(ctx context.Context) (_node *
 	if value, ok := _u.mutation.ResponseHash(); ok {
 		_spec.SetField(policydecisionsnapshot.FieldResponseHash, field.TypeString, value)
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   policydecisionsnapshot.WorkspaceTable,
-			Columns: []string{policydecisionsnapshot.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   policydecisionsnapshot.WorkspaceTable,
-			Columns: []string{policydecisionsnapshot.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.ActionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -1119,35 +974,6 @@ func (_u *PolicyDecisionSnapshotUpdateOne) sqlSave(ctx context.Context) (_node *
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   policydecisionsnapshot.UserTable,
-			Columns: []string{policydecisionsnapshot.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   policydecisionsnapshot.UserTable,
-			Columns: []string{policydecisionsnapshot.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

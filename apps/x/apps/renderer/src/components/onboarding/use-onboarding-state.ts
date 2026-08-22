@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react"
 import { setGoogleCredentials } from "@/lib/google-credentials-store"
 import { toast } from "sonner"
-import { getProductProviderState, isProductProvider } from "@x/shared/dist/branding.js"
+import { getProductProviderState, isProductProvider } from "@x/shared/branding"
 import type { IntegrationConnector } from "@/hooks/useConnectors"
+import { emitRendererEvent } from "@/lib/renderer-events"
 
 export interface ProviderState {
   isConnected: boolean
@@ -361,7 +362,7 @@ export function useOnboardingState(open: boolean, onComplete: () => void) {
       if (result.success) {
         setTestState({ status: "success" })
         await window.ipc.invoke("models:saveConfig", providerConfig)
-        window.dispatchEvent(new Event('models-config-changed'))
+        emitRendererEvent('models-config-changed')
         handleNext()
       } else {
         setTestState({ status: "error", error: result.error })

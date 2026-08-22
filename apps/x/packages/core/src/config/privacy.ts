@@ -1,7 +1,7 @@
 import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import fs from "fs/promises";
 import path from "path";
-import { PrivacyConfigSchema, type PrivacyConfig } from "@x/shared/dist/privacy.js";
+import { PrivacyConfigSchema, type PrivacyConfig } from "@x/shared/privacy";
 import { WorkDir } from "./config.js";
 import { setAnalyticsEnabled } from "../analytics/posthog.js";
 

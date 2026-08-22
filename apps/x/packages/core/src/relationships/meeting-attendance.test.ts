@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MeetingSessionMeta } from "@x/shared/dist/meetings.js";
+import type { MeetingSessionMeta } from "@x/shared/meetings";
 import type { AttendeeSource } from "../meetings/attendees.js";
 import { buildMeetingRoster, resolveRosterBinding } from "../meetings/roster.js";
 import { meetingAttendanceObservation } from "./meeting-evidence.js";

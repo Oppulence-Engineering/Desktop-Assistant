@@ -30,6 +30,16 @@ func openTest(t *testing.T) *db.DB {
 	return d
 }
 
+func TestOpenRejectsPostgresAutoMigration(t *testing.T) {
+	_, err := db.Open(context.Background(), appconfig.Config{
+		DatabaseURL: "postgres://rowboat:rowboat@127.0.0.1:1/rowboat?sslmode=disable",
+		AutoMigrate: true,
+	}, zap.NewNop())
+	if err == nil || !strings.Contains(err.Error(), "PostgreSQL auto-migration is disabled") {
+		t.Fatalf("Open() error = %v, want PostgreSQL auto-migration refusal", err)
+	}
+}
+
 func seedUser(t *testing.T, c *ent.Client, email, wid string) *ent.User {
 	t.Helper()
 	ctx := context.Background()

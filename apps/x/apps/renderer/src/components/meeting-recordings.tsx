@@ -11,7 +11,7 @@ import {
   AlertDialogTitle,
 } from "@oppulence/ui/components/alert-dialog";
 import { cn } from "@/lib/utils";
-import type { MeetingSessionSummary } from "@x/shared/dist/meetings.js";
+import type { MeetingSessionSummary } from "@x/shared/meetings";
 
 /**
  * The recordings behind the notes: what is on disk, what state it is in, and the two

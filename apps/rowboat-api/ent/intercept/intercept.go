@@ -24,6 +24,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
@@ -77,6 +78,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 )
 
@@ -566,6 +569,33 @@ func (f TraverseBackgroundTaskScheduleState) Traverse(ctx context.Context, q ent
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.BackgroundTaskScheduleStateQuery", q)
+}
+
+// The CaptureArtifactFunc type is an adapter to allow the use of ordinary function as a Querier.
+type CaptureArtifactFunc func(context.Context, *ent.CaptureArtifactQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f CaptureArtifactFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.CaptureArtifactQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.CaptureArtifactQuery", q)
+}
+
+// The TraverseCaptureArtifact type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseCaptureArtifact func(context.Context, *ent.CaptureArtifactQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseCaptureArtifact) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseCaptureArtifact) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CaptureArtifactQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.CaptureArtifactQuery", q)
 }
 
 // The CloudEventFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -1972,6 +2002,60 @@ func (f TraverseUserHistory) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.UserHistoryQuery", q)
 }
 
+// The VoiceAPIKeyFunc type is an adapter to allow the use of ordinary function as a Querier.
+type VoiceAPIKeyFunc func(context.Context, *ent.VoiceAPIKeyQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f VoiceAPIKeyFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.VoiceAPIKeyQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.VoiceAPIKeyQuery", q)
+}
+
+// The TraverseVoiceAPIKey type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseVoiceAPIKey func(context.Context, *ent.VoiceAPIKeyQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseVoiceAPIKey) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseVoiceAPIKey) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.VoiceAPIKeyQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.VoiceAPIKeyQuery", q)
+}
+
+// The VoiceSyncItemFunc type is an adapter to allow the use of ordinary function as a Querier.
+type VoiceSyncItemFunc func(context.Context, *ent.VoiceSyncItemQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f VoiceSyncItemFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.VoiceSyncItemQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.VoiceSyncItemQuery", q)
+}
+
+// The TraverseVoiceSyncItem type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseVoiceSyncItem func(context.Context, *ent.VoiceSyncItemQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseVoiceSyncItem) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseVoiceSyncItem) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.VoiceSyncItemQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.VoiceSyncItemQuery", q)
+}
+
 // The WorkspaceFeatureControlFunc type is an adapter to allow the use of ordinary function as a Querier.
 type WorkspaceFeatureControlFunc func(context.Context, *ent.WorkspaceFeatureControlQuery) (ent.Value, error)
 
@@ -2034,6 +2118,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.BackgroundTaskRunEventQuery, predicate.BackgroundTaskRunEvent, backgroundtaskrunevent.OrderOption]{typ: ent.TypeBackgroundTaskRunEvent, tq: q}, nil
 	case *ent.BackgroundTaskScheduleStateQuery:
 		return &query[*ent.BackgroundTaskScheduleStateQuery, predicate.BackgroundTaskScheduleState, backgroundtaskschedulestate.OrderOption]{typ: ent.TypeBackgroundTaskScheduleState, tq: q}, nil
+	case *ent.CaptureArtifactQuery:
+		return &query[*ent.CaptureArtifactQuery, predicate.CaptureArtifact, captureartifact.OrderOption]{typ: ent.TypeCaptureArtifact, tq: q}, nil
 	case *ent.CloudEventQuery:
 		return &query[*ent.CloudEventQuery, predicate.CloudEvent, cloudevent.OrderOption]{typ: ent.TypeCloudEvent, tq: q}, nil
 	case *ent.CommitmentQuery:
@@ -2138,6 +2224,10 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.UserQuery, predicate.User, user.OrderOption]{typ: ent.TypeUser, tq: q}, nil
 	case *ent.UserHistoryQuery:
 		return &query[*ent.UserHistoryQuery, predicate.UserHistory, userhistory.OrderOption]{typ: ent.TypeUserHistory, tq: q}, nil
+	case *ent.VoiceAPIKeyQuery:
+		return &query[*ent.VoiceAPIKeyQuery, predicate.VoiceAPIKey, voiceapikey.OrderOption]{typ: ent.TypeVoiceAPIKey, tq: q}, nil
+	case *ent.VoiceSyncItemQuery:
+		return &query[*ent.VoiceSyncItemQuery, predicate.VoiceSyncItem, voicesyncitem.OrderOption]{typ: ent.TypeVoiceSyncItem, tq: q}, nil
 	case *ent.WorkspaceFeatureControlQuery:
 		return &query[*ent.WorkspaceFeatureControlQuery, predicate.WorkspaceFeatureControl, workspacefeaturecontrol.OrderOption]{typ: ent.TypeWorkspaceFeatureControl, tq: q}, nil
 	default:

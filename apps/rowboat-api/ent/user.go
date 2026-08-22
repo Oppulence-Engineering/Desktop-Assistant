@@ -43,6 +43,12 @@ type UserEdges struct {
 	LedgerEntries []*CreditLedger `json:"ledger_entries,omitempty"`
 	// MeetingMinuteUsages holds the value of the meeting_minute_usages edge.
 	MeetingMinuteUsages []*MeetingMinuteUsage `json:"meeting_minute_usages,omitempty"`
+	// VoiceAPIKeys holds the value of the voice_api_keys edge.
+	VoiceAPIKeys []*VoiceAPIKey `json:"voice_api_keys,omitempty"`
+	// VoiceSyncItems holds the value of the voice_sync_items edge.
+	VoiceSyncItems []*VoiceSyncItem `json:"voice_sync_items,omitempty"`
+	// CaptureArtifacts holds the value of the capture_artifacts edge.
+	CaptureArtifacts []*CaptureArtifact `json:"capture_artifacts,omitempty"`
 	// LlmUsages holds the value of the llm_usages edge.
 	LlmUsages []*LLMUsage `json:"llm_usages,omitempty"`
 	// OauthConnections holds the value of the oauth_connections edge.
@@ -159,12 +165,15 @@ type UserEdges struct {
 	ApprovalTokens []*ApprovalToken `json:"approval_tokens,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [60]bool
+	loadedTypes [63]bool
 	// totalCount holds the count of the edges above.
 	totalCount [60]map[string]int
 
 	namedLedgerEntries                      map[string][]*CreditLedger
 	namedMeetingMinuteUsages                map[string][]*MeetingMinuteUsage
+	namedVoiceAPIKeys                       map[string][]*VoiceAPIKey
+	namedVoiceSyncItems                     map[string][]*VoiceSyncItem
+	namedCaptureArtifacts                   map[string][]*CaptureArtifact
 	namedLlmUsages                          map[string][]*LLMUsage
 	namedOauthConnections                   map[string][]*OAuthConnection
 	namedMcpConnections                     map[string][]*MCPConnection
@@ -253,10 +262,37 @@ func (e UserEdges) MeetingMinuteUsagesOrErr() ([]*MeetingMinuteUsage, error) {
 	return nil, &NotLoadedError{edge: "meeting_minute_usages"}
 }
 
+// VoiceAPIKeysOrErr returns the VoiceAPIKeys value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) VoiceAPIKeysOrErr() ([]*VoiceAPIKey, error) {
+	if e.loadedTypes[3] {
+		return e.VoiceAPIKeys, nil
+	}
+	return nil, &NotLoadedError{edge: "voice_api_keys"}
+}
+
+// VoiceSyncItemsOrErr returns the VoiceSyncItems value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) VoiceSyncItemsOrErr() ([]*VoiceSyncItem, error) {
+	if e.loadedTypes[4] {
+		return e.VoiceSyncItems, nil
+	}
+	return nil, &NotLoadedError{edge: "voice_sync_items"}
+}
+
+// CaptureArtifactsOrErr returns the CaptureArtifacts value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) CaptureArtifactsOrErr() ([]*CaptureArtifact, error) {
+	if e.loadedTypes[5] {
+		return e.CaptureArtifacts, nil
+	}
+	return nil, &NotLoadedError{edge: "capture_artifacts"}
+}
+
 // LlmUsagesOrErr returns the LlmUsages value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) LlmUsagesOrErr() ([]*LLMUsage, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[6] {
 		return e.LlmUsages, nil
 	}
 	return nil, &NotLoadedError{edge: "llm_usages"}
@@ -265,7 +301,7 @@ func (e UserEdges) LlmUsagesOrErr() ([]*LLMUsage, error) {
 // OauthConnectionsOrErr returns the OauthConnections value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) OauthConnectionsOrErr() ([]*OAuthConnection, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[7] {
 		return e.OauthConnections, nil
 	}
 	return nil, &NotLoadedError{edge: "oauth_connections"}
@@ -274,7 +310,7 @@ func (e UserEdges) OauthConnectionsOrErr() ([]*OAuthConnection, error) {
 // McpConnectionsOrErr returns the McpConnections value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) McpConnectionsOrErr() ([]*MCPConnection, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[8] {
 		return e.McpConnections, nil
 	}
 	return nil, &NotLoadedError{edge: "mcp_connections"}
@@ -283,7 +319,7 @@ func (e UserEdges) McpConnectionsOrErr() ([]*MCPConnection, error) {
 // BackgroundTasksOrErr returns the BackgroundTasks value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BackgroundTasksOrErr() ([]*BackgroundTask, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[9] {
 		return e.BackgroundTasks, nil
 	}
 	return nil, &NotLoadedError{edge: "background_tasks"}
@@ -292,7 +328,7 @@ func (e UserEdges) BackgroundTasksOrErr() ([]*BackgroundTask, error) {
 // BackgroundTaskArtifactsOrErr returns the BackgroundTaskArtifacts value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BackgroundTaskArtifactsOrErr() ([]*BackgroundTaskArtifact, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[10] {
 		return e.BackgroundTaskArtifacts, nil
 	}
 	return nil, &NotLoadedError{edge: "background_task_artifacts"}
@@ -301,7 +337,7 @@ func (e UserEdges) BackgroundTaskArtifactsOrErr() ([]*BackgroundTaskArtifact, er
 // BackgroundTaskRunsOrErr returns the BackgroundTaskRuns value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BackgroundTaskRunsOrErr() ([]*BackgroundTaskRun, error) {
-	if e.loadedTypes[8] {
+	if e.loadedTypes[11] {
 		return e.BackgroundTaskRuns, nil
 	}
 	return nil, &NotLoadedError{edge: "background_task_runs"}
@@ -310,7 +346,7 @@ func (e UserEdges) BackgroundTaskRunsOrErr() ([]*BackgroundTaskRun, error) {
 // BackgroundTaskRunEventsOrErr returns the BackgroundTaskRunEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BackgroundTaskRunEventsOrErr() ([]*BackgroundTaskRunEvent, error) {
-	if e.loadedTypes[9] {
+	if e.loadedTypes[12] {
 		return e.BackgroundTaskRunEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "background_task_run_events"}
@@ -319,7 +355,7 @@ func (e UserEdges) BackgroundTaskRunEventsOrErr() ([]*BackgroundTaskRunEvent, er
 // BackgroundTaskScheduleStatesOrErr returns the BackgroundTaskScheduleStates value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) BackgroundTaskScheduleStatesOrErr() ([]*BackgroundTaskScheduleState, error) {
-	if e.loadedTypes[10] {
+	if e.loadedTypes[13] {
 		return e.BackgroundTaskScheduleStates, nil
 	}
 	return nil, &NotLoadedError{edge: "background_task_schedule_states"}
@@ -328,7 +364,7 @@ func (e UserEdges) BackgroundTaskScheduleStatesOrErr() ([]*BackgroundTaskSchedul
 // CloudEventsOrErr returns the CloudEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) CloudEventsOrErr() ([]*CloudEvent, error) {
-	if e.loadedTypes[11] {
+	if e.loadedTypes[14] {
 		return e.CloudEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "cloud_events"}
@@ -337,7 +373,7 @@ func (e UserEdges) CloudEventsOrErr() ([]*CloudEvent, error) {
 // GoogleWatchesOrErr returns the GoogleWatches value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) GoogleWatchesOrErr() ([]*GoogleWatch, error) {
-	if e.loadedTypes[12] {
+	if e.loadedTypes[15] {
 		return e.GoogleWatches, nil
 	}
 	return nil, &NotLoadedError{edge: "google_watches"}
@@ -346,7 +382,7 @@ func (e UserEdges) GoogleWatchesOrErr() ([]*GoogleWatch, error) {
 // AgentDefinitionsOrErr returns the AgentDefinitions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AgentDefinitionsOrErr() ([]*AgentDefinition, error) {
-	if e.loadedTypes[13] {
+	if e.loadedTypes[16] {
 		return e.AgentDefinitions, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_definitions"}
@@ -355,7 +391,7 @@ func (e UserEdges) AgentDefinitionsOrErr() ([]*AgentDefinition, error) {
 // AgentSessionsOrErr returns the AgentSessions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AgentSessionsOrErr() ([]*AgentSession, error) {
-	if e.loadedTypes[14] {
+	if e.loadedTypes[17] {
 		return e.AgentSessions, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_sessions"}
@@ -364,7 +400,7 @@ func (e UserEdges) AgentSessionsOrErr() ([]*AgentSession, error) {
 // AgentTurnsOrErr returns the AgentTurns value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AgentTurnsOrErr() ([]*AgentTurn, error) {
-	if e.loadedTypes[15] {
+	if e.loadedTypes[18] {
 		return e.AgentTurns, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_turns"}
@@ -373,7 +409,7 @@ func (e UserEdges) AgentTurnsOrErr() ([]*AgentTurn, error) {
 // AgentSessionEventsOrErr returns the AgentSessionEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AgentSessionEventsOrErr() ([]*AgentSessionEvent, error) {
-	if e.loadedTypes[16] {
+	if e.loadedTypes[19] {
 		return e.AgentSessionEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_session_events"}
@@ -382,7 +418,7 @@ func (e UserEdges) AgentSessionEventsOrErr() ([]*AgentSessionEvent, error) {
 // AgentToolCallsOrErr returns the AgentToolCalls value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AgentToolCallsOrErr() ([]*AgentToolCall, error) {
-	if e.loadedTypes[17] {
+	if e.loadedTypes[20] {
 		return e.AgentToolCalls, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_tool_calls"}
@@ -391,7 +427,7 @@ func (e UserEdges) AgentToolCallsOrErr() ([]*AgentToolCall, error) {
 // AgentApprovalsOrErr returns the AgentApprovals value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AgentApprovalsOrErr() ([]*AgentApproval, error) {
-	if e.loadedTypes[18] {
+	if e.loadedTypes[21] {
 		return e.AgentApprovals, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_approvals"}
@@ -400,7 +436,7 @@ func (e UserEdges) AgentApprovalsOrErr() ([]*AgentApproval, error) {
 // AgentToolResultBlobsOrErr returns the AgentToolResultBlobs value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AgentToolResultBlobsOrErr() ([]*AgentToolResultBlob, error) {
-	if e.loadedTypes[19] {
+	if e.loadedTypes[22] {
 		return e.AgentToolResultBlobs, nil
 	}
 	return nil, &NotLoadedError{edge: "agent_tool_result_blobs"}
@@ -409,7 +445,7 @@ func (e UserEdges) AgentToolResultBlobsOrErr() ([]*AgentToolResultBlob, error) {
 // RevenueWorkspacesOrErr returns the RevenueWorkspaces value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RevenueWorkspacesOrErr() ([]*RevenueWorkspace, error) {
-	if e.loadedTypes[20] {
+	if e.loadedTypes[23] {
 		return e.RevenueWorkspaces, nil
 	}
 	return nil, &NotLoadedError{edge: "revenue_workspaces"}
@@ -418,7 +454,7 @@ func (e UserEdges) RevenueWorkspacesOrErr() ([]*RevenueWorkspace, error) {
 // RevenueWorkspaceMembersOrErr returns the RevenueWorkspaceMembers value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RevenueWorkspaceMembersOrErr() ([]*RevenueWorkspaceMember, error) {
-	if e.loadedTypes[21] {
+	if e.loadedTypes[24] {
 		return e.RevenueWorkspaceMembers, nil
 	}
 	return nil, &NotLoadedError{edge: "revenue_workspace_members"}
@@ -427,7 +463,7 @@ func (e UserEdges) RevenueWorkspaceMembersOrErr() ([]*RevenueWorkspaceMember, er
 // RelationshipsOrErr returns the Relationships value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipsOrErr() ([]*Relationship, error) {
-	if e.loadedTypes[22] {
+	if e.loadedTypes[25] {
 		return e.Relationships, nil
 	}
 	return nil, &NotLoadedError{edge: "relationships"}
@@ -436,7 +472,7 @@ func (e UserEdges) RelationshipsOrErr() ([]*Relationship, error) {
 // RevenueEvidencesOrErr returns the RevenueEvidences value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RevenueEvidencesOrErr() ([]*RevenueEvidence, error) {
-	if e.loadedTypes[23] {
+	if e.loadedTypes[26] {
 		return e.RevenueEvidences, nil
 	}
 	return nil, &NotLoadedError{edge: "revenue_evidences"}
@@ -445,7 +481,7 @@ func (e UserEdges) RevenueEvidencesOrErr() ([]*RevenueEvidence, error) {
 // CommitmentsOrErr returns the Commitments value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) CommitmentsOrErr() ([]*Commitment, error) {
-	if e.loadedTypes[24] {
+	if e.loadedTypes[27] {
 		return e.Commitments, nil
 	}
 	return nil, &NotLoadedError{edge: "commitments"}
@@ -454,7 +490,7 @@ func (e UserEdges) CommitmentsOrErr() ([]*Commitment, error) {
 // CommitmentEventsOrErr returns the CommitmentEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) CommitmentEventsOrErr() ([]*CommitmentEvent, error) {
-	if e.loadedTypes[25] {
+	if e.loadedTypes[28] {
 		return e.CommitmentEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "commitment_events"}
@@ -463,7 +499,7 @@ func (e UserEdges) CommitmentEventsOrErr() ([]*CommitmentEvent, error) {
 // CommitmentDependenciesOrErr returns the CommitmentDependencies value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) CommitmentDependenciesOrErr() ([]*CommitmentDependency, error) {
-	if e.loadedTypes[26] {
+	if e.loadedTypes[29] {
 		return e.CommitmentDependencies, nil
 	}
 	return nil, &NotLoadedError{edge: "commitment_dependencies"}
@@ -472,7 +508,7 @@ func (e UserEdges) CommitmentDependenciesOrErr() ([]*CommitmentDependency, error
 // ConversationIntelligenceArtifactsOrErr returns the ConversationIntelligenceArtifacts value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ConversationIntelligenceArtifactsOrErr() ([]*ConversationIntelligenceArtifact, error) {
-	if e.loadedTypes[27] {
+	if e.loadedTypes[30] {
 		return e.ConversationIntelligenceArtifacts, nil
 	}
 	return nil, &NotLoadedError{edge: "conversation_intelligence_artifacts"}
@@ -481,7 +517,7 @@ func (e UserEdges) ConversationIntelligenceArtifactsOrErr() ([]*ConversationInte
 // RevenueActionsOrErr returns the RevenueActions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RevenueActionsOrErr() ([]*RevenueAction, error) {
-	if e.loadedTypes[28] {
+	if e.loadedTypes[31] {
 		return e.RevenueActions, nil
 	}
 	return nil, &NotLoadedError{edge: "revenue_actions"}
@@ -490,7 +526,7 @@ func (e UserEdges) RevenueActionsOrErr() ([]*RevenueAction, error) {
 // RevenueActionRevisionsOrErr returns the RevenueActionRevisions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RevenueActionRevisionsOrErr() ([]*RevenueActionRevision, error) {
-	if e.loadedTypes[29] {
+	if e.loadedTypes[32] {
 		return e.RevenueActionRevisions, nil
 	}
 	return nil, &NotLoadedError{edge: "revenue_action_revisions"}
@@ -499,7 +535,7 @@ func (e UserEdges) RevenueActionRevisionsOrErr() ([]*RevenueActionRevision, erro
 // PolicyDecisionSnapshotsOrErr returns the PolicyDecisionSnapshots value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) PolicyDecisionSnapshotsOrErr() ([]*PolicyDecisionSnapshot, error) {
-	if e.loadedTypes[30] {
+	if e.loadedTypes[33] {
 		return e.PolicyDecisionSnapshots, nil
 	}
 	return nil, &NotLoadedError{edge: "policy_decision_snapshots"}
@@ -508,7 +544,7 @@ func (e UserEdges) PolicyDecisionSnapshotsOrErr() ([]*PolicyDecisionSnapshot, er
 // ActionOutcomesOrErr returns the ActionOutcomes value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ActionOutcomesOrErr() ([]*ActionOutcome, error) {
-	if e.loadedTypes[31] {
+	if e.loadedTypes[34] {
 		return e.ActionOutcomes, nil
 	}
 	return nil, &NotLoadedError{edge: "action_outcomes"}
@@ -517,7 +553,7 @@ func (e UserEdges) ActionOutcomesOrErr() ([]*ActionOutcome, error) {
 // RevenueOutboxEventsOrErr returns the RevenueOutboxEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RevenueOutboxEventsOrErr() ([]*RevenueOutboxEvent, error) {
-	if e.loadedTypes[32] {
+	if e.loadedTypes[35] {
 		return e.RevenueOutboxEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "revenue_outbox_events"}
@@ -526,7 +562,7 @@ func (e UserEdges) RevenueOutboxEventsOrErr() ([]*RevenueOutboxEvent, error) {
 // RevenueLeakScansOrErr returns the RevenueLeakScans value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RevenueLeakScansOrErr() ([]*RevenueLeakScan, error) {
-	if e.loadedTypes[33] {
+	if e.loadedTypes[36] {
 		return e.RevenueLeakScans, nil
 	}
 	return nil, &NotLoadedError{edge: "revenue_leak_scans"}
@@ -535,7 +571,7 @@ func (e UserEdges) RevenueLeakScansOrErr() ([]*RevenueLeakScan, error) {
 // MailThreadsOrErr returns the MailThreads value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) MailThreadsOrErr() ([]*MailThread, error) {
-	if e.loadedTypes[34] {
+	if e.loadedTypes[37] {
 		return e.MailThreads, nil
 	}
 	return nil, &NotLoadedError{edge: "mail_threads"}
@@ -544,7 +580,7 @@ func (e UserEdges) MailThreadsOrErr() ([]*MailThread, error) {
 // MailMessageMetasOrErr returns the MailMessageMetas value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) MailMessageMetasOrErr() ([]*MailMessageMeta, error) {
-	if e.loadedTypes[35] {
+	if e.loadedTypes[38] {
 		return e.MailMessageMetas, nil
 	}
 	return nil, &NotLoadedError{edge: "mail_message_metas"}
@@ -553,7 +589,7 @@ func (e UserEdges) MailMessageMetasOrErr() ([]*MailMessageMeta, error) {
 // MailBodyCachesOrErr returns the MailBodyCaches value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) MailBodyCachesOrErr() ([]*MailBodyCache, error) {
-	if e.loadedTypes[36] {
+	if e.loadedTypes[39] {
 		return e.MailBodyCaches, nil
 	}
 	return nil, &NotLoadedError{edge: "mail_body_caches"}
@@ -562,7 +598,7 @@ func (e UserEdges) MailBodyCachesOrErr() ([]*MailBodyCache, error) {
 // MailSignalsOrErr returns the MailSignals value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) MailSignalsOrErr() ([]*MailSignal, error) {
-	if e.loadedTypes[37] {
+	if e.loadedTypes[40] {
 		return e.MailSignals, nil
 	}
 	return nil, &NotLoadedError{edge: "mail_signals"}
@@ -571,7 +607,7 @@ func (e UserEdges) MailSignalsOrErr() ([]*MailSignal, error) {
 // RelationshipParticipantsOrErr returns the RelationshipParticipants value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipParticipantsOrErr() ([]*RelationshipParticipant, error) {
-	if e.loadedTypes[38] {
+	if e.loadedTypes[41] {
 		return e.RelationshipParticipants, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_participants"}
@@ -580,7 +616,7 @@ func (e UserEdges) RelationshipParticipantsOrErr() ([]*RelationshipParticipant, 
 // RelationshipIdentitiesOrErr returns the RelationshipIdentities value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipIdentitiesOrErr() ([]*RelationshipIdentity, error) {
-	if e.loadedTypes[39] {
+	if e.loadedTypes[42] {
 		return e.RelationshipIdentities, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_identities"}
@@ -589,7 +625,7 @@ func (e UserEdges) RelationshipIdentitiesOrErr() ([]*RelationshipIdentity, error
 // RelationshipPersonsOrErr returns the RelationshipPersons value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipPersonsOrErr() ([]*Person, error) {
-	if e.loadedTypes[40] {
+	if e.loadedTypes[43] {
 		return e.RelationshipPersons, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_persons"}
@@ -598,7 +634,7 @@ func (e UserEdges) RelationshipPersonsOrErr() ([]*Person, error) {
 // PersonIdentitiesOrErr returns the PersonIdentities value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) PersonIdentitiesOrErr() ([]*PersonIdentity, error) {
-	if e.loadedTypes[41] {
+	if e.loadedTypes[44] {
 		return e.PersonIdentities, nil
 	}
 	return nil, &NotLoadedError{edge: "person_identities"}
@@ -607,7 +643,7 @@ func (e UserEdges) PersonIdentitiesOrErr() ([]*PersonIdentity, error) {
 // PersonSuppressionsOrErr returns the PersonSuppressions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) PersonSuppressionsOrErr() ([]*PersonSuppression, error) {
-	if e.loadedTypes[42] {
+	if e.loadedTypes[45] {
 		return e.PersonSuppressions, nil
 	}
 	return nil, &NotLoadedError{edge: "person_suppressions"}
@@ -616,7 +652,7 @@ func (e UserEdges) PersonSuppressionsOrErr() ([]*PersonSuppression, error) {
 // PersonAttributesOrErr returns the PersonAttributes value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) PersonAttributesOrErr() ([]*PersonAttribute, error) {
-	if e.loadedTypes[43] {
+	if e.loadedTypes[46] {
 		return e.PersonAttributes, nil
 	}
 	return nil, &NotLoadedError{edge: "person_attributes"}
@@ -625,7 +661,7 @@ func (e UserEdges) PersonAttributesOrErr() ([]*PersonAttribute, error) {
 // PersonMergeCandidatesOrErr returns the PersonMergeCandidates value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) PersonMergeCandidatesOrErr() ([]*PersonMergeCandidate, error) {
-	if e.loadedTypes[44] {
+	if e.loadedTypes[47] {
 		return e.PersonMergeCandidates, nil
 	}
 	return nil, &NotLoadedError{edge: "person_merge_candidates"}
@@ -634,7 +670,7 @@ func (e UserEdges) PersonMergeCandidatesOrErr() ([]*PersonMergeCandidate, error)
 // RelationshipProjectionJobsOrErr returns the RelationshipProjectionJobs value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipProjectionJobsOrErr() ([]*RelationshipProjectionJob, error) {
-	if e.loadedTypes[45] {
+	if e.loadedTypes[48] {
 		return e.RelationshipProjectionJobs, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_projection_jobs"}
@@ -643,7 +679,7 @@ func (e UserEdges) RelationshipProjectionJobsOrErr() ([]*RelationshipProjectionJ
 // TenantEvidenceKeysOrErr returns the TenantEvidenceKeys value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) TenantEvidenceKeysOrErr() ([]*TenantEvidenceKey, error) {
-	if e.loadedTypes[46] {
+	if e.loadedTypes[49] {
 		return e.TenantEvidenceKeys, nil
 	}
 	return nil, &NotLoadedError{edge: "tenant_evidence_keys"}
@@ -652,7 +688,7 @@ func (e UserEdges) TenantEvidenceKeysOrErr() ([]*TenantEvidenceKey, error) {
 // WorkspaceFeatureControlsOrErr returns the WorkspaceFeatureControls value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) WorkspaceFeatureControlsOrErr() ([]*WorkspaceFeatureControl, error) {
-	if e.loadedTypes[47] {
+	if e.loadedTypes[50] {
 		return e.WorkspaceFeatureControls, nil
 	}
 	return nil, &NotLoadedError{edge: "workspace_feature_controls"}
@@ -661,7 +697,7 @@ func (e UserEdges) WorkspaceFeatureControlsOrErr() ([]*WorkspaceFeatureControl, 
 // RevenueTrustEventsOrErr returns the RevenueTrustEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RevenueTrustEventsOrErr() ([]*RevenueTrustEvent, error) {
-	if e.loadedTypes[48] {
+	if e.loadedTypes[51] {
 		return e.RevenueTrustEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "revenue_trust_events"}
@@ -670,7 +706,7 @@ func (e UserEdges) RevenueTrustEventsOrErr() ([]*RevenueTrustEvent, error) {
 // RelationshipIdentityCandidatesOrErr returns the RelationshipIdentityCandidates value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipIdentityCandidatesOrErr() ([]*RelationshipIdentityCandidate, error) {
-	if e.loadedTypes[49] {
+	if e.loadedTypes[52] {
 		return e.RelationshipIdentityCandidates, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_identity_candidates"}
@@ -679,7 +715,7 @@ func (e UserEdges) RelationshipIdentityCandidatesOrErr() ([]*RelationshipIdentit
 // RelationshipLineageEventsOrErr returns the RelationshipLineageEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipLineageEventsOrErr() ([]*RelationshipLineageEvent, error) {
-	if e.loadedTypes[50] {
+	if e.loadedTypes[53] {
 		return e.RelationshipLineageEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_lineage_events"}
@@ -688,7 +724,7 @@ func (e UserEdges) RelationshipLineageEventsOrErr() ([]*RelationshipLineageEvent
 // RelationshipIdentityDecisionsOrErr returns the RelationshipIdentityDecisions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipIdentityDecisionsOrErr() ([]*RelationshipIdentityDecision, error) {
-	if e.loadedTypes[51] {
+	if e.loadedTypes[54] {
 		return e.RelationshipIdentityDecisions, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_identity_decisions"}
@@ -697,7 +733,7 @@ func (e UserEdges) RelationshipIdentityDecisionsOrErr() ([]*RelationshipIdentity
 // RelationshipReviewAcknowledgementsOrErr returns the RelationshipReviewAcknowledgements value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipReviewAcknowledgementsOrErr() ([]*RelationshipReviewAcknowledgement, error) {
-	if e.loadedTypes[52] {
+	if e.loadedTypes[55] {
 		return e.RelationshipReviewAcknowledgements, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_review_acknowledgements"}
@@ -706,7 +742,7 @@ func (e UserEdges) RelationshipReviewAcknowledgementsOrErr() ([]*RelationshipRev
 // RelationshipAttentionItemsOrErr returns the RelationshipAttentionItems value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipAttentionItemsOrErr() ([]*RelationshipAttentionItem, error) {
-	if e.loadedTypes[53] {
+	if e.loadedTypes[56] {
 		return e.RelationshipAttentionItems, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_attention_items"}
@@ -715,7 +751,7 @@ func (e UserEdges) RelationshipAttentionItemsOrErr() ([]*RelationshipAttentionIt
 // RelationshipObservationsOrErr returns the RelationshipObservations value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipObservationsOrErr() ([]*RelationshipObservation, error) {
-	if e.loadedTypes[54] {
+	if e.loadedTypes[57] {
 		return e.RelationshipObservations, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_observations"}
@@ -724,7 +760,7 @@ func (e UserEdges) RelationshipObservationsOrErr() ([]*RelationshipObservation, 
 // RelationshipAssertionsOrErr returns the RelationshipAssertions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipAssertionsOrErr() ([]*RelationshipAssertion, error) {
-	if e.loadedTypes[55] {
+	if e.loadedTypes[58] {
 		return e.RelationshipAssertions, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_assertions"}
@@ -733,7 +769,7 @@ func (e UserEdges) RelationshipAssertionsOrErr() ([]*RelationshipAssertion, erro
 // RelationshipStateSnapshotsOrErr returns the RelationshipStateSnapshots value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipStateSnapshotsOrErr() ([]*RelationshipStateSnapshot, error) {
-	if e.loadedTypes[56] {
+	if e.loadedTypes[59] {
 		return e.RelationshipStateSnapshots, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_state_snapshots"}
@@ -742,7 +778,7 @@ func (e UserEdges) RelationshipStateSnapshotsOrErr() ([]*RelationshipStateSnapsh
 // RelationshipSourceStatusesOrErr returns the RelationshipSourceStatuses value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipSourceStatusesOrErr() ([]*RelationshipSourceStatus, error) {
-	if e.loadedTypes[57] {
+	if e.loadedTypes[60] {
 		return e.RelationshipSourceStatuses, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_source_statuses"}
@@ -751,7 +787,7 @@ func (e UserEdges) RelationshipSourceStatusesOrErr() ([]*RelationshipSourceStatu
 // ActionProposalsOrErr returns the ActionProposals value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ActionProposalsOrErr() ([]*ActionProposal, error) {
-	if e.loadedTypes[58] {
+	if e.loadedTypes[61] {
 		return e.ActionProposals, nil
 	}
 	return nil, &NotLoadedError{edge: "action_proposals"}
@@ -760,7 +796,7 @@ func (e UserEdges) ActionProposalsOrErr() ([]*ActionProposal, error) {
 // ApprovalTokensOrErr returns the ApprovalTokens value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ApprovalTokensOrErr() ([]*ApprovalToken, error) {
-	if e.loadedTypes[59] {
+	if e.loadedTypes[62] {
 		return e.ApprovalTokens, nil
 	}
 	return nil, &NotLoadedError{edge: "approval_tokens"}
@@ -854,6 +890,21 @@ func (_m *User) QueryLedgerEntries() *CreditLedgerQuery {
 // QueryMeetingMinuteUsages queries the "meeting_minute_usages" edge of the User entity.
 func (_m *User) QueryMeetingMinuteUsages() *MeetingMinuteUsageQuery {
 	return NewUserClient(_m.config).QueryMeetingMinuteUsages(_m)
+}
+
+// QueryVoiceAPIKeys queries the "voice_api_keys" edge of the User entity.
+func (_m *User) QueryVoiceAPIKeys() *VoiceAPIKeyQuery {
+	return NewUserClient(_m.config).QueryVoiceAPIKeys(_m)
+}
+
+// QueryVoiceSyncItems queries the "voice_sync_items" edge of the User entity.
+func (_m *User) QueryVoiceSyncItems() *VoiceSyncItemQuery {
+	return NewUserClient(_m.config).QueryVoiceSyncItems(_m)
+}
+
+// QueryCaptureArtifacts queries the "capture_artifacts" edge of the User entity.
+func (_m *User) QueryCaptureArtifacts() *CaptureArtifactQuery {
+	return NewUserClient(_m.config).QueryCaptureArtifacts(_m)
 }
 
 // QueryLlmUsages queries the "llm_usages" edge of the User entity.
@@ -1227,6 +1278,78 @@ func (_m *User) appendNamedMeetingMinuteUsages(name string, edges ...*MeetingMin
 		_m.Edges.namedMeetingMinuteUsages[name] = []*MeetingMinuteUsage{}
 	} else {
 		_m.Edges.namedMeetingMinuteUsages[name] = append(_m.Edges.namedMeetingMinuteUsages[name], edges...)
+	}
+}
+
+// NamedVoiceAPIKeys returns the VoiceAPIKeys named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedVoiceAPIKeys(name string) ([]*VoiceAPIKey, error) {
+	if _m.Edges.namedVoiceAPIKeys == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedVoiceAPIKeys[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedVoiceAPIKeys(name string, edges ...*VoiceAPIKey) {
+	if _m.Edges.namedVoiceAPIKeys == nil {
+		_m.Edges.namedVoiceAPIKeys = make(map[string][]*VoiceAPIKey)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedVoiceAPIKeys[name] = []*VoiceAPIKey{}
+	} else {
+		_m.Edges.namedVoiceAPIKeys[name] = append(_m.Edges.namedVoiceAPIKeys[name], edges...)
+	}
+}
+
+// NamedVoiceSyncItems returns the VoiceSyncItems named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedVoiceSyncItems(name string) ([]*VoiceSyncItem, error) {
+	if _m.Edges.namedVoiceSyncItems == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedVoiceSyncItems[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedVoiceSyncItems(name string, edges ...*VoiceSyncItem) {
+	if _m.Edges.namedVoiceSyncItems == nil {
+		_m.Edges.namedVoiceSyncItems = make(map[string][]*VoiceSyncItem)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedVoiceSyncItems[name] = []*VoiceSyncItem{}
+	} else {
+		_m.Edges.namedVoiceSyncItems[name] = append(_m.Edges.namedVoiceSyncItems[name], edges...)
+	}
+}
+
+// NamedCaptureArtifacts returns the CaptureArtifacts named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedCaptureArtifacts(name string) ([]*CaptureArtifact, error) {
+	if _m.Edges.namedCaptureArtifacts == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedCaptureArtifacts[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedCaptureArtifacts(name string, edges ...*CaptureArtifact) {
+	if _m.Edges.namedCaptureArtifacts == nil {
+		_m.Edges.namedCaptureArtifacts = make(map[string][]*CaptureArtifact)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedCaptureArtifacts[name] = []*CaptureArtifact{}
+	} else {
+		_m.Edges.namedCaptureArtifacts[name] = append(_m.Edges.namedCaptureArtifacts[name], edges...)
 	}
 }
 

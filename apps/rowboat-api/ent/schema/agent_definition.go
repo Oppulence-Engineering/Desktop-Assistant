@@ -19,7 +19,7 @@ import (
 type AgentDefinition struct{ ent.Schema }
 
 // Mixin of the AgentDefinition.
-func (AgentDefinition) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (AgentDefinition) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Fields of the AgentDefinition.
 func (AgentDefinition) Fields() []ent.Field {
@@ -80,7 +80,7 @@ func (AgentDefinition) Fields() []ent.Field {
 // Edges of the AgentDefinition.
 func (AgentDefinition) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("agent_definitions").Unique().Required(),
+		edge.From("user", User.Type).Ref("agent_definitions").Unique().Required().Immutable(),
 		edge.To("sessions", AgentSession.Type),
 	}
 }

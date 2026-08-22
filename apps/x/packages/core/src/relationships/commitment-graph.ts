@@ -3,8 +3,8 @@ import type {
   CommitmentEvent,
   CommitmentEventKind,
   CommitmentProjection,
-} from "@x/shared/dist/relationships.js";
-import { CommitmentEventSchema } from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
+import { CommitmentEventSchema } from "@x/shared/relationships";
 
 const ALLOWED_FROM: Record<CommitmentEventKind, ReadonlySet<CommitmentProjection["state"]>> = {
   proposed: new Set([]),

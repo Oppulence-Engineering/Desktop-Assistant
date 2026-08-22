@@ -1,43 +1,43 @@
-import { shell } from "electron";
 import type { Server } from "http";
 import { createAuthServer } from "./auth-server.js";
-import { DEFAULT_CALLBACK_PORT } from "@x/core/dist/auth/client-repo.js";
-import * as oauthClient from "@x/core/dist/auth/oauth-client.js";
-import type { Configuration } from "@x/core/dist/auth/oauth-client.js";
-import { getProviderConfig, getAvailableProviders } from "@x/core/dist/auth/providers.js";
-import container from "@x/core/dist/di/container.js";
-import { IOAuthRepo } from "@x/core/dist/auth/repo.js";
-import { IClientRegistrationRepo } from "@x/core/dist/auth/client-repo.js";
-import { triggerSync as triggerGmailSync } from "@x/core/dist/knowledge/sync_gmail.js";
-import { triggerSync as triggerCalendarSync } from "@x/core/dist/knowledge/sync_calendar.js";
-import { triggerSync as triggerFirefliesSync } from "@x/core/dist/knowledge/sync_fireflies.js";
+import { DEFAULT_CALLBACK_PORT } from "@x/core/auth/client-repo";
+import * as oauthClient from "@x/core/auth/oauth-client";
+import type { Configuration } from "@x/core/auth/oauth-client";
+import { getProviderConfig, getAvailableProviders } from "@x/core/auth/providers";
+import container from "@x/core/di/container";
+import { IOAuthRepo } from "@x/core/auth/repo";
+import { IClientRegistrationRepo } from "@x/core/auth/client-repo";
+import { triggerSync as triggerGmailSync } from "@x/core/knowledge/sync_gmail";
+import { triggerSync as triggerCalendarSync } from "@x/core/knowledge/sync_calendar";
+import { triggerSync as triggerFirefliesSync } from "@x/core/knowledge/sync_fireflies";
 import { emitOAuthEvent } from "./ipc.js";
-import { getBillingInfo } from "@x/core/dist/billing/billing.js";
+import { openTrustedExternal } from "./external-url.js";
+import { getBillingInfo } from "@x/core/billing/billing";
 import {
   capture as analyticsCapture,
   identify as analyticsIdentify,
   reset as analyticsReset,
-} from "@x/core/dist/analytics/posthog.js";
-import { isSignedIn } from "@x/core/dist/account/account.js";
-import { startGoogleConnectViaBackend } from "@x/core/dist/auth/google-backend-oauth.js";
-import { invalidateCopilotInstructionsCache } from "@x/core/dist/application/assistant/instructions.js";
-import { claimTokensViaBackend } from "@x/core/dist/auth/google-backend-oauth.js";
-import type { OAuthTokens } from "@x/core/dist/auth/types.js";
+} from "@x/core/analytics/posthog";
+import { isSignedIn } from "@x/core/account/account";
+import { startGoogleConnectViaBackend } from "@x/core/auth/google-backend-oauth";
+import { invalidateCopilotInstructionsCache } from "@x/core/application/assistant/instructions";
+import { claimTokensViaBackend } from "@x/core/auth/google-backend-oauth";
+import type { OAuthTokens } from "@x/core/auth/types";
 import {
   startConnectorViaBackend,
   claimConnectorViaBackend,
-} from "@x/core/dist/connectors/connectors-backend.js";
+} from "@x/core/connectors/connectors-backend";
 import {
   slackStartURL,
   claimSlackWorkspaceViaBackend,
-} from "@x/core/dist/auth/slack-backend-oauth.js";
-import { getWorkosLoginUrl, exchangeWorkosCode } from "@x/core/dist/auth/workos-backend.js";
-import { PRODUCT_PROVIDER_ID, isProductProvider } from "@x/shared/dist/branding.js";
-import { isManagedAuthMode } from "@x/core/dist/auth/repo.js";
+} from "@x/core/auth/slack-backend-oauth";
+import { getWorkosLoginUrl, exchangeWorkosCode } from "@x/core/auth/workos-backend";
+import { PRODUCT_PROVIDER_ID, isProductProvider } from "@x/shared/branding";
+import { isManagedAuthMode } from "@x/core/auth/repo";
 import {
   reportRelationshipSourceAuthorization,
   resyncRelationshipSource,
-} from "@x/core/dist/relationships/client.js";
+} from "@x/core/relationships/client";
 
 function buildRedirectUri(port: number): string {
   return `http://localhost:${port}/oauth/callback`;
@@ -396,7 +396,7 @@ async function connectSolomonViaBroker(): Promise<{ success: boolean; error?: st
 
   activeFlow = { provider: PRODUCT_PROVIDER_ID, state, server, cleanupTimeout };
 
-  shell.openExternal(loginUrl);
+  void openTrustedExternal(loginUrl);
   return { success: true };
 }
 
@@ -472,7 +472,7 @@ export async function connectProvider(
             // browser landed on a 404 while this returned success, so the app
             // reported a connect it had not started.
             const authorizeUrl = await startGoogleConnectViaBackend();
-            await shell.openExternal(authorizeUrl);
+            await openTrustedExternal(authorizeUrl);
             console.log("[OAuth] Started Oppulence-managed Google connect (browser opened)");
             // Belt and braces: the api will deep-link back when it finishes,
             // but that depends on owning the URL scheme. Poll for the same
@@ -706,7 +706,7 @@ export async function connectProvider(
       };
 
       // Open in system browser (shares cookies/sessions with user's regular browser)
-      shell.openExternal(authUrl.toString());
+      void openTrustedExternal(authUrl.toString());
 
       return { success: true };
     } catch (setupError) {
@@ -846,7 +846,7 @@ export async function connectConnector(
   try {
     await beginRelationshipSourceAuthorization(connector);
     const authorizeUrl = await startConnectorViaBackend(connector);
-    await shell.openExternal(authorizeUrl);
+    await openTrustedExternal(authorizeUrl);
     return { success: true };
   } catch (error) {
     console.error(`[Connectors] start ${connector} failed:`, error);
@@ -903,7 +903,7 @@ export async function completeConnectorConnect(connector: string, state: string)
 export async function connectSlackWorkspace(): Promise<{ success: boolean; error?: string }> {
   try {
     await beginRelationshipSourceAuthorization("slack");
-    await shell.openExternal(slackStartURL());
+    await openTrustedExternal(slackStartURL());
     return { success: true };
   } catch (error) {
     console.error("[Slack] start workspace install failed:", error);

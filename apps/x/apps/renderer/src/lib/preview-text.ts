@@ -18,7 +18,7 @@
  */
 // Written as escapes on purpose: U+2028/U+2029 are line terminators and would
 // end this regex literal early if pasted in raw.
-const INVISIBLE = /[\u00AD\u034F\u200B-\u200F\u2028\u2029\u2060\uFEFF]/g;
+const INVISIBLE = /(?:\u034F|[\u00AD\u200B-\u200F\u2028\u2029\u2060\uFEFF])/g;
 
 /** ![alt](url) — an image contributes nothing to a text preview. */
 const MARKDOWN_IMAGE = /!\[[^\]]*\]\([^)]*\)/g;

@@ -1,28 +1,34 @@
-// Command migrate manages the database schema.
+// Command migrate manages Rowboat's database schema.
 //
-//	migrate apply              # auto-migrate DATABASE_URL to the current schema
-//	migrate dump [name]        # write the full schema DDL to migrations/<name>.sql
-//
-// `apply` is safe for dev and first deploys. For controlled, versioned
-// migrations in production, generate diffs with Atlas against a dev database
-// (https://atlasgo.io) — `dump` produces the initial baseline.
+//	migrate apply              # apply PostgreSQL Atlas files; auto-migrate SQLite
+//	migrate dump [name]        # write a PostgreSQL baseline migration
+//	migrate diff <name>        # diff Ent against MIGRATION_DEV_URL
+//	migrate hash               # rewrite migrations/postgres/atlas.sum
+//	migrate validate           # verify migration names and checksums
 package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
+	atlasmigrate "ariga.io/atlas/sql/migrate"
 	"entgo.io/ent/dialect"
-	entsql "entgo.io/ent/dialect/sql"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	entschema "entgo.io/ent/dialect/sql/schema"
+	entmigrate "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/migrate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db" // also registers the sqlite/pgx drivers
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db" // registers sqlite/pgx drivers
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/telemetry"
+	_ "github.com/lib/pq" // Ent's versioned-diff helper opens the canonical "postgres" driver.
+)
+
+const (
+	postgresMigrationDir = "migrations/postgres"
+	postgresBaseline     = "20260821000000"
 )
 
 func main() {
@@ -34,67 +40,157 @@ func main() {
 
 func run() error {
 	if len(os.Args) < 2 {
-		return fmt.Errorf("usage: migrate <apply|dump> [name]")
-	}
-	cfg := appconfig.Load()
-	log, err := telemetry.NewLogger(cfg)
-	if err != nil {
-		return err
+		return fmt.Errorf("usage: migrate <apply|dump|diff|hash|validate> [name]")
 	}
 	ctx := context.Background()
-
 	switch os.Args[1] {
 	case "apply":
-		cfg.AutoMigrate = true
-		d, err := db.Open(ctx, cfg, log)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = d.Close() }()
-		fmt.Println("schema applied")
-		return nil
-
+		return apply(ctx)
 	case "dump":
-		name := "0001_init"
+		name := postgresBaseline + "_baseline"
 		if len(os.Args) >= 3 {
-			name = fmt.Sprintf("%s_%s", time.Now().UTC().Format("20060102150405"), os.Args[2])
+			name = os.Args[2]
 		}
-		return dump(ctx, name)
-
+		return dumpPostgres(ctx, name)
+	case "diff":
+		if len(os.Args) != 3 {
+			return fmt.Errorf("usage: migrate diff <name>")
+		}
+		return diff(ctx, os.Args[2])
+	case "hash":
+		return hashDirectory()
+	case "validate":
+		return validateDirectory()
 	default:
 		return fmt.Errorf("unknown command %q", os.Args[1])
 	}
 }
 
-// dump renders the CREATE-table DDL for the current schema and writes it to
-// migrations/<name>.sql.
-func dump(ctx context.Context, name string) error {
-	if !migrationNamePattern.MatchString(name) {
-		return fmt.Errorf("migration name must contain only letters, digits, underscore, or hyphen (max 128 characters)")
+func apply(ctx context.Context) error {
+	cfg := appconfig.Load()
+	if !isPostgres(cfg.DatabaseURL) {
+		log, err := telemetry.NewLogger(cfg)
+		if err != nil {
+			return err
+		}
+		cfg.AutoMigrate = true
+		database, err := db.Open(ctx, cfg, log)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = database.Close() }()
+		fmt.Println("SQLite schema auto-migrated")
+		return nil
 	}
-	sqlDB, err := sql.Open("sqlite", "file:dump?mode=memory&_pragma=foreign_keys(1)")
+	if err := validateDirectory(); err != nil {
+		return err
+	}
+	return applyPostgres(ctx, cfg.DatabaseURL)
+}
+
+// dumpPostgres renders the current Ent schema using PostgreSQL types. It is
+// intended only for establishing a reviewed baseline, not routine changes.
+func dumpPostgres(ctx context.Context, name string) error {
+	if err := validateMigrationName(name); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(postgresMigrationDir, 0o750); err != nil {
+		return err
+	}
+	out := filepath.Join(postgresMigrationDir, name+".sql")
+	file, err := os.OpenFile(out, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600) // #nosec G304,G703 -- allowlisted basename under fixed directory
 	if err != nil {
 		return err
 	}
-	defer func() { _ = sqlDB.Close() }()
-	client := ent.NewClient(ent.Driver(entsql.OpenDB(dialect.SQLite, sqlDB)))
+	defer func() { _ = file.Close() }()
 
-	if err := os.MkdirAll("migrations", 0o750); err != nil {
-		return err
-	}
-	out := filepath.Join("migrations", name+".sql")
-	// name is strictly allowlisted above, so out cannot escape migrations.
-	f, err := os.OpenFile(out, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600) // #nosec G304,G703 -- allowlisted basename under fixed directory
+	ddl, err := entschema.DDL(ctx, entschema.DDLArgs{
+		Dialect:     dialect.Postgres,
+		Version:     "15.0.0",
+		HashSymbols: true,
+		Tables:      entmigrate.Tables,
+	})
 	if err != nil {
 		return err
 	}
-	defer func() { _ = f.Close() }()
-
-	if err := client.Schema.WriteTo(ctx, f); err != nil {
+	if _, err := file.WriteString(ddl); err != nil {
+		return err
+	}
+	if err := hashDirectory(); err != nil {
 		return err
 	}
 	fmt.Printf("wrote %s\n", out)
 	return nil
 }
 
-var migrationNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$`)
+func diff(ctx context.Context, name string) error {
+	if err := validateMigrationName(name); err != nil {
+		return err
+	}
+	devURL := os.Getenv("MIGRATION_DEV_URL")
+	if !isPostgres(devURL) {
+		return fmt.Errorf("MIGRATION_DEV_URL must be a disposable PostgreSQL database URL")
+	}
+	directory, err := atlasmigrate.NewLocalDir(postgresMigrationDir)
+	if err != nil {
+		return err
+	}
+	return entmigrate.NamedDiff(ctx, devURL, name,
+		entschema.WithDir(directory),
+		entschema.WithMigrationMode(entschema.ModeReplay),
+		entschema.WithDialect(dialect.Postgres),
+		entschema.WithFormatter(atlasmigrate.DefaultFormatter),
+	)
+}
+
+func hashDirectory() error {
+	directory, err := atlasmigrate.NewLocalDir(postgresMigrationDir)
+	if err != nil {
+		return err
+	}
+	sum, err := directory.Checksum()
+	if err != nil {
+		return err
+	}
+	return atlasmigrate.WriteSumFile(directory, sum)
+}
+
+func validateDirectory() error {
+	directory, err := atlasmigrate.NewLocalDir(postgresMigrationDir)
+	if err != nil {
+		return err
+	}
+	files, err := directory.Files()
+	if err != nil {
+		return err
+	}
+	if len(files) == 0 {
+		return fmt.Errorf("PostgreSQL migration directory is empty")
+	}
+	for _, file := range files {
+		if err := validateMigrationName(strings.TrimSuffix(file.Name(), filepath.Ext(file.Name()))); err != nil {
+			return fmt.Errorf("%s: %w", file.Name(), err)
+		}
+	}
+	if err := atlasmigrate.Validate(directory); err != nil {
+		return fmt.Errorf("validate Atlas migration directory: %w", err)
+	}
+	fmt.Printf("validated %d PostgreSQL Atlas migration(s)\n", len(files))
+	return nil
+}
+
+func validateMigrationName(name string) error {
+	if !migrationNamePattern.MatchString(name) {
+		return fmt.Errorf("migration name must begin with a 14-digit UTC version and contain only letters, digits, underscore, or hyphen")
+	}
+	if _, err := time.Parse("20060102150405", name[:14]); err != nil {
+		return fmt.Errorf("migration version is not a valid UTC timestamp: %w", err)
+	}
+	return nil
+}
+
+func isPostgres(url string) bool {
+	return strings.HasPrefix(url, "postgres://") || strings.HasPrefix(url, "postgresql://") || strings.Contains(url, "host=")
+}
+
+var migrationNamePattern = regexp.MustCompile(`^[0-9]{14}_[A-Za-z0-9][A-Za-z0-9_-]{0,112}$`)

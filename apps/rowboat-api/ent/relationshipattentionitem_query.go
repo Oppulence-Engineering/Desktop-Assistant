@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -438,6 +439,12 @@ func (_q *RelationshipAttentionItemQuery) prepareQuery(ctx context.Context) erro
 			return err
 		}
 		_q.sql = prev
+	}
+	if relationshipattentionitem.Policy == nil {
+		return errors.New("ent: uninitialized relationshipattentionitem.Policy (forgotten import ent/runtime?)")
+	}
+	if err := relationshipattentionitem.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

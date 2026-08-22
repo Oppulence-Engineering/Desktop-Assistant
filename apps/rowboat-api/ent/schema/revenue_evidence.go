@@ -16,7 +16,7 @@ import (
 type RevenueEvidence struct{ ent.Schema }
 
 // Mixin of the RevenueEvidence.
-func (RevenueEvidence) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RevenueEvidence) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields of the RevenueEvidence.
 func (RevenueEvidence) Fields() []ent.Field {
@@ -45,8 +45,8 @@ func (RevenueEvidence) Fields() []ent.Field {
 func (RevenueEvidence) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("evidences").Unique().Required(),
-		edge.From("user", User.Type).Ref("revenue_evidences").Unique().Required(),
+			Ref("evidences").Unique().Required().Immutable(),
+		edge.From("user", User.Type).Ref("revenue_evidences").Unique().Required().Immutable(),
 		edge.From("relationships", Relationship.Type).Ref("evidences"),
 		edge.From("commitments", Commitment.Type).Ref("evidences"),
 		edge.From("actions", RevenueAction.Type).Ref("evidences"),

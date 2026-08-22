@@ -2,7 +2,7 @@ import type {
   RelationshipLiveCue,
   RelationshipLiveCueFrequency,
   RelationshipLiveCueKind,
-} from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
 import { conversationFingerprint, normalizeConversationText } from "./conversation-utils.js";
 
 export interface LiveCoachingSignal {

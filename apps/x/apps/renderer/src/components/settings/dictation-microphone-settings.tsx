@@ -6,7 +6,7 @@ import { Button } from "@oppulence/ui/components/button";
 import type {
   DictationMicrophonePreference,
   DictationSettings,
-} from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
 import { toast } from "sonner";
 
 interface Props {

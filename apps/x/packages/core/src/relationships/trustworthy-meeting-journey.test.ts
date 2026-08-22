@@ -6,13 +6,13 @@ import {
   MeetingPreflightReport,
   type MeetingSessionMeta,
   type MeetingTranscript,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 import {
   RelationshipSchema,
   type ConversationClaimCandidate,
   type RelationshipObservationIngestResult,
   type RelationshipObservationInput,
-} from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
 import type { LedgerCommitment } from "../meetings/meetings.js";
 import { MeetingCaptureGuardian } from "../meetings/capture-guardian.js";
 import { fakeTranscriber, sessionMeta, tone, trackMeta, writeWav } from "../meetings/factories.testkit.js";

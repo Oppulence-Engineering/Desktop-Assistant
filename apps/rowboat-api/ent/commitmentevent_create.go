@@ -199,7 +199,9 @@ func (_c *CommitmentEventCreate) Mutation() *CommitmentEventMutation {
 
 // Save creates the CommitmentEvent in the database.
 func (_c *CommitmentEventCreate) Save(ctx context.Context) (*CommitmentEvent, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -226,12 +228,18 @@ func (_c *CommitmentEventCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *CommitmentEventCreate) defaults() {
+func (_c *CommitmentEventCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if commitmentevent.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized commitmentevent.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := commitmentevent.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if commitmentevent.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized commitmentevent.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := commitmentevent.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -244,9 +252,13 @@ func (_c *CommitmentEventCreate) defaults() {
 		_c.mutation.SetPayloadJSON(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if commitmentevent.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized commitmentevent.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := commitmentevent.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

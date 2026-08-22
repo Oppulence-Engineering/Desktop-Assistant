@@ -1,7 +1,7 @@
 import * as fs from "node:fs/promises";
-import type { MeetingDoctorCheck, MeetingPreflightReport } from "@x/shared/dist/meetings.js";
-import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
-import { recordingsRoot } from "@x/core/dist/meetings/meetings.js";
+import type { MeetingDoctorCheck, MeetingPreflightReport } from "@x/shared/meetings";
+import { getTranscriptionConfig } from "@x/core/voice/voice";
+import { recordingsRoot } from "@x/core/meetings/meetings";
 import { runCaptureDoctor, osSupportsNativeCapture } from "./meeting-capture.js";
 import { parakeetModelStatus } from "./meeting-engines.js";
 

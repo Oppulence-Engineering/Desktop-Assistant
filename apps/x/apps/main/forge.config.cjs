@@ -4,6 +4,8 @@
 
 const path = require("path");
 const pkg = require("./package.json");
+const { FusesPlugin } = require("@electron-forge/plugin-fuses");
+const fusePolicy = require("./fuse-policy.cjs");
 
 const PRODUCT_NAME = "Oppulence";
 const PRODUCT_SLUG = "oppulence";
@@ -61,6 +63,7 @@ if (appleSigningConfigured) {
 
 module.exports = {
   packagerConfig,
+  plugins: [new FusesPlugin(fusePolicy)],
   makers: [
     {
       name: "@electron-forge/maker-dmg",
@@ -83,7 +86,7 @@ module.exports = {
     },
     {
       name: "@electron-forge/maker-deb",
-      config: (arch) => ({
+      config: () => ({
         options: {
           name: `${PRODUCT_ARTIFACT_NAME}-linux`,
           bin: PRODUCT_SLUG,

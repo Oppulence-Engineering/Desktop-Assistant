@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { emitRendererEvent } from "@/lib/renderer-events";
 import { Streamdown } from "streamdown";
 import "@/styles/live-note-panel.css";
 import { Button } from "@oppulence/ui/components/button";
@@ -22,8 +23,8 @@ import {
   ChevronDown,
   ChevronRight,
 } from "@/lib/icons";
-import { LiveNoteSchema, type LiveNote, type Triggers } from "@x/shared/dist/live-note.js";
-import type { Run } from "@x/shared/dist/runs.js";
+import { LiveNoteSchema, type LiveNote, type Triggers } from "@x/shared/live-note";
+import type { Run } from "@x/shared/runs";
 import type z from "zod";
 import { useLiveNoteAgentStatus } from "@/hooks/use-live-note-agent-status";
 import { formatRelativeTime } from "@/lib/relative-time";
@@ -280,11 +281,7 @@ export function LiveNoteSidebar({ filePath, onClose }: LiveNoteSidebarProps) {
 
   const handleEditWithCopilot = useCallback(() => {
     if (!filePath) return;
-    window.dispatchEvent(
-      new CustomEvent("rowboat:open-copilot-edit-live-note", {
-        detail: { filePath },
-      }),
-    );
+    emitRendererEvent("rowboat:open-copilot-edit-live-note", { filePath });
     onClose();
   }, [filePath, onClose]);
 

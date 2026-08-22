@@ -112,6 +112,14 @@ full workflow and smoke-test coverage.
 The Scalar API reference is available at `http://localhost:18080/docs`, backed
 by the embedded OpenAPI document at `http://localhost:18080/openapi.json`.
 
+## Fly.io deployment
+
+Fly.io is supported as an alternative production target with one public API
+Machine in US East (`iad`) and one in US West (`sjc`). The default topology
+keeps the East API warm, lets the West API stop while idle, and runs one worker
+and one scheduler in the primary region. See [`docs/fly-io.md`](docs/fly-io.md)
+for provisioning, secrets, deployment, cost, and rollback guidance.
+
 ## Public SDK contract
 
 `api/openapi.json` is the public contract for generated REST SDKs. Ent schemas

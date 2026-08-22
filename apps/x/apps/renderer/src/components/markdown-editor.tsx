@@ -22,6 +22,7 @@ import { ChartBlockExtension } from "@/extensions/chart-block";
 import { TableBlockExtension } from "@/extensions/table-block";
 import { CalendarBlockExtension } from "@/extensions/calendar-block";
 import { EmailBlockExtension, EmailsBlockExtension } from "@/extensions/email-block";
+import { emitRendererEvent } from "@/lib/renderer-events";
 import { TranscriptBlockExtension } from "@/extensions/transcript-block";
 import { MermaidBlockExtension } from "@/extensions/mermaid-block";
 import { Markdown } from "tiptap-markdown";
@@ -1797,22 +1798,16 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
           onOpenLiveNote={
             notePath
               ? () => {
-                  window.dispatchEvent(
-                    new CustomEvent("rowboat:open-live-note-panel", {
-                      detail: { filePath: notePath },
-                    }),
-                  );
+                  emitRendererEvent("rowboat:open-live-note-panel", { filePath: notePath });
                 }
               : undefined
           }
           onOpenRelated={
             notePath
               ? () => {
-                  window.dispatchEvent(
-                    new CustomEvent("rowboat:open-related-notes-panel", {
-                      detail: { filePath: notePath },
-                    }),
-                  );
+                  emitRendererEvent("rowboat:open-related-notes-panel", {
+                    filePath: notePath,
+                  });
                 }
               : undefined
           }

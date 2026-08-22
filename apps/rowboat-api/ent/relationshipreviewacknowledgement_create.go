@@ -135,7 +135,9 @@ func (_c *RelationshipReviewAcknowledgementCreate) Mutation() *RelationshipRevie
 
 // Save creates the RelationshipReviewAcknowledgement in the database.
 func (_c *RelationshipReviewAcknowledgementCreate) Save(ctx context.Context) (*RelationshipReviewAcknowledgement, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -162,19 +164,29 @@ func (_c *RelationshipReviewAcknowledgementCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *RelationshipReviewAcknowledgementCreate) defaults() {
+func (_c *RelationshipReviewAcknowledgementCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if relationshipreviewacknowledgement.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipreviewacknowledgement.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipreviewacknowledgement.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if relationshipreviewacknowledgement.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipreviewacknowledgement.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipreviewacknowledgement.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if relationshipreviewacknowledgement.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized relationshipreviewacknowledgement.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := relationshipreviewacknowledgement.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

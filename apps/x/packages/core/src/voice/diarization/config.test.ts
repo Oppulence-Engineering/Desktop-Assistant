@@ -5,7 +5,7 @@ import {
   parseEnvFlag,
   resolveDiarizationSettings,
 } from "./config.js";
-import { DEFAULT_DIARIZATION_SETTINGS } from "@x/shared/dist/diarization.js";
+import { DEFAULT_DIARIZATION_SETTINGS } from "@x/shared/diarization";
 
 describe("parseEnvFlag", () => {
   it("parses truthy/falsy values and leaves unknown/unset as undefined", () => {

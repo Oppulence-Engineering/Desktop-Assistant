@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -6,19 +8,17 @@ import { clearAuthCookies, readSessionCookie, setSessionCookie } from "@/lib/aut
 import { refreshWorkOSSession, shouldRefreshSession } from "@/lib/auth/rowboat-api";
 import type { DashboardSessionCookie } from "@/lib/auth/schemas";
 
-const HOP_BY_HOP_HEADERS = new Set([
-  "connection",
-  "content-length",
-  "cookie",
-  "host",
-  "keep-alive",
-  "proxy-authenticate",
-  "proxy-authorization",
-  "te",
-  "trailer",
-  "transfer-encoding",
-  "upgrade",
-]);
+const FORWARDED_REQUEST_HEADERS = [
+  "accept",
+  "accept-language",
+  "content-type",
+  "if-match",
+  "if-none-match",
+  "last-event-id",
+  "range",
+  "x-idempotency-key",
+  "x-request-id",
+] as const;
 
 const RESPONSE_HEADERS = [
   "cache-control",
@@ -45,7 +45,10 @@ export async function getAuthorizedSession(request: NextRequest): Promise<Author
   if (!session) {
     return {
       ok: false,
-      response: NextResponse.json({ error: "unauthenticated", code: "unauthorized" }, { status: 401 }),
+      response: NextResponse.json(
+        { error: "unauthenticated", code: "unauthorized" },
+        { status: 401 },
+      ),
     };
   }
 
@@ -78,20 +81,16 @@ export function dashboardProxyPath(path: string[]): string {
   return `/v1/${cleaned}`;
 }
 
-export async function proxyRowboatAPI(
-  request: NextRequest,
-  path: string[],
-): Promise<NextResponse> {
+export async function proxyRowboatAPI(request: NextRequest, path: string[]): Promise<NextResponse> {
   const auth = await getAuthorizedSession(request);
   if (!auth.ok) return auth.response;
 
   const upstreamURL = rowboatApiURL(dashboardProxyPath(path), request.nextUrl.searchParams);
   const headers = new Headers();
-  request.headers.forEach((value, key) => {
-    if (!HOP_BY_HOP_HEADERS.has(key.toLowerCase())) {
-      headers.set(key, value);
-    }
-  });
+  for (const key of FORWARDED_REQUEST_HEADERS) {
+    const value = request.headers.get(key);
+    if (value) headers.set(key, value);
+  }
   headers.set("Authorization", `${auth.session.tokenType} ${auth.session.accessToken}`);
 
   const method = request.method.toUpperCase();
@@ -101,6 +100,7 @@ export async function proxyRowboatAPI(
     headers,
     body,
     cache: "no-store",
+    signal: request.signal,
   });
 
   const responseHeaders = new Headers();

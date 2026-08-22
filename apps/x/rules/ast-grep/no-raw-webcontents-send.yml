@@ -1,0 +1,10 @@
+id: X006-no-raw-webcontents-send
+language: TypeScript
+severity: error
+message: Route main-to-renderer events through sendRendererEvent so payloads are schema-validated.
+rule:
+  pattern: $WINDOW.webContents.send($$$ARGS)
+files:
+  - apps/main/src/**/*.ts
+ignores:
+  - apps/main/src/renderer-events.ts

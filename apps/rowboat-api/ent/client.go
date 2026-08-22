@@ -33,6 +33,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
@@ -85,6 +86,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 )
 
@@ -125,6 +128,8 @@ type Client struct {
 	BackgroundTaskRunEvent *BackgroundTaskRunEventClient
 	// BackgroundTaskScheduleState is the client for interacting with the BackgroundTaskScheduleState builders.
 	BackgroundTaskScheduleState *BackgroundTaskScheduleStateClient
+	// CaptureArtifact is the client for interacting with the CaptureArtifact builders.
+	CaptureArtifact *CaptureArtifactClient
 	// CloudEvent is the client for interacting with the CloudEvent builders.
 	CloudEvent *CloudEventClient
 	// Commitment is the client for interacting with the Commitment builders.
@@ -229,6 +234,10 @@ type Client struct {
 	User *UserClient
 	// UserHistory is the client for interacting with the UserHistory builders.
 	UserHistory *UserHistoryClient
+	// VoiceAPIKey is the client for interacting with the VoiceAPIKey builders.
+	VoiceAPIKey *VoiceAPIKeyClient
+	// VoiceSyncItem is the client for interacting with the VoiceSyncItem builders.
+	VoiceSyncItem *VoiceSyncItemClient
 	// WorkspaceFeatureControl is the client for interacting with the WorkspaceFeatureControl builders.
 	WorkspaceFeatureControl *WorkspaceFeatureControlClient
 
@@ -263,6 +272,7 @@ func (c *Client) init() {
 	c.BackgroundTaskRun = NewBackgroundTaskRunClient(c.config)
 	c.BackgroundTaskRunEvent = NewBackgroundTaskRunEventClient(c.config)
 	c.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(c.config)
+	c.CaptureArtifact = NewCaptureArtifactClient(c.config)
 	c.CloudEvent = NewCloudEventClient(c.config)
 	c.Commitment = NewCommitmentClient(c.config)
 	c.CommitmentDependency = NewCommitmentDependencyClient(c.config)
@@ -315,6 +325,8 @@ func (c *Client) init() {
 	c.TenantEvidenceKey = NewTenantEvidenceKeyClient(c.config)
 	c.User = NewUserClient(c.config)
 	c.UserHistory = NewUserHistoryClient(c.config)
+	c.VoiceAPIKey = NewVoiceAPIKeyClient(c.config)
+	c.VoiceSyncItem = NewVoiceSyncItemClient(c.config)
 	c.WorkspaceFeatureControl = NewWorkspaceFeatureControlClient(c.config)
 }
 
@@ -462,6 +474,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		BackgroundTaskRun:                 NewBackgroundTaskRunClient(cfg),
 		BackgroundTaskRunEvent:            NewBackgroundTaskRunEventClient(cfg),
 		BackgroundTaskScheduleState:       NewBackgroundTaskScheduleStateClient(cfg),
+		CaptureArtifact:                   NewCaptureArtifactClient(cfg),
 		CloudEvent:                        NewCloudEventClient(cfg),
 		Commitment:                        NewCommitmentClient(cfg),
 		CommitmentDependency:              NewCommitmentDependencyClient(cfg),
@@ -514,6 +527,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		TenantEvidenceKey:                 NewTenantEvidenceKeyClient(cfg),
 		User:                              NewUserClient(cfg),
 		UserHistory:                       NewUserHistoryClient(cfg),
+		VoiceAPIKey:                       NewVoiceAPIKeyClient(cfg),
+		VoiceSyncItem:                     NewVoiceSyncItemClient(cfg),
 		WorkspaceFeatureControl:           NewWorkspaceFeatureControlClient(cfg),
 	}, nil
 }
@@ -550,6 +565,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		BackgroundTaskRun:                 NewBackgroundTaskRunClient(cfg),
 		BackgroundTaskRunEvent:            NewBackgroundTaskRunEventClient(cfg),
 		BackgroundTaskScheduleState:       NewBackgroundTaskScheduleStateClient(cfg),
+		CaptureArtifact:                   NewCaptureArtifactClient(cfg),
 		CloudEvent:                        NewCloudEventClient(cfg),
 		Commitment:                        NewCommitmentClient(cfg),
 		CommitmentDependency:              NewCommitmentDependencyClient(cfg),
@@ -602,6 +618,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		TenantEvidenceKey:                 NewTenantEvidenceKeyClient(cfg),
 		User:                              NewUserClient(cfg),
 		UserHistory:                       NewUserHistoryClient(cfg),
+		VoiceAPIKey:                       NewVoiceAPIKeyClient(cfg),
+		VoiceSyncItem:                     NewVoiceSyncItemClient(cfg),
 		WorkspaceFeatureControl:           NewWorkspaceFeatureControlClient(cfg),
 	}, nil
 }
@@ -636,7 +654,7 @@ func (c *Client) Use(hooks ...Hook) {
 		c.AgentDefinitionHistory, c.AgentSession, c.AgentSessionEvent, c.AgentToolCall,
 		c.AgentToolResultBlob, c.AgentTurn, c.ApprovalToken, c.BackgroundTask,
 		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
-		c.BackgroundTaskScheduleState, c.CloudEvent, c.Commitment,
+		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
 		c.CommitmentDependency, c.CommitmentEvent, c.ConversationIntelligenceArtifact,
 		c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
 		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
@@ -653,7 +671,7 @@ func (c *Client) Use(hooks ...Hook) {
 		c.RevenueEvidence, c.RevenueLeakScan, c.RevenueOutboxEvent,
 		c.RevenueTrustEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
 		c.Subscription, c.SubscriptionHistory, c.TenantEvidenceKey, c.User,
-		c.UserHistory, c.WorkspaceFeatureControl,
+		c.UserHistory, c.VoiceAPIKey, c.VoiceSyncItem, c.WorkspaceFeatureControl,
 	} {
 		n.Use(hooks...)
 	}
@@ -667,7 +685,7 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.AgentDefinitionHistory, c.AgentSession, c.AgentSessionEvent, c.AgentToolCall,
 		c.AgentToolResultBlob, c.AgentTurn, c.ApprovalToken, c.BackgroundTask,
 		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
-		c.BackgroundTaskScheduleState, c.CloudEvent, c.Commitment,
+		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
 		c.CommitmentDependency, c.CommitmentEvent, c.ConversationIntelligenceArtifact,
 		c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
 		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
@@ -684,7 +702,7 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.RevenueEvidence, c.RevenueLeakScan, c.RevenueOutboxEvent,
 		c.RevenueTrustEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
 		c.Subscription, c.SubscriptionHistory, c.TenantEvidenceKey, c.User,
-		c.UserHistory, c.WorkspaceFeatureControl,
+		c.UserHistory, c.VoiceAPIKey, c.VoiceSyncItem, c.WorkspaceFeatureControl,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -725,6 +743,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BackgroundTaskRunEvent.mutate(ctx, m)
 	case *BackgroundTaskScheduleStateMutation:
 		return c.BackgroundTaskScheduleState.mutate(ctx, m)
+	case *CaptureArtifactMutation:
+		return c.CaptureArtifact.mutate(ctx, m)
 	case *CloudEventMutation:
 		return c.CloudEvent.mutate(ctx, m)
 	case *CommitmentMutation:
@@ -829,6 +849,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.User.mutate(ctx, m)
 	case *UserHistoryMutation:
 		return c.UserHistory.mutate(ctx, m)
+	case *VoiceAPIKeyMutation:
+		return c.VoiceAPIKey.mutate(ctx, m)
+	case *VoiceSyncItemMutation:
+		return c.VoiceSyncItem.mutate(ctx, m)
 	case *WorkspaceFeatureControlMutation:
 		return c.WorkspaceFeatureControl.mutate(ctx, m)
 	default:
@@ -994,7 +1018,8 @@ func (c *ActionOutcomeClient) QueryUser(_m *ActionOutcome) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *ActionOutcomeClient) Hooks() []Hook {
-	return c.hooks.ActionOutcome
+	hooks := c.hooks.ActionOutcome
+	return append(hooks[:len(hooks):len(hooks)], actionoutcome.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1143,7 +1168,8 @@ func (c *ActionProposalClient) QueryUser(_m *ActionProposal) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *ActionProposalClient) Hooks() []Hook {
-	return c.hooks.ActionProposal
+	hooks := c.hooks.ActionProposal
+	return append(hooks[:len(hooks):len(hooks)], actionproposal.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1308,7 +1334,8 @@ func (c *AgentApprovalClient) QuerySession(_m *AgentApproval) *AgentSessionQuery
 
 // Hooks returns the client hooks.
 func (c *AgentApprovalClient) Hooks() []Hook {
-	return c.hooks.AgentApproval
+	hooks := c.hooks.AgentApproval
+	return append(hooks[:len(hooks):len(hooks)], agentapproval.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1473,7 +1500,8 @@ func (c *AgentDefinitionClient) QuerySessions(_m *AgentDefinition) *AgentSession
 
 // Hooks returns the client hooks.
 func (c *AgentDefinitionClient) Hooks() []Hook {
-	return c.hooks.AgentDefinition
+	hooks := c.hooks.AgentDefinition
+	return append(hooks[:len(hooks):len(hooks)], agentdefinition.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1606,7 +1634,8 @@ func (c *AgentDefinitionHistoryClient) GetX(ctx context.Context, id uuid.UUID) *
 
 // Hooks returns the client hooks.
 func (c *AgentDefinitionHistoryClient) Hooks() []Hook {
-	return c.hooks.AgentDefinitionHistory
+	hooks := c.hooks.AgentDefinitionHistory
+	return append(hooks[:len(hooks):len(hooks)], agentdefinitionhistory.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1819,7 +1848,8 @@ func (c *AgentSessionClient) QueryApprovals(_m *AgentSession) *AgentApprovalQuer
 
 // Hooks returns the client hooks.
 func (c *AgentSessionClient) Hooks() []Hook {
-	return c.hooks.AgentSession
+	hooks := c.hooks.AgentSession
+	return append(hooks[:len(hooks):len(hooks)], agentsession.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -1984,7 +2014,8 @@ func (c *AgentSessionEventClient) QuerySession(_m *AgentSessionEvent) *AgentSess
 
 // Hooks returns the client hooks.
 func (c *AgentSessionEventClient) Hooks() []Hook {
-	return c.hooks.AgentSessionEvent
+	hooks := c.hooks.AgentSessionEvent
+	return append(hooks[:len(hooks):len(hooks)], agentsessionevent.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2149,7 +2180,8 @@ func (c *AgentToolCallClient) QueryTurn(_m *AgentToolCall) *AgentTurnQuery {
 
 // Hooks returns the client hooks.
 func (c *AgentToolCallClient) Hooks() []Hook {
-	return c.hooks.AgentToolCall
+	hooks := c.hooks.AgentToolCall
+	return append(hooks[:len(hooks):len(hooks)], agenttoolcall.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2298,7 +2330,8 @@ func (c *AgentToolResultBlobClient) QueryUser(_m *AgentToolResultBlob) *UserQuer
 
 // Hooks returns the client hooks.
 func (c *AgentToolResultBlobClient) Hooks() []Hook {
-	return c.hooks.AgentToolResultBlob
+	hooks := c.hooks.AgentToolResultBlob
+	return append(hooks[:len(hooks):len(hooks)], agenttoolresultblob.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2479,7 +2512,8 @@ func (c *AgentTurnClient) QueryToolCalls(_m *AgentTurn) *AgentToolCallQuery {
 
 // Hooks returns the client hooks.
 func (c *AgentTurnClient) Hooks() []Hook {
-	return c.hooks.AgentTurn
+	hooks := c.hooks.AgentTurn
+	return append(hooks[:len(hooks):len(hooks)], agentturn.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2628,7 +2662,8 @@ func (c *ApprovalTokenClient) QueryUser(_m *ApprovalToken) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *ApprovalTokenClient) Hooks() []Hook {
-	return c.hooks.ApprovalToken
+	hooks := c.hooks.ApprovalToken
+	return append(hooks[:len(hooks):len(hooks)], approvaltoken.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -2841,7 +2876,8 @@ func (c *BackgroundTaskClient) QueryScheduleStates(_m *BackgroundTask) *Backgrou
 
 // Hooks returns the client hooks.
 func (c *BackgroundTaskClient) Hooks() []Hook {
-	return c.hooks.BackgroundTask
+	hooks := c.hooks.BackgroundTask
+	return append(hooks[:len(hooks):len(hooks)], backgroundtask.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -3006,7 +3042,8 @@ func (c *BackgroundTaskArtifactClient) QueryTask(_m *BackgroundTaskArtifact) *Ba
 
 // Hooks returns the client hooks.
 func (c *BackgroundTaskArtifactClient) Hooks() []Hook {
-	return c.hooks.BackgroundTaskArtifact
+	hooks := c.hooks.BackgroundTaskArtifact
+	return append(hooks[:len(hooks):len(hooks)], backgroundtaskartifact.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -3203,7 +3240,8 @@ func (c *BackgroundTaskRunClient) QueryEvents(_m *BackgroundTaskRun) *Background
 
 // Hooks returns the client hooks.
 func (c *BackgroundTaskRunClient) Hooks() []Hook {
-	return c.hooks.BackgroundTaskRun
+	hooks := c.hooks.BackgroundTaskRun
+	return append(hooks[:len(hooks):len(hooks)], backgroundtaskrun.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -3384,7 +3422,8 @@ func (c *BackgroundTaskRunEventClient) QueryRun(_m *BackgroundTaskRunEvent) *Bac
 
 // Hooks returns the client hooks.
 func (c *BackgroundTaskRunEventClient) Hooks() []Hook {
-	return c.hooks.BackgroundTaskRunEvent
+	hooks := c.hooks.BackgroundTaskRunEvent
+	return append(hooks[:len(hooks):len(hooks)], backgroundtaskrunevent.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -3549,7 +3588,8 @@ func (c *BackgroundTaskScheduleStateClient) QueryTask(_m *BackgroundTaskSchedule
 
 // Hooks returns the client hooks.
 func (c *BackgroundTaskScheduleStateClient) Hooks() []Hook {
-	return c.hooks.BackgroundTaskScheduleState
+	hooks := c.hooks.BackgroundTaskScheduleState
+	return append(hooks[:len(hooks):len(hooks)], backgroundtaskschedulestate.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -3569,6 +3609,156 @@ func (c *BackgroundTaskScheduleStateClient) mutate(ctx context.Context, m *Backg
 		return (&BackgroundTaskScheduleStateDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown BackgroundTaskScheduleState mutation op: %q", m.Op())
+	}
+}
+
+// CaptureArtifactClient is a client for the CaptureArtifact schema.
+type CaptureArtifactClient struct {
+	config
+}
+
+// NewCaptureArtifactClient returns a client for the CaptureArtifact from the given config.
+func NewCaptureArtifactClient(c config) *CaptureArtifactClient {
+	return &CaptureArtifactClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `captureartifact.Hooks(f(g(h())))`.
+func (c *CaptureArtifactClient) Use(hooks ...Hook) {
+	c.hooks.CaptureArtifact = append(c.hooks.CaptureArtifact, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `captureartifact.Intercept(f(g(h())))`.
+func (c *CaptureArtifactClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CaptureArtifact = append(c.inters.CaptureArtifact, interceptors...)
+}
+
+// Create returns a builder for creating a CaptureArtifact entity.
+func (c *CaptureArtifactClient) Create() *CaptureArtifactCreate {
+	mutation := newCaptureArtifactMutation(c.config, OpCreate)
+	return &CaptureArtifactCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CaptureArtifact entities.
+func (c *CaptureArtifactClient) CreateBulk(builders ...*CaptureArtifactCreate) *CaptureArtifactCreateBulk {
+	return &CaptureArtifactCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CaptureArtifactClient) MapCreateBulk(slice any, setFunc func(*CaptureArtifactCreate, int)) *CaptureArtifactCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CaptureArtifactCreateBulk{err: fmt.Errorf("calling to CaptureArtifactClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CaptureArtifactCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CaptureArtifactCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CaptureArtifact.
+func (c *CaptureArtifactClient) Update() *CaptureArtifactUpdate {
+	mutation := newCaptureArtifactMutation(c.config, OpUpdate)
+	return &CaptureArtifactUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CaptureArtifactClient) UpdateOne(_m *CaptureArtifact) *CaptureArtifactUpdateOne {
+	mutation := newCaptureArtifactMutation(c.config, OpUpdateOne, withCaptureArtifact(_m))
+	return &CaptureArtifactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CaptureArtifactClient) UpdateOneID(id uuid.UUID) *CaptureArtifactUpdateOne {
+	mutation := newCaptureArtifactMutation(c.config, OpUpdateOne, withCaptureArtifactID(id))
+	return &CaptureArtifactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CaptureArtifact.
+func (c *CaptureArtifactClient) Delete() *CaptureArtifactDelete {
+	mutation := newCaptureArtifactMutation(c.config, OpDelete)
+	return &CaptureArtifactDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CaptureArtifactClient) DeleteOne(_m *CaptureArtifact) *CaptureArtifactDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CaptureArtifactClient) DeleteOneID(id uuid.UUID) *CaptureArtifactDeleteOne {
+	builder := c.Delete().Where(captureartifact.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CaptureArtifactDeleteOne{builder}
+}
+
+// Query returns a query builder for CaptureArtifact.
+func (c *CaptureArtifactClient) Query() *CaptureArtifactQuery {
+	return &CaptureArtifactQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCaptureArtifact},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CaptureArtifact entity by its id.
+func (c *CaptureArtifactClient) Get(ctx context.Context, id uuid.UUID) (*CaptureArtifact, error) {
+	return c.Query().Where(captureartifact.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CaptureArtifactClient) GetX(ctx context.Context, id uuid.UUID) *CaptureArtifact {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a CaptureArtifact.
+func (c *CaptureArtifactClient) QueryUser(_m *CaptureArtifact) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(captureartifact.Table, captureartifact.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, captureartifact.UserTable, captureartifact.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CaptureArtifactClient) Hooks() []Hook {
+	hooks := c.hooks.CaptureArtifact
+	return append(hooks[:len(hooks):len(hooks)], captureartifact.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *CaptureArtifactClient) Interceptors() []Interceptor {
+	return c.inters.CaptureArtifact
+}
+
+func (c *CaptureArtifactClient) mutate(ctx context.Context, m *CaptureArtifactMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CaptureArtifactCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CaptureArtifactUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CaptureArtifactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CaptureArtifactDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CaptureArtifact mutation op: %q", m.Op())
 	}
 }
 
@@ -3714,7 +3904,8 @@ func (c *CloudEventClient) QueryRuns(_m *CloudEvent) *BackgroundTaskRunQuery {
 
 // Hooks returns the client hooks.
 func (c *CloudEventClient) Hooks() []Hook {
-	return c.hooks.CloudEvent
+	hooks := c.hooks.CloudEvent
+	return append(hooks[:len(hooks):len(hooks)], cloudevent.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -3959,7 +4150,8 @@ func (c *CommitmentClient) QueryIncomingDependencies(_m *Commitment) *Commitment
 
 // Hooks returns the client hooks.
 func (c *CommitmentClient) Hooks() []Hook {
-	return c.hooks.Commitment
+	hooks := c.hooks.Commitment
+	return append(hooks[:len(hooks):len(hooks)], commitment.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -4172,7 +4364,8 @@ func (c *CommitmentDependencyClient) QueryToCommitment(_m *CommitmentDependency)
 
 // Hooks returns the client hooks.
 func (c *CommitmentDependencyClient) Hooks() []Hook {
-	return c.hooks.CommitmentDependency
+	hooks := c.hooks.CommitmentDependency
+	return append(hooks[:len(hooks):len(hooks)], commitmentdependency.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -4369,7 +4562,8 @@ func (c *CommitmentEventClient) QueryCommitment(_m *CommitmentEvent) *Commitment
 
 // Hooks returns the client hooks.
 func (c *CommitmentEventClient) Hooks() []Hook {
-	return c.hooks.CommitmentEvent
+	hooks := c.hooks.CommitmentEvent
+	return append(hooks[:len(hooks):len(hooks)], commitmentevent.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -4550,7 +4744,8 @@ func (c *ConversationIntelligenceArtifactClient) QueryRelationship(_m *Conversat
 
 // Hooks returns the client hooks.
 func (c *ConversationIntelligenceArtifactClient) Hooks() []Hook {
-	return c.hooks.ConversationIntelligenceArtifact
+	hooks := c.hooks.ConversationIntelligenceArtifact
+	return append(hooks[:len(hooks):len(hooks)], conversationintelligenceartifact.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -4699,7 +4894,8 @@ func (c *CreditLedgerClient) QueryUser(_m *CreditLedger) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *CreditLedgerClient) Hooks() []Hook {
-	return c.hooks.CreditLedger
+	hooks := c.hooks.CreditLedger
+	return append(hooks[:len(hooks):len(hooks)], creditledger.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -4848,7 +5044,8 @@ func (c *GoogleWatchClient) QueryUser(_m *GoogleWatch) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *GoogleWatchClient) Hooks() []Hook {
-	return c.hooks.GoogleWatch
+	hooks := c.hooks.GoogleWatch
+	return append(hooks[:len(hooks):len(hooks)], googlewatch.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -4997,7 +5194,8 @@ func (c *LLMUsageClient) QueryUser(_m *LLMUsage) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *LLMUsageClient) Hooks() []Hook {
-	return c.hooks.LLMUsage
+	hooks := c.hooks.LLMUsage
+	return append(hooks[:len(hooks):len(hooks)], llmusage.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -5130,7 +5328,8 @@ func (c *LLMUsageHistoryClient) GetX(ctx context.Context, id uuid.UUID) *LLMUsag
 
 // Hooks returns the client hooks.
 func (c *LLMUsageHistoryClient) Hooks() []Hook {
-	return c.hooks.LLMUsageHistory
+	hooks := c.hooks.LLMUsageHistory
+	return append(hooks[:len(hooks):len(hooks)], llmusagehistory.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -5279,7 +5478,8 @@ func (c *MCPConnectionClient) QueryUser(_m *MCPConnection) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *MCPConnectionClient) Hooks() []Hook {
-	return c.hooks.MCPConnection
+	hooks := c.hooks.MCPConnection
+	return append(hooks[:len(hooks):len(hooks)], mcpconnection.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -5412,7 +5612,8 @@ func (c *MCPConnectionHistoryClient) GetX(ctx context.Context, id uuid.UUID) *MC
 
 // Hooks returns the client hooks.
 func (c *MCPConnectionHistoryClient) Hooks() []Hook {
-	return c.hooks.MCPConnectionHistory
+	hooks := c.hooks.MCPConnectionHistory
+	return append(hooks[:len(hooks):len(hooks)], mcpconnectionhistory.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -5561,7 +5762,8 @@ func (c *MailBodyCacheClient) QueryUser(_m *MailBodyCache) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *MailBodyCacheClient) Hooks() []Hook {
-	return c.hooks.MailBodyCache
+	hooks := c.hooks.MailBodyCache
+	return append(hooks[:len(hooks):len(hooks)], mailbodycache.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -5726,7 +5928,8 @@ func (c *MailMessageMetaClient) QueryUser(_m *MailMessageMeta) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *MailMessageMetaClient) Hooks() []Hook {
-	return c.hooks.MailMessageMeta
+	hooks := c.hooks.MailMessageMeta
+	return append(hooks[:len(hooks):len(hooks)], mailmessagemeta.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -5891,7 +6094,8 @@ func (c *MailSignalClient) QueryUser(_m *MailSignal) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *MailSignalClient) Hooks() []Hook {
-	return c.hooks.MailSignal
+	hooks := c.hooks.MailSignal
+	return append(hooks[:len(hooks):len(hooks)], mailsignal.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -6088,7 +6292,8 @@ func (c *MailThreadClient) QuerySignal(_m *MailThread) *MailSignalQuery {
 
 // Hooks returns the client hooks.
 func (c *MailThreadClient) Hooks() []Hook {
-	return c.hooks.MailThread
+	hooks := c.hooks.MailThread
+	return append(hooks[:len(hooks):len(hooks)], mailthread.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -6237,7 +6442,8 @@ func (c *MeetingMinuteUsageClient) QueryUser(_m *MeetingMinuteUsage) *UserQuery 
 
 // Hooks returns the client hooks.
 func (c *MeetingMinuteUsageClient) Hooks() []Hook {
-	return c.hooks.MeetingMinuteUsage
+	hooks := c.hooks.MeetingMinuteUsage
+	return append(hooks[:len(hooks):len(hooks)], meetingminuteusage.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -6386,7 +6592,8 @@ func (c *OAuthConnectionClient) QueryUser(_m *OAuthConnection) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *OAuthConnectionClient) Hooks() []Hook {
-	return c.hooks.OAuthConnection
+	hooks := c.hooks.OAuthConnection
+	return append(hooks[:len(hooks):len(hooks)], oauthconnection.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -6519,7 +6726,8 @@ func (c *OAuthConnectionHistoryClient) GetX(ctx context.Context, id uuid.UUID) *
 
 // Hooks returns the client hooks.
 func (c *OAuthConnectionHistoryClient) Hooks() []Hook {
-	return c.hooks.OAuthConnectionHistory
+	hooks := c.hooks.OAuthConnectionHistory
+	return append(hooks[:len(hooks):len(hooks)], oauthconnectionhistory.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -6913,7 +7121,8 @@ func (c *PersonClient) QueryExistingMergeCandidates(_m *Person) *PersonMergeCand
 
 // Hooks returns the client hooks.
 func (c *PersonClient) Hooks() []Hook {
-	return c.hooks.Person
+	hooks := c.hooks.Person
+	return append(hooks[:len(hooks):len(hooks)], person.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -7110,7 +7319,8 @@ func (c *PersonAttributeClient) QueryUser(_m *PersonAttribute) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *PersonAttributeClient) Hooks() []Hook {
-	return c.hooks.PersonAttribute
+	hooks := c.hooks.PersonAttribute
+	return append(hooks[:len(hooks):len(hooks)], personattribute.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -7291,7 +7501,8 @@ func (c *PersonIdentityClient) QueryUser(_m *PersonIdentity) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *PersonIdentityClient) Hooks() []Hook {
-	return c.hooks.PersonIdentity
+	hooks := c.hooks.PersonIdentity
+	return append(hooks[:len(hooks):len(hooks)], personidentity.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -7472,7 +7683,8 @@ func (c *PersonInteractionStatClient) QueryRelationship(_m *PersonInteractionSta
 
 // Hooks returns the client hooks.
 func (c *PersonInteractionStatClient) Hooks() []Hook {
-	return c.hooks.PersonInteractionStat
+	hooks := c.hooks.PersonInteractionStat
+	return append(hooks[:len(hooks):len(hooks)], personinteractionstat.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -7669,7 +7881,8 @@ func (c *PersonMergeCandidateClient) QueryUser(_m *PersonMergeCandidate) *UserQu
 
 // Hooks returns the client hooks.
 func (c *PersonMergeCandidateClient) Hooks() []Hook {
-	return c.hooks.PersonMergeCandidate
+	hooks := c.hooks.PersonMergeCandidate
+	return append(hooks[:len(hooks):len(hooks)], personmergecandidate.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -7834,7 +8047,8 @@ func (c *PersonSuppressionClient) QueryUser(_m *PersonSuppression) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *PersonSuppressionClient) Hooks() []Hook {
-	return c.hooks.PersonSuppression
+	hooks := c.hooks.PersonSuppression
+	return append(hooks[:len(hooks):len(hooks)], personsuppression.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -8015,7 +8229,8 @@ func (c *PolicyDecisionSnapshotClient) QueryUser(_m *PolicyDecisionSnapshot) *Us
 
 // Hooks returns the client hooks.
 func (c *PolicyDecisionSnapshotClient) Hooks() []Hook {
-	return c.hooks.PolicyDecisionSnapshot
+	hooks := c.hooks.PolicyDecisionSnapshot
+	return append(hooks[:len(hooks):len(hooks)], policydecisionsnapshot.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -8484,7 +8699,8 @@ func (c *RelationshipClient) QueryAttentionItems(_m *Relationship) *Relationship
 
 // Hooks returns the client hooks.
 func (c *RelationshipClient) Hooks() []Hook {
-	return c.hooks.Relationship
+	hooks := c.hooks.Relationship
+	return append(hooks[:len(hooks):len(hooks)], relationship.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -8681,7 +8897,8 @@ func (c *RelationshipAssertionClient) QueryUser(_m *RelationshipAssertion) *User
 
 // Hooks returns the client hooks.
 func (c *RelationshipAssertionClient) Hooks() []Hook {
-	return c.hooks.RelationshipAssertion
+	hooks := c.hooks.RelationshipAssertion
+	return append(hooks[:len(hooks):len(hooks)], relationshipassertion.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -8862,7 +9079,8 @@ func (c *RelationshipAttentionItemClient) QueryUser(_m *RelationshipAttentionIte
 
 // Hooks returns the client hooks.
 func (c *RelationshipAttentionItemClient) Hooks() []Hook {
-	return c.hooks.RelationshipAttentionItem
+	hooks := c.hooks.RelationshipAttentionItem
+	return append(hooks[:len(hooks):len(hooks)], relationshipattentionitem.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -9043,7 +9261,8 @@ func (c *RelationshipIdentityClient) QueryUser(_m *RelationshipIdentity) *UserQu
 
 // Hooks returns the client hooks.
 func (c *RelationshipIdentityClient) Hooks() []Hook {
-	return c.hooks.RelationshipIdentity
+	hooks := c.hooks.RelationshipIdentity
+	return append(hooks[:len(hooks):len(hooks)], relationshipidentity.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -9272,7 +9491,8 @@ func (c *RelationshipIdentityCandidateClient) QueryDecisions(_m *RelationshipIde
 
 // Hooks returns the client hooks.
 func (c *RelationshipIdentityCandidateClient) Hooks() []Hook {
-	return c.hooks.RelationshipIdentityCandidate
+	hooks := c.hooks.RelationshipIdentityCandidate
+	return append(hooks[:len(hooks):len(hooks)], relationshipidentitycandidate.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -9453,7 +9673,8 @@ func (c *RelationshipIdentityDecisionClient) QueryUser(_m *RelationshipIdentityD
 
 // Hooks returns the client hooks.
 func (c *RelationshipIdentityDecisionClient) Hooks() []Hook {
-	return c.hooks.RelationshipIdentityDecision
+	hooks := c.hooks.RelationshipIdentityDecision
+	return append(hooks[:len(hooks):len(hooks)], relationshipidentitydecision.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -9634,7 +9855,8 @@ func (c *RelationshipLineageEventClient) QueryUser(_m *RelationshipLineageEvent)
 
 // Hooks returns the client hooks.
 func (c *RelationshipLineageEventClient) Hooks() []Hook {
-	return c.hooks.RelationshipLineageEvent
+	hooks := c.hooks.RelationshipLineageEvent
+	return append(hooks[:len(hooks):len(hooks)], relationshiplineageevent.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -9847,7 +10069,8 @@ func (c *RelationshipObservationClient) QueryPersonAttributes(_m *RelationshipOb
 
 // Hooks returns the client hooks.
 func (c *RelationshipObservationClient) Hooks() []Hook {
-	return c.hooks.RelationshipObservation
+	hooks := c.hooks.RelationshipObservation
+	return append(hooks[:len(hooks):len(hooks)], relationshipobservation.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -10044,7 +10267,8 @@ func (c *RelationshipParticipantClient) QueryPerson(_m *RelationshipParticipant)
 
 // Hooks returns the client hooks.
 func (c *RelationshipParticipantClient) Hooks() []Hook {
-	return c.hooks.RelationshipParticipant
+	hooks := c.hooks.RelationshipParticipant
+	return append(hooks[:len(hooks):len(hooks)], relationshipparticipant.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -10225,7 +10449,8 @@ func (c *RelationshipProjectionJobClient) QueryUser(_m *RelationshipProjectionJo
 
 // Hooks returns the client hooks.
 func (c *RelationshipProjectionJobClient) Hooks() []Hook {
-	return c.hooks.RelationshipProjectionJob
+	hooks := c.hooks.RelationshipProjectionJob
+	return append(hooks[:len(hooks):len(hooks)], relationshipprojectionjob.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -10406,7 +10631,8 @@ func (c *RelationshipReviewAcknowledgementClient) QueryUser(_m *RelationshipRevi
 
 // Hooks returns the client hooks.
 func (c *RelationshipReviewAcknowledgementClient) Hooks() []Hook {
-	return c.hooks.RelationshipReviewAcknowledgement
+	hooks := c.hooks.RelationshipReviewAcknowledgement
+	return append(hooks[:len(hooks):len(hooks)], relationshipreviewacknowledgement.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -10571,7 +10797,8 @@ func (c *RelationshipSourceStatusClient) QueryUser(_m *RelationshipSourceStatus)
 
 // Hooks returns the client hooks.
 func (c *RelationshipSourceStatusClient) Hooks() []Hook {
-	return c.hooks.RelationshipSourceStatus
+	hooks := c.hooks.RelationshipSourceStatus
+	return append(hooks[:len(hooks):len(hooks)], relationshipsourcestatus.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -10752,7 +10979,8 @@ func (c *RelationshipStateSnapshotClient) QueryUser(_m *RelationshipStateSnapsho
 
 // Hooks returns the client hooks.
 func (c *RelationshipStateSnapshotClient) Hooks() []Hook {
-	return c.hooks.RelationshipStateSnapshot
+	hooks := c.hooks.RelationshipStateSnapshot
+	return append(hooks[:len(hooks):len(hooks)], relationshipstatesnapshot.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -11013,7 +11241,8 @@ func (c *RevenueActionClient) QueryTrustEvents(_m *RevenueAction) *RevenueTrustE
 
 // Hooks returns the client hooks.
 func (c *RevenueActionClient) Hooks() []Hook {
-	return c.hooks.RevenueAction
+	hooks := c.hooks.RevenueAction
+	return append(hooks[:len(hooks):len(hooks)], revenueaction.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -11178,7 +11407,8 @@ func (c *RevenueActionRevisionClient) QueryUser(_m *RevenueActionRevision) *User
 
 // Hooks returns the client hooks.
 func (c *RevenueActionRevisionClient) Hooks() []Hook {
-	return c.hooks.RevenueActionRevision
+	hooks := c.hooks.RevenueActionRevision
+	return append(hooks[:len(hooks):len(hooks)], revenueactionrevision.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -11391,7 +11621,8 @@ func (c *RevenueEvidenceClient) QueryActions(_m *RevenueEvidence) *RevenueAction
 
 // Hooks returns the client hooks.
 func (c *RevenueEvidenceClient) Hooks() []Hook {
-	return c.hooks.RevenueEvidence
+	hooks := c.hooks.RevenueEvidence
+	return append(hooks[:len(hooks):len(hooks)], revenueevidence.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -11556,7 +11787,8 @@ func (c *RevenueLeakScanClient) QueryUser(_m *RevenueLeakScan) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *RevenueLeakScanClient) Hooks() []Hook {
-	return c.hooks.RevenueLeakScan
+	hooks := c.hooks.RevenueLeakScan
+	return append(hooks[:len(hooks):len(hooks)], revenueleakscan.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -11721,7 +11953,8 @@ func (c *RevenueOutboxEventClient) QueryUser(_m *RevenueOutboxEvent) *UserQuery 
 
 // Hooks returns the client hooks.
 func (c *RevenueOutboxEventClient) Hooks() []Hook {
-	return c.hooks.RevenueOutboxEvent
+	hooks := c.hooks.RevenueOutboxEvent
+	return append(hooks[:len(hooks):len(hooks)], revenueoutboxevent.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -11918,7 +12151,8 @@ func (c *RevenueTrustEventClient) QueryAction(_m *RevenueTrustEvent) *RevenueAct
 
 // Hooks returns the client hooks.
 func (c *RevenueTrustEventClient) Hooks() []Hook {
-	return c.hooks.RevenueTrustEvent
+	hooks := c.hooks.RevenueTrustEvent
+	return append(hooks[:len(hooks):len(hooks)], revenuetrustevent.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -12595,7 +12829,8 @@ func (c *RevenueWorkspaceClient) QueryPersonMergeCandidates(_m *RevenueWorkspace
 
 // Hooks returns the client hooks.
 func (c *RevenueWorkspaceClient) Hooks() []Hook {
-	return c.hooks.RevenueWorkspace
+	hooks := c.hooks.RevenueWorkspace
+	return append(hooks[:len(hooks):len(hooks)], revenueworkspace.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -12760,7 +12995,8 @@ func (c *RevenueWorkspaceMemberClient) QueryUser(_m *RevenueWorkspaceMember) *Us
 
 // Hooks returns the client hooks.
 func (c *RevenueWorkspaceMemberClient) Hooks() []Hook {
-	return c.hooks.RevenueWorkspaceMember
+	hooks := c.hooks.RevenueWorkspaceMember
+	return append(hooks[:len(hooks):len(hooks)], revenueworkspacemember.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -12909,7 +13145,8 @@ func (c *SubscriptionClient) QueryUser(_m *Subscription) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *SubscriptionClient) Hooks() []Hook {
-	return c.hooks.Subscription
+	hooks := c.hooks.Subscription
+	return append(hooks[:len(hooks):len(hooks)], subscription.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -13042,7 +13279,8 @@ func (c *SubscriptionHistoryClient) GetX(ctx context.Context, id uuid.UUID) *Sub
 
 // Hooks returns the client hooks.
 func (c *SubscriptionHistoryClient) Hooks() []Hook {
-	return c.hooks.SubscriptionHistory
+	hooks := c.hooks.SubscriptionHistory
+	return append(hooks[:len(hooks):len(hooks)], subscriptionhistory.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -13207,7 +13445,8 @@ func (c *TenantEvidenceKeyClient) QueryUser(_m *TenantEvidenceKey) *UserQuery {
 
 // Hooks returns the client hooks.
 func (c *TenantEvidenceKeyClient) Hooks() []Hook {
-	return c.hooks.TenantEvidenceKey
+	hooks := c.hooks.TenantEvidenceKey
+	return append(hooks[:len(hooks):len(hooks)], tenantevidencekey.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -13379,6 +13618,54 @@ func (c *UserClient) QueryMeetingMinuteUsages(_m *User) *MeetingMinuteUsageQuery
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(meetingminuteusage.Table, meetingminuteusage.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.MeetingMinuteUsagesTable, user.MeetingMinuteUsagesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryVoiceAPIKeys queries the voice_api_keys edge of a User.
+func (c *UserClient) QueryVoiceAPIKeys(_m *User) *VoiceAPIKeyQuery {
+	query := (&VoiceAPIKeyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(voiceapikey.Table, voiceapikey.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.VoiceAPIKeysTable, user.VoiceAPIKeysColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryVoiceSyncItems queries the voice_sync_items edge of a User.
+func (c *UserClient) QueryVoiceSyncItems(_m *User) *VoiceSyncItemQuery {
+	query := (&VoiceSyncItemClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(voicesyncitem.Table, voicesyncitem.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.VoiceSyncItemsTable, user.VoiceSyncItemsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCaptureArtifacts queries the capture_artifacts edge of a User.
+func (c *UserClient) QueryCaptureArtifacts(_m *User) *CaptureArtifactQuery {
+	query := (&CaptureArtifactClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(captureartifact.Table, captureartifact.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CaptureArtifactsTable, user.CaptureArtifactsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -14456,6 +14743,306 @@ func (c *UserHistoryClient) mutate(ctx context.Context, m *UserHistoryMutation) 
 	}
 }
 
+// VoiceAPIKeyClient is a client for the VoiceAPIKey schema.
+type VoiceAPIKeyClient struct {
+	config
+}
+
+// NewVoiceAPIKeyClient returns a client for the VoiceAPIKey from the given config.
+func NewVoiceAPIKeyClient(c config) *VoiceAPIKeyClient {
+	return &VoiceAPIKeyClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `voiceapikey.Hooks(f(g(h())))`.
+func (c *VoiceAPIKeyClient) Use(hooks ...Hook) {
+	c.hooks.VoiceAPIKey = append(c.hooks.VoiceAPIKey, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `voiceapikey.Intercept(f(g(h())))`.
+func (c *VoiceAPIKeyClient) Intercept(interceptors ...Interceptor) {
+	c.inters.VoiceAPIKey = append(c.inters.VoiceAPIKey, interceptors...)
+}
+
+// Create returns a builder for creating a VoiceAPIKey entity.
+func (c *VoiceAPIKeyClient) Create() *VoiceAPIKeyCreate {
+	mutation := newVoiceAPIKeyMutation(c.config, OpCreate)
+	return &VoiceAPIKeyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of VoiceAPIKey entities.
+func (c *VoiceAPIKeyClient) CreateBulk(builders ...*VoiceAPIKeyCreate) *VoiceAPIKeyCreateBulk {
+	return &VoiceAPIKeyCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *VoiceAPIKeyClient) MapCreateBulk(slice any, setFunc func(*VoiceAPIKeyCreate, int)) *VoiceAPIKeyCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &VoiceAPIKeyCreateBulk{err: fmt.Errorf("calling to VoiceAPIKeyClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*VoiceAPIKeyCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &VoiceAPIKeyCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for VoiceAPIKey.
+func (c *VoiceAPIKeyClient) Update() *VoiceAPIKeyUpdate {
+	mutation := newVoiceAPIKeyMutation(c.config, OpUpdate)
+	return &VoiceAPIKeyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *VoiceAPIKeyClient) UpdateOne(_m *VoiceAPIKey) *VoiceAPIKeyUpdateOne {
+	mutation := newVoiceAPIKeyMutation(c.config, OpUpdateOne, withVoiceAPIKey(_m))
+	return &VoiceAPIKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *VoiceAPIKeyClient) UpdateOneID(id uuid.UUID) *VoiceAPIKeyUpdateOne {
+	mutation := newVoiceAPIKeyMutation(c.config, OpUpdateOne, withVoiceAPIKeyID(id))
+	return &VoiceAPIKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for VoiceAPIKey.
+func (c *VoiceAPIKeyClient) Delete() *VoiceAPIKeyDelete {
+	mutation := newVoiceAPIKeyMutation(c.config, OpDelete)
+	return &VoiceAPIKeyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *VoiceAPIKeyClient) DeleteOne(_m *VoiceAPIKey) *VoiceAPIKeyDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *VoiceAPIKeyClient) DeleteOneID(id uuid.UUID) *VoiceAPIKeyDeleteOne {
+	builder := c.Delete().Where(voiceapikey.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &VoiceAPIKeyDeleteOne{builder}
+}
+
+// Query returns a query builder for VoiceAPIKey.
+func (c *VoiceAPIKeyClient) Query() *VoiceAPIKeyQuery {
+	return &VoiceAPIKeyQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeVoiceAPIKey},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a VoiceAPIKey entity by its id.
+func (c *VoiceAPIKeyClient) Get(ctx context.Context, id uuid.UUID) (*VoiceAPIKey, error) {
+	return c.Query().Where(voiceapikey.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *VoiceAPIKeyClient) GetX(ctx context.Context, id uuid.UUID) *VoiceAPIKey {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a VoiceAPIKey.
+func (c *VoiceAPIKeyClient) QueryUser(_m *VoiceAPIKey) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(voiceapikey.Table, voiceapikey.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, voiceapikey.UserTable, voiceapikey.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *VoiceAPIKeyClient) Hooks() []Hook {
+	hooks := c.hooks.VoiceAPIKey
+	return append(hooks[:len(hooks):len(hooks)], voiceapikey.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *VoiceAPIKeyClient) Interceptors() []Interceptor {
+	return c.inters.VoiceAPIKey
+}
+
+func (c *VoiceAPIKeyClient) mutate(ctx context.Context, m *VoiceAPIKeyMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&VoiceAPIKeyCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&VoiceAPIKeyUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&VoiceAPIKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&VoiceAPIKeyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown VoiceAPIKey mutation op: %q", m.Op())
+	}
+}
+
+// VoiceSyncItemClient is a client for the VoiceSyncItem schema.
+type VoiceSyncItemClient struct {
+	config
+}
+
+// NewVoiceSyncItemClient returns a client for the VoiceSyncItem from the given config.
+func NewVoiceSyncItemClient(c config) *VoiceSyncItemClient {
+	return &VoiceSyncItemClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `voicesyncitem.Hooks(f(g(h())))`.
+func (c *VoiceSyncItemClient) Use(hooks ...Hook) {
+	c.hooks.VoiceSyncItem = append(c.hooks.VoiceSyncItem, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `voicesyncitem.Intercept(f(g(h())))`.
+func (c *VoiceSyncItemClient) Intercept(interceptors ...Interceptor) {
+	c.inters.VoiceSyncItem = append(c.inters.VoiceSyncItem, interceptors...)
+}
+
+// Create returns a builder for creating a VoiceSyncItem entity.
+func (c *VoiceSyncItemClient) Create() *VoiceSyncItemCreate {
+	mutation := newVoiceSyncItemMutation(c.config, OpCreate)
+	return &VoiceSyncItemCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of VoiceSyncItem entities.
+func (c *VoiceSyncItemClient) CreateBulk(builders ...*VoiceSyncItemCreate) *VoiceSyncItemCreateBulk {
+	return &VoiceSyncItemCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *VoiceSyncItemClient) MapCreateBulk(slice any, setFunc func(*VoiceSyncItemCreate, int)) *VoiceSyncItemCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &VoiceSyncItemCreateBulk{err: fmt.Errorf("calling to VoiceSyncItemClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*VoiceSyncItemCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &VoiceSyncItemCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for VoiceSyncItem.
+func (c *VoiceSyncItemClient) Update() *VoiceSyncItemUpdate {
+	mutation := newVoiceSyncItemMutation(c.config, OpUpdate)
+	return &VoiceSyncItemUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *VoiceSyncItemClient) UpdateOne(_m *VoiceSyncItem) *VoiceSyncItemUpdateOne {
+	mutation := newVoiceSyncItemMutation(c.config, OpUpdateOne, withVoiceSyncItem(_m))
+	return &VoiceSyncItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *VoiceSyncItemClient) UpdateOneID(id uuid.UUID) *VoiceSyncItemUpdateOne {
+	mutation := newVoiceSyncItemMutation(c.config, OpUpdateOne, withVoiceSyncItemID(id))
+	return &VoiceSyncItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for VoiceSyncItem.
+func (c *VoiceSyncItemClient) Delete() *VoiceSyncItemDelete {
+	mutation := newVoiceSyncItemMutation(c.config, OpDelete)
+	return &VoiceSyncItemDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *VoiceSyncItemClient) DeleteOne(_m *VoiceSyncItem) *VoiceSyncItemDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *VoiceSyncItemClient) DeleteOneID(id uuid.UUID) *VoiceSyncItemDeleteOne {
+	builder := c.Delete().Where(voicesyncitem.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &VoiceSyncItemDeleteOne{builder}
+}
+
+// Query returns a query builder for VoiceSyncItem.
+func (c *VoiceSyncItemClient) Query() *VoiceSyncItemQuery {
+	return &VoiceSyncItemQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeVoiceSyncItem},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a VoiceSyncItem entity by its id.
+func (c *VoiceSyncItemClient) Get(ctx context.Context, id uuid.UUID) (*VoiceSyncItem, error) {
+	return c.Query().Where(voicesyncitem.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *VoiceSyncItemClient) GetX(ctx context.Context, id uuid.UUID) *VoiceSyncItem {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a VoiceSyncItem.
+func (c *VoiceSyncItemClient) QueryUser(_m *VoiceSyncItem) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(voicesyncitem.Table, voicesyncitem.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, voicesyncitem.UserTable, voicesyncitem.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *VoiceSyncItemClient) Hooks() []Hook {
+	hooks := c.hooks.VoiceSyncItem
+	return append(hooks[:len(hooks):len(hooks)], voicesyncitem.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *VoiceSyncItemClient) Interceptors() []Interceptor {
+	return c.inters.VoiceSyncItem
+}
+
+func (c *VoiceSyncItemClient) mutate(ctx context.Context, m *VoiceSyncItemMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&VoiceSyncItemCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&VoiceSyncItemUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&VoiceSyncItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&VoiceSyncItemDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown VoiceSyncItem mutation op: %q", m.Op())
+	}
+}
+
 // WorkspaceFeatureControlClient is a client for the WorkspaceFeatureControl schema.
 type WorkspaceFeatureControlClient struct {
 	config
@@ -14598,7 +15185,8 @@ func (c *WorkspaceFeatureControlClient) QueryUser(_m *WorkspaceFeatureControl) *
 
 // Hooks returns the client hooks.
 func (c *WorkspaceFeatureControlClient) Hooks() []Hook {
-	return c.hooks.WorkspaceFeatureControl
+	hooks := c.hooks.WorkspaceFeatureControl
+	return append(hooks[:len(hooks):len(hooks)], workspacefeaturecontrol.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
@@ -14628,41 +15216,43 @@ type (
 		AgentDefinitionHistory, AgentSession, AgentSessionEvent, AgentToolCall,
 		AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
-		BackgroundTaskScheduleState, CloudEvent, Commitment, CommitmentDependency,
-		CommitmentEvent, ConversationIntelligenceArtifact, CreditLedger, GoogleWatch,
-		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
-		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
-		PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
-		PolicyDecisionSnapshot, Relationship, RelationshipAssertion,
-		RelationshipAttentionItem, RelationshipIdentity, RelationshipIdentityCandidate,
-		RelationshipIdentityDecision, RelationshipLineageEvent,
-		RelationshipObservation, RelationshipParticipant, RelationshipProjectionJob,
-		RelationshipReviewAcknowledgement, RelationshipSourceStatus,
-		RelationshipStateSnapshot, RevenueAction, RevenueActionRevision,
-		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueTrustEvent,
-		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
-		TenantEvidenceKey, User, UserHistory, WorkspaceFeatureControl []ent.Hook
+		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
+		CommitmentDependency, CommitmentEvent, ConversationIntelligenceArtifact,
+		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
+		MCPConnectionHistory, MailBodyCache, MailMessageMeta, MailSignal, MailThread,
+		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
+		Person, PersonAttribute, PersonIdentity, PersonInteractionStat,
+		PersonMergeCandidate, PersonSuppression, PolicyDecisionSnapshot, Relationship,
+		RelationshipAssertion, RelationshipAttentionItem, RelationshipIdentity,
+		RelationshipIdentityCandidate, RelationshipIdentityDecision,
+		RelationshipLineageEvent, RelationshipObservation, RelationshipParticipant,
+		RelationshipProjectionJob, RelationshipReviewAcknowledgement,
+		RelationshipSourceStatus, RelationshipStateSnapshot, RevenueAction,
+		RevenueActionRevision, RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent,
+		RevenueTrustEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
+		SubscriptionHistory, TenantEvidenceKey, User, UserHistory, VoiceAPIKey,
+		VoiceSyncItem, WorkspaceFeatureControl []ent.Hook
 	}
 	inters struct {
 		ActionOutcome, ActionProposal, AgentApproval, AgentDefinition,
 		AgentDefinitionHistory, AgentSession, AgentSessionEvent, AgentToolCall,
 		AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
-		BackgroundTaskScheduleState, CloudEvent, Commitment, CommitmentDependency,
-		CommitmentEvent, ConversationIntelligenceArtifact, CreditLedger, GoogleWatch,
-		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
-		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
-		PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
-		PolicyDecisionSnapshot, Relationship, RelationshipAssertion,
-		RelationshipAttentionItem, RelationshipIdentity, RelationshipIdentityCandidate,
-		RelationshipIdentityDecision, RelationshipLineageEvent,
-		RelationshipObservation, RelationshipParticipant, RelationshipProjectionJob,
-		RelationshipReviewAcknowledgement, RelationshipSourceStatus,
-		RelationshipStateSnapshot, RevenueAction, RevenueActionRevision,
-		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueTrustEvent,
-		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
-		TenantEvidenceKey, User, UserHistory, WorkspaceFeatureControl []ent.Interceptor
+		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
+		CommitmentDependency, CommitmentEvent, ConversationIntelligenceArtifact,
+		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
+		MCPConnectionHistory, MailBodyCache, MailMessageMeta, MailSignal, MailThread,
+		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
+		Person, PersonAttribute, PersonIdentity, PersonInteractionStat,
+		PersonMergeCandidate, PersonSuppression, PolicyDecisionSnapshot, Relationship,
+		RelationshipAssertion, RelationshipAttentionItem, RelationshipIdentity,
+		RelationshipIdentityCandidate, RelationshipIdentityDecision,
+		RelationshipLineageEvent, RelationshipObservation, RelationshipParticipant,
+		RelationshipProjectionJob, RelationshipReviewAcknowledgement,
+		RelationshipSourceStatus, RelationshipStateSnapshot, RevenueAction,
+		RevenueActionRevision, RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent,
+		RevenueTrustEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
+		SubscriptionHistory, TenantEvidenceKey, User, UserHistory, VoiceAPIKey,
+		VoiceSyncItem, WorkspaceFeatureControl []ent.Interceptor
 	}
 )

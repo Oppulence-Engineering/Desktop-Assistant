@@ -1,0 +1,11 @@
+id: X002-no-deep-package-import
+language: TypeScript
+severity: error
+message: Import from @x/core or @x/shared public exports, never src/ or dist/ internals.
+rule:
+  kind: string
+  regex: '^(["''])(@x/(core|shared)/(dist|src)/)'
+files:
+  - apps/**/*.{ts,tsx}
+  - packages/**/*.{ts,tsx}
+  - tests/**/*.{ts,tsx}

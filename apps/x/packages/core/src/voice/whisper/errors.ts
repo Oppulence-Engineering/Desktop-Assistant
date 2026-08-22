@@ -1,4 +1,4 @@
-import type { WhisperErrorCode } from "@x/shared/dist/transcription.js";
+import type { WhisperErrorCode } from "@x/shared/transcription";
 
 export type { WhisperErrorCode };
 

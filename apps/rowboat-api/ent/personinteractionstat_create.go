@@ -245,7 +245,9 @@ func (_c *PersonInteractionStatCreate) Mutation() *PersonInteractionStatMutation
 
 // Save creates the PersonInteractionStat in the database.
 func (_c *PersonInteractionStatCreate) Save(ctx context.Context) (*PersonInteractionStat, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -272,12 +274,18 @@ func (_c *PersonInteractionStatCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *PersonInteractionStatCreate) defaults() {
+func (_c *PersonInteractionStatCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if personinteractionstat.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized personinteractionstat.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := personinteractionstat.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if personinteractionstat.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized personinteractionstat.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := personinteractionstat.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -306,9 +314,13 @@ func (_c *PersonInteractionStatCreate) defaults() {
 		_c.mutation.SetSourceCounts(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if personinteractionstat.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized personinteractionstat.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := personinteractionstat.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

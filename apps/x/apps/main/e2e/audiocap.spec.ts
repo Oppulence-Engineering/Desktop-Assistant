@@ -22,7 +22,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
  * Deliberately does not record: capture needs microphone and system-audio TCC grants
  * that a CI runner cannot give, and a "recording" assertion there would only ever
  * prove the failure path. Levels and signal are verified by hand per the runbook in
- * apps/x/MEETING_CAPTURE.md.
+ * apps/x/docs/MEETING_CAPTURE.md.
  */
 
 const EXPECT_BINARY = process.env.AUDIOCAP_E2E_EXPECT_BINARY === "1";

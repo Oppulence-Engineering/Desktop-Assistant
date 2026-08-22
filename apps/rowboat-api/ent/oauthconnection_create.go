@@ -117,7 +117,9 @@ func (_c *OAuthConnectionCreate) Mutation() *OAuthConnectionMutation {
 
 // Save creates the OAuthConnection in the database.
 func (_c *OAuthConnectionCreate) Save(ctx context.Context) (*OAuthConnection, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -144,19 +146,29 @@ func (_c *OAuthConnectionCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *OAuthConnectionCreate) defaults() {
+func (_c *OAuthConnectionCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if oauthconnection.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized oauthconnection.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := oauthconnection.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if oauthconnection.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized oauthconnection.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := oauthconnection.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if oauthconnection.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized oauthconnection.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := oauthconnection.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

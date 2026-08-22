@@ -8,7 +8,7 @@ import {
   LEGACY_PRODUCT_PROVIDER_ID,
   PRODUCT_PROVIDER_ID,
   isProductProvider,
-} from "@x/shared/dist/branding.js";
+} from "@x/shared/branding";
 
 const ProviderConnectionSchema = z.object({
   tokens: OAuthTokens.nullable().optional(),

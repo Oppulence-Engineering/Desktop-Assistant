@@ -3,7 +3,12 @@
 import * as React from "react";
 import { Plus, Robot, ShieldCheck, Wrench, X } from "@phosphor-icons/react";
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@oppulence/ui/components/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@oppulence/ui/components/accordion";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import { Input } from "@oppulence/ui/components/input";
@@ -55,26 +60,98 @@ type AgentDocument = {
 };
 
 const TOOL_CATALOG = [
-  { name: "current_time", label: "Current time", description: "Read the current UTC date and time." },
-  { name: "web.search", label: "Web search", description: "Search the web for current information." },
+  {
+    name: "current_time",
+    label: "Current time",
+    description: "Read the current UTC date and time.",
+  },
+  {
+    name: "web.search",
+    label: "Web search",
+    description: "Search the web for current information.",
+  },
   { name: "echo", label: "Echo", description: "Test that tool calls are wired correctly." },
-  { name: "tool_result.read", label: "Tool results", description: "Read results produced by another tool." },
-  { name: "slack.read_thread", label: "Read Slack", description: "Read messages from a Slack thread." },
-  { name: "slack.post_message", label: "Post to Slack", description: "Send a Slack message with approval controls." },
-  { name: "connector.read.gmail", label: "Read Gmail", description: "Read connected Gmail messages." },
-  { name: "connector.write.gmail_draft", label: "Draft email", description: "Create a Gmail draft for review." },
-  { name: "connector.write.gmail_send", label: "Send email", description: "Send Gmail messages with approval controls." },
-  { name: "connector.read.calendar", label: "Read calendar", description: "Read connected calendar events." },
-  { name: "connector.write.calendar_create", label: "Create event", description: "Create a calendar event." },
-  { name: "connector.write.calendar_update", label: "Update event", description: "Update an existing calendar event." },
+  {
+    name: "tool_result.read",
+    label: "Tool results",
+    description: "Read results produced by another tool.",
+  },
+  {
+    name: "slack.read_thread",
+    label: "Read Slack",
+    description: "Read messages from a Slack thread.",
+  },
+  {
+    name: "slack.post_message",
+    label: "Post to Slack",
+    description: "Send a Slack message with approval controls.",
+  },
+  {
+    name: "connector.read.gmail",
+    label: "Read Gmail",
+    description: "Read connected Gmail messages.",
+  },
+  {
+    name: "connector.write.gmail_draft",
+    label: "Draft email",
+    description: "Create a Gmail draft for review.",
+  },
+  {
+    name: "connector.write.gmail_send",
+    label: "Send email",
+    description: "Send Gmail messages with approval controls.",
+  },
+  {
+    name: "connector.read.calendar",
+    label: "Read calendar",
+    description: "Read connected calendar events.",
+  },
+  {
+    name: "connector.write.calendar_create",
+    label: "Create event",
+    description: "Create a calendar event.",
+  },
+  {
+    name: "connector.write.calendar_update",
+    label: "Update event",
+    description: "Update an existing calendar event.",
+  },
   { name: "connector.read.drive", label: "Read Drive", description: "Read connected Drive files." },
-  { name: "connector.write.drive_update", label: "Update Drive", description: "Update connected Drive files." },
-  { name: "connector.read.hubspot_search", label: "Search HubSpot", description: "Find records in the connected HubSpot account." },
-  { name: "connector.write.hubspot_note", label: "Add HubSpot note", description: "Attach a note to a HubSpot record." },
-  { name: "connector.write.hubspot_task", label: "Create HubSpot task", description: "Create a follow-up task in HubSpot." },
-  { name: "conduit.read", label: "Read Conduit", description: "Read revenue context from Conduit." },
-  { name: "eigen.simulate", label: "Run simulation", description: "Run an Eigen scenario simulation." },
-  { name: "demo.payment", label: "Payment demo", description: "Exercise approval flows without moving real funds." },
+  {
+    name: "connector.write.drive_update",
+    label: "Update Drive",
+    description: "Update connected Drive files.",
+  },
+  {
+    name: "connector.read.hubspot_search",
+    label: "Search HubSpot",
+    description: "Find records in the connected HubSpot account.",
+  },
+  {
+    name: "connector.write.hubspot_note",
+    label: "Add HubSpot note",
+    description: "Attach a note to a HubSpot record.",
+  },
+  {
+    name: "connector.write.hubspot_task",
+    label: "Create HubSpot task",
+    description: "Create a follow-up task in HubSpot.",
+  },
+  {
+    name: "conduit.read",
+    label: "Read Conduit",
+    description: "Read revenue context from Conduit.",
+  },
+  {
+    name: "eigen.simulate",
+    label: "Run simulation",
+    description: "Run an Eigen scenario simulation.",
+  },
+  {
+    name: "demo.payment",
+    label: "Payment demo",
+    description: "Exercise approval flows without moving real funds.",
+  },
 ] as const;
 
 function parseDocument(content: string): AgentDocument | null {
@@ -131,7 +208,11 @@ function TagEditor({
       {values.length ? (
         <div className="flex flex-wrap gap-2">
           {values.map((value) => (
-            <Badge className="gap-1.5 py-1 pl-2.5 pr-1 font-mono font-normal" key={value} variant="secondary">
+            <Badge
+              className="gap-1.5 py-1 pl-2.5 pr-1 font-mono font-normal"
+              key={value}
+              variant="secondary"
+            >
               {value}
               {!disabled ? (
                 <button
@@ -306,7 +387,9 @@ export function AgentConfigurationForm({
             placeholder="Describe the agent’s role, priorities, tone, and boundaries in plain language."
             value={document.spec.instructions || ""}
           />
-          <FieldHint>Use plain language. These instructions guide every conversation this agent handles.</FieldHint>
+          <FieldHint>
+            Use plain language. These instructions guide every conversation this agent handles.
+          </FieldHint>
         </div>
       </section>
 
@@ -331,7 +414,9 @@ export function AgentConfigurationForm({
             {modelOptions.length ? (
               <Select
                 disabled={readOnly}
-                onValueChange={(value) => setString("model", value === "workspace-default" ? "" : value)}
+                onValueChange={(value) =>
+                  setString("model", value === "workspace-default" ? "" : value)
+                }
                 value={document.spec.model || "workspace-default"}
               >
                 <SelectTrigger className="w-full" id="agent-model">
@@ -429,7 +514,9 @@ export function AgentConfigurationForm({
       <section className="space-y-5 p-5 sm:p-6">
         <div>
           <h3 className="text-sm font-medium">Team and connections</h3>
-          <FieldHint>Allow delegation to another agent or declare connected-service access.</FieldHint>
+          <FieldHint>
+            Allow delegation to another agent or declare connected-service access.
+          </FieldHint>
         </div>
 
         <div className="space-y-3">
@@ -468,7 +555,9 @@ export function AgentConfigurationForm({
 
         <div className="space-y-2">
           <Label>Required connection scopes</Label>
-          <FieldHint>Scopes describe what a connected service may do; they never contain credentials.</FieldHint>
+          <FieldHint>
+            Scopes describe what a connected service may do; they never contain credentials.
+          </FieldHint>
           <TagEditor
             addLabel="Connection scope"
             disabled={readOnly}

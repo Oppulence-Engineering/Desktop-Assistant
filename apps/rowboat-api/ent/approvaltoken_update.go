@@ -13,8 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/approvaltoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/google/uuid"
 )
 
 // ApprovalTokenUpdate is the builder for updating ApprovalToken entities.
@@ -154,31 +152,16 @@ func (_u *ApprovalTokenUpdate) ClearConsumedAt() *ApprovalTokenUpdate {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *ApprovalTokenUpdate) SetUserID(id uuid.UUID) *ApprovalTokenUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *ApprovalTokenUpdate) SetUser(v *User) *ApprovalTokenUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the ApprovalTokenMutation object of the builder.
 func (_u *ApprovalTokenUpdate) Mutation() *ApprovalTokenMutation {
 	return _u.mutation
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *ApprovalTokenUpdate) ClearUser() *ApprovalTokenUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *ApprovalTokenUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -205,11 +188,15 @@ func (_u *ApprovalTokenUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *ApprovalTokenUpdate) defaults() {
+func (_u *ApprovalTokenUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if approvaltoken.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized approvaltoken.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := approvaltoken.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -281,35 +268,6 @@ func (_u *ApprovalTokenUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if _u.mutation.ConsumedAtCleared() {
 		_spec.ClearField(approvaltoken.FieldConsumedAt, field.TypeTime)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   approvaltoken.UserTable,
-			Columns: []string{approvaltoken.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   approvaltoken.UserTable,
-			Columns: []string{approvaltoken.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -455,26 +413,9 @@ func (_u *ApprovalTokenUpdateOne) ClearConsumedAt() *ApprovalTokenUpdateOne {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *ApprovalTokenUpdateOne) SetUserID(id uuid.UUID) *ApprovalTokenUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *ApprovalTokenUpdateOne) SetUser(v *User) *ApprovalTokenUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the ApprovalTokenMutation object of the builder.
 func (_u *ApprovalTokenUpdateOne) Mutation() *ApprovalTokenMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *ApprovalTokenUpdateOne) ClearUser() *ApprovalTokenUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the ApprovalTokenUpdate builder.
@@ -492,7 +433,9 @@ func (_u *ApprovalTokenUpdateOne) Select(field string, fields ...string) *Approv
 
 // Save executes the query and returns the updated ApprovalToken entity.
 func (_u *ApprovalTokenUpdateOne) Save(ctx context.Context) (*ApprovalToken, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -519,11 +462,15 @@ func (_u *ApprovalTokenUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *ApprovalTokenUpdateOne) defaults() {
+func (_u *ApprovalTokenUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if approvaltoken.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized approvaltoken.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := approvaltoken.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -612,35 +559,6 @@ func (_u *ApprovalTokenUpdateOne) sqlSave(ctx context.Context) (_node *ApprovalT
 	}
 	if _u.mutation.ConsumedAtCleared() {
 		_spec.ClearField(approvaltoken.FieldConsumedAt, field.TypeTime)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   approvaltoken.UserTable,
-			Columns: []string{approvaltoken.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   approvaltoken.UserTable,
-			Columns: []string{approvaltoken.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &ApprovalToken{config: _u.config}
 	_spec.Assign = _node.assignValues

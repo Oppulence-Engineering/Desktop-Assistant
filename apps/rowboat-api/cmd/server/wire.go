@@ -53,6 +53,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/slacktoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/transcription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/voice"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/voicecloud"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/workosauth"
 	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
 	"github.com/go-chi/chi/v5"
@@ -262,6 +263,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	googleH.SetOAuthFlow(cfg.GoogleAuthorizeURL, googleRedirect, cfg.DesktopDeepLinkScheme, nil)
 	workosH := workosauth.New(cfg.WorkOSClientID, cfg.WorkOSAPIKey, cfg.WorkOSBaseURL, cfg.WorkOSAuthorizeBaseURL, log)
 	workosH.SetOutboundPolicy(vendorPolicy)
+	voiceCloudH := voicecloud.New(client, log)
 	// Idempotent refresh: WorkOS refresh tokens are rotating/single-use, so
 	// duplicate or replayed refreshes must return the cached rotated bundle
 	// instead of burning the session (see workosauth.SetRefreshDedup).
@@ -634,9 +636,30 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		r.Use(rl.PerUser(ratelimit.GroupDefault, 600)) // sanity bucket
 
 		r.Get("/v1/me", billingH.Me)
+		// Shape adapter for the upstream renderer's Better Auth useSession hook.
+		// RequireJWT above remains the sole credential verifier.
+		r.Get("/api/auth/get-session", voiceCloudH.Session)
 		r.Post("/v1/billing/checkout-session", billingH.CheckoutSession)
 		r.Post("/v1/billing/portal-session", billingH.PortalSession)
 		r.Post("/v1/billing/sync", billingH.Sync)
+
+		// Oppulence Voice control plane and opaque encrypted change relay. The
+		// /api/v1 key routes preserve the published capture-client contract while
+		// using WorkOS identity instead of OpenWhispr email-code sessions.
+		r.Route("/api/v1/keys", func(r chi.Router) {
+			r.Post("/create", voiceCloudH.CreateKey)
+			r.Get("/list", voiceCloudH.ListKeys)
+			r.Post("/{id}/revoke", voiceCloudH.RevokeKey)
+		})
+		r.Get("/v1/voice/api-key-verifiers", voiceCloudH.KeyVerifiers)
+		r.Route("/v1/voice-sync", func(r chi.Router) {
+			r.Get("/items", voiceCloudH.ListSyncItems)
+			r.Post("/items", voiceCloudH.PutSyncItem)
+		})
+		r.Post("/v1/capture-artifacts", voiceCloudH.IngestCapture)
+		r.Get("/v1/capture-artifacts/{eventId}", voiceCloudH.GetCapture)
+		// Compatibility alias for released Oppulence Voice export builds.
+		r.Post("/capture-artifacts", voiceCloudH.IngestCapture)
 
 		// Feedback relay to Plain. Tight per-user window: it's a human-driven form.
 		r.With(rl.PerUserWindow(ratelimit.GroupFeedback, 5, time.Minute)).

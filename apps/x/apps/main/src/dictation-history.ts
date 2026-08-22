@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { z } from "zod";
+import { readValidatedJson } from "./safe-json-file.js";
 
 import {
   DictationHistoryEntry as DictationHistoryEntrySchema,
@@ -10,7 +12,7 @@ import {
   type DictationHistoryStats,
   type DictationLanguage,
   type DictationPolishChange,
-} from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
 
 const FILE_VERSION = 1;
 const MAX_ENTRIES = 10_000;
@@ -20,6 +22,11 @@ interface StoredHistory {
   version: typeof FILE_VERSION;
   entries: DictationHistoryEntry[];
 }
+
+const StoredHistorySchema: z.ZodType<StoredHistory> = z.object({
+  version: z.literal(FILE_VERSION),
+  entries: z.array(DictationHistoryEntrySchema),
+});
 
 export interface DictationHistoryInput {
   text: string;
@@ -343,12 +350,7 @@ export class DictationHistoryStore {
 
   private async readEntries(): Promise<DictationHistoryEntry[]> {
     try {
-      const value = JSON.parse(await fs.readFile(this.filePath, "utf8")) as Partial<StoredHistory>;
-      if (value.version !== FILE_VERSION || !Array.isArray(value.entries)) return [];
-      return value.entries.flatMap((candidate) => {
-        const parsed = DictationHistoryEntrySchema.safeParse(candidate);
-        return parsed.success ? [parsed.data] : [];
-      });
+      return (await readValidatedJson(this.filePath, StoredHistorySchema)).entries;
     } catch {
       return [];
     }

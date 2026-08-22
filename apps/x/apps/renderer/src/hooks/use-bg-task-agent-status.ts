@@ -1,6 +1,6 @@
 import z from "zod";
 import { useSyncExternalStore } from "react";
-import { BackgroundTaskAgentEvent } from "@x/shared/dist/background-task.js";
+import { BackgroundTaskAgentEvent } from "@x/shared/background-task";
 
 export type BackgroundTaskAgentStatus = "idle" | "running" | "done" | "error";
 

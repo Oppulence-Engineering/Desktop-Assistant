@@ -1,3 +1,7 @@
+"use client";
+
+import "client-only";
+
 import { z } from "zod";
 
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";

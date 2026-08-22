@@ -16,8 +16,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -66,17 +64,6 @@ func (_u *CommitmentDependencyUpdate) AppendEvidenceRefs(v []string) *Commitment
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *CommitmentDependencyUpdate) SetWorkspaceID(id uuid.UUID) *CommitmentDependencyUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *CommitmentDependencyUpdate) SetWorkspace(v *RevenueWorkspace) *CommitmentDependencyUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetRelationshipID sets the "relationship" edge to the Relationship entity by ID.
 func (_u *CommitmentDependencyUpdate) SetRelationshipID(id uuid.UUID) *CommitmentDependencyUpdate {
 	_u.mutation.SetRelationshipID(id)
@@ -86,17 +73,6 @@ func (_u *CommitmentDependencyUpdate) SetRelationshipID(id uuid.UUID) *Commitmen
 // SetRelationship sets the "relationship" edge to the Relationship entity.
 func (_u *CommitmentDependencyUpdate) SetRelationship(v *Relationship) *CommitmentDependencyUpdate {
 	return _u.SetRelationshipID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *CommitmentDependencyUpdate) SetUserID(id uuid.UUID) *CommitmentDependencyUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *CommitmentDependencyUpdate) SetUser(v *User) *CommitmentDependencyUpdate {
-	return _u.SetUserID(v.ID)
 }
 
 // SetFromCommitmentID sets the "from_commitment" edge to the Commitment entity by ID.
@@ -126,21 +102,9 @@ func (_u *CommitmentDependencyUpdate) Mutation() *CommitmentDependencyMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *CommitmentDependencyUpdate) ClearWorkspace() *CommitmentDependencyUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
 // ClearRelationship clears the "relationship" edge to the Relationship entity.
 func (_u *CommitmentDependencyUpdate) ClearRelationship() *CommitmentDependencyUpdate {
 	_u.mutation.ClearRelationship()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *CommitmentDependencyUpdate) ClearUser() *CommitmentDependencyUpdate {
-	_u.mutation.ClearUser()
 	return _u
 }
 
@@ -158,7 +122,9 @@ func (_u *CommitmentDependencyUpdate) ClearToCommitment() *CommitmentDependencyU
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *CommitmentDependencyUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -185,11 +151,15 @@ func (_u *CommitmentDependencyUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *CommitmentDependencyUpdate) defaults() {
+func (_u *CommitmentDependencyUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if commitmentdependency.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized commitmentdependency.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := commitmentdependency.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -243,35 +213,6 @@ func (_u *CommitmentDependencyUpdate) sqlSave(ctx context.Context) (_node int, e
 			sqljson.Append(u, commitmentdependency.FieldEvidenceRefs, value)
 		})
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   commitmentdependency.WorkspaceTable,
-			Columns: []string{commitmentdependency.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   commitmentdependency.WorkspaceTable,
-			Columns: []string{commitmentdependency.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.RelationshipCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -294,35 +235,6 @@ func (_u *CommitmentDependencyUpdate) sqlSave(ctx context.Context) (_node int, e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   commitmentdependency.UserTable,
-			Columns: []string{commitmentdependency.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   commitmentdependency.UserTable,
-			Columns: []string{commitmentdependency.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -440,17 +352,6 @@ func (_u *CommitmentDependencyUpdateOne) AppendEvidenceRefs(v []string) *Commitm
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *CommitmentDependencyUpdateOne) SetWorkspaceID(id uuid.UUID) *CommitmentDependencyUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *CommitmentDependencyUpdateOne) SetWorkspace(v *RevenueWorkspace) *CommitmentDependencyUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetRelationshipID sets the "relationship" edge to the Relationship entity by ID.
 func (_u *CommitmentDependencyUpdateOne) SetRelationshipID(id uuid.UUID) *CommitmentDependencyUpdateOne {
 	_u.mutation.SetRelationshipID(id)
@@ -460,17 +361,6 @@ func (_u *CommitmentDependencyUpdateOne) SetRelationshipID(id uuid.UUID) *Commit
 // SetRelationship sets the "relationship" edge to the Relationship entity.
 func (_u *CommitmentDependencyUpdateOne) SetRelationship(v *Relationship) *CommitmentDependencyUpdateOne {
 	return _u.SetRelationshipID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *CommitmentDependencyUpdateOne) SetUserID(id uuid.UUID) *CommitmentDependencyUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *CommitmentDependencyUpdateOne) SetUser(v *User) *CommitmentDependencyUpdateOne {
-	return _u.SetUserID(v.ID)
 }
 
 // SetFromCommitmentID sets the "from_commitment" edge to the Commitment entity by ID.
@@ -500,21 +390,9 @@ func (_u *CommitmentDependencyUpdateOne) Mutation() *CommitmentDependencyMutatio
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *CommitmentDependencyUpdateOne) ClearWorkspace() *CommitmentDependencyUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
 // ClearRelationship clears the "relationship" edge to the Relationship entity.
 func (_u *CommitmentDependencyUpdateOne) ClearRelationship() *CommitmentDependencyUpdateOne {
 	_u.mutation.ClearRelationship()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *CommitmentDependencyUpdateOne) ClearUser() *CommitmentDependencyUpdateOne {
-	_u.mutation.ClearUser()
 	return _u
 }
 
@@ -545,7 +423,9 @@ func (_u *CommitmentDependencyUpdateOne) Select(field string, fields ...string) 
 
 // Save executes the query and returns the updated CommitmentDependency entity.
 func (_u *CommitmentDependencyUpdateOne) Save(ctx context.Context) (*CommitmentDependency, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -572,11 +452,15 @@ func (_u *CommitmentDependencyUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *CommitmentDependencyUpdateOne) defaults() {
+func (_u *CommitmentDependencyUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if commitmentdependency.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized commitmentdependency.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := commitmentdependency.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -647,35 +531,6 @@ func (_u *CommitmentDependencyUpdateOne) sqlSave(ctx context.Context) (_node *Co
 			sqljson.Append(u, commitmentdependency.FieldEvidenceRefs, value)
 		})
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   commitmentdependency.WorkspaceTable,
-			Columns: []string{commitmentdependency.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   commitmentdependency.WorkspaceTable,
-			Columns: []string{commitmentdependency.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.RelationshipCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -698,35 +553,6 @@ func (_u *CommitmentDependencyUpdateOne) sqlSave(ctx context.Context) (_node *Co
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   commitmentdependency.UserTable,
-			Columns: []string{commitmentdependency.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   commitmentdependency.UserTable,
-			Columns: []string{commitmentdependency.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

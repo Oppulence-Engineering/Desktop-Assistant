@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { emitRendererEvent } from "@/lib/renderer-events";
 import {
   Server,
   Key,
@@ -68,8 +69,8 @@ import { FeedbackDialog } from "@/components/feedback-dialog";
 import { IntegrationApiKeyModal } from "@/components/integration-api-key-modal";
 import { useConnectors } from "@/hooks/useConnectors";
 import { useSolomonAccount } from "@/hooks/useSolomonAccount";
-import { PRODUCT_NAME, getProductProviderState } from "@x/shared/dist/branding.js";
-import type { ApprovalPolicy } from "@x/shared/src/code-mode.js";
+import { PRODUCT_NAME, getProductProviderState } from "@x/shared/branding";
+import type { ApprovalPolicy } from "@x/shared/code-mode";
 
 type ConfigTab =
   | "overview"
@@ -1069,7 +1070,7 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
           enabled: next,
           approvalPolicy,
         });
-        window.dispatchEvent(new Event("code-mode-config-changed"));
+        emitRendererEvent("code-mode-config-changed");
         toast.success(next ? "Code mode enabled" : "Code mode disabled");
       } catch {
         setEnabled(!next);
@@ -1091,7 +1092,7 @@ function CodeModeSettings({ dialogOpen }: { dialogOpen: boolean }) {
           enabled,
           approvalPolicy: next,
         });
-        window.dispatchEvent(new Event("code-mode-config-changed"));
+        emitRendererEvent("code-mode-config-changed");
       } catch {
         setApprovalPolicy(prev);
         toast.error("Failed to update approval policy");
@@ -1671,8 +1672,33 @@ export function SettingsDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
+      {/*
+        Full page, matching sign-in. Settings is a place you go, not a panel you
+        peek at over your work: the rail alone carries eleven sections, and an
+        85vw card left a strip of unusable app around the edge that invited
+        clicking back out mid-change.
+
+        Safe to make full-bleed because it stays dismissible — the rail's "Back
+        to app" button calls setOpen(false), and unlike the session dialog this
+        one does not block Escape.
+      */}
       <DialogContent
-        className="rowboat-settings settings-workspace h-[85vh] max-h-[85vh] w-[85vw]! max-w-[85vw]! gap-0 overflow-hidden p-0"
+        // data-[state=closed]:[animation:none]! is load-bearing, not cosmetic.
+        //
+        // Radix's Presence keeps the node mounted until it sees an animationend
+        // for the exit animation the base DialogContent declares
+        // (data-[state=closed]:animate-out). On this surface that event never
+        // arrives, so the node stayed in the DOM at opacity 1 after closing —
+        // and once this became a full-page surface, that meant "Back to app"
+        // appeared to do nothing at all: state flipped to closed and the user
+        // was left staring at a settings page they could not leave.
+        //
+        // Killing the exit animation makes Presence unmount synchronously, which
+        // is what a full-page surface wants anyway: pages do not zoom out. The
+        // important modifier is required because tailwind-merge does not treat
+        // these arbitrary data-variants as conflicting, so animate-out survives
+        // in the class list and would otherwise win on source order.
+        className="rowboat-settings settings-workspace inset-0 top-0 left-0 h-svh w-screen max-w-none translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-none border-0 p-0 shadow-none sm:max-w-none data-[state=closed]:[animation:none]!"
         showCloseButton={false}
       >
         <DialogTitle className="sr-only">Settings</DialogTitle>
@@ -1680,9 +1706,27 @@ export function SettingsDialog({
           Manage account, connections, models, transcription, tags, notifications, appearance,
           security, tools, memory, and support settings.
         </DialogDescription>
+        {/*
+          A drag strip across the top. The window is titleBarStyle:"hiddenInset",
+          so the only draggable area is the title bar — which a full-page surface
+          covers. Without this the window cannot be moved while settings is open.
+          It sits behind the rail (pointer-events pass through to the buttons
+          below it) and is purely for dragging.
+        */}
+        <div
+          className="titlebar-drag-region pointer-events-none absolute inset-x-0 top-0 z-0 h-9"
+          aria-hidden="true"
+        />
         <div className="flex h-full overflow-hidden">
           <div className="settings-rail flex w-60 shrink-0 flex-col border-r">
-            <nav className="settings-rail-scroll flex-1 overflow-y-auto px-2 pb-3 pt-2">
+            {/*
+              pt-9 clears the macOS traffic lights. They are overlaid at
+              (12, 12) by trafficLightPosition, and this rail starts at y=0 now
+              that settings is full-page — so at the old pt-2 the "Back to app"
+              button rendered underneath the close/minimise/zoom buttons and was
+              both unreadable and partly unclickable.
+            */}
+            <nav className="settings-rail-scroll flex-1 overflow-y-auto px-2 pb-3 pt-9">
               <button className="settings-back" onClick={() => setOpen(false)} type="button">
                 <ArrowLeft className="size-3.5" />
                 <span>Back to app</span>

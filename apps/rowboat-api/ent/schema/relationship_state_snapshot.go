@@ -14,7 +14,9 @@ import (
 type RelationshipStateSnapshot struct{ ent.Schema }
 
 // Mixin adds the shared base fields to relationship state snapshots.
-func (RelationshipStateSnapshot) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RelationshipStateSnapshot) Mixin() []ent.Mixin {
+	return []ent.Mixin{mixin.WorkspaceTenantMixin{}}
+}
 
 // Fields defines the relationship state snapshot columns.
 func (RelationshipStateSnapshot) Fields() []ent.Field {
@@ -33,11 +35,11 @@ func (RelationshipStateSnapshot) Fields() []ent.Field {
 func (RelationshipStateSnapshot) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("relationship_state_snapshots").Unique().Required(),
+			Ref("relationship_state_snapshots").Unique().Required().Immutable(),
 		edge.From("relationship", Relationship.Type).
 			Ref("snapshots").Unique().Required(),
 		edge.From("user", User.Type).
-			Ref("relationship_state_snapshots").Unique().Required(),
+			Ref("relationship_state_snapshots").Unique().Required().Immutable(),
 	}
 }
 

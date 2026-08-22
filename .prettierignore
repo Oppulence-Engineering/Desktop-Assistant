@@ -14,7 +14,11 @@ apps/x/apps/renderer/dist/
 **/yarn.lock
 **/*.min.*
 **/CHANGELOG.md
+packages/rowboat-api-client-ts/src/generated/schema.ts
 .release-please-manifest.json
+
+# The nested desktop workspace owns formatting through its own ratchet.
+apps/x/
 
 # Languages Prettier shouldn't own
 **/*.go

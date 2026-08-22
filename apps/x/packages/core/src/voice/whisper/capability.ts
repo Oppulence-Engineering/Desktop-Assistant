@@ -1,7 +1,7 @@
 import * as os from "node:os";
 import { spawn } from "node:child_process";
 import { binaryPath } from "./bin.js";
-import type { WhisperAccel, WhisperCapability } from "@x/shared/dist/transcription.js";
+import type { WhisperAccel, WhisperCapability } from "@x/shared/transcription";
 
 /**
  * Detect the hardware acceleration backend and decide local eligibility

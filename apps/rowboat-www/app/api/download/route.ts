@@ -88,7 +88,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
     }
 
-    const res = await fetch(RELEASES_API, { headers, next: { revalidate: 300 } });
+    const res = await fetch(RELEASES_API, {
+      headers,
+      next: { revalidate: 300 },
+      signal: AbortSignal.timeout(8_000),
+    });
     if (!res.ok) {
       return NextResponse.redirect(RELEASES_PAGE, 302);
     }

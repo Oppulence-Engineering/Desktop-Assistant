@@ -26,7 +26,7 @@ import (
 type ActionProposal struct{ ent.Schema }
 
 // Mixin of the ActionProposal.
-func (ActionProposal) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (ActionProposal) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Fields of the ActionProposal.
 func (ActionProposal) Fields() []ent.Field {
@@ -82,7 +82,7 @@ func (ActionProposal) Fields() []ent.Field {
 // Edges of the ActionProposal.
 func (ActionProposal) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("action_proposals").Unique().Required(),
+		edge.From("user", User.Type).Ref("action_proposals").Unique().Required().Immutable(),
 	}
 }
 

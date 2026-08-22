@@ -241,7 +241,9 @@ func (_c *RevenueOutboxEventCreate) Mutation() *RevenueOutboxEventMutation {
 
 // Save creates the RevenueOutboxEvent in the database.
 func (_c *RevenueOutboxEventCreate) Save(ctx context.Context) (*RevenueOutboxEvent, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -268,12 +270,18 @@ func (_c *RevenueOutboxEventCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *RevenueOutboxEventCreate) defaults() {
+func (_c *RevenueOutboxEventCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if revenueoutboxevent.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueoutboxevent.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueoutboxevent.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if revenueoutboxevent.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueoutboxevent.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueoutboxevent.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -290,9 +298,13 @@ func (_c *RevenueOutboxEventCreate) defaults() {
 		_c.mutation.SetAttempts(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if revenueoutboxevent.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized revenueoutboxevent.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := revenueoutboxevent.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

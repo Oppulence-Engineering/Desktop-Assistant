@@ -2,7 +2,7 @@ import {
   DEFAULT_DIARIZATION_SETTINGS,
   type DiarizationSettings,
   type DiarizationState,
-} from "@x/shared/dist/diarization.js";
+} from "@x/shared/diarization";
 import { Diarizer, type DiarizerTurn } from "./diarizer.js";
 import { createEmbedder } from "./embedder.js";
 import {

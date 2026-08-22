@@ -1,4 +1,4 @@
-import { writeJsonAtomic } from "@x/core/dist/filesystem/atomic_write.js";
+import { writeJsonAtomic } from "@x/core/filesystem/atomic_write";
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import { app, BrowserWindow } from "electron";
@@ -17,9 +17,11 @@ import type {
   MeetingTranscriptionProgress,
   MeetingTranscript,
   MeetingTranscriptSegment,
-} from "@x/shared/dist/meetings.js";
-import type { DictationLanguage } from "@x/shared/dist/language.js";
-import type { RelationshipLiveCue } from "@x/shared/dist/relationships.js";
+} from "@x/shared/meetings";
+import type { DictationLanguage } from "@x/shared/language";
+import type { RelationshipLiveCue } from "@x/shared/relationships";
+import type { ipc } from "@x/shared";
+import { sendRendererEvent } from "./renderer-events.js";
 import {
   calendarEventFromMeta,
   createSessionDir,
@@ -41,7 +43,7 @@ import {
   readLedger,
   setCommitmentStatus,
   askMeeting,
-} from "@x/core/dist/meetings/meetings.js";
+} from "@x/core/meetings/meetings";
 import { MeetingLiveTranscriber } from "./meeting-live.js";
 import type {
   CounterpartyResolution,
@@ -49,18 +51,18 @@ import type {
   KnownPerson,
   LedgerCommitment,
   ProposedCommitment,
-} from "@x/core/dist/meetings/meetings.js";
+} from "@x/core/meetings/meetings";
 import {
   readCommitmentProposals,
   removeCommitmentProposal,
   writeCommitmentProposals,
-} from "@x/core/dist/meetings/commitment-store.js";
-import { buildKnowledgeIndex } from "@x/core/dist/knowledge/knowledge_index.js";
-import type { MeetingTranscriber } from "@x/core/dist/meetings/meetings.js";
-import type { WhisperService } from "@x/core/dist/voice/whisper/index.js";
-import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
-import { anyRelationshipEvidenceConsent } from "@x/shared/dist/transcription.js";
-import { summarizeMeeting } from "@x/core/dist/knowledge/summarize_meeting.js";
+} from "@x/core/meetings/commitment-store";
+import { buildKnowledgeIndex } from "@x/core/knowledge/knowledge_index";
+import type { MeetingTranscriber } from "@x/core/meetings/meetings";
+import type { WhisperService } from "@x/core/voice/whisper/index";
+import { getTranscriptionConfig } from "@x/core/voice/voice";
+import { anyRelationshipEvidenceConsent } from "@x/shared/transcription";
+import { summarizeMeeting } from "@x/core/knowledge/summarize_meeting";
 import {
   MeetingCaptureSidecar,
   ensureMicrophoneAccess,
@@ -77,26 +79,26 @@ import {
   flushRelationshipEvidence,
   relationshipObservationKey,
   type RelationshipEvidenceFlushResult,
-} from "@x/core/dist/relationships/evidence-outbox.js";
+} from "@x/core/relationships/evidence-outbox";
 import {
   confirmedCommitmentObservation,
   commitmentStatusObservation,
   meetingAttendanceObservation,
   meetingTranscriptObservationWithExtraction,
-} from "@x/core/dist/relationships/meeting-evidence.js";
-import { buildMeetingRoster, resolveRosterBinding } from "@x/core/dist/meetings/roster.js";
+} from "@x/core/relationships/meeting-evidence";
+import { buildMeetingRoster, resolveRosterBinding } from "@x/core/meetings/roster";
 import {
   resolveRelationshipCandidates,
   writeRelationshipCandidates,
-} from "@x/core/dist/meetings/relationship-candidates.js";
-import { backfillCalendarEventId } from "@x/core/dist/meetings/calendar-link.js";
-import { getAccountEmail } from "@x/core/dist/knowledge/sync_gmail.js";
-import { getRelationship, listRelationships } from "@x/core/dist/relationships/client.js";
-import { MeetingCaptureGuardian } from "@x/core/dist/meetings/capture-guardian.js";
+} from "@x/core/meetings/relationship-candidates";
+import { backfillCalendarEventId } from "@x/core/meetings/calendar-link";
+import { getAccountEmail } from "@x/core/knowledge/sync_gmail";
+import { getRelationship, listRelationships } from "@x/core/relationships/client";
+import { MeetingCaptureGuardian } from "@x/core/meetings/capture-guardian";
 import {
   detectLiveCoachingSignals,
   generateLiveCoachingCues,
-} from "@x/core/dist/relationships/live-coaching.js";
+} from "@x/core/relationships/live-coaching";
 
 /**
  * The one owner of a native capture session: spawns the sidecar, holds the live
@@ -120,9 +122,12 @@ const SILENCE_CHECK_INTERVAL_MS = 15 * 1000;
 const PEOPLE_CACHE_MS = 60_000;
 const GUARDIAN_INTERVAL_MS = 5_000;
 
-function broadcast<T>(channel: string, payload: T): void {
+function broadcast<K extends ipc.SendChannels>(
+  channel: K,
+  payload: ipc.IPCChannels[K]["req"],
+): void {
   for (const win of BrowserWindow.getAllWindows()) {
-    if (!win.isDestroyed() && win.webContents) win.webContents.send(channel, payload);
+    if (!win.isDestroyed() && win.webContents) sendRendererEvent(win.webContents, channel, payload);
   }
 }
 
@@ -311,7 +316,7 @@ export class MeetingController {
           // reaches a window on the next state transition — and a promote that fails
           // produces no transition at all, so the user would click "Record" and see
           // nothing happen, forever.
-          broadcast<MeetingCaptureStatus>("meeting:captureState", this.statusSnapshot());
+          broadcast("meeting:captureState", this.statusSnapshot());
         },
         onLevel: (peaks, frames) => {
           this.guardianHeartbeatAt = Date.now();
@@ -326,7 +331,7 @@ export class MeetingController {
           if (Object.values(peaks).some((peak) => (peak ?? 0) >= SILENCE_PEAK_LEVEL)) {
             this.lastActivityAt = Date.now();
           }
-          broadcast<MeetingLevels>("meeting:captureLevel", {
+          broadcast("meeting:captureLevel", {
             sessionId: path.basename(dir),
             peaks: peaks as MeetingLevels["peaks"],
           });
@@ -487,7 +492,7 @@ export class MeetingController {
       // after evaluation prevents a brief utterance between two checks from being
       // misclassified as fifteen seconds of digital silence.
       this.guardianPeaks = { mic: 0, system: 0 };
-      broadcast<MeetingCaptureStatus>("meeting:captureState", this.statusSnapshot());
+      broadcast("meeting:captureState", this.statusSnapshot());
     } catch (err) {
       console.warn("[meeting] capture guardian check failed:", err);
     } finally {
@@ -1579,11 +1584,11 @@ export class MeetingController {
           this.guardianPostStartedAt = undefined;
           this.guardianPostProgressAt = undefined;
         }
-        broadcast<MeetingTranscriptionProgress>("meeting:captureProgress", progress);
+        broadcast("meeting:captureProgress", progress);
         // Queue depth is part of the status the tray renders, so a job starting or
         // finishing is also a state change.
         this.onStateChange?.();
-        broadcast<MeetingCaptureStatus>("meeting:captureState", this.statusSnapshot());
+        broadcast("meeting:captureState", this.statusSnapshot());
       },
     });
     return this.queue;
@@ -1695,7 +1700,7 @@ export class MeetingController {
     // The tray, any open window, and the indicator are all views onto this one piece
     // of state, so every transition notifies all three rather than any of them polling.
     this.onStateChange?.();
-    broadcast<MeetingCaptureStatus>("meeting:captureState", this.statusSnapshot());
+    broadcast("meeting:captureState", this.statusSnapshot());
     // Driven from the transition, not from `start()`/`stop()`, so a session the sidecar
     // ended on its own — a crash, a quit — takes the indicator down with it.
     syncMeetingIndicator(state);

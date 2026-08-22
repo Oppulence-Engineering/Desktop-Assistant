@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -180,26 +179,9 @@ func (_u *LLMUsageUpdate) SetNillableRequestID(v *uuid.UUID) *LLMUsageUpdate {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *LLMUsageUpdate) SetUserID(id uuid.UUID) *LLMUsageUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *LLMUsageUpdate) SetUser(v *User) *LLMUsageUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the LLMUsageMutation object of the builder.
 func (_u *LLMUsageUpdate) Mutation() *LLMUsageMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *LLMUsageUpdate) ClearUser() *LLMUsageUpdate {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -305,35 +287,6 @@ func (_u *LLMUsageUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.RequestID(); ok {
 		_spec.SetField(llmusage.FieldRequestID, field.TypeUUID, value)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   llmusage.UserTable,
-			Columns: []string{llmusage.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   llmusage.UserTable,
-			Columns: []string{llmusage.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -506,26 +459,9 @@ func (_u *LLMUsageUpdateOne) SetNillableRequestID(v *uuid.UUID) *LLMUsageUpdateO
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *LLMUsageUpdateOne) SetUserID(id uuid.UUID) *LLMUsageUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *LLMUsageUpdateOne) SetUser(v *User) *LLMUsageUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the LLMUsageMutation object of the builder.
 func (_u *LLMUsageUpdateOne) Mutation() *LLMUsageMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *LLMUsageUpdateOne) ClearUser() *LLMUsageUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the LLMUsageUpdate builder.
@@ -661,35 +597,6 @@ func (_u *LLMUsageUpdateOne) sqlSave(ctx context.Context) (_node *LLMUsage, err 
 	}
 	if value, ok := _u.mutation.RequestID(); ok {
 		_spec.SetField(llmusage.FieldRequestID, field.TypeUUID, value)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   llmusage.UserTable,
-			Columns: []string{llmusage.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   llmusage.UserTable,
-			Columns: []string{llmusage.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &LLMUsage{config: _u.config}
 	_spec.Assign = _node.assignValues

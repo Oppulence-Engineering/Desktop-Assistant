@@ -201,6 +201,18 @@ func (f BackgroundTaskScheduleStateFunc) Mutate(ctx context.Context, m ent.Mutat
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BackgroundTaskScheduleStateMutation", m)
 }
 
+// The CaptureArtifactFunc type is an adapter to allow the use of ordinary
+// function as CaptureArtifact mutator.
+type CaptureArtifactFunc func(context.Context, *ent.CaptureArtifactMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CaptureArtifactFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CaptureArtifactMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CaptureArtifactMutation", m)
+}
+
 // The CloudEventFunc type is an adapter to allow the use of ordinary
 // function as CloudEvent mutator.
 type CloudEventFunc func(context.Context, *ent.CloudEventMutation) (ent.Value, error)
@@ -823,6 +835,30 @@ func (f UserHistoryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserHistoryMutation", m)
+}
+
+// The VoiceAPIKeyFunc type is an adapter to allow the use of ordinary
+// function as VoiceAPIKey mutator.
+type VoiceAPIKeyFunc func(context.Context, *ent.VoiceAPIKeyMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f VoiceAPIKeyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.VoiceAPIKeyMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.VoiceAPIKeyMutation", m)
+}
+
+// The VoiceSyncItemFunc type is an adapter to allow the use of ordinary
+// function as VoiceSyncItem mutator.
+type VoiceSyncItemFunc func(context.Context, *ent.VoiceSyncItemMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f VoiceSyncItemFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.VoiceSyncItemMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.VoiceSyncItemMutation", m)
 }
 
 // The WorkspaceFeatureControlFunc type is an adapter to allow the use of ordinary

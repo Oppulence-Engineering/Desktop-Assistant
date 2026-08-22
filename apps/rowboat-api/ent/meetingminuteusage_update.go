@@ -13,8 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/meetingminuteusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/google/uuid"
 )
 
 // MeetingMinuteUsageUpdate is the builder for updating MeetingMinuteUsage entities.
@@ -78,31 +76,16 @@ func (_u *MeetingMinuteUsageUpdate) AddReservedSeconds(v int) *MeetingMinuteUsag
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *MeetingMinuteUsageUpdate) SetUserID(id uuid.UUID) *MeetingMinuteUsageUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *MeetingMinuteUsageUpdate) SetUser(v *User) *MeetingMinuteUsageUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the MeetingMinuteUsageMutation object of the builder.
 func (_u *MeetingMinuteUsageUpdate) Mutation() *MeetingMinuteUsageMutation {
 	return _u.mutation
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *MeetingMinuteUsageUpdate) ClearUser() *MeetingMinuteUsageUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *MeetingMinuteUsageUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -129,11 +112,15 @@ func (_u *MeetingMinuteUsageUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *MeetingMinuteUsageUpdate) defaults() {
+func (_u *MeetingMinuteUsageUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if meetingminuteusage.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized meetingminuteusage.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := meetingminuteusage.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -180,35 +167,6 @@ func (_u *MeetingMinuteUsageUpdate) sqlSave(ctx context.Context) (_node int, err
 	}
 	if value, ok := _u.mutation.AddedReservedSeconds(); ok {
 		_spec.AddField(meetingminuteusage.FieldReservedSeconds, field.TypeInt, value)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   meetingminuteusage.UserTable,
-			Columns: []string{meetingminuteusage.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   meetingminuteusage.UserTable,
-			Columns: []string{meetingminuteusage.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -278,26 +236,9 @@ func (_u *MeetingMinuteUsageUpdateOne) AddReservedSeconds(v int) *MeetingMinuteU
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *MeetingMinuteUsageUpdateOne) SetUserID(id uuid.UUID) *MeetingMinuteUsageUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *MeetingMinuteUsageUpdateOne) SetUser(v *User) *MeetingMinuteUsageUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the MeetingMinuteUsageMutation object of the builder.
 func (_u *MeetingMinuteUsageUpdateOne) Mutation() *MeetingMinuteUsageMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *MeetingMinuteUsageUpdateOne) ClearUser() *MeetingMinuteUsageUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the MeetingMinuteUsageUpdate builder.
@@ -315,7 +256,9 @@ func (_u *MeetingMinuteUsageUpdateOne) Select(field string, fields ...string) *M
 
 // Save executes the query and returns the updated MeetingMinuteUsage entity.
 func (_u *MeetingMinuteUsageUpdateOne) Save(ctx context.Context) (*MeetingMinuteUsage, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -342,11 +285,15 @@ func (_u *MeetingMinuteUsageUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *MeetingMinuteUsageUpdateOne) defaults() {
+func (_u *MeetingMinuteUsageUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if meetingminuteusage.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized meetingminuteusage.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := meetingminuteusage.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -410,35 +357,6 @@ func (_u *MeetingMinuteUsageUpdateOne) sqlSave(ctx context.Context) (_node *Meet
 	}
 	if value, ok := _u.mutation.AddedReservedSeconds(); ok {
 		_spec.AddField(meetingminuteusage.FieldReservedSeconds, field.TypeInt, value)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   meetingminuteusage.UserTable,
-			Columns: []string{meetingminuteusage.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   meetingminuteusage.UserTable,
-			Columns: []string{meetingminuteusage.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &MeetingMinuteUsage{config: _u.config}
 	_spec.Assign = _node.assignValues

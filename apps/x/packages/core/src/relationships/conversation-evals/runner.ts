@@ -1,4 +1,4 @@
-import type { ConversationClaimKind } from "@x/shared/dist/relationships.js";
+import type { ConversationClaimKind } from "@x/shared/relationships";
 import { normalizeConversationText } from "../conversation-utils.js";
 import type { ConversationEvalCase } from "./fixtures.js";
 

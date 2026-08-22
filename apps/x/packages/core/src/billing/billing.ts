@@ -1,6 +1,6 @@
 import { getAccessToken } from "../auth/tokens.js";
 import { API_URL } from "../config/env.js";
-import type { BillingInfo, BillingPlan } from "@x/shared/dist/billing.js";
+import type { BillingInfo, BillingPlan } from "@x/shared/billing";
 
 export type BillingCheckoutPlan = "starter" | "pro";
 

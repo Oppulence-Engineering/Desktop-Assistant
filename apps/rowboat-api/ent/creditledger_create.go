@@ -89,7 +89,9 @@ func (_c *CreditLedgerCreate) Mutation() *CreditLedgerMutation {
 
 // Save creates the CreditLedger in the database.
 func (_c *CreditLedgerCreate) Save(ctx context.Context) (*CreditLedger, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -116,15 +118,22 @@ func (_c *CreditLedgerCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *CreditLedgerCreate) defaults() {
+func (_c *CreditLedgerCreate) defaults() error {
 	if _, ok := _c.mutation.Ts(); !ok {
+		if creditledger.DefaultTs == nil {
+			return fmt.Errorf("ent: uninitialized creditledger.DefaultTs (forgotten import ent/runtime?)")
+		}
 		v := creditledger.DefaultTs()
 		_c.mutation.SetTs(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if creditledger.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized creditledger.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := creditledger.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

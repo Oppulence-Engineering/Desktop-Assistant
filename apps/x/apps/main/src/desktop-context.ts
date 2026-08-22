@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import type { DictationAppCategory } from "@x/shared/dist/transcription.js";
+import type { DictationAppCategory } from "@x/shared/transcription";
 
 const execFileAsync = promisify(execFile);
 const CONTEXT_LIMIT = 256;

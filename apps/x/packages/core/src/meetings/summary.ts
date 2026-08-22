@@ -2,7 +2,7 @@ import {
   mergeSummaryIntoNote,
   transcriptTextFromNote,
   type MeetingSessionMeta,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 import { readFile, writeFile } from "../workspace/workspace.js";
 import { appendLog } from "./session.js";
 

@@ -374,7 +374,11 @@ export function AgentsView({
                       onCreated={(slug) => void handleCreated(slug)}
                       source={selected}
                     />
-                    <Button onClick={() => onOpenDefinition(selected.slug)} size="sm" variant="outline">
+                    <Button
+                      onClick={() => onOpenDefinition(selected.slug)}
+                      size="sm"
+                      variant="outline"
+                    >
                       <Code className="size-4" />
                       {selected.source === "tenant" ? "Configure" : "View configuration"}
                     </Button>

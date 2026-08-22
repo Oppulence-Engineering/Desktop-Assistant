@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -438,6 +439,12 @@ func (_q *RelationshipReviewAcknowledgementQuery) prepareQuery(ctx context.Conte
 			return err
 		}
 		_q.sql = prev
+	}
+	if relationshipreviewacknowledgement.Policy == nil {
+		return errors.New("ent: uninitialized relationshipreviewacknowledgement.Policy (forgotten import ent/runtime?)")
+	}
+	if err := relationshipreviewacknowledgement.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

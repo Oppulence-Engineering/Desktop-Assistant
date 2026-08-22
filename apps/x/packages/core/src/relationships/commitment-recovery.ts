@@ -2,7 +2,7 @@ import type {
   CommitmentProjection,
   CommitmentRecoveryClassification,
   CommitmentRecoveryEvaluation,
-} from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
 import { conversationFingerprint } from "./conversation-utils.js";
 
 export interface CommitmentRecoveryEvidence {

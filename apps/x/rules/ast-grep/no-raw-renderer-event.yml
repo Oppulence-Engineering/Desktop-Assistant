@@ -1,0 +1,10 @@
+id: X013-no-raw-renderer-event
+language: Tsx
+severity: error
+message: Route application CustomEvents through the typed renderer-events adapter.
+rule:
+  pattern: new CustomEvent($NAME, $$$ARGS)
+files:
+  - apps/renderer/src/**/*.{ts,tsx}
+ignores:
+  - apps/renderer/src/lib/renderer-events.ts

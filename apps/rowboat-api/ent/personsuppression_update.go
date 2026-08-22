@@ -13,9 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personsuppression"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/google/uuid"
 )
 
 // PersonSuppressionUpdate is the builder for updating PersonSuppression entities.
@@ -113,48 +110,16 @@ func (_u *PersonSuppressionUpdate) ClearNote() *PersonSuppressionUpdate {
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *PersonSuppressionUpdate) SetWorkspaceID(id uuid.UUID) *PersonSuppressionUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonSuppressionUpdate) SetWorkspace(v *RevenueWorkspace) *PersonSuppressionUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *PersonSuppressionUpdate) SetUserID(id uuid.UUID) *PersonSuppressionUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *PersonSuppressionUpdate) SetUser(v *User) *PersonSuppressionUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the PersonSuppressionMutation object of the builder.
 func (_u *PersonSuppressionUpdate) Mutation() *PersonSuppressionMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonSuppressionUpdate) ClearWorkspace() *PersonSuppressionUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *PersonSuppressionUpdate) ClearUser() *PersonSuppressionUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *PersonSuppressionUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -181,11 +146,15 @@ func (_u *PersonSuppressionUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *PersonSuppressionUpdate) defaults() {
+func (_u *PersonSuppressionUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if personsuppression.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized personsuppression.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := personsuppression.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -246,64 +215,6 @@ func (_u *PersonSuppressionUpdate) sqlSave(ctx context.Context) (_node int, err 
 	}
 	if _u.mutation.NoteCleared() {
 		_spec.ClearField(personsuppression.FieldNote, field.TypeString)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personsuppression.WorkspaceTable,
-			Columns: []string{personsuppression.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personsuppression.WorkspaceTable,
-			Columns: []string{personsuppression.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personsuppression.UserTable,
-			Columns: []string{personsuppression.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personsuppression.UserTable,
-			Columns: []string{personsuppression.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -407,43 +318,9 @@ func (_u *PersonSuppressionUpdateOne) ClearNote() *PersonSuppressionUpdateOne {
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *PersonSuppressionUpdateOne) SetWorkspaceID(id uuid.UUID) *PersonSuppressionUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonSuppressionUpdateOne) SetWorkspace(v *RevenueWorkspace) *PersonSuppressionUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *PersonSuppressionUpdateOne) SetUserID(id uuid.UUID) *PersonSuppressionUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *PersonSuppressionUpdateOne) SetUser(v *User) *PersonSuppressionUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the PersonSuppressionMutation object of the builder.
 func (_u *PersonSuppressionUpdateOne) Mutation() *PersonSuppressionMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *PersonSuppressionUpdateOne) ClearWorkspace() *PersonSuppressionUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *PersonSuppressionUpdateOne) ClearUser() *PersonSuppressionUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the PersonSuppressionUpdate builder.
@@ -461,7 +338,9 @@ func (_u *PersonSuppressionUpdateOne) Select(field string, fields ...string) *Pe
 
 // Save executes the query and returns the updated PersonSuppression entity.
 func (_u *PersonSuppressionUpdateOne) Save(ctx context.Context) (*PersonSuppression, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -488,11 +367,15 @@ func (_u *PersonSuppressionUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *PersonSuppressionUpdateOne) defaults() {
+func (_u *PersonSuppressionUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if personsuppression.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized personsuppression.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := personsuppression.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -570,64 +453,6 @@ func (_u *PersonSuppressionUpdateOne) sqlSave(ctx context.Context) (_node *Perso
 	}
 	if _u.mutation.NoteCleared() {
 		_spec.ClearField(personsuppression.FieldNote, field.TypeString)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personsuppression.WorkspaceTable,
-			Columns: []string{personsuppression.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personsuppression.WorkspaceTable,
-			Columns: []string{personsuppression.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personsuppression.UserTable,
-			Columns: []string{personsuppression.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personsuppression.UserTable,
-			Columns: []string{personsuppression.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &PersonSuppression{config: _u.config}
 	_spec.Assign = _node.assignValues

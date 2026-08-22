@@ -51,7 +51,9 @@ export default function PlanResponsePage() {
     setToken(nextToken);
     void planCall(nextToken)
       .then((body) => setPlan(body.plan as PublicPlan))
-      .catch((cause) => setError(cause instanceof Error ? cause.message : "The plan is unavailable."));
+      .catch((cause) =>
+        setError(cause instanceof Error ? cause.message : "The plan is unavailable."),
+      );
   }, []);
 
   const respond = async (kind: "confirm" | "blocked" | "completed" | "comment") => {
@@ -78,8 +80,12 @@ export default function PlanResponsePage() {
         Oppulence mutual action plan
       </p>
       <h1 className="mt-3 text-3xl font-semibold">Review the shared plan</h1>
-      {error ? <p className="mt-6 border border-destructive/40 p-4 text-sm text-destructive">{error}</p> : null}
-      {!plan && !error ? <p className="mt-6 text-sm text-muted-foreground">Opening the scoped plan…</p> : null}
+      {error ? (
+        <p className="mt-6 border border-destructive/40 p-4 text-sm text-destructive">{error}</p>
+      ) : null}
+      {!plan && !error ? (
+        <p className="mt-6 text-sm text-muted-foreground">Opening the scoped plan…</p>
+      ) : null}
       {plan ? (
         <section className="mt-8 space-y-5">
           <p className="text-sm text-muted-foreground">
@@ -98,7 +104,8 @@ export default function PlanResponsePage() {
           </ul>
           {sent ? (
             <p className="border border-emerald-500/40 bg-emerald-500/5 p-4 text-sm">
-              Your response was recorded for the plan owner to review. It did not silently change their records.
+              Your response was recorded for the plan owner to review. It did not silently change
+              their records.
             </p>
           ) : (
             <>
@@ -109,15 +116,28 @@ export default function PlanResponsePage() {
                 maxLength={4000}
               />
               <div className="flex flex-wrap gap-2">
-                <Button disabled={busy} onClick={() => void respond("confirm")}>Confirm plan</Button>
-                <Button disabled={busy} variant="outline" onClick={() => void respond("blocked")}>Mark blocked</Button>
-                <Button disabled={busy} variant="outline" onClick={() => void respond("completed")}>Report completed</Button>
-                <Button disabled={busy || !comment.trim()} variant="outline" onClick={() => void respond("comment")}>Send correction/comment</Button>
+                <Button disabled={busy} onClick={() => void respond("confirm")}>
+                  Confirm plan
+                </Button>
+                <Button disabled={busy} variant="outline" onClick={() => void respond("blocked")}>
+                  Mark blocked
+                </Button>
+                <Button disabled={busy} variant="outline" onClick={() => void respond("completed")}>
+                  Report completed
+                </Button>
+                <Button
+                  disabled={busy || !comment.trim()}
+                  variant="outline"
+                  onClick={() => void respond("comment")}
+                >
+                  Send correction/comment
+                </Button>
               </div>
             </>
           )}
           <p className="text-xs text-muted-foreground">
-            This private link exposes only this plan revision—never the account, transcript, or source evidence.
+            This private link exposes only this plan revision—never the account, transcript, or
+            source evidence.
           </p>
         </section>
       ) : null}

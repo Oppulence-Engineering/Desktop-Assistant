@@ -79,8 +79,8 @@ func (h *Handler) PreConsent(w http.ResponseWriter, r *http.Request) {
 	plan := "free"
 	status := "active"
 	if err == nil {
-		plan = string(sub.Plan)
-		status = string(sub.Status)
+		plan = sub.Plan
+		status = sub.Status
 	}
 	if (status == "active" || status == "trialing") && planRank[plan] >= planRank[conn.RequiredPlan] {
 		httpx.WriteJSON(w, http.StatusOK, map[string]any{"allow": true})

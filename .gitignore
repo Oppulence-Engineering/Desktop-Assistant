@@ -18,3 +18,7 @@ data/
 # a key in the working tree is one `git add -A` away from being published.
 tok.txt
 *.key.txt
+
+# Code-review-graph cache and local agent settings backup
+.code-review-graph/
+.gemini/settings.json.bak

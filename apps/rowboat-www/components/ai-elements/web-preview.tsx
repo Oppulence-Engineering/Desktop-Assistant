@@ -1,9 +1,18 @@
 "use client";
 
 import { Button } from "@oppulence/ui/components/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@oppulence/ui/components/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@oppulence/ui/components/collapsible";
 import { Input } from "@oppulence/ui/components/input";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@oppulence/ui/components/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
 import { CaretDown } from "@phosphor-icons/react";
 import type { ComponentProps, ReactNode } from "react";
@@ -142,19 +151,34 @@ export const WebPreviewUrl = ({ value, onChange, onKeyDown, ...props }: WebPrevi
   );
 };
 
-export type WebPreviewBodyProps = ComponentProps<"iframe"> & {
+export type WebPreviewBodyProps = Omit<ComponentProps<"iframe">, "srcDoc"> & {
   loading?: ReactNode;
+};
+
+const safePreviewUrl = (value: string | undefined): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  try {
+    const candidate = value.startsWith("www.") ? `https://${value}` : value;
+    const parsed = new URL(candidate);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.href : undefined;
+  } catch {
+    return undefined;
+  }
 };
 
 export const WebPreviewBody = ({ className, loading, src, ...props }: WebPreviewBodyProps) => {
   const { url } = useWebPreview();
+  const previewUrl = safePreviewUrl(typeof src === "string" ? src : url);
 
   return (
     <div className="flex-1">
       <iframe
         className={cn("size-full", className)}
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
-        src={(src ?? url) || undefined}
+        src={previewUrl}
         title="Preview"
         {...props}
       />

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { emitRendererEvent, onRendererEvent } from "@/lib/renderer-events";
 import {
   Workflow,
   ChevronRight,
@@ -57,14 +58,14 @@ import { extractConferenceLink } from "@/lib/calendar-event";
 import { useBilling } from "@/hooks/useBilling";
 import { useVoiceMode } from "@/hooks/useVoiceMode";
 import { toast } from "@/lib/toast";
-import { ServiceEvent } from "@x/shared/src/service-events.js";
-import type { RelationshipSourceStatus } from "@x/shared/src/relationships.js";
-import type { TranscriptionProvider } from "@x/shared/dist/transcription.js";
+import { ServiceEvent } from "@x/shared/service-events";
+import type { RelationshipSourceStatus } from "@x/shared/relationships";
+import type { TranscriptionProvider } from "@x/shared/transcription";
 import {
   PRODUCT_NAME,
   PRODUCT_PROVIDER_ID,
   getProductProviderState,
-} from "@x/shared/dist/branding.js";
+} from "@x/shared/branding";
 import z from "zod";
 import {
   relationshipSourceHealthSummary,
@@ -1553,10 +1554,10 @@ export function VoiceNoteButton({
     refresh();
     voice.warmup();
     const onConfigChanged = () => refresh();
-    window.addEventListener("transcription-config-changed", onConfigChanged);
+    const offConfigChanged = onRendererEvent("transcription-config-changed", onConfigChanged);
     return () => {
       cancelled = true;
-      window.removeEventListener("transcription-config-changed", onConfigChanged);
+      offConfigChanged();
       // Unmounting mid-recording discards the audio (voice.cancel clears the PCM
       // buffer). Without this the note stays at "*Recording in progress...*"
       // forever with no hint anything went wrong. Reached by navigating away from
@@ -1896,7 +1897,7 @@ function triggerMeetingCapture(event: UpcomingMeeting, openConference: boolean) 
   if (openConference && event.conferenceLink) {
     window.open(event.conferenceLink, "_blank");
   }
-  window.dispatchEvent(new Event("calendar-block:join-meeting"));
+  emitRendererEvent("calendar-block:join-meeting");
 }
 
 type SidebarEmailThread = {

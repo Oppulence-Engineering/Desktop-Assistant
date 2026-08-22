@@ -92,6 +92,7 @@ func (e *HTTPActSeam) Execute(ctx context.Context, req ExecRequest) (*ExecResult
 	if err != nil {
 		return nil, fmt.Errorf("actions: marshal act request: %w", err)
 	}
+	// #nosec G704 -- baseURL is operator-controlled service configuration, never request input.
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, e.baseURL+"/act", bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("actions: build act request: %w", err)
@@ -102,6 +103,7 @@ func (e *HTTPActSeam) Execute(ctx context.Context, req ExecRequest) (*ExecResult
 		httpReq.Header.Set("Authorization", "Bearer "+e.token)
 	}
 
+	// #nosec G704 -- httpReq targets the operator-configured Act seam above.
 	resp, err := e.client.Do(httpReq)
 	if err != nil {
 		return nil, classifyActError(err)
@@ -138,11 +140,11 @@ func operatorRef(id uuid.UUID) string {
 // request may have been processed) or definite. Conservative by design.
 func classifyActError(err error) error {
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-		return fmt.Errorf("%w: %v", ErrAmbiguous, err)
+		return fmt.Errorf("%w: %w", ErrAmbiguous, err)
 	}
 	var nerr net.Error
 	if errors.As(err, &nerr) && nerr.Timeout() {
-		return fmt.Errorf("%w: %v", ErrAmbiguous, err)
+		return fmt.Errorf("%w: %w", ErrAmbiguous, err)
 	}
 	return fmt.Errorf("actions: act seam call failed: %w", err)
 }

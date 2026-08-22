@@ -8,7 +8,8 @@ import { IGranolaConfigRepo } from './repo.js';
 import { serviceLogger } from '../../services/service_logger.js';
 import { limitEventItems } from '../limit_event_items.js';
 import { getTranscriptionConfig } from '../../voice/voice.js';
-import { organizationDomain } from '@x/shared/dist/email-domain.js';
+import { organizationDomain } from '@x/shared/email-domain';
+import { stringify as stringifyYaml } from 'yaml';
 import {
     enqueueRelationshipEvidence,
     flushRelationshipEvidence,
@@ -313,12 +314,13 @@ function documentToMarkdown(doc: Document): string {
     const createdAt = doc.created_at;
     const updatedAt = doc.updated_at || doc.created_at;
 
-    let md = `---\n`;
-    md += `granola_id: ${doc.id}\n`;
-    md += `title: "${title.replace(/"/g, '\\"')}"\n`;
-    md += `created_at: ${createdAt}\n`;
-    md += `updated_at: ${updatedAt}\n`;
-    md += `---\n\n`;
+    const frontmatter = stringifyYaml({
+        granola_id: doc.id,
+        title,
+        created_at: createdAt,
+        updated_at: updatedAt,
+    }).trimEnd();
+    let md = `---\n${frontmatter}\n---\n\n`;
 
     // Try last_viewed_panel content first (ProseMirror format)
     const lastViewedContent = doc.last_viewed_panel?.content;

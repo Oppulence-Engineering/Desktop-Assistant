@@ -18,7 +18,7 @@ import (
 type AgentToolResultBlob struct{ ent.Schema }
 
 // Mixin of the AgentToolResultBlob.
-func (AgentToolResultBlob) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (AgentToolResultBlob) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Fields of the AgentToolResultBlob.
 func (AgentToolResultBlob) Fields() []ent.Field {
@@ -35,7 +35,7 @@ func (AgentToolResultBlob) Fields() []ent.Field {
 // Edges of the AgentToolResultBlob.
 func (AgentToolResultBlob) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("agent_tool_result_blobs").Unique().Required(),
+		edge.From("user", User.Type).Ref("agent_tool_result_blobs").Unique().Required().Immutable(),
 	}
 }
 

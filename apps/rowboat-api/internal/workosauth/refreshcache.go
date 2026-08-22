@@ -2,6 +2,7 @@ package workosauth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -42,7 +43,7 @@ func NewRedisRefreshCache(ctx context.Context, redisURL string) (RefreshCache, e
 
 func (c *redisCache) Get(ctx context.Context, key string) ([]byte, bool, error) {
 	val, err := c.rdb.Get(ctx, key).Bytes()
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		return nil, false, nil
 	}
 	if err != nil {

@@ -1,15 +1,16 @@
 import { BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs/promises";
-import { WorkDir } from "@x/core/dist/config/config.js";
-import type { MeetingCalendarEvent } from "@x/shared/dist/meetings.js";
-import { normalizeMeetingEvent } from "@x/shared/dist/meetings.js";
+import { WorkDir } from "@x/core/config/config";
+import type { MeetingCalendarEvent } from "@x/shared/meetings";
+import { normalizeMeetingEvent } from "@x/shared/meetings";
 import { peekMeetingController } from "./meeting-controller.js";
+import { sendRendererEvent } from "./renderer-events.js";
 import {
   DEEP_LINK_SCHEME,
   LEGACY_DEEP_LINK_SCHEME,
   OLDEST_DEEP_LINK_SCHEME,
-} from "@x/shared/dist/branding.js";
+} from "@x/shared/branding";
 
 export { DEEP_LINK_SCHEME, LEGACY_DEEP_LINK_SCHEME, OLDEST_DEEP_LINK_SCHEME };
 const URL_PREFIXES = [
@@ -78,7 +79,7 @@ export function dispatchDeepLink(url: string): void {
 
   if (win.webContents.isLoading()) return;
 
-  win.webContents.send("app:openUrl", { url });
+  sendRendererEvent(win.webContents, "app:openUrl", { url });
   pendingUrl = null;
 }
 
@@ -206,12 +207,12 @@ async function handleTakeMeetingNotes(eventId: string, openMeeting: boolean): Pr
 
   if (win.webContents.isLoading()) {
     win.webContents.once("did-finish-load", () => {
-      win.webContents.send("app:takeMeetingNotes", payload);
+      sendRendererEvent(win.webContents, "app:takeMeetingNotes", payload);
     });
     return;
   }
 
-  win.webContents.send("app:takeMeetingNotes", payload);
+  sendRendererEvent(win.webContents, "app:takeMeetingNotes", payload);
 }
 
 // --- OAuth completion (Solomon AI-managed Google / Slack connects) ---

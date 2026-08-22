@@ -257,7 +257,12 @@ type personDTO struct {
 	OrgDomain    string   `json:"orgDomain,omitempty"`
 	Timezone     string   `json:"timezone,omitempty"`
 	Locale       string   `json:"locale,omitempty"`
-	Status       string   `json:"status"`
+	// Projected from cloud-research attributes (RFC 039). Empty for every
+	// workspace that never enables research, which is why they are omitempty
+	// rather than always present: "" here means nobody ever told us.
+	Seniority string `json:"seniority,omitempty"`
+	Location  string `json:"location,omitempty"`
+	Status    string `json:"status"`
 	// Whether their mail still reaches them. Surfaced so the UI can say a contact
 	// has left rather than silently ranking the account as merely quiet.
 	EmploymentStatus   string  `json:"employmentStatus,omitempty"`
@@ -277,6 +282,8 @@ func personToDTO(p *ent.Person) *personDTO {
 		ID:                p.ID.String(),
 		DisplayName:       p.DisplayName,
 		Aliases:           p.Aliases,
+		Seniority:         p.Seniority,
+		Location:          p.Location,
 		PrimaryEmail:      p.PrimaryEmail,
 		Title:             p.Title,
 		OrgName:           p.OrgName,
@@ -642,14 +649,10 @@ func relationshipAttentionToDTO(item *ent.RelationshipAttentionItem) (relationsh
 	if err != nil {
 		return relationshipAttentionDTO{}, err
 	}
-	factors := map[string]int{}
-	if err := json.Unmarshal([]byte(item.RankFactorsJSON), &factors); err != nil {
-		return relationshipAttentionDTO{}, err
-	}
 	return relationshipAttentionDTO{
 		ID: item.ID.String(), Version: item.Version, RelationshipID: rel.ID.String(), RelationshipName: rel.DisplayName,
 		ReasonCode: item.ReasonCode, Explanation: item.Explanation, TriggeringObjectRef: item.TriggeringObjectRef,
-		EvidenceRefs: item.EvidenceRefs, UrgencyBand: item.UrgencyBand, RankScore: item.RankScore, RankFactors: factors,
+		EvidenceRefs: item.EvidenceRefs, UrgencyBand: item.UrgencyBand, RankScore: item.RankScore, RankFactors: item.RankFactorsJSON,
 		SourceRequirements: item.SourceRequirements, RecommendationID: item.RecommendationID,
 		RecommendationRevision: item.RecommendationRevision, OwnerID: item.OwnerID, Status: item.Status,
 		StateReason: item.StateReason, SnoozedUntil: item.SnoozedUntil, ExpiresAt: item.ExpiresAt,

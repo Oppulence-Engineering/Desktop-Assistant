@@ -1,4 +1,4 @@
-import { emailDomain } from "@x/shared/dist/email-domain.js";
+import { emailDomain } from "@x/shared/email-domain";
 import { detectDepartureSignal } from "./departure-signal.js";
 import type { MailboxStore } from "./store.js";
 import type { MailboxSenderProfile } from "./store.js";

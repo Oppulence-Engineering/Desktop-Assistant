@@ -1,7 +1,7 @@
 import { generateObject, type ModelMessage } from "ai";
 import z from "zod";
-import { ToolPermissionMetadata } from "@x/shared/dist/runs.js";
-import { ToolCallPart } from "@x/shared/dist/message.js";
+import { ToolPermissionMetadata } from "@x/shared/runs";
+import { ToolCallPart } from "@x/shared/message";
 import { captureLlmUsage } from "../analytics/usage.js";
 import { withUseCase, type UseCase } from "../analytics/use_case.js";
 import { getAutoPermissionDecisionModel, getDefaultModelAndProvider, resolveProviderConfig } from "../models/defaults.js";

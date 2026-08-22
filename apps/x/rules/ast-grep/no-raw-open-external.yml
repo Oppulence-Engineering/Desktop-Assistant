@@ -1,0 +1,10 @@
+id: X016-no-raw-open-external
+language: TypeScript
+severity: error
+message: Route external navigation through openTrustedExternal.
+rule:
+  pattern: shell.openExternal($$$ARGS)
+files:
+  - apps/main/src/**/*.ts
+ignores:
+  - apps/main/src/external-url.ts

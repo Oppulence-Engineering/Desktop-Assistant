@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -329,6 +330,12 @@ func (_q *OAuthConnectionHistoryQuery) prepareQuery(ctx context.Context) error {
 			return err
 		}
 		_q.sql = prev
+	}
+	if oauthconnectionhistory.Policy == nil {
+		return errors.New("ent: uninitialized oauthconnectionhistory.Policy (forgotten import ent/runtime?)")
+	}
+	if err := oauthconnectionhistory.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

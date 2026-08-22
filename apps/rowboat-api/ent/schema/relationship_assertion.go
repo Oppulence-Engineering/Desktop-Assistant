@@ -15,7 +15,7 @@ import (
 type RelationshipAssertion struct{ ent.Schema }
 
 // Mixin adds the shared base fields to relationship assertions.
-func (RelationshipAssertion) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RelationshipAssertion) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields defines the relationship assertion columns.
 func (RelationshipAssertion) Fields() []ent.Field {
@@ -57,13 +57,13 @@ func (RelationshipAssertion) Fields() []ent.Field {
 func (RelationshipAssertion) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("relationship_assertions").Unique().Required(),
+			Ref("relationship_assertions").Unique().Required().Immutable(),
 		edge.From("relationship", Relationship.Type).
 			Ref("assertions").Unique().Required(),
 		edge.From("observation", RelationshipObservation.Type).
 			Ref("assertions").Unique(),
 		edge.From("user", User.Type).
-			Ref("relationship_assertions").Unique().Required(),
+			Ref("relationship_assertions").Unique().Required().Immutable(),
 	}
 }
 

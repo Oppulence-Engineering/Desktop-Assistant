@@ -64,6 +64,9 @@ func (LLMUsageHistory) Edges() []ent.Edge {
 func (LLMUsageHistory) Annotations() []schema.Annotation {
 	return []schema.Annotation{entgql.Annotation{Skip: entgql.SkipAll}, enthistory.Annotations{IsHistory: true, Triggers: []enthistory.OpType{enthistory.OpTypeInsert, enthistory.OpTypeUpdate, enthistory.OpTypeDelete}}}
 }
+func (LLMUsageHistory) Mixin() []ent.Mixin {
+	return []ent.Mixin{mixin.UserTenantPolicyMixin{}}
+}
 func (LLMUsageHistory) Indexes() []ent.Index {
 	return []ent.Index{index.Fields("history_time")}
 }

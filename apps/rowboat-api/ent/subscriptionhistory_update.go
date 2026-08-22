@@ -41,7 +41,9 @@ func (_u *SubscriptionHistoryUpdate) Mutation() *SubscriptionHistoryMutation {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *SubscriptionHistoryUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -68,11 +70,15 @@ func (_u *SubscriptionHistoryUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *SubscriptionHistoryUpdate) defaults() {
+func (_u *SubscriptionHistoryUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if subscriptionhistory.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized subscriptionhistory.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := subscriptionhistory.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 func (_u *SubscriptionHistoryUpdate) sqlSave(ctx context.Context) (_node int, err error) {
@@ -145,7 +151,9 @@ func (_u *SubscriptionHistoryUpdateOne) Select(field string, fields ...string) *
 
 // Save executes the query and returns the updated SubscriptionHistory entity.
 func (_u *SubscriptionHistoryUpdateOne) Save(ctx context.Context) (*SubscriptionHistory, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -172,11 +180,15 @@ func (_u *SubscriptionHistoryUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *SubscriptionHistoryUpdateOne) defaults() {
+func (_u *SubscriptionHistoryUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if subscriptionhistory.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized subscriptionhistory.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := subscriptionhistory.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 func (_u *SubscriptionHistoryUpdateOne) sqlSave(ctx context.Context) (_node *SubscriptionHistory, err error) {

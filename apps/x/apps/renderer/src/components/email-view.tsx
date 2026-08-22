@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { emitRendererEvent } from "@/lib/renderer-events";
 import {
   Archive,
   Bold,
@@ -941,7 +942,7 @@ function ComposeBox({
     lines.push(currentDraft || "(empty — no draft yet)");
 
     window.__pendingEmailDraft = { prompt: lines.join("\n") };
-    window.dispatchEvent(new Event("email-block:draft-with-assistant"));
+    emitRendererEvent("email-block:draft-with-assistant");
   };
 
   return (

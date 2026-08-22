@@ -17,7 +17,7 @@ import (
 type MailSignal struct{ ent.Schema }
 
 // Mixin of the MailSignal.
-func (MailSignal) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (MailSignal) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Fields of the MailSignal.
 func (MailSignal) Fields() []ent.Field {
@@ -41,7 +41,7 @@ func (MailSignal) Fields() []ent.Field {
 func (MailSignal) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("thread", MailThread.Type).Ref("signal").Unique().Required(),
-		edge.From("user", User.Type).Ref("mail_signals").Unique().Required(),
+		edge.From("user", User.Type).Ref("mail_signals").Unique().Required().Immutable(),
 	}
 }
 

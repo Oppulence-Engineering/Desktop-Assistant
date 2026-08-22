@@ -3,7 +3,7 @@ import type {
   ConversationGovernanceDecision,
   ConversationPolicyLayer,
   ResolvedConversationPolicy,
-} from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
 import { conversationFingerprint } from "./conversation-utils.js";
 
 const CAPTURE_ORDER = ["deny", "require_consent", "allow"] as const;

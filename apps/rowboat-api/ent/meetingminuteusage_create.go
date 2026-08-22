@@ -119,7 +119,9 @@ func (_c *MeetingMinuteUsageCreate) Mutation() *MeetingMinuteUsageMutation {
 
 // Save creates the MeetingMinuteUsage in the database.
 func (_c *MeetingMinuteUsageCreate) Save(ctx context.Context) (*MeetingMinuteUsage, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -146,12 +148,18 @@ func (_c *MeetingMinuteUsageCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *MeetingMinuteUsageCreate) defaults() {
+func (_c *MeetingMinuteUsageCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if meetingminuteusage.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized meetingminuteusage.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := meetingminuteusage.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if meetingminuteusage.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized meetingminuteusage.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := meetingminuteusage.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -164,9 +172,13 @@ func (_c *MeetingMinuteUsageCreate) defaults() {
 		_c.mutation.SetReservedSeconds(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if meetingminuteusage.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized meetingminuteusage.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := meetingminuteusage.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

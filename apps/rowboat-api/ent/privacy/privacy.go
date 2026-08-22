@@ -7,6 +7,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 
+	"entgo.io/ent/entql"
 	"entgo.io/ent/privacy"
 )
 
@@ -492,6 +493,30 @@ func (f BackgroundTaskScheduleStateMutationRuleFunc) EvalMutation(ctx context.Co
 		return f(ctx, m)
 	}
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.BackgroundTaskScheduleStateMutation", m)
+}
+
+// The CaptureArtifactQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type CaptureArtifactQueryRuleFunc func(context.Context, *ent.CaptureArtifactQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f CaptureArtifactQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CaptureArtifactQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.CaptureArtifactQuery", q)
+}
+
+// The CaptureArtifactMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type CaptureArtifactMutationRuleFunc func(context.Context, *ent.CaptureArtifactMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f CaptureArtifactMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.CaptureArtifactMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.CaptureArtifactMutation", m)
 }
 
 // The CloudEventQueryRuleFunc type is an adapter to allow the use of ordinary
@@ -1742,6 +1767,54 @@ func (f UserHistoryMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mut
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.UserHistoryMutation", m)
 }
 
+// The VoiceAPIKeyQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type VoiceAPIKeyQueryRuleFunc func(context.Context, *ent.VoiceAPIKeyQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f VoiceAPIKeyQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.VoiceAPIKeyQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.VoiceAPIKeyQuery", q)
+}
+
+// The VoiceAPIKeyMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type VoiceAPIKeyMutationRuleFunc func(context.Context, *ent.VoiceAPIKeyMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f VoiceAPIKeyMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.VoiceAPIKeyMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.VoiceAPIKeyMutation", m)
+}
+
+// The VoiceSyncItemQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type VoiceSyncItemQueryRuleFunc func(context.Context, *ent.VoiceSyncItemQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f VoiceSyncItemQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.VoiceSyncItemQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.VoiceSyncItemQuery", q)
+}
+
+// The VoiceSyncItemMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type VoiceSyncItemMutationRuleFunc func(context.Context, *ent.VoiceSyncItemMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f VoiceSyncItemMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.VoiceSyncItemMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.VoiceSyncItemMutation", m)
+}
+
 // The WorkspaceFeatureControlQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type WorkspaceFeatureControlQueryRuleFunc func(context.Context, *ent.WorkspaceFeatureControlQuery) error
@@ -1764,4 +1837,339 @@ func (f WorkspaceFeatureControlMutationRuleFunc) EvalMutation(ctx context.Contex
 		return f(ctx, m)
 	}
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.WorkspaceFeatureControlMutation", m)
+}
+
+type (
+	// Filter is the interface that wraps the Where function
+	// for filtering nodes in queries and mutations.
+	Filter interface {
+		// Where applies a filter on the executed query/mutation.
+		Where(entql.P)
+	}
+
+	// The FilterFunc type is an adapter that allows the use of ordinary
+	// functions as filters for query and mutation types.
+	FilterFunc func(context.Context, Filter) error
+)
+
+// EvalQuery calls f(ctx, q) if the query implements the Filter interface, otherwise it is denied.
+func (f FilterFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	fr, err := queryFilter(q)
+	if err != nil {
+		return err
+	}
+	return f(ctx, fr)
+}
+
+// EvalMutation calls f(ctx, q) if the mutation implements the Filter interface, otherwise it is denied.
+func (f FilterFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	fr, err := mutationFilter(m)
+	if err != nil {
+		return err
+	}
+	return f(ctx, fr)
+}
+
+var _ QueryMutationRule = FilterFunc(nil)
+
+func queryFilter(q ent.Query) (Filter, error) {
+	switch q := q.(type) {
+	case *ent.ActionOutcomeQuery:
+		return q.Filter(), nil
+	case *ent.ActionProposalQuery:
+		return q.Filter(), nil
+	case *ent.AgentApprovalQuery:
+		return q.Filter(), nil
+	case *ent.AgentDefinitionQuery:
+		return q.Filter(), nil
+	case *ent.AgentDefinitionHistoryQuery:
+		return q.Filter(), nil
+	case *ent.AgentSessionQuery:
+		return q.Filter(), nil
+	case *ent.AgentSessionEventQuery:
+		return q.Filter(), nil
+	case *ent.AgentToolCallQuery:
+		return q.Filter(), nil
+	case *ent.AgentToolResultBlobQuery:
+		return q.Filter(), nil
+	case *ent.AgentTurnQuery:
+		return q.Filter(), nil
+	case *ent.ApprovalTokenQuery:
+		return q.Filter(), nil
+	case *ent.BackgroundTaskQuery:
+		return q.Filter(), nil
+	case *ent.BackgroundTaskArtifactQuery:
+		return q.Filter(), nil
+	case *ent.BackgroundTaskRunQuery:
+		return q.Filter(), nil
+	case *ent.BackgroundTaskRunEventQuery:
+		return q.Filter(), nil
+	case *ent.BackgroundTaskScheduleStateQuery:
+		return q.Filter(), nil
+	case *ent.CaptureArtifactQuery:
+		return q.Filter(), nil
+	case *ent.CloudEventQuery:
+		return q.Filter(), nil
+	case *ent.CommitmentQuery:
+		return q.Filter(), nil
+	case *ent.CommitmentDependencyQuery:
+		return q.Filter(), nil
+	case *ent.CommitmentEventQuery:
+		return q.Filter(), nil
+	case *ent.ConversationIntelligenceArtifactQuery:
+		return q.Filter(), nil
+	case *ent.CreditLedgerQuery:
+		return q.Filter(), nil
+	case *ent.GoogleWatchQuery:
+		return q.Filter(), nil
+	case *ent.LLMUsageQuery:
+		return q.Filter(), nil
+	case *ent.LLMUsageHistoryQuery:
+		return q.Filter(), nil
+	case *ent.MCPConnectionQuery:
+		return q.Filter(), nil
+	case *ent.MCPConnectionHistoryQuery:
+		return q.Filter(), nil
+	case *ent.MailBodyCacheQuery:
+		return q.Filter(), nil
+	case *ent.MailMessageMetaQuery:
+		return q.Filter(), nil
+	case *ent.MailSignalQuery:
+		return q.Filter(), nil
+	case *ent.MailThreadQuery:
+		return q.Filter(), nil
+	case *ent.MeetingMinuteUsageQuery:
+		return q.Filter(), nil
+	case *ent.OAuthConnectionQuery:
+		return q.Filter(), nil
+	case *ent.OAuthConnectionHistoryQuery:
+		return q.Filter(), nil
+	case *ent.OAuthPendingQuery:
+		return q.Filter(), nil
+	case *ent.PersonQuery:
+		return q.Filter(), nil
+	case *ent.PersonAttributeQuery:
+		return q.Filter(), nil
+	case *ent.PersonIdentityQuery:
+		return q.Filter(), nil
+	case *ent.PersonInteractionStatQuery:
+		return q.Filter(), nil
+	case *ent.PersonMergeCandidateQuery:
+		return q.Filter(), nil
+	case *ent.PersonSuppressionQuery:
+		return q.Filter(), nil
+	case *ent.PolicyDecisionSnapshotQuery:
+		return q.Filter(), nil
+	case *ent.RelationshipQuery:
+		return q.Filter(), nil
+	case *ent.RelationshipAssertionQuery:
+		return q.Filter(), nil
+	case *ent.RelationshipAttentionItemQuery:
+		return q.Filter(), nil
+	case *ent.RelationshipIdentityQuery:
+		return q.Filter(), nil
+	case *ent.RelationshipIdentityCandidateQuery:
+		return q.Filter(), nil
+	case *ent.RelationshipIdentityDecisionQuery:
+		return q.Filter(), nil
+	case *ent.RelationshipLineageEventQuery:
+		return q.Filter(), nil
+	case *ent.RelationshipObservationQuery:
+		return q.Filter(), nil
+	case *ent.RelationshipParticipantQuery:
+		return q.Filter(), nil
+	case *ent.RelationshipProjectionJobQuery:
+		return q.Filter(), nil
+	case *ent.RelationshipReviewAcknowledgementQuery:
+		return q.Filter(), nil
+	case *ent.RelationshipSourceStatusQuery:
+		return q.Filter(), nil
+	case *ent.RelationshipStateSnapshotQuery:
+		return q.Filter(), nil
+	case *ent.RevenueActionQuery:
+		return q.Filter(), nil
+	case *ent.RevenueActionRevisionQuery:
+		return q.Filter(), nil
+	case *ent.RevenueEvidenceQuery:
+		return q.Filter(), nil
+	case *ent.RevenueLeakScanQuery:
+		return q.Filter(), nil
+	case *ent.RevenueOutboxEventQuery:
+		return q.Filter(), nil
+	case *ent.RevenueTrustEventQuery:
+		return q.Filter(), nil
+	case *ent.RevenueWorkspaceQuery:
+		return q.Filter(), nil
+	case *ent.RevenueWorkspaceMemberQuery:
+		return q.Filter(), nil
+	case *ent.SubscriptionQuery:
+		return q.Filter(), nil
+	case *ent.SubscriptionHistoryQuery:
+		return q.Filter(), nil
+	case *ent.TenantEvidenceKeyQuery:
+		return q.Filter(), nil
+	case *ent.UserQuery:
+		return q.Filter(), nil
+	case *ent.UserHistoryQuery:
+		return q.Filter(), nil
+	case *ent.VoiceAPIKeyQuery:
+		return q.Filter(), nil
+	case *ent.VoiceSyncItemQuery:
+		return q.Filter(), nil
+	case *ent.WorkspaceFeatureControlQuery:
+		return q.Filter(), nil
+	default:
+		return nil, Denyf("ent/privacy: unexpected query type %T for query filter", q)
+	}
+}
+
+func mutationFilter(m ent.Mutation) (Filter, error) {
+	switch m := m.(type) {
+	case *ent.ActionOutcomeMutation:
+		return m.Filter(), nil
+	case *ent.ActionProposalMutation:
+		return m.Filter(), nil
+	case *ent.AgentApprovalMutation:
+		return m.Filter(), nil
+	case *ent.AgentDefinitionMutation:
+		return m.Filter(), nil
+	case *ent.AgentDefinitionHistoryMutation:
+		return m.Filter(), nil
+	case *ent.AgentSessionMutation:
+		return m.Filter(), nil
+	case *ent.AgentSessionEventMutation:
+		return m.Filter(), nil
+	case *ent.AgentToolCallMutation:
+		return m.Filter(), nil
+	case *ent.AgentToolResultBlobMutation:
+		return m.Filter(), nil
+	case *ent.AgentTurnMutation:
+		return m.Filter(), nil
+	case *ent.ApprovalTokenMutation:
+		return m.Filter(), nil
+	case *ent.BackgroundTaskMutation:
+		return m.Filter(), nil
+	case *ent.BackgroundTaskArtifactMutation:
+		return m.Filter(), nil
+	case *ent.BackgroundTaskRunMutation:
+		return m.Filter(), nil
+	case *ent.BackgroundTaskRunEventMutation:
+		return m.Filter(), nil
+	case *ent.BackgroundTaskScheduleStateMutation:
+		return m.Filter(), nil
+	case *ent.CaptureArtifactMutation:
+		return m.Filter(), nil
+	case *ent.CloudEventMutation:
+		return m.Filter(), nil
+	case *ent.CommitmentMutation:
+		return m.Filter(), nil
+	case *ent.CommitmentDependencyMutation:
+		return m.Filter(), nil
+	case *ent.CommitmentEventMutation:
+		return m.Filter(), nil
+	case *ent.ConversationIntelligenceArtifactMutation:
+		return m.Filter(), nil
+	case *ent.CreditLedgerMutation:
+		return m.Filter(), nil
+	case *ent.GoogleWatchMutation:
+		return m.Filter(), nil
+	case *ent.LLMUsageMutation:
+		return m.Filter(), nil
+	case *ent.LLMUsageHistoryMutation:
+		return m.Filter(), nil
+	case *ent.MCPConnectionMutation:
+		return m.Filter(), nil
+	case *ent.MCPConnectionHistoryMutation:
+		return m.Filter(), nil
+	case *ent.MailBodyCacheMutation:
+		return m.Filter(), nil
+	case *ent.MailMessageMetaMutation:
+		return m.Filter(), nil
+	case *ent.MailSignalMutation:
+		return m.Filter(), nil
+	case *ent.MailThreadMutation:
+		return m.Filter(), nil
+	case *ent.MeetingMinuteUsageMutation:
+		return m.Filter(), nil
+	case *ent.OAuthConnectionMutation:
+		return m.Filter(), nil
+	case *ent.OAuthConnectionHistoryMutation:
+		return m.Filter(), nil
+	case *ent.OAuthPendingMutation:
+		return m.Filter(), nil
+	case *ent.PersonMutation:
+		return m.Filter(), nil
+	case *ent.PersonAttributeMutation:
+		return m.Filter(), nil
+	case *ent.PersonIdentityMutation:
+		return m.Filter(), nil
+	case *ent.PersonInteractionStatMutation:
+		return m.Filter(), nil
+	case *ent.PersonMergeCandidateMutation:
+		return m.Filter(), nil
+	case *ent.PersonSuppressionMutation:
+		return m.Filter(), nil
+	case *ent.PolicyDecisionSnapshotMutation:
+		return m.Filter(), nil
+	case *ent.RelationshipMutation:
+		return m.Filter(), nil
+	case *ent.RelationshipAssertionMutation:
+		return m.Filter(), nil
+	case *ent.RelationshipAttentionItemMutation:
+		return m.Filter(), nil
+	case *ent.RelationshipIdentityMutation:
+		return m.Filter(), nil
+	case *ent.RelationshipIdentityCandidateMutation:
+		return m.Filter(), nil
+	case *ent.RelationshipIdentityDecisionMutation:
+		return m.Filter(), nil
+	case *ent.RelationshipLineageEventMutation:
+		return m.Filter(), nil
+	case *ent.RelationshipObservationMutation:
+		return m.Filter(), nil
+	case *ent.RelationshipParticipantMutation:
+		return m.Filter(), nil
+	case *ent.RelationshipProjectionJobMutation:
+		return m.Filter(), nil
+	case *ent.RelationshipReviewAcknowledgementMutation:
+		return m.Filter(), nil
+	case *ent.RelationshipSourceStatusMutation:
+		return m.Filter(), nil
+	case *ent.RelationshipStateSnapshotMutation:
+		return m.Filter(), nil
+	case *ent.RevenueActionMutation:
+		return m.Filter(), nil
+	case *ent.RevenueActionRevisionMutation:
+		return m.Filter(), nil
+	case *ent.RevenueEvidenceMutation:
+		return m.Filter(), nil
+	case *ent.RevenueLeakScanMutation:
+		return m.Filter(), nil
+	case *ent.RevenueOutboxEventMutation:
+		return m.Filter(), nil
+	case *ent.RevenueTrustEventMutation:
+		return m.Filter(), nil
+	case *ent.RevenueWorkspaceMutation:
+		return m.Filter(), nil
+	case *ent.RevenueWorkspaceMemberMutation:
+		return m.Filter(), nil
+	case *ent.SubscriptionMutation:
+		return m.Filter(), nil
+	case *ent.SubscriptionHistoryMutation:
+		return m.Filter(), nil
+	case *ent.TenantEvidenceKeyMutation:
+		return m.Filter(), nil
+	case *ent.UserMutation:
+		return m.Filter(), nil
+	case *ent.UserHistoryMutation:
+		return m.Filter(), nil
+	case *ent.VoiceAPIKeyMutation:
+		return m.Filter(), nil
+	case *ent.VoiceSyncItemMutation:
+		return m.Filter(), nil
+	case *ent.WorkspaceFeatureControlMutation:
+		return m.Filter(), nil
+	default:
+		return nil, Denyf("ent/privacy: unexpected mutation type %T for mutation filter", m)
+	}
 }

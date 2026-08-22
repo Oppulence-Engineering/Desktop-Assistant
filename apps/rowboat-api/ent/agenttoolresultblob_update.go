@@ -13,8 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolresultblob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/google/uuid"
 )
 
 // AgentToolResultBlobUpdate is the builder for updating AgentToolResultBlob entities.
@@ -147,31 +145,16 @@ func (_u *AgentToolResultBlobUpdate) AddTotalBytes(v int) *AgentToolResultBlobUp
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *AgentToolResultBlobUpdate) SetUserID(id uuid.UUID) *AgentToolResultBlobUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *AgentToolResultBlobUpdate) SetUser(v *User) *AgentToolResultBlobUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the AgentToolResultBlobMutation object of the builder.
 func (_u *AgentToolResultBlobUpdate) Mutation() *AgentToolResultBlobMutation {
 	return _u.mutation
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *AgentToolResultBlobUpdate) ClearUser() *AgentToolResultBlobUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *AgentToolResultBlobUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -198,11 +181,15 @@ func (_u *AgentToolResultBlobUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *AgentToolResultBlobUpdate) defaults() {
+func (_u *AgentToolResultBlobUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if agenttoolresultblob.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized agenttoolresultblob.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := agenttoolresultblob.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -282,35 +269,6 @@ func (_u *AgentToolResultBlobUpdate) sqlSave(ctx context.Context) (_node int, er
 	}
 	if value, ok := _u.mutation.AddedTotalBytes(); ok {
 		_spec.AddField(agenttoolresultblob.FieldTotalBytes, field.TypeInt, value)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   agenttoolresultblob.UserTable,
-			Columns: []string{agenttoolresultblob.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   agenttoolresultblob.UserTable,
-			Columns: []string{agenttoolresultblob.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -449,26 +407,9 @@ func (_u *AgentToolResultBlobUpdateOne) AddTotalBytes(v int) *AgentToolResultBlo
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *AgentToolResultBlobUpdateOne) SetUserID(id uuid.UUID) *AgentToolResultBlobUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *AgentToolResultBlobUpdateOne) SetUser(v *User) *AgentToolResultBlobUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the AgentToolResultBlobMutation object of the builder.
 func (_u *AgentToolResultBlobUpdateOne) Mutation() *AgentToolResultBlobMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *AgentToolResultBlobUpdateOne) ClearUser() *AgentToolResultBlobUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the AgentToolResultBlobUpdate builder.
@@ -486,7 +427,9 @@ func (_u *AgentToolResultBlobUpdateOne) Select(field string, fields ...string) *
 
 // Save executes the query and returns the updated AgentToolResultBlob entity.
 func (_u *AgentToolResultBlobUpdateOne) Save(ctx context.Context) (*AgentToolResultBlob, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -513,11 +456,15 @@ func (_u *AgentToolResultBlobUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *AgentToolResultBlobUpdateOne) defaults() {
+func (_u *AgentToolResultBlobUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if agenttoolresultblob.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized agenttoolresultblob.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := agenttoolresultblob.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -614,35 +561,6 @@ func (_u *AgentToolResultBlobUpdateOne) sqlSave(ctx context.Context) (_node *Age
 	}
 	if value, ok := _u.mutation.AddedTotalBytes(); ok {
 		_spec.AddField(agenttoolresultblob.FieldTotalBytes, field.TypeInt, value)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   agenttoolresultblob.UserTable,
-			Columns: []string{agenttoolresultblob.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   agenttoolresultblob.UserTable,
-			Columns: []string{agenttoolresultblob.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &AgentToolResultBlob{config: _u.config}
 	_spec.Assign = _node.assignValues

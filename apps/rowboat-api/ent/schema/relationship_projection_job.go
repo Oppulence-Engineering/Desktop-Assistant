@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -15,7 +16,9 @@ import (
 type RelationshipProjectionJob struct{ ent.Schema }
 
 // Mixin adds shared identity and timestamps.
-func (RelationshipProjectionJob) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RelationshipProjectionJob) Mixin() []ent.Mixin {
+	return []ent.Mixin{mixin.WorkspaceTenantMixin{}}
+}
 
 // Fields defines lease, retry, compatibility, and result metadata.
 func (RelationshipProjectionJob) Fields() []ent.Field {
@@ -41,18 +44,21 @@ func (RelationshipProjectionJob) Fields() []ent.Field {
 func (RelationshipProjectionJob) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("relationship_projection_jobs").Unique().Required(),
+			Ref("relationship_projection_jobs").Unique().Required().Immutable(),
 		edge.From("relationship", Relationship.Type).
 			Ref("projection_jobs").Unique().Required(),
 		edge.From("user", User.Type).
-			Ref("relationship_projection_jobs").Unique().Required(),
+			Ref("relationship_projection_jobs").Unique().Required().Immutable(),
 	}
 }
 
 // Indexes support due-job leasing and per-relationship diagnostics.
 func (RelationshipProjectionJob) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("status", "next_attempt_at", "lease_expires_at"),
+		index.Fields("status", "next_attempt_at").
+			Annotations(entsql.IndexWhere("status IN ('pending', 'failed')")),
+		index.Fields("status", "lease_expires_at").
+			Annotations(entsql.IndexWhere("status = 'running' AND lease_expires_at IS NOT NULL")),
 		index.Edges("relationship").Fields("status", "created_at"),
 	}
 }

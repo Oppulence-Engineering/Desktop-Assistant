@@ -3,7 +3,7 @@ import { AlertCircle, CheckCircle, Loader2, Mic, Square } from "@/lib/icons";
 import { Button } from "@oppulence/ui/components/button";
 import { Progress } from "@oppulence/ui/components/progress";
 import { cn } from "@/lib/utils";
-import type { WhisperDiagnosticResult } from "@x/shared/dist/transcription.js";
+import type { WhisperDiagnosticResult } from "@x/shared/transcription";
 
 const TARGET_SAMPLE_RATE = 16000;
 const EXPECTED_TEXT = "the quick brown fox jumps over the lazy dog";

@@ -8,8 +8,8 @@ import type {
   RelationshipObservationAssertionInput,
   RelationshipObservationInput,
   RelationshipObservationParticipantInput,
-} from "@x/shared/dist/relationships.js";
-import { ConversationGovernanceReceiptSchema } from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
+import { ConversationGovernanceReceiptSchema } from "@x/shared/relationships";
 import { duePhrase, resolveSpokenDueAt } from "./conversation-dates.js";
 import { conversationFingerprint } from "./conversation-utils.js";
 import type { ConversationExtractor } from "./conversation-extractor.js";

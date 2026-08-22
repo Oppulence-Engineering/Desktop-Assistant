@@ -6,6 +6,9 @@
 //   - privacy:   row-level access policies enforced at the ORM layer
 //   - intercept: read-side query interceptors (metrics, soft-delete-ready)
 //   - sql/upsert: OnConflict upserts (used for the WorkOS user upsert)
+//   - entql: type-aware predicates used by privacy and repository policy code
+//   - sql/versioned-migration: Atlas migration diff support
+//   - schema/snapshot: deterministic schema history for safe code generation
 //
 // Extensions:
 //   - enthistory: generates *_history tables for audited schemas. It runs in
@@ -25,9 +28,17 @@ import (
 	"entgo.io/ent/entc"
 	"entgo.io/ent/entc/gen"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/optimistic"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/tenant"
 	"github.com/flume/enthistory"
 	"github.com/ogen-go/ogen"
 )
+
+type rowboatExtension struct{ entc.DefaultExtension }
+
+func (rowboatExtension) Hooks() []gen.Hook {
+	return []gen.Hook{tenant.ValidateHook(), optimistic.ValidateHook()}
+}
 
 func main() {
 	// Phase 1: generate the *History schemas for the tracked entities.
@@ -100,10 +111,14 @@ func main() {
 			Features: []gen.Feature{
 				gen.FeaturePrivacy,
 				gen.FeatureIntercept,
+				gen.FeatureEntQL,
 				gen.FeatureUpsert,
+				gen.FeatureVersionedMigration,
+				gen.FeatureSnapshot,
 			},
 		},
 		entc.Extensions(
+			rowboatExtension{},
 			enthistory.NewHistoryExtension(),
 			oasExt,
 			gqlExt,

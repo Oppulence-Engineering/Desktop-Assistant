@@ -4,7 +4,7 @@ import type {
   MeetingCaptureStatus,
   MeetingLevels,
   MeetingTrackId,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 
 /**
  * The recording indicator.

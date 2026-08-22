@@ -21,8 +21,9 @@ import { SettingsDialog } from "@/components/settings-dialog";
 import { formatRelativeTime } from "@/lib/relative-time";
 import { conferenceProviderLabel, extractConferenceLink, isEventNow } from "@/lib/calendar-event";
 import { cn } from "@/lib/utils";
+import { emitRendererEvent } from "@/lib/renderer-events";
 import type { MeetingTranscriptionState } from "@/hooks/useMeetingTranscription";
-import type { MeetingDoctorCheck } from "@x/shared/dist/meetings.js";
+import type { MeetingDoctorCheck } from "@x/shared/meetings";
 import { MeetingCaptureStrip } from "@/components/meeting-capture-strip";
 import { MeetingCommitments } from "@/components/meeting-commitments";
 import { MeetingLivePanel } from "@/components/meeting-live-panel";
@@ -198,7 +199,7 @@ function triggerMeetingCapture(event: UpcomingEvent, openConference: boolean) {
   if (openConference && event.conferenceLink) {
     window.open(event.conferenceLink, "_blank");
   }
-  window.dispatchEvent(new Event("calendar-block:join-meeting"));
+  emitRendererEvent("calendar-block:join-meeting");
 }
 
 // Always show today (anchor). For days within the window after today, include
@@ -364,13 +365,10 @@ function linkifyText(value: string): DescriptionPart[] {
 }
 
 function parseDescriptionParts(value: string): DescriptionPart[] {
-  const withLineBreaks = value
-    .replace(/<\s*br\s*\/?>/gi, "\n")
-    .replace(/<\/\s*(p|div|li|tr|h[1-6])\s*>/gi, "\n");
   if (typeof DOMParser === "undefined") {
-    return normalizeDescriptionParts(linkifyText(withLineBreaks.replace(/<[^>]*>/g, "").trim()));
+    return normalizeDescriptionParts(linkifyText(value.trim()));
   }
-  const doc = new DOMParser().parseFromString(withLineBreaks, "text/html");
+  const doc = new DOMParser().parseFromString(value, "text/html");
   const parts: DescriptionPart[] = [];
 
   const visit = (node: Node) => {

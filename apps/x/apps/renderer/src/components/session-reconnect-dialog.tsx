@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@oppulence/ui/components/dialog";
 import { ProductLoginExperience } from "@/components/onboarding/product-login-experience";
-import { PRODUCT_NAME, PRODUCT_PROVIDER_ID, isProductProvider } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME, PRODUCT_PROVIDER_ID, isProductProvider } from "@x/shared/branding";
 
 interface SessionReconnectDialogProps {
   open: boolean;
@@ -62,10 +62,38 @@ export function SessionReconnectDialog({
 
   return (
     <Dialog open={open} onOpenChange={() => undefined}>
+      {/*
+        A full page, not a floating dialog.
+        
+        Signing back in is not a decision taken beside your work — the session is
+        gone, every connected source is unreachable, and the app behind this is
+        showing stale state the user cannot act on. Framing it as an 85vw card
+        over a dimmed workspace invited exactly that misreading.
+
+        It stays a Radix Dialog so the focus trap, the aria wiring, and the
+        refusal to close on Escape or an outside click all still hold; only the
+        presentation is full-bleed. The centering transform and size caps in the
+        base DialogContent are overridden here rather than in the shared
+        primitive, which other dialogs still want.
+      */}
       <DialogContent
         showCloseButton={false}
-        className="app-shell flex h-[85svh] w-[85vw] max-w-none gap-0 overflow-hidden rounded-2xl border-white/10 bg-[#09090b] p-0 text-white shadow-2xl sm:max-w-none"
-        style={{ width: "85vw", height: "85vh", maxWidth: "85vw" }}
+        // data-[state=closed]:[animation:none]! is load-bearing, not cosmetic.
+        //
+        // Radix's Presence keeps the node mounted until it sees an animationend
+        // for the exit animation the base DialogContent declares
+        // (data-[state=closed]:animate-out). On this surface that event never
+        // arrives, so the node stayed in the DOM at opacity 1 after closing —
+        // and once this became a full-page surface, that meant "Back to app"
+        // appeared to do nothing at all: state flipped to closed and the user
+        // was left staring at a settings page they could not leave.
+        //
+        // Killing the exit animation makes Presence unmount synchronously, which
+        // is what a full-page surface wants anyway: pages do not zoom out. The
+        // important modifier is required because tailwind-merge does not treat
+        // these arbitrary data-variants as conflicting, so animate-out survives
+        // in the class list and would otherwise win on source order.
+        className="app-shell inset-0 top-0 left-0 flex h-svh w-screen max-w-none translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-none border-0 bg-[#09090b] p-0 text-white shadow-none sm:max-w-none data-[state=closed]:[animation:none]!"
         onEscapeKeyDown={(event) => event.preventDefault()}
         onPointerDownOutside={(event) => event.preventDefault()}
         onInteractOutside={(event) => event.preventDefault()}

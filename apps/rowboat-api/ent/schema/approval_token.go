@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -22,7 +23,7 @@ import (
 type ApprovalToken struct{ ent.Schema }
 
 // Mixin of the ApprovalToken.
-func (ApprovalToken) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (ApprovalToken) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Fields of the ApprovalToken.
 func (ApprovalToken) Fields() []ent.Field {
@@ -45,7 +46,7 @@ func (ApprovalToken) Fields() []ent.Field {
 // Edges of the ApprovalToken.
 func (ApprovalToken) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("approval_tokens").Unique().Required(),
+		edge.From("user", User.Type).Ref("approval_tokens").Unique().Required().Immutable(),
 	}
 }
 
@@ -54,5 +55,8 @@ func (ApprovalToken) Indexes() []ent.Index {
 	return []ent.Index{
 		// The audit chain loads every token issued for a proposal by this key.
 		index.Fields("proposal_id"),
+		// Validation only reads unconsumed tokens that have not yet expired.
+		index.Fields("expires_at").
+			Annotations(entsql.IndexWhere("consumed = false")),
 	}
 }

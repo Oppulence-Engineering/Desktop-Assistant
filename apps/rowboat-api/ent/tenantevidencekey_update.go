@@ -12,10 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/google/uuid"
 )
 
 // TenantEvidenceKeyUpdate is the builder for updating TenantEvidenceKey entities.
@@ -158,48 +155,16 @@ func (_u *TenantEvidenceKeyUpdate) ClearErasureProof() *TenantEvidenceKeyUpdate 
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *TenantEvidenceKeyUpdate) SetWorkspaceID(id uuid.UUID) *TenantEvidenceKeyUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *TenantEvidenceKeyUpdate) SetWorkspace(v *RevenueWorkspace) *TenantEvidenceKeyUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *TenantEvidenceKeyUpdate) SetUserID(id uuid.UUID) *TenantEvidenceKeyUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *TenantEvidenceKeyUpdate) SetUser(v *User) *TenantEvidenceKeyUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the TenantEvidenceKeyMutation object of the builder.
 func (_u *TenantEvidenceKeyUpdate) Mutation() *TenantEvidenceKeyMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *TenantEvidenceKeyUpdate) ClearWorkspace() *TenantEvidenceKeyUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *TenantEvidenceKeyUpdate) ClearUser() *TenantEvidenceKeyUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *TenantEvidenceKeyUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -226,11 +191,15 @@ func (_u *TenantEvidenceKeyUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *TenantEvidenceKeyUpdate) defaults() {
+func (_u *TenantEvidenceKeyUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if tenantevidencekey.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized tenantevidencekey.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := tenantevidencekey.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -309,64 +278,6 @@ func (_u *TenantEvidenceKeyUpdate) sqlSave(ctx context.Context) (_node int, err 
 	}
 	if _u.mutation.ErasureProofCleared() {
 		_spec.ClearField(tenantevidencekey.FieldErasureProof, field.TypeString)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   tenantevidencekey.WorkspaceTable,
-			Columns: []string{tenantevidencekey.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   tenantevidencekey.WorkspaceTable,
-			Columns: []string{tenantevidencekey.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   tenantevidencekey.UserTable,
-			Columns: []string{tenantevidencekey.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   tenantevidencekey.UserTable,
-			Columns: []string{tenantevidencekey.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -515,43 +426,9 @@ func (_u *TenantEvidenceKeyUpdateOne) ClearErasureProof() *TenantEvidenceKeyUpda
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *TenantEvidenceKeyUpdateOne) SetWorkspaceID(id uuid.UUID) *TenantEvidenceKeyUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *TenantEvidenceKeyUpdateOne) SetWorkspace(v *RevenueWorkspace) *TenantEvidenceKeyUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *TenantEvidenceKeyUpdateOne) SetUserID(id uuid.UUID) *TenantEvidenceKeyUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *TenantEvidenceKeyUpdateOne) SetUser(v *User) *TenantEvidenceKeyUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the TenantEvidenceKeyMutation object of the builder.
 func (_u *TenantEvidenceKeyUpdateOne) Mutation() *TenantEvidenceKeyMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *TenantEvidenceKeyUpdateOne) ClearWorkspace() *TenantEvidenceKeyUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *TenantEvidenceKeyUpdateOne) ClearUser() *TenantEvidenceKeyUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the TenantEvidenceKeyUpdate builder.
@@ -569,7 +446,9 @@ func (_u *TenantEvidenceKeyUpdateOne) Select(field string, fields ...string) *Te
 
 // Save executes the query and returns the updated TenantEvidenceKey entity.
 func (_u *TenantEvidenceKeyUpdateOne) Save(ctx context.Context) (*TenantEvidenceKey, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -596,11 +475,15 @@ func (_u *TenantEvidenceKeyUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *TenantEvidenceKeyUpdateOne) defaults() {
+func (_u *TenantEvidenceKeyUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if tenantevidencekey.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized tenantevidencekey.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := tenantevidencekey.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -696,64 +579,6 @@ func (_u *TenantEvidenceKeyUpdateOne) sqlSave(ctx context.Context) (_node *Tenan
 	}
 	if _u.mutation.ErasureProofCleared() {
 		_spec.ClearField(tenantevidencekey.FieldErasureProof, field.TypeString)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   tenantevidencekey.WorkspaceTable,
-			Columns: []string{tenantevidencekey.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   tenantevidencekey.WorkspaceTable,
-			Columns: []string{tenantevidencekey.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   tenantevidencekey.UserTable,
-			Columns: []string{tenantevidencekey.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   tenantevidencekey.UserTable,
-			Columns: []string{tenantevidencekey.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &TenantEvidenceKey{config: _u.config}
 	_spec.Assign = _node.assignValues

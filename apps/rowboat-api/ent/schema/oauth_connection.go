@@ -18,7 +18,7 @@ import (
 type OAuthConnection struct{ ent.Schema }
 
 // Mixin of the OAuthConnection.
-func (OAuthConnection) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (OAuthConnection) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Annotations excludes the history table from GraphQL (entgql.Skip).
 func (OAuthConnection) Annotations() []schema.Annotation {
@@ -44,7 +44,7 @@ func (OAuthConnection) Fields() []ent.Field {
 // Edges of the OAuthConnection.
 func (OAuthConnection) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("oauth_connections").Unique().Required(),
+		edge.From("user", User.Type).Ref("oauth_connections").Unique().Required().Immutable(),
 	}
 }
 

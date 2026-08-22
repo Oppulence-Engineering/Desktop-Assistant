@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -402,6 +403,12 @@ func (_q *RevenueWorkspaceMemberQuery) prepareQuery(ctx context.Context) error {
 			return err
 		}
 		_q.sql = prev
+	}
+	if revenueworkspacemember.Policy == nil {
+		return errors.New("ent: uninitialized revenueworkspacemember.Policy (forgotten import ent/runtime?)")
+	}
+	if err := revenueworkspacemember.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

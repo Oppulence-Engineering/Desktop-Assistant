@@ -16,8 +16,9 @@ import {
   UsersRound,
   Video,
 } from "@/lib/icons";
-import type { Relationship, RelationshipAttentionItem } from "@x/shared/src/relationships.js";
+import type { Relationship, RelationshipAttentionItem } from "@x/shared/relationships";
 import { extractConferenceLink } from "@/lib/calendar-event";
+import { emitRendererEvent } from "@/lib/renderer-events";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { HUBSPOT_BRAND_ICON, WISPR_FLOW_BRAND_ICON } from "@/components/onboarding/brand-icons";
 
@@ -185,7 +186,7 @@ function triggerMeetingCapture(event: CalEvent, openConference: boolean) {
   if (openConference && event.conferenceLink) {
     window.open(event.conferenceLink, "_blank");
   }
-  window.dispatchEvent(new Event("calendar-block:join-meeting"));
+  emitRendererEvent("calendar-block:join-meeting");
 }
 
 const CARD = "rowboat-dev-card p-4";

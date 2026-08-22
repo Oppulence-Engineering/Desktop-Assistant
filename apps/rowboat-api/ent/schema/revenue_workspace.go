@@ -43,7 +43,7 @@ func oneOfRevenueOptional(name string, allowed ...string) func(string) error {
 type RevenueWorkspace struct{ ent.Schema }
 
 // Mixin of the RevenueWorkspace.
-func (RevenueWorkspace) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RevenueWorkspace) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceRootTenantMixin{}} }
 
 // Fields of the RevenueWorkspace.
 func (RevenueWorkspace) Fields() []ent.Field {
@@ -90,7 +90,7 @@ func (RevenueWorkspace) Edges() []ent.Edge {
 		// The founding owner. MVP tenancy is founder-mode: every revenue row is
 		// user-scoped through the existing interceptor/hook machinery, with the
 		// workspace edge in place for the WP6 member-scoped upgrade.
-		edge.From("user", User.Type).Ref("revenue_workspaces").Unique().Required(),
+		edge.From("user", User.Type).Ref("revenue_workspaces").Unique().Required().Immutable(),
 		edge.To("members", RevenueWorkspaceMember.Type).
 			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("relationships", Relationship.Type).

@@ -22,10 +22,9 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.redirect(url);
     setPKCECookie(response, pkce);
     return response;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "sign-in unavailable";
+  } catch {
     const fallback = new URL("/sign-in", publicOrigin(request));
-    fallback.searchParams.set("error", message);
+    fallback.searchParams.set("error", "sign_in_unavailable");
     return NextResponse.redirect(fallback);
   }
 }

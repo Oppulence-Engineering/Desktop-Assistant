@@ -13,7 +13,7 @@ import (
 type CommitmentEvent struct{ ent.Schema }
 
 // Mixin adds shared identifiers and timestamps.
-func (CommitmentEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (CommitmentEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields defines immutable transition provenance and payload data.
 func (CommitmentEvent) Fields() []ent.Field {
@@ -37,9 +37,9 @@ func (CommitmentEvent) Fields() []ent.Field {
 // Edges scopes each event to its tenant, relationship, actor, and commitment.
 func (CommitmentEvent) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("workspace", RevenueWorkspace.Type).Ref("commitment_events").Unique().Required(),
+		edge.From("workspace", RevenueWorkspace.Type).Ref("commitment_events").Unique().Required().Immutable(),
 		edge.From("relationship", Relationship.Type).Ref("commitment_events").Unique().Required(),
-		edge.From("user", User.Type).Ref("commitment_events").Unique().Required(),
+		edge.From("user", User.Type).Ref("commitment_events").Unique().Required().Immutable(),
 		edge.From("commitment", Commitment.Type).Ref("events").Unique().Required(),
 	}
 }

@@ -3,6 +3,7 @@ package backgroundtaskruntime
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -430,7 +431,7 @@ func TestArgoSandboxExecutorDeletesWorkflowOnContextCancel(t *testing.T) {
 			cancel()
 		},
 	})
-	if err == nil || err != context.Canceled {
+	if err == nil || !errors.Is(err, context.Canceled) {
 		t.Fatalf("execute err = %v, want context.Canceled", err)
 	}
 	if !created || !deleted {

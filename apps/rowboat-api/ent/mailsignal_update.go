@@ -14,7 +14,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailsignal"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -128,17 +127,6 @@ func (_u *MailSignalUpdate) SetThread(v *MailThread) *MailSignalUpdate {
 	return _u.SetThreadID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *MailSignalUpdate) SetUserID(id uuid.UUID) *MailSignalUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *MailSignalUpdate) SetUser(v *User) *MailSignalUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the MailSignalMutation object of the builder.
 func (_u *MailSignalUpdate) Mutation() *MailSignalMutation {
 	return _u.mutation
@@ -150,15 +138,11 @@ func (_u *MailSignalUpdate) ClearThread() *MailSignalUpdate {
 	return _u
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *MailSignalUpdate) ClearUser() *MailSignalUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *MailSignalUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -185,11 +169,15 @@ func (_u *MailSignalUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *MailSignalUpdate) defaults() {
+func (_u *MailSignalUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if mailsignal.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized mailsignal.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := mailsignal.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -269,35 +257,6 @@ func (_u *MailSignalUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mailsignal.UserTable,
-			Columns: []string{mailsignal.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mailsignal.UserTable,
-			Columns: []string{mailsignal.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -422,17 +381,6 @@ func (_u *MailSignalUpdateOne) SetThread(v *MailThread) *MailSignalUpdateOne {
 	return _u.SetThreadID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *MailSignalUpdateOne) SetUserID(id uuid.UUID) *MailSignalUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *MailSignalUpdateOne) SetUser(v *User) *MailSignalUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the MailSignalMutation object of the builder.
 func (_u *MailSignalUpdateOne) Mutation() *MailSignalMutation {
 	return _u.mutation
@@ -441,12 +389,6 @@ func (_u *MailSignalUpdateOne) Mutation() *MailSignalMutation {
 // ClearThread clears the "thread" edge to the MailThread entity.
 func (_u *MailSignalUpdateOne) ClearThread() *MailSignalUpdateOne {
 	_u.mutation.ClearThread()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *MailSignalUpdateOne) ClearUser() *MailSignalUpdateOne {
-	_u.mutation.ClearUser()
 	return _u
 }
 
@@ -465,7 +407,9 @@ func (_u *MailSignalUpdateOne) Select(field string, fields ...string) *MailSigna
 
 // Save executes the query and returns the updated MailSignal entity.
 func (_u *MailSignalUpdateOne) Save(ctx context.Context) (*MailSignal, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -492,11 +436,15 @@ func (_u *MailSignalUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *MailSignalUpdateOne) defaults() {
+func (_u *MailSignalUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if mailsignal.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized mailsignal.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := mailsignal.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -593,35 +541,6 @@ func (_u *MailSignalUpdateOne) sqlSave(ctx context.Context) (_node *MailSignal, 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mailsignal.UserTable,
-			Columns: []string{mailsignal.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   mailsignal.UserTable,
-			Columns: []string{mailsignal.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

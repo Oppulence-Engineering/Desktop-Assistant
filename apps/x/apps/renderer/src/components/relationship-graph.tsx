@@ -6,7 +6,7 @@ import {
   queryRelationshipGraph,
   relationshipGraphNeighborhood,
 } from "@oppulence/relationship-contract";
-import { DEEP_LINK_SCHEME } from "@x/shared/dist/branding.js";
+import { DEEP_LINK_SCHEME } from "@x/shared/branding";
 import {
   RelationshipGraphSavedViewSchema,
   RelationshipGraphSavedViewsSchema,
@@ -15,7 +15,7 @@ import {
   type RelationshipGraphNode,
   type RelationshipGraphSavedView,
   type RelationshipGraphSavedViewState,
-} from "@x/shared/src/relationships.js";
+} from "@x/shared/relationships";
 import {
   ArrowCounterClockwise,
   Buildings,

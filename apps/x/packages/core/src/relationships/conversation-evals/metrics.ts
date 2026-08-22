@@ -1,4 +1,4 @@
-import type { ConversationClaimKind } from "@x/shared/dist/relationships.js";
+import type { ConversationClaimKind } from "@x/shared/relationships";
 import type { ConversationEvalReport } from "./runner.js";
 
 const REPORTED_KINDS: ConversationClaimKind[] = [

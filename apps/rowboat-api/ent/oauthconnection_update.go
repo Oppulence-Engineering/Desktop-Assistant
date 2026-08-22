@@ -14,8 +14,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
-	"github.com/google/uuid"
 )
 
 // OAuthConnectionUpdate is the builder for updating OAuthConnection entities.
@@ -95,31 +93,16 @@ func (_u *OAuthConnectionUpdate) ClearExternalAccountID() *OAuthConnectionUpdate
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *OAuthConnectionUpdate) SetUserID(id uuid.UUID) *OAuthConnectionUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *OAuthConnectionUpdate) SetUser(v *User) *OAuthConnectionUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the OAuthConnectionMutation object of the builder.
 func (_u *OAuthConnectionUpdate) Mutation() *OAuthConnectionMutation {
 	return _u.mutation
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *OAuthConnectionUpdate) ClearUser() *OAuthConnectionUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *OAuthConnectionUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -146,11 +129,15 @@ func (_u *OAuthConnectionUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *OAuthConnectionUpdate) defaults() {
+func (_u *OAuthConnectionUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if oauthconnection.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized oauthconnection.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := oauthconnection.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -198,35 +185,6 @@ func (_u *OAuthConnectionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if _u.mutation.ExternalAccountIDCleared() {
 		_spec.ClearField(oauthconnection.FieldExternalAccountID, field.TypeString)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   oauthconnection.UserTable,
-			Columns: []string{oauthconnection.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   oauthconnection.UserTable,
-			Columns: []string{oauthconnection.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -312,26 +270,9 @@ func (_u *OAuthConnectionUpdateOne) ClearExternalAccountID() *OAuthConnectionUpd
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *OAuthConnectionUpdateOne) SetUserID(id uuid.UUID) *OAuthConnectionUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *OAuthConnectionUpdateOne) SetUser(v *User) *OAuthConnectionUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the OAuthConnectionMutation object of the builder.
 func (_u *OAuthConnectionUpdateOne) Mutation() *OAuthConnectionMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *OAuthConnectionUpdateOne) ClearUser() *OAuthConnectionUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the OAuthConnectionUpdate builder.
@@ -349,7 +290,9 @@ func (_u *OAuthConnectionUpdateOne) Select(field string, fields ...string) *OAut
 
 // Save executes the query and returns the updated OAuthConnection entity.
 func (_u *OAuthConnectionUpdateOne) Save(ctx context.Context) (*OAuthConnection, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -376,11 +319,15 @@ func (_u *OAuthConnectionUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *OAuthConnectionUpdateOne) defaults() {
+func (_u *OAuthConnectionUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if oauthconnection.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized oauthconnection.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := oauthconnection.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -445,35 +392,6 @@ func (_u *OAuthConnectionUpdateOne) sqlSave(ctx context.Context) (_node *OAuthCo
 	}
 	if _u.mutation.ExternalAccountIDCleared() {
 		_spec.ClearField(oauthconnection.FieldExternalAccountID, field.TypeString)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   oauthconnection.UserTable,
-			Columns: []string{oauthconnection.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   oauthconnection.UserTable,
-			Columns: []string{oauthconnection.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &OAuthConnection{config: _u.config}
 	_spec.Assign = _node.assignValues

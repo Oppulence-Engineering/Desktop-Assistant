@@ -17,7 +17,7 @@ type RelationshipIdentityDecision struct{ ent.Schema }
 
 // Mixin adds the common identifier and audit timestamps.
 func (RelationshipIdentityDecision) Mixin() []ent.Mixin {
-	return []ent.Mixin{mixin.BaseMixin{}}
+	return []ent.Mixin{mixin.WorkspaceTenantMixin{}}
 }
 
 // Fields defines one version-bound, actor-attributed identity decision.
@@ -38,11 +38,11 @@ func (RelationshipIdentityDecision) Fields() []ent.Field {
 func (RelationshipIdentityDecision) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("relationship_identity_decisions").Unique().Required(),
+			Ref("relationship_identity_decisions").Unique().Required().Immutable(),
 		edge.From("candidate", RelationshipIdentityCandidate.Type).
 			Ref("decisions").Unique().Required(),
 		edge.From("user", User.Type).
-			Ref("relationship_identity_decisions").Unique().Required(),
+			Ref("relationship_identity_decisions").Unique().Required().Immutable(),
 	}
 }
 

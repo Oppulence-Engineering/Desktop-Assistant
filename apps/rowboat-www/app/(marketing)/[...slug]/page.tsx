@@ -37,6 +37,16 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   return {
     title: `${page.eyebrow} - Oppulence`,
     description: page.description,
+    ...(page.path === "voice"
+      ? {
+          alternates: { canonical: "https://oppulence.io/voice" },
+          openGraph: {
+            title: "Oppulence Voice - Oppulence",
+            description: page.description,
+            url: "https://oppulence.io/voice",
+          },
+        }
+      : {}),
   };
 }
 

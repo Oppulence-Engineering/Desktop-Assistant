@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import type { UpdateStatus, UpdateStatusName } from "@x/shared/dist/updates.js";
-import { updatePending } from "@x/shared/dist/updates.js";
+import type { UpdateStatus, UpdateStatusName } from "@x/shared/updates";
+import { updatePending } from "@x/shared/updates";
 
 export type { UpdateStatus, UpdateStatusName };
 export { updatePending };

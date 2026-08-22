@@ -31,7 +31,14 @@ jobs:
     timeout-minutes: 240
     env:
       INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
-      INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID }}
+      # Falls back to the workspace id committed in .infisical.json, which is
+      # also what rowboat-api-deploy.yml hardcodes. This read
+      # `secrets.INFISICAL_PROJECT_ID`, a secret that was never set, so the id
+      # arrived empty and the run aborted on its own guard — every night, for
+      # weeks. A project id is an identifier rather than a credential (the
+      # token beside it is the secret), so there is nothing to protect by
+      # leaving it unset. The secret still wins if someone defines it.
+      INFISICAL_PROJECT_ID: ${{ secrets.INFISICAL_PROJECT_ID || '04ebc1cf-0ec5-4e9e-8ab9-4c6da4252574' }}
       INFISICAL_DISABLE_UPDATE_CHECK: 'true'
       ROWBOAT_DESKTOP_PERF_ARTIFACT_DIR: ${{ github.workspace }}/.rowboat-kind/desktop-perf/nightly
       ROWBOAT_ELECTRON_REMOTE_DEBUGGING_PORT: '9333'

@@ -14,7 +14,7 @@ import (
 type WorkspaceFeatureControl struct{ ent.Schema }
 
 // Mixin adds the common identifier and audit timestamps.
-func (WorkspaceFeatureControl) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (WorkspaceFeatureControl) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields defines one capability's enablement, rollout stage, and reason.
 func (WorkspaceFeatureControl) Fields() []ent.Field {
@@ -30,8 +30,8 @@ func (WorkspaceFeatureControl) Fields() []ent.Field {
 // Edges bind the control to its tenant and last managing user.
 func (WorkspaceFeatureControl) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("workspace", RevenueWorkspace.Type).Ref("feature_controls").Unique().Required(),
-		edge.From("user", User.Type).Ref("workspace_feature_controls").Unique().Required(),
+		edge.From("workspace", RevenueWorkspace.Type).Ref("feature_controls").Unique().Required().Immutable(),
+		edge.From("user", User.Type).Ref("workspace_feature_controls").Unique().Required().Immutable(),
 	}
 }
 

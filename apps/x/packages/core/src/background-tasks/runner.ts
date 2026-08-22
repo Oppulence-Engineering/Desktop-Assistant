@@ -1,5 +1,5 @@
-import type { BackgroundTask, BackgroundTaskTriggerType } from '@x/shared/dist/background-task.js';
-import { PrefixLogger } from '@x/shared/dist/prefix-logger.js';
+import type { BackgroundTask, BackgroundTaskTriggerType } from '@x/shared/background-task';
+import { PrefixLogger } from '@x/shared/prefix-logger';
 import { fetchTask, patchTask, prependRunId } from './fileops.js';
 import { createRun, createMessage } from '../runs/runs.js';
 import { getBackgroundTaskAgentModel } from '../models/defaults.js';

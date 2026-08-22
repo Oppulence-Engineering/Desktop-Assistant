@@ -1,0 +1,45 @@
+# Historical baseline captured when enforcement was introduced (2026-08-21).
+# Entries suppress only the exact commit/path/rule/line fingerprint. Any real
+# credential represented here must be treated as exposed and rotated.
+6f677784db07937018a8afbd24d4f9183feea35a:apps/rowboat-api/cmd/devstack/devkey.go:private-key:25
+47192bf9e21c20491419ffd5ad219e886a737172:apps/rowboat-api/cmd/devstack/devkey.go:private-key:25
+fea917903ab546c05104c1eabe8bc2800dd332f5:apps/x/packages/core/src/mailbox/contact-extractor.test.ts:generic-api-key:63
+36e9bca2621ada7e0e945c74d906dee6ffd77579:apps/rowboat-api/internal/revenue/executor_channels_test.go:generic-api-key:318
+5abdd1c28712f407dc7493958cf5fab0c177342c:apps/rowboat-api/internal/agentworkflow/activities_test.go:generic-api-key:105
+5abdd1c28712f407dc7493958cf5fab0c177342c:apps/rowboat-api/api/openapi.json:generic-api-key:5527
+5abdd1c28712f407dc7493958cf5fab0c177342c:apps/rowboat-api/api/openapi.json:generic-api-key:5642
+5abdd1c28712f407dc7493958cf5fab0c177342c:apps/rowboat-api/api/openapi.json:generic-api-key:7786
+5abdd1c28712f407dc7493958cf5fab0c177342c:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:155
+5abdd1c28712f407dc7493958cf5fab0c177342c:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:355
+5abdd1c28712f407dc7493958cf5fab0c177342c:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:1303
+5abdd1c28712f407dc7493958cf5fab0c177342c:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:1506
+5abdd1c28712f407dc7493958cf5fab0c177342c:apps/rowboat/src/application/lib/integration/types.ts:generic-api-key:183
+691e7c27982314197f0caf1dea9462249351e459:apps/rowboat-api/api/openapi.json:generic-api-key:7786
+691e7c27982314197f0caf1dea9462249351e459:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:1303
+5abdd1c28712f407dc7493958cf5fab0c177342c:packages/rowboat-api-client-ts/src/generated/schema.ts:generic-api-key:5268
+5abdd1c28712f407dc7493958cf5fab0c177342c:packages/rowboat-api-client-ts/src/generated/schema.ts:generic-api-key:5345
+5abdd1c28712f407dc7493958cf5fab0c177342c:packages/rowboat-api-client-ts/src/generated/schema.ts:generic-api-key:6836
+691e7c27982314197f0caf1dea9462249351e459:packages/rowboat-api-client-ts/src/generated/schema.ts:generic-api-key:6836
+cd419849eea5e56fcd22afb4d8cca1f496b3a6e1:apps/rowboat-api/api/openapi.json:generic-api-key:7786
+cd419849eea5e56fcd22afb4d8cca1f496b3a6e1:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:1303
+cd419849eea5e56fcd22afb4d8cca1f496b3a6e1:packages/rowboat-api-client-ts/src/generated/schema.ts:generic-api-key:6836
+aa1cc6d607e78292de1854754a0db67335333e8d:apps/rowboat-api/internal/agentworkflow/activities_test.go:generic-api-key:105
+b65288c2528e23536cc6d095df079d1a4fceea4f:packages/rowboat-api-client-ts/src/generated/schema.ts:generic-api-key:3561
+b65288c2528e23536cc6d095df079d1a4fceea4f:packages/rowboat-api-client-ts/src/generated/schema.ts:generic-api-key:3638
+775c9ac9e29387c4fb6ea8dd92328bffbe4c806b:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:137
+18faa47b2ac427b1bdd4a1a5525b06056d65a553:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:137
+a731abb64c7c77bb54e13c24db05e4abe03f544e:apps/rowboat-api/api/openapi.json:generic-api-key:3744
+a731abb64c7c77bb54e13c24db05e4abe03f544e:apps/rowboat-api/api/openapi.json:generic-api-key:3863
+a731abb64c7c77bb54e13c24db05e4abe03f544e:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:137
+a731abb64c7c77bb54e13c24db05e4abe03f544e:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:304
+a731abb64c7c77bb54e13c24db05e4abe03f544e:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:1106
+c562248850fd20df4e902996a0d8cbf634810f63:apps/cli/podcast.json:generic-api-key:537
+bfd8b0dad3bf00f85599e231018ce9843cb2f2f6:apps/cli/examples/notebooklm-podcast.txt:generic-api-key:124
+c004bc5eb65d6706d20f40c1f8f6f7c083995337:apps/cli/src/application/config/config.ts:generic-api-key:16
+5675cda52b352fa850e2d7c661756b29fe4de3b7:apps/rowboat/src/application/lib/composio/types.ts:generic-api-key:179
+078f785a9e0ca4864fb8cbf50be0e819bd478bd8:apps/rowboat/app/lib/composio/composio.ts:generic-api-key:179
+ad4ea23d79a1a5788233ae8eb3e84e60632bd3b1:.env.example:generic-api-key:7
+c23e31af95badd639d2fd3605275dfa8491a5b0d:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:827
+c23e31af95badd639d2fd3605275dfa8491a5b0d:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:878
+ad4ea23d79a1a5788233ae8eb3e84e60632bd3b1:apps/copilot/README.md:curl-auth-header:45
+10f76ef49f6f14cf9658b49963aef338f6bcd4d2:apps/rowboat/package.json:github-fine-grained-pat:41

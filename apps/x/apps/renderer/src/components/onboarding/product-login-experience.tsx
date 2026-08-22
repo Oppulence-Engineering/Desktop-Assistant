@@ -2,7 +2,7 @@ import { Alert, AlertDescription } from "@oppulence/ui/components/alert";
 
 import { AlertCircle, ArrowRight, KeyRound, ShieldCheck } from "@/lib/icons";
 import { Button } from "@oppulence/ui/components/button";
-import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME } from "@x/shared/branding";
 import { MinimalOnboardingLayout } from "./minimal-layout";
 import { ProductSignInButton } from "./product-sign-in-button";
 

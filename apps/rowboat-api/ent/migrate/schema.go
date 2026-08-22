@@ -540,6 +540,14 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{ApprovalTokensColumns[4]},
 			},
+			{
+				Name:    "approvaltoken_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{ApprovalTokensColumns[8]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "consumed = false",
+				},
+			},
 		},
 	}
 	// BackgroundTasksColumns holds the columns for the "background_tasks" table.
@@ -813,6 +821,9 @@ var (
 				Name:    "backgroundtaskschedulestate_lease_expires_at",
 				Unique:  false,
 				Columns: []*schema.Column{BackgroundTaskScheduleStatesColumns[10]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "last_run_id = '' AND lease_owner <> '' AND lease_expires_at IS NOT NULL",
+				},
 			},
 			{
 				Name:    "backgroundtaskschedulestate_last_run_id",
@@ -823,6 +834,50 @@ var (
 				Name:    "backgroundtaskschedulestate_created_at",
 				Unique:  false,
 				Columns: []*schema.Column{BackgroundTaskScheduleStatesColumns[1]},
+			},
+		},
+	}
+	// CaptureArtifactsColumns holds the columns for the "capture_artifacts" table.
+	CaptureArtifactsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "event_id", Type: field.TypeString},
+		{Name: "artifact_id", Type: field.TypeString},
+		{Name: "schema_version", Type: field.TypeString},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "operation", Type: field.TypeString},
+		{Name: "source_product", Type: field.TypeString},
+		{Name: "consent_basis", Type: field.TypeString},
+		{Name: "content_hash", Type: field.TypeString},
+		{Name: "payload_json", Type: field.TypeString, Size: 2147483647},
+		{Name: "status", Type: field.TypeString, Default: "accepted"},
+		{Name: "occurred_at", Type: field.TypeTime},
+		{Name: "user_capture_artifacts", Type: field.TypeUUID},
+	}
+	// CaptureArtifactsTable holds the schema information for the "capture_artifacts" table.
+	CaptureArtifactsTable = &schema.Table{
+		Name:       "capture_artifacts",
+		Columns:    CaptureArtifactsColumns,
+		PrimaryKey: []*schema.Column{CaptureArtifactsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "capture_artifacts_users_capture_artifacts",
+				Columns:    []*schema.Column{CaptureArtifactsColumns[14]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "captureartifact_event_id_user_capture_artifacts",
+				Unique:  true,
+				Columns: []*schema.Column{CaptureArtifactsColumns[3], CaptureArtifactsColumns[14]},
+			},
+			{
+				Name:    "captureartifact_artifact_id_created_at_user_capture_artifacts",
+				Unique:  false,
+				Columns: []*schema.Column{CaptureArtifactsColumns[4], CaptureArtifactsColumns[1], CaptureArtifactsColumns[14]},
 			},
 		},
 	}
@@ -868,9 +923,12 @@ var (
 				Columns: []*schema.Column{CloudEventsColumns[3], CloudEventsColumns[12], CloudEventsColumns[18]},
 			},
 			{
-				Name:    "cloudevent_routing_status",
+				Name:    "cloudevent_routing_status_received_at",
 				Unique:  false,
-				Columns: []*schema.Column{CloudEventsColumns[13]},
+				Columns: []*schema.Column{CloudEventsColumns[13], CloudEventsColumns[16]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "routing_status = 'pending'",
+				},
 			},
 			{
 				Name:    "cloudevent_received_at",
@@ -2180,7 +2238,7 @@ var (
 		{Name: "evidence_refs", Type: field.TypeJSON},
 		{Name: "urgency_band", Type: field.TypeString},
 		{Name: "rank_score", Type: field.TypeInt},
-		{Name: "rank_factors_json", Type: field.TypeString, Size: 2147483647},
+		{Name: "rank_factors_json", Type: field.TypeJSON},
 		{Name: "source_requirements", Type: field.TypeJSON},
 		{Name: "recommendation_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "recommendation_revision", Type: field.TypeInt, Default: 0},
@@ -2653,9 +2711,20 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "relationshipprojectionjob_status_next_attempt_at_lease_expires_at",
+				Name:    "relationshipprojectionjob_status_next_attempt_at",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipProjectionJobsColumns[4], RelationshipProjectionJobsColumns[9], RelationshipProjectionJobsColumns[11]},
+				Columns: []*schema.Column{RelationshipProjectionJobsColumns[4], RelationshipProjectionJobsColumns[9]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "status IN ('pending', 'failed')",
+				},
+			},
+			{
+				Name:    "relationshipprojectionjob_status_lease_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{RelationshipProjectionJobsColumns[4], RelationshipProjectionJobsColumns[11]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "status = 'running' AND lease_expires_at IS NOT NULL",
+				},
 			},
 			{
 				Name:    "relationshipprojectionjob_status_created_at_relationship_id",
@@ -3012,7 +3081,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "status", Type: field.TypeString, Default: "pending"},
-		{Name: "active_claim", Type: field.TypeString, Unique: true, Nullable: true},
+		{Name: "active_claim", Type: field.TypeString, Nullable: true},
 		{Name: "mode", Type: field.TypeString, Default: "local"},
 		{Name: "lookback_days", Type: field.TypeInt, Default: 90},
 		{Name: "threads_seen", Type: field.TypeInt, Default: 0},
@@ -3051,6 +3120,14 @@ var (
 				Name:    "revenueleakscan_status_revenue_workspace_id",
 				Unique:  false,
 				Columns: []*schema.Column{RevenueLeakScansColumns[3], RevenueLeakScansColumns[16]},
+			},
+			{
+				Name:    "revenueleakscan_active_claim",
+				Unique:  true,
+				Columns: []*schema.Column{RevenueLeakScansColumns[4]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "active_claim IS NOT NULL",
+				},
 			},
 		},
 	}
@@ -3098,6 +3175,9 @@ var (
 				Name:    "revenueoutboxevent_delivery_status_next_attempt_at",
 				Unique:  false,
 				Columns: []*schema.Column{RevenueOutboxEventsColumns[11], RevenueOutboxEventsColumns[13]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "delivery_status IN ('pending', 'failed')",
+				},
 			},
 		},
 	}
@@ -3382,6 +3462,91 @@ var (
 			},
 		},
 	}
+	// VoiceAPIKeysColumns holds the columns for the "voice_api_keys" table.
+	VoiceAPIKeysColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "name", Type: field.TypeString},
+		{Name: "key_digest", Type: field.TypeString, Unique: true},
+		{Name: "key_prefix", Type: field.TypeString},
+		{Name: "scopes", Type: field.TypeJSON},
+		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "revoked_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_voice_api_keys", Type: field.TypeUUID},
+	}
+	// VoiceAPIKeysTable holds the schema information for the "voice_api_keys" table.
+	VoiceAPIKeysTable = &schema.Table{
+		Name:       "voice_api_keys",
+		Columns:    VoiceAPIKeysColumns,
+		PrimaryKey: []*schema.Column{VoiceAPIKeysColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "voice_api_keys_users_voice_api_keys",
+				Columns:    []*schema.Column{VoiceAPIKeysColumns[10]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "voiceapikey_created_at_user_voice_api_keys",
+				Unique:  false,
+				Columns: []*schema.Column{VoiceAPIKeysColumns[1], VoiceAPIKeysColumns[10]},
+			},
+		},
+	}
+	// VoiceSyncItemsColumns holds the columns for the "voice_sync_items" table.
+	VoiceSyncItemsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "collection", Type: field.TypeString},
+		{Name: "item_id", Type: field.TypeString},
+		{Name: "space_id", Type: field.TypeString, Nullable: true},
+		{Name: "operation", Type: field.TypeString},
+		{Name: "revision", Type: field.TypeInt, Default: 1},
+		{Name: "key_id", Type: field.TypeString},
+		{Name: "nonce", Type: field.TypeString},
+		{Name: "ciphertext", Type: field.TypeString, Size: 2147483647},
+		{Name: "content_hash", Type: field.TypeString},
+		{Name: "blind_index", Type: field.TypeString, Nullable: true},
+		{Name: "occurred_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_voice_sync_items", Type: field.TypeUUID},
+	}
+	// VoiceSyncItemsTable holds the schema information for the "voice_sync_items" table.
+	VoiceSyncItemsTable = &schema.Table{
+		Name:       "voice_sync_items",
+		Columns:    VoiceSyncItemsColumns,
+		PrimaryKey: []*schema.Column{VoiceSyncItemsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "voice_sync_items_users_voice_sync_items",
+				Columns:    []*schema.Column{VoiceSyncItemsColumns[15]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "voicesyncitem_collection_item_id_user_voice_sync_items",
+				Unique:  true,
+				Columns: []*schema.Column{VoiceSyncItemsColumns[3], VoiceSyncItemsColumns[4], VoiceSyncItemsColumns[15]},
+			},
+			{
+				Name:    "voicesyncitem_updated_at_id_user_voice_sync_items",
+				Unique:  false,
+				Columns: []*schema.Column{VoiceSyncItemsColumns[2], VoiceSyncItemsColumns[0], VoiceSyncItemsColumns[15]},
+			},
+			{
+				Name:    "voicesyncitem_space_id_collection_blind_index_user_voice_sync_items",
+				Unique:  false,
+				Columns: []*schema.Column{VoiceSyncItemsColumns[5], VoiceSyncItemsColumns[3], VoiceSyncItemsColumns[12], VoiceSyncItemsColumns[15]},
+			},
+		},
+	}
 	// WorkspaceFeatureControlsColumns holds the columns for the "workspace_feature_controls" table.
 	WorkspaceFeatureControlsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -3514,6 +3679,7 @@ var (
 		BackgroundTaskRunsTable,
 		BackgroundTaskRunEventsTable,
 		BackgroundTaskScheduleStatesTable,
+		CaptureArtifactsTable,
 		CloudEventsTable,
 		CommitmentsTable,
 		CommitmentDependenciesTable,
@@ -3566,6 +3732,8 @@ var (
 		TenantEvidenceKeysTable,
 		UsersTable,
 		UserHistoriesTable,
+		VoiceAPIKeysTable,
+		VoiceSyncItemsTable,
 		WorkspaceFeatureControlsTable,
 		CommitmentEvidencesTable,
 		RelationshipEvidencesTable,
@@ -3605,6 +3773,7 @@ func init() {
 	BackgroundTaskRunEventsTable.ForeignKeys[2].RefTable = UsersTable
 	BackgroundTaskScheduleStatesTable.ForeignKeys[0].RefTable = BackgroundTasksTable
 	BackgroundTaskScheduleStatesTable.ForeignKeys[1].RefTable = UsersTable
+	CaptureArtifactsTable.ForeignKeys[0].RefTable = UsersTable
 	CloudEventsTable.ForeignKeys[0].RefTable = UsersTable
 	CommitmentsTable.ForeignKeys[0].RefTable = RelationshipsTable
 	CommitmentsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
@@ -3719,6 +3888,8 @@ func init() {
 	SubscriptionsTable.ForeignKeys[0].RefTable = UsersTable
 	TenantEvidenceKeysTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
 	TenantEvidenceKeysTable.ForeignKeys[1].RefTable = UsersTable
+	VoiceAPIKeysTable.ForeignKeys[0].RefTable = UsersTable
+	VoiceSyncItemsTable.ForeignKeys[0].RefTable = UsersTable
 	WorkspaceFeatureControlsTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
 	WorkspaceFeatureControlsTable.ForeignKeys[1].RefTable = UsersTable
 	CommitmentEvidencesTable.ForeignKeys[0].RefTable = CommitmentsTable

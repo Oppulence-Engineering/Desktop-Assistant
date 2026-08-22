@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { emitRendererEvent } from "@/lib/renderer-events";
 import { CheckCircle2, Key, Loader2, Plus, X } from "@/lib/icons";
 import { Button } from "@oppulence/ui/components/button";
 import { Input } from "@oppulence/ui/components/input";
@@ -13,7 +14,7 @@ import {
 } from "@oppulence/ui/components/select";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { PRODUCT_NAME, PRODUCT_PROVIDER_ID } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME, PRODUCT_PROVIDER_ID } from "@x/shared/branding";
 
 type LlmProviderFlavor =
   | "openai"
@@ -372,7 +373,7 @@ export function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
         await window.ipc.invoke("models:saveConfig", providerConfig);
         setDefaultProvider(provider);
         setTestState({ status: "success" });
-        window.dispatchEvent(new Event("models-config-changed"));
+        emitRendererEvent("models-config-changed");
         toast.success("Model configuration saved");
       } else {
         setTestState({ status: "error", error: result.error });
@@ -404,7 +405,7 @@ export function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
           autoPermissionDecisionModel: config.autoPermissionDecisionModel.trim() || undefined,
         });
         setDefaultProvider(prov);
-        window.dispatchEvent(new Event("models-config-changed"));
+        emitRendererEvent("models-config-changed");
         toast.success("Default provider updated");
       } catch {
         toast.error("Failed to set default provider");
@@ -458,7 +459,7 @@ export function ModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
           },
         }));
         setTestState({ status: "idle" });
-        window.dispatchEvent(new Event("models-config-changed"));
+        emitRendererEvent("models-config-changed");
         toast.success("Provider configuration removed");
       } catch {
         toast.error("Failed to remove provider");
@@ -904,7 +905,7 @@ export function SolomonModelSettings({ dialogOpen }: { dialogOpen: boolean }) {
         model: selectedModel,
         knowledgeGraphModel: selectedKgModel || undefined,
       });
-      window.dispatchEvent(new Event("models-config-changed"));
+      emitRendererEvent("models-config-changed");
       toast.success("Model configuration saved");
     } catch {
       toast.error("Failed to save model configuration");

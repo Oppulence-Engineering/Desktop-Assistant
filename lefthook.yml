@@ -9,8 +9,8 @@
 # Run now: pnpm hooks:run            (pre-commit against all files)
 # Bypass:  git commit --no-verify    /  LEFTHOOK=0 git push
 #
-# Design rule: pre-commit must stay fast and staged-only (format + lint-fix).
-# Typecheck and tests are too slow for commit — they run on pre-push and in CI.
+# Desktop commits deliberately run the complete architecture gauntlet after staged
+# file mutation. Pre-push and CI repeat it as authoritative defense in depth.
 min_version: 1.10.0
 
 # Don't run hooks during merge/rebase resolution.
@@ -19,25 +19,51 @@ skip_output:
   - summary
 
 pre-commit:
-  parallel: true
+  # Sequential ordering prevents the final verification command from racing with
+  # ESLint/Prettier/goimports commands that modify and re-stage files.
+  parallel: false
   commands:
     # Lint + autofix staged desktop TypeScript. `root:` rebases {staged_files}
     # to apps/x and runs there so the local eslint + flat config resolve.
     desktop-eslint:
+      priority: 10
       root: "apps/x/"
       glob: "*.{ts,tsx,mts,cts}"
-      run: pnpm exec eslint --fix --no-warn-ignored {staged_files}
+      run: pnpm exec eslint --config config/eslint.config.mts --fix --no-warn-ignored {staged_files}
       stage_fixed: true
+    rowboat-www-eslint:
+      priority: 10
+      root: "apps/rowboat-www/"
+      glob: "*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"
+      run: npm exec eslint -- --fix --no-warn-ignored {staged_files}
+      stage_fixed: true
+    rowboat-www-component-contracts:
+      priority: 30
+      root: "apps/rowboat-www/"
+      glob:
+        - "components/**/*.{ts,tsx}"
+        - "app/**/_components/**/*.{ts,tsx}"
+        - "component-architecture.json"
+        - "components.json"
+      run: npm test
+    # Scan only the staged diff for immediate credential feedback. CI scans
+    # full history independently.
+    gitleaks-staged:
+      priority: 30
+      run: go run github.com/zricethezav/gitleaks/v8@v8.30.1 git --staged --gitleaks-ignore-path .gitleaksignore --redact --no-banner .
     # Format every staged file Prettier understands (TS/JS/JSON/CSS/MD/YAML…),
     # using the root Prettier + .prettierignore. --ignore-unknown skips the rest.
     prettier:
+      priority: 20
       glob: "*.{ts,tsx,js,jsx,mjs,cjs,mts,cts,json,jsonc,css,scss,md,mdx,yml,yaml,html}"
       run: pnpm exec prettier --write --ignore-unknown {staged_files}
       stage_fixed: true
-    # Go: gofmt staged files, then vet the perf tool if it changed.
-    gofmt:
+    # Go: goimports includes gofmt and canonical import grouping. The tool is
+    # version-pinned to the rowboat-api Makefile/toolchain.
+    goimports:
+      priority: 10
       glob: "*.go"
-      run: gofmt -w {staged_files}
+      run: go run golang.org/x/tools/cmd/goimports@v0.49.0 -w {staged_files}
       stage_fixed: true
     # rowboat-api codegen: when ent schemas or gqlgen inputs are staged, run
     # the generators and stage their output, so CI's generate-drift check
@@ -47,18 +73,38 @@ pre-commit:
     # commits, which are rare and already expensive to get wrong. proto
     # regen is CI-only (needs protoc + plugins via `make install-tools`).
     rowboat-api-codegen:
+      priority: 1
       root: "apps/rowboat-api/"
       glob:
-        - "apps/rowboat-api/ent/schema/*.go"
-        - "apps/rowboat-api/ent/schema/mixin/*.go"
+        - "apps/rowboat-api/ent/schema/**/*.go"
         - "apps/rowboat-api/internal/gqlapi/gqlgen.yml"
         - "apps/rowboat-api/internal/gqlapi/extra.graphql"
       run: make ent-generate gql-generate sdk-generate
       stage_fixed: true
+    # Cheap API policy checks run on commits that can alter database contracts.
+    # Full verification remains the pre-push gate below.
+    rowboat-api-schema-policy:
+      priority: 30
+      root: "apps/rowboat-api/"
+      glob:
+        - "apps/rowboat-api/ent/schema/**/*.go"
+        - "apps/rowboat-api/migrations/postgres/**"
+        - "apps/rowboat-api/cmd/migrate/**/*.go"
+      run: make fmt-check architecture migration-validate
     perf-tool-vet:
+      priority: 30
       glob: "tools/desktop-perf/**/*.go"
       root: "tools/desktop-perf/"
       run: go vet ./...
+    # Run the same one-command gate used by pre-push. It is last because earlier
+    # hook commands can rewrite and re-stage source/configuration files.
+    desktop-verify:
+      # Lefthook treats priority 0 as +Infinity, so this runs after every
+      # explicitly prioritized mutation/check above.
+      priority: 0
+      root: "apps/x/"
+      glob: "apps/x/**"
+      run: pnpm verify
 
 commit-msg:
   commands:
@@ -77,4 +123,10 @@ pre-push:
   commands:
     desktop-checks:
       root: "apps/x/"
-      run: pnpm run typecheck && pnpm test
+      run: pnpm run verify
+    rowboat-api-checks:
+      root: "apps/rowboat-api/"
+      run: make verify
+    rowboat-www-checks:
+      root: "apps/rowboat-www/"
+      run: npm run verify

@@ -6,7 +6,7 @@ import z from "zod";
 import { IMcpConfigRepo } from "./repo.js";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { connectionState, ListToolsResponse, McpServerList } from "@x/shared/dist/mcp.js";
+import { connectionState, ListToolsResponse, McpServerList } from "@x/shared/mcp";
 
 type mcpState = {
   state: z.infer<typeof connectionState>;

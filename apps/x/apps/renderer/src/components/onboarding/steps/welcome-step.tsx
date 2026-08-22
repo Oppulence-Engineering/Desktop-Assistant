@@ -1,7 +1,7 @@
 import {
   PRODUCT_PROVIDER_ID,
   getProductProviderState,
-} from "@x/shared/dist/branding.js";
+} from "@x/shared/branding";
 import { ProductLoginExperience } from "../product-login-experience";
 import type { OnboardingState } from "../use-onboarding-state";
 

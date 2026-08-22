@@ -1,8 +1,8 @@
 import { app, crashReporter } from 'electron';
 import { readdir, stat, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
-import { captureNativeCrash } from '@x/core/dist/analytics/posthog.js';
-import { PRODUCT_NAME, PRODUCT_SLUG } from '@x/shared/dist/branding.js';
+import { captureNativeCrash } from '@x/core/analytics/posthog';
+import { PRODUCT_NAME, PRODUCT_SLUG } from '@x/shared/branding';
 
 /**
  * Reasons reported by Electron's render-process-gone / child-process-gone

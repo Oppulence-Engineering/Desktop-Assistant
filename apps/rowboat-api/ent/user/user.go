@@ -31,6 +31,12 @@ const (
 	EdgeLedgerEntries = "ledger_entries"
 	// EdgeMeetingMinuteUsages holds the string denoting the meeting_minute_usages edge name in mutations.
 	EdgeMeetingMinuteUsages = "meeting_minute_usages"
+	// EdgeVoiceAPIKeys holds the string denoting the voice_api_keys edge name in mutations.
+	EdgeVoiceAPIKeys = "voice_api_keys"
+	// EdgeVoiceSyncItems holds the string denoting the voice_sync_items edge name in mutations.
+	EdgeVoiceSyncItems = "voice_sync_items"
+	// EdgeCaptureArtifacts holds the string denoting the capture_artifacts edge name in mutations.
+	EdgeCaptureArtifacts = "capture_artifacts"
 	// EdgeLlmUsages holds the string denoting the llm_usages edge name in mutations.
 	EdgeLlmUsages = "llm_usages"
 	// EdgeOauthConnections holds the string denoting the oauth_connections edge name in mutations.
@@ -168,6 +174,27 @@ const (
 	MeetingMinuteUsagesInverseTable = "meeting_minute_usages"
 	// MeetingMinuteUsagesColumn is the table column denoting the meeting_minute_usages relation/edge.
 	MeetingMinuteUsagesColumn = "user_meeting_minute_usages"
+	// VoiceAPIKeysTable is the table that holds the voice_api_keys relation/edge.
+	VoiceAPIKeysTable = "voice_api_keys"
+	// VoiceAPIKeysInverseTable is the table name for the VoiceAPIKey entity.
+	// It exists in this package in order to avoid circular dependency with the "voiceapikey" package.
+	VoiceAPIKeysInverseTable = "voice_api_keys"
+	// VoiceAPIKeysColumn is the table column denoting the voice_api_keys relation/edge.
+	VoiceAPIKeysColumn = "user_voice_api_keys"
+	// VoiceSyncItemsTable is the table that holds the voice_sync_items relation/edge.
+	VoiceSyncItemsTable = "voice_sync_items"
+	// VoiceSyncItemsInverseTable is the table name for the VoiceSyncItem entity.
+	// It exists in this package in order to avoid circular dependency with the "voicesyncitem" package.
+	VoiceSyncItemsInverseTable = "voice_sync_items"
+	// VoiceSyncItemsColumn is the table column denoting the voice_sync_items relation/edge.
+	VoiceSyncItemsColumn = "user_voice_sync_items"
+	// CaptureArtifactsTable is the table that holds the capture_artifacts relation/edge.
+	CaptureArtifactsTable = "capture_artifacts"
+	// CaptureArtifactsInverseTable is the table name for the CaptureArtifact entity.
+	// It exists in this package in order to avoid circular dependency with the "captureartifact" package.
+	CaptureArtifactsInverseTable = "capture_artifacts"
+	// CaptureArtifactsColumn is the table column denoting the capture_artifacts relation/edge.
+	CaptureArtifactsColumn = "user_capture_artifacts"
 	// LlmUsagesTable is the table that holds the llm_usages relation/edge.
 	LlmUsagesTable = "llm_usages"
 	// LlmUsagesInverseTable is the table name for the LLMUsage entity.
@@ -667,6 +694,48 @@ func ByMeetingMinuteUsagesCount(opts ...sql.OrderTermOption) OrderOption {
 func ByMeetingMinuteUsages(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newMeetingMinuteUsagesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByVoiceAPIKeysCount orders the results by voice_api_keys count.
+func ByVoiceAPIKeysCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newVoiceAPIKeysStep(), opts...)
+	}
+}
+
+// ByVoiceAPIKeys orders the results by voice_api_keys terms.
+func ByVoiceAPIKeys(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newVoiceAPIKeysStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByVoiceSyncItemsCount orders the results by voice_sync_items count.
+func ByVoiceSyncItemsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newVoiceSyncItemsStep(), opts...)
+	}
+}
+
+// ByVoiceSyncItems orders the results by voice_sync_items terms.
+func ByVoiceSyncItems(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newVoiceSyncItemsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByCaptureArtifactsCount orders the results by capture_artifacts count.
+func ByCaptureArtifactsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCaptureArtifactsStep(), opts...)
+	}
+}
+
+// ByCaptureArtifacts orders the results by capture_artifacts terms.
+func ByCaptureArtifacts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCaptureArtifactsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -1486,6 +1555,27 @@ func newMeetingMinuteUsagesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MeetingMinuteUsagesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, MeetingMinuteUsagesTable, MeetingMinuteUsagesColumn),
+	)
+}
+func newVoiceAPIKeysStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(VoiceAPIKeysInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, VoiceAPIKeysTable, VoiceAPIKeysColumn),
+	)
+}
+func newVoiceSyncItemsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(VoiceSyncItemsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, VoiceSyncItemsTable, VoiceSyncItemsColumn),
+	)
+}
+func newCaptureArtifactsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CaptureArtifactsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CaptureArtifactsTable, CaptureArtifactsColumn),
 	)
 }
 func newLlmUsagesStep() *sqlgraph.Step {

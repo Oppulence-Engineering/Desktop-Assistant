@@ -12,9 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -240,48 +238,16 @@ func (_u *RevenueActionRevisionUpdate) ClearCreatedBy() *RevenueActionRevisionUp
 	return _u
 }
 
-// SetActionID sets the "action" edge to the RevenueAction entity by ID.
-func (_u *RevenueActionRevisionUpdate) SetActionID(id uuid.UUID) *RevenueActionRevisionUpdate {
-	_u.mutation.SetActionID(id)
-	return _u
-}
-
-// SetAction sets the "action" edge to the RevenueAction entity.
-func (_u *RevenueActionRevisionUpdate) SetAction(v *RevenueAction) *RevenueActionRevisionUpdate {
-	return _u.SetActionID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RevenueActionRevisionUpdate) SetUserID(id uuid.UUID) *RevenueActionRevisionUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RevenueActionRevisionUpdate) SetUser(v *User) *RevenueActionRevisionUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RevenueActionRevisionMutation object of the builder.
 func (_u *RevenueActionRevisionUpdate) Mutation() *RevenueActionRevisionMutation {
 	return _u.mutation
 }
 
-// ClearAction clears the "action" edge to the RevenueAction entity.
-func (_u *RevenueActionRevisionUpdate) ClearAction() *RevenueActionRevisionUpdate {
-	_u.mutation.ClearAction()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RevenueActionRevisionUpdate) ClearUser() *RevenueActionRevisionUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *RevenueActionRevisionUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -308,11 +274,15 @@ func (_u *RevenueActionRevisionUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RevenueActionRevisionUpdate) defaults() {
+func (_u *RevenueActionRevisionUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if revenueactionrevision.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueactionrevision.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueactionrevision.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -417,64 +387,6 @@ func (_u *RevenueActionRevisionUpdate) sqlSave(ctx context.Context) (_node int, 
 	}
 	if _u.mutation.CreatedByCleared() {
 		_spec.ClearField(revenueactionrevision.FieldCreatedBy, field.TypeUUID)
-	}
-	if _u.mutation.ActionCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueactionrevision.ActionTable,
-			Columns: []string{revenueactionrevision.ActionColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.ActionIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueactionrevision.ActionTable,
-			Columns: []string{revenueactionrevision.ActionColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueactionrevision.UserTable,
-			Columns: []string{revenueactionrevision.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueactionrevision.UserTable,
-			Columns: []string{revenueactionrevision.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -705,43 +617,9 @@ func (_u *RevenueActionRevisionUpdateOne) ClearCreatedBy() *RevenueActionRevisio
 	return _u
 }
 
-// SetActionID sets the "action" edge to the RevenueAction entity by ID.
-func (_u *RevenueActionRevisionUpdateOne) SetActionID(id uuid.UUID) *RevenueActionRevisionUpdateOne {
-	_u.mutation.SetActionID(id)
-	return _u
-}
-
-// SetAction sets the "action" edge to the RevenueAction entity.
-func (_u *RevenueActionRevisionUpdateOne) SetAction(v *RevenueAction) *RevenueActionRevisionUpdateOne {
-	return _u.SetActionID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RevenueActionRevisionUpdateOne) SetUserID(id uuid.UUID) *RevenueActionRevisionUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RevenueActionRevisionUpdateOne) SetUser(v *User) *RevenueActionRevisionUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RevenueActionRevisionMutation object of the builder.
 func (_u *RevenueActionRevisionUpdateOne) Mutation() *RevenueActionRevisionMutation {
 	return _u.mutation
-}
-
-// ClearAction clears the "action" edge to the RevenueAction entity.
-func (_u *RevenueActionRevisionUpdateOne) ClearAction() *RevenueActionRevisionUpdateOne {
-	_u.mutation.ClearAction()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RevenueActionRevisionUpdateOne) ClearUser() *RevenueActionRevisionUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the RevenueActionRevisionUpdate builder.
@@ -759,7 +637,9 @@ func (_u *RevenueActionRevisionUpdateOne) Select(field string, fields ...string)
 
 // Save executes the query and returns the updated RevenueActionRevision entity.
 func (_u *RevenueActionRevisionUpdateOne) Save(ctx context.Context) (*RevenueActionRevision, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -786,11 +666,15 @@ func (_u *RevenueActionRevisionUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RevenueActionRevisionUpdateOne) defaults() {
+func (_u *RevenueActionRevisionUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if revenueactionrevision.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueactionrevision.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueactionrevision.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -912,64 +796,6 @@ func (_u *RevenueActionRevisionUpdateOne) sqlSave(ctx context.Context) (_node *R
 	}
 	if _u.mutation.CreatedByCleared() {
 		_spec.ClearField(revenueactionrevision.FieldCreatedBy, field.TypeUUID)
-	}
-	if _u.mutation.ActionCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueactionrevision.ActionTable,
-			Columns: []string{revenueactionrevision.ActionColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.ActionIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueactionrevision.ActionTable,
-			Columns: []string{revenueactionrevision.ActionColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueaction.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueactionrevision.UserTable,
-			Columns: []string{revenueactionrevision.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueactionrevision.UserTable,
-			Columns: []string{revenueactionrevision.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &RevenueActionRevision{config: _u.config}
 	_spec.Assign = _node.assignValues

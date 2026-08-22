@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import type { MeetingTranscriptSegment } from "@x/shared/dist/meetings.js";
+import type { MeetingTranscriptSegment } from "@x/shared/meetings";
 import {
   getDefaultModelAndProvider,
   getMeetingNotesModel,

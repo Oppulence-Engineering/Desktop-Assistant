@@ -41,7 +41,9 @@ func (_u *OAuthConnectionHistoryUpdate) Mutation() *OAuthConnectionHistoryMutati
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *OAuthConnectionHistoryUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -68,11 +70,15 @@ func (_u *OAuthConnectionHistoryUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *OAuthConnectionHistoryUpdate) defaults() {
+func (_u *OAuthConnectionHistoryUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if oauthconnectionhistory.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized oauthconnectionhistory.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := oauthconnectionhistory.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 func (_u *OAuthConnectionHistoryUpdate) sqlSave(ctx context.Context) (_node int, err error) {
@@ -142,7 +148,9 @@ func (_u *OAuthConnectionHistoryUpdateOne) Select(field string, fields ...string
 
 // Save executes the query and returns the updated OAuthConnectionHistory entity.
 func (_u *OAuthConnectionHistoryUpdateOne) Save(ctx context.Context) (*OAuthConnectionHistory, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -169,11 +177,15 @@ func (_u *OAuthConnectionHistoryUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *OAuthConnectionHistoryUpdateOne) defaults() {
+func (_u *OAuthConnectionHistoryUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if oauthconnectionhistory.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized oauthconnectionhistory.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := oauthconnectionhistory.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 func (_u *OAuthConnectionHistoryUpdateOne) sqlSave(ctx context.Context) (_node *OAuthConnectionHistory, err error) {

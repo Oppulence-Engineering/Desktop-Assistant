@@ -28,6 +28,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
@@ -80,6 +81,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 )
 
@@ -157,6 +160,7 @@ func checkColumn(t, c string) error {
 			backgroundtaskrun.Table:                 backgroundtaskrun.ValidColumn,
 			backgroundtaskrunevent.Table:            backgroundtaskrunevent.ValidColumn,
 			backgroundtaskschedulestate.Table:       backgroundtaskschedulestate.ValidColumn,
+			captureartifact.Table:                   captureartifact.ValidColumn,
 			cloudevent.Table:                        cloudevent.ValidColumn,
 			commitment.Table:                        commitment.ValidColumn,
 			commitmentdependency.Table:              commitmentdependency.ValidColumn,
@@ -209,6 +213,8 @@ func checkColumn(t, c string) error {
 			tenantevidencekey.Table:                 tenantevidencekey.ValidColumn,
 			user.Table:                              user.ValidColumn,
 			userhistory.Table:                       userhistory.ValidColumn,
+			voiceapikey.Table:                       voiceapikey.ValidColumn,
+			voicesyncitem.Table:                     voicesyncitem.ValidColumn,
 			workspacefeaturecontrol.Table:           workspacefeaturecontrol.ValidColumn,
 		})
 	})

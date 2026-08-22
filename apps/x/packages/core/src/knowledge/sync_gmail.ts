@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
-import { google, gmail_v1 as gmail } from "googleapis";
+import { gmail_v1 as gmail } from "googleapis";
+import { createGmailClient } from "./gmail_client.js";
 import { NodeHtmlMarkdown } from "node-html-markdown";
 import { OAuth2Client } from "google-auth-library";
 import { WorkDir } from "../config/config.js";
@@ -134,7 +135,7 @@ function deleteCachedSnapshot(threadId: string): void {
 async function getGmailClientOrThrow() {
   const auth = await GoogleClientFactory.getClient();
   if (!auth) throw new Error("Gmail is not connected.");
-  return google.gmail({ version: "v1", auth });
+  return createGmailClient(auth);
 }
 
 export interface ThreadActionResult {
@@ -754,7 +755,7 @@ export async function listRecentThreadIds(daysAgo: number = 2): Promise<RecentTh
     throw new Error("Gmail is not connected.");
   }
 
-  const gmailClient = google.gmail({ version: "v1", auth });
+  const gmailClient = createGmailClient(auth);
   const since = new Date();
   since.setDate(since.getDate() - daysAgo);
   const dateQuery = since.toISOString().split("T")[0].replace(/-/g, "/");
@@ -1006,7 +1007,7 @@ async function processThread(
   syncDir: string,
   attachmentsDir: string,
 ): Promise<SyncedThread | null> {
-  const gmail = google.gmail({ version: "v1", auth });
+  const gmail = createGmailClient(auth);
   try {
     const res = await gmail.users.threads.get({ userId: "me", id: threadId });
     const thread = res.data;
@@ -1104,7 +1105,7 @@ async function processThread(
 async function pruneInboxCache(auth: OAuth2Client): Promise<void> {
   if (!fs.existsSync(CACHE_DIR)) return;
   try {
-    const gmailClient = google.gmail({ version: "v1", auth });
+    const gmailClient = createGmailClient(auth);
     const inInbox = new Set<string>();
     let pageToken: string | undefined;
     do {
@@ -1233,7 +1234,7 @@ async function backfillMissingRecentThreads(
 ): Promise<SyncedThread[]> {
   if (!shouldRunRecentBackfill(stateFile)) return [];
 
-  const gmailClient = google.gmail({ version: "v1", auth });
+  const gmailClient = createGmailClient(auth);
   const recentThreads = await listRecentNonDeletedThreadIds(gmailClient, lookbackDays);
   const missingThreadIds = recentThreads
     .map((thread) => thread.threadId)
@@ -1263,7 +1264,7 @@ async function fullSync(
   stateFile: string,
   lookbackDays: number,
 ) {
-  const gmail = google.gmail({ version: "v1", auth });
+  const gmail = createGmailClient(auth);
 
   // If the state file holds a last_sync timestamp (e.g. left over from a
   // prior legacy connector sync, or from a previous successful native sync that
@@ -1396,7 +1397,7 @@ async function partialSync(
   lookbackDays: number,
 ) {
   console.log(`Checking updates since historyId ${startHistoryId}...`);
-  const gmail = google.gmail({ version: "v1", auth });
+  const gmail = createGmailClient(auth);
 
   let run: ServiceRunContext | null = null;
   const ensureRun = async () => {
@@ -1699,7 +1700,7 @@ export async function sendThreadReply(opts: SendReplyOptions): Promise<SendReply
     const auth = await GoogleClientFactory.getClient();
     if (!auth) return { error: "Gmail is not connected." };
 
-    const gmailClient = google.gmail({ version: "v1", auth });
+    const gmailClient = createGmailClient(auth);
     const userEmail = await getUserEmail(auth);
     if (!userEmail) return { error: "Could not determine your Gmail address." };
 

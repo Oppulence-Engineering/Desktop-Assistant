@@ -2,7 +2,7 @@ import { transcribePcm, type RunOpts, type RunResult } from "./runner.js";
 import { deinterleaveStereoI16, concatI16 } from "./wav.js";
 import { autoThreads, timeoutFor } from "./runner.js";
 import { codeOf } from "./errors.js";
-import type { WhisperErrorCode, WhisperSpeaker } from "@x/shared/dist/transcription.js";
+import type { WhisperErrorCode, WhisperSpeaker } from "@x/shared/transcription";
 
 /**
  * Meeting-mode near-real-time pipeline (RFC 009 §15, Appendix N).

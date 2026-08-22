@@ -53,7 +53,7 @@ func run(path, stage string) error {
 	if !stages[stage] {
 		return fmt.Errorf("unsupported stage %q", stage)
 	}
-	raw, err := os.ReadFile(path)
+	raw, err := os.ReadFile(path) //nolint:gosec // Maintainer selects the local release-evidence file.
 	if err != nil {
 		return err
 	}

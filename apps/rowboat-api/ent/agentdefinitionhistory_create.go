@@ -348,7 +348,9 @@ func (_c *AgentDefinitionHistoryCreate) Mutation() *AgentDefinitionHistoryMutati
 
 // Save creates the AgentDefinitionHistory in the database.
 func (_c *AgentDefinitionHistoryCreate) Save(ctx context.Context) (*AgentDefinitionHistory, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -375,16 +377,25 @@ func (_c *AgentDefinitionHistoryCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *AgentDefinitionHistoryCreate) defaults() {
+func (_c *AgentDefinitionHistoryCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if agentdefinitionhistory.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized agentdefinitionhistory.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := agentdefinitionhistory.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if agentdefinitionhistory.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized agentdefinitionhistory.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := agentdefinitionhistory.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
 	if _, ok := _c.mutation.HistoryTime(); !ok {
+		if agentdefinitionhistory.DefaultHistoryTime == nil {
+			return fmt.Errorf("ent: uninitialized agentdefinitionhistory.DefaultHistoryTime (forgotten import ent/runtime?)")
+		}
 		v := agentdefinitionhistory.DefaultHistoryTime()
 		_c.mutation.SetHistoryTime(v)
 	}
@@ -409,9 +420,13 @@ func (_c *AgentDefinitionHistoryCreate) defaults() {
 		_c.mutation.SetAgentSyncState(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if agentdefinitionhistory.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized agentdefinitionhistory.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := agentdefinitionhistory.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

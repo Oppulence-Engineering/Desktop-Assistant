@@ -3,7 +3,7 @@ import { withPromptCaching } from "./prompt-caching.js";
 import fs from "fs";
 import path from "path";
 import { WorkDir } from "../config/config.js";
-import { Agent, ToolAttachment } from "@x/shared/dist/agent.js";
+import { Agent, ToolAttachment } from "@x/shared/agent";
 import {
   AssistantContentPart,
   AssistantMessage,
@@ -13,17 +13,17 @@ import {
   ToolCallPart,
   ToolMessage,
   UserMessageContext,
-} from "@x/shared/dist/message.js";
+} from "@x/shared/message";
 import { LanguageModel, stepCountIs, streamText, tool, Tool, ToolSet } from "ai";
 import { z } from "zod";
-import { LlmStepStreamEvent } from "@x/shared/dist/llm-step-events.js";
+import { LlmStepStreamEvent } from "@x/shared/llm-step-events";
 import { execTool } from "../application/lib/exec-tool.js";
 import {
   AskHumanRequestEvent,
   RunEvent,
   ToolPermissionMetadata,
   ToolPermissionRequestEvent,
-} from "@x/shared/dist/runs.js";
+} from "@x/shared/runs";
 import { BuiltinTools } from "../application/lib/builtin-tools.js";
 import { buildCopilotAgent } from "../application/assistant/agent.js";
 import { buildLiveNoteAgent } from "../knowledge/live-note/agent.js";

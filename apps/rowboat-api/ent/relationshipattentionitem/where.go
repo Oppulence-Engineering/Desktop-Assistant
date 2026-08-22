@@ -101,11 +101,6 @@ func RankScore(v int) predicate.RelationshipAttentionItem {
 	return predicate.RelationshipAttentionItem(sql.FieldEQ(FieldRankScore, v))
 }
 
-// RankFactorsJSON applies equality check predicate on the "rank_factors_json" field. It's identical to RankFactorsJSONEQ.
-func RankFactorsJSON(v string) predicate.RelationshipAttentionItem {
-	return predicate.RelationshipAttentionItem(sql.FieldEQ(FieldRankFactorsJSON, v))
-}
-
 // RecommendationID applies equality check predicate on the "recommendation_id" field. It's identical to RecommendationIDEQ.
 func RecommendationID(v uuid.UUID) predicate.RelationshipAttentionItem {
 	return predicate.RelationshipAttentionItem(sql.FieldEQ(FieldRecommendationID, v))
@@ -669,71 +664,6 @@ func RankScoreLT(v int) predicate.RelationshipAttentionItem {
 // RankScoreLTE applies the LTE predicate on the "rank_score" field.
 func RankScoreLTE(v int) predicate.RelationshipAttentionItem {
 	return predicate.RelationshipAttentionItem(sql.FieldLTE(FieldRankScore, v))
-}
-
-// RankFactorsJSONEQ applies the EQ predicate on the "rank_factors_json" field.
-func RankFactorsJSONEQ(v string) predicate.RelationshipAttentionItem {
-	return predicate.RelationshipAttentionItem(sql.FieldEQ(FieldRankFactorsJSON, v))
-}
-
-// RankFactorsJSONNEQ applies the NEQ predicate on the "rank_factors_json" field.
-func RankFactorsJSONNEQ(v string) predicate.RelationshipAttentionItem {
-	return predicate.RelationshipAttentionItem(sql.FieldNEQ(FieldRankFactorsJSON, v))
-}
-
-// RankFactorsJSONIn applies the In predicate on the "rank_factors_json" field.
-func RankFactorsJSONIn(vs ...string) predicate.RelationshipAttentionItem {
-	return predicate.RelationshipAttentionItem(sql.FieldIn(FieldRankFactorsJSON, vs...))
-}
-
-// RankFactorsJSONNotIn applies the NotIn predicate on the "rank_factors_json" field.
-func RankFactorsJSONNotIn(vs ...string) predicate.RelationshipAttentionItem {
-	return predicate.RelationshipAttentionItem(sql.FieldNotIn(FieldRankFactorsJSON, vs...))
-}
-
-// RankFactorsJSONGT applies the GT predicate on the "rank_factors_json" field.
-func RankFactorsJSONGT(v string) predicate.RelationshipAttentionItem {
-	return predicate.RelationshipAttentionItem(sql.FieldGT(FieldRankFactorsJSON, v))
-}
-
-// RankFactorsJSONGTE applies the GTE predicate on the "rank_factors_json" field.
-func RankFactorsJSONGTE(v string) predicate.RelationshipAttentionItem {
-	return predicate.RelationshipAttentionItem(sql.FieldGTE(FieldRankFactorsJSON, v))
-}
-
-// RankFactorsJSONLT applies the LT predicate on the "rank_factors_json" field.
-func RankFactorsJSONLT(v string) predicate.RelationshipAttentionItem {
-	return predicate.RelationshipAttentionItem(sql.FieldLT(FieldRankFactorsJSON, v))
-}
-
-// RankFactorsJSONLTE applies the LTE predicate on the "rank_factors_json" field.
-func RankFactorsJSONLTE(v string) predicate.RelationshipAttentionItem {
-	return predicate.RelationshipAttentionItem(sql.FieldLTE(FieldRankFactorsJSON, v))
-}
-
-// RankFactorsJSONContains applies the Contains predicate on the "rank_factors_json" field.
-func RankFactorsJSONContains(v string) predicate.RelationshipAttentionItem {
-	return predicate.RelationshipAttentionItem(sql.FieldContains(FieldRankFactorsJSON, v))
-}
-
-// RankFactorsJSONHasPrefix applies the HasPrefix predicate on the "rank_factors_json" field.
-func RankFactorsJSONHasPrefix(v string) predicate.RelationshipAttentionItem {
-	return predicate.RelationshipAttentionItem(sql.FieldHasPrefix(FieldRankFactorsJSON, v))
-}
-
-// RankFactorsJSONHasSuffix applies the HasSuffix predicate on the "rank_factors_json" field.
-func RankFactorsJSONHasSuffix(v string) predicate.RelationshipAttentionItem {
-	return predicate.RelationshipAttentionItem(sql.FieldHasSuffix(FieldRankFactorsJSON, v))
-}
-
-// RankFactorsJSONEqualFold applies the EqualFold predicate on the "rank_factors_json" field.
-func RankFactorsJSONEqualFold(v string) predicate.RelationshipAttentionItem {
-	return predicate.RelationshipAttentionItem(sql.FieldEqualFold(FieldRankFactorsJSON, v))
-}
-
-// RankFactorsJSONContainsFold applies the ContainsFold predicate on the "rank_factors_json" field.
-func RankFactorsJSONContainsFold(v string) predicate.RelationshipAttentionItem {
-	return predicate.RelationshipAttentionItem(sql.FieldContainsFold(FieldRankFactorsJSON, v))
 }
 
 // RecommendationIDEQ applies the EQ predicate on the "recommendation_id" field.

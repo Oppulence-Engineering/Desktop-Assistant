@@ -8,7 +8,7 @@ import type {
   MeetingDoctorReport,
   MeetingResolvedEngine,
   MeetingTrackId,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 
 /**
  * Supervising the `oppulence-audiocap` sidecar (`vendor/audiocap`).

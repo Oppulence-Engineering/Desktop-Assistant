@@ -15,8 +15,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -182,28 +180,6 @@ func (_u *ConversationIntelligenceArtifactUpdate) SetNillablePayloadHash(v *stri
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *ConversationIntelligenceArtifactUpdate) SetWorkspaceID(id uuid.UUID) *ConversationIntelligenceArtifactUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *ConversationIntelligenceArtifactUpdate) SetWorkspace(v *RevenueWorkspace) *ConversationIntelligenceArtifactUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *ConversationIntelligenceArtifactUpdate) SetUserID(id uuid.UUID) *ConversationIntelligenceArtifactUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *ConversationIntelligenceArtifactUpdate) SetUser(v *User) *ConversationIntelligenceArtifactUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // SetRelationshipID sets the "relationship" edge to the Relationship entity by ID.
 func (_u *ConversationIntelligenceArtifactUpdate) SetRelationshipID(id uuid.UUID) *ConversationIntelligenceArtifactUpdate {
 	_u.mutation.SetRelationshipID(id)
@@ -228,18 +204,6 @@ func (_u *ConversationIntelligenceArtifactUpdate) Mutation() *ConversationIntell
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *ConversationIntelligenceArtifactUpdate) ClearWorkspace() *ConversationIntelligenceArtifactUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *ConversationIntelligenceArtifactUpdate) ClearUser() *ConversationIntelligenceArtifactUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // ClearRelationship clears the "relationship" edge to the Relationship entity.
 func (_u *ConversationIntelligenceArtifactUpdate) ClearRelationship() *ConversationIntelligenceArtifactUpdate {
 	_u.mutation.ClearRelationship()
@@ -248,7 +212,9 @@ func (_u *ConversationIntelligenceArtifactUpdate) ClearRelationship() *Conversat
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *ConversationIntelligenceArtifactUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -275,11 +241,15 @@ func (_u *ConversationIntelligenceArtifactUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *ConversationIntelligenceArtifactUpdate) defaults() {
+func (_u *ConversationIntelligenceArtifactUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if conversationintelligenceartifact.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized conversationintelligenceartifact.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := conversationintelligenceartifact.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -373,64 +343,6 @@ func (_u *ConversationIntelligenceArtifactUpdate) sqlSave(ctx context.Context) (
 	}
 	if value, ok := _u.mutation.PayloadHash(); ok {
 		_spec.SetField(conversationintelligenceartifact.FieldPayloadHash, field.TypeString, value)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   conversationintelligenceartifact.WorkspaceTable,
-			Columns: []string{conversationintelligenceartifact.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   conversationintelligenceartifact.WorkspaceTable,
-			Columns: []string{conversationintelligenceartifact.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   conversationintelligenceartifact.UserTable,
-			Columns: []string{conversationintelligenceartifact.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   conversationintelligenceartifact.UserTable,
-			Columns: []string{conversationintelligenceartifact.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.RelationshipCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -630,28 +542,6 @@ func (_u *ConversationIntelligenceArtifactUpdateOne) SetNillablePayloadHash(v *s
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *ConversationIntelligenceArtifactUpdateOne) SetWorkspaceID(id uuid.UUID) *ConversationIntelligenceArtifactUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *ConversationIntelligenceArtifactUpdateOne) SetWorkspace(v *RevenueWorkspace) *ConversationIntelligenceArtifactUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *ConversationIntelligenceArtifactUpdateOne) SetUserID(id uuid.UUID) *ConversationIntelligenceArtifactUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *ConversationIntelligenceArtifactUpdateOne) SetUser(v *User) *ConversationIntelligenceArtifactUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // SetRelationshipID sets the "relationship" edge to the Relationship entity by ID.
 func (_u *ConversationIntelligenceArtifactUpdateOne) SetRelationshipID(id uuid.UUID) *ConversationIntelligenceArtifactUpdateOne {
 	_u.mutation.SetRelationshipID(id)
@@ -676,18 +566,6 @@ func (_u *ConversationIntelligenceArtifactUpdateOne) Mutation() *ConversationInt
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *ConversationIntelligenceArtifactUpdateOne) ClearWorkspace() *ConversationIntelligenceArtifactUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *ConversationIntelligenceArtifactUpdateOne) ClearUser() *ConversationIntelligenceArtifactUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // ClearRelationship clears the "relationship" edge to the Relationship entity.
 func (_u *ConversationIntelligenceArtifactUpdateOne) ClearRelationship() *ConversationIntelligenceArtifactUpdateOne {
 	_u.mutation.ClearRelationship()
@@ -709,7 +587,9 @@ func (_u *ConversationIntelligenceArtifactUpdateOne) Select(field string, fields
 
 // Save executes the query and returns the updated ConversationIntelligenceArtifact entity.
 func (_u *ConversationIntelligenceArtifactUpdateOne) Save(ctx context.Context) (*ConversationIntelligenceArtifact, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -736,11 +616,15 @@ func (_u *ConversationIntelligenceArtifactUpdateOne) ExecX(ctx context.Context) 
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *ConversationIntelligenceArtifactUpdateOne) defaults() {
+func (_u *ConversationIntelligenceArtifactUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if conversationintelligenceartifact.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized conversationintelligenceartifact.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := conversationintelligenceartifact.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -851,64 +735,6 @@ func (_u *ConversationIntelligenceArtifactUpdateOne) sqlSave(ctx context.Context
 	}
 	if value, ok := _u.mutation.PayloadHash(); ok {
 		_spec.SetField(conversationintelligenceartifact.FieldPayloadHash, field.TypeString, value)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   conversationintelligenceartifact.WorkspaceTable,
-			Columns: []string{conversationintelligenceartifact.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   conversationintelligenceartifact.WorkspaceTable,
-			Columns: []string{conversationintelligenceartifact.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   conversationintelligenceartifact.UserTable,
-			Columns: []string{conversationintelligenceartifact.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   conversationintelligenceartifact.UserTable,
-			Columns: []string{conversationintelligenceartifact.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.RelationshipCleared() {
 		edge := &sqlgraph.EdgeSpec{

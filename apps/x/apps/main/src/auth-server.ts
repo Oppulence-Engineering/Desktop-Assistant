@@ -555,7 +555,7 @@ function tryBindPort(
         }
 
         // Handle callback - pass full URL so params like iss (OpenID Connect) are preserved for token exchange
-        onCallback(url);
+        void onCallback(url);
 
         // ... (ERRORS.md E50) Stay neutral: the token exchange runs asynchronously
         // after this responds, so we must not assert success — it may still fail.

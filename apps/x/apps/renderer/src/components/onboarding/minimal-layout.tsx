@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
-import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME } from "@x/shared/branding";
 
 const DIAGRAM_BARS = [
   46, 56, 66, 74, 82, 88, 92, 96, 98, 100, 100, 98, 94, 90, 84, 76, 68, 58, 48,

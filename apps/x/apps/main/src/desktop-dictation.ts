@@ -4,7 +4,6 @@ import {
   clipboard,
   globalShortcut,
   screen,
-  shell,
   systemPreferences,
 } from "electron";
 import { execFile } from "node:child_process";
@@ -12,9 +11,9 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
-import { WorkDir } from "@x/core/dist/config/config.js";
-import { transformDictationCommand } from "@x/core/dist/voice/command-mode.js";
-import { getTranscriptionConfig, setTranscriptionConfig } from "@x/core/dist/voice/voice.js";
+import { WorkDir } from "@x/core/config/config";
+import { transformDictationCommand } from "@x/core/voice/command-mode";
+import { getTranscriptionConfig, setTranscriptionConfig } from "@x/core/voice/voice";
 import {
   DICTATION_LANGUAGE_LABELS,
   DICTATION_SHORTCUT_LABELS,
@@ -26,7 +25,7 @@ import {
   type DictationSettings,
   type DictationShortcut,
   type DictationTransform,
-} from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
 
 import { audiocapBinaryPath } from "./meeting-capture.js";
 import { markSecondaryWindow, preloadPath } from "./main-window.js";
@@ -52,6 +51,8 @@ import {
 import { polishDictation } from "./dictation-polish.js";
 import { stopFastDictationEngine, warmFastDictationEngine } from "./parakeet-dictation-runner.js";
 import type { DesktopTextContext } from "./desktop-context.js";
+import { sendRendererEvent } from "./renderer-events.js";
+import { MACOS_SYSTEM_SETTINGS_PROTOCOLS, openTrustedExternal } from "./external-url.js";
 
 export type DesktopDictationState = "idle" | "listening" | "transcribing" | "success" | "error";
 
@@ -131,7 +132,7 @@ export interface DesktopDictationCommitMetadata {
 
 export function notifyDesktopDictationHistoryChanged(): void {
   for (const win of BrowserWindow.getAllWindows()) {
-    if (!win.isDestroyed()) win.webContents.send("dictation:historyChanged", {});
+    if (!win.isDestroyed()) sendRendererEvent(win.webContents, "dictation:historyChanged", {});
   }
 }
 
@@ -285,7 +286,7 @@ function positionWindow(
 function broadcastFlowBarDock(): void {
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) {
-      win.webContents.send("dictation:flowBarDockChanged", { dock: activeFlowBarDock });
+      sendRendererEvent(win.webContents, "dictation:flowBarDockChanged", { dock: activeFlowBarDock });
     }
   }
 }
@@ -349,9 +350,9 @@ function ensureWindow(): BrowserWindow {
 
   win.webContents.on("did-finish-load", () => {
     rendererReady = true;
-    win.webContents.send("dictation:flowBarDockChanged", { dock: activeFlowBarDock });
+    sendRendererEvent(win.webContents, "dictation:flowBarDockChanged", { dock: activeFlowBarDock });
     for (const pending of pendingPhases.splice(0)) {
-      win.webContents.send("dictation:shortcut", {
+      sendRendererEvent(win.webContents, "dictation:shortcut", {
         phase: pending.phase,
         shortcut: actionShortcutLabel(pending.phase),
         language: pending.language,
@@ -409,7 +410,7 @@ function sendShortcut(phase: DesktopShortcutAction): void {
     pendingPhases.push({ phase, language, microphonePriority });
     return;
   }
-  win.webContents.send("dictation:shortcut", {
+  sendRendererEvent(win.webContents, "dictation:shortcut", {
     phase,
     shortcut: actionShortcutLabel(phase),
     language,
@@ -695,7 +696,7 @@ export function applyDesktopDictationSettings(settings: DictationSettings): void
   if (languageChanged) {
     for (const win of BrowserWindow.getAllWindows()) {
       if (!win.isDestroyed()) {
-        win.webContents.send("dictation:languageChanged", {
+        sendRendererEvent(win.webContents, "dictation:languageChanged", {
           language: activeLanguage,
           label: DICTATION_LANGUAGE_LABELS[activeLanguage],
         });
@@ -706,7 +707,7 @@ export function applyDesktopDictationSettings(settings: DictationSettings): void
   if (microphonesChanged) {
     for (const win of BrowserWindow.getAllWindows()) {
       if (!win.isDestroyed()) {
-        win.webContents.send("dictation:microphonesChanged", {
+        sendRendererEvent(win.webContents, "dictation:microphonesChanged", {
           microphonePriority: activeMicrophonePriority,
         });
       }
@@ -915,7 +916,7 @@ export function requestDictationAccessibility(): boolean {
 
 export async function openInputMonitoringSettings(): Promise<boolean> {
   if (process.platform !== "darwin") return false;
-  await shell.openExternal(INPUT_MONITORING_URL);
+  await openTrustedExternal(INPUT_MONITORING_URL, MACOS_SYSTEM_SETTINGS_PROTOCOLS);
   return true;
 }
 
@@ -924,7 +925,7 @@ export function updateDesktopDictationState(state: DesktopDictationState, messag
   const win = ensureWindow();
   if (hideTimer) clearTimeout(hideTimer);
   hideTimer = null;
-  win.webContents.send("dictation:state", { state, message, dock: activeFlowBarDock });
+  sendRendererEvent(win.webContents, "dictation:state", { state, message, dock: activeFlowBarDock });
   syncCancelShortcut(state === "listening");
 
   if (state === "idle") {

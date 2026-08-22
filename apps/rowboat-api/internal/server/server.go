@@ -311,7 +311,8 @@ func (s *Server) Run(ctx context.Context) error {
 	}()
 	if s.cfg.GRPCAddr != "" {
 		go func() {
-			lis, err := net.Listen("tcp", s.cfg.GRPCAddr)
+			var listenConfig net.ListenConfig
+			lis, err := listenConfig.Listen(baseCtx, "tcp", s.cfg.GRPCAddr)
 			if err != nil {
 				errCh <- err
 				return

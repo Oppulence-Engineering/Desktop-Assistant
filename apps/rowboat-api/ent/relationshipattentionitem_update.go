@@ -15,8 +15,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -164,16 +162,8 @@ func (_u *RelationshipAttentionItemUpdate) AddRankScore(v int) *RelationshipAtte
 }
 
 // SetRankFactorsJSON sets the "rank_factors_json" field.
-func (_u *RelationshipAttentionItemUpdate) SetRankFactorsJSON(v string) *RelationshipAttentionItemUpdate {
+func (_u *RelationshipAttentionItemUpdate) SetRankFactorsJSON(v map[string]int) *RelationshipAttentionItemUpdate {
 	_u.mutation.SetRankFactorsJSON(v)
-	return _u
-}
-
-// SetNillableRankFactorsJSON sets the "rank_factors_json" field if the given value is not nil.
-func (_u *RelationshipAttentionItemUpdate) SetNillableRankFactorsJSON(v *string) *RelationshipAttentionItemUpdate {
-	if v != nil {
-		_u.SetRankFactorsJSON(*v)
-	}
 	return _u
 }
 
@@ -495,17 +485,6 @@ func (_u *RelationshipAttentionItemUpdate) ClearDismissedAt() *RelationshipAtten
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RelationshipAttentionItemUpdate) SetWorkspaceID(id uuid.UUID) *RelationshipAttentionItemUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipAttentionItemUpdate) SetWorkspace(v *RevenueWorkspace) *RelationshipAttentionItemUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetRelationshipID sets the "relationship" edge to the Relationship entity by ID.
 func (_u *RelationshipAttentionItemUpdate) SetRelationshipID(id uuid.UUID) *RelationshipAttentionItemUpdate {
 	_u.mutation.SetRelationshipID(id)
@@ -517,26 +496,9 @@ func (_u *RelationshipAttentionItemUpdate) SetRelationship(v *Relationship) *Rel
 	return _u.SetRelationshipID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RelationshipAttentionItemUpdate) SetUserID(id uuid.UUID) *RelationshipAttentionItemUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RelationshipAttentionItemUpdate) SetUser(v *User) *RelationshipAttentionItemUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RelationshipAttentionItemMutation object of the builder.
 func (_u *RelationshipAttentionItemUpdate) Mutation() *RelationshipAttentionItemMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipAttentionItemUpdate) ClearWorkspace() *RelationshipAttentionItemUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
 }
 
 // ClearRelationship clears the "relationship" edge to the Relationship entity.
@@ -545,15 +507,11 @@ func (_u *RelationshipAttentionItemUpdate) ClearRelationship() *RelationshipAtte
 	return _u
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RelationshipAttentionItemUpdate) ClearUser() *RelationshipAttentionItemUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *RelationshipAttentionItemUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -580,11 +538,15 @@ func (_u *RelationshipAttentionItemUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RelationshipAttentionItemUpdate) defaults() {
+func (_u *RelationshipAttentionItemUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if relationshipattentionitem.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipattentionitem.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipattentionitem.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -622,11 +584,6 @@ func (_u *RelationshipAttentionItemUpdate) check() error {
 	if v, ok := _u.mutation.RankScore(); ok {
 		if err := relationshipattentionitem.RankScoreValidator(v); err != nil {
 			return &ValidationError{Name: "rank_score", err: fmt.Errorf(`ent: validator failed for field "RelationshipAttentionItem.rank_score": %w`, err)}
-		}
-	}
-	if v, ok := _u.mutation.RankFactorsJSON(); ok {
-		if err := relationshipattentionitem.RankFactorsJSONValidator(v); err != nil {
-			return &ValidationError{Name: "rank_factors_json", err: fmt.Errorf(`ent: validator failed for field "RelationshipAttentionItem.rank_factors_json": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.RecommendationRevision(); ok {
@@ -722,7 +679,7 @@ func (_u *RelationshipAttentionItemUpdate) sqlSave(ctx context.Context) (_node i
 		_spec.AddField(relationshipattentionitem.FieldRankScore, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.RankFactorsJSON(); ok {
-		_spec.SetField(relationshipattentionitem.FieldRankFactorsJSON, field.TypeString, value)
+		_spec.SetField(relationshipattentionitem.FieldRankFactorsJSON, field.TypeJSON, value)
 	}
 	if value, ok := _u.mutation.SourceRequirements(); ok {
 		_spec.SetField(relationshipattentionitem.FieldSourceRequirements, field.TypeJSON, value)
@@ -819,35 +776,6 @@ func (_u *RelationshipAttentionItemUpdate) sqlSave(ctx context.Context) (_node i
 	if _u.mutation.DismissedAtCleared() {
 		_spec.ClearField(relationshipattentionitem.FieldDismissedAt, field.TypeTime)
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipattentionitem.WorkspaceTable,
-			Columns: []string{relationshipattentionitem.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipattentionitem.WorkspaceTable,
-			Columns: []string{relationshipattentionitem.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.RelationshipCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -870,35 +798,6 @@ func (_u *RelationshipAttentionItemUpdate) sqlSave(ctx context.Context) (_node i
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipattentionitem.UserTable,
-			Columns: []string{relationshipattentionitem.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipattentionitem.UserTable,
-			Columns: []string{relationshipattentionitem.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1057,16 +956,8 @@ func (_u *RelationshipAttentionItemUpdateOne) AddRankScore(v int) *RelationshipA
 }
 
 // SetRankFactorsJSON sets the "rank_factors_json" field.
-func (_u *RelationshipAttentionItemUpdateOne) SetRankFactorsJSON(v string) *RelationshipAttentionItemUpdateOne {
+func (_u *RelationshipAttentionItemUpdateOne) SetRankFactorsJSON(v map[string]int) *RelationshipAttentionItemUpdateOne {
 	_u.mutation.SetRankFactorsJSON(v)
-	return _u
-}
-
-// SetNillableRankFactorsJSON sets the "rank_factors_json" field if the given value is not nil.
-func (_u *RelationshipAttentionItemUpdateOne) SetNillableRankFactorsJSON(v *string) *RelationshipAttentionItemUpdateOne {
-	if v != nil {
-		_u.SetRankFactorsJSON(*v)
-	}
 	return _u
 }
 
@@ -1388,17 +1279,6 @@ func (_u *RelationshipAttentionItemUpdateOne) ClearDismissedAt() *RelationshipAt
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RelationshipAttentionItemUpdateOne) SetWorkspaceID(id uuid.UUID) *RelationshipAttentionItemUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipAttentionItemUpdateOne) SetWorkspace(v *RevenueWorkspace) *RelationshipAttentionItemUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetRelationshipID sets the "relationship" edge to the Relationship entity by ID.
 func (_u *RelationshipAttentionItemUpdateOne) SetRelationshipID(id uuid.UUID) *RelationshipAttentionItemUpdateOne {
 	_u.mutation.SetRelationshipID(id)
@@ -1410,37 +1290,14 @@ func (_u *RelationshipAttentionItemUpdateOne) SetRelationship(v *Relationship) *
 	return _u.SetRelationshipID(v.ID)
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RelationshipAttentionItemUpdateOne) SetUserID(id uuid.UUID) *RelationshipAttentionItemUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RelationshipAttentionItemUpdateOne) SetUser(v *User) *RelationshipAttentionItemUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RelationshipAttentionItemMutation object of the builder.
 func (_u *RelationshipAttentionItemUpdateOne) Mutation() *RelationshipAttentionItemMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RelationshipAttentionItemUpdateOne) ClearWorkspace() *RelationshipAttentionItemUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
 // ClearRelationship clears the "relationship" edge to the Relationship entity.
 func (_u *RelationshipAttentionItemUpdateOne) ClearRelationship() *RelationshipAttentionItemUpdateOne {
 	_u.mutation.ClearRelationship()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RelationshipAttentionItemUpdateOne) ClearUser() *RelationshipAttentionItemUpdateOne {
-	_u.mutation.ClearUser()
 	return _u
 }
 
@@ -1459,7 +1316,9 @@ func (_u *RelationshipAttentionItemUpdateOne) Select(field string, fields ...str
 
 // Save executes the query and returns the updated RelationshipAttentionItem entity.
 func (_u *RelationshipAttentionItemUpdateOne) Save(ctx context.Context) (*RelationshipAttentionItem, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -1486,11 +1345,15 @@ func (_u *RelationshipAttentionItemUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RelationshipAttentionItemUpdateOne) defaults() {
+func (_u *RelationshipAttentionItemUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if relationshipattentionitem.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized relationshipattentionitem.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := relationshipattentionitem.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -1528,11 +1391,6 @@ func (_u *RelationshipAttentionItemUpdateOne) check() error {
 	if v, ok := _u.mutation.RankScore(); ok {
 		if err := relationshipattentionitem.RankScoreValidator(v); err != nil {
 			return &ValidationError{Name: "rank_score", err: fmt.Errorf(`ent: validator failed for field "RelationshipAttentionItem.rank_score": %w`, err)}
-		}
-	}
-	if v, ok := _u.mutation.RankFactorsJSON(); ok {
-		if err := relationshipattentionitem.RankFactorsJSONValidator(v); err != nil {
-			return &ValidationError{Name: "rank_factors_json", err: fmt.Errorf(`ent: validator failed for field "RelationshipAttentionItem.rank_factors_json": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.RecommendationRevision(); ok {
@@ -1645,7 +1503,7 @@ func (_u *RelationshipAttentionItemUpdateOne) sqlSave(ctx context.Context) (_nod
 		_spec.AddField(relationshipattentionitem.FieldRankScore, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.RankFactorsJSON(); ok {
-		_spec.SetField(relationshipattentionitem.FieldRankFactorsJSON, field.TypeString, value)
+		_spec.SetField(relationshipattentionitem.FieldRankFactorsJSON, field.TypeJSON, value)
 	}
 	if value, ok := _u.mutation.SourceRequirements(); ok {
 		_spec.SetField(relationshipattentionitem.FieldSourceRequirements, field.TypeJSON, value)
@@ -1742,35 +1600,6 @@ func (_u *RelationshipAttentionItemUpdateOne) sqlSave(ctx context.Context) (_nod
 	if _u.mutation.DismissedAtCleared() {
 		_spec.ClearField(relationshipattentionitem.FieldDismissedAt, field.TypeTime)
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipattentionitem.WorkspaceTable,
-			Columns: []string{relationshipattentionitem.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipattentionitem.WorkspaceTable,
-			Columns: []string{relationshipattentionitem.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.RelationshipCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -1793,35 +1622,6 @@ func (_u *RelationshipAttentionItemUpdateOne) sqlSave(ctx context.Context) (_nod
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipattentionitem.UserTable,
-			Columns: []string{relationshipattentionitem.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   relationshipattentionitem.UserTable,
-			Columns: []string{relationshipattentionitem.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

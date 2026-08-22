@@ -7,8 +7,8 @@ import {
   OLDEST_DEEP_LINK_SCHEME,
   PRODUCT_NAME,
   getProductProviderState,
-} from "@x/shared/dist/branding.js";
-import { RunEvent, ListRunsResponse } from "@x/shared/src/runs.js";
+} from "@x/shared/branding";
+import { RunEvent, ListRunsResponse } from "@x/shared/runs";
 import type { LanguageModelUsage, ToolUIPart } from "ai";
 import "./App.css";
 import "../../../../rowboat-www/app/product-theme.css";
@@ -94,7 +94,7 @@ import {
   ToolPermissionAutoDecisionEvent,
   ToolPermissionRequestEvent,
   AskHumanRequestEvent,
-} from "@x/shared/src/runs.js";
+} from "@x/shared/runs";
 import { SidebarInset, SidebarProvider } from "@oppulence/ui/components/sidebar";
 import {
   Tooltip,
@@ -169,13 +169,13 @@ import {
   parseAttachedFiles,
   toToolState,
 } from "@/lib/chat-conversation";
-import { AgentScheduleConfig } from "@x/shared/dist/agent-schedule.js";
-import { AgentScheduleState } from "@x/shared/dist/agent-schedule-state.js";
+import { AgentScheduleConfig } from "@x/shared/agent-schedule";
+import { AgentScheduleState } from "@x/shared/agent-schedule-state";
 import { toast } from "sonner";
 import { useVoiceMode } from "@/hooks/useVoiceMode";
 import { useVoiceTTS } from "@/hooks/useVoiceTTS";
 import { useMeetingTranscription, type CalendarEventMeta } from "@/hooks/useMeetingTranscription";
-import type { MeetingDoctorCheck, MeetingRelationshipTarget } from "@x/shared/dist/meetings.js";
+import type { MeetingDoctorCheck, MeetingRelationshipTarget } from "@x/shared/meetings";
 import { findMicrophoneBlocker } from "@/lib/meeting-readiness";
 import { useAnalyticsIdentity } from "@/hooks/useAnalyticsIdentity";
 import { useUpdatePrompt } from "@/hooks/use-update-prompt";
@@ -183,6 +183,7 @@ import { useSolomonAccount } from "@/hooks/useSolomonAccount";
 import { useBilling } from "@/hooks/useBilling";
 import * as analytics from "@/lib/analytics";
 import { useTheme } from "@/contexts/theme-context";
+import { emitRendererEvent, onRendererEvent } from "@/lib/renderer-events";
 
 type DirEntry = z.infer<typeof workspace.DirEntry>;
 type RunEventType = z.infer<typeof RunEvent>;
@@ -2906,9 +2907,9 @@ function App() {
 
   // Listen to run events - use refs/callbacks to avoid stale closure issues.
   useEffect(() => {
-    const cleanup = window.ipc.on("runs:events", ((event: unknown) => {
-      handleRunEvent(event as RunEventType);
-    }) as (event: null) => void);
+    const cleanup = window.ipc.on("runs:events", (event) => {
+      handleRunEvent(event);
+    });
     return cleanup;
   }, [handleRunEvent]);
 
@@ -4017,34 +4018,20 @@ function App() {
 
   // Listener for "Edit with Copilot" events from the live-note panel.
   useEffect(() => {
-    const handler = (e: Event) => {
-      const ev = e as CustomEvent<{
-        filePath?: string;
-      }>;
-      const filePath = ev.detail?.filePath;
-      if (!filePath) return;
+    return onRendererEvent("rowboat:open-copilot-edit-live-note", ({ filePath }) => {
       const displayName = filePath.split("/").pop() ?? filePath;
       submitFromPalette(
         `Let's tweak the live note objective in this note. Please load the \`live-note\` skill first, then ask me what I want to change.`,
         { path: filePath, displayName },
       );
-    };
-    window.addEventListener("rowboat:open-copilot-edit-live-note", handler as EventListener);
-    return () =>
-      window.removeEventListener("rowboat:open-copilot-edit-live-note", handler as EventListener);
+    });
   }, [submitFromPalette]);
 
   // Listener for the toolbar "Live note" button — opens the panel for a path.
   useEffect(() => {
-    const handler = (e: Event) => {
-      const ev = e as CustomEvent<{ filePath?: string }>;
-      const filePath = ev.detail?.filePath;
-      if (!filePath) return;
+    return onRendererEvent("rowboat:open-live-note-panel", ({ filePath }) => {
       setLiveNotePanelPath(filePath);
-    };
-    window.addEventListener("rowboat:open-live-note-panel", handler as EventListener);
-    return () =>
-      window.removeEventListener("rowboat:open-live-note-panel", handler as EventListener);
+    });
   }, []);
 
   // Auto-close the live-note panel when the active note changes — the panel is
@@ -4057,15 +4044,9 @@ function App() {
 
   // Listener for the toolbar "Related notes" button — opens the panel for a path.
   useEffect(() => {
-    const handler = (e: Event) => {
-      const ev = e as CustomEvent<{ filePath?: string }>;
-      const filePath = ev.detail?.filePath;
-      if (!filePath) return;
+    return onRendererEvent("rowboat:open-related-notes-panel", ({ filePath }) => {
       setRelatedNotesPanelPath(filePath);
-    };
-    window.addEventListener("rowboat:open-related-notes-panel", handler as EventListener);
-    return () =>
-      window.removeEventListener("rowboat:open-related-notes-panel", handler as EventListener);
+    });
   }, []);
 
   // Auto-close the related-notes panel when the active note changes.
@@ -4078,23 +4059,12 @@ function App() {
   // Listener for prompt-block "Run" events
   // (dispatched by apps/renderer/src/extensions/prompt-block.tsx)
   useEffect(() => {
-    const handler = (e: Event) => {
-      const ev = e as CustomEvent<{
-        instruction?: string;
-        filePath?: string;
-        label?: string;
-      }>;
-      const instruction = ev.detail?.instruction;
-      const filePath = ev.detail?.filePath;
-      if (!instruction) return;
+    return onRendererEvent("rowboat:open-copilot-prompt", ({ instruction, filePath }) => {
       const mention = filePath
         ? { path: filePath, displayName: filePath.split("/").pop() ?? filePath }
         : null;
       submitFromPalette(instruction, mention);
-    };
-    window.addEventListener("rowboat:open-copilot-prompt", handler as EventListener);
-    return () =>
-      window.removeEventListener("rowboat:open-copilot-prompt", handler as EventListener);
+    });
   }, [submitFromPalette]);
 
   // Reveal the chat in the right side pane (from the middle-panel chat icon).
@@ -4998,10 +4968,20 @@ function App() {
     [navigateToView, openBgTasksView, openEmailView, openMeetingsView, productTourVariant],
   );
 
-  // First-run autostart. The completion flag below is the only thing that stops
-  // it, so the tour shows once per install and never again unless the user asks
-  // for it from the sidebar or Settings -> Help.
+  // First-run autostart, once the app is actually usable.
+  //
+  // The completion flag is what makes this happen once per install; the two
+  // conditions are what stop it happening at the wrong moment. Onboarding and
+  // the session-reconnect dialog are both modal, and a tour that opens on top of
+  // "Sign back in to Oppulence" walks someone through features they are signed
+  // out of, over the dialog that would fix that. Waiting costs nothing: these
+  // are React state, so the effect re-runs and the tour opens the moment the
+  // user is through.
   useEffect(() => {
+    // solomonAccount.isLoading matters as much as the two flags. shouldShowSessionReconnect
+    // returns false while loading, so without this the tour opens in the gap before auth
+    // settles and the dialog then stacks on top of it — which is exactly what it did.
+    if (showOnboarding || sessionReconnectRequired || solomonAccount.isLoading) return;
     try {
       if (getProductTourStorage()?.getItem(PRODUCT_TOUR_STORAGE_KEY) === "true") return;
     } catch {
@@ -5013,7 +4993,7 @@ function App() {
       setIsProductTourOpen(true);
     }, 600);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [showOnboarding, sessionReconnectRequired, solomonAccount.isLoading]);
 
   // Move the maximized/full-screen chat into the right side pane: restore the
   // view we expanded from (or fall back to Home) and dock the chat on the right.
@@ -5144,7 +5124,7 @@ function App() {
         conferenceLink,
         source: "calendar-sync",
       };
-      window.dispatchEvent(new Event("calendar-block:join-meeting"));
+      emitRendererEvent("calendar-block:join-meeting");
     });
   }, []);
 
@@ -6268,8 +6248,7 @@ function App() {
       // Use the same toggle flow — it will pick up pendingCalendarEventRef
       handleToggleMeetingRef.current?.();
     };
-    window.addEventListener("calendar-block:join-meeting", handler);
-    return () => window.removeEventListener("calendar-block:join-meeting", handler);
+    return onRendererEvent("calendar-block:join-meeting", handler);
   }, []);
 
   // Email block: draft with assistant
@@ -6282,8 +6261,7 @@ function App() {
         window.__pendingEmailDraft = undefined;
       }
     };
-    window.addEventListener("email-block:draft-with-assistant", handler);
-    return () => window.removeEventListener("email-block:draft-with-assistant", handler);
+    return onRendererEvent("email-block:draft-with-assistant", handler);
   }, []);
 
   const resolveWikiFilePath = useCallback(
@@ -7664,14 +7642,10 @@ function App() {
                                                         permRequest.subflow,
                                                         "deny",
                                                       );
-                                                      window.dispatchEvent(
-                                                        new CustomEvent("code-mode-detected", {
-                                                          detail: {
-                                                            runId: runIdForSwitch,
-                                                            agent: newAgent,
-                                                          },
-                                                        }),
-                                                      );
+                                                      emitRendererEvent("code-mode-detected", {
+                                                        runId: runIdForSwitch ?? undefined,
+                                                        agent: newAgent,
+                                                      });
                                                       if (runIdForSwitch) {
                                                         try {
                                                           await window.ipc.invoke(
@@ -7884,11 +7858,10 @@ function App() {
                     // the swapped agent — parity with full-screen chat. (ERRORS.md E02)
                     const runIdForSwitch = runId;
                     await handlePermissionResponse(toolCallId, subflow, "deny");
-                    window.dispatchEvent(
-                      new CustomEvent("code-mode-detected", {
-                        detail: { runId: runIdForSwitch, agent: newAgent },
-                      }),
-                    );
+                    emitRendererEvent("code-mode-detected", {
+                      runId: runIdForSwitch ?? undefined,
+                      agent: newAgent,
+                    });
                     if (runIdForSwitch) {
                       try {
                         await window.ipc.invoke("runs:createMessage", {
@@ -7940,7 +7913,10 @@ function App() {
       </SidebarSectionProvider>
       <Toaster />
       <ProductTour
-        open={isProductTourOpen}
+        // Gated at render as well as at open. A tour that started legitimately
+        // and then had a session expire under it would otherwise sit on top of
+        // the dialog that fixes it.
+        open={isProductTourOpen && !showOnboarding && !sessionReconnectRequired}
         variant={productTourVariant}
         forceStart={productTourForceStart}
         onClose={() => {

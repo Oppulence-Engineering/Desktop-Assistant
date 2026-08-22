@@ -1,4 +1,4 @@
-import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME } from "@x/shared/branding";
 // Extension-qualified and relative rather than the "@/lib/..." alias the
 // components use: this module is covered by tests/service-error-copy.test.ts,
 // which runs under `node --test` with no Vite alias resolution.

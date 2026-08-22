@@ -1,4 +1,4 @@
-import type { WhisperSegment } from "@x/shared/dist/transcription.js";
+import type { WhisperSegment } from "@x/shared/transcription";
 
 /**
  * Renderer-side driver for a local streaming-transcription session (RFC 009 §15,

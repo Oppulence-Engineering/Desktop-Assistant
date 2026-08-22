@@ -3,7 +3,7 @@ import type {
   CaptureHealthKind,
   CaptureHealthSnapshot,
   MeetingTrackId,
-} from "@x/shared/dist/meetings.js";
+} from "@x/shared/meetings";
 import { createHash } from "node:crypto";
 
 export interface CaptureGuardianTrackInput {

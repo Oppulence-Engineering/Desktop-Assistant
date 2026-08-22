@@ -5,7 +5,7 @@ import path from "path";
 import {
   NotificationsConfigSchema,
   type NotificationsConfig,
-} from "@x/shared/dist/notifications.js";
+} from "@x/shared/notifications";
 import { WorkDir } from "./config.js";
 
 // Notification preferences (RFC 006): the offline-return OS-notification

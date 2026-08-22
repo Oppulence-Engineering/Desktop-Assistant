@@ -43,7 +43,7 @@ type RelationshipAttentionItem struct {
 	// RankScore holds the value of the "rank_score" field.
 	RankScore int `json:"rank_score,omitempty"`
 	// RankFactorsJSON holds the value of the "rank_factors_json" field.
-	RankFactorsJSON string `json:"rank_factors_json,omitempty"`
+	RankFactorsJSON map[string]int `json:"rank_factors_json,omitempty"`
 	// SourceRequirements holds the value of the "source_requirements" field.
 	SourceRequirements []string `json:"source_requirements,omitempty"`
 	// RecommendationID holds the value of the "recommendation_id" field.
@@ -142,11 +142,11 @@ func (*RelationshipAttentionItem) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case relationshipattentionitem.FieldRecommendationID, relationshipattentionitem.FieldOwnerID, relationshipattentionitem.FieldAcknowledgedBy, relationshipattentionitem.FieldDismissedBy:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case relationshipattentionitem.FieldEvidenceRefs, relationshipattentionitem.FieldSourceRequirements:
+		case relationshipattentionitem.FieldEvidenceRefs, relationshipattentionitem.FieldRankFactorsJSON, relationshipattentionitem.FieldSourceRequirements:
 			values[i] = new([]byte)
 		case relationshipattentionitem.FieldVersion, relationshipattentionitem.FieldRankScore, relationshipattentionitem.FieldRecommendationRevision, relationshipattentionitem.FieldDetectorVersion, relationshipattentionitem.FieldProjectorVersion, relationshipattentionitem.FieldRelationshipStateVersion:
 			values[i] = new(sql.NullInt64)
-		case relationshipattentionitem.FieldStableKey, relationshipattentionitem.FieldReasonCode, relationshipattentionitem.FieldExplanation, relationshipattentionitem.FieldTriggeringObjectRef, relationshipattentionitem.FieldUrgencyBand, relationshipattentionitem.FieldRankFactorsJSON, relationshipattentionitem.FieldStatus, relationshipattentionitem.FieldStateReason, relationshipattentionitem.FieldMaterialHash:
+		case relationshipattentionitem.FieldStableKey, relationshipattentionitem.FieldReasonCode, relationshipattentionitem.FieldExplanation, relationshipattentionitem.FieldTriggeringObjectRef, relationshipattentionitem.FieldUrgencyBand, relationshipattentionitem.FieldStatus, relationshipattentionitem.FieldStateReason, relationshipattentionitem.FieldMaterialHash:
 			values[i] = new(sql.NullString)
 		case relationshipattentionitem.FieldCreatedAt, relationshipattentionitem.FieldUpdatedAt, relationshipattentionitem.FieldSnoozedUntil, relationshipattentionitem.FieldExpiresAt, relationshipattentionitem.FieldLastDetectedAt, relationshipattentionitem.FieldAcknowledgedAt, relationshipattentionitem.FieldDismissedAt:
 			values[i] = new(sql.NullTime)
@@ -242,10 +242,12 @@ func (_m *RelationshipAttentionItem) assignValues(columns []string, values []any
 				_m.RankScore = int(value.Int64)
 			}
 		case relationshipattentionitem.FieldRankFactorsJSON:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field rank_factors_json", values[i])
-			} else if value.Valid {
-				_m.RankFactorsJSON = value.String
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.RankFactorsJSON); err != nil {
+					return fmt.Errorf("unmarshal field rank_factors_json: %w", err)
+				}
 			}
 		case relationshipattentionitem.FieldSourceRequirements:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -462,7 +464,7 @@ func (_m *RelationshipAttentionItem) String() string {
 	builder.WriteString(fmt.Sprintf("%v", _m.RankScore))
 	builder.WriteString(", ")
 	builder.WriteString("rank_factors_json=")
-	builder.WriteString(_m.RankFactorsJSON)
+	builder.WriteString(fmt.Sprintf("%v", _m.RankFactorsJSON))
 	builder.WriteString(", ")
 	builder.WriteString("source_requirements=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SourceRequirements))

@@ -15,7 +15,7 @@ import (
 type BackgroundTaskRunEvent struct{ ent.Schema }
 
 // Mixin of the BackgroundTaskRunEvent.
-func (BackgroundTaskRunEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (BackgroundTaskRunEvent) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Annotations of the BackgroundTaskRunEvent.
 func (BackgroundTaskRunEvent) Annotations() []schema.Annotation {
@@ -38,7 +38,7 @@ func (BackgroundTaskRunEvent) Fields() []ent.Field {
 // Edges of the BackgroundTaskRunEvent.
 func (BackgroundTaskRunEvent) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("background_task_run_events").Unique().Required(),
+		edge.From("user", User.Type).Ref("background_task_run_events").Unique().Required().Immutable(),
 		edge.From("task", BackgroundTask.Type).Ref("run_events").Unique().Required(),
 		edge.From("run", BackgroundTaskRun.Type).Ref("events").Unique().Required(),
 	}

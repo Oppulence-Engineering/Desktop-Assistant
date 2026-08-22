@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { MeetingTranscriptSegment } from "@x/shared/dist/meetings.js";
+import type { MeetingTranscriptSegment } from "@x/shared/meetings";
 import { ASK_GUARD, askMeeting, renderForAsk } from "./ask.js";
 
 function segment(over: Partial<MeetingTranscriptSegment> = {}): MeetingTranscriptSegment {

@@ -21,7 +21,7 @@ type MeetingMinuteUsage struct{ ent.Schema }
 
 // Mixin gives the row a UUID id + created_at/updated_at (used by the stale
 // reservation sweeper).
-func (MeetingMinuteUsage) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (MeetingMinuteUsage) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Fields of the MeetingMinuteUsage.
 func (MeetingMinuteUsage) Fields() []ent.Field {
@@ -35,7 +35,7 @@ func (MeetingMinuteUsage) Fields() []ent.Field {
 // Edges of the MeetingMinuteUsage.
 func (MeetingMinuteUsage) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("meeting_minute_usages").Unique().Required(),
+		edge.From("user", User.Type).Ref("meeting_minute_usages").Unique().Required().Immutable(),
 	}
 }
 

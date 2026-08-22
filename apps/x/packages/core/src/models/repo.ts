@@ -4,7 +4,7 @@
 // of that cycle.
 import { withFileLock } from "../knowledge/file-lock.js";
 import { writeJsonAtomic } from "../filesystem/atomic_write.js";
-import { LlmModelConfig as ModelConfig, LlmProvider as Provider } from "@x/shared/dist/models.js";
+import { LlmModelConfig as ModelConfig, LlmProvider as Provider } from "@x/shared/models";
 import { WorkDir } from "../config/config.js";
 import fs from "fs/promises";
 import path from "path";

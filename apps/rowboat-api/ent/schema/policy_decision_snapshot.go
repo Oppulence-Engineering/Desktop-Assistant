@@ -17,7 +17,7 @@ import (
 type PolicyDecisionSnapshot struct{ ent.Schema }
 
 // Mixin of the PolicyDecisionSnapshot.
-func (PolicyDecisionSnapshot) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (PolicyDecisionSnapshot) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields of the PolicyDecisionSnapshot.
 func (PolicyDecisionSnapshot) Fields() []ent.Field {
@@ -43,9 +43,9 @@ func (PolicyDecisionSnapshot) Fields() []ent.Field {
 func (PolicyDecisionSnapshot) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("decisions").Unique().Required(),
+			Ref("decisions").Unique().Required().Immutable(),
 		edge.From("action", RevenueAction.Type).
 			Ref("decisions").Unique().Required(),
-		edge.From("user", User.Type).Ref("policy_decision_snapshots").Unique().Required(),
+		edge.From("user", User.Type).Ref("policy_decision_snapshots").Unique().Required().Immutable(),
 	}
 }

@@ -179,16 +179,18 @@ func TestProductionAllowlistIsFullyPriced(t *testing.T) {
 //	sonnet-4-5   $3/$15     opus-4-1  $15/$75    haiku-4-5 $1/$5
 //	gpt-4.1      $2/$8      4.1-mini  $0.40/$1.60  o4-mini $1.10/$4.40
 //	gemini-2.5-pro $1.25/$10           2.5-flash $0.30/$2.50
+//	gemini-3.1-flash-lite $0.25/$1.50
 //
 // Update alongside the table when a vendor changes list price.
 var vendorListCredits = map[string]pricing.ModelRate{
-	"anthropic/claude-sonnet-4-5": {InputPer1K: 30, OutputPer1K: 150},
-	"anthropic/claude-opus-4-1":   {InputPer1K: 150, OutputPer1K: 750},
-	"anthropic/claude-haiku-4-5":  {InputPer1K: 10, OutputPer1K: 50},
-	"openai/gpt-4.1":              {InputPer1K: 20, OutputPer1K: 80},
-	"openai/gpt-4.1-mini":         {InputPer1K: 4, OutputPer1K: 16},
-	"openai/o4-mini":              {InputPer1K: 11, OutputPer1K: 44},
-	"google/gemini-2.5-flash":     {InputPer1K: 3, OutputPer1K: 25},
+	"anthropic/claude-sonnet-4-5":  {InputPer1K: 30, OutputPer1K: 150},
+	"anthropic/claude-opus-4-1":    {InputPer1K: 150, OutputPer1K: 750},
+	"anthropic/claude-haiku-4-5":   {InputPer1K: 10, OutputPer1K: 50},
+	"google/gemini-3.1-flash-lite": {InputPer1K: 3, OutputPer1K: 15},
+	"openai/gpt-4.1":               {InputPer1K: 20, OutputPer1K: 80},
+	"openai/gpt-4.1-mini":          {InputPer1K: 4, OutputPer1K: 16},
+	"openai/o4-mini":               {InputPer1K: 11, OutputPer1K: 44},
+	"google/gemini-2.5-flash":      {InputPer1K: 3, OutputPer1K: 25},
 }
 
 // The margin policy itself is a product decision and stays where it is — this

@@ -54,6 +54,9 @@ type BackgroundTaskRunEvent func(*sql.Selector)
 // BackgroundTaskScheduleState is the predicate function for backgroundtaskschedulestate builders.
 type BackgroundTaskScheduleState func(*sql.Selector)
 
+// CaptureArtifact is the predicate function for captureartifact builders.
+type CaptureArtifact func(*sql.Selector)
+
 // CloudEvent is the predicate function for cloudevent builders.
 type CloudEvent func(*sql.Selector)
 
@@ -209,6 +212,12 @@ type User func(*sql.Selector)
 
 // UserHistory is the predicate function for userhistory builders.
 type UserHistory func(*sql.Selector)
+
+// VoiceAPIKey is the predicate function for voiceapikey builders.
+type VoiceAPIKey func(*sql.Selector)
+
+// VoiceSyncItem is the predicate function for voicesyncitem builders.
+type VoiceSyncItem func(*sql.Selector)
 
 // WorkspaceFeatureControl is the predicate function for workspacefeaturecontrol builders.
 type WorkspaceFeatureControl func(*sql.Selector)

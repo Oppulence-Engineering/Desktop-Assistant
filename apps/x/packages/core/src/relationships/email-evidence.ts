@@ -1,5 +1,5 @@
-import type { RelationshipObservationInput } from "@x/shared/dist/relationships.js";
-import { organizationDomain } from "@x/shared/dist/email-domain.js";
+import type { RelationshipObservationInput } from "@x/shared/relationships";
+import { organizationDomain } from "@x/shared/email-domain";
 import type { MailboxParticipant, MailboxThread } from "../mailbox/types.js";
 import { isMachineSender } from "../mailbox/sender-profiles.js";
 

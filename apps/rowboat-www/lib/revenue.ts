@@ -1,5 +1,7 @@
 "use client";
 
+import "client-only";
+
 // Client for the Revenue Action Queue (RFC 030). Every call goes through the
 // same-origin dashboard proxy, which attaches the rowboat-api bearer token
 // server-side and bounces the browser back through WorkOS on a 401.
@@ -125,7 +127,8 @@ export const startScan = (lookbackDays?: number) =>
     lookbackDays ? { lookbackDays } : undefined,
   ) as Promise<RevenueLeakScan>;
 
-export const getScan = (scanId: string) => call<RevenueLeakScan>(`/revenue-leak-scans/${scanId}`);
+export const getScan = (scanId: string, signal?: AbortSignal) =>
+  call<RevenueLeakScan>(`/revenue-leak-scans/${scanId}`, { signal });
 
 // Scan history is not a server list endpoint; the panel keeps its own record of
 // scans it started this session and re-hydrates each by id.

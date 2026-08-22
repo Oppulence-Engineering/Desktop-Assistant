@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -438,6 +439,12 @@ func (_q *RelationshipStateSnapshotQuery) prepareQuery(ctx context.Context) erro
 			return err
 		}
 		_q.sql = prev
+	}
+	if relationshipstatesnapshot.Policy == nil {
+		return errors.New("ent: uninitialized relationshipstatesnapshot.Policy (forgotten import ent/runtime?)")
+	}
+	if err := relationshipstatesnapshot.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

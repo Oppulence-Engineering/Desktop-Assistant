@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"entgo.io/contrib/entgql"
+	"entgo.io/contrib/entoas"
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -16,7 +18,9 @@ import (
 type RelationshipAttentionItem struct{ ent.Schema }
 
 // Mixin adds the common identifier and audit timestamps.
-func (RelationshipAttentionItem) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RelationshipAttentionItem) Mixin() []ent.Mixin {
+	return []ent.Mixin{mixin.WorkspaceTenantMixin{}, mixin.OptimisticLockMixin{Field: "version"}}
+}
 
 // Fields defines durable detector output, ranking factors, and review state.
 func (RelationshipAttentionItem) Fields() []ent.Field {
@@ -41,7 +45,8 @@ func (RelationshipAttentionItem) Fields() []ent.Field {
 		field.JSON("evidence_refs", []string{}).Default([]string{}),
 		field.String("urgency_band").Validate(oneOfRevenue("urgency_band", "low", "normal", "high", "critical")),
 		field.Int("rank_score").Min(0).Max(100),
-		field.Text("rank_factors_json").Validate(validJSON),
+		field.JSON("rank_factors_json", map[string]int{}).Default(map[string]int{}).
+			Annotations(entgql.Skip(), entoas.Skip(true)),
 		field.JSON("source_requirements", []string{}).Default([]string{}),
 		field.UUID("recommendation_id", uuid.UUID{}).Optional().Nillable(),
 		field.Int("recommendation_revision").Default(0).NonNegative(),
@@ -66,9 +71,9 @@ func (RelationshipAttentionItem) Fields() []ent.Field {
 // Edges binds each attention item to its tenant, relationship, and creator.
 func (RelationshipAttentionItem) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("workspace", RevenueWorkspace.Type).Ref("relationship_attention_items").Unique().Required(),
+		edge.From("workspace", RevenueWorkspace.Type).Ref("relationship_attention_items").Unique().Required().Immutable(),
 		edge.From("relationship", Relationship.Type).Ref("attention_items").Unique().Required(),
-		edge.From("user", User.Type).Ref("relationship_attention_items").Unique().Required(),
+		edge.From("user", User.Type).Ref("relationship_attention_items").Unique().Required().Immutable(),
 	}
 }
 

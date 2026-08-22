@@ -246,7 +246,7 @@ func (s *Service) requireBetaActionProviderReady(
 	if source == "slack" {
 		team, _, _, targetErr := slackTarget(action)
 		if targetErr != nil {
-			return fmt.Errorf("%w: %v", ErrSourceIncomplete, targetErr)
+			return fmt.Errorf("%w: %w", ErrSourceIncomplete, targetErr)
 		}
 		expectedSourceAccountID = strings.TrimSpace(team)
 	}

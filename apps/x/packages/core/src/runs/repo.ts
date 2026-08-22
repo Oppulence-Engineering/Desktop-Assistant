@@ -5,7 +5,7 @@ import path from "path";
 import fsp from "fs/promises";
 import fs from "fs";
 import readline from "readline";
-import { Run, RunEvent, StartEvent, ListRunsOptions, ListRunsResponse, MessageEvent, UseCase } from "@x/shared/dist/runs.js";
+import { Run, RunEvent, StartEvent, ListRunsOptions, ListRunsResponse, MessageEvent, UseCase } from "@x/shared/runs";
 
 /**
  * Reading-only schemas: extend the canonical `StartEvent` / `RunEvent` to
@@ -15,7 +15,7 @@ import { Run, RunEvent, StartEvent, ListRunsOptions, ListRunsResponse, MessageEv
  * for any non-start event RunEvent matches first; for a strict start event
  * RunEvent still matches; only a legacy start event falls through and parses
  * as LegacyStartEvent. New event types stay maintained in one place
- * (`@x/shared/dist/runs.js`) — the lenient form just adds one fallback variant.
+ * (`@x/shared/runs`) — the lenient form just adds one fallback variant.
  */
 const LegacyStartEvent = StartEvent.extend({
     model: z.string().optional(),

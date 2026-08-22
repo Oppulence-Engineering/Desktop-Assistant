@@ -4,7 +4,7 @@ import { Button } from "@oppulence/ui/components/button";
 import { Input } from "@oppulence/ui/components/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@oppulence/ui/components/collapsible";
 import { cn } from "@/lib/utils";
-import { McpServerConfig } from "@x/shared/dist/mcp.js";
+import { McpServerConfig } from "@x/shared/mcp";
 import { SettingsSection, SettingsField, KeyValueRows, StringListRows } from "./settings-ui";
 
 /**

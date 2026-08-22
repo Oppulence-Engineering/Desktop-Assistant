@@ -18,7 +18,9 @@ import (
 type RevenueAction struct{ ent.Schema }
 
 // Mixin of the RevenueAction.
-func (RevenueAction) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RevenueAction) Mixin() []ent.Mixin {
+	return []ent.Mixin{mixin.WorkspaceTenantMixin{}, mixin.OptimisticLockMixin{Field: "revision"}}
+}
 
 // Fields of the RevenueAction.
 func (RevenueAction) Fields() []ent.Field {
@@ -102,10 +104,10 @@ func (RevenueAction) Fields() []ent.Field {
 func (RevenueAction) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("actions").Unique().Required(),
+			Ref("actions").Unique().Required().Immutable(),
 		edge.From("relationship", Relationship.Type).
 			Ref("actions").Unique().Required(),
-		edge.From("user", User.Type).Ref("revenue_actions").Unique().Required(),
+		edge.From("user", User.Type).Ref("revenue_actions").Unique().Required().Immutable(),
 		edge.To("evidences", RevenueEvidence.Type),
 		edge.To("revisions", RevenueActionRevision.Type).
 			StorageKey(edge.Column("revenue_action_id")),

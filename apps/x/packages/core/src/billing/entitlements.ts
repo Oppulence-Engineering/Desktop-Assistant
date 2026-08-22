@@ -1,4 +1,5 @@
-import type { BillingPlan } from "@x/shared/dist/billing.js";
+import type { BillingPlan } from "@x/shared/billing";
+import { isSignedIn } from "../account/account.js";
 import { getBillingInfo } from "./billing.js";
 
 /**
@@ -64,4 +65,23 @@ export async function hasPaidSubscription(nowMs: number = Date.now()): Promise<b
     if (lastKnown && nowMs - lastKnown.atMs < ENTITLEMENT_GRACE_MS) return lastKnown.paid;
     return false;
   }
+}
+
+/**
+ * Whether email labeling may run.
+ *
+ * The gate exists because labeling is the most expensive thing the app does on
+ * a user's behalf — an agent run over every synced email — and unpaid use of it
+ * costs us money. That reasoning only holds when the tokens are ours.
+ *
+ * Signed-in runs route through the product gateway regardless of what
+ * models.json says (getDefaultModelAndProvider: "routing stays on the product
+ * gateway regardless"), so we pay and a paid plan is required. A BYOK install
+ * is not signed in and spends the user's own key against their own provider, so
+ * gating it would withhold a feature that costs us nothing and that they are
+ * already paying for on the other side.
+ */
+export async function labelingEntitled(nowMs: number = Date.now()): Promise<boolean> {
+  if (!(await isSignedIn())) return true;
+  return hasPaidSubscription(nowMs);
 }

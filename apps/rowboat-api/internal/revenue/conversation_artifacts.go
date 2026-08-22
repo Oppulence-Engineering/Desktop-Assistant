@@ -49,7 +49,7 @@ func appendConversationArtifact(
 	}
 	payload, err := json.Marshal(input.Payload)
 	if err != nil {
-		return nil, fmt.Errorf("%w: conversation artifact payload: %v", ErrInvalidInput, err)
+		return nil, fmt.Errorf("%w: conversation artifact payload: %w", ErrInvalidInput, err)
 	}
 	if len(payload) > maxConversationArtifactBytes {
 		return nil, fmt.Errorf("%w: conversation artifact payload exceeds %d bytes", ErrInvalidInput, maxConversationArtifactBytes)
@@ -109,7 +109,7 @@ func persistConversationObservationArtifacts(
 	}
 	var candidates []conversationClaimCandidate
 	if err := decodeFact(input.Facts, "conversation_claim_candidates", &candidates); err != nil {
-		return fmt.Errorf("%w: conversation claim candidates: %v", ErrInvalidInput, err)
+		return fmt.Errorf("%w: conversation claim candidates: %w", ErrInvalidInput, err)
 	}
 	for _, candidate := range candidates {
 		quotes := make([]string, 0, len(candidate.Evidence))
@@ -127,7 +127,7 @@ func persistConversationObservationArtifacts(
 	}
 	var review conversationReviewMetadata
 	if err := decodeFact(input.Facts, "conversation_review", &review); err != nil {
-		return fmt.Errorf("%w: conversation review metadata: %v", ErrInvalidInput, err)
+		return fmt.Errorf("%w: conversation review metadata: %w", ErrInvalidInput, err)
 	}
 	if review.BatchID != "" {
 		if _, err := appendConversationArtifact(ctx, client, ws, u, rel, conversationArtifactInput{
@@ -143,7 +143,7 @@ func persistConversationObservationArtifacts(
 	}
 	var decision conversationReviewDecisionRecord
 	if err := decodeFact(input.Facts, "review_decision", &decision); err != nil {
-		return fmt.Errorf("%w: conversation review decision: %v", ErrInvalidInput, err)
+		return fmt.Errorf("%w: conversation review decision: %w", ErrInvalidInput, err)
 	}
 	if decision.ItemID != "" {
 		if _, err := appendConversationArtifact(ctx, client, ws, u, rel, conversationArtifactInput{
@@ -157,7 +157,7 @@ func persistConversationObservationArtifacts(
 	if rawResolution, ok := input.Facts["contradiction_resolution"]; ok {
 		payload, err := json.Marshal(rawResolution)
 		if err != nil {
-			return fmt.Errorf("%w: contradiction resolution: %v", ErrInvalidInput, err)
+			return fmt.Errorf("%w: contradiction resolution: %w", ErrInvalidInput, err)
 		}
 		var resolution ConversationContradictionCase
 		if err := json.Unmarshal(payload, &resolution); err != nil || resolution.CaseID == "" {
@@ -177,7 +177,7 @@ func persistConversationObservationArtifacts(
 	}
 	var governance ConversationGovernanceDecision
 	if err := decodeFact(input.Facts, "conversation_governance_decision", &governance); err != nil {
-		return fmt.Errorf("%w: conversation governance decision: %v", ErrInvalidInput, err)
+		return fmt.Errorf("%w: conversation governance decision: %w", ErrInvalidInput, err)
 	}
 	if governance.DecisionID != "" {
 		if _, err := appendConversationArtifact(ctx, client, ws, u, rel, conversationArtifactInput{

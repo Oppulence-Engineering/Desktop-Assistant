@@ -3,7 +3,7 @@ import fs from "fs/promises";
 import { glob } from "node:fs/promises";
 import path from "path";
 import z from "zod";
-import { Agent } from "@x/shared/dist/agent.js";
+import { Agent } from "@x/shared/agent";
 import { stringify } from "yaml";
 import { parseFrontmatter } from "../application/lib/parse-frontmatter.js";
 

@@ -19,8 +19,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueactionrevision"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenuetrustevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -741,17 +739,6 @@ func (_u *RevenueActionUpdate) ClearHandledAt() *RevenueActionUpdate {
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RevenueActionUpdate) SetWorkspaceID(id uuid.UUID) *RevenueActionUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueActionUpdate) SetWorkspace(v *RevenueWorkspace) *RevenueActionUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetRelationshipID sets the "relationship" edge to the Relationship entity by ID.
 func (_u *RevenueActionUpdate) SetRelationshipID(id uuid.UUID) *RevenueActionUpdate {
 	_u.mutation.SetRelationshipID(id)
@@ -761,17 +748,6 @@ func (_u *RevenueActionUpdate) SetRelationshipID(id uuid.UUID) *RevenueActionUpd
 // SetRelationship sets the "relationship" edge to the Relationship entity.
 func (_u *RevenueActionUpdate) SetRelationship(v *Relationship) *RevenueActionUpdate {
 	return _u.SetRelationshipID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RevenueActionUpdate) SetUserID(id uuid.UUID) *RevenueActionUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RevenueActionUpdate) SetUser(v *User) *RevenueActionUpdate {
-	return _u.SetUserID(v.ID)
 }
 
 // AddEvidenceIDs adds the "evidences" edge to the RevenueEvidence entity by IDs.
@@ -854,21 +830,9 @@ func (_u *RevenueActionUpdate) Mutation() *RevenueActionMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueActionUpdate) ClearWorkspace() *RevenueActionUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
 // ClearRelationship clears the "relationship" edge to the Relationship entity.
 func (_u *RevenueActionUpdate) ClearRelationship() *RevenueActionUpdate {
 	_u.mutation.ClearRelationship()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RevenueActionUpdate) ClearUser() *RevenueActionUpdate {
-	_u.mutation.ClearUser()
 	return _u
 }
 
@@ -979,7 +943,9 @@ func (_u *RevenueActionUpdate) RemoveTrustEvents(v ...*RevenueTrustEvent) *Reven
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *RevenueActionUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -1006,11 +972,15 @@ func (_u *RevenueActionUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RevenueActionUpdate) defaults() {
+func (_u *RevenueActionUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if revenueaction.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueaction.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueaction.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -1322,35 +1292,6 @@ func (_u *RevenueActionUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	if _u.mutation.HandledAtCleared() {
 		_spec.ClearField(revenueaction.FieldHandledAt, field.TypeTime)
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueaction.WorkspaceTable,
-			Columns: []string{revenueaction.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueaction.WorkspaceTable,
-			Columns: []string{revenueaction.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.RelationshipCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -1373,35 +1314,6 @@ func (_u *RevenueActionUpdate) sqlSave(ctx context.Context) (_node int, err erro
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueaction.UserTable,
-			Columns: []string{revenueaction.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueaction.UserTable,
-			Columns: []string{revenueaction.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -2358,17 +2270,6 @@ func (_u *RevenueActionUpdateOne) ClearHandledAt() *RevenueActionUpdateOne {
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RevenueActionUpdateOne) SetWorkspaceID(id uuid.UUID) *RevenueActionUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueActionUpdateOne) SetWorkspace(v *RevenueWorkspace) *RevenueActionUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
 // SetRelationshipID sets the "relationship" edge to the Relationship entity by ID.
 func (_u *RevenueActionUpdateOne) SetRelationshipID(id uuid.UUID) *RevenueActionUpdateOne {
 	_u.mutation.SetRelationshipID(id)
@@ -2378,17 +2279,6 @@ func (_u *RevenueActionUpdateOne) SetRelationshipID(id uuid.UUID) *RevenueAction
 // SetRelationship sets the "relationship" edge to the Relationship entity.
 func (_u *RevenueActionUpdateOne) SetRelationship(v *Relationship) *RevenueActionUpdateOne {
 	return _u.SetRelationshipID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RevenueActionUpdateOne) SetUserID(id uuid.UUID) *RevenueActionUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RevenueActionUpdateOne) SetUser(v *User) *RevenueActionUpdateOne {
-	return _u.SetUserID(v.ID)
 }
 
 // AddEvidenceIDs adds the "evidences" edge to the RevenueEvidence entity by IDs.
@@ -2471,21 +2361,9 @@ func (_u *RevenueActionUpdateOne) Mutation() *RevenueActionMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueActionUpdateOne) ClearWorkspace() *RevenueActionUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
 // ClearRelationship clears the "relationship" edge to the Relationship entity.
 func (_u *RevenueActionUpdateOne) ClearRelationship() *RevenueActionUpdateOne {
 	_u.mutation.ClearRelationship()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RevenueActionUpdateOne) ClearUser() *RevenueActionUpdateOne {
-	_u.mutation.ClearUser()
 	return _u
 }
 
@@ -2609,7 +2487,9 @@ func (_u *RevenueActionUpdateOne) Select(field string, fields ...string) *Revenu
 
 // Save executes the query and returns the updated RevenueAction entity.
 func (_u *RevenueActionUpdateOne) Save(ctx context.Context) (*RevenueAction, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -2636,11 +2516,15 @@ func (_u *RevenueActionUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RevenueActionUpdateOne) defaults() {
+func (_u *RevenueActionUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if revenueaction.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueaction.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueaction.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -2969,35 +2853,6 @@ func (_u *RevenueActionUpdateOne) sqlSave(ctx context.Context) (_node *RevenueAc
 	if _u.mutation.HandledAtCleared() {
 		_spec.ClearField(revenueaction.FieldHandledAt, field.TypeTime)
 	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueaction.WorkspaceTable,
-			Columns: []string{revenueaction.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueaction.WorkspaceTable,
-			Columns: []string{revenueaction.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if _u.mutation.RelationshipCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -3020,35 +2875,6 @@ func (_u *RevenueActionUpdateOne) sqlSave(ctx context.Context) (_node *RevenueAc
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueaction.UserTable,
-			Columns: []string{revenueaction.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueaction.UserTable,
-			Columns: []string{revenueaction.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

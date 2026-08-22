@@ -1,0 +1,11 @@
+id: X001-no-core-electron-import
+language: TypeScript
+severity: error
+message: packages/core must remain independent of Electron.
+rule:
+  any:
+    - pattern: import $$$A from "electron"
+    - pattern: import "electron"
+    - pattern: require("electron")
+files:
+  - packages/core/src/**/*.ts

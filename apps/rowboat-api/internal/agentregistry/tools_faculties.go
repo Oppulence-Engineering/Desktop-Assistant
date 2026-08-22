@@ -94,7 +94,7 @@ func (t *facultyTool) Invoke(ctx context.Context, scope backgroundtaskruntime.To
 	out, err := t.client.Call(ctx, scope.UserID, t.path, body)
 	if err != nil {
 		b, _ := json.Marshal(map[string]string{"error": err.Error()})
-		return b, nil
+		return b, nil //nolint:nilerr // Preserve the provider's error body as a successful tool result.
 	}
 	return out, nil
 }

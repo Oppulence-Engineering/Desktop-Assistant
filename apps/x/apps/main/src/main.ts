@@ -5,7 +5,6 @@ import {
   dialog,
   protocol,
   net,
-  shell,
   session,
   type Session,
 } from "electron";
@@ -30,56 +29,75 @@ import { calendarNotifyHooks } from "./meeting-autostart.js";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname } from "node:path";
 import { initUpdates } from "./update-manager.js";
-import { clearBackgroundQueue } from "@x/core/dist/models/gateway-budget.js";
-import { init as initGmailSync } from "@x/core/dist/knowledge/sync_gmail.js";
-import { initEmailRelationshipEvidence } from "@x/core/dist/relationships/email-sync-bridge.js";
-import { initCalendarAttendance } from "@x/core/dist/relationships/calendar-attendance.js";
-import { init as initCalendarSync } from "@x/core/dist/knowledge/sync_calendar.js";
-import { init as initFirefliesSync } from "@x/core/dist/knowledge/sync_fireflies.js";
-import { init as initGranolaSync } from "@x/core/dist/knowledge/granola/sync.js";
-import { init as initGraphBuilder } from "@x/core/dist/knowledge/build_graph.js";
-import { init as initMemoryIndexing } from "@x/core/dist/memory/sync.js";
-import { init as initEmailLabeling } from "@x/core/dist/knowledge/label_emails.js";
-import { init as initNoteTagging } from "@x/core/dist/knowledge/tag_notes.js";
-import { init as initInlineTasks } from "@x/core/dist/knowledge/inline_tasks.js";
-import { init as initAgentRunner } from "@x/core/dist/agent-schedule/runner.js";
-import { init as initAgentNotes } from "@x/core/dist/knowledge/agent_notes.js";
-import { init as initCalendarNotifications } from "@x/core/dist/knowledge/notify_calendar_meetings.js";
-import { init as initLiveNoteScheduler } from "@x/core/dist/knowledge/live-note/scheduler.js";
-import { init as initEventProcessor, registerConsumer } from "@x/core/dist/events/init.js";
-import { liveNoteEventConsumer } from "@x/core/dist/knowledge/live-note/event-consumer.js";
-import { init as initBackgroundTaskScheduler } from "@x/core/dist/background-tasks/scheduler.js";
-import { checkOfflineReturn } from "@x/core/dist/background-tasks/cloud-runs-state.js";
+import { clearBackgroundQueue } from "@x/core/models/gateway-budget";
+import { init as initGmailSync } from "@x/core/knowledge/sync_gmail";
+import { initEmailRelationshipEvidence } from "@x/core/relationships/email-sync-bridge";
+import { initCalendarAttendance } from "@x/core/relationships/calendar-attendance";
+import { init as initCalendarSync } from "@x/core/knowledge/sync_calendar";
+import { init as initFirefliesSync } from "@x/core/knowledge/sync_fireflies";
+import { init as initGranolaSync } from "@x/core/knowledge/granola/sync";
+import { init as initGraphBuilder } from "@x/core/knowledge/build_graph";
+import { init as initMemoryIndexing } from "@x/core/memory/sync";
+import { init as initEmailLabeling } from "@x/core/knowledge/label_emails";
+import { init as initNoteTagging } from "@x/core/knowledge/tag_notes";
+import { init as initInlineTasks } from "@x/core/knowledge/inline_tasks";
+import { init as initAgentRunner } from "@x/core/agent-schedule/runner";
+import { init as initAgentNotes } from "@x/core/knowledge/agent_notes";
+import { init as initCalendarNotifications } from "@x/core/knowledge/notify_calendar_meetings";
+import { init as initLiveNoteScheduler } from "@x/core/knowledge/live-note/scheduler";
+import { init as initEventProcessor, registerConsumer } from "@x/core/events/init";
+import { liveNoteEventConsumer } from "@x/core/knowledge/live-note/event-consumer";
+import { init as initBackgroundTaskScheduler } from "@x/core/background-tasks/scheduler";
+import { checkOfflineReturn } from "@x/core/background-tasks/cloud-runs-state";
 import {
   getNotificationsConfig,
   setNotificationsConfig,
-} from "@x/core/dist/config/notifications.js";
-import { listTasks } from "@x/core/dist/background-tasks/fileops.js";
-import { backgroundTaskEventConsumer } from "@x/core/dist/background-tasks/event-consumer.js";
+} from "@x/core/config/notifications";
+import { listTasks } from "@x/core/background-tasks/fileops";
+import { backgroundTaskEventConsumer } from "@x/core/background-tasks/event-consumer";
 import {
   init as initLocalSites,
   shutdown as shutdownLocalSites,
-} from "@x/core/dist/local-sites/server.js";
-import { shutdown as shutdownAnalytics, captureException } from "@x/core/dist/analytics/posthog.js";
-import { identifyIfSignedIn } from "@x/core/dist/analytics/identify.js";
+} from "@x/core/local-sites/server";
+import { shutdown as shutdownAnalytics, captureException } from "@x/core/analytics/posthog";
+import { identifyIfSignedIn } from "@x/core/analytics/identify";
 
-import { configureBundledEmbeddings } from "@x/core/dist/memory/onnx/assets.js";
-import { initConfigs } from "@x/core/dist/config/initConfigs.js";
-import { applyPrivacyConfig } from "@x/core/dist/config/privacy.js";
-import { resolveWorkspacePath } from "@x/core/dist/workspace/workspace.js";
+import { configureBundledEmbeddings } from "@x/core/memory/onnx/assets";
+import { initConfigs } from "@x/core/config/initConfigs";
+import { applyPrivacyConfig } from "@x/core/config/privacy";
+import { resolveWorkspacePath } from "@x/core/workspace/workspace";
 import started from "electron-squirrel-startup";
-import { init as initChromeSync } from "@x/core/dist/knowledge/chrome-extension/server/server.js";
+import { init as initChromeSync } from "@x/core/knowledge/chrome-extension/server/server";
 import container, {
   registerBrowserControlService,
   registerNotificationService,
-} from "@x/core/dist/di/container.js";
-import type { CodeModeManager } from "@x/core/dist/code-mode/acp/manager.js";
+} from "@x/core/di/container";
+import type { CodeModeManager } from "@x/core/code-mode/acp/manager";
 import { browserViewManager, BROWSER_PARTITION } from "./browser/view.js";
 import { setupBrowserEventForwarding } from "./browser/ipc.js";
 import { ElectronBrowserControlService } from "./browser/control-service.js";
 import { ElectronNotificationService } from "./notification/electron-notification-service.js";
+import { LifecycleRegistry } from "@x/core/services/lifecycle";
+import { sendRendererEvent } from "./renderer-events.js";
+import { openTrustedExternal } from "./external-url.js";
 
 const notificationService = new ElectronNotificationService();
+const mainLifecycle = new LifecycleRegistry();
+mainLifecycle.register({
+  name: "workspace-watcher",
+  start: () => startWorkspaceWatcher(),
+  stop: () => stopWorkspaceWatcher(),
+});
+mainLifecycle.register({
+  name: "runs-watcher",
+  start: () => startRunsWatcher(),
+  stop: () => stopRunsWatcher(),
+});
+mainLifecycle.register({
+  name: "services-watcher",
+  start: () => startServicesWatcher(),
+  stop: () => stopServicesWatcher(),
+});
 import {
   DEEP_LINK_SCHEME,
   LEGACY_DEEP_LINK_SCHEME,
@@ -89,8 +107,8 @@ import {
   setMainWindowForDeepLinks,
 } from "./deeplink.js";
 import { appWindows, getMainWindow, preloadPath, setMainWindow } from "./main-window.js";
-import { getTranscriptionConfig } from "@x/core/dist/voice/voice.js";
-import { recordingsRoot } from "@x/core/dist/meetings/meetings.js";
+import { getTranscriptionConfig } from "@x/core/voice/voice";
+import { recordingsRoot } from "@x/core/meetings/meetings";
 import {
   startCrashReporter,
   processPendingCrashDumps,
@@ -312,7 +330,7 @@ async function serveRecording(pathname: string): Promise<Response> {
     if (path.dirname(path.dirname(absPath)) !== root) {
       return new Response("Forbidden", { status: 403 });
     }
-    return net.fetch(pathToFileURL(absPath).toString());
+    return await net.fetch(pathToFileURL(absPath).toString());
   } catch {
     return new Response("Not Found", { status: 404 });
   }
@@ -352,13 +370,17 @@ function configureSessionPermissions(targetSession: Session): void {
   // Auto-approve display media requests and route system audio as loopback.
   // Electron requires a video source in the callback even if we only want audio.
   // We pass the first available screen source; the renderer discards the video track.
-  targetSession.setDisplayMediaRequestHandler(async (_request, callback) => {
-    const sources = await desktopCapturer.getSources({ types: ["screen"] });
-    if (sources.length === 0) {
-      callback({});
-      return;
-    }
-    callback({ video: sources[0], audio: "loopback" });
+  targetSession.setDisplayMediaRequestHandler((_request, callback) => {
+    void desktopCapturer
+      .getSources({ types: ["screen"] })
+      .then((sources) => {
+        if (sources.length === 0) {
+          callback({});
+          return;
+        }
+        callback({ video: sources[0], audio: "loopback" });
+      })
+      .catch(() => callback({}));
   });
 }
 
@@ -409,7 +431,7 @@ function createWindow() {
   // Open external links in system browser (not sandboxed Electron window)
   // This handles window.open() and target="_blank" links
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    void openTrustedExternal(url);
     return { action: "deny" };
   });
 
@@ -418,7 +440,7 @@ function createWindow() {
     const isInternal = url.startsWith("app://") || url.startsWith("http://localhost:5173");
     if (!isInternal) {
       event.preventDefault();
-      shell.openExternal(url);
+      void openTrustedExternal(url);
     }
   });
 
@@ -427,9 +449,9 @@ function createWindow() {
   browserViewManager.attach(win);
 
   if (useBuiltRenderer) {
-    win.loadURL("app://-/index.html");
+    void win.loadURL("app://-/index.html");
   } else {
-    win.loadURL("http://localhost:5173");
+    void win.loadURL("http://localhost:5173");
   }
 
   return win;
@@ -453,13 +475,7 @@ async function startBackgroundServices() {
   // - Changes made via IPC handlers (workspace:writeFile, etc.)
   // - External changes (terminal, git, other editors)
   // Only starts once (guarded in startWorkspaceWatcher)
-  startWorkspaceWatcher();
-
-  // start runs watcher
-  startRunsWatcher();
-
-  // start services watcher
-  startServicesWatcher();
+  await mainLifecycle.startAll();
 
   // start live-note agent event watcher (forwards bus → renderer)
   startLiveNoteAgentWatcher();
@@ -470,10 +486,10 @@ async function startBackgroundServices() {
   startMemoryWatcher();
 
   // start live-note scheduler (cron / window)
-  initLiveNoteScheduler();
+  void initLiveNoteScheduler();
 
   // start bg-task scheduler (cron / window)
-  initBackgroundTaskScheduler();
+  void initBackgroundTaskScheduler();
 
   // Meeting capture: put a menu-bar item up so a recording is visible and stoppable
   // with every window closed, and pick up any session that finished but never got
@@ -488,7 +504,7 @@ async function startBackgroundServices() {
       if (!payload || payload.count === 0) return;
       for (const win of BrowserWindow.getAllWindows()) {
         if (!win.isDestroyed()) {
-          win.webContents.send("bg-task:offlineRuns", payload);
+          sendRendererEvent(win.webContents, "bg-task:offlineRuns", payload);
         }
       }
       // Opt-in OS notification (RFC 006 decision: never default-on). Reuse
@@ -514,7 +530,7 @@ async function startBackgroundServices() {
   // concurrently for Pass-1, then fires each consumer's candidates in parallel)
   registerConsumer(liveNoteEventConsumer);
   registerConsumer(backgroundTaskEventConsumer);
-  initEventProcessor();
+  void initEventProcessor();
 
   // If the stored Google grant predates a scope change (only old scopes),
   // disconnect it now so the user re-connects with the current scopes before
@@ -527,48 +543,48 @@ async function startBackgroundServices() {
   initEmailRelationshipEvidence();
 
   // start gmail sync
-  initGmailSync();
+  void initGmailSync();
 
   // Attendance for meetings that were never recorded. Registered before the loop
   // for the same reason as the email observer.
   initCalendarAttendance();
 
   // start calendar sync
-  initCalendarSync();
+  void initCalendarSync();
 
   // start fireflies sync
-  initFirefliesSync();
+  void initFirefliesSync();
 
   // start granola sync
-  initGranolaSync();
+  void initGranolaSync();
 
   // start knowledge graph builder
-  initGraphBuilder();
+  void initGraphBuilder();
 
   // start semantic memory indexing service (RFC 021): keeps the local vector
   // index fresh so memory-search / ⌘K / related-notes have data to work with.
-  initMemoryIndexing();
+  void initMemoryIndexing();
 
   // start email labeling service
-  initEmailLabeling();
+  void initEmailLabeling();
 
   // start note tagging service
-  initNoteTagging();
+  void initNoteTagging();
 
   // start inline task service (@solomon: mentions)
-  initInlineTasks();
+  void initInlineTasks();
 
   // start background agent runner (scheduled agents)
-  initAgentRunner();
+  void initAgentRunner();
 
   // start agent notes learning service
-  initAgentNotes();
+  void initAgentNotes();
 
   // start calendar meeting notification service (fires 1-minute warnings)
-  initCalendarNotifications(calendarNotifyHooks());
+  void initCalendarNotifications(calendarNotifyHooks());
 
   // start chrome extension sync server
-  initChromeSync();
+  void initChromeSync();
 
   // start local sites server for iframe dashboards and other mini apps
   initLocalSites().catch((error) => {
@@ -576,7 +592,7 @@ async function startBackgroundServices() {
   });
 }
 
-app.whenReady().then(async () => {
+void app.whenReady().then(async () => {
   // Register custom protocol before creating window.
   // In production this serves the renderer SPA; in dev (and prod) it also
   // serves workspace files via app://workspace/<rel-path> for media previews.
@@ -754,9 +770,9 @@ function runQuitCleanup(): void {
   destroyMeetingTray();
   destroyDesktopDictation();
   // Clean up watcher on app quit
-  stopWorkspaceWatcher();
-  stopRunsWatcher();
-  stopServicesWatcher();
+  void mainLifecycle.stopAll().catch((error) => {
+    console.error("[Main] Failed to stop lifecycle services:", error);
+  });
   // Drop paced background LLM work. A labeling run can leave hundreds of
   // requests queued; without this they keep firing while everything else is
   // being torn down.

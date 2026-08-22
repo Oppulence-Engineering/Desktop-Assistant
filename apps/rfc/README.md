@@ -33,24 +33,24 @@ remain reusable foundations.
 
 ### Tier 1 — Relationship-intelligence critical path
 
-| Rank | RFC                                                    | Why                                                                                                                                                                               |
-| ---- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | [036](./036-relationship-state-engine.md)              | The product contract: identity, evidence, temporal assertions, deterministic projection, Account Mission Control, recommendations, approval, action, learning, and equal clients. |
-| 2    | [022](./022-unified-entity-graph.md)                   | Stable company/person identity, aliases, reconciliation, merge/split lineage, and the shared spine every source must resolve against. RFC 036 tightens its authority rules.       |
-| 3    | [020](./020-native-third-party-action-engine.md)       | The third-party connector platform and SDK: repeatable packages, safe execution, durable ingestion, relationship mapping, certification, and catalog scale.                       |
-| 4    | [012](./012-connector-suite-and-consent-broker.md)     | Consent, scoped authorization, credential custody, revocation, and the connection substrate used by RFC 020.                                                                      |
-| 5    | [031](./031-tiered-mail-storage-for-revenue-memory.md) | Evidence storage, sealed short-TTL content, and permanent source-backed snapshots without turning Oppulence into a mailbox copy.                                                  |
+| Rank | RFC                                                    | Why                                                                                                                                                                                                                                                                                                 |
+| ---- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | [036](./036-relationship-state-engine.md)              | The product contract: identity, evidence, temporal assertions, deterministic projection, Account Mission Control, recommendations, approval, action, learning, and equal clients.                                                                                                                   |
+| 2    | [022](./022-unified-entity-graph.md)                   | Stable company/person identity, aliases, reconciliation, merge/split lineage, and the shared spine every source must resolve against. RFC 036 tightens its authority rules. **Status check 2026-08-12: not started** — only its `resourceRef` grammar shipped (inside RFC 036); rescope or re-rank. |
+| 3    | [020](./020-native-third-party-action-engine.md)       | The third-party connector platform and SDK: repeatable packages, safe execution, durable ingestion, relationship mapping, certification, and catalog scale.                                                                                                                                         |
+| 4    | [012](./012-connector-suite-and-consent-broker.md)     | Consent, scoped authorization, credential custody, revocation, and the connection substrate used by RFC 020.                                                                                                                                                                                        |
+| 5    | [031](./031-tiered-mail-storage-for-revenue-memory.md) | Evidence storage, sealed short-TTL content, and permanent source-backed snapshots without turning Oppulence into a mailbox copy.                                                                                                                                                                    |
 
 ### Tier 2 — Production correctness and governed action
 
-| Rank | RFC                                                         | Why                                                                                                              |
-| ---- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| 6    | [023](./023-closed-loop-actions.md)                         | Exact-revision propose → approve → execute → watch semantics for every consequential recommendation.             |
-| 7    | [007](./007-production-cloud-enablement.md)                 | Production Temporal, SLOs, alerts, and runbooks so observation and projection continue while clients are closed. |
-| 8    | [019](./019-google-push-infrastructure.md)                  | Production Gmail and Calendar push delivery for the first high-value observers.                                  |
-| 9    | [015](./015-rowboat-platform-workos-fga-and-widget-auth.md) | Organization identity, project and relationship authorization, billing, and team-safe sharing.                   |
-| 10   | [025](./025-desktop-runtime-durability.md)                  | Crash-safe desktop observation outbox, backpressure, and multi-workspace behavior.                               |
-| 11   | [014](./014-live-note-observability-cost-and-provenance.md) | Source-to-state provenance, reliability, cost, and trust-facing diagnostics.                                     |
+| Rank | RFC                                                         | Why                                                                                                                                                                                                       |
+| ---- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 6    | [023](./023-closed-loop-actions.md)                         | Exact-revision propose → approve → execute → watch semantics for every consequential recommendation.                                                                                                      |
+| 7    | [007](./007-production-cloud-enablement.md)                 | Production Temporal, SLOs, alerts, and runbooks so observation and projection continue while clients are closed.                                                                                          |
+| 8    | [019](./019-google-push-infrastructure.md)                  | Production Gmail and Calendar push delivery for the first high-value observers. **Status check 2026-08-12: Calendar live in staging + production; Gmail still blocked on an unset `GMAIL_PUBSUB_TOPIC`.** |
+| 9    | [015](./015-rowboat-platform-workos-fga-and-widget-auth.md) | Organization identity, project and relationship authorization, billing, and team-safe sharing.                                                                                                            |
+| 10   | [025](./025-desktop-runtime-durability.md)                  | Crash-safe desktop observation outbox, backpressure, and multi-workspace behavior.                                                                                                                        |
+| 11   | [014](./014-live-note-observability-cost-and-provenance.md) | Source-to-state provenance, reliability, cost, and trust-facing diagnostics.                                                                                                                              |
 
 ### Tier 3 — High-value observers and relationship applications
 
@@ -216,6 +216,29 @@ follow-through. Each RFC carries its own current status.
 | [033](./033-integration-parity-surface.md)             | Integration Parity Surface                               | rowboat-api + clients | Packages RFC 020’s connector catalog for users and prioritizes task, communication, and knowledge sources that improve relationship evidence.                           |
 | [034](./034-floating-overlay-assistant.md)             | Floating Overlay Assistant (Hummingbird-class)           | apps/x                | A global summonable Ask/Capture/Approve panel with consented per-invocation context; it is one desktop affordance over the shared RFC 036 intelligence and action loop. |
 | [035](./035-meeting-intelligence-commitment-ledger.md) | Meeting Intelligence — Parity Plus the Commitment Ledger | apps/x + rowboat-api  | Composes local transcription, diarization, and meeting context into evidence-backed participants, commitments, risks, and follow-through in RFC 036.                    |
+
+## Capture-product boundary and integration
+
+[RFC 055](./055-capture-product-boundary-and-rowboat-integration.md) replaces
+the former OpenWhispr parity program. The OpenWhispr fork remains a separate,
+independently useful Oppulence capture product; Rowboat remains the canonical
+relationship-intelligence, evidence, and governed-action system.
+
+Capture-only RFCs 040, 041, 043, 045, 046, 047, and 052 were removed from this
+active roadmap and preserved in the capture repository as RFCs 0010–0016.
+RFC 054 was superseded. Split concerns remain here only for their Rowboat-owned
+behavior:
+
+| #                                                                | Rowboat-owned scope                                                                                       |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [042](./042-voice-agent-screen-context-and-selection-editing.md) | Consented desktop context for relationship-aware commands; local selection editing belongs to capture.    |
+| [044](./044-cross-meeting-speaker-fingerprinting.md)             | Bind capture-owned voice-profile hints to canonical people with evidence and confidence.                  |
+| [048](./048-public-api-mcp-server-cli.md)                        | Relationship APIs, MCP distribution, and the versioned capture-artifact ingestion surface.                |
+| [049](./049-i18n-and-localization.md)                            | Rowboat localization; the capture product localizes independently.                                        |
+| [050](./050-enterprise-controls.md)                              | Shared organization identity and policy, enforced fail-closed by Rowboat.                                 |
+| [051](./051-note-sharing-and-team-spaces.md)                     | Relationship/evidence collaboration; transcript sharing belongs to capture.                               |
+| [053](./053-local-llm-runtime.md)                                | Local relationship inference and quality gates, not capture-model management.                             |
+| [055](./055-capture-product-boundary-and-rowboat-integration.md) | Product ownership, integration contract, privacy boundary, code-reuse policy, rollout, and success gates. |
 
 ## Email feature RFCs
 

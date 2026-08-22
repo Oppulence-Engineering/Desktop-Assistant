@@ -2,7 +2,11 @@
 
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
 import { Badge } from "@oppulence/ui/components/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@oppulence/ui/components/collapsible";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@oppulence/ui/components/collapsible";
 import { cn } from "@/lib/utils";
 import {
   Brain,

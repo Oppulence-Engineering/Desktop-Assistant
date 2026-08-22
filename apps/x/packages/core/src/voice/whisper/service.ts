@@ -16,7 +16,7 @@ import type {
   WhisperModelHealth,
   WhisperModelSummary,
   WhisperSegment,
-} from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
 
 export type { ModelProgress };
 

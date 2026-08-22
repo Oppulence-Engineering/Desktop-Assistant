@@ -22,7 +22,7 @@ import type {
   ConversationDeletionReceipt,
   BetaDiagnostics,
   RelationshipGraph,
-} from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
 
 /**
  * A non-2xx response from the relationship API, carrying the status.

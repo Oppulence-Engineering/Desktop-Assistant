@@ -27,6 +27,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
@@ -80,6 +81,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 	"github.com/flume/enthistory"
 	"github.com/google/uuid"
@@ -110,6 +113,7 @@ const (
 	TypeBackgroundTaskRun                 = "BackgroundTaskRun"
 	TypeBackgroundTaskRunEvent            = "BackgroundTaskRunEvent"
 	TypeBackgroundTaskScheduleState       = "BackgroundTaskScheduleState"
+	TypeCaptureArtifact                   = "CaptureArtifact"
 	TypeCloudEvent                        = "CloudEvent"
 	TypeCommitment                        = "Commitment"
 	TypeCommitmentDependency              = "CommitmentDependency"
@@ -162,6 +166,8 @@ const (
 	TypeTenantEvidenceKey                 = "TenantEvidenceKey"
 	TypeUser                              = "User"
 	TypeUserHistory                       = "UserHistory"
+	TypeVoiceAPIKey                       = "VoiceAPIKey"
+	TypeVoiceSyncItem                     = "VoiceSyncItem"
 	TypeWorkspaceFeatureControl           = "WorkspaceFeatureControl"
 )
 
@@ -23171,6 +23177,1053 @@ func (m *BackgroundTaskScheduleStateMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown BackgroundTaskScheduleState edge %s", name)
+}
+
+// CaptureArtifactMutation represents an operation that mutates the CaptureArtifact nodes in the graph.
+type CaptureArtifactMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *uuid.UUID
+	created_at     *time.Time
+	updated_at     *time.Time
+	event_id       *string
+	artifact_id    *string
+	schema_version *string
+	kind           *string
+	operation      *string
+	source_product *string
+	consent_basis  *string
+	content_hash   *string
+	payload_json   *string
+	status         *string
+	occurred_at    *time.Time
+	clearedFields  map[string]struct{}
+	user           *uuid.UUID
+	cleareduser    bool
+	done           bool
+	oldValue       func(context.Context) (*CaptureArtifact, error)
+	predicates     []predicate.CaptureArtifact
+}
+
+var _ ent.Mutation = (*CaptureArtifactMutation)(nil)
+
+// captureartifactOption allows management of the mutation configuration using functional options.
+type captureartifactOption func(*CaptureArtifactMutation)
+
+// newCaptureArtifactMutation creates new mutation for the CaptureArtifact entity.
+func newCaptureArtifactMutation(c config, op Op, opts ...captureartifactOption) *CaptureArtifactMutation {
+	m := &CaptureArtifactMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCaptureArtifact,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCaptureArtifactID sets the ID field of the mutation.
+func withCaptureArtifactID(id uuid.UUID) captureartifactOption {
+	return func(m *CaptureArtifactMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CaptureArtifact
+		)
+		m.oldValue = func(ctx context.Context) (*CaptureArtifact, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CaptureArtifact.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCaptureArtifact sets the old CaptureArtifact of the mutation.
+func withCaptureArtifact(node *CaptureArtifact) captureartifactOption {
+	return func(m *CaptureArtifactMutation) {
+		m.oldValue = func(context.Context) (*CaptureArtifact, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CaptureArtifactMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CaptureArtifactMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CaptureArtifact entities.
+func (m *CaptureArtifactMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CaptureArtifactMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CaptureArtifactMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CaptureArtifact.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CaptureArtifactMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CaptureArtifactMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CaptureArtifact entity.
+// If the CaptureArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CaptureArtifactMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CaptureArtifactMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *CaptureArtifactMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *CaptureArtifactMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the CaptureArtifact entity.
+// If the CaptureArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CaptureArtifactMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *CaptureArtifactMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetEventID sets the "event_id" field.
+func (m *CaptureArtifactMutation) SetEventID(s string) {
+	m.event_id = &s
+}
+
+// EventID returns the value of the "event_id" field in the mutation.
+func (m *CaptureArtifactMutation) EventID() (r string, exists bool) {
+	v := m.event_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventID returns the old "event_id" field's value of the CaptureArtifact entity.
+// If the CaptureArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CaptureArtifactMutation) OldEventID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventID: %w", err)
+	}
+	return oldValue.EventID, nil
+}
+
+// ResetEventID resets all changes to the "event_id" field.
+func (m *CaptureArtifactMutation) ResetEventID() {
+	m.event_id = nil
+}
+
+// SetArtifactID sets the "artifact_id" field.
+func (m *CaptureArtifactMutation) SetArtifactID(s string) {
+	m.artifact_id = &s
+}
+
+// ArtifactID returns the value of the "artifact_id" field in the mutation.
+func (m *CaptureArtifactMutation) ArtifactID() (r string, exists bool) {
+	v := m.artifact_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldArtifactID returns the old "artifact_id" field's value of the CaptureArtifact entity.
+// If the CaptureArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CaptureArtifactMutation) OldArtifactID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldArtifactID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldArtifactID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldArtifactID: %w", err)
+	}
+	return oldValue.ArtifactID, nil
+}
+
+// ResetArtifactID resets all changes to the "artifact_id" field.
+func (m *CaptureArtifactMutation) ResetArtifactID() {
+	m.artifact_id = nil
+}
+
+// SetSchemaVersion sets the "schema_version" field.
+func (m *CaptureArtifactMutation) SetSchemaVersion(s string) {
+	m.schema_version = &s
+}
+
+// SchemaVersion returns the value of the "schema_version" field in the mutation.
+func (m *CaptureArtifactMutation) SchemaVersion() (r string, exists bool) {
+	v := m.schema_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSchemaVersion returns the old "schema_version" field's value of the CaptureArtifact entity.
+// If the CaptureArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CaptureArtifactMutation) OldSchemaVersion(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSchemaVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSchemaVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSchemaVersion: %w", err)
+	}
+	return oldValue.SchemaVersion, nil
+}
+
+// ResetSchemaVersion resets all changes to the "schema_version" field.
+func (m *CaptureArtifactMutation) ResetSchemaVersion() {
+	m.schema_version = nil
+}
+
+// SetKind sets the "kind" field.
+func (m *CaptureArtifactMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *CaptureArtifactMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the CaptureArtifact entity.
+// If the CaptureArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CaptureArtifactMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *CaptureArtifactMutation) ResetKind() {
+	m.kind = nil
+}
+
+// SetOperation sets the "operation" field.
+func (m *CaptureArtifactMutation) SetOperation(s string) {
+	m.operation = &s
+}
+
+// Operation returns the value of the "operation" field in the mutation.
+func (m *CaptureArtifactMutation) Operation() (r string, exists bool) {
+	v := m.operation
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOperation returns the old "operation" field's value of the CaptureArtifact entity.
+// If the CaptureArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CaptureArtifactMutation) OldOperation(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOperation is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOperation requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOperation: %w", err)
+	}
+	return oldValue.Operation, nil
+}
+
+// ResetOperation resets all changes to the "operation" field.
+func (m *CaptureArtifactMutation) ResetOperation() {
+	m.operation = nil
+}
+
+// SetSourceProduct sets the "source_product" field.
+func (m *CaptureArtifactMutation) SetSourceProduct(s string) {
+	m.source_product = &s
+}
+
+// SourceProduct returns the value of the "source_product" field in the mutation.
+func (m *CaptureArtifactMutation) SourceProduct() (r string, exists bool) {
+	v := m.source_product
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceProduct returns the old "source_product" field's value of the CaptureArtifact entity.
+// If the CaptureArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CaptureArtifactMutation) OldSourceProduct(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceProduct is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceProduct requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceProduct: %w", err)
+	}
+	return oldValue.SourceProduct, nil
+}
+
+// ResetSourceProduct resets all changes to the "source_product" field.
+func (m *CaptureArtifactMutation) ResetSourceProduct() {
+	m.source_product = nil
+}
+
+// SetConsentBasis sets the "consent_basis" field.
+func (m *CaptureArtifactMutation) SetConsentBasis(s string) {
+	m.consent_basis = &s
+}
+
+// ConsentBasis returns the value of the "consent_basis" field in the mutation.
+func (m *CaptureArtifactMutation) ConsentBasis() (r string, exists bool) {
+	v := m.consent_basis
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConsentBasis returns the old "consent_basis" field's value of the CaptureArtifact entity.
+// If the CaptureArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CaptureArtifactMutation) OldConsentBasis(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConsentBasis is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConsentBasis requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConsentBasis: %w", err)
+	}
+	return oldValue.ConsentBasis, nil
+}
+
+// ResetConsentBasis resets all changes to the "consent_basis" field.
+func (m *CaptureArtifactMutation) ResetConsentBasis() {
+	m.consent_basis = nil
+}
+
+// SetContentHash sets the "content_hash" field.
+func (m *CaptureArtifactMutation) SetContentHash(s string) {
+	m.content_hash = &s
+}
+
+// ContentHash returns the value of the "content_hash" field in the mutation.
+func (m *CaptureArtifactMutation) ContentHash() (r string, exists bool) {
+	v := m.content_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContentHash returns the old "content_hash" field's value of the CaptureArtifact entity.
+// If the CaptureArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CaptureArtifactMutation) OldContentHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldContentHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldContentHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContentHash: %w", err)
+	}
+	return oldValue.ContentHash, nil
+}
+
+// ResetContentHash resets all changes to the "content_hash" field.
+func (m *CaptureArtifactMutation) ResetContentHash() {
+	m.content_hash = nil
+}
+
+// SetPayloadJSON sets the "payload_json" field.
+func (m *CaptureArtifactMutation) SetPayloadJSON(s string) {
+	m.payload_json = &s
+}
+
+// PayloadJSON returns the value of the "payload_json" field in the mutation.
+func (m *CaptureArtifactMutation) PayloadJSON() (r string, exists bool) {
+	v := m.payload_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPayloadJSON returns the old "payload_json" field's value of the CaptureArtifact entity.
+// If the CaptureArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CaptureArtifactMutation) OldPayloadJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPayloadJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPayloadJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayloadJSON: %w", err)
+	}
+	return oldValue.PayloadJSON, nil
+}
+
+// ResetPayloadJSON resets all changes to the "payload_json" field.
+func (m *CaptureArtifactMutation) ResetPayloadJSON() {
+	m.payload_json = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *CaptureArtifactMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *CaptureArtifactMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the CaptureArtifact entity.
+// If the CaptureArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CaptureArtifactMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *CaptureArtifactMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetOccurredAt sets the "occurred_at" field.
+func (m *CaptureArtifactMutation) SetOccurredAt(t time.Time) {
+	m.occurred_at = &t
+}
+
+// OccurredAt returns the value of the "occurred_at" field in the mutation.
+func (m *CaptureArtifactMutation) OccurredAt() (r time.Time, exists bool) {
+	v := m.occurred_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOccurredAt returns the old "occurred_at" field's value of the CaptureArtifact entity.
+// If the CaptureArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CaptureArtifactMutation) OldOccurredAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOccurredAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOccurredAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOccurredAt: %w", err)
+	}
+	return oldValue.OccurredAt, nil
+}
+
+// ResetOccurredAt resets all changes to the "occurred_at" field.
+func (m *CaptureArtifactMutation) ResetOccurredAt() {
+	m.occurred_at = nil
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *CaptureArtifactMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *CaptureArtifactMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *CaptureArtifactMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *CaptureArtifactMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *CaptureArtifactMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *CaptureArtifactMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the CaptureArtifactMutation builder.
+func (m *CaptureArtifactMutation) Where(ps ...predicate.CaptureArtifact) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CaptureArtifactMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CaptureArtifactMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CaptureArtifact, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CaptureArtifactMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CaptureArtifactMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CaptureArtifact).
+func (m *CaptureArtifactMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CaptureArtifactMutation) Fields() []string {
+	fields := make([]string, 0, 13)
+	if m.created_at != nil {
+		fields = append(fields, captureartifact.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, captureartifact.FieldUpdatedAt)
+	}
+	if m.event_id != nil {
+		fields = append(fields, captureartifact.FieldEventID)
+	}
+	if m.artifact_id != nil {
+		fields = append(fields, captureartifact.FieldArtifactID)
+	}
+	if m.schema_version != nil {
+		fields = append(fields, captureartifact.FieldSchemaVersion)
+	}
+	if m.kind != nil {
+		fields = append(fields, captureartifact.FieldKind)
+	}
+	if m.operation != nil {
+		fields = append(fields, captureartifact.FieldOperation)
+	}
+	if m.source_product != nil {
+		fields = append(fields, captureartifact.FieldSourceProduct)
+	}
+	if m.consent_basis != nil {
+		fields = append(fields, captureartifact.FieldConsentBasis)
+	}
+	if m.content_hash != nil {
+		fields = append(fields, captureartifact.FieldContentHash)
+	}
+	if m.payload_json != nil {
+		fields = append(fields, captureartifact.FieldPayloadJSON)
+	}
+	if m.status != nil {
+		fields = append(fields, captureartifact.FieldStatus)
+	}
+	if m.occurred_at != nil {
+		fields = append(fields, captureartifact.FieldOccurredAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CaptureArtifactMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case captureartifact.FieldCreatedAt:
+		return m.CreatedAt()
+	case captureartifact.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case captureartifact.FieldEventID:
+		return m.EventID()
+	case captureartifact.FieldArtifactID:
+		return m.ArtifactID()
+	case captureartifact.FieldSchemaVersion:
+		return m.SchemaVersion()
+	case captureartifact.FieldKind:
+		return m.Kind()
+	case captureartifact.FieldOperation:
+		return m.Operation()
+	case captureartifact.FieldSourceProduct:
+		return m.SourceProduct()
+	case captureartifact.FieldConsentBasis:
+		return m.ConsentBasis()
+	case captureartifact.FieldContentHash:
+		return m.ContentHash()
+	case captureartifact.FieldPayloadJSON:
+		return m.PayloadJSON()
+	case captureartifact.FieldStatus:
+		return m.Status()
+	case captureartifact.FieldOccurredAt:
+		return m.OccurredAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CaptureArtifactMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case captureartifact.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case captureartifact.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case captureartifact.FieldEventID:
+		return m.OldEventID(ctx)
+	case captureartifact.FieldArtifactID:
+		return m.OldArtifactID(ctx)
+	case captureartifact.FieldSchemaVersion:
+		return m.OldSchemaVersion(ctx)
+	case captureartifact.FieldKind:
+		return m.OldKind(ctx)
+	case captureartifact.FieldOperation:
+		return m.OldOperation(ctx)
+	case captureartifact.FieldSourceProduct:
+		return m.OldSourceProduct(ctx)
+	case captureartifact.FieldConsentBasis:
+		return m.OldConsentBasis(ctx)
+	case captureartifact.FieldContentHash:
+		return m.OldContentHash(ctx)
+	case captureartifact.FieldPayloadJSON:
+		return m.OldPayloadJSON(ctx)
+	case captureartifact.FieldStatus:
+		return m.OldStatus(ctx)
+	case captureartifact.FieldOccurredAt:
+		return m.OldOccurredAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown CaptureArtifact field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CaptureArtifactMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case captureartifact.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case captureartifact.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case captureartifact.FieldEventID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventID(v)
+		return nil
+	case captureartifact.FieldArtifactID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetArtifactID(v)
+		return nil
+	case captureartifact.FieldSchemaVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSchemaVersion(v)
+		return nil
+	case captureartifact.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
+	case captureartifact.FieldOperation:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOperation(v)
+		return nil
+	case captureartifact.FieldSourceProduct:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceProduct(v)
+		return nil
+	case captureartifact.FieldConsentBasis:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConsentBasis(v)
+		return nil
+	case captureartifact.FieldContentHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContentHash(v)
+		return nil
+	case captureartifact.FieldPayloadJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPayloadJSON(v)
+		return nil
+	case captureartifact.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case captureartifact.FieldOccurredAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOccurredAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CaptureArtifact field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CaptureArtifactMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CaptureArtifactMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CaptureArtifactMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown CaptureArtifact numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CaptureArtifactMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CaptureArtifactMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CaptureArtifactMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown CaptureArtifact nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CaptureArtifactMutation) ResetField(name string) error {
+	switch name {
+	case captureartifact.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case captureartifact.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case captureartifact.FieldEventID:
+		m.ResetEventID()
+		return nil
+	case captureartifact.FieldArtifactID:
+		m.ResetArtifactID()
+		return nil
+	case captureartifact.FieldSchemaVersion:
+		m.ResetSchemaVersion()
+		return nil
+	case captureartifact.FieldKind:
+		m.ResetKind()
+		return nil
+	case captureartifact.FieldOperation:
+		m.ResetOperation()
+		return nil
+	case captureartifact.FieldSourceProduct:
+		m.ResetSourceProduct()
+		return nil
+	case captureartifact.FieldConsentBasis:
+		m.ResetConsentBasis()
+		return nil
+	case captureartifact.FieldContentHash:
+		m.ResetContentHash()
+		return nil
+	case captureartifact.FieldPayloadJSON:
+		m.ResetPayloadJSON()
+		return nil
+	case captureartifact.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case captureartifact.FieldOccurredAt:
+		m.ResetOccurredAt()
+		return nil
+	}
+	return fmt.Errorf("unknown CaptureArtifact field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CaptureArtifactMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, captureartifact.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CaptureArtifactMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case captureartifact.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CaptureArtifactMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CaptureArtifactMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CaptureArtifactMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, captureartifact.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CaptureArtifactMutation) EdgeCleared(name string) bool {
+	switch name {
+	case captureartifact.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CaptureArtifactMutation) ClearEdge(name string) error {
+	switch name {
+	case captureartifact.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown CaptureArtifact unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CaptureArtifactMutation) ResetEdge(name string) error {
+	switch name {
+	case captureartifact.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown CaptureArtifact edge %s", name)
 }
 
 // CloudEventMutation represents an operation that mutates the CloudEvent nodes in the graph.
@@ -58966,7 +60019,7 @@ type RelationshipAttentionItemMutation struct {
 	urgency_band                  *string
 	rank_score                    *int
 	addrank_score                 *int
-	rank_factors_json             *string
+	rank_factors_json             *map[string]int
 	source_requirements           *[]string
 	appendsource_requirements     []string
 	recommendation_id             *uuid.UUID
@@ -59521,12 +60574,12 @@ func (m *RelationshipAttentionItemMutation) ResetRankScore() {
 }
 
 // SetRankFactorsJSON sets the "rank_factors_json" field.
-func (m *RelationshipAttentionItemMutation) SetRankFactorsJSON(s string) {
-	m.rank_factors_json = &s
+func (m *RelationshipAttentionItemMutation) SetRankFactorsJSON(value map[string]int) {
+	m.rank_factors_json = &value
 }
 
 // RankFactorsJSON returns the value of the "rank_factors_json" field in the mutation.
-func (m *RelationshipAttentionItemMutation) RankFactorsJSON() (r string, exists bool) {
+func (m *RelationshipAttentionItemMutation) RankFactorsJSON() (r map[string]int, exists bool) {
 	v := m.rank_factors_json
 	if v == nil {
 		return
@@ -59537,7 +60590,7 @@ func (m *RelationshipAttentionItemMutation) RankFactorsJSON() (r string, exists 
 // OldRankFactorsJSON returns the old "rank_factors_json" field's value of the RelationshipAttentionItem entity.
 // If the RelationshipAttentionItem object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RelationshipAttentionItemMutation) OldRankFactorsJSON(ctx context.Context) (v string, err error) {
+func (m *RelationshipAttentionItemMutation) OldRankFactorsJSON(ctx context.Context) (v map[string]int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRankFactorsJSON is only allowed on UpdateOne operations")
 	}
@@ -60825,7 +61878,7 @@ func (m *RelationshipAttentionItemMutation) SetField(name string, value ent.Valu
 		m.SetRankScore(v)
 		return nil
 	case relationshipattentionitem.FieldRankFactorsJSON:
-		v, ok := value.(string)
+		v, ok := value.(map[string]int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -93403,6 +94456,15 @@ type UserMutation struct {
 	meeting_minute_usages                       map[uuid.UUID]struct{}
 	removedmeeting_minute_usages                map[uuid.UUID]struct{}
 	clearedmeeting_minute_usages                bool
+	voice_api_keys                              map[uuid.UUID]struct{}
+	removedvoice_api_keys                       map[uuid.UUID]struct{}
+	clearedvoice_api_keys                       bool
+	voice_sync_items                            map[uuid.UUID]struct{}
+	removedvoice_sync_items                     map[uuid.UUID]struct{}
+	clearedvoice_sync_items                     bool
+	capture_artifacts                           map[uuid.UUID]struct{}
+	removedcapture_artifacts                    map[uuid.UUID]struct{}
+	clearedcapture_artifacts                    bool
 	llm_usages                                  map[uuid.UUID]struct{}
 	removedllm_usages                           map[uuid.UUID]struct{}
 	clearedllm_usages                           bool
@@ -94034,6 +95096,168 @@ func (m *UserMutation) ResetMeetingMinuteUsages() {
 	m.meeting_minute_usages = nil
 	m.clearedmeeting_minute_usages = false
 	m.removedmeeting_minute_usages = nil
+}
+
+// AddVoiceAPIKeyIDs adds the "voice_api_keys" edge to the VoiceAPIKey entity by ids.
+func (m *UserMutation) AddVoiceAPIKeyIDs(ids ...uuid.UUID) {
+	if m.voice_api_keys == nil {
+		m.voice_api_keys = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.voice_api_keys[ids[i]] = struct{}{}
+	}
+}
+
+// ClearVoiceAPIKeys clears the "voice_api_keys" edge to the VoiceAPIKey entity.
+func (m *UserMutation) ClearVoiceAPIKeys() {
+	m.clearedvoice_api_keys = true
+}
+
+// VoiceAPIKeysCleared reports if the "voice_api_keys" edge to the VoiceAPIKey entity was cleared.
+func (m *UserMutation) VoiceAPIKeysCleared() bool {
+	return m.clearedvoice_api_keys
+}
+
+// RemoveVoiceAPIKeyIDs removes the "voice_api_keys" edge to the VoiceAPIKey entity by IDs.
+func (m *UserMutation) RemoveVoiceAPIKeyIDs(ids ...uuid.UUID) {
+	if m.removedvoice_api_keys == nil {
+		m.removedvoice_api_keys = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.voice_api_keys, ids[i])
+		m.removedvoice_api_keys[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedVoiceAPIKeys returns the removed IDs of the "voice_api_keys" edge to the VoiceAPIKey entity.
+func (m *UserMutation) RemovedVoiceAPIKeysIDs() (ids []uuid.UUID) {
+	for id := range m.removedvoice_api_keys {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// VoiceAPIKeysIDs returns the "voice_api_keys" edge IDs in the mutation.
+func (m *UserMutation) VoiceAPIKeysIDs() (ids []uuid.UUID) {
+	for id := range m.voice_api_keys {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetVoiceAPIKeys resets all changes to the "voice_api_keys" edge.
+func (m *UserMutation) ResetVoiceAPIKeys() {
+	m.voice_api_keys = nil
+	m.clearedvoice_api_keys = false
+	m.removedvoice_api_keys = nil
+}
+
+// AddVoiceSyncItemIDs adds the "voice_sync_items" edge to the VoiceSyncItem entity by ids.
+func (m *UserMutation) AddVoiceSyncItemIDs(ids ...uuid.UUID) {
+	if m.voice_sync_items == nil {
+		m.voice_sync_items = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.voice_sync_items[ids[i]] = struct{}{}
+	}
+}
+
+// ClearVoiceSyncItems clears the "voice_sync_items" edge to the VoiceSyncItem entity.
+func (m *UserMutation) ClearVoiceSyncItems() {
+	m.clearedvoice_sync_items = true
+}
+
+// VoiceSyncItemsCleared reports if the "voice_sync_items" edge to the VoiceSyncItem entity was cleared.
+func (m *UserMutation) VoiceSyncItemsCleared() bool {
+	return m.clearedvoice_sync_items
+}
+
+// RemoveVoiceSyncItemIDs removes the "voice_sync_items" edge to the VoiceSyncItem entity by IDs.
+func (m *UserMutation) RemoveVoiceSyncItemIDs(ids ...uuid.UUID) {
+	if m.removedvoice_sync_items == nil {
+		m.removedvoice_sync_items = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.voice_sync_items, ids[i])
+		m.removedvoice_sync_items[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedVoiceSyncItems returns the removed IDs of the "voice_sync_items" edge to the VoiceSyncItem entity.
+func (m *UserMutation) RemovedVoiceSyncItemsIDs() (ids []uuid.UUID) {
+	for id := range m.removedvoice_sync_items {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// VoiceSyncItemsIDs returns the "voice_sync_items" edge IDs in the mutation.
+func (m *UserMutation) VoiceSyncItemsIDs() (ids []uuid.UUID) {
+	for id := range m.voice_sync_items {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetVoiceSyncItems resets all changes to the "voice_sync_items" edge.
+func (m *UserMutation) ResetVoiceSyncItems() {
+	m.voice_sync_items = nil
+	m.clearedvoice_sync_items = false
+	m.removedvoice_sync_items = nil
+}
+
+// AddCaptureArtifactIDs adds the "capture_artifacts" edge to the CaptureArtifact entity by ids.
+func (m *UserMutation) AddCaptureArtifactIDs(ids ...uuid.UUID) {
+	if m.capture_artifacts == nil {
+		m.capture_artifacts = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.capture_artifacts[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCaptureArtifacts clears the "capture_artifacts" edge to the CaptureArtifact entity.
+func (m *UserMutation) ClearCaptureArtifacts() {
+	m.clearedcapture_artifacts = true
+}
+
+// CaptureArtifactsCleared reports if the "capture_artifacts" edge to the CaptureArtifact entity was cleared.
+func (m *UserMutation) CaptureArtifactsCleared() bool {
+	return m.clearedcapture_artifacts
+}
+
+// RemoveCaptureArtifactIDs removes the "capture_artifacts" edge to the CaptureArtifact entity by IDs.
+func (m *UserMutation) RemoveCaptureArtifactIDs(ids ...uuid.UUID) {
+	if m.removedcapture_artifacts == nil {
+		m.removedcapture_artifacts = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.capture_artifacts, ids[i])
+		m.removedcapture_artifacts[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCaptureArtifacts returns the removed IDs of the "capture_artifacts" edge to the CaptureArtifact entity.
+func (m *UserMutation) RemovedCaptureArtifactsIDs() (ids []uuid.UUID) {
+	for id := range m.removedcapture_artifacts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CaptureArtifactsIDs returns the "capture_artifacts" edge IDs in the mutation.
+func (m *UserMutation) CaptureArtifactsIDs() (ids []uuid.UUID) {
+	for id := range m.capture_artifacts {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCaptureArtifacts resets all changes to the "capture_artifacts" edge.
+func (m *UserMutation) ResetCaptureArtifacts() {
+	m.capture_artifacts = nil
+	m.clearedcapture_artifacts = false
+	m.removedcapture_artifacts = nil
 }
 
 // AddLlmUsageIDs adds the "llm_usages" edge to the LLMUsage entity by ids.
@@ -97330,7 +98554,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 60)
+	edges := make([]string, 0, 63)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -97339,6 +98563,15 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.meeting_minute_usages != nil {
 		edges = append(edges, user.EdgeMeetingMinuteUsages)
+	}
+	if m.voice_api_keys != nil {
+		edges = append(edges, user.EdgeVoiceAPIKeys)
+	}
+	if m.voice_sync_items != nil {
+		edges = append(edges, user.EdgeVoiceSyncItems)
+	}
+	if m.capture_artifacts != nil {
+		edges = append(edges, user.EdgeCaptureArtifacts)
 	}
 	if m.llm_usages != nil {
 		edges = append(edges, user.EdgeLlmUsages)
@@ -97531,6 +98764,24 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 	case user.EdgeMeetingMinuteUsages:
 		ids := make([]ent.Value, 0, len(m.meeting_minute_usages))
 		for id := range m.meeting_minute_usages {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeVoiceAPIKeys:
+		ids := make([]ent.Value, 0, len(m.voice_api_keys))
+		for id := range m.voice_api_keys {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeVoiceSyncItems:
+		ids := make([]ent.Value, 0, len(m.voice_sync_items))
+		for id := range m.voice_sync_items {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeCaptureArtifacts:
+		ids := make([]ent.Value, 0, len(m.capture_artifacts))
+		for id := range m.capture_artifacts {
 			ids = append(ids, id)
 		}
 		return ids
@@ -97882,12 +99133,21 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 60)
+	edges := make([]string, 0, 63)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
 	if m.removedmeeting_minute_usages != nil {
 		edges = append(edges, user.EdgeMeetingMinuteUsages)
+	}
+	if m.removedvoice_api_keys != nil {
+		edges = append(edges, user.EdgeVoiceAPIKeys)
+	}
+	if m.removedvoice_sync_items != nil {
+		edges = append(edges, user.EdgeVoiceSyncItems)
+	}
+	if m.removedcapture_artifacts != nil {
+		edges = append(edges, user.EdgeCaptureArtifacts)
 	}
 	if m.removedllm_usages != nil {
 		edges = append(edges, user.EdgeLlmUsages)
@@ -98076,6 +99336,24 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 	case user.EdgeMeetingMinuteUsages:
 		ids := make([]ent.Value, 0, len(m.removedmeeting_minute_usages))
 		for id := range m.removedmeeting_minute_usages {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeVoiceAPIKeys:
+		ids := make([]ent.Value, 0, len(m.removedvoice_api_keys))
+		for id := range m.removedvoice_api_keys {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeVoiceSyncItems:
+		ids := make([]ent.Value, 0, len(m.removedvoice_sync_items))
+		for id := range m.removedvoice_sync_items {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeCaptureArtifacts:
+		ids := make([]ent.Value, 0, len(m.removedcapture_artifacts))
+		for id := range m.removedcapture_artifacts {
 			ids = append(ids, id)
 		}
 		return ids
@@ -98427,7 +99705,7 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 60)
+	edges := make([]string, 0, 63)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -98436,6 +99714,15 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedmeeting_minute_usages {
 		edges = append(edges, user.EdgeMeetingMinuteUsages)
+	}
+	if m.clearedvoice_api_keys {
+		edges = append(edges, user.EdgeVoiceAPIKeys)
+	}
+	if m.clearedvoice_sync_items {
+		edges = append(edges, user.EdgeVoiceSyncItems)
+	}
+	if m.clearedcapture_artifacts {
+		edges = append(edges, user.EdgeCaptureArtifacts)
 	}
 	if m.clearedllm_usages {
 		edges = append(edges, user.EdgeLlmUsages)
@@ -98621,6 +99908,12 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedledger_entries
 	case user.EdgeMeetingMinuteUsages:
 		return m.clearedmeeting_minute_usages
+	case user.EdgeVoiceAPIKeys:
+		return m.clearedvoice_api_keys
+	case user.EdgeVoiceSyncItems:
+		return m.clearedvoice_sync_items
+	case user.EdgeCaptureArtifacts:
+		return m.clearedcapture_artifacts
 	case user.EdgeLlmUsages:
 		return m.clearedllm_usages
 	case user.EdgeOauthConnections:
@@ -98762,6 +100055,15 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeMeetingMinuteUsages:
 		m.ResetMeetingMinuteUsages()
+		return nil
+	case user.EdgeVoiceAPIKeys:
+		m.ResetVoiceAPIKeys()
+		return nil
+	case user.EdgeVoiceSyncItems:
+		m.ResetVoiceSyncItems()
+		return nil
+	case user.EdgeCaptureArtifacts:
+		m.ResetCaptureArtifacts()
 		return nil
 	case user.EdgeLlmUsages:
 		m.ResetLlmUsages()
@@ -99706,6 +101008,2110 @@ func (m *UserHistoryMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *UserHistoryMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown UserHistory edge %s", name)
+}
+
+// VoiceAPIKeyMutation represents an operation that mutates the VoiceAPIKey nodes in the graph.
+type VoiceAPIKeyMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *uuid.UUID
+	created_at    *time.Time
+	updated_at    *time.Time
+	name          *string
+	key_digest    *string
+	key_prefix    *string
+	scopes        *[]string
+	appendscopes  []string
+	last_used_at  *time.Time
+	expires_at    *time.Time
+	revoked_at    *time.Time
+	clearedFields map[string]struct{}
+	user          *uuid.UUID
+	cleareduser   bool
+	done          bool
+	oldValue      func(context.Context) (*VoiceAPIKey, error)
+	predicates    []predicate.VoiceAPIKey
+}
+
+var _ ent.Mutation = (*VoiceAPIKeyMutation)(nil)
+
+// voiceapikeyOption allows management of the mutation configuration using functional options.
+type voiceapikeyOption func(*VoiceAPIKeyMutation)
+
+// newVoiceAPIKeyMutation creates new mutation for the VoiceAPIKey entity.
+func newVoiceAPIKeyMutation(c config, op Op, opts ...voiceapikeyOption) *VoiceAPIKeyMutation {
+	m := &VoiceAPIKeyMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeVoiceAPIKey,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withVoiceAPIKeyID sets the ID field of the mutation.
+func withVoiceAPIKeyID(id uuid.UUID) voiceapikeyOption {
+	return func(m *VoiceAPIKeyMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *VoiceAPIKey
+		)
+		m.oldValue = func(ctx context.Context) (*VoiceAPIKey, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().VoiceAPIKey.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withVoiceAPIKey sets the old VoiceAPIKey of the mutation.
+func withVoiceAPIKey(node *VoiceAPIKey) voiceapikeyOption {
+	return func(m *VoiceAPIKeyMutation) {
+		m.oldValue = func(context.Context) (*VoiceAPIKey, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m VoiceAPIKeyMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m VoiceAPIKeyMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of VoiceAPIKey entities.
+func (m *VoiceAPIKeyMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *VoiceAPIKeyMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *VoiceAPIKeyMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().VoiceAPIKey.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *VoiceAPIKeyMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *VoiceAPIKeyMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the VoiceAPIKey entity.
+// If the VoiceAPIKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceAPIKeyMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *VoiceAPIKeyMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *VoiceAPIKeyMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *VoiceAPIKeyMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the VoiceAPIKey entity.
+// If the VoiceAPIKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceAPIKeyMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *VoiceAPIKeyMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetName sets the "name" field.
+func (m *VoiceAPIKeyMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *VoiceAPIKeyMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the VoiceAPIKey entity.
+// If the VoiceAPIKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceAPIKeyMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *VoiceAPIKeyMutation) ResetName() {
+	m.name = nil
+}
+
+// SetKeyDigest sets the "key_digest" field.
+func (m *VoiceAPIKeyMutation) SetKeyDigest(s string) {
+	m.key_digest = &s
+}
+
+// KeyDigest returns the value of the "key_digest" field in the mutation.
+func (m *VoiceAPIKeyMutation) KeyDigest() (r string, exists bool) {
+	v := m.key_digest
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKeyDigest returns the old "key_digest" field's value of the VoiceAPIKey entity.
+// If the VoiceAPIKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceAPIKeyMutation) OldKeyDigest(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKeyDigest is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKeyDigest requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKeyDigest: %w", err)
+	}
+	return oldValue.KeyDigest, nil
+}
+
+// ResetKeyDigest resets all changes to the "key_digest" field.
+func (m *VoiceAPIKeyMutation) ResetKeyDigest() {
+	m.key_digest = nil
+}
+
+// SetKeyPrefix sets the "key_prefix" field.
+func (m *VoiceAPIKeyMutation) SetKeyPrefix(s string) {
+	m.key_prefix = &s
+}
+
+// KeyPrefix returns the value of the "key_prefix" field in the mutation.
+func (m *VoiceAPIKeyMutation) KeyPrefix() (r string, exists bool) {
+	v := m.key_prefix
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKeyPrefix returns the old "key_prefix" field's value of the VoiceAPIKey entity.
+// If the VoiceAPIKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceAPIKeyMutation) OldKeyPrefix(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKeyPrefix is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKeyPrefix requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKeyPrefix: %w", err)
+	}
+	return oldValue.KeyPrefix, nil
+}
+
+// ResetKeyPrefix resets all changes to the "key_prefix" field.
+func (m *VoiceAPIKeyMutation) ResetKeyPrefix() {
+	m.key_prefix = nil
+}
+
+// SetScopes sets the "scopes" field.
+func (m *VoiceAPIKeyMutation) SetScopes(s []string) {
+	m.scopes = &s
+	m.appendscopes = nil
+}
+
+// Scopes returns the value of the "scopes" field in the mutation.
+func (m *VoiceAPIKeyMutation) Scopes() (r []string, exists bool) {
+	v := m.scopes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScopes returns the old "scopes" field's value of the VoiceAPIKey entity.
+// If the VoiceAPIKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceAPIKeyMutation) OldScopes(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScopes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScopes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScopes: %w", err)
+	}
+	return oldValue.Scopes, nil
+}
+
+// AppendScopes adds s to the "scopes" field.
+func (m *VoiceAPIKeyMutation) AppendScopes(s []string) {
+	m.appendscopes = append(m.appendscopes, s...)
+}
+
+// AppendedScopes returns the list of values that were appended to the "scopes" field in this mutation.
+func (m *VoiceAPIKeyMutation) AppendedScopes() ([]string, bool) {
+	if len(m.appendscopes) == 0 {
+		return nil, false
+	}
+	return m.appendscopes, true
+}
+
+// ResetScopes resets all changes to the "scopes" field.
+func (m *VoiceAPIKeyMutation) ResetScopes() {
+	m.scopes = nil
+	m.appendscopes = nil
+}
+
+// SetLastUsedAt sets the "last_used_at" field.
+func (m *VoiceAPIKeyMutation) SetLastUsedAt(t time.Time) {
+	m.last_used_at = &t
+}
+
+// LastUsedAt returns the value of the "last_used_at" field in the mutation.
+func (m *VoiceAPIKeyMutation) LastUsedAt() (r time.Time, exists bool) {
+	v := m.last_used_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastUsedAt returns the old "last_used_at" field's value of the VoiceAPIKey entity.
+// If the VoiceAPIKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceAPIKeyMutation) OldLastUsedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastUsedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastUsedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastUsedAt: %w", err)
+	}
+	return oldValue.LastUsedAt, nil
+}
+
+// ClearLastUsedAt clears the value of the "last_used_at" field.
+func (m *VoiceAPIKeyMutation) ClearLastUsedAt() {
+	m.last_used_at = nil
+	m.clearedFields[voiceapikey.FieldLastUsedAt] = struct{}{}
+}
+
+// LastUsedAtCleared returns if the "last_used_at" field was cleared in this mutation.
+func (m *VoiceAPIKeyMutation) LastUsedAtCleared() bool {
+	_, ok := m.clearedFields[voiceapikey.FieldLastUsedAt]
+	return ok
+}
+
+// ResetLastUsedAt resets all changes to the "last_used_at" field.
+func (m *VoiceAPIKeyMutation) ResetLastUsedAt() {
+	m.last_used_at = nil
+	delete(m.clearedFields, voiceapikey.FieldLastUsedAt)
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (m *VoiceAPIKeyMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *VoiceAPIKeyMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the VoiceAPIKey entity.
+// If the VoiceAPIKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceAPIKeyMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (m *VoiceAPIKeyMutation) ClearExpiresAt() {
+	m.expires_at = nil
+	m.clearedFields[voiceapikey.FieldExpiresAt] = struct{}{}
+}
+
+// ExpiresAtCleared returns if the "expires_at" field was cleared in this mutation.
+func (m *VoiceAPIKeyMutation) ExpiresAtCleared() bool {
+	_, ok := m.clearedFields[voiceapikey.FieldExpiresAt]
+	return ok
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *VoiceAPIKeyMutation) ResetExpiresAt() {
+	m.expires_at = nil
+	delete(m.clearedFields, voiceapikey.FieldExpiresAt)
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (m *VoiceAPIKeyMutation) SetRevokedAt(t time.Time) {
+	m.revoked_at = &t
+}
+
+// RevokedAt returns the value of the "revoked_at" field in the mutation.
+func (m *VoiceAPIKeyMutation) RevokedAt() (r time.Time, exists bool) {
+	v := m.revoked_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRevokedAt returns the old "revoked_at" field's value of the VoiceAPIKey entity.
+// If the VoiceAPIKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceAPIKeyMutation) OldRevokedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRevokedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRevokedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRevokedAt: %w", err)
+	}
+	return oldValue.RevokedAt, nil
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (m *VoiceAPIKeyMutation) ClearRevokedAt() {
+	m.revoked_at = nil
+	m.clearedFields[voiceapikey.FieldRevokedAt] = struct{}{}
+}
+
+// RevokedAtCleared returns if the "revoked_at" field was cleared in this mutation.
+func (m *VoiceAPIKeyMutation) RevokedAtCleared() bool {
+	_, ok := m.clearedFields[voiceapikey.FieldRevokedAt]
+	return ok
+}
+
+// ResetRevokedAt resets all changes to the "revoked_at" field.
+func (m *VoiceAPIKeyMutation) ResetRevokedAt() {
+	m.revoked_at = nil
+	delete(m.clearedFields, voiceapikey.FieldRevokedAt)
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *VoiceAPIKeyMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *VoiceAPIKeyMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *VoiceAPIKeyMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *VoiceAPIKeyMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *VoiceAPIKeyMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *VoiceAPIKeyMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the VoiceAPIKeyMutation builder.
+func (m *VoiceAPIKeyMutation) Where(ps ...predicate.VoiceAPIKey) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the VoiceAPIKeyMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *VoiceAPIKeyMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.VoiceAPIKey, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *VoiceAPIKeyMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *VoiceAPIKeyMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (VoiceAPIKey).
+func (m *VoiceAPIKeyMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *VoiceAPIKeyMutation) Fields() []string {
+	fields := make([]string, 0, 9)
+	if m.created_at != nil {
+		fields = append(fields, voiceapikey.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, voiceapikey.FieldUpdatedAt)
+	}
+	if m.name != nil {
+		fields = append(fields, voiceapikey.FieldName)
+	}
+	if m.key_digest != nil {
+		fields = append(fields, voiceapikey.FieldKeyDigest)
+	}
+	if m.key_prefix != nil {
+		fields = append(fields, voiceapikey.FieldKeyPrefix)
+	}
+	if m.scopes != nil {
+		fields = append(fields, voiceapikey.FieldScopes)
+	}
+	if m.last_used_at != nil {
+		fields = append(fields, voiceapikey.FieldLastUsedAt)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, voiceapikey.FieldExpiresAt)
+	}
+	if m.revoked_at != nil {
+		fields = append(fields, voiceapikey.FieldRevokedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *VoiceAPIKeyMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case voiceapikey.FieldCreatedAt:
+		return m.CreatedAt()
+	case voiceapikey.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case voiceapikey.FieldName:
+		return m.Name()
+	case voiceapikey.FieldKeyDigest:
+		return m.KeyDigest()
+	case voiceapikey.FieldKeyPrefix:
+		return m.KeyPrefix()
+	case voiceapikey.FieldScopes:
+		return m.Scopes()
+	case voiceapikey.FieldLastUsedAt:
+		return m.LastUsedAt()
+	case voiceapikey.FieldExpiresAt:
+		return m.ExpiresAt()
+	case voiceapikey.FieldRevokedAt:
+		return m.RevokedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *VoiceAPIKeyMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case voiceapikey.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case voiceapikey.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case voiceapikey.FieldName:
+		return m.OldName(ctx)
+	case voiceapikey.FieldKeyDigest:
+		return m.OldKeyDigest(ctx)
+	case voiceapikey.FieldKeyPrefix:
+		return m.OldKeyPrefix(ctx)
+	case voiceapikey.FieldScopes:
+		return m.OldScopes(ctx)
+	case voiceapikey.FieldLastUsedAt:
+		return m.OldLastUsedAt(ctx)
+	case voiceapikey.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
+	case voiceapikey.FieldRevokedAt:
+		return m.OldRevokedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown VoiceAPIKey field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *VoiceAPIKeyMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case voiceapikey.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case voiceapikey.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case voiceapikey.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case voiceapikey.FieldKeyDigest:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKeyDigest(v)
+		return nil
+	case voiceapikey.FieldKeyPrefix:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKeyPrefix(v)
+		return nil
+	case voiceapikey.FieldScopes:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScopes(v)
+		return nil
+	case voiceapikey.FieldLastUsedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastUsedAt(v)
+		return nil
+	case voiceapikey.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
+	case voiceapikey.FieldRevokedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRevokedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown VoiceAPIKey field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *VoiceAPIKeyMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *VoiceAPIKeyMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *VoiceAPIKeyMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown VoiceAPIKey numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *VoiceAPIKeyMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(voiceapikey.FieldLastUsedAt) {
+		fields = append(fields, voiceapikey.FieldLastUsedAt)
+	}
+	if m.FieldCleared(voiceapikey.FieldExpiresAt) {
+		fields = append(fields, voiceapikey.FieldExpiresAt)
+	}
+	if m.FieldCleared(voiceapikey.FieldRevokedAt) {
+		fields = append(fields, voiceapikey.FieldRevokedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *VoiceAPIKeyMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *VoiceAPIKeyMutation) ClearField(name string) error {
+	switch name {
+	case voiceapikey.FieldLastUsedAt:
+		m.ClearLastUsedAt()
+		return nil
+	case voiceapikey.FieldExpiresAt:
+		m.ClearExpiresAt()
+		return nil
+	case voiceapikey.FieldRevokedAt:
+		m.ClearRevokedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown VoiceAPIKey nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *VoiceAPIKeyMutation) ResetField(name string) error {
+	switch name {
+	case voiceapikey.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case voiceapikey.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case voiceapikey.FieldName:
+		m.ResetName()
+		return nil
+	case voiceapikey.FieldKeyDigest:
+		m.ResetKeyDigest()
+		return nil
+	case voiceapikey.FieldKeyPrefix:
+		m.ResetKeyPrefix()
+		return nil
+	case voiceapikey.FieldScopes:
+		m.ResetScopes()
+		return nil
+	case voiceapikey.FieldLastUsedAt:
+		m.ResetLastUsedAt()
+		return nil
+	case voiceapikey.FieldExpiresAt:
+		m.ResetExpiresAt()
+		return nil
+	case voiceapikey.FieldRevokedAt:
+		m.ResetRevokedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown VoiceAPIKey field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *VoiceAPIKeyMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, voiceapikey.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *VoiceAPIKeyMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case voiceapikey.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *VoiceAPIKeyMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *VoiceAPIKeyMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *VoiceAPIKeyMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, voiceapikey.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *VoiceAPIKeyMutation) EdgeCleared(name string) bool {
+	switch name {
+	case voiceapikey.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *VoiceAPIKeyMutation) ClearEdge(name string) error {
+	switch name {
+	case voiceapikey.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown VoiceAPIKey unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *VoiceAPIKeyMutation) ResetEdge(name string) error {
+	switch name {
+	case voiceapikey.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown VoiceAPIKey edge %s", name)
+}
+
+// VoiceSyncItemMutation represents an operation that mutates the VoiceSyncItem nodes in the graph.
+type VoiceSyncItemMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *uuid.UUID
+	created_at    *time.Time
+	updated_at    *time.Time
+	collection    *string
+	item_id       *string
+	space_id      *string
+	operation     *string
+	revision      *int
+	addrevision   *int
+	key_id        *string
+	nonce         *string
+	ciphertext    *string
+	content_hash  *string
+	blind_index   *string
+	occurred_at   *time.Time
+	deleted_at    *time.Time
+	clearedFields map[string]struct{}
+	user          *uuid.UUID
+	cleareduser   bool
+	done          bool
+	oldValue      func(context.Context) (*VoiceSyncItem, error)
+	predicates    []predicate.VoiceSyncItem
+}
+
+var _ ent.Mutation = (*VoiceSyncItemMutation)(nil)
+
+// voicesyncitemOption allows management of the mutation configuration using functional options.
+type voicesyncitemOption func(*VoiceSyncItemMutation)
+
+// newVoiceSyncItemMutation creates new mutation for the VoiceSyncItem entity.
+func newVoiceSyncItemMutation(c config, op Op, opts ...voicesyncitemOption) *VoiceSyncItemMutation {
+	m := &VoiceSyncItemMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeVoiceSyncItem,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withVoiceSyncItemID sets the ID field of the mutation.
+func withVoiceSyncItemID(id uuid.UUID) voicesyncitemOption {
+	return func(m *VoiceSyncItemMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *VoiceSyncItem
+		)
+		m.oldValue = func(ctx context.Context) (*VoiceSyncItem, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().VoiceSyncItem.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withVoiceSyncItem sets the old VoiceSyncItem of the mutation.
+func withVoiceSyncItem(node *VoiceSyncItem) voicesyncitemOption {
+	return func(m *VoiceSyncItemMutation) {
+		m.oldValue = func(context.Context) (*VoiceSyncItem, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m VoiceSyncItemMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m VoiceSyncItemMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of VoiceSyncItem entities.
+func (m *VoiceSyncItemMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *VoiceSyncItemMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *VoiceSyncItemMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().VoiceSyncItem.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *VoiceSyncItemMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *VoiceSyncItemMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the VoiceSyncItem entity.
+// If the VoiceSyncItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceSyncItemMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *VoiceSyncItemMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *VoiceSyncItemMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *VoiceSyncItemMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the VoiceSyncItem entity.
+// If the VoiceSyncItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceSyncItemMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *VoiceSyncItemMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetCollection sets the "collection" field.
+func (m *VoiceSyncItemMutation) SetCollection(s string) {
+	m.collection = &s
+}
+
+// Collection returns the value of the "collection" field in the mutation.
+func (m *VoiceSyncItemMutation) Collection() (r string, exists bool) {
+	v := m.collection
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCollection returns the old "collection" field's value of the VoiceSyncItem entity.
+// If the VoiceSyncItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceSyncItemMutation) OldCollection(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCollection is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCollection requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCollection: %w", err)
+	}
+	return oldValue.Collection, nil
+}
+
+// ResetCollection resets all changes to the "collection" field.
+func (m *VoiceSyncItemMutation) ResetCollection() {
+	m.collection = nil
+}
+
+// SetItemID sets the "item_id" field.
+func (m *VoiceSyncItemMutation) SetItemID(s string) {
+	m.item_id = &s
+}
+
+// ItemID returns the value of the "item_id" field in the mutation.
+func (m *VoiceSyncItemMutation) ItemID() (r string, exists bool) {
+	v := m.item_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldItemID returns the old "item_id" field's value of the VoiceSyncItem entity.
+// If the VoiceSyncItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceSyncItemMutation) OldItemID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldItemID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldItemID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldItemID: %w", err)
+	}
+	return oldValue.ItemID, nil
+}
+
+// ResetItemID resets all changes to the "item_id" field.
+func (m *VoiceSyncItemMutation) ResetItemID() {
+	m.item_id = nil
+}
+
+// SetSpaceID sets the "space_id" field.
+func (m *VoiceSyncItemMutation) SetSpaceID(s string) {
+	m.space_id = &s
+}
+
+// SpaceID returns the value of the "space_id" field in the mutation.
+func (m *VoiceSyncItemMutation) SpaceID() (r string, exists bool) {
+	v := m.space_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSpaceID returns the old "space_id" field's value of the VoiceSyncItem entity.
+// If the VoiceSyncItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceSyncItemMutation) OldSpaceID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSpaceID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSpaceID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSpaceID: %w", err)
+	}
+	return oldValue.SpaceID, nil
+}
+
+// ClearSpaceID clears the value of the "space_id" field.
+func (m *VoiceSyncItemMutation) ClearSpaceID() {
+	m.space_id = nil
+	m.clearedFields[voicesyncitem.FieldSpaceID] = struct{}{}
+}
+
+// SpaceIDCleared returns if the "space_id" field was cleared in this mutation.
+func (m *VoiceSyncItemMutation) SpaceIDCleared() bool {
+	_, ok := m.clearedFields[voicesyncitem.FieldSpaceID]
+	return ok
+}
+
+// ResetSpaceID resets all changes to the "space_id" field.
+func (m *VoiceSyncItemMutation) ResetSpaceID() {
+	m.space_id = nil
+	delete(m.clearedFields, voicesyncitem.FieldSpaceID)
+}
+
+// SetOperation sets the "operation" field.
+func (m *VoiceSyncItemMutation) SetOperation(s string) {
+	m.operation = &s
+}
+
+// Operation returns the value of the "operation" field in the mutation.
+func (m *VoiceSyncItemMutation) Operation() (r string, exists bool) {
+	v := m.operation
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOperation returns the old "operation" field's value of the VoiceSyncItem entity.
+// If the VoiceSyncItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceSyncItemMutation) OldOperation(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOperation is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOperation requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOperation: %w", err)
+	}
+	return oldValue.Operation, nil
+}
+
+// ResetOperation resets all changes to the "operation" field.
+func (m *VoiceSyncItemMutation) ResetOperation() {
+	m.operation = nil
+}
+
+// SetRevision sets the "revision" field.
+func (m *VoiceSyncItemMutation) SetRevision(i int) {
+	m.revision = &i
+	m.addrevision = nil
+}
+
+// Revision returns the value of the "revision" field in the mutation.
+func (m *VoiceSyncItemMutation) Revision() (r int, exists bool) {
+	v := m.revision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRevision returns the old "revision" field's value of the VoiceSyncItem entity.
+// If the VoiceSyncItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceSyncItemMutation) OldRevision(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRevision is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRevision requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRevision: %w", err)
+	}
+	return oldValue.Revision, nil
+}
+
+// AddRevision adds i to the "revision" field.
+func (m *VoiceSyncItemMutation) AddRevision(i int) {
+	if m.addrevision != nil {
+		*m.addrevision += i
+	} else {
+		m.addrevision = &i
+	}
+}
+
+// AddedRevision returns the value that was added to the "revision" field in this mutation.
+func (m *VoiceSyncItemMutation) AddedRevision() (r int, exists bool) {
+	v := m.addrevision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRevision resets all changes to the "revision" field.
+func (m *VoiceSyncItemMutation) ResetRevision() {
+	m.revision = nil
+	m.addrevision = nil
+}
+
+// SetKeyID sets the "key_id" field.
+func (m *VoiceSyncItemMutation) SetKeyID(s string) {
+	m.key_id = &s
+}
+
+// KeyID returns the value of the "key_id" field in the mutation.
+func (m *VoiceSyncItemMutation) KeyID() (r string, exists bool) {
+	v := m.key_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKeyID returns the old "key_id" field's value of the VoiceSyncItem entity.
+// If the VoiceSyncItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceSyncItemMutation) OldKeyID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKeyID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKeyID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKeyID: %w", err)
+	}
+	return oldValue.KeyID, nil
+}
+
+// ResetKeyID resets all changes to the "key_id" field.
+func (m *VoiceSyncItemMutation) ResetKeyID() {
+	m.key_id = nil
+}
+
+// SetNonce sets the "nonce" field.
+func (m *VoiceSyncItemMutation) SetNonce(s string) {
+	m.nonce = &s
+}
+
+// Nonce returns the value of the "nonce" field in the mutation.
+func (m *VoiceSyncItemMutation) Nonce() (r string, exists bool) {
+	v := m.nonce
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNonce returns the old "nonce" field's value of the VoiceSyncItem entity.
+// If the VoiceSyncItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceSyncItemMutation) OldNonce(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNonce is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNonce requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNonce: %w", err)
+	}
+	return oldValue.Nonce, nil
+}
+
+// ResetNonce resets all changes to the "nonce" field.
+func (m *VoiceSyncItemMutation) ResetNonce() {
+	m.nonce = nil
+}
+
+// SetCiphertext sets the "ciphertext" field.
+func (m *VoiceSyncItemMutation) SetCiphertext(s string) {
+	m.ciphertext = &s
+}
+
+// Ciphertext returns the value of the "ciphertext" field in the mutation.
+func (m *VoiceSyncItemMutation) Ciphertext() (r string, exists bool) {
+	v := m.ciphertext
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCiphertext returns the old "ciphertext" field's value of the VoiceSyncItem entity.
+// If the VoiceSyncItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceSyncItemMutation) OldCiphertext(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCiphertext is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCiphertext requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCiphertext: %w", err)
+	}
+	return oldValue.Ciphertext, nil
+}
+
+// ResetCiphertext resets all changes to the "ciphertext" field.
+func (m *VoiceSyncItemMutation) ResetCiphertext() {
+	m.ciphertext = nil
+}
+
+// SetContentHash sets the "content_hash" field.
+func (m *VoiceSyncItemMutation) SetContentHash(s string) {
+	m.content_hash = &s
+}
+
+// ContentHash returns the value of the "content_hash" field in the mutation.
+func (m *VoiceSyncItemMutation) ContentHash() (r string, exists bool) {
+	v := m.content_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContentHash returns the old "content_hash" field's value of the VoiceSyncItem entity.
+// If the VoiceSyncItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceSyncItemMutation) OldContentHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldContentHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldContentHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContentHash: %w", err)
+	}
+	return oldValue.ContentHash, nil
+}
+
+// ResetContentHash resets all changes to the "content_hash" field.
+func (m *VoiceSyncItemMutation) ResetContentHash() {
+	m.content_hash = nil
+}
+
+// SetBlindIndex sets the "blind_index" field.
+func (m *VoiceSyncItemMutation) SetBlindIndex(s string) {
+	m.blind_index = &s
+}
+
+// BlindIndex returns the value of the "blind_index" field in the mutation.
+func (m *VoiceSyncItemMutation) BlindIndex() (r string, exists bool) {
+	v := m.blind_index
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBlindIndex returns the old "blind_index" field's value of the VoiceSyncItem entity.
+// If the VoiceSyncItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceSyncItemMutation) OldBlindIndex(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBlindIndex is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBlindIndex requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBlindIndex: %w", err)
+	}
+	return oldValue.BlindIndex, nil
+}
+
+// ClearBlindIndex clears the value of the "blind_index" field.
+func (m *VoiceSyncItemMutation) ClearBlindIndex() {
+	m.blind_index = nil
+	m.clearedFields[voicesyncitem.FieldBlindIndex] = struct{}{}
+}
+
+// BlindIndexCleared returns if the "blind_index" field was cleared in this mutation.
+func (m *VoiceSyncItemMutation) BlindIndexCleared() bool {
+	_, ok := m.clearedFields[voicesyncitem.FieldBlindIndex]
+	return ok
+}
+
+// ResetBlindIndex resets all changes to the "blind_index" field.
+func (m *VoiceSyncItemMutation) ResetBlindIndex() {
+	m.blind_index = nil
+	delete(m.clearedFields, voicesyncitem.FieldBlindIndex)
+}
+
+// SetOccurredAt sets the "occurred_at" field.
+func (m *VoiceSyncItemMutation) SetOccurredAt(t time.Time) {
+	m.occurred_at = &t
+}
+
+// OccurredAt returns the value of the "occurred_at" field in the mutation.
+func (m *VoiceSyncItemMutation) OccurredAt() (r time.Time, exists bool) {
+	v := m.occurred_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOccurredAt returns the old "occurred_at" field's value of the VoiceSyncItem entity.
+// If the VoiceSyncItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceSyncItemMutation) OldOccurredAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOccurredAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOccurredAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOccurredAt: %w", err)
+	}
+	return oldValue.OccurredAt, nil
+}
+
+// ResetOccurredAt resets all changes to the "occurred_at" field.
+func (m *VoiceSyncItemMutation) ResetOccurredAt() {
+	m.occurred_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *VoiceSyncItemMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *VoiceSyncItemMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the VoiceSyncItem entity.
+// If the VoiceSyncItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VoiceSyncItemMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *VoiceSyncItemMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[voicesyncitem.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *VoiceSyncItemMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[voicesyncitem.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *VoiceSyncItemMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, voicesyncitem.FieldDeletedAt)
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *VoiceSyncItemMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *VoiceSyncItemMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *VoiceSyncItemMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *VoiceSyncItemMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *VoiceSyncItemMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *VoiceSyncItemMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the VoiceSyncItemMutation builder.
+func (m *VoiceSyncItemMutation) Where(ps ...predicate.VoiceSyncItem) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the VoiceSyncItemMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *VoiceSyncItemMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.VoiceSyncItem, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *VoiceSyncItemMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *VoiceSyncItemMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (VoiceSyncItem).
+func (m *VoiceSyncItemMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *VoiceSyncItemMutation) Fields() []string {
+	fields := make([]string, 0, 14)
+	if m.created_at != nil {
+		fields = append(fields, voicesyncitem.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, voicesyncitem.FieldUpdatedAt)
+	}
+	if m.collection != nil {
+		fields = append(fields, voicesyncitem.FieldCollection)
+	}
+	if m.item_id != nil {
+		fields = append(fields, voicesyncitem.FieldItemID)
+	}
+	if m.space_id != nil {
+		fields = append(fields, voicesyncitem.FieldSpaceID)
+	}
+	if m.operation != nil {
+		fields = append(fields, voicesyncitem.FieldOperation)
+	}
+	if m.revision != nil {
+		fields = append(fields, voicesyncitem.FieldRevision)
+	}
+	if m.key_id != nil {
+		fields = append(fields, voicesyncitem.FieldKeyID)
+	}
+	if m.nonce != nil {
+		fields = append(fields, voicesyncitem.FieldNonce)
+	}
+	if m.ciphertext != nil {
+		fields = append(fields, voicesyncitem.FieldCiphertext)
+	}
+	if m.content_hash != nil {
+		fields = append(fields, voicesyncitem.FieldContentHash)
+	}
+	if m.blind_index != nil {
+		fields = append(fields, voicesyncitem.FieldBlindIndex)
+	}
+	if m.occurred_at != nil {
+		fields = append(fields, voicesyncitem.FieldOccurredAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, voicesyncitem.FieldDeletedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *VoiceSyncItemMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case voicesyncitem.FieldCreatedAt:
+		return m.CreatedAt()
+	case voicesyncitem.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case voicesyncitem.FieldCollection:
+		return m.Collection()
+	case voicesyncitem.FieldItemID:
+		return m.ItemID()
+	case voicesyncitem.FieldSpaceID:
+		return m.SpaceID()
+	case voicesyncitem.FieldOperation:
+		return m.Operation()
+	case voicesyncitem.FieldRevision:
+		return m.Revision()
+	case voicesyncitem.FieldKeyID:
+		return m.KeyID()
+	case voicesyncitem.FieldNonce:
+		return m.Nonce()
+	case voicesyncitem.FieldCiphertext:
+		return m.Ciphertext()
+	case voicesyncitem.FieldContentHash:
+		return m.ContentHash()
+	case voicesyncitem.FieldBlindIndex:
+		return m.BlindIndex()
+	case voicesyncitem.FieldOccurredAt:
+		return m.OccurredAt()
+	case voicesyncitem.FieldDeletedAt:
+		return m.DeletedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *VoiceSyncItemMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case voicesyncitem.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case voicesyncitem.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case voicesyncitem.FieldCollection:
+		return m.OldCollection(ctx)
+	case voicesyncitem.FieldItemID:
+		return m.OldItemID(ctx)
+	case voicesyncitem.FieldSpaceID:
+		return m.OldSpaceID(ctx)
+	case voicesyncitem.FieldOperation:
+		return m.OldOperation(ctx)
+	case voicesyncitem.FieldRevision:
+		return m.OldRevision(ctx)
+	case voicesyncitem.FieldKeyID:
+		return m.OldKeyID(ctx)
+	case voicesyncitem.FieldNonce:
+		return m.OldNonce(ctx)
+	case voicesyncitem.FieldCiphertext:
+		return m.OldCiphertext(ctx)
+	case voicesyncitem.FieldContentHash:
+		return m.OldContentHash(ctx)
+	case voicesyncitem.FieldBlindIndex:
+		return m.OldBlindIndex(ctx)
+	case voicesyncitem.FieldOccurredAt:
+		return m.OldOccurredAt(ctx)
+	case voicesyncitem.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown VoiceSyncItem field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *VoiceSyncItemMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case voicesyncitem.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case voicesyncitem.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case voicesyncitem.FieldCollection:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCollection(v)
+		return nil
+	case voicesyncitem.FieldItemID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetItemID(v)
+		return nil
+	case voicesyncitem.FieldSpaceID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSpaceID(v)
+		return nil
+	case voicesyncitem.FieldOperation:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOperation(v)
+		return nil
+	case voicesyncitem.FieldRevision:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRevision(v)
+		return nil
+	case voicesyncitem.FieldKeyID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKeyID(v)
+		return nil
+	case voicesyncitem.FieldNonce:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNonce(v)
+		return nil
+	case voicesyncitem.FieldCiphertext:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCiphertext(v)
+		return nil
+	case voicesyncitem.FieldContentHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContentHash(v)
+		return nil
+	case voicesyncitem.FieldBlindIndex:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBlindIndex(v)
+		return nil
+	case voicesyncitem.FieldOccurredAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOccurredAt(v)
+		return nil
+	case voicesyncitem.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown VoiceSyncItem field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *VoiceSyncItemMutation) AddedFields() []string {
+	var fields []string
+	if m.addrevision != nil {
+		fields = append(fields, voicesyncitem.FieldRevision)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *VoiceSyncItemMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case voicesyncitem.FieldRevision:
+		return m.AddedRevision()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *VoiceSyncItemMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case voicesyncitem.FieldRevision:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRevision(v)
+		return nil
+	}
+	return fmt.Errorf("unknown VoiceSyncItem numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *VoiceSyncItemMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(voicesyncitem.FieldSpaceID) {
+		fields = append(fields, voicesyncitem.FieldSpaceID)
+	}
+	if m.FieldCleared(voicesyncitem.FieldBlindIndex) {
+		fields = append(fields, voicesyncitem.FieldBlindIndex)
+	}
+	if m.FieldCleared(voicesyncitem.FieldDeletedAt) {
+		fields = append(fields, voicesyncitem.FieldDeletedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *VoiceSyncItemMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *VoiceSyncItemMutation) ClearField(name string) error {
+	switch name {
+	case voicesyncitem.FieldSpaceID:
+		m.ClearSpaceID()
+		return nil
+	case voicesyncitem.FieldBlindIndex:
+		m.ClearBlindIndex()
+		return nil
+	case voicesyncitem.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown VoiceSyncItem nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *VoiceSyncItemMutation) ResetField(name string) error {
+	switch name {
+	case voicesyncitem.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case voicesyncitem.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case voicesyncitem.FieldCollection:
+		m.ResetCollection()
+		return nil
+	case voicesyncitem.FieldItemID:
+		m.ResetItemID()
+		return nil
+	case voicesyncitem.FieldSpaceID:
+		m.ResetSpaceID()
+		return nil
+	case voicesyncitem.FieldOperation:
+		m.ResetOperation()
+		return nil
+	case voicesyncitem.FieldRevision:
+		m.ResetRevision()
+		return nil
+	case voicesyncitem.FieldKeyID:
+		m.ResetKeyID()
+		return nil
+	case voicesyncitem.FieldNonce:
+		m.ResetNonce()
+		return nil
+	case voicesyncitem.FieldCiphertext:
+		m.ResetCiphertext()
+		return nil
+	case voicesyncitem.FieldContentHash:
+		m.ResetContentHash()
+		return nil
+	case voicesyncitem.FieldBlindIndex:
+		m.ResetBlindIndex()
+		return nil
+	case voicesyncitem.FieldOccurredAt:
+		m.ResetOccurredAt()
+		return nil
+	case voicesyncitem.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown VoiceSyncItem field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *VoiceSyncItemMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, voicesyncitem.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *VoiceSyncItemMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case voicesyncitem.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *VoiceSyncItemMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *VoiceSyncItemMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *VoiceSyncItemMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, voicesyncitem.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *VoiceSyncItemMutation) EdgeCleared(name string) bool {
+	switch name {
+	case voicesyncitem.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *VoiceSyncItemMutation) ClearEdge(name string) error {
+	switch name {
+	case voicesyncitem.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown VoiceSyncItem unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *VoiceSyncItemMutation) ResetEdge(name string) error {
+	switch name {
+	case voicesyncitem.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown VoiceSyncItem edge %s", name)
 }
 
 // WorkspaceFeatureControlMutation represents an operation that mutates the WorkspaceFeatureControl nodes in the graph.

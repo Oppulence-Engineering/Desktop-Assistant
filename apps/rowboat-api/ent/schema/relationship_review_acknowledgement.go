@@ -16,7 +16,7 @@ type RelationshipReviewAcknowledgement struct{ ent.Schema }
 
 // Mixin adds the common identifier and audit timestamps.
 func (RelationshipReviewAcknowledgement) Mixin() []ent.Mixin {
-	return []ent.Mixin{mixin.BaseMixin{}}
+	return []ent.Mixin{mixin.WorkspaceTenantMixin{}}
 }
 
 // Fields defines the exact canonical state version a user acknowledged.
@@ -31,9 +31,9 @@ func (RelationshipReviewAcknowledgement) Fields() []ent.Field {
 // Edges binds acknowledgement state to the tenant, relationship, and reviewer.
 func (RelationshipReviewAcknowledgement) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("workspace", RevenueWorkspace.Type).Ref("relationship_review_acknowledgements").Unique().Required(),
+		edge.From("workspace", RevenueWorkspace.Type).Ref("relationship_review_acknowledgements").Unique().Required().Immutable(),
 		edge.From("relationship", Relationship.Type).Ref("review_acknowledgements").Unique().Required(),
-		edge.From("user", User.Type).Ref("relationship_review_acknowledgements").Unique().Required(),
+		edge.From("user", User.Type).Ref("relationship_review_acknowledgements").Unique().Required().Immutable(),
 	}
 }
 

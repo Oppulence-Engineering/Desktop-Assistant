@@ -42,12 +42,12 @@ import type {
   RelationshipSourceInventoryItem,
   RelationshipSourceStatus,
   RelationshipStateSnapshot,
-} from "@x/shared/src/relationships.js";
+} from "@x/shared/relationships";
 import type {
   MeetingDoctorCheck,
   MeetingRelationshipTarget,
   MeetingSessionSummary,
-} from "@x/shared/src/meetings.js";
+} from "@x/shared/meetings";
 
 import { RelationshipGraphWorkspace } from "@/components/relationship-graph";
 import {

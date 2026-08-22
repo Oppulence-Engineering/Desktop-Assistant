@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
+import { onRendererEvent } from "@/lib/renderer-events";
 import { Check, Cloud, HardDrive, Laptop, Loader2, Trash2, TriangleAlertIcon } from "@/lib/icons";
 import { Button } from "@oppulence/ui/components/button";
 import { Checkbox } from "@oppulence/ui/components/checkbox";
 import type {
   TranscriptionDataLocation,
   TranscriptionRouting,
-} from "@x/shared/dist/transcription.js";
+} from "@x/shared/transcription";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -182,8 +183,7 @@ export function PrivacySettings({ dialogOpen }: { dialogOpen?: boolean }) {
     if (dialogOpen === false) return;
     void refresh();
     const onConfigChanged = () => void refresh();
-    window.addEventListener("transcription-config-changed", onConfigChanged);
-    return () => window.removeEventListener("transcription-config-changed", onConfigChanged);
+    return onRendererEvent("transcription-config-changed", onConfigChanged);
   }, [dialogOpen, refresh]);
 
   const confirmDeleteAll = useCallback(async () => {

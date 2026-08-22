@@ -6,16 +6,16 @@ import { resolveSkill, availableSkills } from "../assistant/skills/index.js";
 import { closeMcpClient, executeTool, listServers, listTools } from "../../mcp/mcp.js";
 import container from "../../di/container.js";
 import { IMcpConfigRepo } from "../..//mcp/repo.js";
-import { McpServerDefinition } from "@x/shared/dist/mcp.js";
+import { McpServerDefinition } from "@x/shared/mcp";
 import * as files from "../../filesystem/files.js";
 import { IAgentsRepo } from "../../agents/repo.js";
 import { WorkDir } from "../../config/config.js";
-import { BrowserControlInputSchema, type BrowserControlInput } from "@x/shared/dist/browser-control.js";
-import { BackgroundTaskSchema, TriggersSchema } from "@x/shared/dist/background-task.js";
+import { BrowserControlInputSchema, type BrowserControlInput } from "@x/shared/browser-control";
+import { BackgroundTaskSchema, TriggersSchema } from "@x/shared/background-task";
 import type { CodeModeManager } from "../../code-mode/acp/manager.js";
 import type { CodePermissionRegistry } from "../../code-mode/acp/permission-registry.js";
 import { ICodeModeConfigRepo } from "../../code-mode/repo.js";
-import type { ApprovalPolicy } from "@x/shared/dist/code-mode.js";
+import type { ApprovalPolicy } from "@x/shared/code-mode";
 
 // Inputs for the bg-task builtin tools. Reuse the canonical schema field
 // descriptions; only `triggers` gets a tighter contextual override (the
@@ -1112,7 +1112,7 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
                 case 'get-base-state': {
                     // Scan knowledge/ files and extract frontmatter properties
                     try {
-                        const { parseFrontmatter } = await import("@x/shared/dist/frontmatter.js");
+                        const { parseFrontmatter } = await import("@x/shared/frontmatter");
                         const entries = await files.list("knowledge", { recursive: true, allowedExtensions: [".md"] });
                         const noteFiles = entries.filter(e => e.kind === 'file');
                         const properties = new Map<string, Set<string>>();

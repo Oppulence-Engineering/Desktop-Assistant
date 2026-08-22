@@ -47,7 +47,7 @@ export function JsonEditor({ content, onChange, readOnly = false }: JsonEditorPr
   // Set initial content and update when content prop changes
   useEffect(() => {
     if (!editor) return;
-    
+
     const currentText = editor.getText().trim();
     if (currentText !== content.trim()) {
       // Set content using ProseMirror JSON structure
@@ -59,12 +59,14 @@ export function JsonEditor({ content, onChange, readOnly = false }: JsonEditorPr
             attrs: {
               language: "json",
             },
-            content: content ? [
-              {
-                type: "text",
-                text: content,
-              },
-            ] : [],
+            content: content
+              ? [
+                  {
+                    type: "text",
+                    text: content,
+                  },
+                ]
+              : [],
           },
         ],
       });
@@ -89,4 +91,3 @@ export function JsonEditor({ content, onChange, readOnly = false }: JsonEditorPr
     </div>
   );
 }
-

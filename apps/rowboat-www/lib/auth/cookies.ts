@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -11,7 +13,7 @@ import {
   type WorkOSPKCECookie,
 } from "@/lib/auth/schemas";
 
-const SESSION_COOKIE = "rowboat_www_session";
+export const SESSION_COOKIE = "rowboat_www_session";
 const PKCE_COOKIE = "rowboat_www_pkce";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 14;
 const PKCE_MAX_AGE_SECONDS = 60 * 10;
@@ -67,15 +69,21 @@ function cookieOptions(maxAge: number) {
 
 /** Reads and decrypts the sealed dashboard session from the incoming request. */
 export function readSessionCookie(request: NextRequest): DashboardSessionCookie | null {
-  return verifyCookieValue(
-    request.cookies.get(SESSION_COOKIE)?.value,
-    DashboardSessionCookieSchema,
-  );
+  return readSessionCookieValue(request.cookies.get(SESSION_COOKIE)?.value);
+}
+
+/** Reads and decrypts a session supplied by a Server Component cookie store. */
+export function readSessionCookieValue(raw: string | undefined): DashboardSessionCookie | null {
+  return verifyCookieValue(raw, DashboardSessionCookieSchema);
 }
 
 /** Installs the sealed dashboard session cookie on a Next response. */
 export function setSessionCookie(response: NextResponse, session: DashboardSessionCookie): void {
-  response.cookies.set(SESSION_COOKIE, sealCookieValue(session), cookieOptions(SESSION_MAX_AGE_SECONDS));
+  response.cookies.set(
+    SESSION_COOKIE,
+    sealCookieValue(session),
+    cookieOptions(SESSION_MAX_AGE_SECONDS),
+  );
 }
 
 /** Clears all auth cookies that rowboat-www owns. */

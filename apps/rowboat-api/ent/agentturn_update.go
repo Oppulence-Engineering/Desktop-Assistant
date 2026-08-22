@@ -15,7 +15,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agenttoolcall"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/agentturn"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -236,17 +235,6 @@ func (_u *AgentTurnUpdate) ClearCompletedAt() *AgentTurnUpdate {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *AgentTurnUpdate) SetUserID(id uuid.UUID) *AgentTurnUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *AgentTurnUpdate) SetUser(v *User) *AgentTurnUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // SetSessionID sets the "session" edge to the AgentSession entity by ID.
 func (_u *AgentTurnUpdate) SetSessionID(id uuid.UUID) *AgentTurnUpdate {
 	_u.mutation.SetSessionID(id)
@@ -278,12 +266,6 @@ func (_u *AgentTurnUpdate) Mutation() *AgentTurnMutation {
 	return _u.mutation
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (_u *AgentTurnUpdate) ClearUser() *AgentTurnUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // ClearSession clears the "session" edge to the AgentSession entity.
 func (_u *AgentTurnUpdate) ClearSession() *AgentTurnUpdate {
 	_u.mutation.ClearSession()
@@ -313,7 +295,9 @@ func (_u *AgentTurnUpdate) RemoveToolCalls(v ...*AgentToolCall) *AgentTurnUpdate
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *AgentTurnUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -340,11 +324,15 @@ func (_u *AgentTurnUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *AgentTurnUpdate) defaults() {
+func (_u *AgentTurnUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if agentturn.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized agentturn.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := agentturn.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -454,35 +442,6 @@ func (_u *AgentTurnUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.CompletedAtCleared() {
 		_spec.ClearField(agentturn.FieldCompletedAt, field.TypeTime)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   agentturn.UserTable,
-			Columns: []string{agentturn.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   agentturn.UserTable,
-			Columns: []string{agentturn.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.SessionCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -782,17 +741,6 @@ func (_u *AgentTurnUpdateOne) ClearCompletedAt() *AgentTurnUpdateOne {
 	return _u
 }
 
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *AgentTurnUpdateOne) SetUserID(id uuid.UUID) *AgentTurnUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *AgentTurnUpdateOne) SetUser(v *User) *AgentTurnUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // SetSessionID sets the "session" edge to the AgentSession entity by ID.
 func (_u *AgentTurnUpdateOne) SetSessionID(id uuid.UUID) *AgentTurnUpdateOne {
 	_u.mutation.SetSessionID(id)
@@ -822,12 +770,6 @@ func (_u *AgentTurnUpdateOne) AddToolCalls(v ...*AgentToolCall) *AgentTurnUpdate
 // Mutation returns the AgentTurnMutation object of the builder.
 func (_u *AgentTurnUpdateOne) Mutation() *AgentTurnMutation {
 	return _u.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *AgentTurnUpdateOne) ClearUser() *AgentTurnUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // ClearSession clears the "session" edge to the AgentSession entity.
@@ -872,7 +814,9 @@ func (_u *AgentTurnUpdateOne) Select(field string, fields ...string) *AgentTurnU
 
 // Save executes the query and returns the updated AgentTurn entity.
 func (_u *AgentTurnUpdateOne) Save(ctx context.Context) (*AgentTurn, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -899,11 +843,15 @@ func (_u *AgentTurnUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *AgentTurnUpdateOne) defaults() {
+func (_u *AgentTurnUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if agentturn.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized agentturn.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := agentturn.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -1030,35 +978,6 @@ func (_u *AgentTurnUpdateOne) sqlSave(ctx context.Context) (_node *AgentTurn, er
 	}
 	if _u.mutation.CompletedAtCleared() {
 		_spec.ClearField(agentturn.FieldCompletedAt, field.TypeTime)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   agentturn.UserTable,
-			Columns: []string{agentturn.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   agentturn.UserTable,
-			Columns: []string{agentturn.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.SessionCleared() {
 		edge := &sqlgraph.EdgeSpec{

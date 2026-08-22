@@ -17,7 +17,7 @@ type ConversationIntelligenceArtifact struct{ ent.Schema }
 
 // Mixin adds shared identifiers and timestamps.
 func (ConversationIntelligenceArtifact) Mixin() []ent.Mixin {
-	return []ent.Mixin{mixin.BaseMixin{}}
+	return []ent.Mixin{mixin.WorkspaceTenantMixin{}, mixin.OptimisticLockMixin{Field: "version"}}
 }
 
 // Fields defines the bounded, versioned artifact envelope.
@@ -43,9 +43,9 @@ func (ConversationIntelligenceArtifact) Fields() []ent.Field {
 func (ConversationIntelligenceArtifact) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("conversation_intelligence_artifacts").Unique().Required(),
+			Ref("conversation_intelligence_artifacts").Unique().Required().Immutable(),
 		edge.From("user", User.Type).
-			Ref("conversation_intelligence_artifacts").Unique().Required(),
+			Ref("conversation_intelligence_artifacts").Unique().Required().Immutable(),
 		edge.From("relationship", Relationship.Type).
 			Ref("conversation_intelligence_artifacts").Unique(),
 	}

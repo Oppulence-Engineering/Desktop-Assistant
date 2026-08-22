@@ -1,0 +1,22 @@
+# These advisories currently have no published fixed version. Exceptions expire so
+# the scanner forces a fresh review instead of silently becoming permanent policy.
+
+[[IgnoredVulns]]
+id = "GHSA-866g-f22w-33x8"
+ignoreUntil = 2026-11-21
+reason = "Transitive @ai-sdk/provider-utils advisory has no upstream fixed release."
+
+[[IgnoredVulns]]
+id = "GHSA-jmr9-qjv8-65gv"
+ignoreUntil = 2026-11-21
+reason = "Transitive extract-zip advisory has no upstream fixed release."
+
+[[IgnoredVulns]]
+id = "GHSA-5p2g-fcmc-qvqq"
+ignoreUntil = 2026-11-21
+reason = "Transitive image-size advisory has no upstream fixed release."
+
+[[IgnoredVulns]]
+id = "GHSA-w3rx-r6r6-pgpr"
+ignoreUntil = 2026-11-21
+reason = "Transitive image-size advisory has no upstream fixed release."

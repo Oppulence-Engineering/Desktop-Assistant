@@ -16,7 +16,7 @@ import (
 type AgentToolCall struct{ ent.Schema }
 
 // Mixin of the AgentToolCall.
-func (AgentToolCall) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (AgentToolCall) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Fields of the AgentToolCall.
 func (AgentToolCall) Fields() []ent.Field {
@@ -39,7 +39,7 @@ func (AgentToolCall) Fields() []ent.Field {
 // Edges of the AgentToolCall.
 func (AgentToolCall) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("agent_tool_calls").Unique().Required(),
+		edge.From("user", User.Type).Ref("agent_tool_calls").Unique().Required().Immutable(),
 		edge.From("turn", AgentTurn.Type).Ref("tool_calls").Unique().Required(),
 	}
 }

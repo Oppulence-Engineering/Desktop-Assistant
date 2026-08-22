@@ -68,7 +68,10 @@ config:
   # missing here while the desktop shipped the feature, so every index pass got
   # a 400 model_not_allowed. Every id on this list needs a matching entry in
   # pricing.DefaultTable() — anything unpriced bills at the fallback rate.
-  LLM_ALLOWED_MODELS: openai/gpt-4.1-mini,openai/gpt-4.1,anthropic/claude-haiku-4-5,anthropic/claude-sonnet-4-5,openai/text-embedding-3-small
+  # google/gemini-3.1-flash-lite is the desktop's default for signed-in work.
+  # It must be listed here or every signed-in call is rejected with
+  # model_not_allowed; this list and internal/pricing must always agree.
+  LLM_ALLOWED_MODELS: openai/gpt-4.1-mini,openai/gpt-4.1,anthropic/claude-haiku-4-5,anthropic/claude-sonnet-4-5,google/gemini-3.1-flash-lite,openai/text-embedding-3-small
   TRANSCRIPTION_VOICE_DEFAULT: solomon
   TRANSCRIPTION_MEETING_DEFAULT: solomon
   CLOUD_RUNTIME_MODEL: openai/gpt-4.1-mini

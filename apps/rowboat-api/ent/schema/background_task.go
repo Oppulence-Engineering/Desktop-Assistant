@@ -21,7 +21,9 @@ import (
 type BackgroundTask struct{ ent.Schema }
 
 // Mixin of the BackgroundTask.
-func (BackgroundTask) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (BackgroundTask) Mixin() []ent.Mixin {
+	return []ent.Mixin{mixin.UserTenantMixin{}, mixin.OptimisticLockMixin{Field: "revision"}}
+}
 
 // Annotations of the BackgroundTask.
 func (BackgroundTask) Annotations() []schema.Annotation {
@@ -71,7 +73,7 @@ func (BackgroundTask) Fields() []ent.Field {
 // Edges of the BackgroundTask.
 func (BackgroundTask) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("background_tasks").Unique().Required(),
+		edge.From("user", User.Type).Ref("background_tasks").Unique().Required().Immutable(),
 		edge.To("artifact", BackgroundTaskArtifact.Type).
 			StorageKey(edge.Column("background_task_id")).
 			Unique(),

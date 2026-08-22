@@ -518,7 +518,7 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 	}
 	refs, err := normalizeResourceRefs(in.ResourceRefs)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 	}
 	if len(refs) > 0 {
 		create.SetResourceRefs(refs)
@@ -526,7 +526,7 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 	rel, err := create.Save(ctx)
 	if err != nil {
 		if isValidationError(err) {
-			return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+			return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 		}
 		return nil, err
 	}
@@ -760,7 +760,7 @@ func (s *Service) CreateAction(ctx context.Context, u *ent.User, in ActionInput)
 				First(ctx)
 		}
 		if isValidationError(err) {
-			return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+			return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 		}
 		return nil, err
 	}
@@ -965,7 +965,7 @@ func (s *Service) EditAction(ctx context.Context, u *ent.User, id uuid.UUID, in 
 	if err != nil {
 		_ = tx.Rollback()
 		if isValidationError(err) {
-			return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+			return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 		}
 		return nil, err
 	}
@@ -1713,7 +1713,7 @@ func (s *Service) AppendOutcome(ctx context.Context, u *ent.User, actionID uuid.
 				First(ctx)
 		}
 		if isValidationError(err) {
-			return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+			return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 		}
 		return nil, err
 	}

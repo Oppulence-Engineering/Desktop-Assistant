@@ -4,11 +4,13 @@ import path from "node:path";
 import { isAtomicTempName } from "../filesystem/files.js";
 import { ensureWorkspaceRoot, absToRelPosix } from "./workspace.js";
 import { WorkDir } from "../config/config.js";
-import { WorkspaceChangeEvent } from "packages/shared/dist/workspace.js";
+import { workspace } from "@x/shared";
 import z from "zod";
 import { Stats } from "node:fs";
 
-export type WorkspaceChangeCallback = (event: z.infer<typeof WorkspaceChangeEvent>) => void;
+export type WorkspaceChangeCallback = (
+  event: z.infer<typeof workspace.WorkspaceChangeEvent>,
+) => void;
 
 /**
  * Create a workspace watcher

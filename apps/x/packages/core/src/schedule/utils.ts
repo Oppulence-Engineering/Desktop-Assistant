@@ -1,5 +1,5 @@
 import { CronExpressionParser } from "cron-parser";
-import type { Triggers } from "@x/shared/dist/live-note.js";
+import type { Triggers } from "@x/shared/live-note";
 
 const GRACE_MS = 2 * 60 * 1000; // 2 minutes
 export const RETRY_BACKOFF_MS = 5 * 60 * 1000; // 5 minutes

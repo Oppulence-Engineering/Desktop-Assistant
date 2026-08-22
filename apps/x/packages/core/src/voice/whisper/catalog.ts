@@ -1,4 +1,4 @@
-import type { LocalModelKind } from "@x/shared/dist/diarization.js";
+import type { LocalModelKind } from "@x/shared/diarization";
 import { CHECKSUMS, COREML_CHECKSUMS, COREML_SIZES_MB } from "./checksums.js";
 
 /**

@@ -15,7 +15,9 @@ import (
 type TenantEvidenceKey struct{ ent.Schema }
 
 // Mixin adds the common identifier and audit timestamps.
-func (TenantEvidenceKey) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (TenantEvidenceKey) Mixin() []ent.Mixin {
+	return []ent.Mixin{mixin.WorkspaceTenantMixin{}, mixin.OptimisticLockMixin{Field: "version"}}
+}
 
 // Fields defines wrapped key material and its auditable lifecycle metadata.
 func (TenantEvidenceKey) Fields() []ent.Field {
@@ -34,8 +36,8 @@ func (TenantEvidenceKey) Fields() []ent.Field {
 // Edges bind a wrapped key version to its tenant and creating user.
 func (TenantEvidenceKey) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("workspace", RevenueWorkspace.Type).Ref("evidence_keys").Unique().Required(),
-		edge.From("user", User.Type).Ref("tenant_evidence_keys").Unique().Required(),
+		edge.From("workspace", RevenueWorkspace.Type).Ref("evidence_keys").Unique().Required().Immutable(),
+		edge.From("user", User.Type).Ref("tenant_evidence_keys").Unique().Required().Immutable(),
 	}
 }
 

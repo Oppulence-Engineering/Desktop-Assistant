@@ -12,12 +12,15 @@ package backgroundscheduler
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 	"sync"
 	"testing"
 	"time"
 
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtask"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
@@ -34,7 +37,19 @@ func pgClient(t *testing.T) *ent.Client {
 	if dsn == "" {
 		t.Skip("ROWBOAT_TEST_PG_DSN not set; skipping Postgres concurrency tests")
 	}
-	d, err := db.Open(context.Background(), appconfig.Config{DatabaseURL: dsn, AutoMigrate: true}, zap.NewNop())
+	sqlDB, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatalf("open postgres schema connection: %v", err)
+	}
+	schemaClient := ent.NewClient(ent.Driver(entsql.OpenDB(dialect.Postgres, sqlDB)))
+	if err := schemaClient.Schema.Create(context.Background()); err != nil {
+		_ = schemaClient.Close()
+		t.Fatalf("create postgres test schema: %v", err)
+	}
+	if err := schemaClient.Close(); err != nil {
+		t.Fatalf("close postgres schema connection: %v", err)
+	}
+	d, err := db.Open(context.Background(), appconfig.Config{DatabaseURL: dsn, AutoMigrate: false}, zap.NewNop())
 	if err != nil {
 		t.Fatalf("open postgres: %v", err)
 	}

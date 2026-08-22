@@ -336,7 +336,7 @@ func (s *Service) ingestRelationshipObservation(
 	}
 	factsJSON, err := json.Marshal(input.Facts)
 	if err != nil {
-		return RelationshipObservationResult{}, fmt.Errorf("%w: normalized facts: %v", ErrInvalidInput, err)
+		return RelationshipObservationResult{}, fmt.Errorf("%w: normalized facts: %w", ErrInvalidInput, err)
 	}
 	hashInput := append(append([]byte(input.Summary), factsJSON...), input.Payload...)
 	sum := sha256.Sum256(hashInput)
@@ -367,7 +367,7 @@ func (s *Service) ingestRelationshipObservation(
 	observation, err := create.Save(ctx)
 	if err != nil {
 		if isValidationError(err) {
-			return RelationshipObservationResult{}, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+			return RelationshipObservationResult{}, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 		}
 		return RelationshipObservationResult{}, err
 	}
@@ -528,7 +528,7 @@ func createConfirmedCommitment(
 	}
 	commitment, err := create.Save(ctx)
 	if err != nil && isValidationError(err) {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 	}
 	if err != nil {
 		return nil, err
@@ -708,7 +708,7 @@ func (s *Service) createConfirmedCommitmentAction(
 	action, err := create.Save(ctx)
 	if err != nil {
 		if isValidationError(err) {
-			return fmt.Errorf("%w: %v", ErrInvalidInput, err)
+			return fmt.Errorf("%w: %w", ErrInvalidInput, err)
 		}
 		return err
 	}
@@ -728,7 +728,7 @@ func resolveObservationRelationship(
 ) (*ent.Relationship, bool, error) {
 	refs, err := normalizeResourceRefs(input.ResourceRefs)
 	if err != nil {
-		return nil, false, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+		return nil, false, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 	}
 	signals := observationIdentitySignals(input, refs)
 	if input.RelationshipID != uuid.Nil {
@@ -752,7 +752,7 @@ func resolveObservationRelationship(
 		sanitized := removeConflictingIdentityFields(input, conflicts)
 		sanitizedRefs, err := normalizeResourceRefs(sanitized.ResourceRefs)
 		if err != nil {
-			return nil, false, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+			return nil, false, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 		}
 		rel, err = mergeRelationshipIdentityFields(ctx, rel, sanitized, sanitizedRefs)
 		if err != nil {
@@ -1231,7 +1231,7 @@ func upsertRelationshipParticipant(
 	name := strings.TrimSpace(input.DisplayName)
 	refs, err := normalizeResourceRefs(input.ExternalRefs)
 	if err != nil {
-		return fmt.Errorf("%w: participant external refs: %v", ErrInvalidInput, err)
+		return fmt.Errorf("%w: participant external refs: %w", ErrInvalidInput, err)
 	}
 	if email == "" && name == "" && len(refs) == 0 {
 		return nil
@@ -1419,7 +1419,7 @@ func createRelationshipAssertion(
 	}
 	assertion, err := create.Save(ctx)
 	if err != nil && isValidationError(err) {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 	}
 	return assertion, err
 }

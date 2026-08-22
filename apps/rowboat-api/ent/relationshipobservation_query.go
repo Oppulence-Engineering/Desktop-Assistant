@@ -5,6 +5,7 @@ package ent
 import (
 	"context"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"math"
 
@@ -513,6 +514,12 @@ func (_q *RelationshipObservationQuery) prepareQuery(ctx context.Context) error 
 			return err
 		}
 		_q.sql = prev
+	}
+	if relationshipobservation.Policy == nil {
+		return errors.New("ent: uninitialized relationshipobservation.Policy (forgotten import ent/runtime?)")
+	}
+	if err := relationshipobservation.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

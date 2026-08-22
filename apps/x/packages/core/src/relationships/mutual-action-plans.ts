@@ -3,7 +3,7 @@ import type {
   MutualActionPlan,
   MutualActionPlanItem,
   MutualActionPlanRevision,
-} from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
 import { conversationFingerprint } from "./conversation-utils.js";
 
 function revision(args: {

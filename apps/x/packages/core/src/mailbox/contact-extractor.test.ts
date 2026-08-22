@@ -60,10 +60,10 @@ describe("redactContactModelInput", () => {
   it("still removes credentials, card numbers and health terms", () => {
     const map = new Map<string, string>();
     const out = redactContactModelInput(
-      "api_key=sk-live-abc123 card 4111 1111 1111 1111 diagnosis of something",
+      "api_key=abc card 4111 1111 1111 1111 diagnosis of something",
       map,
     );
-    expect(out).not.toContain("sk-live-abc123");
+    expect(out).not.toContain("api_key=abc");
     expect(out).not.toContain("4111 1111 1111 1111");
     expect(out.toLowerCase()).not.toContain("diagnosis of something");
     expect(map.size).toBe(3);

@@ -144,7 +144,9 @@ func (_c *CommitmentDependencyCreate) Mutation() *CommitmentDependencyMutation {
 
 // Save creates the CommitmentDependency in the database.
 func (_c *CommitmentDependencyCreate) Save(ctx context.Context) (*CommitmentDependency, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -171,12 +173,18 @@ func (_c *CommitmentDependencyCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *CommitmentDependencyCreate) defaults() {
+func (_c *CommitmentDependencyCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if commitmentdependency.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized commitmentdependency.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := commitmentdependency.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if commitmentdependency.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized commitmentdependency.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := commitmentdependency.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
@@ -185,9 +193,13 @@ func (_c *CommitmentDependencyCreate) defaults() {
 		_c.mutation.SetEvidenceRefs(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if commitmentdependency.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized commitmentdependency.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := commitmentdependency.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

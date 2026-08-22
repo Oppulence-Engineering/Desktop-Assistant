@@ -5,7 +5,7 @@ import {
   resolveCalendarEvent,
   startsWithin,
   type ResolvedCalendarEvent,
-} from "@x/shared/dist/calendar.js";
+} from "@x/shared/calendar";
 import { WorkDir } from "../config/config.js";
 
 /**

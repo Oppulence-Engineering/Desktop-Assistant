@@ -1,0 +1,18 @@
+# BuildKit applies this when building with -f apps/rowboat-www/Dockerfile.
+#
+# The Dockerfile COPYs repo-root-relative paths (apps/rowboat-www/...,
+# packages/ui, packages/relationship-contract, and packages/eslint-plugin-oppulence-web),
+# so the build context must be the repo root. This keeps that context to the
+# four trees it reads — mirroring apps/rowboat-api/Dockerfile.dockerignore.
+*
+!apps/rowboat-www
+!packages/eslint-plugin-oppulence-web
+!packages/relationship-contract
+!packages/ui
+
+# Re-excluded after the allowlist above, so a working tree that has already been
+# built or installed does not ship its output into the image context.
+**/node_modules
+**/.next
+**/dist
+**/*.tsbuildinfo

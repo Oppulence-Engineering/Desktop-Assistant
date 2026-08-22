@@ -3,7 +3,7 @@ import {
   type DiarizationProvenance,
   type MeetingDiarizationState,
   type TranscriptionProvider,
-} from "@x/shared/dist/diarization.js";
+} from "@x/shared/diarization";
 
 /**
  * Diarization provenance (RFC 017 §"Provenance"): the trust-surface record that

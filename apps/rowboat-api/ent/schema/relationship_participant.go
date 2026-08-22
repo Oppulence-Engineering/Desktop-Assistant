@@ -15,7 +15,7 @@ import (
 type RelationshipParticipant struct{ ent.Schema }
 
 // Mixin adds the shared base fields to relationship participants.
-func (RelationshipParticipant) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (RelationshipParticipant) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
 // Fields defines the relationship participant columns.
 func (RelationshipParticipant) Fields() []ent.Field {
@@ -37,11 +37,11 @@ func (RelationshipParticipant) Fields() []ent.Field {
 func (RelationshipParticipant) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
-			Ref("relationship_participants").Unique().Required(),
+			Ref("relationship_participants").Unique().Required().Immutable(),
 		edge.From("relationship", Relationship.Type).
 			Ref("participants").Unique().Required(),
 		edge.From("user", User.Type).
-			Ref("relationship_participants").Unique().Required(),
+			Ref("relationship_participants").Unique().Required().Immutable(),
 		// Deliberately NOT Required: every pre-existing row starts unlinked and is
 		// filled in by the person backfill. A participant is "this person, in this
 		// relationship, with this role" — the person carries the durable identity,

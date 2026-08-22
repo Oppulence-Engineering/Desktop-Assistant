@@ -13,8 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueoutboxevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -255,48 +253,16 @@ func (_u *RevenueOutboxEventUpdate) ClearLastError() *RevenueOutboxEventUpdate {
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RevenueOutboxEventUpdate) SetWorkspaceID(id uuid.UUID) *RevenueOutboxEventUpdate {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueOutboxEventUpdate) SetWorkspace(v *RevenueWorkspace) *RevenueOutboxEventUpdate {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RevenueOutboxEventUpdate) SetUserID(id uuid.UUID) *RevenueOutboxEventUpdate {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RevenueOutboxEventUpdate) SetUser(v *User) *RevenueOutboxEventUpdate {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RevenueOutboxEventMutation object of the builder.
 func (_u *RevenueOutboxEventUpdate) Mutation() *RevenueOutboxEventMutation {
 	return _u.mutation
 }
 
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueOutboxEventUpdate) ClearWorkspace() *RevenueOutboxEventUpdate {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RevenueOutboxEventUpdate) ClearUser() *RevenueOutboxEventUpdate {
-	_u.mutation.ClearUser()
-	return _u
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *RevenueOutboxEventUpdate) Save(ctx context.Context) (int, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -323,11 +289,15 @@ func (_u *RevenueOutboxEventUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RevenueOutboxEventUpdate) defaults() {
+func (_u *RevenueOutboxEventUpdate) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if revenueoutboxevent.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueoutboxevent.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueoutboxevent.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -445,64 +415,6 @@ func (_u *RevenueOutboxEventUpdate) sqlSave(ctx context.Context) (_node int, err
 	}
 	if _u.mutation.LastErrorCleared() {
 		_spec.ClearField(revenueoutboxevent.FieldLastError, field.TypeString)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueoutboxevent.WorkspaceTable,
-			Columns: []string{revenueoutboxevent.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueoutboxevent.WorkspaceTable,
-			Columns: []string{revenueoutboxevent.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueoutboxevent.UserTable,
-			Columns: []string{revenueoutboxevent.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueoutboxevent.UserTable,
-			Columns: []string{revenueoutboxevent.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -748,43 +660,9 @@ func (_u *RevenueOutboxEventUpdateOne) ClearLastError() *RevenueOutboxEventUpdat
 	return _u
 }
 
-// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by ID.
-func (_u *RevenueOutboxEventUpdateOne) SetWorkspaceID(id uuid.UUID) *RevenueOutboxEventUpdateOne {
-	_u.mutation.SetWorkspaceID(id)
-	return _u
-}
-
-// SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueOutboxEventUpdateOne) SetWorkspace(v *RevenueWorkspace) *RevenueOutboxEventUpdateOne {
-	return _u.SetWorkspaceID(v.ID)
-}
-
-// SetUserID sets the "user" edge to the User entity by ID.
-func (_u *RevenueOutboxEventUpdateOne) SetUserID(id uuid.UUID) *RevenueOutboxEventUpdateOne {
-	_u.mutation.SetUserID(id)
-	return _u
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (_u *RevenueOutboxEventUpdateOne) SetUser(v *User) *RevenueOutboxEventUpdateOne {
-	return _u.SetUserID(v.ID)
-}
-
 // Mutation returns the RevenueOutboxEventMutation object of the builder.
 func (_u *RevenueOutboxEventUpdateOne) Mutation() *RevenueOutboxEventMutation {
 	return _u.mutation
-}
-
-// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
-func (_u *RevenueOutboxEventUpdateOne) ClearWorkspace() *RevenueOutboxEventUpdateOne {
-	_u.mutation.ClearWorkspace()
-	return _u
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (_u *RevenueOutboxEventUpdateOne) ClearUser() *RevenueOutboxEventUpdateOne {
-	_u.mutation.ClearUser()
-	return _u
 }
 
 // Where appends a list predicates to the RevenueOutboxEventUpdate builder.
@@ -802,7 +680,9 @@ func (_u *RevenueOutboxEventUpdateOne) Select(field string, fields ...string) *R
 
 // Save executes the query and returns the updated RevenueOutboxEvent entity.
 func (_u *RevenueOutboxEventUpdateOne) Save(ctx context.Context) (*RevenueOutboxEvent, error) {
-	_u.defaults()
+	if err := _u.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -829,11 +709,15 @@ func (_u *RevenueOutboxEventUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_u *RevenueOutboxEventUpdateOne) defaults() {
+func (_u *RevenueOutboxEventUpdateOne) defaults() error {
 	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		if revenueoutboxevent.UpdateDefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized revenueoutboxevent.UpdateDefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := revenueoutboxevent.UpdateDefaultUpdatedAt()
 		_u.mutation.SetUpdatedAt(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -968,64 +852,6 @@ func (_u *RevenueOutboxEventUpdateOne) sqlSave(ctx context.Context) (_node *Reve
 	}
 	if _u.mutation.LastErrorCleared() {
 		_spec.ClearField(revenueoutboxevent.FieldLastError, field.TypeString)
-	}
-	if _u.mutation.WorkspaceCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueoutboxevent.WorkspaceTable,
-			Columns: []string{revenueoutboxevent.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.WorkspaceIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueoutboxevent.WorkspaceTable,
-			Columns: []string{revenueoutboxevent.WorkspaceColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(revenueworkspace.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueoutboxevent.UserTable,
-			Columns: []string{revenueoutboxevent.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   revenueoutboxevent.UserTable,
-			Columns: []string{revenueoutboxevent.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &RevenueOutboxEvent{config: _u.config}
 	_spec.Assign = _node.assignValues

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import type { RowboatEvent } from '@x/shared/dist/events.js';
+import type { RowboatEvent } from '@x/shared/events';
 import { WorkDir } from '../config/config.js';
 import type { IMonotonicallyIncreasingIdGenerator } from '../application/lib/id-gen.js';
 import container from '../di/container.js';

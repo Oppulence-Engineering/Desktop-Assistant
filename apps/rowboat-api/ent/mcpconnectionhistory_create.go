@@ -180,7 +180,9 @@ func (_c *MCPConnectionHistoryCreate) Mutation() *MCPConnectionHistoryMutation {
 
 // Save creates the MCPConnectionHistory in the database.
 func (_c *MCPConnectionHistoryCreate) Save(ctx context.Context) (*MCPConnectionHistory, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -207,23 +209,36 @@ func (_c *MCPConnectionHistoryCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *MCPConnectionHistoryCreate) defaults() {
+func (_c *MCPConnectionHistoryCreate) defaults() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
+		if mcpconnectionhistory.DefaultCreatedAt == nil {
+			return fmt.Errorf("ent: uninitialized mcpconnectionhistory.DefaultCreatedAt (forgotten import ent/runtime?)")
+		}
 		v := mcpconnectionhistory.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		if mcpconnectionhistory.DefaultUpdatedAt == nil {
+			return fmt.Errorf("ent: uninitialized mcpconnectionhistory.DefaultUpdatedAt (forgotten import ent/runtime?)")
+		}
 		v := mcpconnectionhistory.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
 	if _, ok := _c.mutation.HistoryTime(); !ok {
+		if mcpconnectionhistory.DefaultHistoryTime == nil {
+			return fmt.Errorf("ent: uninitialized mcpconnectionhistory.DefaultHistoryTime (forgotten import ent/runtime?)")
+		}
 		v := mcpconnectionhistory.DefaultHistoryTime()
 		_c.mutation.SetHistoryTime(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if mcpconnectionhistory.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized mcpconnectionhistory.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := mcpconnectionhistory.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

@@ -21,7 +21,7 @@ import { Separator } from "@oppulence/ui/components/separator";
 import { GoogleClientIdModal } from "@/components/google-client-id-modal";
 import { IntegrationApiKeyModal } from "@/components/integration-api-key-modal";
 import { useConnectors } from "@/hooks/useConnectors";
-import { PRODUCT_NAME, PRODUCT_PROVIDER_ID, isProductProvider } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME, PRODUCT_PROVIDER_ID, isProductProvider } from "@x/shared/branding";
 
 interface ConnectorsPopoverProps {
   children: React.ReactNode;

@@ -316,7 +316,7 @@ func (s *Service) materializeConversationEvidence(
 	if strings.TrimSpace(input.EventType) == "conversation_evidence_compiled" {
 		var receipt ConversationGovernanceReceipt
 		if err := decodeFact(input.Facts, "governance_receipt", &receipt); err != nil {
-			return fmt.Errorf("%w: governance receipt: %v", ErrInvalidInput, err)
+			return fmt.Errorf("%w: governance receipt: %w", ErrInvalidInput, err)
 		}
 		required := []string{
 			receipt.ReceiptID, receipt.CapturedAt, receipt.CapturePolicy, receipt.Routing,
@@ -334,11 +334,11 @@ func (s *Service) materializeConversationEvidence(
 	}
 	var claims []ConversationClaim
 	if err := decodeFact(input.Facts, "conversation_claims", &claims); err != nil {
-		return fmt.Errorf("%w: conversation claims: %v", ErrInvalidInput, err)
+		return fmt.Errorf("%w: conversation claims: %w", ErrInvalidInput, err)
 	}
 	var proposals []ConversationActionProposal
 	if err := decodeFact(input.Facts, "action_pack", &proposals); err != nil {
-		return fmt.Errorf("%w: action pack: %v", ErrInvalidInput, err)
+		return fmt.Errorf("%w: action pack: %w", ErrInvalidInput, err)
 	}
 	// Defense in depth for older clients: the presence of semantic candidates means
 	// this observation is review-only, even if a legacy action pack was also supplied.
@@ -348,7 +348,7 @@ func (s *Service) materializeConversationEvidence(
 	exactSegments, transcript := transcriptTextInPayload(input.Payload)
 	var candidates []conversationClaimCandidate
 	if err := decodeFact(input.Facts, "conversation_claim_candidates", &candidates); err != nil {
-		return fmt.Errorf("%w: conversation claim candidates: %v", ErrInvalidInput, err)
+		return fmt.Errorf("%w: conversation claim candidates: %w", ErrInvalidInput, err)
 	}
 	for _, candidate := range candidates {
 		if strings.TrimSpace(candidate.CandidateID) == "" || len(candidate.Evidence) == 0 {
@@ -527,7 +527,7 @@ func (s *Service) applyCommitmentUpdates(
 ) error {
 	var updates []commitmentUpdate
 	if err := decodeFact(input.Facts, "commitment_updates", &updates); err != nil {
-		return fmt.Errorf("%w: commitment updates: %v", ErrInvalidInput, err)
+		return fmt.Errorf("%w: commitment updates: %w", ErrInvalidInput, err)
 	}
 	for _, update := range updates {
 		if update.CommitmentID == "" {

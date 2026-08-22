@@ -1,11 +1,11 @@
-import type { LiveNote, LiveNoteTriggerType } from "@x/shared/dist/live-note.js";
+import type { LiveNote, LiveNoteTriggerType } from "@x/shared/live-note";
 import { fetchLiveNote, patchLiveNote, readNoteBody } from "./fileops.js";
 import { createRun, createMessage } from "../../runs/runs.js";
 import { getLiveNoteAgentModel } from "../../models/defaults.js";
 import { extractAgentResponse, waitForRunCompletion } from "../../agents/utils.js";
 import { buildTriggerBlock } from "../../agents/build-trigger-block.js";
 import { liveNoteBus } from "./bus.js";
-import { PrefixLogger } from "@x/shared/dist/prefix-logger.js";
+import { PrefixLogger } from "@x/shared/prefix-logger";
 
 const log = new PrefixLogger("LiveNote:Agent");
 

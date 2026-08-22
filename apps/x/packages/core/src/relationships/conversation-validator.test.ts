@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ConversationExtractionProvenance } from "@x/shared/dist/relationships.js";
+import type { ConversationExtractionProvenance } from "@x/shared/relationships";
 import { normalizeTranscript } from "./conversation-evidence.js";
 import { validateConversationCandidates } from "./conversation-validator.js";
 

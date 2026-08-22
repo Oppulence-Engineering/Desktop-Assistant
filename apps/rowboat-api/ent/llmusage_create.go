@@ -167,7 +167,9 @@ func (_c *LLMUsageCreate) Mutation() *LLMUsageMutation {
 
 // Save creates the LLMUsage in the database.
 func (_c *LLMUsageCreate) Save(ctx context.Context) (*LLMUsage, error) {
-	_c.defaults()
+	if err := _c.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -194,7 +196,7 @@ func (_c *LLMUsageCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (_c *LLMUsageCreate) defaults() {
+func (_c *LLMUsageCreate) defaults() error {
 	if _, ok := _c.mutation.InputTokens(); !ok {
 		v := llmusage.DefaultInputTokens
 		_c.mutation.SetInputTokens(v)
@@ -208,13 +210,20 @@ func (_c *LLMUsageCreate) defaults() {
 		_c.mutation.SetCostUnits(v)
 	}
 	if _, ok := _c.mutation.Ts(); !ok {
+		if llmusage.DefaultTs == nil {
+			return fmt.Errorf("ent: uninitialized llmusage.DefaultTs (forgotten import ent/runtime?)")
+		}
 		v := llmusage.DefaultTs()
 		_c.mutation.SetTs(v)
 	}
 	if _, ok := _c.mutation.ID(); !ok {
+		if llmusage.DefaultID == nil {
+			return fmt.Errorf("ent: uninitialized llmusage.DefaultID (forgotten import ent/runtime?)")
+		}
 		v := llmusage.DefaultID()
 		_c.mutation.SetID(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.

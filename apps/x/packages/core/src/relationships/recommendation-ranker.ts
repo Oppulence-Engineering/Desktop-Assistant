@@ -1,7 +1,7 @@
 import type {
   RecommendationEvaluation,
   RecommendationFactor,
-} from "@x/shared/dist/relationships.js";
+} from "@x/shared/relationships";
 import { conversationFingerprint } from "./conversation-utils.js";
 
 export interface RecommendationRankContext {

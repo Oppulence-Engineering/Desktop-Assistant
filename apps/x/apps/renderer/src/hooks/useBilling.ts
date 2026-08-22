@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { BillingInfo } from "@x/shared/dist/billing.js";
+import type { BillingInfo } from "@x/shared/billing";
 
 export type BillingLoadError = {
   reason: "auth_unavailable" | "unknown";

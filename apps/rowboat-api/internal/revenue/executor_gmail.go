@@ -229,14 +229,14 @@ var googleStatusRe = regexp.MustCompile(`returned (\d{3})`)
 func classifySubmitError(err error) error {
 	// The call was cut off in flight: Google may or may not have processed it.
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-		return fmt.Errorf("%w: %v", ErrAmbiguous, err)
+		return fmt.Errorf("%w: %w", ErrAmbiguous, err)
 	}
 	var nerr net.Error
 	if errors.As(err, &nerr) && nerr.Timeout() {
-		return fmt.Errorf("%w: %v", ErrAmbiguous, err)
+		return fmt.Errorf("%w: %w", ErrAmbiguous, err)
 	}
 	if status, ok := hubspotapi.StatusCode(err); ok && status >= 500 {
-		return fmt.Errorf("%w: %v", ErrAmbiguous, err)
+		return fmt.Errorf("%w: %w", ErrAmbiguous, err)
 	}
 	// Official provider SDKs such as slack-go expose transport status through
 	// this small interface. A 5xx means the write reached the provider boundary
@@ -244,12 +244,12 @@ func classifySubmitError(err error) error {
 	// a message or activity.
 	var statusErr interface{ HTTPStatusCode() int }
 	if errors.As(err, &statusErr) && statusErr.HTTPStatusCode() >= 500 {
-		return fmt.Errorf("%w: %v", ErrAmbiguous, err)
+		return fmt.Errorf("%w: %w", ErrAmbiguous, err)
 	}
 	// A 5xx answer proves the request arrived but not whether it was applied;
 	// a 4xx is a definite rejection.
 	if m := googleStatusRe.FindStringSubmatch(err.Error()); m != nil && strings.HasPrefix(m[1], "5") {
-		return fmt.Errorf("%w: %v", ErrAmbiguous, err)
+		return fmt.Errorf("%w: %w", ErrAmbiguous, err)
 	}
 	return err
 }

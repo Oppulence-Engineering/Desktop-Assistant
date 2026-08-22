@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { LiveNote } from '@x/shared/dist/live-note.js'
+import type { LiveNote } from '@x/shared/live-note'
 import { useLiveNoteAgentStatus, type LiveNoteAgentState } from './use-live-note-agent-status'
 
 export interface UseLiveNoteForPathResult {

@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 
@@ -402,6 +403,12 @@ func (_q *WorkspaceFeatureControlQuery) prepareQuery(ctx context.Context) error 
 			return err
 		}
 		_q.sql = prev
+	}
+	if workspacefeaturecontrol.Policy == nil {
+		return errors.New("ent: uninitialized workspacefeaturecontrol.Policy (forgotten import ent/runtime?)")
+	}
+	if err := workspacefeaturecontrol.Policy.EvalQuery(ctx, _q); err != nil {
+		return err
 	}
 	return nil
 }

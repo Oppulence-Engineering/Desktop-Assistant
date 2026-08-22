@@ -17,7 +17,7 @@ import (
 type MailMessageMeta struct{ ent.Schema }
 
 // Mixin of the MailMessageMeta.
-func (MailMessageMeta) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (MailMessageMeta) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Fields of the MailMessageMeta.
 func (MailMessageMeta) Fields() []ent.Field {
@@ -37,7 +37,7 @@ func (MailMessageMeta) Fields() []ent.Field {
 func (MailMessageMeta) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("thread", MailThread.Type).Ref("messages").Unique().Required(),
-		edge.From("user", User.Type).Ref("mail_message_metas").Unique().Required(),
+		edge.From("user", User.Type).Ref("mail_message_metas").Unique().Required().Immutable(),
 	}
 }
 

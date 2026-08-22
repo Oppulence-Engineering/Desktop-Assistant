@@ -2,7 +2,7 @@ import { app, Menu, nativeImage, shell, Tray } from "electron";
 import type { NativeImage } from "electron";
 import { peekMeetingController, type MeetingController } from "./meeting-controller.js";
 import { appWindows, getMainWindow } from "./main-window.js";
-import { DICTATION_LANGUAGE_OPTIONS } from "@x/shared/dist/transcription.js";
+import { DICTATION_LANGUAGE_OPTIONS } from "@x/shared/transcription";
 import {
   getDesktopDictationLanguage,
   setDesktopDictationLanguage,

@@ -6688,11 +6688,6 @@ func (_q *RelationshipAttentionItemQuery) collectField(ctx context.Context, oneN
 				selectedFields = append(selectedFields, relationshipattentionitem.FieldRankScore)
 				fieldSeen[relationshipattentionitem.FieldRankScore] = struct{}{}
 			}
-		case "rankFactorsJSON":
-			if _, ok := fieldSeen[relationshipattentionitem.FieldRankFactorsJSON]; !ok {
-				selectedFields = append(selectedFields, relationshipattentionitem.FieldRankFactorsJSON)
-				fieldSeen[relationshipattentionitem.FieldRankFactorsJSON] = struct{}{}
-			}
 		case "sourceRequirements":
 			if _, ok := fieldSeen[relationshipattentionitem.FieldSourceRequirements]; !ok {
 				selectedFields = append(selectedFields, relationshipattentionitem.FieldSourceRequirements)

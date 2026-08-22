@@ -136,7 +136,7 @@ func (b *Broker) Propose(ctx context.Context, user *ent.User, in ProposeInput) (
 	}
 	// Validate params early so a bad proposal fails at propose, not approve.
 	if _, err := ParamsHash(in.ParamsJSON); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 	}
 	correlation := strings.TrimSpace(in.CorrelationID)
 	if correlation == "" {
@@ -205,7 +205,7 @@ func (b *Broker) Approve(ctx context.Context, user *ent.User, id uuid.UUID, step
 	}
 	paramsHash, err := ParamsHash(p.ParamsJSON)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 	}
 	now := b.now()
 	token, exp, err := b.signer.Mint(Claims{
@@ -313,7 +313,7 @@ func (b *Broker) Execute(ctx context.Context, user *ent.User, id uuid.UUID, toke
 	// Re-hash the CURRENT params: an edit after approval invalidates the token.
 	currentHash, err := ParamsHash(p.ParamsJSON)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidInput, err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 	}
 	if currentHash != claims.ParamsHash {
 		actionmetrics.TokensRejected.WithLabelValues("params_mismatch").Inc()

@@ -4,6 +4,7 @@ import { X, Calendar, Video, ChevronDown, Mic } from '@/lib/icons'
 import { blocks } from '@x/shared'
 import { useState, useEffect, useRef } from 'react'
 import { extractConferenceLink } from '../lib/calendar-event'
+import { emitRendererEvent } from '@/lib/renderer-events'
 
 function formatTime(dateStr: string): string {
   const d = new Date(dateStr)
@@ -230,7 +231,7 @@ function CalendarBlockView({ node, deleteNode }: { node: { attrs: Record<string,
       source: originalEvent?.source,
     }
     // Dispatch custom event so App.tsx can start meeting transcription
-    window.dispatchEvent(new Event('calendar-block:join-meeting'))
+    emitRendererEvent('calendar-block:join-meeting')
   }
 
   return (

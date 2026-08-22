@@ -18,7 +18,7 @@ import (
 type MCPConnection struct{ ent.Schema }
 
 // Mixin of the MCPConnection.
-func (MCPConnection) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
+func (MCPConnection) Mixin() []ent.Mixin { return []ent.Mixin{mixin.UserTenantMixin{}} }
 
 // Annotations of the MCPConnection (GraphQL exposure via entgql).
 func (MCPConnection) Annotations() []schema.Annotation {
@@ -46,7 +46,7 @@ func (MCPConnection) Fields() []ent.Field {
 // Edges of the MCPConnection.
 func (MCPConnection) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).Ref("mcp_connections").Unique().Required(),
+		edge.From("user", User.Type).Ref("mcp_connections").Unique().Required().Immutable(),
 	}
 }
 

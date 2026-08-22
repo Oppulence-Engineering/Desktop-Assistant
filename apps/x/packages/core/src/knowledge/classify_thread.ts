@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
 import { generateObject } from 'ai';
-import { google } from 'googleapis';
+import { createGmailClient } from './gmail_client.js';
 import type { OAuth2Client } from 'google-auth-library';
 import { WorkDir } from '../config/config.js';
 import { createProvider } from '../models/models.js';
@@ -88,7 +88,7 @@ let cachedUserEmail: string | null = null;
 export async function getUserEmail(auth: OAuth2Client): Promise<string | null> {
     if (cachedUserEmail) return cachedUserEmail;
     try {
-        const gmailClient = google.gmail({ version: 'v1', auth });
+        const gmailClient = createGmailClient(auth);
         const res = await gmailClient.users.getProfile({ userId: 'me' });
         if (res.data.emailAddress) {
             cachedUserEmail = res.data.emailAddress.toLowerCase();

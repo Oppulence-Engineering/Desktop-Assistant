@@ -2,6 +2,7 @@ package agentsessions_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -193,9 +194,5 @@ func TestStartScheduledSession(t *testing.T) {
 }
 
 func asInvalid(err error, target **agentsessions.InvalidParamsError) bool {
-	if e, ok := err.(*agentsessions.InvalidParamsError); ok {
-		*target = e
-		return true
-	}
-	return false
+	return errors.As(err, target)
 }

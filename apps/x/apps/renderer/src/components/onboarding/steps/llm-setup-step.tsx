@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowRight, CheckCircle2, KeyRound, Loader2 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
-import { PRODUCT_NAME } from "@x/shared/dist/branding.js";
+import { PRODUCT_NAME } from "@x/shared/branding";
 import { MinimalOnboardingLayout } from "../minimal-layout";
 import type { LlmProviderFlavor, OnboardingState } from "../use-onboarding-state";
 

@@ -1,4 +1,4 @@
-import type { CanonicalTranscriptEnvelope } from "@x/shared/dist/relationships.js";
+import type { CanonicalTranscriptEnvelope } from "@x/shared/relationships";
 import type { ConversationCandidateDraft } from "./conversation-validator.js";
 import { duePhrase } from "./conversation-dates.js";
 
