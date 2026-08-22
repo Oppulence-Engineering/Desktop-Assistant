@@ -33,6 +33,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
@@ -85,6 +86,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 )
 
@@ -125,6 +128,8 @@ type Client struct {
 	BackgroundTaskRunEvent *BackgroundTaskRunEventClient
 	// BackgroundTaskScheduleState is the client for interacting with the BackgroundTaskScheduleState builders.
 	BackgroundTaskScheduleState *BackgroundTaskScheduleStateClient
+	// CaptureArtifact is the client for interacting with the CaptureArtifact builders.
+	CaptureArtifact *CaptureArtifactClient
 	// CloudEvent is the client for interacting with the CloudEvent builders.
 	CloudEvent *CloudEventClient
 	// Commitment is the client for interacting with the Commitment builders.
@@ -229,6 +234,10 @@ type Client struct {
 	User *UserClient
 	// UserHistory is the client for interacting with the UserHistory builders.
 	UserHistory *UserHistoryClient
+	// VoiceAPIKey is the client for interacting with the VoiceAPIKey builders.
+	VoiceAPIKey *VoiceAPIKeyClient
+	// VoiceSyncItem is the client for interacting with the VoiceSyncItem builders.
+	VoiceSyncItem *VoiceSyncItemClient
 	// WorkspaceFeatureControl is the client for interacting with the WorkspaceFeatureControl builders.
 	WorkspaceFeatureControl *WorkspaceFeatureControlClient
 
@@ -263,6 +272,7 @@ func (c *Client) init() {
 	c.BackgroundTaskRun = NewBackgroundTaskRunClient(c.config)
 	c.BackgroundTaskRunEvent = NewBackgroundTaskRunEventClient(c.config)
 	c.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(c.config)
+	c.CaptureArtifact = NewCaptureArtifactClient(c.config)
 	c.CloudEvent = NewCloudEventClient(c.config)
 	c.Commitment = NewCommitmentClient(c.config)
 	c.CommitmentDependency = NewCommitmentDependencyClient(c.config)
@@ -315,6 +325,8 @@ func (c *Client) init() {
 	c.TenantEvidenceKey = NewTenantEvidenceKeyClient(c.config)
 	c.User = NewUserClient(c.config)
 	c.UserHistory = NewUserHistoryClient(c.config)
+	c.VoiceAPIKey = NewVoiceAPIKeyClient(c.config)
+	c.VoiceSyncItem = NewVoiceSyncItemClient(c.config)
 	c.WorkspaceFeatureControl = NewWorkspaceFeatureControlClient(c.config)
 }
 
@@ -462,6 +474,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		BackgroundTaskRun:                 NewBackgroundTaskRunClient(cfg),
 		BackgroundTaskRunEvent:            NewBackgroundTaskRunEventClient(cfg),
 		BackgroundTaskScheduleState:       NewBackgroundTaskScheduleStateClient(cfg),
+		CaptureArtifact:                   NewCaptureArtifactClient(cfg),
 		CloudEvent:                        NewCloudEventClient(cfg),
 		Commitment:                        NewCommitmentClient(cfg),
 		CommitmentDependency:              NewCommitmentDependencyClient(cfg),
@@ -514,6 +527,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		TenantEvidenceKey:                 NewTenantEvidenceKeyClient(cfg),
 		User:                              NewUserClient(cfg),
 		UserHistory:                       NewUserHistoryClient(cfg),
+		VoiceAPIKey:                       NewVoiceAPIKeyClient(cfg),
+		VoiceSyncItem:                     NewVoiceSyncItemClient(cfg),
 		WorkspaceFeatureControl:           NewWorkspaceFeatureControlClient(cfg),
 	}, nil
 }
@@ -550,6 +565,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		BackgroundTaskRun:                 NewBackgroundTaskRunClient(cfg),
 		BackgroundTaskRunEvent:            NewBackgroundTaskRunEventClient(cfg),
 		BackgroundTaskScheduleState:       NewBackgroundTaskScheduleStateClient(cfg),
+		CaptureArtifact:                   NewCaptureArtifactClient(cfg),
 		CloudEvent:                        NewCloudEventClient(cfg),
 		Commitment:                        NewCommitmentClient(cfg),
 		CommitmentDependency:              NewCommitmentDependencyClient(cfg),
@@ -602,6 +618,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		TenantEvidenceKey:                 NewTenantEvidenceKeyClient(cfg),
 		User:                              NewUserClient(cfg),
 		UserHistory:                       NewUserHistoryClient(cfg),
+		VoiceAPIKey:                       NewVoiceAPIKeyClient(cfg),
+		VoiceSyncItem:                     NewVoiceSyncItemClient(cfg),
 		WorkspaceFeatureControl:           NewWorkspaceFeatureControlClient(cfg),
 	}, nil
 }
@@ -636,7 +654,7 @@ func (c *Client) Use(hooks ...Hook) {
 		c.AgentDefinitionHistory, c.AgentSession, c.AgentSessionEvent, c.AgentToolCall,
 		c.AgentToolResultBlob, c.AgentTurn, c.ApprovalToken, c.BackgroundTask,
 		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
-		c.BackgroundTaskScheduleState, c.CloudEvent, c.Commitment,
+		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
 		c.CommitmentDependency, c.CommitmentEvent, c.ConversationIntelligenceArtifact,
 		c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
 		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
@@ -653,7 +671,7 @@ func (c *Client) Use(hooks ...Hook) {
 		c.RevenueEvidence, c.RevenueLeakScan, c.RevenueOutboxEvent,
 		c.RevenueTrustEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
 		c.Subscription, c.SubscriptionHistory, c.TenantEvidenceKey, c.User,
-		c.UserHistory, c.WorkspaceFeatureControl,
+		c.UserHistory, c.VoiceAPIKey, c.VoiceSyncItem, c.WorkspaceFeatureControl,
 	} {
 		n.Use(hooks...)
 	}
@@ -667,7 +685,7 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.AgentDefinitionHistory, c.AgentSession, c.AgentSessionEvent, c.AgentToolCall,
 		c.AgentToolResultBlob, c.AgentTurn, c.ApprovalToken, c.BackgroundTask,
 		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
-		c.BackgroundTaskScheduleState, c.CloudEvent, c.Commitment,
+		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
 		c.CommitmentDependency, c.CommitmentEvent, c.ConversationIntelligenceArtifact,
 		c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
 		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
@@ -684,7 +702,7 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.RevenueEvidence, c.RevenueLeakScan, c.RevenueOutboxEvent,
 		c.RevenueTrustEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
 		c.Subscription, c.SubscriptionHistory, c.TenantEvidenceKey, c.User,
-		c.UserHistory, c.WorkspaceFeatureControl,
+		c.UserHistory, c.VoiceAPIKey, c.VoiceSyncItem, c.WorkspaceFeatureControl,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -725,6 +743,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BackgroundTaskRunEvent.mutate(ctx, m)
 	case *BackgroundTaskScheduleStateMutation:
 		return c.BackgroundTaskScheduleState.mutate(ctx, m)
+	case *CaptureArtifactMutation:
+		return c.CaptureArtifact.mutate(ctx, m)
 	case *CloudEventMutation:
 		return c.CloudEvent.mutate(ctx, m)
 	case *CommitmentMutation:
@@ -829,6 +849,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.User.mutate(ctx, m)
 	case *UserHistoryMutation:
 		return c.UserHistory.mutate(ctx, m)
+	case *VoiceAPIKeyMutation:
+		return c.VoiceAPIKey.mutate(ctx, m)
+	case *VoiceSyncItemMutation:
+		return c.VoiceSyncItem.mutate(ctx, m)
 	case *WorkspaceFeatureControlMutation:
 		return c.WorkspaceFeatureControl.mutate(ctx, m)
 	default:
@@ -3585,6 +3609,156 @@ func (c *BackgroundTaskScheduleStateClient) mutate(ctx context.Context, m *Backg
 		return (&BackgroundTaskScheduleStateDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown BackgroundTaskScheduleState mutation op: %q", m.Op())
+	}
+}
+
+// CaptureArtifactClient is a client for the CaptureArtifact schema.
+type CaptureArtifactClient struct {
+	config
+}
+
+// NewCaptureArtifactClient returns a client for the CaptureArtifact from the given config.
+func NewCaptureArtifactClient(c config) *CaptureArtifactClient {
+	return &CaptureArtifactClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `captureartifact.Hooks(f(g(h())))`.
+func (c *CaptureArtifactClient) Use(hooks ...Hook) {
+	c.hooks.CaptureArtifact = append(c.hooks.CaptureArtifact, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `captureartifact.Intercept(f(g(h())))`.
+func (c *CaptureArtifactClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CaptureArtifact = append(c.inters.CaptureArtifact, interceptors...)
+}
+
+// Create returns a builder for creating a CaptureArtifact entity.
+func (c *CaptureArtifactClient) Create() *CaptureArtifactCreate {
+	mutation := newCaptureArtifactMutation(c.config, OpCreate)
+	return &CaptureArtifactCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CaptureArtifact entities.
+func (c *CaptureArtifactClient) CreateBulk(builders ...*CaptureArtifactCreate) *CaptureArtifactCreateBulk {
+	return &CaptureArtifactCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CaptureArtifactClient) MapCreateBulk(slice any, setFunc func(*CaptureArtifactCreate, int)) *CaptureArtifactCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CaptureArtifactCreateBulk{err: fmt.Errorf("calling to CaptureArtifactClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CaptureArtifactCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CaptureArtifactCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CaptureArtifact.
+func (c *CaptureArtifactClient) Update() *CaptureArtifactUpdate {
+	mutation := newCaptureArtifactMutation(c.config, OpUpdate)
+	return &CaptureArtifactUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CaptureArtifactClient) UpdateOne(_m *CaptureArtifact) *CaptureArtifactUpdateOne {
+	mutation := newCaptureArtifactMutation(c.config, OpUpdateOne, withCaptureArtifact(_m))
+	return &CaptureArtifactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CaptureArtifactClient) UpdateOneID(id uuid.UUID) *CaptureArtifactUpdateOne {
+	mutation := newCaptureArtifactMutation(c.config, OpUpdateOne, withCaptureArtifactID(id))
+	return &CaptureArtifactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CaptureArtifact.
+func (c *CaptureArtifactClient) Delete() *CaptureArtifactDelete {
+	mutation := newCaptureArtifactMutation(c.config, OpDelete)
+	return &CaptureArtifactDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CaptureArtifactClient) DeleteOne(_m *CaptureArtifact) *CaptureArtifactDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CaptureArtifactClient) DeleteOneID(id uuid.UUID) *CaptureArtifactDeleteOne {
+	builder := c.Delete().Where(captureartifact.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CaptureArtifactDeleteOne{builder}
+}
+
+// Query returns a query builder for CaptureArtifact.
+func (c *CaptureArtifactClient) Query() *CaptureArtifactQuery {
+	return &CaptureArtifactQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCaptureArtifact},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CaptureArtifact entity by its id.
+func (c *CaptureArtifactClient) Get(ctx context.Context, id uuid.UUID) (*CaptureArtifact, error) {
+	return c.Query().Where(captureartifact.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CaptureArtifactClient) GetX(ctx context.Context, id uuid.UUID) *CaptureArtifact {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a CaptureArtifact.
+func (c *CaptureArtifactClient) QueryUser(_m *CaptureArtifact) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(captureartifact.Table, captureartifact.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, captureartifact.UserTable, captureartifact.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CaptureArtifactClient) Hooks() []Hook {
+	hooks := c.hooks.CaptureArtifact
+	return append(hooks[:len(hooks):len(hooks)], captureartifact.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *CaptureArtifactClient) Interceptors() []Interceptor {
+	return c.inters.CaptureArtifact
+}
+
+func (c *CaptureArtifactClient) mutate(ctx context.Context, m *CaptureArtifactMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CaptureArtifactCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CaptureArtifactUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CaptureArtifactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CaptureArtifactDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CaptureArtifact mutation op: %q", m.Op())
 	}
 }
 
@@ -13451,6 +13625,54 @@ func (c *UserClient) QueryMeetingMinuteUsages(_m *User) *MeetingMinuteUsageQuery
 	return query
 }
 
+// QueryVoiceAPIKeys queries the voice_api_keys edge of a User.
+func (c *UserClient) QueryVoiceAPIKeys(_m *User) *VoiceAPIKeyQuery {
+	query := (&VoiceAPIKeyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(voiceapikey.Table, voiceapikey.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.VoiceAPIKeysTable, user.VoiceAPIKeysColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryVoiceSyncItems queries the voice_sync_items edge of a User.
+func (c *UserClient) QueryVoiceSyncItems(_m *User) *VoiceSyncItemQuery {
+	query := (&VoiceSyncItemClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(voicesyncitem.Table, voicesyncitem.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.VoiceSyncItemsTable, user.VoiceSyncItemsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCaptureArtifacts queries the capture_artifacts edge of a User.
+func (c *UserClient) QueryCaptureArtifacts(_m *User) *CaptureArtifactQuery {
+	query := (&CaptureArtifactClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(captureartifact.Table, captureartifact.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CaptureArtifactsTable, user.CaptureArtifactsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryLlmUsages queries the llm_usages edge of a User.
 func (c *UserClient) QueryLlmUsages(_m *User) *LLMUsageQuery {
 	query := (&LLMUsageClient{config: c.config}).Query()
@@ -14521,6 +14743,306 @@ func (c *UserHistoryClient) mutate(ctx context.Context, m *UserHistoryMutation) 
 	}
 }
 
+// VoiceAPIKeyClient is a client for the VoiceAPIKey schema.
+type VoiceAPIKeyClient struct {
+	config
+}
+
+// NewVoiceAPIKeyClient returns a client for the VoiceAPIKey from the given config.
+func NewVoiceAPIKeyClient(c config) *VoiceAPIKeyClient {
+	return &VoiceAPIKeyClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `voiceapikey.Hooks(f(g(h())))`.
+func (c *VoiceAPIKeyClient) Use(hooks ...Hook) {
+	c.hooks.VoiceAPIKey = append(c.hooks.VoiceAPIKey, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `voiceapikey.Intercept(f(g(h())))`.
+func (c *VoiceAPIKeyClient) Intercept(interceptors ...Interceptor) {
+	c.inters.VoiceAPIKey = append(c.inters.VoiceAPIKey, interceptors...)
+}
+
+// Create returns a builder for creating a VoiceAPIKey entity.
+func (c *VoiceAPIKeyClient) Create() *VoiceAPIKeyCreate {
+	mutation := newVoiceAPIKeyMutation(c.config, OpCreate)
+	return &VoiceAPIKeyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of VoiceAPIKey entities.
+func (c *VoiceAPIKeyClient) CreateBulk(builders ...*VoiceAPIKeyCreate) *VoiceAPIKeyCreateBulk {
+	return &VoiceAPIKeyCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *VoiceAPIKeyClient) MapCreateBulk(slice any, setFunc func(*VoiceAPIKeyCreate, int)) *VoiceAPIKeyCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &VoiceAPIKeyCreateBulk{err: fmt.Errorf("calling to VoiceAPIKeyClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*VoiceAPIKeyCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &VoiceAPIKeyCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for VoiceAPIKey.
+func (c *VoiceAPIKeyClient) Update() *VoiceAPIKeyUpdate {
+	mutation := newVoiceAPIKeyMutation(c.config, OpUpdate)
+	return &VoiceAPIKeyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *VoiceAPIKeyClient) UpdateOne(_m *VoiceAPIKey) *VoiceAPIKeyUpdateOne {
+	mutation := newVoiceAPIKeyMutation(c.config, OpUpdateOne, withVoiceAPIKey(_m))
+	return &VoiceAPIKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *VoiceAPIKeyClient) UpdateOneID(id uuid.UUID) *VoiceAPIKeyUpdateOne {
+	mutation := newVoiceAPIKeyMutation(c.config, OpUpdateOne, withVoiceAPIKeyID(id))
+	return &VoiceAPIKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for VoiceAPIKey.
+func (c *VoiceAPIKeyClient) Delete() *VoiceAPIKeyDelete {
+	mutation := newVoiceAPIKeyMutation(c.config, OpDelete)
+	return &VoiceAPIKeyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *VoiceAPIKeyClient) DeleteOne(_m *VoiceAPIKey) *VoiceAPIKeyDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *VoiceAPIKeyClient) DeleteOneID(id uuid.UUID) *VoiceAPIKeyDeleteOne {
+	builder := c.Delete().Where(voiceapikey.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &VoiceAPIKeyDeleteOne{builder}
+}
+
+// Query returns a query builder for VoiceAPIKey.
+func (c *VoiceAPIKeyClient) Query() *VoiceAPIKeyQuery {
+	return &VoiceAPIKeyQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeVoiceAPIKey},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a VoiceAPIKey entity by its id.
+func (c *VoiceAPIKeyClient) Get(ctx context.Context, id uuid.UUID) (*VoiceAPIKey, error) {
+	return c.Query().Where(voiceapikey.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *VoiceAPIKeyClient) GetX(ctx context.Context, id uuid.UUID) *VoiceAPIKey {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a VoiceAPIKey.
+func (c *VoiceAPIKeyClient) QueryUser(_m *VoiceAPIKey) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(voiceapikey.Table, voiceapikey.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, voiceapikey.UserTable, voiceapikey.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *VoiceAPIKeyClient) Hooks() []Hook {
+	hooks := c.hooks.VoiceAPIKey
+	return append(hooks[:len(hooks):len(hooks)], voiceapikey.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *VoiceAPIKeyClient) Interceptors() []Interceptor {
+	return c.inters.VoiceAPIKey
+}
+
+func (c *VoiceAPIKeyClient) mutate(ctx context.Context, m *VoiceAPIKeyMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&VoiceAPIKeyCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&VoiceAPIKeyUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&VoiceAPIKeyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&VoiceAPIKeyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown VoiceAPIKey mutation op: %q", m.Op())
+	}
+}
+
+// VoiceSyncItemClient is a client for the VoiceSyncItem schema.
+type VoiceSyncItemClient struct {
+	config
+}
+
+// NewVoiceSyncItemClient returns a client for the VoiceSyncItem from the given config.
+func NewVoiceSyncItemClient(c config) *VoiceSyncItemClient {
+	return &VoiceSyncItemClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `voicesyncitem.Hooks(f(g(h())))`.
+func (c *VoiceSyncItemClient) Use(hooks ...Hook) {
+	c.hooks.VoiceSyncItem = append(c.hooks.VoiceSyncItem, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `voicesyncitem.Intercept(f(g(h())))`.
+func (c *VoiceSyncItemClient) Intercept(interceptors ...Interceptor) {
+	c.inters.VoiceSyncItem = append(c.inters.VoiceSyncItem, interceptors...)
+}
+
+// Create returns a builder for creating a VoiceSyncItem entity.
+func (c *VoiceSyncItemClient) Create() *VoiceSyncItemCreate {
+	mutation := newVoiceSyncItemMutation(c.config, OpCreate)
+	return &VoiceSyncItemCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of VoiceSyncItem entities.
+func (c *VoiceSyncItemClient) CreateBulk(builders ...*VoiceSyncItemCreate) *VoiceSyncItemCreateBulk {
+	return &VoiceSyncItemCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *VoiceSyncItemClient) MapCreateBulk(slice any, setFunc func(*VoiceSyncItemCreate, int)) *VoiceSyncItemCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &VoiceSyncItemCreateBulk{err: fmt.Errorf("calling to VoiceSyncItemClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*VoiceSyncItemCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &VoiceSyncItemCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for VoiceSyncItem.
+func (c *VoiceSyncItemClient) Update() *VoiceSyncItemUpdate {
+	mutation := newVoiceSyncItemMutation(c.config, OpUpdate)
+	return &VoiceSyncItemUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *VoiceSyncItemClient) UpdateOne(_m *VoiceSyncItem) *VoiceSyncItemUpdateOne {
+	mutation := newVoiceSyncItemMutation(c.config, OpUpdateOne, withVoiceSyncItem(_m))
+	return &VoiceSyncItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *VoiceSyncItemClient) UpdateOneID(id uuid.UUID) *VoiceSyncItemUpdateOne {
+	mutation := newVoiceSyncItemMutation(c.config, OpUpdateOne, withVoiceSyncItemID(id))
+	return &VoiceSyncItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for VoiceSyncItem.
+func (c *VoiceSyncItemClient) Delete() *VoiceSyncItemDelete {
+	mutation := newVoiceSyncItemMutation(c.config, OpDelete)
+	return &VoiceSyncItemDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *VoiceSyncItemClient) DeleteOne(_m *VoiceSyncItem) *VoiceSyncItemDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *VoiceSyncItemClient) DeleteOneID(id uuid.UUID) *VoiceSyncItemDeleteOne {
+	builder := c.Delete().Where(voicesyncitem.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &VoiceSyncItemDeleteOne{builder}
+}
+
+// Query returns a query builder for VoiceSyncItem.
+func (c *VoiceSyncItemClient) Query() *VoiceSyncItemQuery {
+	return &VoiceSyncItemQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeVoiceSyncItem},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a VoiceSyncItem entity by its id.
+func (c *VoiceSyncItemClient) Get(ctx context.Context, id uuid.UUID) (*VoiceSyncItem, error) {
+	return c.Query().Where(voicesyncitem.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *VoiceSyncItemClient) GetX(ctx context.Context, id uuid.UUID) *VoiceSyncItem {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a VoiceSyncItem.
+func (c *VoiceSyncItemClient) QueryUser(_m *VoiceSyncItem) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(voicesyncitem.Table, voicesyncitem.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, voicesyncitem.UserTable, voicesyncitem.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *VoiceSyncItemClient) Hooks() []Hook {
+	hooks := c.hooks.VoiceSyncItem
+	return append(hooks[:len(hooks):len(hooks)], voicesyncitem.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *VoiceSyncItemClient) Interceptors() []Interceptor {
+	return c.inters.VoiceSyncItem
+}
+
+func (c *VoiceSyncItemClient) mutate(ctx context.Context, m *VoiceSyncItemMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&VoiceSyncItemCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&VoiceSyncItemUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&VoiceSyncItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&VoiceSyncItemDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown VoiceSyncItem mutation op: %q", m.Op())
+	}
+}
+
 // WorkspaceFeatureControlClient is a client for the WorkspaceFeatureControl schema.
 type WorkspaceFeatureControlClient struct {
 	config
@@ -14694,41 +15216,43 @@ type (
 		AgentDefinitionHistory, AgentSession, AgentSessionEvent, AgentToolCall,
 		AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
-		BackgroundTaskScheduleState, CloudEvent, Commitment, CommitmentDependency,
-		CommitmentEvent, ConversationIntelligenceArtifact, CreditLedger, GoogleWatch,
-		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
-		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
-		PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
-		PolicyDecisionSnapshot, Relationship, RelationshipAssertion,
-		RelationshipAttentionItem, RelationshipIdentity, RelationshipIdentityCandidate,
-		RelationshipIdentityDecision, RelationshipLineageEvent,
-		RelationshipObservation, RelationshipParticipant, RelationshipProjectionJob,
-		RelationshipReviewAcknowledgement, RelationshipSourceStatus,
-		RelationshipStateSnapshot, RevenueAction, RevenueActionRevision,
-		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueTrustEvent,
-		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
-		TenantEvidenceKey, User, UserHistory, WorkspaceFeatureControl []ent.Hook
+		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
+		CommitmentDependency, CommitmentEvent, ConversationIntelligenceArtifact,
+		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
+		MCPConnectionHistory, MailBodyCache, MailMessageMeta, MailSignal, MailThread,
+		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
+		Person, PersonAttribute, PersonIdentity, PersonInteractionStat,
+		PersonMergeCandidate, PersonSuppression, PolicyDecisionSnapshot, Relationship,
+		RelationshipAssertion, RelationshipAttentionItem, RelationshipIdentity,
+		RelationshipIdentityCandidate, RelationshipIdentityDecision,
+		RelationshipLineageEvent, RelationshipObservation, RelationshipParticipant,
+		RelationshipProjectionJob, RelationshipReviewAcknowledgement,
+		RelationshipSourceStatus, RelationshipStateSnapshot, RevenueAction,
+		RevenueActionRevision, RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent,
+		RevenueTrustEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
+		SubscriptionHistory, TenantEvidenceKey, User, UserHistory, VoiceAPIKey,
+		VoiceSyncItem, WorkspaceFeatureControl []ent.Hook
 	}
 	inters struct {
 		ActionOutcome, ActionProposal, AgentApproval, AgentDefinition,
 		AgentDefinitionHistory, AgentSession, AgentSessionEvent, AgentToolCall,
 		AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
-		BackgroundTaskScheduleState, CloudEvent, Commitment, CommitmentDependency,
-		CommitmentEvent, ConversationIntelligenceArtifact, CreditLedger, GoogleWatch,
-		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
-		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
-		PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
-		PolicyDecisionSnapshot, Relationship, RelationshipAssertion,
-		RelationshipAttentionItem, RelationshipIdentity, RelationshipIdentityCandidate,
-		RelationshipIdentityDecision, RelationshipLineageEvent,
-		RelationshipObservation, RelationshipParticipant, RelationshipProjectionJob,
-		RelationshipReviewAcknowledgement, RelationshipSourceStatus,
-		RelationshipStateSnapshot, RevenueAction, RevenueActionRevision,
-		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueTrustEvent,
-		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
-		TenantEvidenceKey, User, UserHistory, WorkspaceFeatureControl []ent.Interceptor
+		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
+		CommitmentDependency, CommitmentEvent, ConversationIntelligenceArtifact,
+		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
+		MCPConnectionHistory, MailBodyCache, MailMessageMeta, MailSignal, MailThread,
+		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
+		Person, PersonAttribute, PersonIdentity, PersonInteractionStat,
+		PersonMergeCandidate, PersonSuppression, PolicyDecisionSnapshot, Relationship,
+		RelationshipAssertion, RelationshipAttentionItem, RelationshipIdentity,
+		RelationshipIdentityCandidate, RelationshipIdentityDecision,
+		RelationshipLineageEvent, RelationshipObservation, RelationshipParticipant,
+		RelationshipProjectionJob, RelationshipReviewAcknowledgement,
+		RelationshipSourceStatus, RelationshipStateSnapshot, RevenueAction,
+		RevenueActionRevision, RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent,
+		RevenueTrustEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
+		SubscriptionHistory, TenantEvidenceKey, User, UserHistory, VoiceAPIKey,
+		VoiceSyncItem, WorkspaceFeatureControl []ent.Interceptor
 	}
 )

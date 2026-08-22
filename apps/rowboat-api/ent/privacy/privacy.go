@@ -495,6 +495,30 @@ func (f BackgroundTaskScheduleStateMutationRuleFunc) EvalMutation(ctx context.Co
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.BackgroundTaskScheduleStateMutation", m)
 }
 
+// The CaptureArtifactQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type CaptureArtifactQueryRuleFunc func(context.Context, *ent.CaptureArtifactQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f CaptureArtifactQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CaptureArtifactQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.CaptureArtifactQuery", q)
+}
+
+// The CaptureArtifactMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type CaptureArtifactMutationRuleFunc func(context.Context, *ent.CaptureArtifactMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f CaptureArtifactMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.CaptureArtifactMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.CaptureArtifactMutation", m)
+}
+
 // The CloudEventQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type CloudEventQueryRuleFunc func(context.Context, *ent.CloudEventQuery) error
@@ -1743,6 +1767,54 @@ func (f UserHistoryMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mut
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.UserHistoryMutation", m)
 }
 
+// The VoiceAPIKeyQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type VoiceAPIKeyQueryRuleFunc func(context.Context, *ent.VoiceAPIKeyQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f VoiceAPIKeyQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.VoiceAPIKeyQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.VoiceAPIKeyQuery", q)
+}
+
+// The VoiceAPIKeyMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type VoiceAPIKeyMutationRuleFunc func(context.Context, *ent.VoiceAPIKeyMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f VoiceAPIKeyMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.VoiceAPIKeyMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.VoiceAPIKeyMutation", m)
+}
+
+// The VoiceSyncItemQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type VoiceSyncItemQueryRuleFunc func(context.Context, *ent.VoiceSyncItemQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f VoiceSyncItemQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.VoiceSyncItemQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.VoiceSyncItemQuery", q)
+}
+
+// The VoiceSyncItemMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type VoiceSyncItemMutationRuleFunc func(context.Context, *ent.VoiceSyncItemMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f VoiceSyncItemMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.VoiceSyncItemMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.VoiceSyncItemMutation", m)
+}
+
 // The WorkspaceFeatureControlQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type WorkspaceFeatureControlQueryRuleFunc func(context.Context, *ent.WorkspaceFeatureControlQuery) error
@@ -1833,6 +1905,8 @@ func queryFilter(q ent.Query) (Filter, error) {
 	case *ent.BackgroundTaskRunEventQuery:
 		return q.Filter(), nil
 	case *ent.BackgroundTaskScheduleStateQuery:
+		return q.Filter(), nil
+	case *ent.CaptureArtifactQuery:
 		return q.Filter(), nil
 	case *ent.CloudEventQuery:
 		return q.Filter(), nil
@@ -1938,6 +2012,10 @@ func queryFilter(q ent.Query) (Filter, error) {
 		return q.Filter(), nil
 	case *ent.UserHistoryQuery:
 		return q.Filter(), nil
+	case *ent.VoiceAPIKeyQuery:
+		return q.Filter(), nil
+	case *ent.VoiceSyncItemQuery:
+		return q.Filter(), nil
 	case *ent.WorkspaceFeatureControlQuery:
 		return q.Filter(), nil
 	default:
@@ -1978,6 +2056,8 @@ func mutationFilter(m ent.Mutation) (Filter, error) {
 	case *ent.BackgroundTaskRunEventMutation:
 		return m.Filter(), nil
 	case *ent.BackgroundTaskScheduleStateMutation:
+		return m.Filter(), nil
+	case *ent.CaptureArtifactMutation:
 		return m.Filter(), nil
 	case *ent.CloudEventMutation:
 		return m.Filter(), nil
@@ -2082,6 +2162,10 @@ func mutationFilter(m ent.Mutation) (Filter, error) {
 	case *ent.UserMutation:
 		return m.Filter(), nil
 	case *ent.UserHistoryMutation:
+		return m.Filter(), nil
+	case *ent.VoiceAPIKeyMutation:
+		return m.Filter(), nil
+	case *ent.VoiceSyncItemMutation:
 		return m.Filter(), nil
 	case *ent.WorkspaceFeatureControlMutation:
 		return m.Filter(), nil

@@ -230,6 +230,31 @@ Deletion propagation is a product requirement, not a best-effort maintenance
 job. Rowboat must remove or tombstone derived data as required by policy while
 retaining only the minimal audit proof permitted by that policy.
 
+### 4.4 Implementation status (2026-08-21)
+
+The first cloud control-plane slice is implemented in `apps/rowboat-api`:
+
+- tenant-scoped Oppulence Voice API-key creation, listing, revocation, and
+  digest-only verifier snapshots;
+- opaque encrypted sync-item storage with conflict detection and resumable
+  `(updated_at, id)` cursors;
+- explicit capture-artifact ingestion at `/v1/capture-artifacts`, plus the
+  `/capture-artifacts` compatibility route used by the desktop outbox;
+- content-hash, consent, tombstone, and full-envelope idempotency validation;
+- a Better Auth-shaped session adapter over already verified WorkOS JWTs; and
+- Ent schemas, an Atlas migration, generated OpenAPI/GraphQL/TypeScript
+  contracts, tenant interceptors, audit hooks, and handler tests.
+
+This slice provides durable acceptance and deletion acknowledgement. It does
+not yet project accepted artifacts into canonical people, evidence,
+commitments, or relationship state. That work remains an asynchronous Rowboat
+pipeline so capture delivery is not coupled to graph-processing availability.
+
+The server-side opaque sync store is also implemented, but desktop encrypted
+sync upload, restore, and key-recovery UX remain rollout work. The server cannot
+decrypt a sync item and must not gain that capability as those clients are
+added.
+
 ## 5. Code reuse policy
 
 Do not cherry-pick complete product features into Rowboat. The repositories

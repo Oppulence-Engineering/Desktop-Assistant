@@ -22,6 +22,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
@@ -75,6 +76,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 	"github.com/google/uuid"
 
@@ -1016,6 +1019,90 @@ func init() {
 	backgroundtaskschedulestateDescID := backgroundtaskschedulestateMixinFields0[0].Descriptor()
 	// backgroundtaskschedulestate.DefaultID holds the default value on creation for the id field.
 	backgroundtaskschedulestate.DefaultID = backgroundtaskschedulestateDescID.Default.(func() uuid.UUID)
+	captureartifactMixin := schema.CaptureArtifact{}.Mixin()
+	captureartifact.Policy = privacy.NewPolicies(captureartifactMixin[0], schema.CaptureArtifact{})
+	captureartifact.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := captureartifact.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	captureartifactMixinFields0 := captureartifactMixin[0].Fields()
+	_ = captureartifactMixinFields0
+	captureartifactFields := schema.CaptureArtifact{}.Fields()
+	_ = captureartifactFields
+	// captureartifactDescCreatedAt is the schema descriptor for created_at field.
+	captureartifactDescCreatedAt := captureartifactMixinFields0[1].Descriptor()
+	// captureartifact.DefaultCreatedAt holds the default value on creation for the created_at field.
+	captureartifact.DefaultCreatedAt = captureartifactDescCreatedAt.Default.(func() time.Time)
+	// captureartifactDescUpdatedAt is the schema descriptor for updated_at field.
+	captureartifactDescUpdatedAt := captureartifactMixinFields0[2].Descriptor()
+	// captureartifact.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	captureartifact.DefaultUpdatedAt = captureartifactDescUpdatedAt.Default.(func() time.Time)
+	// captureartifact.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	captureartifact.UpdateDefaultUpdatedAt = captureartifactDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// captureartifactDescEventID is the schema descriptor for event_id field.
+	captureartifactDescEventID := captureartifactFields[0].Descriptor()
+	// captureartifact.EventIDValidator is a validator for the "event_id" field. It is called by the builders before save.
+	captureartifact.EventIDValidator = captureartifactDescEventID.Validators[0].(func(string) error)
+	// captureartifactDescArtifactID is the schema descriptor for artifact_id field.
+	captureartifactDescArtifactID := captureartifactFields[1].Descriptor()
+	// captureartifact.ArtifactIDValidator is a validator for the "artifact_id" field. It is called by the builders before save.
+	captureartifact.ArtifactIDValidator = captureartifactDescArtifactID.Validators[0].(func(string) error)
+	// captureartifactDescSchemaVersion is the schema descriptor for schema_version field.
+	captureartifactDescSchemaVersion := captureartifactFields[2].Descriptor()
+	// captureartifact.SchemaVersionValidator is a validator for the "schema_version" field. It is called by the builders before save.
+	captureartifact.SchemaVersionValidator = captureartifactDescSchemaVersion.Validators[0].(func(string) error)
+	// captureartifactDescKind is the schema descriptor for kind field.
+	captureartifactDescKind := captureartifactFields[3].Descriptor()
+	// captureartifact.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	captureartifact.KindValidator = captureartifactDescKind.Validators[0].(func(string) error)
+	// captureartifactDescOperation is the schema descriptor for operation field.
+	captureartifactDescOperation := captureartifactFields[4].Descriptor()
+	// captureartifact.OperationValidator is a validator for the "operation" field. It is called by the builders before save.
+	captureartifact.OperationValidator = captureartifactDescOperation.Validators[0].(func(string) error)
+	// captureartifactDescSourceProduct is the schema descriptor for source_product field.
+	captureartifactDescSourceProduct := captureartifactFields[5].Descriptor()
+	// captureartifact.SourceProductValidator is a validator for the "source_product" field. It is called by the builders before save.
+	captureartifact.SourceProductValidator = captureartifactDescSourceProduct.Validators[0].(func(string) error)
+	// captureartifactDescConsentBasis is the schema descriptor for consent_basis field.
+	captureartifactDescConsentBasis := captureartifactFields[6].Descriptor()
+	// captureartifact.ConsentBasisValidator is a validator for the "consent_basis" field. It is called by the builders before save.
+	captureartifact.ConsentBasisValidator = captureartifactDescConsentBasis.Validators[0].(func(string) error)
+	// captureartifactDescContentHash is the schema descriptor for content_hash field.
+	captureartifactDescContentHash := captureartifactFields[7].Descriptor()
+	// captureartifact.ContentHashValidator is a validator for the "content_hash" field. It is called by the builders before save.
+	captureartifact.ContentHashValidator = captureartifactDescContentHash.Validators[0].(func(string) error)
+	// captureartifactDescPayloadJSON is the schema descriptor for payload_json field.
+	captureartifactDescPayloadJSON := captureartifactFields[8].Descriptor()
+	// captureartifact.PayloadJSONValidator is a validator for the "payload_json" field. It is called by the builders before save.
+	captureartifact.PayloadJSONValidator = func() func(string) error {
+		validators := captureartifactDescPayloadJSON.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(payload_json string) error {
+			for _, fn := range fns {
+				if err := fn(payload_json); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// captureartifactDescStatus is the schema descriptor for status field.
+	captureartifactDescStatus := captureartifactFields[9].Descriptor()
+	// captureartifact.DefaultStatus holds the default value on creation for the status field.
+	captureartifact.DefaultStatus = captureartifactDescStatus.Default.(string)
+	// captureartifact.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	captureartifact.StatusValidator = captureartifactDescStatus.Validators[0].(func(string) error)
+	// captureartifactDescID is the schema descriptor for id field.
+	captureartifactDescID := captureartifactMixinFields0[0].Descriptor()
+	// captureartifact.DefaultID holds the default value on creation for the id field.
+	captureartifact.DefaultID = captureartifactDescID.Default.(func() uuid.UUID)
 	cloudeventMixin := schema.CloudEvent{}.Mixin()
 	cloudevent.Policy = privacy.NewPolicies(cloudeventMixin[0], schema.CloudEvent{})
 	cloudevent.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -3851,6 +3938,112 @@ func init() {
 	userhistoryDescID := userhistoryFields[0].Descriptor()
 	// userhistory.DefaultID holds the default value on creation for the id field.
 	userhistory.DefaultID = userhistoryDescID.Default.(func() uuid.UUID)
+	voiceapikeyMixin := schema.VoiceAPIKey{}.Mixin()
+	voiceapikey.Policy = privacy.NewPolicies(voiceapikeyMixin[0], schema.VoiceAPIKey{})
+	voiceapikey.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := voiceapikey.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	voiceapikeyMixinFields0 := voiceapikeyMixin[0].Fields()
+	_ = voiceapikeyMixinFields0
+	voiceapikeyFields := schema.VoiceAPIKey{}.Fields()
+	_ = voiceapikeyFields
+	// voiceapikeyDescCreatedAt is the schema descriptor for created_at field.
+	voiceapikeyDescCreatedAt := voiceapikeyMixinFields0[1].Descriptor()
+	// voiceapikey.DefaultCreatedAt holds the default value on creation for the created_at field.
+	voiceapikey.DefaultCreatedAt = voiceapikeyDescCreatedAt.Default.(func() time.Time)
+	// voiceapikeyDescUpdatedAt is the schema descriptor for updated_at field.
+	voiceapikeyDescUpdatedAt := voiceapikeyMixinFields0[2].Descriptor()
+	// voiceapikey.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	voiceapikey.DefaultUpdatedAt = voiceapikeyDescUpdatedAt.Default.(func() time.Time)
+	// voiceapikey.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	voiceapikey.UpdateDefaultUpdatedAt = voiceapikeyDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// voiceapikeyDescName is the schema descriptor for name field.
+	voiceapikeyDescName := voiceapikeyFields[0].Descriptor()
+	// voiceapikey.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	voiceapikey.NameValidator = voiceapikeyDescName.Validators[0].(func(string) error)
+	// voiceapikeyDescKeyDigest is the schema descriptor for key_digest field.
+	voiceapikeyDescKeyDigest := voiceapikeyFields[1].Descriptor()
+	// voiceapikey.KeyDigestValidator is a validator for the "key_digest" field. It is called by the builders before save.
+	voiceapikey.KeyDigestValidator = voiceapikeyDescKeyDigest.Validators[0].(func(string) error)
+	// voiceapikeyDescKeyPrefix is the schema descriptor for key_prefix field.
+	voiceapikeyDescKeyPrefix := voiceapikeyFields[2].Descriptor()
+	// voiceapikey.KeyPrefixValidator is a validator for the "key_prefix" field. It is called by the builders before save.
+	voiceapikey.KeyPrefixValidator = voiceapikeyDescKeyPrefix.Validators[0].(func(string) error)
+	// voiceapikeyDescScopes is the schema descriptor for scopes field.
+	voiceapikeyDescScopes := voiceapikeyFields[3].Descriptor()
+	// voiceapikey.DefaultScopes holds the default value on creation for the scopes field.
+	voiceapikey.DefaultScopes = voiceapikeyDescScopes.Default.([]string)
+	// voiceapikeyDescID is the schema descriptor for id field.
+	voiceapikeyDescID := voiceapikeyMixinFields0[0].Descriptor()
+	// voiceapikey.DefaultID holds the default value on creation for the id field.
+	voiceapikey.DefaultID = voiceapikeyDescID.Default.(func() uuid.UUID)
+	voicesyncitemMixin := schema.VoiceSyncItem{}.Mixin()
+	voicesyncitem.Policy = privacy.NewPolicies(voicesyncitemMixin[0], schema.VoiceSyncItem{})
+	voicesyncitem.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := voicesyncitem.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	voicesyncitemMixinFields0 := voicesyncitemMixin[0].Fields()
+	_ = voicesyncitemMixinFields0
+	voicesyncitemFields := schema.VoiceSyncItem{}.Fields()
+	_ = voicesyncitemFields
+	// voicesyncitemDescCreatedAt is the schema descriptor for created_at field.
+	voicesyncitemDescCreatedAt := voicesyncitemMixinFields0[1].Descriptor()
+	// voicesyncitem.DefaultCreatedAt holds the default value on creation for the created_at field.
+	voicesyncitem.DefaultCreatedAt = voicesyncitemDescCreatedAt.Default.(func() time.Time)
+	// voicesyncitemDescUpdatedAt is the schema descriptor for updated_at field.
+	voicesyncitemDescUpdatedAt := voicesyncitemMixinFields0[2].Descriptor()
+	// voicesyncitem.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	voicesyncitem.DefaultUpdatedAt = voicesyncitemDescUpdatedAt.Default.(func() time.Time)
+	// voicesyncitem.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	voicesyncitem.UpdateDefaultUpdatedAt = voicesyncitemDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// voicesyncitemDescCollection is the schema descriptor for collection field.
+	voicesyncitemDescCollection := voicesyncitemFields[0].Descriptor()
+	// voicesyncitem.CollectionValidator is a validator for the "collection" field. It is called by the builders before save.
+	voicesyncitem.CollectionValidator = voicesyncitemDescCollection.Validators[0].(func(string) error)
+	// voicesyncitemDescItemID is the schema descriptor for item_id field.
+	voicesyncitemDescItemID := voicesyncitemFields[1].Descriptor()
+	// voicesyncitem.ItemIDValidator is a validator for the "item_id" field. It is called by the builders before save.
+	voicesyncitem.ItemIDValidator = voicesyncitemDescItemID.Validators[0].(func(string) error)
+	// voicesyncitemDescOperation is the schema descriptor for operation field.
+	voicesyncitemDescOperation := voicesyncitemFields[3].Descriptor()
+	// voicesyncitem.OperationValidator is a validator for the "operation" field. It is called by the builders before save.
+	voicesyncitem.OperationValidator = voicesyncitemDescOperation.Validators[0].(func(string) error)
+	// voicesyncitemDescRevision is the schema descriptor for revision field.
+	voicesyncitemDescRevision := voicesyncitemFields[4].Descriptor()
+	// voicesyncitem.DefaultRevision holds the default value on creation for the revision field.
+	voicesyncitem.DefaultRevision = voicesyncitemDescRevision.Default.(int)
+	// voicesyncitem.RevisionValidator is a validator for the "revision" field. It is called by the builders before save.
+	voicesyncitem.RevisionValidator = voicesyncitemDescRevision.Validators[0].(func(int) error)
+	// voicesyncitemDescKeyID is the schema descriptor for key_id field.
+	voicesyncitemDescKeyID := voicesyncitemFields[5].Descriptor()
+	// voicesyncitem.KeyIDValidator is a validator for the "key_id" field. It is called by the builders before save.
+	voicesyncitem.KeyIDValidator = voicesyncitemDescKeyID.Validators[0].(func(string) error)
+	// voicesyncitemDescNonce is the schema descriptor for nonce field.
+	voicesyncitemDescNonce := voicesyncitemFields[6].Descriptor()
+	// voicesyncitem.NonceValidator is a validator for the "nonce" field. It is called by the builders before save.
+	voicesyncitem.NonceValidator = voicesyncitemDescNonce.Validators[0].(func(string) error)
+	// voicesyncitemDescCiphertext is the schema descriptor for ciphertext field.
+	voicesyncitemDescCiphertext := voicesyncitemFields[7].Descriptor()
+	// voicesyncitem.CiphertextValidator is a validator for the "ciphertext" field. It is called by the builders before save.
+	voicesyncitem.CiphertextValidator = voicesyncitemDescCiphertext.Validators[0].(func(string) error)
+	// voicesyncitemDescContentHash is the schema descriptor for content_hash field.
+	voicesyncitemDescContentHash := voicesyncitemFields[8].Descriptor()
+	// voicesyncitem.ContentHashValidator is a validator for the "content_hash" field. It is called by the builders before save.
+	voicesyncitem.ContentHashValidator = voicesyncitemDescContentHash.Validators[0].(func(string) error)
+	// voicesyncitemDescID is the schema descriptor for id field.
+	voicesyncitemDescID := voicesyncitemMixinFields0[0].Descriptor()
+	// voicesyncitem.DefaultID holds the default value on creation for the id field.
+	voicesyncitem.DefaultID = voicesyncitemDescID.Default.(func() uuid.UUID)
 	workspacefeaturecontrolMixin := schema.WorkspaceFeatureControl{}.Mixin()
 	workspacefeaturecontrol.Policy = privacy.NewPolicies(workspacefeaturecontrolMixin[0], schema.WorkspaceFeatureControl{})
 	workspacefeaturecontrol.Hooks[0] = func(next ent.Mutator) ent.Mutator {

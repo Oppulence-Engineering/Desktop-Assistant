@@ -4,6 +4,86 @@
  */
 
 export interface paths {
+  "/api/auth/get-session": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get desktop session
+     * @description Adapts the authenticated WorkOS identity to the Better Auth session response shape expected by the upstream renderer. It does not mint or rotate credentials.
+     */
+    get: operations["getOppulenceVoiceSession"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/keys/create": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create API key
+     * @description Creates an Oppulence-owned scoped key and returns its secret once.
+     */
+    post: operations["createVoiceAPIKey"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/keys/list": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List API keys
+     * @description Lists active key metadata without secret material.
+     */
+    get: operations["listVoiceAPIKeys"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/keys/{id}/revoke": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Revoke API key
+     * @description Immediately removes a key from newly issued verifier snapshots.
+     */
+    post: operations["revokeVoiceAPIKey"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/graphql": {
     parameters: {
       query?: never;
@@ -566,6 +646,46 @@ export interface paths {
      * @description For executionTarget=desktop, queues a remote trigger with status=queued for desktop pickup. For executionTarget=api, creates an API-worker run and starts a Temporal workflow, while clients poll Solomon AI run status endpoints.
      */
     post: operations["triggerBackgroundTask"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/capture-artifacts": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Ingest consented capture artifact
+     * @description Validates content hash and idempotency before persisting one explicit Rowboat handoff.
+     */
+    post: operations["ingestCaptureArtifact"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/capture-artifacts/{eventId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get capture ingestion status
+     * @description Returns status without exposing submitted content.
+     */
+    get: operations["getCaptureArtifactStatus"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -2323,6 +2443,50 @@ export interface paths {
      * @description Idempotently deletes the authenticated user's managed Slack workspace connection for the given team id.
      */
     delete: operations["deleteSlackWorkspace"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/voice-sync/items": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List encrypted sync items
+     * @description Returns a bounded deterministic ciphertext feed.
+     */
+    get: operations["listVoiceSyncItems"];
+    put?: never;
+    /**
+     * Write encrypted sync item
+     * @description Creates or compare-and-swaps one opaque capture item.
+     */
+    post: operations["putVoiceSyncItem"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/voice/api-key-verifiers": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Fetch local API verifier snapshot
+     * @description Returns active key digests and scopes with a short fail-closed validity window.
+     */
+    get: operations["getVoiceAPIKeyVerifiers"];
+    put?: never;
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -4158,6 +4322,105 @@ export interface components {
        * @example 125
        */
       usedCredits: number;
+    };
+    CaptureArtifact: {
+      artifact_id: string;
+      consent_basis: string;
+      content_hash: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      event_id: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      kind: string;
+      /** Format: date-time */
+      occurred_at: string;
+      /**
+       * @description Mutation operation that produced this history row.
+       * @example UPDATE
+       */
+      operation: string;
+      payload_json: string;
+      schema_version: string;
+      source_product: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
+    /** @description Versioned, explicitly consented Oppulence Voice handoff. */
+    CaptureArtifactEnvelope: {
+      /**
+       * @description Stable logical artifact id.
+       * @example oppulence-voice:note:42
+       */
+      artifactId: string;
+      /** @description Explicit consent descriptor. */
+      consent: {
+        [key: string]: unknown;
+      };
+      /** @description Consented content, or null for a tombstone. */
+      content: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description SHA-256 of the exact content JSON.
+       * @example aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+       */
+      contentHash: string;
+      /**
+       * @description SHA-256 event id and idempotency key.
+       * @example bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+       */
+      eventId: string;
+      /**
+       * @description Artifact kind.
+       * @example note
+       * @enum {string}
+       */
+      kind: "note" | "transcription" | "speaker_mapping";
+      /**
+       * @description Source event time.
+       * @example 2026-08-21T23:00:00Z
+       */
+      occurredAt: string;
+      /**
+       * @description Mutation operation that produced this history row.
+       * @example UPDATE
+       * @enum {string}
+       */
+      operation: "upsert" | "delete";
+      /** @description Capture provenance. */
+      provenance?: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Artifact schema version.
+       * @example 1.0
+       * @enum {string}
+       */
+      schemaVersion: "1.0";
+      /** @description Capture source descriptor. */
+      source: {
+        [key: string]: unknown;
+      };
     };
     /** @description Stored cloud event. payload and routing appear only on the detail endpoint. */
     CloudEvent: {
@@ -9590,6 +9853,7 @@ export interface components {
       background_task_schedule_states?: components["schemas"]["BackgroundTaskScheduleState"][];
       /** @description Background task mirrors owned by the user. */
       background_tasks?: components["schemas"]["BackgroundTask"][];
+      capture_artifacts?: components["schemas"]["CaptureArtifact"][];
       cloud_events?: components["schemas"]["CloudEvent"][];
       commitment_dependencies?: components["schemas"]["CommitmentDependency"][];
       commitment_events?: components["schemas"]["CommitmentEvent"][];
@@ -9662,6 +9926,8 @@ export interface components {
        * @example 2026-06-04T20:39:00Z
        */
       updated_at: string;
+      voice_api_keys?: components["schemas"]["VoiceAPIKey"][];
+      voice_sync_items?: components["schemas"]["VoiceSyncItem"][];
       /**
        * @description Optional WorkOS organization id for B2B/workspace contexts.
        * @example org_01HABCDEF
@@ -9727,6 +9993,186 @@ export interface components {
        * @example user_01HABCDEF
        */
       workos_user_id: string;
+    };
+    /** @description Oppulence Voice API-key metadata. key is returned only on creation. */
+    VoiceAPIKey: {
+      /**
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * @description Credential or one-time ticket expiry timestamp.
+       * @example 2026-06-04T20:48:00Z
+       */
+      expires_at?: string | null;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description One-time bearer secret.
+       * @example opv_live_example
+       */
+      key?: string | null;
+      /**
+       * @description Safe display prefix.
+       * @example opv_live_example
+       */
+      key_prefix: string;
+      /**
+       * @description Timestamp when the connector credential was last minted or used.
+       * @example 2026-06-04T20:45:00Z
+       */
+      last_used_at?: string | null;
+      /**
+       * @description Display name.
+       * @example Local automation
+       */
+      name: string;
+      /**
+       * @description OAuth scopes granted or requested.
+       * @example [
+       *       "invoices:read",
+       *       "customers:read"
+       *     ]
+       */
+      scopes: string[];
+    };
+    /** @description Oppulence Voice API-key request. */
+    VoiceAPIKeyCreateRequest: {
+      /**
+       * @description Optional lifetime in days (1-3650).
+       * @example 30
+       */
+      expires_in_days?: number | null;
+      /**
+       * @description Display name.
+       * @example Local automation
+       */
+      name: string;
+      /**
+       * @description OAuth scopes granted or requested.
+       * @example [
+       *       "invoices:read",
+       *       "customers:read"
+       *     ]
+       */
+      scopes?: string[];
+    };
+    VoiceSyncItem: {
+      blind_index?: string;
+      ciphertext: string;
+      collection: string;
+      content_hash: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /** Format: date-time */
+      deleted_at?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      item_id: string;
+      key_id: string;
+      nonce: string;
+      /** Format: date-time */
+      occurred_at: string;
+      /**
+       * @description Mutation operation that produced this history row.
+       * @example UPDATE
+       */
+      operation: string;
+      revision: number;
+      space_id?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+    };
+    /** @description Opaque encrypted capture mutation. User-authored plaintext is forbidden. */
+    VoiceSyncMutation: {
+      /**
+       * @description Expected current revision; zero creates.
+       * @example 1
+       */
+      base_revision?: number | null;
+      /**
+       * @description Optional keyed equality index.
+       * @example folder-name-hmac
+       */
+      blind_index?: string | null;
+      /**
+       * @description Authenticated ciphertext.
+       * @example Y2lwaGVydGV4dA
+       */
+      ciphertext: string;
+      /**
+       * @description Capture collection.
+       * @example note
+       * @enum {string}
+       */
+      collection:
+        | "note"
+        | "folder"
+        | "transcription"
+        | "dictionary"
+        | "snippet"
+        | "speaker_profile";
+      /**
+       * @description SHA-256 integrity label.
+       * @example aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+       */
+      content_hash: string;
+      /**
+       * @description Stable client item id.
+       * @example note-42
+       */
+      item_id: string;
+      /**
+       * @description Client encryption key id.
+       * @example personal-v1
+       */
+      key_id: string;
+      /**
+       * @description Base64 encryption nonce.
+       * @example bm9uY2U
+       */
+      nonce: string;
+      /**
+       * @description Source event time.
+       * @example 2026-08-21T23:00:00Z
+       */
+      occurred_at: string;
+      /**
+       * @description Mutation operation that produced this history row.
+       * @example UPDATE
+       * @enum {string}
+       */
+      operation: "upsert" | "delete";
+      /**
+       * @description Envelope version.
+       * @example 1.0
+       * @enum {string}
+       */
+      schema_version: "1.0";
+      /**
+       * @description Optional encrypted-space id.
+       * @example personal
+       */
+      space_id?: string | null;
     };
     /** @description ElevenLabs text-to-speech request body. Solomon AI API reads text for credit charging and forwards the full JSON body unchanged. */
     VoiceTextToSpeechRequest: {
@@ -10075,6 +10521,148 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  getOppulenceVoiceSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Desktop session. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "session": {
+           *         "userId": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"
+           *       },
+           *       "user": {
+           *         "email": "voice@example.com",
+           *         "emailVerified": true,
+           *         "id": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"
+           *       }
+           *     }
+           */
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+    };
+  };
+  createVoiceAPIKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Key options. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "name": "Local automation",
+         *       "scopes": [
+         *         "notes:read"
+         *       ]
+         *     }
+         */
+        "application/json": components["schemas"]["VoiceAPIKeyCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description Created key. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "data": {
+           *         "key": "opv_live_example"
+           *       }
+           *     }
+           */
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
+    };
+  };
+  listVoiceAPIKeys: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Key list. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "data": []
+           *     }
+           */
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
+    };
+  };
+  revokeVoiceAPIKey: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description API key id. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Revoked. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "message": "API key revoked"
+           *     }
+           */
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
   graphql: {
     parameters: {
       query?: never;
@@ -11921,6 +12509,100 @@ export interface operations {
       500: components["responses"]["500"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
+    };
+  };
+  ingestCaptureArtifact: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Capture artifact. */
+    requestBody: {
+      content: {
+        /** @example {} */
+        "application/json": components["schemas"]["CaptureArtifactEnvelope"];
+      };
+    };
+    responses: {
+      /** @description Idempotent replay. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "data": {
+           *         "duplicate": true,
+           *         "status": "accepted"
+           *       }
+           *     }
+           */
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Accepted. */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "data": {
+           *         "duplicate": false,
+           *         "status": "accepted"
+           *       }
+           *     }
+           */
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      409: components["responses"]["409"];
+      500: components["responses"]["500"];
+    };
+  };
+  getCaptureArtifactStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description SHA-256 event id. */
+        eventId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Artifact status. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "data": {
+           *         "status": "accepted"
+           *       }
+           *     }
+           */
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
     };
   };
   getConfig: {
@@ -16061,6 +16743,134 @@ export interface operations {
         content?: never;
       };
       400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
+    };
+  };
+  listVoiceSyncItems: {
+    parameters: {
+      query?: {
+        /** @description Optional collection filter. */
+        collection?: string;
+        /** @description Page size (1-500). */
+        limit?: number;
+        /** @description Opaque updated-at/id checkpoint from next_cursor. */
+        cursor?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Encrypted item page. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "data": [],
+           *       "has_more": false,
+           *       "next_cursor": null
+           *     }
+           */
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
+    };
+  };
+  putVoiceSyncItem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Encrypted mutation. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "ciphertext": "Y2lwaGVydGV4dA",
+         *       "collection": "note",
+         *       "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+         *       "item_id": "note-42",
+         *       "key_id": "personal-v1",
+         *       "nonce": "bm9uY2U",
+         *       "occurred_at": "2026-08-21T23:00:00Z",
+         *       "operation": "upsert",
+         *       "schema_version": "1.0"
+         *     }
+         */
+        "application/json": components["schemas"]["VoiceSyncMutation"];
+      };
+    };
+    responses: {
+      /** @description Updated item. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /** @example {} */
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Created item. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /** @example {} */
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      409: components["responses"]["409"];
+      500: components["responses"]["500"];
+    };
+  };
+  getVoiceAPIKeyVerifiers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Verifier snapshot. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "data": {
+           *         "valid_until": "2026-08-21T23:15:00Z",
+           *         "verifiers": []
+           *       }
+           *     }
+           */
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
       401: components["responses"]["401"];
       500: components["responses"]["500"];
     };

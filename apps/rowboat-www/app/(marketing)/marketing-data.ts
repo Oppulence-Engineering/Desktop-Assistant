@@ -102,6 +102,11 @@ export const productLinks: LinkItem[] = [
     description: "See how living relationship state becomes evidence-backed action",
   },
   {
+    label: "Oppulence Voice",
+    href: "/voice",
+    description: "Capture voice locally and send consented evidence into relationship memory",
+  },
+  {
     label: "Account Mission Control",
     href: "/api-documentation-software",
     description: "Prioritize, verify, govern, approve, execute, and learn in one queue",
@@ -942,6 +947,26 @@ export const primaryPages: MarketingPage[] = [
     proof: baseProof,
     ctaLabel: "Book a Revenue Leak Scan",
     ctaHref: "/book-a-demo",
+  },
+  {
+    path: "voice",
+    eyebrow: "Oppulence Voice",
+    title: "Private voice capture for living relationship memory.",
+    description:
+      "Oppulence Voice transcribes on your device, keeps local capture under your control, and sends only explicitly consented evidence into Rowboat workflows.",
+    category: "product",
+    bullets: [
+      "Capture dictation, notes, and meeting context locally before deciding what leaves the device.",
+      "Synchronize encrypted artifacts through the Oppulence cloud without storing plaintext note content in the relay.",
+      "Hand approved captures to Rowboat with source identity, consent, provenance, and idempotency attached.",
+    ],
+    proof: [
+      "Local-first transcription and capture",
+      "Explicit consent at the Rowboat handoff",
+      "Source-backed, idempotent relationship evidence",
+    ],
+    ctaLabel: "Read the Oppulence Voice docs",
+    ctaHref: "https://docs.oppulence.io",
   },
   {
     path: "ai-documentation-agent",

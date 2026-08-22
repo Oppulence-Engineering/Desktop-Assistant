@@ -445,6 +445,75 @@ func HasMeetingMinuteUsagesWith(preds ...predicate.MeetingMinuteUsage) predicate
 	})
 }
 
+// HasVoiceAPIKeys applies the HasEdge predicate on the "voice_api_keys" edge.
+func HasVoiceAPIKeys() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, VoiceAPIKeysTable, VoiceAPIKeysColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasVoiceAPIKeysWith applies the HasEdge predicate on the "voice_api_keys" edge with a given conditions (other predicates).
+func HasVoiceAPIKeysWith(preds ...predicate.VoiceAPIKey) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newVoiceAPIKeysStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasVoiceSyncItems applies the HasEdge predicate on the "voice_sync_items" edge.
+func HasVoiceSyncItems() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, VoiceSyncItemsTable, VoiceSyncItemsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasVoiceSyncItemsWith applies the HasEdge predicate on the "voice_sync_items" edge with a given conditions (other predicates).
+func HasVoiceSyncItemsWith(preds ...predicate.VoiceSyncItem) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newVoiceSyncItemsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCaptureArtifacts applies the HasEdge predicate on the "capture_artifacts" edge.
+func HasCaptureArtifacts() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CaptureArtifactsTable, CaptureArtifactsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCaptureArtifactsWith applies the HasEdge predicate on the "capture_artifacts" edge with a given conditions (other predicates).
+func HasCaptureArtifactsWith(preds ...predicate.CaptureArtifact) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newCaptureArtifactsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasLlmUsages applies the HasEdge predicate on the "llm_usages" edge.
 func HasLlmUsages() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

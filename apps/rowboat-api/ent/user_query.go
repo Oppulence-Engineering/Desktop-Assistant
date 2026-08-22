@@ -27,6 +27,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
@@ -73,6 +74,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 	"github.com/google/uuid"
 )
@@ -87,6 +90,9 @@ type UserQuery struct {
 	withSubscription                            *SubscriptionQuery
 	withLedgerEntries                           *CreditLedgerQuery
 	withMeetingMinuteUsages                     *MeetingMinuteUsageQuery
+	withVoiceAPIKeys                            *VoiceAPIKeyQuery
+	withVoiceSyncItems                          *VoiceSyncItemQuery
+	withCaptureArtifacts                        *CaptureArtifactQuery
 	withLlmUsages                               *LLMUsageQuery
 	withOauthConnections                        *OAuthConnectionQuery
 	withMcpConnections                          *MCPConnectionQuery
@@ -148,6 +154,9 @@ type UserQuery struct {
 	loadTotal                                   []func(context.Context, []*User) error
 	withNamedLedgerEntries                      map[string]*CreditLedgerQuery
 	withNamedMeetingMinuteUsages                map[string]*MeetingMinuteUsageQuery
+	withNamedVoiceAPIKeys                       map[string]*VoiceAPIKeyQuery
+	withNamedVoiceSyncItems                     map[string]*VoiceSyncItemQuery
+	withNamedCaptureArtifacts                   map[string]*CaptureArtifactQuery
 	withNamedLlmUsages                          map[string]*LLMUsageQuery
 	withNamedOauthConnections                   map[string]*OAuthConnectionQuery
 	withNamedMcpConnections                     map[string]*MCPConnectionQuery
@@ -300,6 +309,72 @@ func (_q *UserQuery) QueryMeetingMinuteUsages() *MeetingMinuteUsageQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(meetingminuteusage.Table, meetingminuteusage.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.MeetingMinuteUsagesTable, user.MeetingMinuteUsagesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryVoiceAPIKeys chains the current query on the "voice_api_keys" edge.
+func (_q *UserQuery) QueryVoiceAPIKeys() *VoiceAPIKeyQuery {
+	query := (&VoiceAPIKeyClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(voiceapikey.Table, voiceapikey.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.VoiceAPIKeysTable, user.VoiceAPIKeysColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryVoiceSyncItems chains the current query on the "voice_sync_items" edge.
+func (_q *UserQuery) QueryVoiceSyncItems() *VoiceSyncItemQuery {
+	query := (&VoiceSyncItemClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(voicesyncitem.Table, voicesyncitem.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.VoiceSyncItemsTable, user.VoiceSyncItemsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCaptureArtifacts chains the current query on the "capture_artifacts" edge.
+func (_q *UserQuery) QueryCaptureArtifacts() *CaptureArtifactQuery {
+	query := (&CaptureArtifactClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(captureartifact.Table, captureartifact.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CaptureArtifactsTable, user.CaptureArtifactsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -1756,6 +1831,9 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withSubscription:                       _q.withSubscription.Clone(),
 		withLedgerEntries:                      _q.withLedgerEntries.Clone(),
 		withMeetingMinuteUsages:                _q.withMeetingMinuteUsages.Clone(),
+		withVoiceAPIKeys:                       _q.withVoiceAPIKeys.Clone(),
+		withVoiceSyncItems:                     _q.withVoiceSyncItems.Clone(),
+		withCaptureArtifacts:                   _q.withCaptureArtifacts.Clone(),
 		withLlmUsages:                          _q.withLlmUsages.Clone(),
 		withOauthConnections:                   _q.withOauthConnections.Clone(),
 		withMcpConnections:                     _q.withMcpConnections.Clone(),
@@ -1849,6 +1927,39 @@ func (_q *UserQuery) WithMeetingMinuteUsages(opts ...func(*MeetingMinuteUsageQue
 		opt(query)
 	}
 	_q.withMeetingMinuteUsages = query
+	return _q
+}
+
+// WithVoiceAPIKeys tells the query-builder to eager-load the nodes that are connected to
+// the "voice_api_keys" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithVoiceAPIKeys(opts ...func(*VoiceAPIKeyQuery)) *UserQuery {
+	query := (&VoiceAPIKeyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withVoiceAPIKeys = query
+	return _q
+}
+
+// WithVoiceSyncItems tells the query-builder to eager-load the nodes that are connected to
+// the "voice_sync_items" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithVoiceSyncItems(opts ...func(*VoiceSyncItemQuery)) *UserQuery {
+	query := (&VoiceSyncItemClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withVoiceSyncItems = query
+	return _q
+}
+
+// WithCaptureArtifacts tells the query-builder to eager-load the nodes that are connected to
+// the "capture_artifacts" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithCaptureArtifacts(opts ...func(*CaptureArtifactQuery)) *UserQuery {
+	query := (&CaptureArtifactClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCaptureArtifacts = query
 	return _q
 }
 
@@ -2557,10 +2668,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [60]bool{
+		loadedTypes = [63]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
+			_q.withVoiceAPIKeys != nil,
+			_q.withVoiceSyncItems != nil,
+			_q.withCaptureArtifacts != nil,
 			_q.withLlmUsages != nil,
 			_q.withOauthConnections != nil,
 			_q.withMcpConnections != nil,
@@ -2660,6 +2774,27 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			func(n *User, e *MeetingMinuteUsage) {
 				n.Edges.MeetingMinuteUsages = append(n.Edges.MeetingMinuteUsages, e)
 			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withVoiceAPIKeys; query != nil {
+		if err := _q.loadVoiceAPIKeys(ctx, query, nodes,
+			func(n *User) { n.Edges.VoiceAPIKeys = []*VoiceAPIKey{} },
+			func(n *User, e *VoiceAPIKey) { n.Edges.VoiceAPIKeys = append(n.Edges.VoiceAPIKeys, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withVoiceSyncItems; query != nil {
+		if err := _q.loadVoiceSyncItems(ctx, query, nodes,
+			func(n *User) { n.Edges.VoiceSyncItems = []*VoiceSyncItem{} },
+			func(n *User, e *VoiceSyncItem) { n.Edges.VoiceSyncItems = append(n.Edges.VoiceSyncItems, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCaptureArtifacts; query != nil {
+		if err := _q.loadCaptureArtifacts(ctx, query, nodes,
+			func(n *User) { n.Edges.CaptureArtifacts = []*CaptureArtifact{} },
+			func(n *User, e *CaptureArtifact) { n.Edges.CaptureArtifacts = append(n.Edges.CaptureArtifacts, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -3131,6 +3266,27 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadMeetingMinuteUsages(ctx, query, nodes,
 			func(n *User) { n.appendNamedMeetingMinuteUsages(name) },
 			func(n *User, e *MeetingMinuteUsage) { n.appendNamedMeetingMinuteUsages(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedVoiceAPIKeys {
+		if err := _q.loadVoiceAPIKeys(ctx, query, nodes,
+			func(n *User) { n.appendNamedVoiceAPIKeys(name) },
+			func(n *User, e *VoiceAPIKey) { n.appendNamedVoiceAPIKeys(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedVoiceSyncItems {
+		if err := _q.loadVoiceSyncItems(ctx, query, nodes,
+			func(n *User) { n.appendNamedVoiceSyncItems(name) },
+			func(n *User, e *VoiceSyncItem) { n.appendNamedVoiceSyncItems(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCaptureArtifacts {
+		if err := _q.loadCaptureArtifacts(ctx, query, nodes,
+			func(n *User) { n.appendNamedCaptureArtifacts(name) },
+			func(n *User, e *CaptureArtifact) { n.appendNamedCaptureArtifacts(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -3630,6 +3786,99 @@ func (_q *UserQuery) loadMeetingMinuteUsages(ctx context.Context, query *Meeting
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_meeting_minute_usages" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadVoiceAPIKeys(ctx context.Context, query *VoiceAPIKeyQuery, nodes []*User, init func(*User), assign func(*User, *VoiceAPIKey)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.VoiceAPIKey(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.VoiceAPIKeysColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_voice_api_keys
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_voice_api_keys" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_voice_api_keys" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadVoiceSyncItems(ctx context.Context, query *VoiceSyncItemQuery, nodes []*User, init func(*User), assign func(*User, *VoiceSyncItem)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.VoiceSyncItem(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.VoiceSyncItemsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_voice_sync_items
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_voice_sync_items" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_voice_sync_items" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadCaptureArtifacts(ctx context.Context, query *CaptureArtifactQuery, nodes []*User, init func(*User), assign func(*User, *CaptureArtifact)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CaptureArtifact(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.CaptureArtifactsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_capture_artifacts
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_capture_artifacts" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_capture_artifacts" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -5512,6 +5761,48 @@ func (_q *UserQuery) WithNamedMeetingMinuteUsages(name string, opts ...func(*Mee
 		_q.withNamedMeetingMinuteUsages = make(map[string]*MeetingMinuteUsageQuery)
 	}
 	_q.withNamedMeetingMinuteUsages[name] = query
+	return _q
+}
+
+// WithNamedVoiceAPIKeys tells the query-builder to eager-load the nodes that are connected to the "voice_api_keys"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedVoiceAPIKeys(name string, opts ...func(*VoiceAPIKeyQuery)) *UserQuery {
+	query := (&VoiceAPIKeyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedVoiceAPIKeys == nil {
+		_q.withNamedVoiceAPIKeys = make(map[string]*VoiceAPIKeyQuery)
+	}
+	_q.withNamedVoiceAPIKeys[name] = query
+	return _q
+}
+
+// WithNamedVoiceSyncItems tells the query-builder to eager-load the nodes that are connected to the "voice_sync_items"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedVoiceSyncItems(name string, opts ...func(*VoiceSyncItemQuery)) *UserQuery {
+	query := (&VoiceSyncItemClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedVoiceSyncItems == nil {
+		_q.withNamedVoiceSyncItems = make(map[string]*VoiceSyncItemQuery)
+	}
+	_q.withNamedVoiceSyncItems[name] = query
+	return _q
+}
+
+// WithNamedCaptureArtifacts tells the query-builder to eager-load the nodes that are connected to the "capture_artifacts"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedCaptureArtifacts(name string, opts ...func(*CaptureArtifactQuery)) *UserQuery {
+	query := (&CaptureArtifactClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCaptureArtifacts == nil {
+		_q.withNamedCaptureArtifacts = make(map[string]*CaptureArtifactQuery)
+	}
+	_q.withNamedCaptureArtifacts[name] = query
 	return _q
 }
 

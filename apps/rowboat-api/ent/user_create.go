@@ -27,6 +27,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskschedulestate"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/captureartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/cloudevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
@@ -72,6 +73,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
 	"github.com/google/uuid"
 )
@@ -207,6 +210,51 @@ func (_c *UserCreate) AddMeetingMinuteUsages(v ...*MeetingMinuteUsage) *UserCrea
 		ids[i] = v[i].ID
 	}
 	return _c.AddMeetingMinuteUsageIDs(ids...)
+}
+
+// AddVoiceAPIKeyIDs adds the "voice_api_keys" edge to the VoiceAPIKey entity by IDs.
+func (_c *UserCreate) AddVoiceAPIKeyIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddVoiceAPIKeyIDs(ids...)
+	return _c
+}
+
+// AddVoiceAPIKeys adds the "voice_api_keys" edges to the VoiceAPIKey entity.
+func (_c *UserCreate) AddVoiceAPIKeys(v ...*VoiceAPIKey) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddVoiceAPIKeyIDs(ids...)
+}
+
+// AddVoiceSyncItemIDs adds the "voice_sync_items" edge to the VoiceSyncItem entity by IDs.
+func (_c *UserCreate) AddVoiceSyncItemIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddVoiceSyncItemIDs(ids...)
+	return _c
+}
+
+// AddVoiceSyncItems adds the "voice_sync_items" edges to the VoiceSyncItem entity.
+func (_c *UserCreate) AddVoiceSyncItems(v ...*VoiceSyncItem) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddVoiceSyncItemIDs(ids...)
+}
+
+// AddCaptureArtifactIDs adds the "capture_artifacts" edge to the CaptureArtifact entity by IDs.
+func (_c *UserCreate) AddCaptureArtifactIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddCaptureArtifactIDs(ids...)
+	return _c
+}
+
+// AddCaptureArtifacts adds the "capture_artifacts" edges to the CaptureArtifact entity.
+func (_c *UserCreate) AddCaptureArtifacts(v ...*CaptureArtifact) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCaptureArtifactIDs(ids...)
 }
 
 // AddLlmUsageIDs adds the "llm_usages" edge to the LLMUsage entity by IDs.
@@ -1226,6 +1274,54 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(meetingminuteusage.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.VoiceAPIKeysIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.VoiceAPIKeysTable,
+			Columns: []string{user.VoiceAPIKeysColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(voiceapikey.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.VoiceSyncItemsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.VoiceSyncItemsTable,
+			Columns: []string{user.VoiceSyncItemsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(voicesyncitem.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CaptureArtifactsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CaptureArtifactsTable,
+			Columns: []string{user.CaptureArtifactsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(captureartifact.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

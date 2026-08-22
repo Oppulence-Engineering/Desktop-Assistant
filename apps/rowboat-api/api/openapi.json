@@ -2796,6 +2796,164 @@
         "required": ["sanctionedCredits", "usedCredits", "availableCredits", "monthly", "daily"],
         "type": "object"
       },
+      "CaptureArtifact": {
+        "properties": {
+          "artifact_id": {
+            "type": "string"
+          },
+          "consent_basis": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "operation": {
+            "description": "Mutation operation that produced this history row.",
+            "example": "UPDATE",
+            "type": "string"
+          },
+          "payload_json": {
+            "type": "string"
+          },
+          "schema_version": {
+            "type": "string"
+          },
+          "source_product": {
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "event_id",
+          "artifact_id",
+          "schema_version",
+          "kind",
+          "operation",
+          "source_product",
+          "consent_basis",
+          "content_hash",
+          "payload_json",
+          "status",
+          "occurred_at",
+          "user"
+        ],
+        "type": "object"
+      },
+      "CaptureArtifactEnvelope": {
+        "description": "Versioned, explicitly consented Oppulence Voice handoff.",
+        "properties": {
+          "artifactId": {
+            "description": "Stable logical artifact id.",
+            "example": "oppulence-voice:note:42",
+            "type": "string"
+          },
+          "consent": {
+            "additionalProperties": true,
+            "description": "Explicit consent descriptor.",
+            "type": "object"
+          },
+          "content": {
+            "additionalProperties": true,
+            "description": "Consented content, or null for a tombstone.",
+            "type": "object"
+          },
+          "contentHash": {
+            "description": "SHA-256 of the exact content JSON.",
+            "example": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "type": "string"
+          },
+          "eventId": {
+            "description": "SHA-256 event id and idempotency key.",
+            "example": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "type": "string"
+          },
+          "kind": {
+            "description": "Artifact kind.",
+            "enum": ["note", "transcription", "speaker_mapping"],
+            "example": "note",
+            "type": "string"
+          },
+          "occurredAt": {
+            "description": "Source event time.",
+            "example": "2026-08-21T23:00:00Z",
+            "type": "string"
+          },
+          "operation": {
+            "description": "Mutation operation that produced this history row.",
+            "enum": ["upsert", "delete"],
+            "example": "UPDATE",
+            "type": "string"
+          },
+          "provenance": {
+            "additionalProperties": true,
+            "description": "Capture provenance.",
+            "type": "object"
+          },
+          "schemaVersion": {
+            "description": "Artifact schema version.",
+            "enum": ["1.0"],
+            "example": "1.0",
+            "type": "string"
+          },
+          "source": {
+            "additionalProperties": true,
+            "description": "Capture source descriptor.",
+            "type": "object"
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "eventId",
+          "artifactId",
+          "kind",
+          "operation",
+          "occurredAt",
+          "source",
+          "consent",
+          "contentHash",
+          "content"
+        ],
+        "type": "object"
+      },
       "CloudEvent": {
         "description": "Stored cloud event. payload and routing appear only on the detail endpoint.",
         "properties": {
@@ -10923,6 +11081,12 @@
             },
             "type": "array"
           },
+          "capture_artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/CaptureArtifact"
+            },
+            "type": "array"
+          },
           "cloud_events": {
             "items": {
               "$ref": "#/components/schemas/CloudEvent"
@@ -11212,6 +11376,18 @@
             "format": "date-time",
             "type": "string"
           },
+          "voice_api_keys": {
+            "items": {
+              "$ref": "#/components/schemas/VoiceAPIKey"
+            },
+            "type": "array"
+          },
+          "voice_sync_items": {
+            "items": {
+              "$ref": "#/components/schemas/VoiceSyncItem"
+            },
+            "type": "array"
+          },
           "workos_org_id": {
             "description": "Optional WorkOS organization id for B2B/workspace contexts.",
             "example": "org_01HABCDEF",
@@ -11294,6 +11470,255 @@
           "history_time",
           "operation",
           "workos_user_id"
+        ],
+        "type": "object"
+      },
+      "VoiceAPIKey": {
+        "description": "Oppulence Voice API-key metadata. key is returned only on creation.",
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "type": "string"
+          },
+          "expires_at": {
+            "description": "Credential or one-time ticket expiry timestamp.",
+            "example": "2026-06-04T20:48:00Z",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "key": {
+            "description": "One-time bearer secret.",
+            "example": "opv_live_example",
+            "nullable": true,
+            "type": "string"
+          },
+          "key_prefix": {
+            "description": "Safe display prefix.",
+            "example": "opv_live_example",
+            "type": "string"
+          },
+          "last_used_at": {
+            "description": "Timestamp when the connector credential was last minted or used.",
+            "example": "2026-06-04T20:45:00Z",
+            "nullable": true,
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name.",
+            "example": "Local automation",
+            "type": "string"
+          },
+          "scopes": {
+            "description": "OAuth scopes granted or requested.",
+            "example": ["invoices:read", "customers:read"],
+            "items": {
+              "description": "Scope.",
+              "example": "notes:read",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["id", "name", "key_prefix", "scopes", "created_at"],
+        "type": "object"
+      },
+      "VoiceAPIKeyCreateRequest": {
+        "description": "Oppulence Voice API-key request.",
+        "properties": {
+          "expires_in_days": {
+            "description": "Optional lifetime in days (1-3650).",
+            "example": 30,
+            "nullable": true,
+            "type": "integer"
+          },
+          "name": {
+            "description": "Display name.",
+            "example": "Local automation",
+            "type": "string"
+          },
+          "scopes": {
+            "description": "OAuth scopes granted or requested.",
+            "example": ["invoices:read", "customers:read"],
+            "items": {
+              "description": "Scope.",
+              "example": "notes:read",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["name"],
+        "type": "object"
+      },
+      "VoiceSyncItem": {
+        "properties": {
+          "blind_index": {
+            "type": "string"
+          },
+          "ciphertext": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string"
+          },
+          "content_hash": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "deleted_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "item_id": {
+            "type": "string"
+          },
+          "key_id": {
+            "type": "string"
+          },
+          "nonce": {
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "operation": {
+            "description": "Mutation operation that produced this history row.",
+            "example": "UPDATE",
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "space_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "collection",
+          "item_id",
+          "operation",
+          "revision",
+          "key_id",
+          "nonce",
+          "ciphertext",
+          "content_hash",
+          "occurred_at",
+          "user"
+        ],
+        "type": "object"
+      },
+      "VoiceSyncMutation": {
+        "description": "Opaque encrypted capture mutation. User-authored plaintext is forbidden.",
+        "properties": {
+          "base_revision": {
+            "description": "Expected current revision; zero creates.",
+            "example": 1,
+            "nullable": true,
+            "type": "integer"
+          },
+          "blind_index": {
+            "description": "Optional keyed equality index.",
+            "example": "folder-name-hmac",
+            "nullable": true,
+            "type": "string"
+          },
+          "ciphertext": {
+            "description": "Authenticated ciphertext.",
+            "example": "Y2lwaGVydGV4dA",
+            "type": "string"
+          },
+          "collection": {
+            "description": "Capture collection.",
+            "enum": ["note", "folder", "transcription", "dictionary", "snippet", "speaker_profile"],
+            "example": "note",
+            "type": "string"
+          },
+          "content_hash": {
+            "description": "SHA-256 integrity label.",
+            "example": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "type": "string"
+          },
+          "item_id": {
+            "description": "Stable client item id.",
+            "example": "note-42",
+            "type": "string"
+          },
+          "key_id": {
+            "description": "Client encryption key id.",
+            "example": "personal-v1",
+            "type": "string"
+          },
+          "nonce": {
+            "description": "Base64 encryption nonce.",
+            "example": "bm9uY2U",
+            "type": "string"
+          },
+          "occurred_at": {
+            "description": "Source event time.",
+            "example": "2026-08-21T23:00:00Z",
+            "type": "string"
+          },
+          "operation": {
+            "description": "Mutation operation that produced this history row.",
+            "enum": ["upsert", "delete"],
+            "example": "UPDATE",
+            "type": "string"
+          },
+          "schema_version": {
+            "description": "Envelope version.",
+            "enum": ["1.0"],
+            "example": "1.0",
+            "type": "string"
+          },
+          "space_id": {
+            "description": "Optional encrypted-space id.",
+            "example": "personal",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "collection",
+          "item_id",
+          "operation",
+          "key_id",
+          "nonce",
+          "ciphertext",
+          "content_hash",
+          "occurred_at"
         ],
         "type": "object"
       },
@@ -11516,6 +11941,191 @@
   },
   "openapi": "3.0.3",
   "paths": {
+    "/api/auth/get-session": {
+      "get": {
+        "description": "Adapts the authenticated WorkOS identity to the Better Auth session response shape expected by the upstream renderer. It does not mint or rotate credentials.",
+        "operationId": "getOppulenceVoiceSession",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "session": {
+                    "userId": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"
+                  },
+                  "user": {
+                    "email": "voice@example.com",
+                    "emailVerified": true,
+                    "id": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"
+                  }
+                },
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Better Auth-compatible session and user object.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Desktop session."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get desktop session",
+        "tags": ["Oppulence Voice"]
+      }
+    },
+    "/api/v1/keys/create": {
+      "post": {
+        "description": "Creates an Oppulence-owned scoped key and returns its secret once.",
+        "operationId": "createVoiceAPIKey",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "name": "Local automation",
+                "scopes": ["notes:read"]
+              },
+              "schema": {
+                "$ref": "#/components/schemas/VoiceAPIKeyCreateRequest"
+              }
+            }
+          },
+          "description": "Key options.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": {
+                    "key": "opv_live_example"
+                  }
+                },
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Data-wrapped VoiceAPIKey.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created key."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Create API key",
+        "tags": ["Oppulence Voice"]
+      }
+    },
+    "/api/v1/keys/list": {
+      "get": {
+        "description": "Lists active key metadata without secret material.",
+        "operationId": "listVoiceAPIKeys",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": []
+                },
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Data-wrapped key array.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Key list."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List API keys",
+        "tags": ["Oppulence Voice"]
+      }
+    },
+    "/api/v1/keys/{id}/revoke": {
+      "post": {
+        "description": "Immediately removes a key from newly issued verifier snapshots.",
+        "operationId": "revokeVoiceAPIKey",
+        "parameters": [
+          {
+            "description": "API key id.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Key id.",
+              "example": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5",
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "API key revoked"
+                },
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Message response.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Revoked."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Revoke API key",
+        "tags": ["Oppulence Voice"]
+      }
+    },
     "/graphql": {
       "post": {
         "description": "Internal admin GraphQL endpoint over the ent graph. The internal-secret middleware marks the request internal so resolvers can bypass per-user tenant scoping.",
@@ -14116,6 +14726,135 @@
         ],
         "summary": "Queue or start task trigger",
         "tags": ["Background Tasks"]
+      }
+    },
+    "/v1/capture-artifacts": {
+      "post": {
+        "description": "Validates content hash and idempotency before persisting one explicit Rowboat handoff.",
+        "operationId": "ingestCaptureArtifact",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {},
+              "schema": {
+                "$ref": "#/components/schemas/CaptureArtifactEnvelope"
+              }
+            }
+          },
+          "description": "Capture artifact.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": {
+                    "duplicate": true,
+                    "status": "accepted"
+                  }
+                },
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Artifact acknowledgement.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Idempotent replay."
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": {
+                    "duplicate": false,
+                    "status": "accepted"
+                  }
+                },
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Artifact acknowledgement.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Accepted."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Ingest consented capture artifact",
+        "tags": ["Oppulence Voice"]
+      }
+    },
+    "/v1/capture-artifacts/{eventId}": {
+      "get": {
+        "description": "Returns status without exposing submitted content.",
+        "operationId": "getCaptureArtifactStatus",
+        "parameters": [
+          {
+            "description": "SHA-256 event id.",
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "description": "Event id.",
+              "example": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": {
+                    "status": "accepted"
+                  }
+                },
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Artifact acknowledgement.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Artifact status."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get capture ingestion status",
+        "tags": ["Oppulence Voice"]
       }
     },
     "/v1/config": {
@@ -20513,6 +21252,194 @@
         "tags": ["Slack OAuth"]
       }
     },
+    "/v1/voice-sync/items": {
+      "get": {
+        "description": "Returns a bounded deterministic ciphertext feed.",
+        "operationId": "listVoiceSyncItems",
+        "parameters": [
+          {
+            "description": "Optional collection filter.",
+            "in": "query",
+            "name": "collection",
+            "required": false,
+            "schema": {
+              "description": "Collection.",
+              "example": "note",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size (1-500).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "description": "Page size.",
+              "example": 100,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Opaque updated-at/id checkpoint from next_cursor.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "description": "Cursor.",
+              "example": "",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": [],
+                  "has_more": false,
+                  "next_cursor": null
+                },
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Paginated encrypted items.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Encrypted item page."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List encrypted sync items",
+        "tags": ["Oppulence Voice"]
+      },
+      "post": {
+        "description": "Creates or compare-and-swaps one opaque capture item.",
+        "operationId": "putVoiceSyncItem",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "ciphertext": "Y2lwaGVydGV4dA",
+                "collection": "note",
+                "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "item_id": "note-42",
+                "key_id": "personal-v1",
+                "nonce": "bm9uY2U",
+                "occurred_at": "2026-08-21T23:00:00Z",
+                "operation": "upsert",
+                "schema_version": "1.0"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/VoiceSyncMutation"
+              }
+            }
+          },
+          "description": "Encrypted mutation.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {},
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Data-wrapped encrypted item.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Updated item."
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {},
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Data-wrapped encrypted item.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created item."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Write encrypted sync item",
+        "tags": ["Oppulence Voice"]
+      }
+    },
+    "/v1/voice/api-key-verifiers": {
+      "get": {
+        "description": "Returns active key digests and scopes with a short fail-closed validity window.",
+        "operationId": "getVoiceAPIKeyVerifiers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": {
+                    "valid_until": "2026-08-21T23:15:00Z",
+                    "verifiers": []
+                  }
+                },
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Verifier snapshot.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Verifier snapshot."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Fetch local API verifier snapshot",
+        "tags": ["Oppulence Voice"]
+      }
+    },
     "/v1/voice/text-to-speech/{voiceId}": {
       "post": {
         "description": "Credit-gated ElevenLabs proxy. The text field is used for per-character credit charging and the full body is forwarded to ElevenLabs. Successful responses stream audio bytes back to the desktop.",
@@ -20859,6 +21786,10 @@
     {
       "description": "Credit-gated ElevenLabs text-to-speech proxy.",
       "name": "Voice"
+    },
+    {
+      "description": "WorkOS-backed API keys, opaque encrypted capture synchronization, and explicit Rowboat artifact ingestion.",
+      "name": "Oppulence Voice"
     },
     {
       "description": "Credit-gated Exa search proxy.",

@@ -58,6 +58,7 @@ func Enrich(spec obj) {
 		obj{"name": "Background Tasks", "description": "Authenticated cloud mirror for desktop background task specs, artifacts, run state, JSONL events, and remote trigger queueing."},
 		obj{"name": "LLM", "description": "Credit-gated OpenAI-compatible text, chat, embedding, model-list, and streaming endpoints."},
 		obj{"name": "Voice", "description": "Credit-gated ElevenLabs text-to-speech proxy."},
+		obj{"name": "Oppulence Voice", "description": "WorkOS-backed API keys, opaque encrypted capture synchronization, and explicit Rowboat artifact ingestion."},
 		obj{"name": "Search", "description": "Credit-gated Exa search proxy."},
 		obj{"name": "Google OAuth", "description": "Browser and desktop handoff endpoints for Google OAuth tokens."},
 		obj{"name": "Connectors", "description": "Connector registry, OAuth start/callback, MCP token minting, and disconnect flows."},
@@ -74,6 +75,7 @@ func Enrich(spec obj) {
 	addSecuritySchemes(ensureObj(components, "securitySchemes"))
 	addCommonResponses(responses)
 	addRuntimeSchemas(schemas)
+	addVoiceCloudSchemas(schemas)
 	addRevenueSchemas(schemas)
 	enrichEntitySchemas(schemas)
 
@@ -812,6 +814,85 @@ func addRuntimePaths(paths obj) {
 	addCloudEventPaths(paths)
 	addRevenuePaths(paths)
 	addInternalPaths(paths)
+	addVoiceCloudPaths(paths)
+}
+
+func addVoiceCloudSchemas(schemas obj) {
+	schemas["VoiceAPIKeyCreateRequest"] = objectSchema("Oppulence Voice API-key request.", obj{
+		"name":            stringSchema("Display name.", "Local automation"),
+		"scopes":          arraySchema("Granted scopes.", stringSchema("Scope.", "notes:read")),
+		"expires_in_days": intSchema("Optional lifetime in days (1-3650).", 30, nullable()),
+	}, "name")
+	schemas["VoiceAPIKey"] = objectSchema("Oppulence Voice API-key metadata. key is returned only on creation.", obj{
+		"id":           uuidSchema("Key id.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"),
+		"key":          stringSchema("One-time bearer secret.", "opv_live_example", nullable()),
+		"name":         stringSchema("Display name.", "Local automation"),
+		"key_prefix":   stringSchema("Safe display prefix.", "opv_live_example"),
+		"scopes":       arraySchema("Granted scopes.", stringSchema("Scope.", "notes:read")),
+		"last_used_at": stringSchema("Last-use time.", "2026-08-21T23:00:00Z", nullable()),
+		"expires_at":   stringSchema("Expiry time.", "2026-09-20T23:00:00Z", nullable()),
+		"created_at":   stringSchema("Creation time.", "2026-08-21T23:00:00Z"),
+	}, "id", "name", "key_prefix", "scopes", "created_at")
+	schemas["VoiceSyncMutation"] = objectSchema("Opaque encrypted capture mutation. User-authored plaintext is forbidden.", obj{
+		"schema_version": stringEnum("Envelope version.", "1.0", "1.0"),
+		"collection":     stringEnum("Capture collection.", "note", "note", "folder", "transcription", "dictionary", "snippet", "speaker_profile"),
+		"item_id":        stringSchema("Stable client item id.", "note-42"),
+		"space_id":       stringSchema("Optional encrypted-space id.", "personal", nullable()),
+		"operation":      stringEnum("Mutation operation.", "upsert", "upsert", "delete"),
+		"base_revision":  intSchema("Expected current revision; zero creates.", 1, nullable()),
+		"key_id":         stringSchema("Client encryption key id.", "personal-v1"),
+		"nonce":          stringSchema("Base64 encryption nonce.", "bm9uY2U"),
+		"ciphertext":     stringSchema("Authenticated ciphertext.", "Y2lwaGVydGV4dA"),
+		"content_hash":   stringSchema("SHA-256 integrity label.", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+		"blind_index":    stringSchema("Optional keyed equality index.", "folder-name-hmac", nullable()),
+		"occurred_at":    stringSchema("Source event time.", "2026-08-21T23:00:00Z"),
+	}, "schema_version", "collection", "item_id", "operation", "key_id", "nonce", "ciphertext", "content_hash", "occurred_at")
+	schemas["CaptureArtifactEnvelope"] = objectSchema("Versioned, explicitly consented Oppulence Voice handoff.", obj{
+		"schemaVersion": stringEnum("Artifact schema version.", "1.0", "1.0"),
+		"eventId":       stringSchema("SHA-256 event id and idempotency key.", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+		"artifactId":    stringSchema("Stable logical artifact id.", "oppulence-voice:note:42"),
+		"kind":          stringEnum("Artifact kind.", "note", "note", "transcription", "speaker_mapping"),
+		"operation":     stringEnum("Artifact operation.", "upsert", "upsert", "delete"),
+		"occurredAt":    stringSchema("Source event time.", "2026-08-21T23:00:00Z"),
+		"source":        freeFormSchema("Capture source descriptor."),
+		"consent":       freeFormSchema("Explicit consent descriptor."),
+		"provenance":    freeFormSchema("Capture provenance."),
+		"contentHash":   stringSchema("SHA-256 of the exact content JSON.", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+		"content":       freeFormSchema("Consented content, or null for a tombstone."),
+	}, "schemaVersion", "eventId", "artifactId", "kind", "operation", "occurredAt", "source", "consent", "contentHash", "content")
+}
+
+func addVoiceCloudPaths(paths obj) {
+	paths["/api/auth/get-session"] = obj{"get": operation("Oppulence Voice", "Get desktop session", "Adapts the authenticated WorkOS identity to the Better Auth session response shape expected by the upstream renderer. It does not mint or rotate credentials.", "getOppulenceVoiceSession", bearer(), nil, nil, obj{
+		"200": jsonResponse("Desktop session.", freeFormSchema("Better Auth-compatible session and user object."), obj{"session": obj{"userId": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5"}, "user": obj{"id": "a8dfa9b6-a7b2-46ea-982c-622a914c00e5", "email": "voice@example.com", "emailVerified": true}}),
+		"401": responseRef("401"),
+	})}
+	paths["/api/v1/keys/create"] = obj{"post": operation("Oppulence Voice", "Create API key", "Creates an Oppulence-owned scoped key and returns its secret once.", "createVoiceAPIKey", bearer(), nil,
+		jsonRequest("Key options.", ref("VoiceAPIKeyCreateRequest"), obj{"name": "Local automation", "scopes": []any{"notes:read"}}), obj{
+			"201": jsonResponse("Created key.", freeFormSchema("Data-wrapped VoiceAPIKey."), obj{"data": obj{"key": "opv_live_example"}}), "400": responseRef("400"), "401": responseRef("401"), "500": responseRef("500"),
+		})}
+	paths["/api/v1/keys/list"] = obj{"get": operation("Oppulence Voice", "List API keys", "Lists active key metadata without secret material.", "listVoiceAPIKeys", bearer(), nil, nil, obj{
+		"200": jsonResponse("Key list.", freeFormSchema("Data-wrapped key array."), obj{"data": []any{}}), "401": responseRef("401"), "500": responseRef("500"),
+	})}
+	paths["/api/v1/keys/{id}/revoke"] = obj{"post": operation("Oppulence Voice", "Revoke API key", "Immediately removes a key from newly issued verifier snapshots.", "revokeVoiceAPIKey", bearer(), []any{
+		pathParam("id", "API key id.", uuidSchema("Key id.", "a8dfa9b6-a7b2-46ea-982c-622a914c00e5")),
+	}, nil, obj{"200": jsonResponse("Revoked.", freeFormSchema("Message response."), obj{"message": "API key revoked"}), "401": responseRef("401"), "404": responseRef("404"), "500": responseRef("500")})}
+	paths["/v1/voice/api-key-verifiers"] = obj{"get": operation("Oppulence Voice", "Fetch local API verifier snapshot", "Returns active key digests and scopes with a short fail-closed validity window.", "getVoiceAPIKeyVerifiers", bearer(), nil, nil, obj{
+		"200": jsonResponse("Verifier snapshot.", freeFormSchema("Verifier snapshot."), obj{"data": obj{"verifiers": []any{}, "valid_until": "2026-08-21T23:15:00Z"}}), "401": responseRef("401"), "500": responseRef("500"),
+	})}
+	paths["/v1/voice-sync/items"] = obj{
+		"post": operation("Oppulence Voice", "Write encrypted sync item", "Creates or compare-and-swaps one opaque capture item.", "putVoiceSyncItem", bearer(), nil,
+			jsonRequest("Encrypted mutation.", ref("VoiceSyncMutation"), obj{"schema_version": "1.0", "collection": "note", "item_id": "note-42", "operation": "upsert", "key_id": "personal-v1", "nonce": "bm9uY2U", "ciphertext": "Y2lwaGVydGV4dA", "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "occurred_at": "2026-08-21T23:00:00Z"}),
+			obj{"200": jsonResponse("Updated item.", freeFormSchema("Data-wrapped encrypted item."), obj{}), "201": jsonResponse("Created item.", freeFormSchema("Data-wrapped encrypted item."), obj{}), "400": responseRef("400"), "401": responseRef("401"), "409": responseRef("409"), "500": responseRef("500")}),
+		"get": operation("Oppulence Voice", "List encrypted sync items", "Returns a bounded deterministic ciphertext feed.", "listVoiceSyncItems", bearer(), []any{
+			queryParam("collection", "Optional collection filter.", false, stringSchema("Collection.", "note")), queryParam("limit", "Page size (1-500).", false, intSchema("Page size.", 100)), queryParam("cursor", "Opaque updated-at/id checkpoint from next_cursor.", false, stringSchema("Cursor.", "")),
+		}, nil, obj{"200": jsonResponse("Encrypted item page.", freeFormSchema("Paginated encrypted items."), obj{"data": []any{}, "has_more": false, "next_cursor": nil}), "400": responseRef("400"), "401": responseRef("401"), "500": responseRef("500")}),
+	}
+	paths["/v1/capture-artifacts"] = obj{"post": operation("Oppulence Voice", "Ingest consented capture artifact", "Validates content hash and idempotency before persisting one explicit Rowboat handoff.", "ingestCaptureArtifact", bearer(), nil,
+		jsonRequest("Capture artifact.", ref("CaptureArtifactEnvelope"), obj{}), obj{"202": jsonResponse("Accepted.", freeFormSchema("Artifact acknowledgement."), obj{"data": obj{"status": "accepted", "duplicate": false}}), "200": jsonResponse("Idempotent replay.", freeFormSchema("Artifact acknowledgement."), obj{"data": obj{"status": "accepted", "duplicate": true}}), "400": responseRef("400"), "401": responseRef("401"), "409": responseRef("409"), "500": responseRef("500")})}
+	paths["/v1/capture-artifacts/{eventId}"] = obj{"get": operation("Oppulence Voice", "Get capture ingestion status", "Returns status without exposing submitted content.", "getCaptureArtifactStatus", bearer(), []any{
+		pathParam("eventId", "SHA-256 event id.", stringSchema("Event id.", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")),
+	}, nil, obj{"200": jsonResponse("Artifact status.", freeFormSchema("Artifact acknowledgement."), obj{"data": obj{"status": "accepted"}}), "401": responseRef("401"), "404": responseRef("404"), "500": responseRef("500")})}
 }
 
 func addCloudEventPaths(paths obj) {

@@ -44,6 +44,8 @@ type Tx struct {
 	BackgroundTaskRunEvent *BackgroundTaskRunEventClient
 	// BackgroundTaskScheduleState is the client for interacting with the BackgroundTaskScheduleState builders.
 	BackgroundTaskScheduleState *BackgroundTaskScheduleStateClient
+	// CaptureArtifact is the client for interacting with the CaptureArtifact builders.
+	CaptureArtifact *CaptureArtifactClient
 	// CloudEvent is the client for interacting with the CloudEvent builders.
 	CloudEvent *CloudEventClient
 	// Commitment is the client for interacting with the Commitment builders.
@@ -148,6 +150,10 @@ type Tx struct {
 	User *UserClient
 	// UserHistory is the client for interacting with the UserHistory builders.
 	UserHistory *UserHistoryClient
+	// VoiceAPIKey is the client for interacting with the VoiceAPIKey builders.
+	VoiceAPIKey *VoiceAPIKeyClient
+	// VoiceSyncItem is the client for interacting with the VoiceSyncItem builders.
+	VoiceSyncItem *VoiceSyncItemClient
 	// WorkspaceFeatureControl is the client for interacting with the WorkspaceFeatureControl builders.
 	WorkspaceFeatureControl *WorkspaceFeatureControlClient
 
@@ -297,6 +303,7 @@ func (tx *Tx) init() {
 	tx.BackgroundTaskRun = NewBackgroundTaskRunClient(tx.config)
 	tx.BackgroundTaskRunEvent = NewBackgroundTaskRunEventClient(tx.config)
 	tx.BackgroundTaskScheduleState = NewBackgroundTaskScheduleStateClient(tx.config)
+	tx.CaptureArtifact = NewCaptureArtifactClient(tx.config)
 	tx.CloudEvent = NewCloudEventClient(tx.config)
 	tx.Commitment = NewCommitmentClient(tx.config)
 	tx.CommitmentDependency = NewCommitmentDependencyClient(tx.config)
@@ -349,6 +356,8 @@ func (tx *Tx) init() {
 	tx.TenantEvidenceKey = NewTenantEvidenceKeyClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.UserHistory = NewUserHistoryClient(tx.config)
+	tx.VoiceAPIKey = NewVoiceAPIKeyClient(tx.config)
+	tx.VoiceSyncItem = NewVoiceSyncItemClient(tx.config)
 	tx.WorkspaceFeatureControl = NewWorkspaceFeatureControlClient(tx.config)
 }
 

@@ -20,6 +20,7 @@ import type { BackgroundTaskArtifact } from "./backgroundTaskArtifact";
 import type { BackgroundTaskRun } from "./backgroundTaskRun";
 import type { BackgroundTaskRunEvent } from "./backgroundTaskRunEvent";
 import type { BackgroundTaskScheduleState } from "./backgroundTaskScheduleState";
+import type { CaptureArtifact } from "./captureArtifact";
 import type { CloudEvent } from "./cloudEvent";
 import type { Commitment } from "./commitment";
 import type { CommitmentDependency } from "./commitmentDependency";
@@ -64,6 +65,8 @@ import type { RevenueWorkspace } from "./revenueWorkspace";
 import type { RevenueWorkspaceMember } from "./revenueWorkspaceMember";
 import type { Subscription } from "./subscription";
 import type { TenantEvidenceKey } from "./tenantEvidenceKey";
+import type { VoiceAPIKey } from "./voiceAPIKey";
+import type { VoiceSyncItem } from "./voiceSyncItem";
 import type { WorkspaceFeatureControl } from "./workspaceFeatureControl";
 
 /**
@@ -89,6 +92,7 @@ export interface User {
   background_task_schedule_states?: BackgroundTaskScheduleState[];
   /** Background task mirrors owned by the user. */
   background_tasks?: BackgroundTask[];
+  capture_artifacts?: CaptureArtifact[];
   cloud_events?: CloudEvent[];
   commitment_dependencies?: CommitmentDependency[];
   commitment_events?: CommitmentEvent[];
@@ -146,6 +150,8 @@ export interface User {
   tenant_evidence_keys?: TenantEvidenceKey[];
   /** Last row update timestamp. */
   updated_at: string;
+  voice_api_keys?: VoiceAPIKey[];
+  voice_sync_items?: VoiceSyncItem[];
   /** Optional WorkOS organization id for B2B/workspace contexts. */
   workos_org_id?: string;
   /** WorkOS user id used to resolve bearer tokens into local users. */
