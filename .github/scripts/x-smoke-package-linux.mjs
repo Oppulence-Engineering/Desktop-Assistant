@@ -10,7 +10,15 @@ const requireFromApp = createRequire(path.join(appDir, "package.json"));
 const packager = requireFromApp("@electron/packager");
 const forgeConfig = requireFromApp("./forge.config.cjs");
 const fusePolicy = requireFromApp("./fuse-policy.cjs");
-const { flipFuses } = requireFromApp("@electron/fuses");
+const { flipFuses, FuseV1Options } = requireFromApp("@electron/fuses");
+
+// Playwright's Electron launcher attaches to the main process with --inspect=0.
+// Keep that capability confined to this unsigned CI artifact; Forge release
+// packaging continues to apply the production policy unchanged.
+const smokeFusePolicy = {
+  ...fusePolicy,
+  [FuseV1Options.EnableNodeCliInspectArguments]: true,
+};
 
 const platform = process.env.SMOKE_PACKAGE_PLATFORM ?? "linux";
 const arch = process.env.SMOKE_PACKAGE_ARCH ?? "x64";
@@ -61,5 +69,5 @@ const binaryPath =
     : path.join(outputPaths[0], platform === "win32" ? `${executableName}.exe` : executableName);
 
 await access(binaryPath);
-await flipFuses(binaryPath, fusePolicy);
+await flipFuses(binaryPath, smokeFusePolicy);
 console.log(`Packaged smoke binary: ${path.relative(repoRoot, binaryPath)}`);

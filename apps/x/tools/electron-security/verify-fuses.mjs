@@ -4,21 +4,28 @@ import path from "node:path";
 import process from "node:process";
 import { FuseState, FuseV1Options, getCurrentFuseWire } from "@electron/fuses";
 
-const binaryPath = process.argv.slice(2).find((argument) => argument !== "--");
+const arguments_ = process.argv.slice(2).filter((argument) => argument !== "--");
+const allowNodeCliInspect = arguments_.includes("--allow-node-cli-inspect");
+const binaryPath = arguments_.find((argument) => !argument.startsWith("--"));
 if (!binaryPath) {
-  console.error("Usage: pnpm fuses:verify -- /absolute/path/to/packaged-electron-binary");
+  console.error(
+    "Usage: pnpm fuses:verify -- [--allow-node-cli-inspect] /absolute/path/to/packaged-electron-binary",
+  );
   process.exit(2);
 }
 
 const require = createRequire(import.meta.url);
 const policy = require(path.resolve("apps/main/fuse-policy.cjs"));
+const expectedPolicy = allowNodeCliInspect
+  ? { ...policy, [FuseV1Options.EnableNodeCliInspectArguments]: true }
+  : policy;
 const actual = await getCurrentFuseWire(path.resolve(binaryPath));
 const failures = [];
 
 const supportedOptions = Object.keys(actual).map(Number).filter(Number.isInteger);
 
 for (const option of supportedOptions) {
-  const expected = policy[option];
+  const expected = expectedPolicy[option];
   if (typeof expected !== "boolean") {
     failures.push(
       `${FuseV1Options[option] ?? option} is supported but missing from fuse-policy.cjs`,
