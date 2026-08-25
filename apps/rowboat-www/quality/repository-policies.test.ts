@@ -121,5 +121,7 @@ describe("repository architecture policies", () => {
     );
     expect(workflow).toContain("osv-scanner/v2/cmd/osv-scanner@v2.5.1");
     expect(workflow).toContain("scan image");
+    expect(workflow).toContain("--build-only");
+    expect(workflow).toContain('--image "${IMAGE_REF}"');
   });
 });

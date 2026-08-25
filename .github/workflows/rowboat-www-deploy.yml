@@ -28,6 +28,7 @@ jobs:
       FLY_API_TOKEN: ${{ secrets.ROWBOAT_WWW_FLY_API_TOKEN }}
       FLY_APP_NAME: ${{ vars.ROWBOAT_WWW_FLY_APP_NAME || 'oppulence-rowboat-www' }}
       FLY_CONFIG: apps/rowboat-www/config/deployment/fly.toml
+      IMAGE_LABEL: deployment-${{ github.sha }}
       ROWBOAT_WWW_SESSION_SECRET: ${{ secrets.ROWBOAT_WWW_SESSION_SECRET }}
     steps:
       - uses: actions/checkout@v6
@@ -51,10 +52,34 @@ jobs:
           flyctl secrets set --stage --app "${FLY_APP_NAME}"
           "ROWBOAT_WWW_SESSION_SECRET=${ROWBOAT_WWW_SESSION_SECRET}"
 
-      - name: Deploy from the monorepo root
+      - name: Build and push the immutable image
+        run: |
+          set -euo pipefail
+          IMAGE_REF="registry.fly.io/${FLY_APP_NAME}:${IMAGE_LABEL}"
+          flyctl deploy . \
+            --app "${FLY_APP_NAME}" \
+            --config "${FLY_CONFIG}" \
+            --build-only \
+            --image-label "${IMAGE_LABEL}" \
+            --push \
+            --remote-only
+          flyctl auth docker
+          echo "IMAGE_REF=${IMAGE_REF}" >> "${GITHUB_ENV}"
+
+      - name: Setup Go for container scanning
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.26.x"
+
+      - name: Scan the immutable image with OSV-Scanner
+        run: >-
+          go run github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.5.1
+          scan image "${IMAGE_REF}"
+
+      - name: Deploy the scanned image
         run: >-
           flyctl deploy . --app "${FLY_APP_NAME}" --config "${FLY_CONFIG}"
-          --ha=false --remote-only --yes
+          --ha=false --image "${IMAGE_REF}" --yes
 
       - name: Enforce east and west production Machines
         run: |
