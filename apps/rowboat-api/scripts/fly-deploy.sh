@@ -27,23 +27,31 @@ flyctl config validate \
 flyctl deploy "${REPO_ROOT}" \
   --app "${FLY_APP}" \
   --config "${FLY_CONFIG}" \
+  --buildkit \
   --ha=false \
   --remote-only \
   --yes
 
-# One request-serving Machine per coast. max-per-region prevents both from
-# being placed together when capacity is constrained.
-flyctl scale count 2 \
+# Preserve the Kubernetes production floor, with capacity on both coasts.
+flyctl scale count 3 \
   --app "${FLY_APP}" \
   --process-group app \
   --region iad,sjc \
-  --max-per-region 1 \
+  --max-per-region 2 \
   --yes
 
-# Background work does not benefit from edge placement. Keep a single worker
-# and scheduler in the primary region, close to the primary database.
-flyctl scale count 1 --app "${FLY_APP}" --process-group worker --region iad --yes
-flyctl scale count 1 --app "${FLY_APP}" --process-group scheduler --region iad --yes
+# Keep each two-Machine background group split east and west.
+flyctl scale count 2 --app "${FLY_APP}" --process-group worker --region iad,sjc --max-per-region 1 --yes
+flyctl scale count 2 --app "${FLY_APP}" --process-group scheduler --region iad,sjc --max-per-region 1 --yes
+
+flyctl machines list --app "${FLY_APP}" --json | jq -e '
+  [.[] | select(.state != "destroyed")] as $machines |
+  def regions($group):
+    [$machines[] | select(.config.metadata.fly_process_group == $group) | .region];
+  (regions("app") | length == 3 and index("iad") != null and index("sjc") != null) and
+  (regions("worker") | sort == ["iad", "sjc"]) and
+  (regions("scheduler") | sort == ["iad", "sjc"])
+' >/dev/null
 
 flyctl scale show --app "${FLY_APP}"
 flyctl status --app "${FLY_APP}"

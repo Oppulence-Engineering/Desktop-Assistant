@@ -68,7 +68,8 @@ func run() error {
 
 func apply(ctx context.Context) error {
 	cfg := appconfig.Load()
-	if !isPostgres(cfg.DatabaseURL) {
+	databaseURL := migrationDatabaseURL(cfg.DatabaseURL)
+	if !isPostgres(databaseURL) {
 		log, err := telemetry.NewLogger(cfg)
 		if err != nil {
 			return err
@@ -85,7 +86,14 @@ func apply(ctx context.Context) error {
 	if err := validateDirectory(); err != nil {
 		return err
 	}
-	return applyPostgres(ctx, cfg.DatabaseURL)
+	return applyPostgres(ctx, databaseURL)
+}
+
+func migrationDatabaseURL(runtimeURL string) string {
+	if migrationURL := os.Getenv("MIGRATION_DATABASE_URL"); migrationURL != "" {
+		return migrationURL
+	}
+	return runtimeURL
 }
 
 // dumpPostgres renders the current Ent schema using PostgreSQL types. It is

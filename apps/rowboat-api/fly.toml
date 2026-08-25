@@ -6,7 +6,7 @@ kill_signal = "SIGTERM"
 kill_timeout = "30s"
 
 [build]
-  dockerfile = "apps/rowboat-api/Dockerfile"
+  dockerfile = "Dockerfile"
 
 [deploy]
   release_command = "/rowboat-api-migrate apply"
@@ -19,6 +19,8 @@ kill_timeout = "30s"
   scheduler = "/rowboat-api-scheduler"
 
 [env]
+  APP_URL = "https://oppulence.io"
+  CORS_ALLOWED_ORIGINS = "https://oppulence.io"
   ENVIRONMENT = "production"
   LOG_LEVEL = "info"
   HTTP_ADDR = ":8080"
@@ -27,19 +29,35 @@ kill_timeout = "30s"
   AUTO_MIGRATE = "false"
   DB_MAX_OPEN_CONNS = "5"
   INFISICAL_ENABLED = "false"
+  OIDC_ISSUER_URL = "https://agile-glow-66.authkit.app"
+  TOKEN_ISSUER = "https://api.workos.com"
+  PUBLIC_BASE_URL = "https://api.oppulence.io"
+  WEBSOCKET_API_URL = "wss://api.oppulence.io"
+  GOOGLE_REDIRECT_URI = "https://api.oppulence.io/oauth/google/callback"
+  SLACK_REDIRECT_URI = "https://api.oppulence.io/oauth/slack/callback"
+  LLM_ALLOWED_MODELS = "openai/gpt-4.1-mini,openai/gpt-4.1,anthropic/claude-haiku-4-5,anthropic/claude-sonnet-4-5,google/gemini-3.1-flash-lite,openai/text-embedding-3-small"
+  TRANSCRIPTION_VOICE_DEFAULT = "solomon"
+  TRANSCRIPTION_MEETING_DEFAULT = "solomon"
+  CLOUD_RUNTIME_MODEL = "openai/gpt-4.1-mini"
+  CLOUD_EVENTS_ROUTER_MODEL = "openai/gpt-4.1-mini"
   TEMPORAL_ENABLED = "true"
+  TEMPORAL_ADDRESS = "rowboat-production.kpisa.tmprl.cloud:7233"
+  TEMPORAL_NAMESPACE = "rowboat-production.kpisa"
+  TEMPORAL_TASK_QUEUE = "rowboat-api-background-tasks"
   TEMPORAL_TLS_ENABLED = "true"
+  TEMPORAL_WORKER_ENABLED = "true"
+  CLOUD_EVENTS_ROUTING_ENABLED = "true"
   CLOUD_SCHEDULER_ENABLED = "true"
+  GOOGLE_WATCH_ENABLED = "true"
+  REVENUE_AUTO_SCAN_ENABLED = "true"
+  REVENUE_MAIL_PUSH_SYNC_ENABLED = "true"
 
 [http_service]
   processes = ["app"]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
-  auto_start_machines = true
-  # Fly only enforces this minimum in the primary region. The sjc Machine may
-  # stop while idle and cold-start on West Coast traffic to reduce spend.
-  min_machines_running = 1
+  auto_stop_machines = "off"
+  auto_start_machines = false
 
   [[http_service.checks]]
     grace_period = "15s"

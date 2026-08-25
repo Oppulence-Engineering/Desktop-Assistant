@@ -24,6 +24,7 @@ COPY packages/oauth-resource-server-go ./packages/oauth-resource-server-go
 RUN chmod -R a=rX /src/apps/rowboat-api/migrations/postgres
 
 WORKDIR /src/apps/rowboat-api
+ENV GOFLAGS="-p=1"
 ARG VERSION=dev
 ARG COMMIT=none
 ARG DATE=unknown

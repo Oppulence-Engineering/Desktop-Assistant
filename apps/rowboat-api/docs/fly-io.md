@@ -1,23 +1,18 @@
 # Fly.io deployment
 
-This deployment runs the public API in two U.S. regions while keeping the idle
-footprint small:
+This production-only deployment runs every process group in two U.S. regions:
 
-| Process         | Region                       | Size                | Idle behavior                      |
-| --------------- | ---------------------------- | ------------------- | ---------------------------------- |
-| API             | `iad` (Ashburn, Virginia)    | shared CPU, 512 MiB | always warm                        |
-| API             | `sjc` (San Jose, California) | shared CPU, 512 MiB | stops when idle; starts on traffic |
-| Temporal worker | `iad`                        | shared CPU, 512 MiB | always running                     |
-| Scheduler       | `iad`                        | shared CPU, 256 MiB | always running                     |
+| Process         | Region          | Size                | Idle behavior                      |
+| --------------- | --------------- | ------------------- | ---------------------------------- |
+| API             | `iad` and `sjc` | shared CPU, 512 MiB | three always-warm Machines         |
+| Temporal worker | `iad` and `sjc` | shared CPU, 512 MiB | one always-warm Machine per region |
+| Scheduler       | `iad` and `sjc` | shared CPU, 256 MiB | one always-warm Machine per region |
 
 Fly Proxy routes clients to a healthy nearby API Machine. The API is stateless:
 all Machines must share externally managed Postgres, Redis, and Temporal Cloud.
 Do not attach a Fly Volume for application data.
 
-The West Coast API can cold-start after an idle period. To trade higher cost for
-predictable latency in both regions, set `auto_stop_machines = "off"` and
-`min_machines_running = 0` in `fly.toml`; both API Machines will then remain
-running.
+There is no Fly staging application. Production Machines stay warm.
 
 ## Provision once
 
@@ -26,7 +21,7 @@ the app without deploying Fly's generated configuration:
 
 ```bash
 fly auth login
-fly apps create <app-name> --org <organization>
+fly apps create <app-name> --org playbookmedia-llc
 ```
 
 Set runtime secrets on the app. Use the same production values documented in
@@ -58,10 +53,9 @@ fly secrets set --app <app-name> \
   GOOGLE_OAUTH_CLIENT_SECRET='...'
 ```
 
-`DATABASE_URL` must be usable by both runtime Machines and the temporary release
-Machine. Prefer a pooled TLS URL only if the pool supports Atlas's session-level
-advisory lock; otherwise use the direct TLS Postgres URL. The release command is
-idempotent: Atlas records applied versions and validates migration checksums.
+`DATABASE_URL` remains the pooled runtime connection. The release command uses
+`MIGRATION_DATABASE_URL`, the direct TLS connection, and falls back to
+`DATABASE_URL` only when no direct value exists.
 
 Create a short-lived, app-scoped deploy token for GitHub Actions and store it in
 the repository's protected `production` environment. An app-scoped token keeps
@@ -87,16 +81,14 @@ From `apps/rowboat-api`, run:
 ./scripts/fly-deploy.sh <app-name>
 ```
 
-For a production deployment, dispatch **Deploy rowboat-api to Fly.io** from
-GitHub Actions. The workflow uses the protected `production` environment,
-deploys the same script non-interactively, verifies Fly health checks, and
-smoke-tests `/healthz` and `/readyz`. It is manual by design so the existing
-Kubernetes production workflow cannot race a Fly rollout during migration.
+Pushes to `main` and manual dispatches run **Deploy rowboat-api to Fly.io**.
+The workflow loads production secrets from Infisical and has no Kubernetes or
+staging deployment path.
 
 The script builds with the repository root as Docker context, runs versioned
 database migrations once in a temporary release Machine, rolls out the three
-process groups, then enforces exactly one API Machine in each of `iad` and `sjc`
-and one background Machine per process in `iad`. A failed migration aborts the
+process groups, then enforces three API Machines across `iad` and `sjc`, plus
+one worker and scheduler per region. A failed migration aborts the
 rollout. A failed regional scale exits non-zero and is safe to retry.
 
 Verify the public and regional state:
@@ -109,8 +101,8 @@ fly scale show --app <app-name>
 fly checks list --app <app-name>
 ```
 
-Expected scale is `app=2` in `iad,sjc`, `worker=1` in `iad`, and `scheduler=1`
-in `iad`. `/readyz` must return 200 before Fly routes traffic to an API Machine.
+Expected scale is `app=3`, `worker=2`, and `scheduler=2`, with every process
+group present in both `iad` and `sjc`. `/readyz` must return 200 before Fly routes traffic to an API Machine.
 Top-level readiness checks monitor the private worker and scheduler on port
 `9090`; those checks are observable but do not route public traffic.
 
