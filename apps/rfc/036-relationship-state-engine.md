@@ -154,8 +154,17 @@ The following capabilities exist:
 - encrypted raw observation payloads through the service sealer;
 - assertion precedence for user corrections, source facts, deterministic
   derivations, and AI inferences;
+- versioned typed assertion validation, explicit accepted/proposed/rejected/
+  superseded/retracted/expired lifecycle states, persisted authority rank, and
+  reviewer audit metadata;
+- server-owned assertion admission: ordinary authenticated observation claims
+  become proposed AI-tier candidates, accepted source facts come only from
+  provider-verified internal adapters, and an explicit `userConfirmed` decision
+  is recorded atomically as an accepted user correction with reviewer metadata;
 - deterministic selection and materialized relationship fields;
 - immutable snapshots when projected state changes;
+- explicit projection time, projector compatibility, stable state hashes, a
+  transactional projection outbox, retry/dead-letter handling, and replay CLI;
 - source normalizers for Gmail, Calendar, Slack, and HubSpot;
 - relationship list, create, detail, timeline, changes, evidence, correction,
   source-health, recommendation-approval, and recommendation-rejection APIs;
@@ -190,18 +199,10 @@ The current implementation is not production-complete:
   human reconciliation workflow;
 - the four source adapters are normalizers, not complete production ingestion
   pipelines;
-- assertions have no explicit `valid_to`, retraction status, review status,
-  extractor version, or projector compatibility version;
-- a high-precedence assertion can remain dominant indefinitely because
-  temporal expiry and revocation are incomplete;
 - risks and milestones are stored as arrays but projected from one winning
   assertion each;
 - commitments, risks, milestones, and participant changes are not yet fully
   modeled as independent temporal objects;
-- projection occurs synchronously inside ingestion and has no outbox,
-  asynchronous rebuild worker, replay command, or dead-letter path;
-- projector time and version are not explicit inputs, which prevents strong
-  deterministic replay guarantees;
 - source status is updated on successful observations but does not yet model
   cursor, watermark, poll time, expected cadence, lag, consent scope, or
   disconnect reason;
@@ -394,6 +395,8 @@ Every assertion must contain:
 
 Free-form string values are insufficient for typed state dimensions. The API
 must validate values against versioned dimension schemas before acceptance.
+The deterministic authority ladder is `user_correction` above `source_fact`,
+above `deterministic`, above `external_research`, above `ai_inference`.
 
 ## 7. System invariants
 
@@ -1415,6 +1418,79 @@ Work packages:
 | R1.7 | Source completeness and freshness projection                                           | API         | Stale-source scenarios       |
 | R1.8 | Relationship-specific metrics, traces, dashboards, and alerts                          | API + SRE   | Staging SLO dashboard        |
 
+**Implementation checkpoint (2026-08-26):** R1.1 is landed. Assertion values
+are validated against a versioned dimension contract before acceptance.
+Authority rank is deterministic and persisted. Lifecycle states and reviewer
+metadata are explicit. Untrusted observation assertions cannot self-assign
+canonical authority. Retraction and supersession preserve historical replay
+through their validity boundaries. The additive migration deliberately keeps
+legacy `active` rows and the database default until pre-R1.1 projectors have
+drained. New projectors read both statuses while new writers emit `accepted`.
+New projection jobs require projector version 2, so a pre-R1.1 version-1 worker
+fails them for retry instead of silently completing stale state; version-2
+workers remain able to drain version-1 jobs.
+The Phase 1 exit gate remains open until the
+full corpus, operational, encryption, source-completeness, and seven-day staging
+proofs pass together.
+
+**R1.1 validation evidence (2026-08-26):**
+
+- Adversarial review: two independent reviewers and two follow-up verification
+  reviewers examined the implementation and generated contracts. Their findings
+  covered legacy-row migration safety, rolling-projector fencing, public
+  authority admission, supersession, review timestamps, explicit-zero
+  confidence, desktop outbox transport, and Mission Control response shapes.
+  Every actionable finding was fixed and received regression coverage before
+  the final repository gates ran.
+- API repository gate: `make verify` passed.
+- API CI-only follow-through: `make migration-lint test-race security` passed.
+  Atlas reported no diagnostics for the new migration, race-enabled tests
+  passed, `govulncheck` found no vulnerabilities, and Gitleaks found no leaks.
+- Generated-contract reproducibility: `make generate-check` and the web
+  `contracts:check` gate passed with no drift.
+- Web gates: `npm run verify` passed. The CI-only `bundle:check`, Playwright
+  `test:e2e`, and Lighthouse stages also passed.
+- Desktop gates: `pnpm verify` passed. The pinned external tools were then
+  installed and the CI-required policy, secret, and dependency audits passed
+  with `X_GAUNTLET_REQUIRE_EXTERNAL=1`.
+- Consumer compatibility: web and desktop type checks passed after generation.
+- Authenticated public-interface acceptance: freshly built `cmd/server` and
+  `cmd/devstack` binaries ran against a freshly migrated PostgreSQL 16
+  database. `/healthz` and `/readyz` returned HTTP 200, with database and JWKS
+  checks reporting `ok`. The served `/openapi.json` contract mounted the full
+  observation-batch request, including assertions, participants, resource
+  references, receipt time, channel, and direction. Mission Control evidence
+  values accept scalar strings, string arrays, or null where a dimension has no
+  value.
+- End-to-end authority behavior: a JWT-authenticated observation POST returned
+  HTTP 201 and completed a projector-version-2 job. The explicit user-confirmed
+  risk became an accepted `user_correction` with server-stamped reviewer
+  metadata. Its caller-supplied future projector version was clamped to 2 and
+  its untrusted supersession target was cleared. An unconfirmed `source_fact`
+  health candidate was downgraded to proposed `ai_inference`, preserved its
+  explicit confidence of zero, and left canonical health `unknown`. The
+  resulting relationship had state version 1, the confirmed risk, empty rather
+  than null milestone data, and the submitted resource reference.
+- Generated-client acceptance: the generated Zod request schema accepted the
+  same observation payload and rejected confidence above 1. The generated
+  relationship response schema parsed the live Mission Control response,
+  including the risk string array. Omitting required assertion confidence from
+  a distinct observation returned HTTP 400.
+- Lifecycle and replay behavior: retracting that assertion returned HTTP 200,
+  restored health to `unknown` at state version 2, and removed active health
+  support without deleting the observation timeline. Reposting the same
+  provider identity returned `duplicate: true`, preserved the original
+  observation, and did not mint caller-requested correction authority.
+- Integration boundaries: a second authenticated tenant received HTTP 404 for
+  the relationship, confirming scoped read isolation. The generated
+  `@oppulence/rowboat-api-client` was built and used against the running API to
+  list and read the relationship; it observed Mission Control contract
+  `tfa-r1.1-2026-08-26` at state version 2.
+
+This evidence closes R1.1 implementation validation only. The broader Phase 1
+exit gate still requires the full corpus, staging SLO window, key rotation,
+source-completeness scenarios, and operational recovery proofs listed below.
+
 Exit gate:
 
 - deterministic replay passes for the full corpus;
@@ -1733,21 +1809,25 @@ binding, approval, and auditable outcomes.
 
 Every work package adds links here:
 
-| Evidence                | Location                                                                   |
-| ----------------------- | -------------------------------------------------------------------------- |
-| Product contract        | `docs/one-pager.md`                                                        |
-| RFC contract            | `apps/rfc/036-relationship-state-engine.md`                                |
-| Domain schemas          | `apps/rowboat-api/ent/schema/relationship*.go`                             |
-| Migration               | `apps/rowboat-api/migrations/20260726114325_relationship_intelligence.sql` |
-| Ingestion and projector | `apps/rowboat-api/internal/revenue/relationship_state.go`                  |
-| Adapter boundary        | `apps/rowboat-api/internal/revenue/relationship_adapters.go`               |
-| API handlers            | `apps/rowboat-api/internal/revenue/handler.go`                             |
-| Current API tests       | `apps/rowboat-api/internal/revenue/relationship_state_test.go`             |
-| Web client              | `apps/rowboat-www/components/revenue/relationships-view.tsx`               |
-| Desktop client          | `apps/x/apps/renderer/src/components/relationships-view.tsx`               |
-| Desktop transport       | `apps/x/packages/core/src/relationships/client.ts`                         |
-| Desktop schemas         | `apps/x/packages/shared/src/relationships.ts`                              |
-| Golden fixtures         | `fixtures/relationship-*.json`                                             |
+| Evidence                   | Location                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
+| Product contract           | `docs/one-pager.md`                                                                        |
+| RFC contract               | `apps/rfc/036-relationship-state-engine.md`                                                |
+| Domain schemas             | `apps/rowboat-api/ent/schema/relationship*.go`                                             |
+| Migration                  | `apps/rowboat-api/migrations/20260726114325_relationship_intelligence.sql`                 |
+| Ingestion and projector    | `apps/rowboat-api/internal/revenue/relationship_state.go`                                  |
+| Adapter boundary           | `apps/rowboat-api/internal/revenue/relationship_adapters.go`                               |
+| API handlers               | `apps/rowboat-api/internal/revenue/handler.go`                                             |
+| Current API tests          | `apps/rowboat-api/internal/revenue/relationship_state_test.go`                             |
+| Assertion contract         | `apps/rowboat-api/internal/revenue/relationship_assertion_contract.go`                     |
+| Assertion contract tests   | `apps/rowboat-api/internal/revenue/relationship_assertion_contract_test.go`                |
+| Projection lifecycle tests | `apps/rowboat-api/internal/revenue/relationship_projection_test.go`                        |
+| R1.1 migration             | `apps/rowboat-api/migrations/postgres/20260826090000_relationship_assertion_authority.sql` |
+| Web client                 | `apps/rowboat-www/components/revenue/relationships-view.tsx`                               |
+| Desktop client             | `apps/x/apps/renderer/src/components/relationships-view.tsx`                               |
+| Desktop transport          | `apps/x/packages/core/src/relationships/client.ts`                                         |
+| Desktop schemas            | `apps/x/packages/shared/src/relationships.ts`                                              |
+| Golden fixtures            | `fixtures/relationship-*.json`                                                             |
 
 Phase evidence is incomplete until it includes code, tests, runtime proof,
 security proof, operational proof, and both-client proof.

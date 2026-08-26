@@ -235,7 +235,7 @@ func (r *SourceBackfillRunner) process(parent context.Context, status *ent.Relat
 			batch.Observations[index].SourceAccountID = status.SourceAccountID
 		}
 		if len(batch.Observations) > 0 {
-			if _, ingestErr := r.svc.IngestRelationshipObservations(ctx, u, batch.Observations); ingestErr != nil {
+			if _, ingestErr := r.svc.ingestTrustedRelationshipObservations(ctx, u, batch.Observations); ingestErr != nil {
 				return ingestErr
 			}
 		}

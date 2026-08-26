@@ -28,6 +28,8 @@ const (
 	FieldSourceType = "source_type"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldAuthorityRank holds the string denoting the authority_rank field in the database.
+	FieldAuthorityRank = "authority_rank"
 	// FieldConfidence holds the string denoting the confidence field in the database.
 	FieldConfidence = "confidence"
 	// FieldReason holds the string denoting the reason field in the database.
@@ -36,6 +38,8 @@ const (
 	FieldValidFrom = "valid_from"
 	// FieldValidTo holds the string denoting the valid_to field in the database.
 	FieldValidTo = "valid_to"
+	// FieldValueSchemaVersion holds the string denoting the value_schema_version field in the database.
+	FieldValueSchemaVersion = "value_schema_version"
 	// FieldRetractedAt holds the string denoting the retracted_at field in the database.
 	FieldRetractedAt = "retracted_at"
 	// FieldRetractionReason holds the string denoting the retraction_reason field in the database.
@@ -44,6 +48,12 @@ const (
 	FieldSupersedesAssertionID = "supersedes_assertion_id"
 	// FieldExtractorVersion holds the string denoting the extractor_version field in the database.
 	FieldExtractorVersion = "extractor_version"
+	// FieldReviewerID holds the string denoting the reviewer_id field in the database.
+	FieldReviewerID = "reviewer_id"
+	// FieldReviewDecision holds the string denoting the review_decision field in the database.
+	FieldReviewDecision = "review_decision"
+	// FieldReviewedAt holds the string denoting the reviewed_at field in the database.
+	FieldReviewedAt = "reviewed_at"
 	// FieldCitationsJSON holds the string denoting the citations_json field in the database.
 	FieldCitationsJSON = "citations_json"
 	// FieldProjectorCompatVersion holds the string denoting the projector_compat_version field in the database.
@@ -99,14 +109,19 @@ var Columns = []string{
 	FieldValue,
 	FieldSourceType,
 	FieldStatus,
+	FieldAuthorityRank,
 	FieldConfidence,
 	FieldReason,
 	FieldValidFrom,
 	FieldValidTo,
+	FieldValueSchemaVersion,
 	FieldRetractedAt,
 	FieldRetractionReason,
 	FieldSupersedesAssertionID,
 	FieldExtractorVersion,
+	FieldReviewerID,
+	FieldReviewDecision,
+	FieldReviewedAt,
 	FieldCitationsJSON,
 	FieldProjectorCompatVersion,
 	FieldSupportingObservationIds,
@@ -160,12 +175,22 @@ var (
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	StatusValidator func(string) error
+	// DefaultAuthorityRank holds the default value on creation for the "authority_rank" field.
+	DefaultAuthorityRank int
+	// AuthorityRankValidator is a validator for the "authority_rank" field. It is called by the builders before save.
+	AuthorityRankValidator func(int) error
 	// DefaultConfidence holds the default value on creation for the "confidence" field.
 	DefaultConfidence float64
 	// ConfidenceValidator is a validator for the "confidence" field. It is called by the builders before save.
 	ConfidenceValidator func(float64) error
+	// DefaultValueSchemaVersion holds the default value on creation for the "value_schema_version" field.
+	DefaultValueSchemaVersion int
+	// ValueSchemaVersionValidator is a validator for the "value_schema_version" field. It is called by the builders before save.
+	ValueSchemaVersionValidator func(int) error
 	// DefaultExtractorVersion holds the default value on creation for the "extractor_version" field.
 	DefaultExtractorVersion string
+	// ReviewDecisionValidator is a validator for the "review_decision" field. It is called by the builders before save.
+	ReviewDecisionValidator func(string) error
 	// CitationsJSONValidator is a validator for the "citations_json" field. It is called by the builders before save.
 	CitationsJSONValidator func(string) error
 	// DefaultProjectorCompatVersion holds the default value on creation for the "projector_compat_version" field.
@@ -216,6 +241,11 @@ func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
 
+// ByAuthorityRank orders the results by the authority_rank field.
+func ByAuthorityRank(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAuthorityRank, opts...).ToFunc()
+}
+
 // ByConfidence orders the results by the confidence field.
 func ByConfidence(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldConfidence, opts...).ToFunc()
@@ -236,6 +266,11 @@ func ByValidTo(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldValidTo, opts...).ToFunc()
 }
 
+// ByValueSchemaVersion orders the results by the value_schema_version field.
+func ByValueSchemaVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldValueSchemaVersion, opts...).ToFunc()
+}
+
 // ByRetractedAt orders the results by the retracted_at field.
 func ByRetractedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRetractedAt, opts...).ToFunc()
@@ -254,6 +289,21 @@ func BySupersedesAssertionID(opts ...sql.OrderTermOption) OrderOption {
 // ByExtractorVersion orders the results by the extractor_version field.
 func ByExtractorVersion(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldExtractorVersion, opts...).ToFunc()
+}
+
+// ByReviewerID orders the results by the reviewer_id field.
+func ByReviewerID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReviewerID, opts...).ToFunc()
+}
+
+// ByReviewDecision orders the results by the review_decision field.
+func ByReviewDecision(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReviewDecision, opts...).ToFunc()
+}
+
+// ByReviewedAt orders the results by the reviewed_at field.
+func ByReviewedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReviewedAt, opts...).ToFunc()
 }
 
 // ByCitationsJSON orders the results by the citations_json field.

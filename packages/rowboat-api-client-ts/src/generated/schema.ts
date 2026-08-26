@@ -6412,6 +6412,153 @@ export interface components {
       /** @description User that owns this row. */
       user: components["schemas"]["User"];
     };
+    /** @description Winning typed assertion, authority decision, validity, and evidence for one projected dimension. */
+    MissionControlDimensionEvidence: {
+      /**
+       * Format: uuid
+       * @description Winning assertion id.
+       * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      assertionId?: string;
+      /**
+       * @description Assertion source authority.
+       * @example source_fact
+       * @enum {string}
+       */
+      authority?:
+        | "user_correction"
+        | "source_fact"
+        | "deterministic"
+        | "external_research"
+        | "ai_inference";
+      /**
+       * @description Deterministic ordinal authority rank.
+       * @example 4
+       */
+      authorityRank?: number;
+      /**
+       * @description Assertion confidence.
+       * @example 1
+       */
+      confidence?: number;
+      /**
+       * @description Projected dimension.
+       * @example health
+       */
+      dimension: string;
+      /** @description Supporting observations. */
+      evidence: components["schemas"]["MissionControlEvidenceReference"][];
+      /**
+       * @description Extractor or deterministic rule version.
+       * @example hubspot-company-v1
+       */
+      extractorVersion?: string;
+      /**
+       * @description Whether supporting sources are fresh and complete.
+       * @example true
+       */
+      fresh: boolean;
+      /**
+       * @description Why support is missing.
+       * @example No accepted assertion is valid at this boundary.
+       */
+      missingReason?: string;
+      /**
+       * @description Minimum compatible projector version.
+       * @example 2
+       */
+      projectorCompatVersion?: number;
+      /**
+       * @description Evidence-backed explanation.
+       * @example CRM deal stage changed to closed won.
+       */
+      reason?: string;
+      /**
+       * @description Explicit review decision.
+       * @example accepted
+       * @enum {string}
+       */
+      reviewDecision?: "accepted" | "rejected";
+      /**
+       * Format: date-time
+       * @description Explicit review time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      reviewedAt?: string | null;
+      /**
+       * Format: uuid
+       * @description Explicit reviewer when present.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      reviewerId?: string;
+      /**
+       * @description Assertion lifecycle state.
+       * @example accepted
+       * @enum {string}
+       */
+      status?:
+        | "proposed"
+        | "accepted"
+        | "rejected"
+        | "superseded"
+        | "retracted"
+        | "expired"
+        | "active";
+      /**
+       * @description Whether accessible evidence supports the value.
+       * @example true
+       */
+      supported: boolean;
+      /**
+       * Format: date-time
+       * @description Assertion validity start.
+       * @example 2026-07-31T14:00:00Z
+       */
+      validFrom?: string | null;
+      /**
+       * Format: date-time
+       * @description Assertion validity end.
+       * @example 2026-08-31T14:00:00Z
+       */
+      validTo?: string | null;
+      /** @description Typed projected value. Scalar dimensions return a string; risk and milestone return string arrays. */
+      value?: (string | string[]) | null;
+      /**
+       * @description Typed dimension schema version.
+       * @example 1
+       */
+      valueSchemaVersion?: number;
+    };
+    /** @description Immutable evidence supporting one projected relationship dimension. */
+    MissionControlEvidenceReference: {
+      /**
+       * @description Immutable observation content hash.
+       * @example sha256:ab12
+       */
+      contentHash: string;
+      /**
+       * @description Authorized evidence inspection path.
+       * @example /v1/relationships/9c8dfa9b-a7b2-46ea-982c-622a914c00e5/evidence/6b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      evidencePath: string;
+      /**
+       * Format: uuid
+       * @description Observation id.
+       * @example 6b8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      observationId: string;
+      /**
+       * Format: date-time
+       * @description Source occurrence time.
+       * @example 2026-07-31T14:00:00Z
+       */
+      observedAt: string;
+      /**
+       * @description Canonical source.
+       * @example hubspot
+       */
+      source: string;
+    };
     /** @description One server-owned, version-consistent answer to state, change, evidence, action, completeness, and control. */
     MissionControlReadModel: {
       /** @description Active revision-bound recommendation and factors. */
@@ -6448,7 +6595,7 @@ export interface components {
       };
       /**
        * @description Read-contract version.
-       * @example tfa-2026-07-31
+       * @example tfa-r1.1-2026-08-26
        */
       contractVersion: string;
       /**
@@ -6456,9 +6603,9 @@ export interface components {
        * @example 1
        */
       detectorVersion: number;
-      /** @description Dimension-keyed winning assertions and evidence references. */
+      /** @description Dimension-keyed winning typed assertions and evidence references. */
       evidence: {
-        [key: string]: unknown;
+        [key: string]: components["schemas"]["MissionControlDimensionEvidence"];
       };
       /**
        * Format: date-time
@@ -7160,6 +7307,7 @@ export interface components {
       workspace: components["schemas"]["RevenueWorkspace"];
     };
     RelationshipAssertion: {
+      authority_rank: number;
       citations_json?: string;
       /** Format: double */
       confidence: number;
@@ -7196,6 +7344,11 @@ export interface components {
       /** Format: date-time */
       retracted_at?: string;
       retraction_reason?: string;
+      review_decision?: string;
+      /** Format: date-time */
+      reviewed_at?: string;
+      /** Format: uuid */
+      reviewer_id?: string;
       source_type: string;
       /**
        * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
@@ -7217,6 +7370,7 @@ export interface components {
       /** Format: date-time */
       valid_to?: string;
       value: string;
+      value_schema_version: number;
       workspace: components["schemas"]["RevenueWorkspace"];
     };
     /** @description Versioned relationship-native reason for portfolio attention. */
@@ -9284,9 +9438,11 @@ export interface components {
       projectedAt?: string | null;
       /**
        * @description Deterministic projector version.
-       * @example 1
+       * @example 2
        */
       projectorVersion: number;
+      /** @description Canonical product:type:externalId references. */
+      resourceRefs: string[];
       /** @description Current relationship risks. */
       risks: string[];
       /**
@@ -14031,6 +14187,99 @@ export interface operations {
              * @example acme.com
              */
             accountDomain?: string;
+            /** @description Typed assertion candidates. Caller authority is ignored; userConfirmed records an explicit reviewed correction. */
+            assertions?: {
+              /**
+               * @description JSON citations for external research.
+               * @example []
+               */
+              citationsJson?: string;
+              /**
+               * @description Assertion confidence, including explicit zero.
+               * @example 0.8
+               */
+              confidence: number;
+              /**
+               * @description Projected dimension.
+               * @example health
+               * @enum {string}
+               */
+              dimension:
+                | "lifecycle"
+                | "engagement"
+                | "sentiment"
+                | "health"
+                | "summary"
+                | "next_action"
+                | "risk"
+                | "milestone";
+              /**
+               * @description Extractor version.
+               * @example desktop-review-v1
+               */
+              extractorVersion?: string;
+              /**
+               * @description Minimum compatible projector version. Public candidates are clamped to the current version.
+               * @example 2
+               */
+              projectorCompatVersion?: number;
+              /**
+               * @description Evidence-backed explanation.
+               * @example Recent engagement indicates attention is needed.
+               */
+              reason: string;
+              /**
+               * @description Claimed source type. Unconfirmed public assertions are downgraded to proposed AI-tier candidates.
+               * @example ai_inference
+               * @enum {string}
+               */
+              sourceType?: "source_fact" | "deterministic" | "external_research" | "ai_inference";
+              /**
+               * Format: uuid
+               * @description Reserved for trusted internal writers. Public observation admission ignores it; use the correction endpoint for validated supersession.
+               * @example 7b8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              supersedesAssertionId?: string;
+              /**
+               * @description Whether the authenticated user explicitly accepted this value. The server records it as a user correction with reviewer metadata.
+               * @example true
+               */
+              userConfirmed?: boolean;
+              /**
+               * Format: date-time
+               * @description Validity start.
+               * @example 2026-07-18T17:30:00Z
+               */
+              validFrom?: string;
+              /**
+               * Format: date-time
+               * @description Optional exclusive validity end.
+               * @example 2026-08-18T17:30:00Z
+               */
+              validTo?: string | null;
+              /**
+               * @description Typed assertion value.
+               * @example needs_attention
+               */
+              value: string;
+              /**
+               * @description Typed value schema version.
+               * @example 1
+               */
+              valueSchemaVersion?: number;
+            }[];
+            /**
+             * @description Interaction channel.
+             * @example email
+             * @enum {string}
+             */
+            channel?: "email" | "meeting" | "call" | "chat" | "note" | "crm";
+            /**
+             * @description Interaction direction.
+             * @example inbound
+             * @enum {string}
+             */
+            direction?: "inbound" | "outbound" | "internal";
             /**
              * @description Account display name for first ingestion.
              * @example Acme
@@ -14056,6 +14305,37 @@ export interface operations {
              * @example 2026-07-18T17:30:00Z
              */
             occurredAt?: string;
+            /** @description Observed relationship participants. */
+            participants?: {
+              /**
+               * @description Participant interaction direction.
+               * @example inbound
+               * @enum {string}
+               */
+              direction?: "inbound" | "outbound" | "internal";
+              /**
+               * @description Participant display name.
+               * @example Avery Chen
+               */
+              displayName: string;
+              /**
+               * @description Participant email.
+               * @example avery@acme.com
+               */
+              email?: string;
+              /** @description Provider participant references. */
+              externalRefs?: string[];
+              /**
+               * @description Relationship role.
+               * @example champion
+               */
+              role?: string;
+              /**
+               * @description Participant title.
+               * @example VP Engineering
+               */
+              title?: string;
+            }[];
             /** @description Raw provider payload, sealed at rest. */
             payload?: {
               [key: string]: unknown;
@@ -14066,11 +14346,19 @@ export interface operations {
              */
             primaryEmail?: string;
             /**
+             * Format: date-time
+             * @description Receipt time.
+             * @example 2026-07-18T17:30:01Z
+             */
+            receivedAt?: string;
+            /**
              * Format: uuid
              * @description Known relationship id.
              * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
              */
             relationshipId?: string;
+            /** @description Canonical product:type:externalId references. */
+            resourceRefs?: string[];
             /**
              * @description Evidence source.
              * @example gmail
@@ -15211,7 +15499,15 @@ export interface operations {
            * @example health
            * @enum {string}
            */
-          dimension: "lifecycle" | "engagement" | "sentiment" | "health" | "next_action";
+          dimension:
+            | "lifecycle"
+            | "engagement"
+            | "sentiment"
+            | "health"
+            | "summary"
+            | "next_action"
+            | "risk"
+            | "milestone";
           /**
            * @description Why the model is wrong.
            * @example The review happened yesterday.

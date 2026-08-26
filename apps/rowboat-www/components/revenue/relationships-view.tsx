@@ -1057,6 +1057,13 @@ function MissionControlOverview({
                 {!item.fresh ? <span className="text-amber-600">stale</span> : null}
               </div>
               <p className="mt-1 text-primary/55">{item.reason || item.missingReason}</p>
+              {item.supported && item.authorityRank ? (
+                <p className="mt-1 text-primary/40">
+                  {relationshipLabel(item.status)} · authority rank {item.authorityRank} · value
+                  schema v{item.valueSchemaVersion ?? 1} ·{" "}
+                  {item.extractorVersion || "unknown extractor"}
+                </p>
+              ) : null}
               {item.evidence.length ? (
                 <p className="mt-1 text-primary/40">
                   {item.evidence

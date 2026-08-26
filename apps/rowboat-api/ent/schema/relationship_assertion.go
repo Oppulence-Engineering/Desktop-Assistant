@@ -5,6 +5,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
 )
@@ -35,16 +36,22 @@ func (RelationshipAssertion) Fields() []ent.Field {
 				"external_research",
 				"ai_inference")),
 		field.String("status").
-			Default("active").
-			Validate(oneOfRevenue("status", "active", "retracted", "superseded")),
+			Default("accepted").
+			Validate(oneOfRevenue("status", "proposed", "accepted", "rejected", "superseded", "retracted", "expired")),
+		field.Int("authority_rank").Default(1).Positive(),
 		field.Float("confidence").Default(1).Min(0).Max(1),
 		field.Text("reason").Optional().Sensitive(),
 		field.Time("valid_from"),
 		field.Time("valid_to").Optional().Nillable(),
+		field.Int("value_schema_version").Default(1).Positive(),
 		field.Time("retracted_at").Optional().Nillable(),
 		field.Text("retraction_reason").Optional().Sensitive(),
 		field.String("supersedes_assertion_id").Optional(),
 		field.String("extractor_version").Default("unknown-v1"),
+		field.UUID("reviewer_id", uuid.UUID{}).Optional().Nillable(),
+		field.String("review_decision").Optional().
+			Validate(oneOfRevenueOptional("review_decision", "accepted", "rejected")),
+		field.Time("reviewed_at").Optional().Nillable(),
 		// JSON array of {title, url, excerpts[]} backing an external_research
 		// assertion. See PersonAttribute.citations_json.
 		field.Text("citations_json").Optional().Validate(validJSON),
@@ -72,5 +79,6 @@ func (RelationshipAssertion) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("relationship").Fields("dimension", "valid_from"),
 		index.Edges("relationship").Fields("status", "valid_to"),
+		index.Edges("relationship").Fields("authority_rank", "valid_from"),
 	}
 }

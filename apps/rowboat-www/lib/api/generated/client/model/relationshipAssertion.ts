@@ -12,6 +12,7 @@ import type { RevenueWorkspace } from "./revenueWorkspace";
 import type { User } from "./user";
 
 export interface RelationshipAssertion {
+  authority_rank: number;
   citations_json?: string;
   confidence: number;
   /** Row creation timestamp. */
@@ -27,6 +28,9 @@ export interface RelationshipAssertion {
   relationship: Relationship;
   retracted_at?: string;
   retraction_reason?: string;
+  review_decision?: string;
+  reviewed_at?: string;
+  reviewer_id?: string;
   source_type: string;
   /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
   status: string;
@@ -39,5 +43,6 @@ export interface RelationshipAssertion {
   valid_from: string;
   valid_to?: string;
   value: string;
+  value_schema_version: number;
   workspace: RevenueWorkspace;
 }

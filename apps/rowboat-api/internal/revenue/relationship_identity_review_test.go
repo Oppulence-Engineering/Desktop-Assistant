@@ -41,7 +41,10 @@ func identityCollisionFixture(t *testing.T) (*fixture, *ent.Relationship, *ent.R
 		RelationshipID: proposed.ID, DisplayName: "Proposed Acme", Source: "hubspot",
 		ExternalID: "ambiguous-acme", EventType: "company.updated",
 		ResourceRefs: []string{"hubspot:company:identity-review"}, OccurredAt: now.Add(time.Minute), ReceivedAt: now.Add(time.Minute),
-		Assertions: []RelationshipAssertionInput{{Dimension: "summary", Value: "Ambiguous evidence", SourceType: "source_fact", Confidence: 1}},
+		Assertions: []RelationshipAssertionInput{{
+			Dimension: "summary", Value: "Ambiguous evidence", SourceType: "source_fact", Confidence: 1,
+			Reason: "The provider anchor conflicts with an existing canonical relationship.",
+		}},
 	}})
 	if err != nil {
 		t.Fatal(err)

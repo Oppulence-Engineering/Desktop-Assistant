@@ -7,18 +7,17 @@
  */
 
 /**
- * Corrected state dimension.
+ * Assertion lifecycle state.
  */
-export type CorrectRelationshipBodyDimension =
-  (typeof CorrectRelationshipBodyDimension)[keyof typeof CorrectRelationshipBodyDimension];
+export type MissionControlDimensionEvidenceStatus =
+  (typeof MissionControlDimensionEvidenceStatus)[keyof typeof MissionControlDimensionEvidenceStatus];
 
-export const CorrectRelationshipBodyDimension = {
-  lifecycle: "lifecycle",
-  engagement: "engagement",
-  sentiment: "sentiment",
-  health: "health",
-  summary: "summary",
-  next_action: "next_action",
-  risk: "risk",
-  milestone: "milestone",
+export const MissionControlDimensionEvidenceStatus = {
+  proposed: "proposed",
+  accepted: "accepted",
+  rejected: "rejected",
+  superseded: "superseded",
+  retracted: "retracted",
+  expired: "expired",
+  active: "active",
 } as const;

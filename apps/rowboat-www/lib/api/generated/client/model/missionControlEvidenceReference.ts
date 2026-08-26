@@ -7,18 +7,17 @@
  */
 
 /**
- * Corrected state dimension.
+ * Immutable evidence supporting one projected relationship dimension.
  */
-export type CorrectRelationshipBodyDimension =
-  (typeof CorrectRelationshipBodyDimension)[keyof typeof CorrectRelationshipBodyDimension];
-
-export const CorrectRelationshipBodyDimension = {
-  lifecycle: "lifecycle",
-  engagement: "engagement",
-  sentiment: "sentiment",
-  health: "health",
-  summary: "summary",
-  next_action: "next_action",
-  risk: "risk",
-  milestone: "milestone",
-} as const;
+export interface MissionControlEvidenceReference {
+  /** Immutable observation content hash. */
+  contentHash: string;
+  /** Authorized evidence inspection path. */
+  evidencePath: string;
+  /** Observation id. */
+  observationId: string;
+  /** Source occurrence time. */
+  observedAt: string;
+  /** Canonical source. */
+  source: string;
+}

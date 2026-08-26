@@ -34,12 +34,13 @@ func addRevenueSchemas(schemas obj) {
 		"stateReason":      stringSchema("Evidence-backed explanation of the projected state.", "Security review was promised, but no owner or meeting exists."),
 		"stateVersion":     intSchema("Monotonic projection version.", 4),
 		"stateHash":        stringSchema("Stable hash of canonical projected values and winning assertions.", "sha256:ab12cd34"),
-		"projectorVersion": intSchema("Deterministic projector version.", 1),
+		"projectorVersion": intSchema("Deterministic projector version.", 2),
 		"projectedAt":      stringSchema("Explicit evaluation time used by the projector.", "2026-07-25T16:00:00Z", obj{"format": "date-time"}, nullable()),
 		"lastChangedAt":    stringSchema("Last material state change.", "2026-07-25T16:00:00Z", obj{"format": "date-time"}, nullable()),
 		"risks":            arraySchema("Current relationship risks.", stringSchema("Risk.", "Security review has no owner.")),
 		"milestones":       arraySchema("Reached relationship milestones.", stringSchema("Milestone.", "Proposal shared.")),
-	}, "id", "kind", "displayName", "status", "lifecycle", "engagement", "sentiment", "health", "stateVersion", "projectorVersion", "risks", "milestones")
+		"resourceRefs":     arraySchema("Canonical product:type:externalId references.", stringSchema("Resource reference.", "hubspot:company:123")),
+	}, "id", "kind", "displayName", "status", "lifecycle", "engagement", "sentiment", "health", "stateVersion", "projectorVersion", "risks", "milestones", "resourceRefs")
 
 	schemas["RelationshipParticipant"] = objectSchema("A person participating in the relationship, resolved across provider identities.", obj{
 		"id":           uuidSchema("Participant id.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
@@ -210,11 +211,39 @@ func addRevenueSchemas(schemas obj) {
 		"createdAt": stringSchema("Created time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}), "updatedAt": stringSchema("Updated time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
 	}, "id", "version", "relationshipId", "relationshipName", "reasonCode", "explanation", "triggeringObjectRef", "evidenceRefs", "urgencyBand", "rankScore", "rankFactors", "sourceRequirements", "status", "detectorVersion", "projectorVersion", "relationshipStateVersion", "createdAt", "updatedAt")
 
+	schemas["MissionControlEvidenceReference"] = objectSchema("Immutable evidence supporting one projected relationship dimension.", obj{
+		"observationId": uuidSchema("Observation id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"source":        stringSchema("Canonical source.", "hubspot"),
+		"observedAt":    stringSchema("Source occurrence time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
+		"evidencePath":  stringSchema("Authorized evidence inspection path.", "/v1/relationships/9c8dfa9b-a7b2-46ea-982c-622a914c00e5/evidence/6b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"contentHash":   stringSchema("Immutable observation content hash.", "sha256:ab12"),
+	}, "observationId", "source", "observedAt", "evidencePath", "contentHash")
+
+	schemas["MissionControlDimensionEvidence"] = objectSchema("Winning typed assertion, authority decision, validity, and evidence for one projected dimension.", obj{
+		"dimension": stringSchema("Projected dimension.", "health"), "value": obj{
+			"description": "Typed projected value. Scalar dimensions return a string; risk and milestone return string arrays.",
+			"nullable":    true,
+			"oneOf": []any{
+				stringSchema("Scalar projected value.", "needs_attention"),
+				arraySchema("Collection projected value.", stringSchema("Projected list item.", "Security review is blocked.")),
+			},
+		},
+		"supported": boolSchema("Whether accessible evidence supports the value.", true), "missingReason": stringSchema("Why support is missing.", "No accepted assertion is valid at this boundary."),
+		"assertionId": uuidSchema("Winning assertion id.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "authority": stringEnum("Assertion source authority.", "source_fact", "user_correction", "source_fact", "deterministic", "external_research", "ai_inference"),
+		"authorityRank": intSchema("Deterministic ordinal authority rank.", 4), "status": stringEnum("Assertion lifecycle state.", "accepted", "proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active"),
+		"confidence": numberSchema("Assertion confidence.", 1, obj{"minimum": 0, "maximum": 1}), "reason": stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won."),
+		"valueSchemaVersion": intSchema("Typed dimension schema version.", 1), "extractorVersion": stringSchema("Extractor or deterministic rule version.", "hubspot-company-v1"),
+		"projectorCompatVersion": intSchema("Minimum compatible projector version.", 2), "reviewerId": uuidSchema("Explicit reviewer when present.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"reviewDecision": stringEnum("Explicit review decision.", "accepted", "accepted", "rejected"), "reviewedAt": stringSchema("Explicit review time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}, nullable()),
+		"validFrom": stringSchema("Assertion validity start.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}, nullable()), "validTo": stringSchema("Assertion validity end.", "2026-08-31T14:00:00Z", obj{"format": "date-time"}, nullable()),
+		"fresh": boolSchema("Whether supporting sources are fresh and complete.", true), "evidence": arraySchema("Supporting observations.", ref("MissionControlEvidenceReference")),
+	}, "dimension", "supported", "fresh", "evidence")
+
 	schemas["MissionControlReadModel"] = objectSchema("One server-owned, version-consistent answer to state, change, evidence, action, completeness, and control.", obj{
-		"contractVersion": stringSchema("Read-contract version.", "tfa-2026-07-31"), "aggregateHash": stringSchema("Stable hash of every material answer in this aggregate.", "sha256:cd34"), "asOf": stringSchema("Explicit response boundary.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
+		"contractVersion": stringSchema("Read-contract version.", "tfa-r1.1-2026-08-26"), "aggregateHash": stringSchema("Stable hash of every material answer in this aggregate.", "sha256:cd34"), "asOf": stringSchema("Explicit response boundary.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
 		"stateVersion": intSchema("Relationship state version.", 4), "stateHash": stringSchema("Stable state hash.", "sha256:ab12"), "projectorVersion": intSchema("Projector version.", 1), "detectorVersion": intSchema("Detector version.", 1),
 		"freshnessBoundary": stringSchema("Earliest source freshness boundary.", "2026-07-31T14:30:00Z", obj{"format": "date-time"}, nullable()), "previousReviewedStateVersion": intSchema("Last acknowledged version.", 3), "changedSinceReview": boolSchema("Whether material state changed.", true),
-		"changes": arraySchema("Dimension-level changes.", freeFormSchema("Mission Control change.")), "evidence": freeFormSchema("Dimension-keyed winning assertions and evidence references."),
+		"changes": arraySchema("Dimension-level changes.", freeFormSchema("Mission Control change.")), "evidence": obj{"type": "object", "description": "Dimension-keyed winning typed assertions and evidence references.", "additionalProperties": ref("MissionControlDimensionEvidence")},
 		"completeness": freeFormSchema("Source coverage, missing dimensions, ambiguity, and external-action safety."), "activeRecommendation": freeFormSchema("Active revision-bound recommendation and factors."),
 		"pending": freeFormSchema("Pending correction, identity, approval, execution, and reconciliation counts."), "capabilities": freeFormSchema("Authorized operation links."),
 	}, "contractVersion", "aggregateHash", "asOf", "stateVersion", "stateHash", "projectorVersion", "detectorVersion", "previousReviewedStateVersion", "changedSinceReview", "changes", "evidence", "completeness", "pending", "capabilities")
@@ -519,6 +548,23 @@ func addRevenueSchemas(schemas obj) {
 	}, "id", "kind", "source", "sourceEventId", "occurredAt")
 }
 
+// restoreRevenueSchemaOverrides runs after the generic Ent field documentation
+// overlay. Runtime schemas may reuse names such as status and reason with
+// domain-specific semantics, so their contract must win over entity defaults.
+func restoreRevenueSchemaOverrides(schemas obj) {
+	evidence := asObj(schemas["MissionControlDimensionEvidence"])
+	if evidence == nil {
+		return
+	}
+	properties := asObj(evidence["properties"])
+	properties["reason"] = stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won.")
+	properties["status"] = stringEnum(
+		"Assertion lifecycle state.",
+		"accepted",
+		"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
+	)
+}
+
 func addRevenuePaths(paths obj) {
 	actionParam := []any{obj{"name": "actionId", "in": "path", "required": true, "description": "Action id.", "schema": obj{"type": "string", "format": "uuid"}}}
 
@@ -652,7 +698,7 @@ func addRevenuePaths(paths obj) {
 		"404": responseRef("404"),
 	})}
 	paths["/v1/relationships/{relationshipId}/corrections"] = obj{"post": operation("Relationship Intelligence", "Correct relationship state", "Appends a user correction assertion and deterministically reprojects the relationship. Source evidence is never overwritten.", "correctRelationship", bearer(), relationshipParam, jsonRequest("Correction.", objectSchema("Relationship correction.", obj{
-		"dimension":             stringEnum("Corrected state dimension.", "health", "lifecycle", "engagement", "sentiment", "health", "next_action"),
+		"dimension":             stringEnum("Corrected state dimension.", "health", "lifecycle", "engagement", "sentiment", "health", "summary", "next_action", "risk", "milestone"),
 		"value":                 stringSchema("Correct value.", "healthy"),
 		"reason":                stringSchema("Why the model is wrong.", "The review happened yesterday."),
 		"supersedesAssertionId": stringSchema("Optional active assertion on the same relationship and dimension that this correction permanently replaces.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5", obj{"format": "uuid"}),
@@ -785,15 +831,43 @@ func addRevenuePaths(paths obj) {
 			"displayName":     stringSchema("Account display name for first ingestion.", "Acme"),
 			"primaryEmail":    stringSchema("Primary contact email.", "avery@acme.com"),
 			"accountDomain":   stringSchema("Exact account domain.", "acme.com"),
+			"resourceRefs":    arraySchema("Canonical product:type:externalId references.", stringSchema("Resource reference.", "desktop:relationship:acme")),
 			"source":          stringSchema("Evidence source.", "gmail"),
 			"sourceAccountId": stringSchema("Provider account id.", "me@company.com"),
 			"externalId":      stringSchema("Provider event id.", "message-123"),
 			"sourceVersion":   stringSchema("Provider event version.", "1"),
 			"eventType":       stringSchema("Normalized event type.", "commitment_created"),
 			"occurredAt":      stringSchema("Occurrence time.", "2026-07-18T17:30:00Z", obj{"format": "date-time"}),
+			"receivedAt":      stringSchema("Receipt time.", "2026-07-18T17:30:01Z", obj{"format": "date-time"}),
 			"summary":         stringSchema("Bounded evidence summary.", "We promised the security packet."),
 			"normalizedFacts": freeFormSchema("Provider-neutral facts."),
 			"payload":         freeFormSchema("Raw provider payload, sealed at rest."),
+			"participants": arraySchema("Observed relationship participants.", objectSchema("Observation participant.", obj{
+				"displayName": stringSchema("Participant display name.", "Avery Chen"),
+				"email":       stringSchema("Participant email.", "avery@acme.com"),
+				"role":        stringSchema("Relationship role.", "champion"),
+				"title":       stringSchema("Participant title.", "VP Engineering"),
+				"externalRefs": arraySchema("Provider participant references.",
+					stringSchema("Participant reference.", "gmail:contact:123")),
+				"direction": stringEnum("Participant interaction direction.", "inbound", "inbound", "outbound", "internal"),
+			}, "displayName")),
+			"assertions": arraySchema("Typed assertion candidates. Caller authority is ignored; userConfirmed records an explicit reviewed correction.", objectSchema("Observation assertion.", obj{
+				"dimension":              stringEnum("Projected dimension.", "health", "lifecycle", "engagement", "sentiment", "health", "summary", "next_action", "risk", "milestone"),
+				"value":                  stringSchema("Typed assertion value.", "needs_attention"),
+				"valueSchemaVersion":     intSchema("Typed value schema version.", 1),
+				"sourceType":             stringEnum("Claimed source type. Unconfirmed public assertions are downgraded to proposed AI-tier candidates.", "ai_inference", "source_fact", "deterministic", "external_research", "ai_inference"),
+				"confidence":             numberSchema("Assertion confidence, including explicit zero.", 0.8, obj{"minimum": 0, "maximum": 1}),
+				"reason":                 stringSchema("Evidence-backed explanation.", "Recent engagement indicates attention is needed."),
+				"validFrom":              stringSchema("Validity start.", "2026-07-18T17:30:00Z", obj{"format": "date-time"}),
+				"validTo":                stringSchema("Optional exclusive validity end.", "2026-08-18T17:30:00Z", obj{"format": "date-time"}, nullable()),
+				"supersedesAssertionId":  uuidSchema("Reserved for trusted internal writers. Public observation admission ignores it; use the correction endpoint for validated supersession.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+				"extractorVersion":       stringSchema("Extractor version.", "desktop-review-v1"),
+				"projectorCompatVersion": intSchema("Minimum compatible projector version. Public candidates are clamped to the current version.", 2),
+				"citationsJson":          stringSchema("JSON citations for external research.", "[]"),
+				"userConfirmed":          boolSchema("Whether the authenticated user explicitly accepted this value. The server records it as a user correction with reviewer metadata.", true),
+			}, "dimension", "value", "confidence", "reason")),
+			"channel":   stringEnum("Interaction channel.", "email", "email", "meeting", "call", "chat", "note", "crm"),
+			"direction": stringEnum("Interaction direction.", "inbound", "inbound", "outbound", "internal"),
 		}, "source", "externalId", "eventType")),
 	}, "observations"), obj{"observations": []any{obj{"displayName": "Acme", "accountDomain": "acme.com", "source": "gmail", "externalId": "message-123", "eventType": "commitment_created"}}}), obj{
 		"201": jsonResponse("Ingestion results.", freeFormSchema("Observation, relationship, and duplicate status per input."), nil),

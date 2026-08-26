@@ -43,6 +43,11 @@ func TestMissionControlOwnsStateChangeEvidenceCompletenessAndAction(t *testing.T
 	if !model.Evidence["lifecycle"].Supported || model.Evidence["lifecycle"].AssertionID == "" || len(model.Evidence["lifecycle"].Evidence) != 1 {
 		t.Fatalf("winning lifecycle assertion is not source-linked: %+v", model.Evidence["lifecycle"])
 	}
+	if lifecycle := model.Evidence["lifecycle"]; lifecycle.Status != relationshipAssertionStatusAccepted ||
+		lifecycle.AuthorityRank != 4 || lifecycle.ValueSchemaVersion != relationshipAssertionValueSchemaVersion ||
+		lifecycle.ExtractorVersion == "" || lifecycle.ProjectorCompatVersion != relationshipProjectorVersion {
+		t.Fatalf("winning lifecycle authority metadata is incomplete: %+v", lifecycle)
+	}
 	hubSpotComplete := false
 	for _, source := range model.Completeness.Sources {
 		if source.Source == "hubspot" && source.Completeness == "complete" {
@@ -98,7 +103,9 @@ func TestMissionControlAcknowledgementAndCorrectionBoundary(t *testing.T) {
 	if !model.ChangedSinceReview || model.StateVersion != corrected.StateVersion || model.PreviousReviewedStateVersion != ack.StateVersion {
 		t.Fatalf("correction did not cross acknowledgement boundary: %+v", model)
 	}
-	if model.Evidence["health"].Authority != "user_correction" || !model.Evidence["health"].Supported {
+	if model.Evidence["health"].Authority != "user_correction" || !model.Evidence["health"].Supported ||
+		model.Evidence["health"].AuthorityRank != 5 || model.Evidence["health"].ReviewerID != f.user.ID.String() ||
+		model.Evidence["health"].ReviewDecision != relationshipAssertionStatusAccepted || model.Evidence["health"].ReviewedAt == nil {
 		t.Fatalf("user correction did not become the visible winner: %+v", model.Evidence["health"])
 	}
 	found := false

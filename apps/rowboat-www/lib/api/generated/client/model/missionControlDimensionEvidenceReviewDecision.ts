@@ -7,18 +7,12 @@
  */
 
 /**
- * Corrected state dimension.
+ * Explicit review decision.
  */
-export type CorrectRelationshipBodyDimension =
-  (typeof CorrectRelationshipBodyDimension)[keyof typeof CorrectRelationshipBodyDimension];
+export type MissionControlDimensionEvidenceReviewDecision =
+  (typeof MissionControlDimensionEvidenceReviewDecision)[keyof typeof MissionControlDimensionEvidenceReviewDecision];
 
-export const CorrectRelationshipBodyDimension = {
-  lifecycle: "lifecycle",
-  engagement: "engagement",
-  sentiment: "sentiment",
-  health: "health",
-  summary: "summary",
-  next_action: "next_action",
-  risk: "risk",
-  milestone: "milestone",
+export const MissionControlDimensionEvidenceReviewDecision = {
+  accepted: "accepted",
+  rejected: "rejected",
 } as const;

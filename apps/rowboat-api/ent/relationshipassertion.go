@@ -35,6 +35,8 @@ type RelationshipAssertion struct {
 	SourceType string `json:"source_type,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
+	// AuthorityRank holds the value of the "authority_rank" field.
+	AuthorityRank int `json:"authority_rank,omitempty"`
 	// Confidence holds the value of the "confidence" field.
 	Confidence float64 `json:"confidence,omitempty"`
 	// Reason holds the value of the "reason" field.
@@ -43,6 +45,8 @@ type RelationshipAssertion struct {
 	ValidFrom time.Time `json:"valid_from,omitempty"`
 	// ValidTo holds the value of the "valid_to" field.
 	ValidTo *time.Time `json:"valid_to,omitempty"`
+	// ValueSchemaVersion holds the value of the "value_schema_version" field.
+	ValueSchemaVersion int `json:"value_schema_version,omitempty"`
 	// RetractedAt holds the value of the "retracted_at" field.
 	RetractedAt *time.Time `json:"retracted_at,omitempty"`
 	// RetractionReason holds the value of the "retraction_reason" field.
@@ -51,6 +55,12 @@ type RelationshipAssertion struct {
 	SupersedesAssertionID string `json:"supersedes_assertion_id,omitempty"`
 	// ExtractorVersion holds the value of the "extractor_version" field.
 	ExtractorVersion string `json:"extractor_version,omitempty"`
+	// ReviewerID holds the value of the "reviewer_id" field.
+	ReviewerID *uuid.UUID `json:"reviewer_id,omitempty"`
+	// ReviewDecision holds the value of the "review_decision" field.
+	ReviewDecision string `json:"review_decision,omitempty"`
+	// ReviewedAt holds the value of the "reviewed_at" field.
+	ReviewedAt *time.Time `json:"reviewed_at,omitempty"`
 	// CitationsJSON holds the value of the "citations_json" field.
 	CitationsJSON string `json:"citations_json,omitempty"`
 	// ProjectorCompatVersion holds the value of the "projector_compat_version" field.
@@ -133,15 +143,17 @@ func (*RelationshipAssertion) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case relationshipassertion.FieldReviewerID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case relationshipassertion.FieldSupportingObservationIds:
 			values[i] = new([]byte)
 		case relationshipassertion.FieldConfidence:
 			values[i] = new(sql.NullFloat64)
-		case relationshipassertion.FieldProjectorCompatVersion:
+		case relationshipassertion.FieldAuthorityRank, relationshipassertion.FieldValueSchemaVersion, relationshipassertion.FieldProjectorCompatVersion:
 			values[i] = new(sql.NullInt64)
-		case relationshipassertion.FieldDimension, relationshipassertion.FieldValue, relationshipassertion.FieldSourceType, relationshipassertion.FieldStatus, relationshipassertion.FieldReason, relationshipassertion.FieldRetractionReason, relationshipassertion.FieldSupersedesAssertionID, relationshipassertion.FieldExtractorVersion, relationshipassertion.FieldCitationsJSON:
+		case relationshipassertion.FieldDimension, relationshipassertion.FieldValue, relationshipassertion.FieldSourceType, relationshipassertion.FieldStatus, relationshipassertion.FieldReason, relationshipassertion.FieldRetractionReason, relationshipassertion.FieldSupersedesAssertionID, relationshipassertion.FieldExtractorVersion, relationshipassertion.FieldReviewDecision, relationshipassertion.FieldCitationsJSON:
 			values[i] = new(sql.NullString)
-		case relationshipassertion.FieldCreatedAt, relationshipassertion.FieldUpdatedAt, relationshipassertion.FieldValidFrom, relationshipassertion.FieldValidTo, relationshipassertion.FieldRetractedAt:
+		case relationshipassertion.FieldCreatedAt, relationshipassertion.FieldUpdatedAt, relationshipassertion.FieldValidFrom, relationshipassertion.FieldValidTo, relationshipassertion.FieldRetractedAt, relationshipassertion.FieldReviewedAt:
 			values[i] = new(sql.NullTime)
 		case relationshipassertion.FieldID:
 			values[i] = new(uuid.UUID)
@@ -210,6 +222,12 @@ func (_m *RelationshipAssertion) assignValues(columns []string, values []any) er
 			} else if value.Valid {
 				_m.Status = value.String
 			}
+		case relationshipassertion.FieldAuthorityRank:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field authority_rank", values[i])
+			} else if value.Valid {
+				_m.AuthorityRank = int(value.Int64)
+			}
 		case relationshipassertion.FieldConfidence:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field confidence", values[i])
@@ -235,6 +253,12 @@ func (_m *RelationshipAssertion) assignValues(columns []string, values []any) er
 				_m.ValidTo = new(time.Time)
 				*_m.ValidTo = value.Time
 			}
+		case relationshipassertion.FieldValueSchemaVersion:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field value_schema_version", values[i])
+			} else if value.Valid {
+				_m.ValueSchemaVersion = int(value.Int64)
+			}
 		case relationshipassertion.FieldRetractedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field retracted_at", values[i])
@@ -259,6 +283,26 @@ func (_m *RelationshipAssertion) assignValues(columns []string, values []any) er
 				return fmt.Errorf("unexpected type %T for field extractor_version", values[i])
 			} else if value.Valid {
 				_m.ExtractorVersion = value.String
+			}
+		case relationshipassertion.FieldReviewerID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field reviewer_id", values[i])
+			} else if value.Valid {
+				_m.ReviewerID = new(uuid.UUID)
+				*_m.ReviewerID = *value.S.(*uuid.UUID)
+			}
+		case relationshipassertion.FieldReviewDecision:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field review_decision", values[i])
+			} else if value.Valid {
+				_m.ReviewDecision = value.String
+			}
+		case relationshipassertion.FieldReviewedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field reviewed_at", values[i])
+			} else if value.Valid {
+				_m.ReviewedAt = new(time.Time)
+				*_m.ReviewedAt = value.Time
 			}
 		case relationshipassertion.FieldCitationsJSON:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -381,6 +425,9 @@ func (_m *RelationshipAssertion) String() string {
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)
 	builder.WriteString(", ")
+	builder.WriteString("authority_rank=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AuthorityRank))
+	builder.WriteString(", ")
 	builder.WriteString("confidence=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Confidence))
 	builder.WriteString(", ")
@@ -394,6 +441,9 @@ func (_m *RelationshipAssertion) String() string {
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
+	builder.WriteString("value_schema_version=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ValueSchemaVersion))
+	builder.WriteString(", ")
 	if v := _m.RetractedAt; v != nil {
 		builder.WriteString("retracted_at=")
 		builder.WriteString(v.Format(time.ANSIC))
@@ -406,6 +456,19 @@ func (_m *RelationshipAssertion) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("extractor_version=")
 	builder.WriteString(_m.ExtractorVersion)
+	builder.WriteString(", ")
+	if v := _m.ReviewerID; v != nil {
+		builder.WriteString("reviewer_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("review_decision=")
+	builder.WriteString(_m.ReviewDecision)
+	builder.WriteString(", ")
+	if v := _m.ReviewedAt; v != nil {
+		builder.WriteString("reviewed_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("citations_json=")
 	builder.WriteString(_m.CitationsJSON)

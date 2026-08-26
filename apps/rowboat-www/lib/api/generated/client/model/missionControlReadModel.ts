@@ -34,7 +34,7 @@ export interface MissionControlReadModel {
   contractVersion: string;
   /** Detector version. */
   detectorVersion: number;
-  /** Dimension-keyed winning assertions and evidence references. */
+  /** Dimension-keyed winning typed assertions and evidence references. */
   evidence: MissionControlReadModelEvidence;
   /**
    * Earliest source freshness boundary.

@@ -226,6 +226,7 @@ describe("meeting relationship evidence", () => {
         value: "Send the proposal",
         sourceType: "source_fact",
         confidence: 1,
+        userConfirmed: true,
       }),
     ]);
     expect(mine.normalizedFacts.commitment_due_at).toBe("2026-08-01T17:00:00.000Z");

@@ -997,9 +997,10 @@ func (s *Service) CorrectConversationReview(
 			Dimension: input.StateDimension, Value: strings.TrimSpace(input.CorrectedValue),
 			SourceType: "user_correction", Confidence: 1,
 			Reason: reason, ValidFrom: correctedAt,
+			admission: relationshipAssertionAdmissionUserCorrection,
 		})
 	}
-	results, err := s.IngestRelationshipObservations(ctx, u, []RelationshipObservationInput{{
+	results, err := s.ingestTrustedRelationshipObservations(ctx, u, []RelationshipObservationInput{{
 		RelationshipID: relationshipID,
 		Source:         "user", ExternalID: "review-correction:" + uuid.NewString(), SourceVersion: "1",
 		EventType: "conversation_evidence_corrected", OccurredAt: correctedAt, ReceivedAt: correctedAt,
@@ -1122,7 +1123,7 @@ func (s *Service) ResolveContradiction(
 	selectedCase.Reason = reason
 	selectedCase.ResolvedAt = resolvedAt.Format(time.RFC3339)
 	selectedCase.ResolutionAssertionID = resolutionAssertionID
-	results, err := s.IngestRelationshipObservations(ctx, u, []RelationshipObservationInput{{
+	results, err := s.ingestTrustedRelationshipObservations(ctx, u, []RelationshipObservationInput{{
 		RelationshipID: relationshipID, Source: "user",
 		ExternalID:    "contradiction-resolution:" + selectedCase.CaseID,
 		SourceVersion: "1", EventType: "relationship_contradiction_resolved",
@@ -1133,6 +1134,7 @@ func (s *Service) ResolveContradiction(
 			ID:        uuid.MustParse(resolutionAssertionID),
 			Dimension: selectedCase.Dimension, Value: value, SourceType: "user_correction",
 			Confidence: 1, Reason: reason, ValidFrom: resolvedAt,
+			admission: relationshipAssertionAdmissionUserCorrection,
 		}},
 	}})
 	if err != nil {
@@ -1249,18 +1251,21 @@ func (s *Service) DecideConversationReview(
 				eventType = "commitment_confirmed"
 			} else if item.StateDimension != "" {
 				sourceType := "ai_inference"
+				admission := relationshipAssertionAdmissionTrusted
 				if input.Kind == "correct" {
 					sourceType = "user_correction"
+					admission = relationshipAssertionAdmissionUserCorrection
 				}
 				assertions = append(assertions, RelationshipAssertionInput{
 					Dimension: item.StateDimension, Value: value, SourceType: sourceType,
 					Confidence: item.Confidence, Reason: reason, ValidFrom: decidedAt,
+					admission: admission,
 				})
 			}
 		}
 	}
 	sum := sha256.Sum256([]byte(item.ID + ":" + input.Kind + ":" + value + ":" + u.ID.String()))
-	results, err := s.IngestRelationshipObservations(ctx, u, []RelationshipObservationInput{{
+	results, err := s.ingestTrustedRelationshipObservations(ctx, u, []RelationshipObservationInput{{
 		RelationshipID: relationshipID,
 		Source:         "user", ExternalID: "conversation-review-decision:" + hex.EncodeToString(sum[:16]),
 		SourceVersion: "1", EventType: eventType, OccurredAt: decidedAt, ReceivedAt: decidedAt,

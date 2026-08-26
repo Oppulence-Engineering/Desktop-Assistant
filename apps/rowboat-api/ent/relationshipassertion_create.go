@@ -88,6 +88,20 @@ func (_c *RelationshipAssertionCreate) SetNillableStatus(v *string) *Relationshi
 	return _c
 }
 
+// SetAuthorityRank sets the "authority_rank" field.
+func (_c *RelationshipAssertionCreate) SetAuthorityRank(v int) *RelationshipAssertionCreate {
+	_c.mutation.SetAuthorityRank(v)
+	return _c
+}
+
+// SetNillableAuthorityRank sets the "authority_rank" field if the given value is not nil.
+func (_c *RelationshipAssertionCreate) SetNillableAuthorityRank(v *int) *RelationshipAssertionCreate {
+	if v != nil {
+		_c.SetAuthorityRank(*v)
+	}
+	return _c
+}
+
 // SetConfidence sets the "confidence" field.
 func (_c *RelationshipAssertionCreate) SetConfidence(v float64) *RelationshipAssertionCreate {
 	_c.mutation.SetConfidence(v)
@@ -132,6 +146,20 @@ func (_c *RelationshipAssertionCreate) SetValidTo(v time.Time) *RelationshipAsse
 func (_c *RelationshipAssertionCreate) SetNillableValidTo(v *time.Time) *RelationshipAssertionCreate {
 	if v != nil {
 		_c.SetValidTo(*v)
+	}
+	return _c
+}
+
+// SetValueSchemaVersion sets the "value_schema_version" field.
+func (_c *RelationshipAssertionCreate) SetValueSchemaVersion(v int) *RelationshipAssertionCreate {
+	_c.mutation.SetValueSchemaVersion(v)
+	return _c
+}
+
+// SetNillableValueSchemaVersion sets the "value_schema_version" field if the given value is not nil.
+func (_c *RelationshipAssertionCreate) SetNillableValueSchemaVersion(v *int) *RelationshipAssertionCreate {
+	if v != nil {
+		_c.SetValueSchemaVersion(*v)
 	}
 	return _c
 }
@@ -188,6 +216,48 @@ func (_c *RelationshipAssertionCreate) SetExtractorVersion(v string) *Relationsh
 func (_c *RelationshipAssertionCreate) SetNillableExtractorVersion(v *string) *RelationshipAssertionCreate {
 	if v != nil {
 		_c.SetExtractorVersion(*v)
+	}
+	return _c
+}
+
+// SetReviewerID sets the "reviewer_id" field.
+func (_c *RelationshipAssertionCreate) SetReviewerID(v uuid.UUID) *RelationshipAssertionCreate {
+	_c.mutation.SetReviewerID(v)
+	return _c
+}
+
+// SetNillableReviewerID sets the "reviewer_id" field if the given value is not nil.
+func (_c *RelationshipAssertionCreate) SetNillableReviewerID(v *uuid.UUID) *RelationshipAssertionCreate {
+	if v != nil {
+		_c.SetReviewerID(*v)
+	}
+	return _c
+}
+
+// SetReviewDecision sets the "review_decision" field.
+func (_c *RelationshipAssertionCreate) SetReviewDecision(v string) *RelationshipAssertionCreate {
+	_c.mutation.SetReviewDecision(v)
+	return _c
+}
+
+// SetNillableReviewDecision sets the "review_decision" field if the given value is not nil.
+func (_c *RelationshipAssertionCreate) SetNillableReviewDecision(v *string) *RelationshipAssertionCreate {
+	if v != nil {
+		_c.SetReviewDecision(*v)
+	}
+	return _c
+}
+
+// SetReviewedAt sets the "reviewed_at" field.
+func (_c *RelationshipAssertionCreate) SetReviewedAt(v time.Time) *RelationshipAssertionCreate {
+	_c.mutation.SetReviewedAt(v)
+	return _c
+}
+
+// SetNillableReviewedAt sets the "reviewed_at" field if the given value is not nil.
+func (_c *RelationshipAssertionCreate) SetNillableReviewedAt(v *time.Time) *RelationshipAssertionCreate {
+	if v != nil {
+		_c.SetReviewedAt(*v)
 	}
 	return _c
 }
@@ -347,9 +417,17 @@ func (_c *RelationshipAssertionCreate) defaults() error {
 		v := relationshipassertion.DefaultStatus
 		_c.mutation.SetStatus(v)
 	}
+	if _, ok := _c.mutation.AuthorityRank(); !ok {
+		v := relationshipassertion.DefaultAuthorityRank
+		_c.mutation.SetAuthorityRank(v)
+	}
 	if _, ok := _c.mutation.Confidence(); !ok {
 		v := relationshipassertion.DefaultConfidence
 		_c.mutation.SetConfidence(v)
+	}
+	if _, ok := _c.mutation.ValueSchemaVersion(); !ok {
+		v := relationshipassertion.DefaultValueSchemaVersion
+		_c.mutation.SetValueSchemaVersion(v)
 	}
 	if _, ok := _c.mutation.ExtractorVersion(); !ok {
 		v := relationshipassertion.DefaultExtractorVersion
@@ -413,6 +491,14 @@ func (_c *RelationshipAssertionCreate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.status": %w`, err)}
 		}
 	}
+	if _, ok := _c.mutation.AuthorityRank(); !ok {
+		return &ValidationError{Name: "authority_rank", err: errors.New(`ent: missing required field "RelationshipAssertion.authority_rank"`)}
+	}
+	if v, ok := _c.mutation.AuthorityRank(); ok {
+		if err := relationshipassertion.AuthorityRankValidator(v); err != nil {
+			return &ValidationError{Name: "authority_rank", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.authority_rank": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.Confidence(); !ok {
 		return &ValidationError{Name: "confidence", err: errors.New(`ent: missing required field "RelationshipAssertion.confidence"`)}
 	}
@@ -424,8 +510,21 @@ func (_c *RelationshipAssertionCreate) check() error {
 	if _, ok := _c.mutation.ValidFrom(); !ok {
 		return &ValidationError{Name: "valid_from", err: errors.New(`ent: missing required field "RelationshipAssertion.valid_from"`)}
 	}
+	if _, ok := _c.mutation.ValueSchemaVersion(); !ok {
+		return &ValidationError{Name: "value_schema_version", err: errors.New(`ent: missing required field "RelationshipAssertion.value_schema_version"`)}
+	}
+	if v, ok := _c.mutation.ValueSchemaVersion(); ok {
+		if err := relationshipassertion.ValueSchemaVersionValidator(v); err != nil {
+			return &ValidationError{Name: "value_schema_version", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.value_schema_version": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.ExtractorVersion(); !ok {
 		return &ValidationError{Name: "extractor_version", err: errors.New(`ent: missing required field "RelationshipAssertion.extractor_version"`)}
+	}
+	if v, ok := _c.mutation.ReviewDecision(); ok {
+		if err := relationshipassertion.ReviewDecisionValidator(v); err != nil {
+			return &ValidationError{Name: "review_decision", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.review_decision": %w`, err)}
+		}
 	}
 	if v, ok := _c.mutation.CitationsJSON(); ok {
 		if err := relationshipassertion.CitationsJSONValidator(v); err != nil {
@@ -512,6 +611,10 @@ func (_c *RelationshipAssertionCreate) createSpec() (*RelationshipAssertion, *sq
 		_spec.SetField(relationshipassertion.FieldStatus, field.TypeString, value)
 		_node.Status = value
 	}
+	if value, ok := _c.mutation.AuthorityRank(); ok {
+		_spec.SetField(relationshipassertion.FieldAuthorityRank, field.TypeInt, value)
+		_node.AuthorityRank = value
+	}
 	if value, ok := _c.mutation.Confidence(); ok {
 		_spec.SetField(relationshipassertion.FieldConfidence, field.TypeFloat64, value)
 		_node.Confidence = value
@@ -528,6 +631,10 @@ func (_c *RelationshipAssertionCreate) createSpec() (*RelationshipAssertion, *sq
 		_spec.SetField(relationshipassertion.FieldValidTo, field.TypeTime, value)
 		_node.ValidTo = &value
 	}
+	if value, ok := _c.mutation.ValueSchemaVersion(); ok {
+		_spec.SetField(relationshipassertion.FieldValueSchemaVersion, field.TypeInt, value)
+		_node.ValueSchemaVersion = value
+	}
 	if value, ok := _c.mutation.RetractedAt(); ok {
 		_spec.SetField(relationshipassertion.FieldRetractedAt, field.TypeTime, value)
 		_node.RetractedAt = &value
@@ -543,6 +650,18 @@ func (_c *RelationshipAssertionCreate) createSpec() (*RelationshipAssertion, *sq
 	if value, ok := _c.mutation.ExtractorVersion(); ok {
 		_spec.SetField(relationshipassertion.FieldExtractorVersion, field.TypeString, value)
 		_node.ExtractorVersion = value
+	}
+	if value, ok := _c.mutation.ReviewerID(); ok {
+		_spec.SetField(relationshipassertion.FieldReviewerID, field.TypeUUID, value)
+		_node.ReviewerID = &value
+	}
+	if value, ok := _c.mutation.ReviewDecision(); ok {
+		_spec.SetField(relationshipassertion.FieldReviewDecision, field.TypeString, value)
+		_node.ReviewDecision = value
+	}
+	if value, ok := _c.mutation.ReviewedAt(); ok {
+		_spec.SetField(relationshipassertion.FieldReviewedAt, field.TypeTime, value)
+		_node.ReviewedAt = &value
 	}
 	if value, ok := _c.mutation.CitationsJSON(); ok {
 		_spec.SetField(relationshipassertion.FieldCitationsJSON, field.TypeString, value)
@@ -736,6 +855,24 @@ func (u *RelationshipAssertionUpsert) UpdateStatus() *RelationshipAssertionUpser
 	return u
 }
 
+// SetAuthorityRank sets the "authority_rank" field.
+func (u *RelationshipAssertionUpsert) SetAuthorityRank(v int) *RelationshipAssertionUpsert {
+	u.Set(relationshipassertion.FieldAuthorityRank, v)
+	return u
+}
+
+// UpdateAuthorityRank sets the "authority_rank" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsert) UpdateAuthorityRank() *RelationshipAssertionUpsert {
+	u.SetExcluded(relationshipassertion.FieldAuthorityRank)
+	return u
+}
+
+// AddAuthorityRank adds v to the "authority_rank" field.
+func (u *RelationshipAssertionUpsert) AddAuthorityRank(v int) *RelationshipAssertionUpsert {
+	u.Add(relationshipassertion.FieldAuthorityRank, v)
+	return u
+}
+
 // SetConfidence sets the "confidence" field.
 func (u *RelationshipAssertionUpsert) SetConfidence(v float64) *RelationshipAssertionUpsert {
 	u.Set(relationshipassertion.FieldConfidence, v)
@@ -802,6 +939,24 @@ func (u *RelationshipAssertionUpsert) ClearValidTo() *RelationshipAssertionUpser
 	return u
 }
 
+// SetValueSchemaVersion sets the "value_schema_version" field.
+func (u *RelationshipAssertionUpsert) SetValueSchemaVersion(v int) *RelationshipAssertionUpsert {
+	u.Set(relationshipassertion.FieldValueSchemaVersion, v)
+	return u
+}
+
+// UpdateValueSchemaVersion sets the "value_schema_version" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsert) UpdateValueSchemaVersion() *RelationshipAssertionUpsert {
+	u.SetExcluded(relationshipassertion.FieldValueSchemaVersion)
+	return u
+}
+
+// AddValueSchemaVersion adds v to the "value_schema_version" field.
+func (u *RelationshipAssertionUpsert) AddValueSchemaVersion(v int) *RelationshipAssertionUpsert {
+	u.Add(relationshipassertion.FieldValueSchemaVersion, v)
+	return u
+}
+
 // SetRetractedAt sets the "retracted_at" field.
 func (u *RelationshipAssertionUpsert) SetRetractedAt(v time.Time) *RelationshipAssertionUpsert {
 	u.Set(relationshipassertion.FieldRetractedAt, v)
@@ -865,6 +1020,60 @@ func (u *RelationshipAssertionUpsert) SetExtractorVersion(v string) *Relationshi
 // UpdateExtractorVersion sets the "extractor_version" field to the value that was provided on create.
 func (u *RelationshipAssertionUpsert) UpdateExtractorVersion() *RelationshipAssertionUpsert {
 	u.SetExcluded(relationshipassertion.FieldExtractorVersion)
+	return u
+}
+
+// SetReviewerID sets the "reviewer_id" field.
+func (u *RelationshipAssertionUpsert) SetReviewerID(v uuid.UUID) *RelationshipAssertionUpsert {
+	u.Set(relationshipassertion.FieldReviewerID, v)
+	return u
+}
+
+// UpdateReviewerID sets the "reviewer_id" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsert) UpdateReviewerID() *RelationshipAssertionUpsert {
+	u.SetExcluded(relationshipassertion.FieldReviewerID)
+	return u
+}
+
+// ClearReviewerID clears the value of the "reviewer_id" field.
+func (u *RelationshipAssertionUpsert) ClearReviewerID() *RelationshipAssertionUpsert {
+	u.SetNull(relationshipassertion.FieldReviewerID)
+	return u
+}
+
+// SetReviewDecision sets the "review_decision" field.
+func (u *RelationshipAssertionUpsert) SetReviewDecision(v string) *RelationshipAssertionUpsert {
+	u.Set(relationshipassertion.FieldReviewDecision, v)
+	return u
+}
+
+// UpdateReviewDecision sets the "review_decision" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsert) UpdateReviewDecision() *RelationshipAssertionUpsert {
+	u.SetExcluded(relationshipassertion.FieldReviewDecision)
+	return u
+}
+
+// ClearReviewDecision clears the value of the "review_decision" field.
+func (u *RelationshipAssertionUpsert) ClearReviewDecision() *RelationshipAssertionUpsert {
+	u.SetNull(relationshipassertion.FieldReviewDecision)
+	return u
+}
+
+// SetReviewedAt sets the "reviewed_at" field.
+func (u *RelationshipAssertionUpsert) SetReviewedAt(v time.Time) *RelationshipAssertionUpsert {
+	u.Set(relationshipassertion.FieldReviewedAt, v)
+	return u
+}
+
+// UpdateReviewedAt sets the "reviewed_at" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsert) UpdateReviewedAt() *RelationshipAssertionUpsert {
+	u.SetExcluded(relationshipassertion.FieldReviewedAt)
+	return u
+}
+
+// ClearReviewedAt clears the value of the "reviewed_at" field.
+func (u *RelationshipAssertionUpsert) ClearReviewedAt() *RelationshipAssertionUpsert {
+	u.SetNull(relationshipassertion.FieldReviewedAt)
 	return u
 }
 
@@ -1037,6 +1246,27 @@ func (u *RelationshipAssertionUpsertOne) UpdateStatus() *RelationshipAssertionUp
 	})
 }
 
+// SetAuthorityRank sets the "authority_rank" field.
+func (u *RelationshipAssertionUpsertOne) SetAuthorityRank(v int) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetAuthorityRank(v)
+	})
+}
+
+// AddAuthorityRank adds v to the "authority_rank" field.
+func (u *RelationshipAssertionUpsertOne) AddAuthorityRank(v int) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.AddAuthorityRank(v)
+	})
+}
+
+// UpdateAuthorityRank sets the "authority_rank" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertOne) UpdateAuthorityRank() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateAuthorityRank()
+	})
+}
+
 // SetConfidence sets the "confidence" field.
 func (u *RelationshipAssertionUpsertOne) SetConfidence(v float64) *RelationshipAssertionUpsertOne {
 	return u.Update(func(s *RelationshipAssertionUpsert) {
@@ -1114,6 +1344,27 @@ func (u *RelationshipAssertionUpsertOne) ClearValidTo() *RelationshipAssertionUp
 	})
 }
 
+// SetValueSchemaVersion sets the "value_schema_version" field.
+func (u *RelationshipAssertionUpsertOne) SetValueSchemaVersion(v int) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetValueSchemaVersion(v)
+	})
+}
+
+// AddValueSchemaVersion adds v to the "value_schema_version" field.
+func (u *RelationshipAssertionUpsertOne) AddValueSchemaVersion(v int) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.AddValueSchemaVersion(v)
+	})
+}
+
+// UpdateValueSchemaVersion sets the "value_schema_version" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertOne) UpdateValueSchemaVersion() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateValueSchemaVersion()
+	})
+}
+
 // SetRetractedAt sets the "retracted_at" field.
 func (u *RelationshipAssertionUpsertOne) SetRetractedAt(v time.Time) *RelationshipAssertionUpsertOne {
 	return u.Update(func(s *RelationshipAssertionUpsert) {
@@ -1188,6 +1439,69 @@ func (u *RelationshipAssertionUpsertOne) SetExtractorVersion(v string) *Relation
 func (u *RelationshipAssertionUpsertOne) UpdateExtractorVersion() *RelationshipAssertionUpsertOne {
 	return u.Update(func(s *RelationshipAssertionUpsert) {
 		s.UpdateExtractorVersion()
+	})
+}
+
+// SetReviewerID sets the "reviewer_id" field.
+func (u *RelationshipAssertionUpsertOne) SetReviewerID(v uuid.UUID) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetReviewerID(v)
+	})
+}
+
+// UpdateReviewerID sets the "reviewer_id" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertOne) UpdateReviewerID() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateReviewerID()
+	})
+}
+
+// ClearReviewerID clears the value of the "reviewer_id" field.
+func (u *RelationshipAssertionUpsertOne) ClearReviewerID() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.ClearReviewerID()
+	})
+}
+
+// SetReviewDecision sets the "review_decision" field.
+func (u *RelationshipAssertionUpsertOne) SetReviewDecision(v string) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetReviewDecision(v)
+	})
+}
+
+// UpdateReviewDecision sets the "review_decision" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertOne) UpdateReviewDecision() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateReviewDecision()
+	})
+}
+
+// ClearReviewDecision clears the value of the "review_decision" field.
+func (u *RelationshipAssertionUpsertOne) ClearReviewDecision() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.ClearReviewDecision()
+	})
+}
+
+// SetReviewedAt sets the "reviewed_at" field.
+func (u *RelationshipAssertionUpsertOne) SetReviewedAt(v time.Time) *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetReviewedAt(v)
+	})
+}
+
+// UpdateReviewedAt sets the "reviewed_at" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertOne) UpdateReviewedAt() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateReviewedAt()
+	})
+}
+
+// ClearReviewedAt clears the value of the "reviewed_at" field.
+func (u *RelationshipAssertionUpsertOne) ClearReviewedAt() *RelationshipAssertionUpsertOne {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.ClearReviewedAt()
 	})
 }
 
@@ -1535,6 +1849,27 @@ func (u *RelationshipAssertionUpsertBulk) UpdateStatus() *RelationshipAssertionU
 	})
 }
 
+// SetAuthorityRank sets the "authority_rank" field.
+func (u *RelationshipAssertionUpsertBulk) SetAuthorityRank(v int) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetAuthorityRank(v)
+	})
+}
+
+// AddAuthorityRank adds v to the "authority_rank" field.
+func (u *RelationshipAssertionUpsertBulk) AddAuthorityRank(v int) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.AddAuthorityRank(v)
+	})
+}
+
+// UpdateAuthorityRank sets the "authority_rank" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertBulk) UpdateAuthorityRank() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateAuthorityRank()
+	})
+}
+
 // SetConfidence sets the "confidence" field.
 func (u *RelationshipAssertionUpsertBulk) SetConfidence(v float64) *RelationshipAssertionUpsertBulk {
 	return u.Update(func(s *RelationshipAssertionUpsert) {
@@ -1612,6 +1947,27 @@ func (u *RelationshipAssertionUpsertBulk) ClearValidTo() *RelationshipAssertionU
 	})
 }
 
+// SetValueSchemaVersion sets the "value_schema_version" field.
+func (u *RelationshipAssertionUpsertBulk) SetValueSchemaVersion(v int) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetValueSchemaVersion(v)
+	})
+}
+
+// AddValueSchemaVersion adds v to the "value_schema_version" field.
+func (u *RelationshipAssertionUpsertBulk) AddValueSchemaVersion(v int) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.AddValueSchemaVersion(v)
+	})
+}
+
+// UpdateValueSchemaVersion sets the "value_schema_version" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertBulk) UpdateValueSchemaVersion() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateValueSchemaVersion()
+	})
+}
+
 // SetRetractedAt sets the "retracted_at" field.
 func (u *RelationshipAssertionUpsertBulk) SetRetractedAt(v time.Time) *RelationshipAssertionUpsertBulk {
 	return u.Update(func(s *RelationshipAssertionUpsert) {
@@ -1686,6 +2042,69 @@ func (u *RelationshipAssertionUpsertBulk) SetExtractorVersion(v string) *Relatio
 func (u *RelationshipAssertionUpsertBulk) UpdateExtractorVersion() *RelationshipAssertionUpsertBulk {
 	return u.Update(func(s *RelationshipAssertionUpsert) {
 		s.UpdateExtractorVersion()
+	})
+}
+
+// SetReviewerID sets the "reviewer_id" field.
+func (u *RelationshipAssertionUpsertBulk) SetReviewerID(v uuid.UUID) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetReviewerID(v)
+	})
+}
+
+// UpdateReviewerID sets the "reviewer_id" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertBulk) UpdateReviewerID() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateReviewerID()
+	})
+}
+
+// ClearReviewerID clears the value of the "reviewer_id" field.
+func (u *RelationshipAssertionUpsertBulk) ClearReviewerID() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.ClearReviewerID()
+	})
+}
+
+// SetReviewDecision sets the "review_decision" field.
+func (u *RelationshipAssertionUpsertBulk) SetReviewDecision(v string) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetReviewDecision(v)
+	})
+}
+
+// UpdateReviewDecision sets the "review_decision" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertBulk) UpdateReviewDecision() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateReviewDecision()
+	})
+}
+
+// ClearReviewDecision clears the value of the "review_decision" field.
+func (u *RelationshipAssertionUpsertBulk) ClearReviewDecision() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.ClearReviewDecision()
+	})
+}
+
+// SetReviewedAt sets the "reviewed_at" field.
+func (u *RelationshipAssertionUpsertBulk) SetReviewedAt(v time.Time) *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.SetReviewedAt(v)
+	})
+}
+
+// UpdateReviewedAt sets the "reviewed_at" field to the value that was provided on create.
+func (u *RelationshipAssertionUpsertBulk) UpdateReviewedAt() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.UpdateReviewedAt()
+	})
+}
+
+// ClearReviewedAt clears the value of the "reviewed_at" field.
+func (u *RelationshipAssertionUpsertBulk) ClearReviewedAt() *RelationshipAssertionUpsertBulk {
+	return u.Update(func(s *RelationshipAssertionUpsert) {
+		s.ClearReviewedAt()
 	})
 }
 

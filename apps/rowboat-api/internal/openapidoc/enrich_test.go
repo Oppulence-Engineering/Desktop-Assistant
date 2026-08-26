@@ -135,6 +135,49 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if delta["description"] == nil || delta["example"] == nil {
 		t.Fatal("CreditLedger.delta should have a detailed description and example")
 	}
+
+	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
+	evidenceProperties := asObj(missionControlEvidence["properties"])
+	reason := asObj(evidenceProperties["reason"])
+	if reason["type"] != "string" || reason["description"] != "Evidence-backed explanation." || reason["enum"] != nil {
+		t.Fatalf("MissionControlDimensionEvidence.reason was corrupted by generic entity metadata: %#v", reason)
+	}
+	status := asObj(evidenceProperties["status"])
+	if status["type"] != "string" || status["description"] != "Assertion lifecycle state." || status["example"] != "accepted" {
+		t.Fatalf("MissionControlDimensionEvidence.status was corrupted by generic entity metadata: %#v", status)
+	}
+	value := asObj(evidenceProperties["value"])
+	oneOf, ok := value["oneOf"].([]any)
+	if !ok || len(oneOf) != 2 || value["nullable"] != true || asObj(oneOf[0])["type"] != "string" || asObj(oneOf[1])["type"] != "array" {
+		t.Fatalf("MissionControlDimensionEvidence.value must allow scalar and list values: %#v", value)
+	}
+	relationshipProperties := asObj(asObj(schemas["RevenueRelationship"])["properties"])
+	if relationshipProperties["resourceRefs"] == nil {
+		t.Fatal("RevenueRelationship is missing runtime resourceRefs")
+	}
+
+	observationBatch := asObj(asObj(asObj(asObj(spec["paths"])["/v1/relationship-observations/batch"])["post"])["requestBody"])
+	content := asObj(observationBatch["content"])
+	bodySchema := asObj(asObj(content["application/json"])["schema"])
+	observations := asObj(asObj(bodySchema["properties"])["observations"])
+	observationInput := asObj(observations["items"])
+	observationProperties := asObj(observationInput["properties"])
+	for _, field := range []string{"relationshipId", "resourceRefs", "receivedAt", "participants", "assertions", "channel", "direction"} {
+		if observationProperties[field] == nil {
+			t.Fatalf("observation request is missing %s", field)
+		}
+	}
+	assertionItems := asObj(asObj(observationProperties["assertions"])["items"])
+	assertionProperties := asObj(assertionItems["properties"])
+	for _, field := range []string{"valueSchemaVersion", "sourceType", "confidence", "reason", "validFrom", "validTo", "extractorVersion", "projectorCompatVersion", "userConfirmed"} {
+		if assertionProperties[field] == nil {
+			t.Fatalf("observation assertion request is missing %s", field)
+		}
+	}
+	confidence := asObj(assertionProperties["confidence"])
+	if confidence["minimum"] != 0 || confidence["maximum"] != 1 {
+		t.Fatalf("observation assertion confidence bounds are invalid: %#v", confidence)
+	}
 }
 
 func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
@@ -156,5 +199,12 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	schemas := asObj(asObj(spec["components"])["schemas"])
 	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil || schemas["IntegrationTemplateBlock"] == nil || schemas["SlackWorkspacesResponse"] == nil || schemas["SlackThreadReadResponse"] == nil {
 		t.Fatal("checked-in openapi json is missing enriched runtime schemas")
+	}
+	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
+	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
+		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
+	}
+	if value := asObj(evidenceProperties["value"]); value["oneOf"] == nil {
+		t.Fatalf("checked-in MissionControlDimensionEvidence.value is invalid: %#v", value)
 	}
 }

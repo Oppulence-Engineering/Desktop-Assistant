@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	missionControlContractVersion = "tfa-2026-07-31"
+	missionControlContractVersion = "tfa-r1.1-2026-08-26"
 	missionControlDetectorVersion = 1
 )
 
@@ -51,18 +51,26 @@ type MissionControlEvidenceReference struct {
 // MissionControlDimensionEvidence explains one projected dimension, its
 // authority, freshness, and complete source trail.
 type MissionControlDimensionEvidence struct {
-	Dimension     string                            `json:"dimension"`
-	Value         any                               `json:"value,omitempty"`
-	Supported     bool                              `json:"supported"`
-	MissingReason string                            `json:"missingReason,omitempty"`
-	AssertionID   string                            `json:"assertionId,omitempty"`
-	Authority     string                            `json:"authority,omitempty"`
-	Confidence    float64                           `json:"confidence,omitempty"`
-	Reason        string                            `json:"reason,omitempty"`
-	ValidFrom     *time.Time                        `json:"validFrom,omitempty"`
-	ValidTo       *time.Time                        `json:"validTo,omitempty"`
-	Fresh         bool                              `json:"fresh"`
-	Evidence      []MissionControlEvidenceReference `json:"evidence"`
+	Dimension              string                            `json:"dimension"`
+	Value                  any                               `json:"value,omitempty"`
+	Supported              bool                              `json:"supported"`
+	MissingReason          string                            `json:"missingReason,omitempty"`
+	AssertionID            string                            `json:"assertionId,omitempty"`
+	Authority              string                            `json:"authority,omitempty"`
+	AuthorityRank          int                               `json:"authorityRank,omitempty"`
+	Status                 string                            `json:"status,omitempty"`
+	Confidence             float64                           `json:"confidence,omitempty"`
+	Reason                 string                            `json:"reason,omitempty"`
+	ValueSchemaVersion     int                               `json:"valueSchemaVersion,omitempty"`
+	ExtractorVersion       string                            `json:"extractorVersion,omitempty"`
+	ProjectorCompatVersion int                               `json:"projectorCompatVersion,omitempty"`
+	ReviewerID             string                            `json:"reviewerId,omitempty"`
+	ReviewDecision         string                            `json:"reviewDecision,omitempty"`
+	ReviewedAt             *time.Time                        `json:"reviewedAt,omitempty"`
+	ValidFrom              *time.Time                        `json:"validFrom,omitempty"`
+	ValidTo                *time.Time                        `json:"validTo,omitempty"`
+	Fresh                  bool                              `json:"fresh"`
+	Evidence               []MissionControlEvidenceReference `json:"evidence"`
 }
 
 // MissionControlSourceCoverage exposes one provider account's contribution and
@@ -334,8 +342,18 @@ func (s *Service) buildMissionControl(ctx context.Context, u *ent.User, relation
 		item.Supported = true
 		item.AssertionID = winner.ID.String()
 		item.Authority = winner.SourceType
+		item.AuthorityRank = winner.AuthorityRank
+		item.Status = winner.Status
 		item.Confidence = winner.Confidence
 		item.Reason = winner.Reason
+		item.ValueSchemaVersion = winner.ValueSchemaVersion
+		item.ExtractorVersion = winner.ExtractorVersion
+		item.ProjectorCompatVersion = winner.ProjectorCompatVersion
+		if winner.ReviewerID != nil {
+			item.ReviewerID = winner.ReviewerID.String()
+		}
+		item.ReviewDecision = winner.ReviewDecision
+		item.ReviewedAt = winner.ReviewedAt
 		from := winner.ValidFrom.UTC()
 		item.ValidFrom = &from
 		item.ValidTo = winner.ValidTo

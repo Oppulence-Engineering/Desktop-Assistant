@@ -5711,6 +5711,191 @@
         ],
         "type": "object"
       },
+      "MissionControlDimensionEvidence": {
+        "description": "Winning typed assertion, authority decision, validity, and evidence for one projected dimension.",
+        "properties": {
+          "assertionId": {
+            "description": "Winning assertion id.",
+            "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "authority": {
+            "description": "Assertion source authority.",
+            "enum": [
+              "user_correction",
+              "source_fact",
+              "deterministic",
+              "external_research",
+              "ai_inference"
+            ],
+            "example": "source_fact",
+            "type": "string"
+          },
+          "authorityRank": {
+            "description": "Deterministic ordinal authority rank.",
+            "example": 4,
+            "type": "integer"
+          },
+          "confidence": {
+            "description": "Assertion confidence.",
+            "example": 1,
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "dimension": {
+            "description": "Projected dimension.",
+            "example": "health",
+            "type": "string"
+          },
+          "evidence": {
+            "description": "Supporting observations.",
+            "items": {
+              "$ref": "#/components/schemas/MissionControlEvidenceReference"
+            },
+            "type": "array"
+          },
+          "extractorVersion": {
+            "description": "Extractor or deterministic rule version.",
+            "example": "hubspot-company-v1",
+            "type": "string"
+          },
+          "fresh": {
+            "description": "Whether supporting sources are fresh and complete.",
+            "example": true,
+            "type": "boolean"
+          },
+          "missingReason": {
+            "description": "Why support is missing.",
+            "example": "No accepted assertion is valid at this boundary.",
+            "type": "string"
+          },
+          "projectorCompatVersion": {
+            "description": "Minimum compatible projector version.",
+            "example": 2,
+            "type": "integer"
+          },
+          "reason": {
+            "description": "Evidence-backed explanation.",
+            "example": "CRM deal stage changed to closed won.",
+            "type": "string"
+          },
+          "reviewDecision": {
+            "description": "Explicit review decision.",
+            "enum": ["accepted", "rejected"],
+            "example": "accepted",
+            "type": "string"
+          },
+          "reviewedAt": {
+            "description": "Explicit review time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "reviewerId": {
+            "description": "Explicit reviewer when present.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "description": "Assertion lifecycle state.",
+            "enum": [
+              "proposed",
+              "accepted",
+              "rejected",
+              "superseded",
+              "retracted",
+              "expired",
+              "active"
+            ],
+            "example": "accepted",
+            "type": "string"
+          },
+          "supported": {
+            "description": "Whether accessible evidence supports the value.",
+            "example": true,
+            "type": "boolean"
+          },
+          "validFrom": {
+            "description": "Assertion validity start.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "validTo": {
+            "description": "Assertion validity end.",
+            "example": "2026-08-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "value": {
+            "description": "Typed projected value. Scalar dimensions return a string; risk and milestone return string arrays.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "description": "Scalar projected value.",
+                "example": "needs_attention",
+                "type": "string"
+              },
+              {
+                "description": "Collection projected value.",
+                "items": {
+                  "description": "Projected list item.",
+                  "example": "Security review is blocked.",
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "valueSchemaVersion": {
+            "description": "Typed dimension schema version.",
+            "example": 1,
+            "type": "integer"
+          }
+        },
+        "required": ["dimension", "supported", "fresh", "evidence"],
+        "type": "object"
+      },
+      "MissionControlEvidenceReference": {
+        "description": "Immutable evidence supporting one projected relationship dimension.",
+        "properties": {
+          "contentHash": {
+            "description": "Immutable observation content hash.",
+            "example": "sha256:ab12",
+            "type": "string"
+          },
+          "evidencePath": {
+            "description": "Authorized evidence inspection path.",
+            "example": "/v1/relationships/9c8dfa9b-a7b2-46ea-982c-622a914c00e5/evidence/6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "type": "string"
+          },
+          "observationId": {
+            "description": "Observation id.",
+            "example": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "observedAt": {
+            "description": "Source occurrence time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "source": {
+            "description": "Canonical source.",
+            "example": "hubspot",
+            "type": "string"
+          }
+        },
+        "required": ["observationId", "source", "observedAt", "evidencePath", "contentHash"],
+        "type": "object"
+      },
       "MissionControlReadModel": {
         "description": "One server-owned, version-consistent answer to state, change, evidence, action, completeness, and control.",
         "properties": {
@@ -5756,7 +5941,7 @@
           },
           "contractVersion": {
             "description": "Read-contract version.",
-            "example": "tfa-2026-07-31",
+            "example": "tfa-r1.1-2026-08-26",
             "type": "string"
           },
           "detectorVersion": {
@@ -5765,8 +5950,10 @@
             "type": "integer"
           },
           "evidence": {
-            "additionalProperties": true,
-            "description": "Dimension-keyed winning assertions and evidence references.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MissionControlDimensionEvidence"
+            },
+            "description": "Dimension-keyed winning typed assertions and evidence references.",
             "type": "object"
           },
           "freshnessBoundary": {
@@ -7123,6 +7310,9 @@
       },
       "RelationshipAssertion": {
         "properties": {
+          "authority_rank": {
+            "type": "integer"
+          },
           "citations_json": {
             "type": "string"
           },
@@ -7178,6 +7368,17 @@
           "retraction_reason": {
             "type": "string"
           },
+          "review_decision": {
+            "type": "string"
+          },
+          "reviewed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reviewer_id": {
+            "format": "uuid",
+            "type": "string"
+          },
           "source_type": {
             "type": "string"
           },
@@ -7216,6 +7417,9 @@
           "value": {
             "type": "string"
           },
+          "value_schema_version": {
+            "type": "integer"
+          },
           "workspace": {
             "$ref": "#/components/schemas/RevenueWorkspace"
           }
@@ -7228,8 +7432,10 @@
           "value",
           "source_type",
           "status",
+          "authority_rank",
           "confidence",
           "valid_from",
+          "value_schema_version",
           "extractor_version",
           "projector_compat_version",
           "supporting_observation_ids",
@@ -10233,8 +10439,17 @@
           },
           "projectorVersion": {
             "description": "Deterministic projector version.",
-            "example": 1,
+            "example": 2,
             "type": "integer"
+          },
+          "resourceRefs": {
+            "description": "Canonical product:type:externalId references.",
+            "items": {
+              "description": "Resource reference.",
+              "example": "hubspot:company:123",
+              "type": "string"
+            },
+            "type": "array"
           },
           "risks": {
             "description": "Current relationship risks.",
@@ -10290,7 +10505,8 @@
           "stateVersion",
           "projectorVersion",
           "risks",
-          "milestones"
+          "milestones",
+          "resourceRefs"
         ],
         "type": "object"
       },
@@ -17006,6 +17222,116 @@
                           "example": "acme.com",
                           "type": "string"
                         },
+                        "assertions": {
+                          "description": "Typed assertion candidates. Caller authority is ignored; userConfirmed records an explicit reviewed correction.",
+                          "items": {
+                            "description": "Observation assertion.",
+                            "properties": {
+                              "citationsJson": {
+                                "description": "JSON citations for external research.",
+                                "example": "[]",
+                                "type": "string"
+                              },
+                              "confidence": {
+                                "description": "Assertion confidence, including explicit zero.",
+                                "example": 0.8,
+                                "maximum": 1,
+                                "minimum": 0,
+                                "type": "number"
+                              },
+                              "dimension": {
+                                "description": "Projected dimension.",
+                                "enum": [
+                                  "lifecycle",
+                                  "engagement",
+                                  "sentiment",
+                                  "health",
+                                  "summary",
+                                  "next_action",
+                                  "risk",
+                                  "milestone"
+                                ],
+                                "example": "health",
+                                "type": "string"
+                              },
+                              "extractorVersion": {
+                                "description": "Extractor version.",
+                                "example": "desktop-review-v1",
+                                "type": "string"
+                              },
+                              "projectorCompatVersion": {
+                                "description": "Minimum compatible projector version. Public candidates are clamped to the current version.",
+                                "example": 2,
+                                "type": "integer"
+                              },
+                              "reason": {
+                                "description": "Evidence-backed explanation.",
+                                "example": "Recent engagement indicates attention is needed.",
+                                "type": "string"
+                              },
+                              "sourceType": {
+                                "description": "Claimed source type. Unconfirmed public assertions are downgraded to proposed AI-tier candidates.",
+                                "enum": [
+                                  "source_fact",
+                                  "deterministic",
+                                  "external_research",
+                                  "ai_inference"
+                                ],
+                                "example": "ai_inference",
+                                "type": "string"
+                              },
+                              "supersedesAssertionId": {
+                                "description": "Reserved for trusted internal writers. Public observation admission ignores it; use the correction endpoint for validated supersession.",
+                                "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "userConfirmed": {
+                                "description": "Whether the authenticated user explicitly accepted this value. The server records it as a user correction with reviewer metadata.",
+                                "example": true,
+                                "type": "boolean"
+                              },
+                              "validFrom": {
+                                "description": "Validity start.",
+                                "example": "2026-07-18T17:30:00Z",
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              "validTo": {
+                                "description": "Optional exclusive validity end.",
+                                "example": "2026-08-18T17:30:00Z",
+                                "format": "date-time",
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "value": {
+                                "description": "Typed assertion value.",
+                                "example": "needs_attention",
+                                "type": "string"
+                              },
+                              "valueSchemaVersion": {
+                                "description": "Typed value schema version.",
+                                "example": 1,
+                                "type": "integer"
+                              }
+                            },
+                            "required": ["dimension", "value", "confidence", "reason"],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "channel": {
+                          "description": "Interaction channel.",
+                          "enum": ["email", "meeting", "call", "chat", "note", "crm"],
+                          "example": "email",
+                          "type": "string"
+                        },
+                        "direction": {
+                          "description": "Interaction direction.",
+                          "enum": ["inbound", "outbound", "internal"],
+                          "example": "inbound",
+                          "type": "string"
+                        },
                         "displayName": {
                           "description": "Account display name for first ingestion.",
                           "example": "Acme",
@@ -17032,6 +17358,52 @@
                           "format": "date-time",
                           "type": "string"
                         },
+                        "participants": {
+                          "description": "Observed relationship participants.",
+                          "items": {
+                            "description": "Observation participant.",
+                            "properties": {
+                              "direction": {
+                                "description": "Participant interaction direction.",
+                                "enum": ["inbound", "outbound", "internal"],
+                                "example": "inbound",
+                                "type": "string"
+                              },
+                              "displayName": {
+                                "description": "Participant display name.",
+                                "example": "Avery Chen",
+                                "type": "string"
+                              },
+                              "email": {
+                                "description": "Participant email.",
+                                "example": "avery@acme.com",
+                                "type": "string"
+                              },
+                              "externalRefs": {
+                                "description": "Provider participant references.",
+                                "items": {
+                                  "description": "Participant reference.",
+                                  "example": "gmail:contact:123",
+                                  "type": "string"
+                                },
+                                "type": "array"
+                              },
+                              "role": {
+                                "description": "Relationship role.",
+                                "example": "champion",
+                                "type": "string"
+                              },
+                              "title": {
+                                "description": "Participant title.",
+                                "example": "VP Engineering",
+                                "type": "string"
+                              }
+                            },
+                            "required": ["displayName"],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
                         "payload": {
                           "additionalProperties": true,
                           "description": "Raw provider payload, sealed at rest.",
@@ -17042,11 +17414,26 @@
                           "example": "avery@acme.com",
                           "type": "string"
                         },
+                        "receivedAt": {
+                          "description": "Receipt time.",
+                          "example": "2026-07-18T17:30:01Z",
+                          "format": "date-time",
+                          "type": "string"
+                        },
                         "relationshipId": {
                           "description": "Known relationship id.",
                           "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
                           "format": "uuid",
                           "type": "string"
+                        },
+                        "resourceRefs": {
+                          "description": "Canonical product:type:externalId references.",
+                          "items": {
+                            "description": "Resource reference.",
+                            "example": "desktop:relationship:acme",
+                            "type": "string"
+                          },
+                          "type": "array"
                         },
                         "source": {
                           "description": "Evidence source.",
@@ -18956,7 +19343,16 @@
                 "properties": {
                   "dimension": {
                     "description": "Corrected state dimension.",
-                    "enum": ["lifecycle", "engagement", "sentiment", "health", "next_action"],
+                    "enum": [
+                      "lifecycle",
+                      "engagement",
+                      "sentiment",
+                      "health",
+                      "summary",
+                      "next_action",
+                      "risk",
+                      "milestone"
+                    ],
                     "example": "health",
                     "type": "string"
                   },

@@ -7,18 +7,15 @@
  */
 
 /**
- * Corrected state dimension.
+ * Assertion source authority.
  */
-export type CorrectRelationshipBodyDimension =
-  (typeof CorrectRelationshipBodyDimension)[keyof typeof CorrectRelationshipBodyDimension];
+export type MissionControlDimensionEvidenceAuthority =
+  (typeof MissionControlDimensionEvidenceAuthority)[keyof typeof MissionControlDimensionEvidenceAuthority];
 
-export const CorrectRelationshipBodyDimension = {
-  lifecycle: "lifecycle",
-  engagement: "engagement",
-  sentiment: "sentiment",
-  health: "health",
-  summary: "summary",
-  next_action: "next_action",
-  risk: "risk",
-  milestone: "milestone",
+export const MissionControlDimensionEvidenceAuthority = {
+  user_correction: "user_correction",
+  source_fact: "source_fact",
+  deterministic: "deterministic",
+  external_research: "external_research",
+  ai_inference: "ai_inference",
 } as const;

@@ -224,9 +224,9 @@ func relationshipToDTO(rel *ent.Relationship) relationshipDTO {
 		ProjectorVersion: rel.ProjectorVersion,
 		ProjectedAt:      rel.ProjectedAt,
 		LastChangedAt:    rel.LastChangedAt,
-		Risks:            rel.Risks,
-		Milestones:       rel.Milestones,
-		ResourceRefs:     rel.ResourceRefs,
+		Risks:            append([]string{}, rel.Risks...),
+		Milestones:       append([]string{}, rel.Milestones...),
+		ResourceRefs:     append([]string{}, rel.ResourceRefs...),
 	}
 }
 
@@ -2293,7 +2293,7 @@ func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.
 		}
 		inputs = append(inputs, input)
 	}
-	results, err := h.svc.IngestRelationshipObservations(r.Context(), u, inputs)
+	results, err := h.svc.IngestRelationshipObservationCandidates(r.Context(), u, inputs)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return

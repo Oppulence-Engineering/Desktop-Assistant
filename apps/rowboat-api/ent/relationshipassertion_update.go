@@ -94,6 +94,27 @@ func (_u *RelationshipAssertionUpdate) SetNillableStatus(v *string) *Relationshi
 	return _u
 }
 
+// SetAuthorityRank sets the "authority_rank" field.
+func (_u *RelationshipAssertionUpdate) SetAuthorityRank(v int) *RelationshipAssertionUpdate {
+	_u.mutation.ResetAuthorityRank()
+	_u.mutation.SetAuthorityRank(v)
+	return _u
+}
+
+// SetNillableAuthorityRank sets the "authority_rank" field if the given value is not nil.
+func (_u *RelationshipAssertionUpdate) SetNillableAuthorityRank(v *int) *RelationshipAssertionUpdate {
+	if v != nil {
+		_u.SetAuthorityRank(*v)
+	}
+	return _u
+}
+
+// AddAuthorityRank adds value to the "authority_rank" field.
+func (_u *RelationshipAssertionUpdate) AddAuthorityRank(v int) *RelationshipAssertionUpdate {
+	_u.mutation.AddAuthorityRank(v)
+	return _u
+}
+
 // SetConfidence sets the "confidence" field.
 func (_u *RelationshipAssertionUpdate) SetConfidence(v float64) *RelationshipAssertionUpdate {
 	_u.mutation.ResetConfidence()
@@ -169,6 +190,27 @@ func (_u *RelationshipAssertionUpdate) ClearValidTo() *RelationshipAssertionUpda
 	return _u
 }
 
+// SetValueSchemaVersion sets the "value_schema_version" field.
+func (_u *RelationshipAssertionUpdate) SetValueSchemaVersion(v int) *RelationshipAssertionUpdate {
+	_u.mutation.ResetValueSchemaVersion()
+	_u.mutation.SetValueSchemaVersion(v)
+	return _u
+}
+
+// SetNillableValueSchemaVersion sets the "value_schema_version" field if the given value is not nil.
+func (_u *RelationshipAssertionUpdate) SetNillableValueSchemaVersion(v *int) *RelationshipAssertionUpdate {
+	if v != nil {
+		_u.SetValueSchemaVersion(*v)
+	}
+	return _u
+}
+
+// AddValueSchemaVersion adds value to the "value_schema_version" field.
+func (_u *RelationshipAssertionUpdate) AddValueSchemaVersion(v int) *RelationshipAssertionUpdate {
+	_u.mutation.AddValueSchemaVersion(v)
+	return _u
+}
+
 // SetRetractedAt sets the "retracted_at" field.
 func (_u *RelationshipAssertionUpdate) SetRetractedAt(v time.Time) *RelationshipAssertionUpdate {
 	_u.mutation.SetRetractedAt(v)
@@ -240,6 +282,66 @@ func (_u *RelationshipAssertionUpdate) SetNillableExtractorVersion(v *string) *R
 	if v != nil {
 		_u.SetExtractorVersion(*v)
 	}
+	return _u
+}
+
+// SetReviewerID sets the "reviewer_id" field.
+func (_u *RelationshipAssertionUpdate) SetReviewerID(v uuid.UUID) *RelationshipAssertionUpdate {
+	_u.mutation.SetReviewerID(v)
+	return _u
+}
+
+// SetNillableReviewerID sets the "reviewer_id" field if the given value is not nil.
+func (_u *RelationshipAssertionUpdate) SetNillableReviewerID(v *uuid.UUID) *RelationshipAssertionUpdate {
+	if v != nil {
+		_u.SetReviewerID(*v)
+	}
+	return _u
+}
+
+// ClearReviewerID clears the value of the "reviewer_id" field.
+func (_u *RelationshipAssertionUpdate) ClearReviewerID() *RelationshipAssertionUpdate {
+	_u.mutation.ClearReviewerID()
+	return _u
+}
+
+// SetReviewDecision sets the "review_decision" field.
+func (_u *RelationshipAssertionUpdate) SetReviewDecision(v string) *RelationshipAssertionUpdate {
+	_u.mutation.SetReviewDecision(v)
+	return _u
+}
+
+// SetNillableReviewDecision sets the "review_decision" field if the given value is not nil.
+func (_u *RelationshipAssertionUpdate) SetNillableReviewDecision(v *string) *RelationshipAssertionUpdate {
+	if v != nil {
+		_u.SetReviewDecision(*v)
+	}
+	return _u
+}
+
+// ClearReviewDecision clears the value of the "review_decision" field.
+func (_u *RelationshipAssertionUpdate) ClearReviewDecision() *RelationshipAssertionUpdate {
+	_u.mutation.ClearReviewDecision()
+	return _u
+}
+
+// SetReviewedAt sets the "reviewed_at" field.
+func (_u *RelationshipAssertionUpdate) SetReviewedAt(v time.Time) *RelationshipAssertionUpdate {
+	_u.mutation.SetReviewedAt(v)
+	return _u
+}
+
+// SetNillableReviewedAt sets the "reviewed_at" field if the given value is not nil.
+func (_u *RelationshipAssertionUpdate) SetNillableReviewedAt(v *time.Time) *RelationshipAssertionUpdate {
+	if v != nil {
+		_u.SetReviewedAt(*v)
+	}
+	return _u
+}
+
+// ClearReviewedAt clears the value of the "reviewed_at" field.
+func (_u *RelationshipAssertionUpdate) ClearReviewedAt() *RelationshipAssertionUpdate {
+	_u.mutation.ClearReviewedAt()
 	return _u
 }
 
@@ -407,9 +509,24 @@ func (_u *RelationshipAssertionUpdate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.status": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.AuthorityRank(); ok {
+		if err := relationshipassertion.AuthorityRankValidator(v); err != nil {
+			return &ValidationError{Name: "authority_rank", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.authority_rank": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Confidence(); ok {
 		if err := relationshipassertion.ConfidenceValidator(v); err != nil {
 			return &ValidationError{Name: "confidence", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.confidence": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ValueSchemaVersion(); ok {
+		if err := relationshipassertion.ValueSchemaVersionValidator(v); err != nil {
+			return &ValidationError{Name: "value_schema_version", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.value_schema_version": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ReviewDecision(); ok {
+		if err := relationshipassertion.ReviewDecisionValidator(v); err != nil {
+			return &ValidationError{Name: "review_decision", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.review_decision": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.CitationsJSON(); ok {
@@ -461,6 +578,12 @@ func (_u *RelationshipAssertionUpdate) sqlSave(ctx context.Context) (_node int, 
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(relationshipassertion.FieldStatus, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.AuthorityRank(); ok {
+		_spec.SetField(relationshipassertion.FieldAuthorityRank, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedAuthorityRank(); ok {
+		_spec.AddField(relationshipassertion.FieldAuthorityRank, field.TypeInt, value)
+	}
 	if value, ok := _u.mutation.Confidence(); ok {
 		_spec.SetField(relationshipassertion.FieldConfidence, field.TypeFloat64, value)
 	}
@@ -482,6 +605,12 @@ func (_u *RelationshipAssertionUpdate) sqlSave(ctx context.Context) (_node int, 
 	if _u.mutation.ValidToCleared() {
 		_spec.ClearField(relationshipassertion.FieldValidTo, field.TypeTime)
 	}
+	if value, ok := _u.mutation.ValueSchemaVersion(); ok {
+		_spec.SetField(relationshipassertion.FieldValueSchemaVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedValueSchemaVersion(); ok {
+		_spec.AddField(relationshipassertion.FieldValueSchemaVersion, field.TypeInt, value)
+	}
 	if value, ok := _u.mutation.RetractedAt(); ok {
 		_spec.SetField(relationshipassertion.FieldRetractedAt, field.TypeTime, value)
 	}
@@ -502,6 +631,24 @@ func (_u *RelationshipAssertionUpdate) sqlSave(ctx context.Context) (_node int, 
 	}
 	if value, ok := _u.mutation.ExtractorVersion(); ok {
 		_spec.SetField(relationshipassertion.FieldExtractorVersion, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ReviewerID(); ok {
+		_spec.SetField(relationshipassertion.FieldReviewerID, field.TypeUUID, value)
+	}
+	if _u.mutation.ReviewerIDCleared() {
+		_spec.ClearField(relationshipassertion.FieldReviewerID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.ReviewDecision(); ok {
+		_spec.SetField(relationshipassertion.FieldReviewDecision, field.TypeString, value)
+	}
+	if _u.mutation.ReviewDecisionCleared() {
+		_spec.ClearField(relationshipassertion.FieldReviewDecision, field.TypeString)
+	}
+	if value, ok := _u.mutation.ReviewedAt(); ok {
+		_spec.SetField(relationshipassertion.FieldReviewedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ReviewedAtCleared() {
+		_spec.ClearField(relationshipassertion.FieldReviewedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.CitationsJSON(); ok {
 		_spec.SetField(relationshipassertion.FieldCitationsJSON, field.TypeString, value)
@@ -663,6 +810,27 @@ func (_u *RelationshipAssertionUpdateOne) SetNillableStatus(v *string) *Relation
 	return _u
 }
 
+// SetAuthorityRank sets the "authority_rank" field.
+func (_u *RelationshipAssertionUpdateOne) SetAuthorityRank(v int) *RelationshipAssertionUpdateOne {
+	_u.mutation.ResetAuthorityRank()
+	_u.mutation.SetAuthorityRank(v)
+	return _u
+}
+
+// SetNillableAuthorityRank sets the "authority_rank" field if the given value is not nil.
+func (_u *RelationshipAssertionUpdateOne) SetNillableAuthorityRank(v *int) *RelationshipAssertionUpdateOne {
+	if v != nil {
+		_u.SetAuthorityRank(*v)
+	}
+	return _u
+}
+
+// AddAuthorityRank adds value to the "authority_rank" field.
+func (_u *RelationshipAssertionUpdateOne) AddAuthorityRank(v int) *RelationshipAssertionUpdateOne {
+	_u.mutation.AddAuthorityRank(v)
+	return _u
+}
+
 // SetConfidence sets the "confidence" field.
 func (_u *RelationshipAssertionUpdateOne) SetConfidence(v float64) *RelationshipAssertionUpdateOne {
 	_u.mutation.ResetConfidence()
@@ -738,6 +906,27 @@ func (_u *RelationshipAssertionUpdateOne) ClearValidTo() *RelationshipAssertionU
 	return _u
 }
 
+// SetValueSchemaVersion sets the "value_schema_version" field.
+func (_u *RelationshipAssertionUpdateOne) SetValueSchemaVersion(v int) *RelationshipAssertionUpdateOne {
+	_u.mutation.ResetValueSchemaVersion()
+	_u.mutation.SetValueSchemaVersion(v)
+	return _u
+}
+
+// SetNillableValueSchemaVersion sets the "value_schema_version" field if the given value is not nil.
+func (_u *RelationshipAssertionUpdateOne) SetNillableValueSchemaVersion(v *int) *RelationshipAssertionUpdateOne {
+	if v != nil {
+		_u.SetValueSchemaVersion(*v)
+	}
+	return _u
+}
+
+// AddValueSchemaVersion adds value to the "value_schema_version" field.
+func (_u *RelationshipAssertionUpdateOne) AddValueSchemaVersion(v int) *RelationshipAssertionUpdateOne {
+	_u.mutation.AddValueSchemaVersion(v)
+	return _u
+}
+
 // SetRetractedAt sets the "retracted_at" field.
 func (_u *RelationshipAssertionUpdateOne) SetRetractedAt(v time.Time) *RelationshipAssertionUpdateOne {
 	_u.mutation.SetRetractedAt(v)
@@ -809,6 +998,66 @@ func (_u *RelationshipAssertionUpdateOne) SetNillableExtractorVersion(v *string)
 	if v != nil {
 		_u.SetExtractorVersion(*v)
 	}
+	return _u
+}
+
+// SetReviewerID sets the "reviewer_id" field.
+func (_u *RelationshipAssertionUpdateOne) SetReviewerID(v uuid.UUID) *RelationshipAssertionUpdateOne {
+	_u.mutation.SetReviewerID(v)
+	return _u
+}
+
+// SetNillableReviewerID sets the "reviewer_id" field if the given value is not nil.
+func (_u *RelationshipAssertionUpdateOne) SetNillableReviewerID(v *uuid.UUID) *RelationshipAssertionUpdateOne {
+	if v != nil {
+		_u.SetReviewerID(*v)
+	}
+	return _u
+}
+
+// ClearReviewerID clears the value of the "reviewer_id" field.
+func (_u *RelationshipAssertionUpdateOne) ClearReviewerID() *RelationshipAssertionUpdateOne {
+	_u.mutation.ClearReviewerID()
+	return _u
+}
+
+// SetReviewDecision sets the "review_decision" field.
+func (_u *RelationshipAssertionUpdateOne) SetReviewDecision(v string) *RelationshipAssertionUpdateOne {
+	_u.mutation.SetReviewDecision(v)
+	return _u
+}
+
+// SetNillableReviewDecision sets the "review_decision" field if the given value is not nil.
+func (_u *RelationshipAssertionUpdateOne) SetNillableReviewDecision(v *string) *RelationshipAssertionUpdateOne {
+	if v != nil {
+		_u.SetReviewDecision(*v)
+	}
+	return _u
+}
+
+// ClearReviewDecision clears the value of the "review_decision" field.
+func (_u *RelationshipAssertionUpdateOne) ClearReviewDecision() *RelationshipAssertionUpdateOne {
+	_u.mutation.ClearReviewDecision()
+	return _u
+}
+
+// SetReviewedAt sets the "reviewed_at" field.
+func (_u *RelationshipAssertionUpdateOne) SetReviewedAt(v time.Time) *RelationshipAssertionUpdateOne {
+	_u.mutation.SetReviewedAt(v)
+	return _u
+}
+
+// SetNillableReviewedAt sets the "reviewed_at" field if the given value is not nil.
+func (_u *RelationshipAssertionUpdateOne) SetNillableReviewedAt(v *time.Time) *RelationshipAssertionUpdateOne {
+	if v != nil {
+		_u.SetReviewedAt(*v)
+	}
+	return _u
+}
+
+// ClearReviewedAt clears the value of the "reviewed_at" field.
+func (_u *RelationshipAssertionUpdateOne) ClearReviewedAt() *RelationshipAssertionUpdateOne {
+	_u.mutation.ClearReviewedAt()
 	return _u
 }
 
@@ -989,9 +1238,24 @@ func (_u *RelationshipAssertionUpdateOne) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.status": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.AuthorityRank(); ok {
+		if err := relationshipassertion.AuthorityRankValidator(v); err != nil {
+			return &ValidationError{Name: "authority_rank", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.authority_rank": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Confidence(); ok {
 		if err := relationshipassertion.ConfidenceValidator(v); err != nil {
 			return &ValidationError{Name: "confidence", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.confidence": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ValueSchemaVersion(); ok {
+		if err := relationshipassertion.ValueSchemaVersionValidator(v); err != nil {
+			return &ValidationError{Name: "value_schema_version", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.value_schema_version": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ReviewDecision(); ok {
+		if err := relationshipassertion.ReviewDecisionValidator(v); err != nil {
+			return &ValidationError{Name: "review_decision", err: fmt.Errorf(`ent: validator failed for field "RelationshipAssertion.review_decision": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.CitationsJSON(); ok {
@@ -1060,6 +1324,12 @@ func (_u *RelationshipAssertionUpdateOne) sqlSave(ctx context.Context) (_node *R
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(relationshipassertion.FieldStatus, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.AuthorityRank(); ok {
+		_spec.SetField(relationshipassertion.FieldAuthorityRank, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedAuthorityRank(); ok {
+		_spec.AddField(relationshipassertion.FieldAuthorityRank, field.TypeInt, value)
+	}
 	if value, ok := _u.mutation.Confidence(); ok {
 		_spec.SetField(relationshipassertion.FieldConfidence, field.TypeFloat64, value)
 	}
@@ -1081,6 +1351,12 @@ func (_u *RelationshipAssertionUpdateOne) sqlSave(ctx context.Context) (_node *R
 	if _u.mutation.ValidToCleared() {
 		_spec.ClearField(relationshipassertion.FieldValidTo, field.TypeTime)
 	}
+	if value, ok := _u.mutation.ValueSchemaVersion(); ok {
+		_spec.SetField(relationshipassertion.FieldValueSchemaVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedValueSchemaVersion(); ok {
+		_spec.AddField(relationshipassertion.FieldValueSchemaVersion, field.TypeInt, value)
+	}
 	if value, ok := _u.mutation.RetractedAt(); ok {
 		_spec.SetField(relationshipassertion.FieldRetractedAt, field.TypeTime, value)
 	}
@@ -1101,6 +1377,24 @@ func (_u *RelationshipAssertionUpdateOne) sqlSave(ctx context.Context) (_node *R
 	}
 	if value, ok := _u.mutation.ExtractorVersion(); ok {
 		_spec.SetField(relationshipassertion.FieldExtractorVersion, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.ReviewerID(); ok {
+		_spec.SetField(relationshipassertion.FieldReviewerID, field.TypeUUID, value)
+	}
+	if _u.mutation.ReviewerIDCleared() {
+		_spec.ClearField(relationshipassertion.FieldReviewerID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.ReviewDecision(); ok {
+		_spec.SetField(relationshipassertion.FieldReviewDecision, field.TypeString, value)
+	}
+	if _u.mutation.ReviewDecisionCleared() {
+		_spec.ClearField(relationshipassertion.FieldReviewDecision, field.TypeString)
+	}
+	if value, ok := _u.mutation.ReviewedAt(); ok {
+		_spec.SetField(relationshipassertion.FieldReviewedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ReviewedAtCleared() {
+		_spec.ClearField(relationshipassertion.FieldReviewedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.CitationsJSON(); ok {
 		_spec.SetField(relationshipassertion.FieldCitationsJSON, field.TypeString, value)

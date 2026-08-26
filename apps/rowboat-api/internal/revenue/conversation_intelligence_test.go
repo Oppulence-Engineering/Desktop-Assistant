@@ -392,7 +392,8 @@ func TestTypedContradictionPersistsAndResolutionReferencesEverySide(t *testing.T
 		DisplayName: "Acme", AccountDomain: "acme.example", Source: "crm",
 		ExternalID: "crm-lifecycle-1", EventType: "lifecycle_changed", OccurredAt: now, ReceivedAt: now,
 		Assertions: []RelationshipAssertionInput{{
-			Dimension: "lifecycle", Value: "evaluation", SourceType: "source_fact", Confidence: 1, ValidFrom: now,
+			Dimension: "lifecycle", Value: "evaluation", SourceType: "source_fact", Confidence: 1,
+			Reason: "CRM reports the account is in evaluation.", ValidFrom: now,
 		}},
 	}})
 	if err != nil {
@@ -404,7 +405,7 @@ func TestTypedContradictionPersistsAndResolutionReferencesEverySide(t *testing.T
 		EventType: "lifecycle_observed", OccurredAt: now.Add(time.Hour), ReceivedAt: now.Add(time.Hour),
 		Assertions: []RelationshipAssertionInput{{
 			Dimension: "lifecycle", Value: "renewal", SourceType: "source_fact", Confidence: 1,
-			ValidFrom: now.Add(time.Hour),
+			Reason: "Meeting evidence describes an active renewal.", ValidFrom: now.Add(time.Hour),
 		}},
 	}})
 	if err != nil {

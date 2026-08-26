@@ -86,6 +86,11 @@ func Status(v string) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldEQ(FieldStatus, v))
 }
 
+// AuthorityRank applies equality check predicate on the "authority_rank" field. It's identical to AuthorityRankEQ.
+func AuthorityRank(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldAuthorityRank, v))
+}
+
 // Confidence applies equality check predicate on the "confidence" field. It's identical to ConfidenceEQ.
 func Confidence(v float64) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldEQ(FieldConfidence, v))
@@ -106,6 +111,11 @@ func ValidTo(v time.Time) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldEQ(FieldValidTo, v))
 }
 
+// ValueSchemaVersion applies equality check predicate on the "value_schema_version" field. It's identical to ValueSchemaVersionEQ.
+func ValueSchemaVersion(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldValueSchemaVersion, v))
+}
+
 // RetractedAt applies equality check predicate on the "retracted_at" field. It's identical to RetractedAtEQ.
 func RetractedAt(v time.Time) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldEQ(FieldRetractedAt, v))
@@ -124,6 +134,21 @@ func SupersedesAssertionID(v string) predicate.RelationshipAssertion {
 // ExtractorVersion applies equality check predicate on the "extractor_version" field. It's identical to ExtractorVersionEQ.
 func ExtractorVersion(v string) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldEQ(FieldExtractorVersion, v))
+}
+
+// ReviewerID applies equality check predicate on the "reviewer_id" field. It's identical to ReviewerIDEQ.
+func ReviewerID(v uuid.UUID) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldReviewerID, v))
+}
+
+// ReviewDecision applies equality check predicate on the "review_decision" field. It's identical to ReviewDecisionEQ.
+func ReviewDecision(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldReviewDecision, v))
+}
+
+// ReviewedAt applies equality check predicate on the "reviewed_at" field. It's identical to ReviewedAtEQ.
+func ReviewedAt(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldReviewedAt, v))
 }
 
 // CitationsJSON applies equality check predicate on the "citations_json" field. It's identical to CitationsJSONEQ.
@@ -476,6 +501,46 @@ func StatusContainsFold(v string) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldContainsFold(FieldStatus, v))
 }
 
+// AuthorityRankEQ applies the EQ predicate on the "authority_rank" field.
+func AuthorityRankEQ(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldAuthorityRank, v))
+}
+
+// AuthorityRankNEQ applies the NEQ predicate on the "authority_rank" field.
+func AuthorityRankNEQ(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNEQ(FieldAuthorityRank, v))
+}
+
+// AuthorityRankIn applies the In predicate on the "authority_rank" field.
+func AuthorityRankIn(vs ...int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIn(FieldAuthorityRank, vs...))
+}
+
+// AuthorityRankNotIn applies the NotIn predicate on the "authority_rank" field.
+func AuthorityRankNotIn(vs ...int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotIn(FieldAuthorityRank, vs...))
+}
+
+// AuthorityRankGT applies the GT predicate on the "authority_rank" field.
+func AuthorityRankGT(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGT(FieldAuthorityRank, v))
+}
+
+// AuthorityRankGTE applies the GTE predicate on the "authority_rank" field.
+func AuthorityRankGTE(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGTE(FieldAuthorityRank, v))
+}
+
+// AuthorityRankLT applies the LT predicate on the "authority_rank" field.
+func AuthorityRankLT(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLT(FieldAuthorityRank, v))
+}
+
+// AuthorityRankLTE applies the LTE predicate on the "authority_rank" field.
+func AuthorityRankLTE(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLTE(FieldAuthorityRank, v))
+}
+
 // ConfidenceEQ applies the EQ predicate on the "confidence" field.
 func ConfidenceEQ(v float64) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldEQ(FieldConfidence, v))
@@ -679,6 +744,46 @@ func ValidToIsNil() predicate.RelationshipAssertion {
 // ValidToNotNil applies the NotNil predicate on the "valid_to" field.
 func ValidToNotNil() predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldNotNull(FieldValidTo))
+}
+
+// ValueSchemaVersionEQ applies the EQ predicate on the "value_schema_version" field.
+func ValueSchemaVersionEQ(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldValueSchemaVersion, v))
+}
+
+// ValueSchemaVersionNEQ applies the NEQ predicate on the "value_schema_version" field.
+func ValueSchemaVersionNEQ(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNEQ(FieldValueSchemaVersion, v))
+}
+
+// ValueSchemaVersionIn applies the In predicate on the "value_schema_version" field.
+func ValueSchemaVersionIn(vs ...int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIn(FieldValueSchemaVersion, vs...))
+}
+
+// ValueSchemaVersionNotIn applies the NotIn predicate on the "value_schema_version" field.
+func ValueSchemaVersionNotIn(vs ...int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotIn(FieldValueSchemaVersion, vs...))
+}
+
+// ValueSchemaVersionGT applies the GT predicate on the "value_schema_version" field.
+func ValueSchemaVersionGT(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGT(FieldValueSchemaVersion, v))
+}
+
+// ValueSchemaVersionGTE applies the GTE predicate on the "value_schema_version" field.
+func ValueSchemaVersionGTE(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGTE(FieldValueSchemaVersion, v))
+}
+
+// ValueSchemaVersionLT applies the LT predicate on the "value_schema_version" field.
+func ValueSchemaVersionLT(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLT(FieldValueSchemaVersion, v))
+}
+
+// ValueSchemaVersionLTE applies the LTE predicate on the "value_schema_version" field.
+func ValueSchemaVersionLTE(v int) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLTE(FieldValueSchemaVersion, v))
 }
 
 // RetractedAtEQ applies the EQ predicate on the "retracted_at" field.
@@ -944,6 +1049,181 @@ func ExtractorVersionEqualFold(v string) predicate.RelationshipAssertion {
 // ExtractorVersionContainsFold applies the ContainsFold predicate on the "extractor_version" field.
 func ExtractorVersionContainsFold(v string) predicate.RelationshipAssertion {
 	return predicate.RelationshipAssertion(sql.FieldContainsFold(FieldExtractorVersion, v))
+}
+
+// ReviewerIDEQ applies the EQ predicate on the "reviewer_id" field.
+func ReviewerIDEQ(v uuid.UUID) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldReviewerID, v))
+}
+
+// ReviewerIDNEQ applies the NEQ predicate on the "reviewer_id" field.
+func ReviewerIDNEQ(v uuid.UUID) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNEQ(FieldReviewerID, v))
+}
+
+// ReviewerIDIn applies the In predicate on the "reviewer_id" field.
+func ReviewerIDIn(vs ...uuid.UUID) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIn(FieldReviewerID, vs...))
+}
+
+// ReviewerIDNotIn applies the NotIn predicate on the "reviewer_id" field.
+func ReviewerIDNotIn(vs ...uuid.UUID) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotIn(FieldReviewerID, vs...))
+}
+
+// ReviewerIDGT applies the GT predicate on the "reviewer_id" field.
+func ReviewerIDGT(v uuid.UUID) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGT(FieldReviewerID, v))
+}
+
+// ReviewerIDGTE applies the GTE predicate on the "reviewer_id" field.
+func ReviewerIDGTE(v uuid.UUID) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGTE(FieldReviewerID, v))
+}
+
+// ReviewerIDLT applies the LT predicate on the "reviewer_id" field.
+func ReviewerIDLT(v uuid.UUID) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLT(FieldReviewerID, v))
+}
+
+// ReviewerIDLTE applies the LTE predicate on the "reviewer_id" field.
+func ReviewerIDLTE(v uuid.UUID) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLTE(FieldReviewerID, v))
+}
+
+// ReviewerIDIsNil applies the IsNil predicate on the "reviewer_id" field.
+func ReviewerIDIsNil() predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIsNull(FieldReviewerID))
+}
+
+// ReviewerIDNotNil applies the NotNil predicate on the "reviewer_id" field.
+func ReviewerIDNotNil() predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotNull(FieldReviewerID))
+}
+
+// ReviewDecisionEQ applies the EQ predicate on the "review_decision" field.
+func ReviewDecisionEQ(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldReviewDecision, v))
+}
+
+// ReviewDecisionNEQ applies the NEQ predicate on the "review_decision" field.
+func ReviewDecisionNEQ(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNEQ(FieldReviewDecision, v))
+}
+
+// ReviewDecisionIn applies the In predicate on the "review_decision" field.
+func ReviewDecisionIn(vs ...string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIn(FieldReviewDecision, vs...))
+}
+
+// ReviewDecisionNotIn applies the NotIn predicate on the "review_decision" field.
+func ReviewDecisionNotIn(vs ...string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotIn(FieldReviewDecision, vs...))
+}
+
+// ReviewDecisionGT applies the GT predicate on the "review_decision" field.
+func ReviewDecisionGT(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGT(FieldReviewDecision, v))
+}
+
+// ReviewDecisionGTE applies the GTE predicate on the "review_decision" field.
+func ReviewDecisionGTE(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGTE(FieldReviewDecision, v))
+}
+
+// ReviewDecisionLT applies the LT predicate on the "review_decision" field.
+func ReviewDecisionLT(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLT(FieldReviewDecision, v))
+}
+
+// ReviewDecisionLTE applies the LTE predicate on the "review_decision" field.
+func ReviewDecisionLTE(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLTE(FieldReviewDecision, v))
+}
+
+// ReviewDecisionContains applies the Contains predicate on the "review_decision" field.
+func ReviewDecisionContains(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldContains(FieldReviewDecision, v))
+}
+
+// ReviewDecisionHasPrefix applies the HasPrefix predicate on the "review_decision" field.
+func ReviewDecisionHasPrefix(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldHasPrefix(FieldReviewDecision, v))
+}
+
+// ReviewDecisionHasSuffix applies the HasSuffix predicate on the "review_decision" field.
+func ReviewDecisionHasSuffix(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldHasSuffix(FieldReviewDecision, v))
+}
+
+// ReviewDecisionIsNil applies the IsNil predicate on the "review_decision" field.
+func ReviewDecisionIsNil() predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIsNull(FieldReviewDecision))
+}
+
+// ReviewDecisionNotNil applies the NotNil predicate on the "review_decision" field.
+func ReviewDecisionNotNil() predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotNull(FieldReviewDecision))
+}
+
+// ReviewDecisionEqualFold applies the EqualFold predicate on the "review_decision" field.
+func ReviewDecisionEqualFold(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEqualFold(FieldReviewDecision, v))
+}
+
+// ReviewDecisionContainsFold applies the ContainsFold predicate on the "review_decision" field.
+func ReviewDecisionContainsFold(v string) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldContainsFold(FieldReviewDecision, v))
+}
+
+// ReviewedAtEQ applies the EQ predicate on the "reviewed_at" field.
+func ReviewedAtEQ(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldEQ(FieldReviewedAt, v))
+}
+
+// ReviewedAtNEQ applies the NEQ predicate on the "reviewed_at" field.
+func ReviewedAtNEQ(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNEQ(FieldReviewedAt, v))
+}
+
+// ReviewedAtIn applies the In predicate on the "reviewed_at" field.
+func ReviewedAtIn(vs ...time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIn(FieldReviewedAt, vs...))
+}
+
+// ReviewedAtNotIn applies the NotIn predicate on the "reviewed_at" field.
+func ReviewedAtNotIn(vs ...time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotIn(FieldReviewedAt, vs...))
+}
+
+// ReviewedAtGT applies the GT predicate on the "reviewed_at" field.
+func ReviewedAtGT(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGT(FieldReviewedAt, v))
+}
+
+// ReviewedAtGTE applies the GTE predicate on the "reviewed_at" field.
+func ReviewedAtGTE(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldGTE(FieldReviewedAt, v))
+}
+
+// ReviewedAtLT applies the LT predicate on the "reviewed_at" field.
+func ReviewedAtLT(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLT(FieldReviewedAt, v))
+}
+
+// ReviewedAtLTE applies the LTE predicate on the "reviewed_at" field.
+func ReviewedAtLTE(v time.Time) predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldLTE(FieldReviewedAt, v))
+}
+
+// ReviewedAtIsNil applies the IsNil predicate on the "reviewed_at" field.
+func ReviewedAtIsNil() predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldIsNull(FieldReviewedAt))
+}
+
+// ReviewedAtNotNil applies the NotNil predicate on the "reviewed_at" field.
+func ReviewedAtNotNil() predicate.RelationshipAssertion {
+	return predicate.RelationshipAssertion(sql.FieldNotNull(FieldReviewedAt))
 }
 
 // CitationsJSONEQ applies the EQ predicate on the "citations_json" field.

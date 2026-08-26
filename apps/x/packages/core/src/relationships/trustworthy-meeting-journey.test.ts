@@ -15,7 +15,13 @@ import {
 } from "@x/shared/relationships";
 import type { LedgerCommitment } from "../meetings/meetings.js";
 import { MeetingCaptureGuardian } from "../meetings/capture-guardian.js";
-import { fakeTranscriber, sessionMeta, tone, trackMeta, writeWav } from "../meetings/factories.testkit.js";
+import {
+  fakeTranscriber,
+  sessionMeta,
+  tone,
+  trackMeta,
+  writeWav,
+} from "../meetings/factories.testkit.js";
 import { MeetingQueue } from "../meetings/queue.js";
 import { readMeta, writeJsonAtomic } from "../meetings/session.js";
 import { DeterministicConversationExtractor } from "./conversation-extractor.js";
@@ -32,9 +38,7 @@ import {
 const dirs: string[] = [];
 
 afterEach(async () => {
-  await Promise.all(
-    dirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })),
-  );
+  await Promise.all(dirs.splice(0).map((dir) => fs.rm(dir, { recursive: true, force: true })));
 });
 
 async function settle(queue: { depth: number }): Promise<void> {
@@ -229,6 +233,7 @@ describe("trustworthy desktop conversation golden journey", () => {
         dimension: "next_action",
         value: "Send the corrected proposal tomorrow",
         sourceType: "source_fact",
+        userConfirmed: true,
       }),
     ]);
 
@@ -334,6 +339,13 @@ describe("trustworthy desktop conversation golden journey", () => {
     expect((await readMeta(meetingDir))?.audio_deleted_at).toBe(publishedMeta?.audio_deleted_at);
     await fs.rm(meetingDir, { recursive: true, force: true });
     expect(sharedSnapshots).toHaveLength(2);
+    expect(sharedSnapshots[1]?.assertions).toEqual([
+      expect.objectContaining({
+        dimension: "next_action",
+        value: "Send the corrected proposal tomorrow",
+        userConfirmed: true,
+      }),
+    ]);
     expect(
       (sharedSnapshots[0].normalizedFacts.governance_receipt as { deletionOutcome: string })
         .deletionOutcome,

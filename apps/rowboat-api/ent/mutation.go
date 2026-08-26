@@ -58370,15 +58370,22 @@ type RelationshipAssertionMutation struct {
 	value                            *string
 	source_type                      *string
 	status                           *string
+	authority_rank                   *int
+	addauthority_rank                *int
 	confidence                       *float64
 	addconfidence                    *float64
 	reason                           *string
 	valid_from                       *time.Time
 	valid_to                         *time.Time
+	value_schema_version             *int
+	addvalue_schema_version          *int
 	retracted_at                     *time.Time
 	retraction_reason                *string
 	supersedes_assertion_id          *string
 	extractor_version                *string
+	reviewer_id                      *uuid.UUID
+	review_decision                  *string
+	reviewed_at                      *time.Time
 	citations_json                   *string
 	projector_compat_version         *int
 	addprojector_compat_version      *int
@@ -58718,6 +58725,62 @@ func (m *RelationshipAssertionMutation) ResetStatus() {
 	m.status = nil
 }
 
+// SetAuthorityRank sets the "authority_rank" field.
+func (m *RelationshipAssertionMutation) SetAuthorityRank(i int) {
+	m.authority_rank = &i
+	m.addauthority_rank = nil
+}
+
+// AuthorityRank returns the value of the "authority_rank" field in the mutation.
+func (m *RelationshipAssertionMutation) AuthorityRank() (r int, exists bool) {
+	v := m.authority_rank
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAuthorityRank returns the old "authority_rank" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldAuthorityRank(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAuthorityRank is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAuthorityRank requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAuthorityRank: %w", err)
+	}
+	return oldValue.AuthorityRank, nil
+}
+
+// AddAuthorityRank adds i to the "authority_rank" field.
+func (m *RelationshipAssertionMutation) AddAuthorityRank(i int) {
+	if m.addauthority_rank != nil {
+		*m.addauthority_rank += i
+	} else {
+		m.addauthority_rank = &i
+	}
+}
+
+// AddedAuthorityRank returns the value that was added to the "authority_rank" field in this mutation.
+func (m *RelationshipAssertionMutation) AddedAuthorityRank() (r int, exists bool) {
+	v := m.addauthority_rank
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAuthorityRank resets all changes to the "authority_rank" field.
+func (m *RelationshipAssertionMutation) ResetAuthorityRank() {
+	m.authority_rank = nil
+	m.addauthority_rank = nil
+}
+
 // SetConfidence sets the "confidence" field.
 func (m *RelationshipAssertionMutation) SetConfidence(f float64) {
 	m.confidence = &f
@@ -58908,6 +58971,62 @@ func (m *RelationshipAssertionMutation) ResetValidTo() {
 	delete(m.clearedFields, relationshipassertion.FieldValidTo)
 }
 
+// SetValueSchemaVersion sets the "value_schema_version" field.
+func (m *RelationshipAssertionMutation) SetValueSchemaVersion(i int) {
+	m.value_schema_version = &i
+	m.addvalue_schema_version = nil
+}
+
+// ValueSchemaVersion returns the value of the "value_schema_version" field in the mutation.
+func (m *RelationshipAssertionMutation) ValueSchemaVersion() (r int, exists bool) {
+	v := m.value_schema_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValueSchemaVersion returns the old "value_schema_version" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldValueSchemaVersion(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValueSchemaVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValueSchemaVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValueSchemaVersion: %w", err)
+	}
+	return oldValue.ValueSchemaVersion, nil
+}
+
+// AddValueSchemaVersion adds i to the "value_schema_version" field.
+func (m *RelationshipAssertionMutation) AddValueSchemaVersion(i int) {
+	if m.addvalue_schema_version != nil {
+		*m.addvalue_schema_version += i
+	} else {
+		m.addvalue_schema_version = &i
+	}
+}
+
+// AddedValueSchemaVersion returns the value that was added to the "value_schema_version" field in this mutation.
+func (m *RelationshipAssertionMutation) AddedValueSchemaVersion() (r int, exists bool) {
+	v := m.addvalue_schema_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetValueSchemaVersion resets all changes to the "value_schema_version" field.
+func (m *RelationshipAssertionMutation) ResetValueSchemaVersion() {
+	m.value_schema_version = nil
+	m.addvalue_schema_version = nil
+}
+
 // SetRetractedAt sets the "retracted_at" field.
 func (m *RelationshipAssertionMutation) SetRetractedAt(t time.Time) {
 	m.retracted_at = &t
@@ -59089,6 +59208,153 @@ func (m *RelationshipAssertionMutation) OldExtractorVersion(ctx context.Context)
 // ResetExtractorVersion resets all changes to the "extractor_version" field.
 func (m *RelationshipAssertionMutation) ResetExtractorVersion() {
 	m.extractor_version = nil
+}
+
+// SetReviewerID sets the "reviewer_id" field.
+func (m *RelationshipAssertionMutation) SetReviewerID(u uuid.UUID) {
+	m.reviewer_id = &u
+}
+
+// ReviewerID returns the value of the "reviewer_id" field in the mutation.
+func (m *RelationshipAssertionMutation) ReviewerID() (r uuid.UUID, exists bool) {
+	v := m.reviewer_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReviewerID returns the old "reviewer_id" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldReviewerID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReviewerID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReviewerID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReviewerID: %w", err)
+	}
+	return oldValue.ReviewerID, nil
+}
+
+// ClearReviewerID clears the value of the "reviewer_id" field.
+func (m *RelationshipAssertionMutation) ClearReviewerID() {
+	m.reviewer_id = nil
+	m.clearedFields[relationshipassertion.FieldReviewerID] = struct{}{}
+}
+
+// ReviewerIDCleared returns if the "reviewer_id" field was cleared in this mutation.
+func (m *RelationshipAssertionMutation) ReviewerIDCleared() bool {
+	_, ok := m.clearedFields[relationshipassertion.FieldReviewerID]
+	return ok
+}
+
+// ResetReviewerID resets all changes to the "reviewer_id" field.
+func (m *RelationshipAssertionMutation) ResetReviewerID() {
+	m.reviewer_id = nil
+	delete(m.clearedFields, relationshipassertion.FieldReviewerID)
+}
+
+// SetReviewDecision sets the "review_decision" field.
+func (m *RelationshipAssertionMutation) SetReviewDecision(s string) {
+	m.review_decision = &s
+}
+
+// ReviewDecision returns the value of the "review_decision" field in the mutation.
+func (m *RelationshipAssertionMutation) ReviewDecision() (r string, exists bool) {
+	v := m.review_decision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReviewDecision returns the old "review_decision" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldReviewDecision(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReviewDecision is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReviewDecision requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReviewDecision: %w", err)
+	}
+	return oldValue.ReviewDecision, nil
+}
+
+// ClearReviewDecision clears the value of the "review_decision" field.
+func (m *RelationshipAssertionMutation) ClearReviewDecision() {
+	m.review_decision = nil
+	m.clearedFields[relationshipassertion.FieldReviewDecision] = struct{}{}
+}
+
+// ReviewDecisionCleared returns if the "review_decision" field was cleared in this mutation.
+func (m *RelationshipAssertionMutation) ReviewDecisionCleared() bool {
+	_, ok := m.clearedFields[relationshipassertion.FieldReviewDecision]
+	return ok
+}
+
+// ResetReviewDecision resets all changes to the "review_decision" field.
+func (m *RelationshipAssertionMutation) ResetReviewDecision() {
+	m.review_decision = nil
+	delete(m.clearedFields, relationshipassertion.FieldReviewDecision)
+}
+
+// SetReviewedAt sets the "reviewed_at" field.
+func (m *RelationshipAssertionMutation) SetReviewedAt(t time.Time) {
+	m.reviewed_at = &t
+}
+
+// ReviewedAt returns the value of the "reviewed_at" field in the mutation.
+func (m *RelationshipAssertionMutation) ReviewedAt() (r time.Time, exists bool) {
+	v := m.reviewed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReviewedAt returns the old "reviewed_at" field's value of the RelationshipAssertion entity.
+// If the RelationshipAssertion object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipAssertionMutation) OldReviewedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReviewedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReviewedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReviewedAt: %w", err)
+	}
+	return oldValue.ReviewedAt, nil
+}
+
+// ClearReviewedAt clears the value of the "reviewed_at" field.
+func (m *RelationshipAssertionMutation) ClearReviewedAt() {
+	m.reviewed_at = nil
+	m.clearedFields[relationshipassertion.FieldReviewedAt] = struct{}{}
+}
+
+// ReviewedAtCleared returns if the "reviewed_at" field was cleared in this mutation.
+func (m *RelationshipAssertionMutation) ReviewedAtCleared() bool {
+	_, ok := m.clearedFields[relationshipassertion.FieldReviewedAt]
+	return ok
+}
+
+// ResetReviewedAt resets all changes to the "reviewed_at" field.
+func (m *RelationshipAssertionMutation) ResetReviewedAt() {
+	m.reviewed_at = nil
+	delete(m.clearedFields, relationshipassertion.FieldReviewedAt)
 }
 
 // SetCitationsJSON sets the "citations_json" field.
@@ -59437,7 +59703,7 @@ func (m *RelationshipAssertionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RelationshipAssertionMutation) Fields() []string {
-	fields := make([]string, 0, 17)
+	fields := make([]string, 0, 22)
 	if m.created_at != nil {
 		fields = append(fields, relationshipassertion.FieldCreatedAt)
 	}
@@ -59456,6 +59722,9 @@ func (m *RelationshipAssertionMutation) Fields() []string {
 	if m.status != nil {
 		fields = append(fields, relationshipassertion.FieldStatus)
 	}
+	if m.authority_rank != nil {
+		fields = append(fields, relationshipassertion.FieldAuthorityRank)
+	}
 	if m.confidence != nil {
 		fields = append(fields, relationshipassertion.FieldConfidence)
 	}
@@ -59468,6 +59737,9 @@ func (m *RelationshipAssertionMutation) Fields() []string {
 	if m.valid_to != nil {
 		fields = append(fields, relationshipassertion.FieldValidTo)
 	}
+	if m.value_schema_version != nil {
+		fields = append(fields, relationshipassertion.FieldValueSchemaVersion)
+	}
 	if m.retracted_at != nil {
 		fields = append(fields, relationshipassertion.FieldRetractedAt)
 	}
@@ -59479,6 +59751,15 @@ func (m *RelationshipAssertionMutation) Fields() []string {
 	}
 	if m.extractor_version != nil {
 		fields = append(fields, relationshipassertion.FieldExtractorVersion)
+	}
+	if m.reviewer_id != nil {
+		fields = append(fields, relationshipassertion.FieldReviewerID)
+	}
+	if m.review_decision != nil {
+		fields = append(fields, relationshipassertion.FieldReviewDecision)
+	}
+	if m.reviewed_at != nil {
+		fields = append(fields, relationshipassertion.FieldReviewedAt)
 	}
 	if m.citations_json != nil {
 		fields = append(fields, relationshipassertion.FieldCitationsJSON)
@@ -59509,6 +59790,8 @@ func (m *RelationshipAssertionMutation) Field(name string) (ent.Value, bool) {
 		return m.SourceType()
 	case relationshipassertion.FieldStatus:
 		return m.Status()
+	case relationshipassertion.FieldAuthorityRank:
+		return m.AuthorityRank()
 	case relationshipassertion.FieldConfidence:
 		return m.Confidence()
 	case relationshipassertion.FieldReason:
@@ -59517,6 +59800,8 @@ func (m *RelationshipAssertionMutation) Field(name string) (ent.Value, bool) {
 		return m.ValidFrom()
 	case relationshipassertion.FieldValidTo:
 		return m.ValidTo()
+	case relationshipassertion.FieldValueSchemaVersion:
+		return m.ValueSchemaVersion()
 	case relationshipassertion.FieldRetractedAt:
 		return m.RetractedAt()
 	case relationshipassertion.FieldRetractionReason:
@@ -59525,6 +59810,12 @@ func (m *RelationshipAssertionMutation) Field(name string) (ent.Value, bool) {
 		return m.SupersedesAssertionID()
 	case relationshipassertion.FieldExtractorVersion:
 		return m.ExtractorVersion()
+	case relationshipassertion.FieldReviewerID:
+		return m.ReviewerID()
+	case relationshipassertion.FieldReviewDecision:
+		return m.ReviewDecision()
+	case relationshipassertion.FieldReviewedAt:
+		return m.ReviewedAt()
 	case relationshipassertion.FieldCitationsJSON:
 		return m.CitationsJSON()
 	case relationshipassertion.FieldProjectorCompatVersion:
@@ -59552,6 +59843,8 @@ func (m *RelationshipAssertionMutation) OldField(ctx context.Context, name strin
 		return m.OldSourceType(ctx)
 	case relationshipassertion.FieldStatus:
 		return m.OldStatus(ctx)
+	case relationshipassertion.FieldAuthorityRank:
+		return m.OldAuthorityRank(ctx)
 	case relationshipassertion.FieldConfidence:
 		return m.OldConfidence(ctx)
 	case relationshipassertion.FieldReason:
@@ -59560,6 +59853,8 @@ func (m *RelationshipAssertionMutation) OldField(ctx context.Context, name strin
 		return m.OldValidFrom(ctx)
 	case relationshipassertion.FieldValidTo:
 		return m.OldValidTo(ctx)
+	case relationshipassertion.FieldValueSchemaVersion:
+		return m.OldValueSchemaVersion(ctx)
 	case relationshipassertion.FieldRetractedAt:
 		return m.OldRetractedAt(ctx)
 	case relationshipassertion.FieldRetractionReason:
@@ -59568,6 +59863,12 @@ func (m *RelationshipAssertionMutation) OldField(ctx context.Context, name strin
 		return m.OldSupersedesAssertionID(ctx)
 	case relationshipassertion.FieldExtractorVersion:
 		return m.OldExtractorVersion(ctx)
+	case relationshipassertion.FieldReviewerID:
+		return m.OldReviewerID(ctx)
+	case relationshipassertion.FieldReviewDecision:
+		return m.OldReviewDecision(ctx)
+	case relationshipassertion.FieldReviewedAt:
+		return m.OldReviewedAt(ctx)
 	case relationshipassertion.FieldCitationsJSON:
 		return m.OldCitationsJSON(ctx)
 	case relationshipassertion.FieldProjectorCompatVersion:
@@ -59625,6 +59926,13 @@ func (m *RelationshipAssertionMutation) SetField(name string, value ent.Value) e
 		}
 		m.SetStatus(v)
 		return nil
+	case relationshipassertion.FieldAuthorityRank:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAuthorityRank(v)
+		return nil
 	case relationshipassertion.FieldConfidence:
 		v, ok := value.(float64)
 		if !ok {
@@ -59653,6 +59961,13 @@ func (m *RelationshipAssertionMutation) SetField(name string, value ent.Value) e
 		}
 		m.SetValidTo(v)
 		return nil
+	case relationshipassertion.FieldValueSchemaVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValueSchemaVersion(v)
+		return nil
 	case relationshipassertion.FieldRetractedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -59680,6 +59995,27 @@ func (m *RelationshipAssertionMutation) SetField(name string, value ent.Value) e
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetExtractorVersion(v)
+		return nil
+	case relationshipassertion.FieldReviewerID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReviewerID(v)
+		return nil
+	case relationshipassertion.FieldReviewDecision:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReviewDecision(v)
+		return nil
+	case relationshipassertion.FieldReviewedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReviewedAt(v)
 		return nil
 	case relationshipassertion.FieldCitationsJSON:
 		v, ok := value.(string)
@@ -59710,8 +60046,14 @@ func (m *RelationshipAssertionMutation) SetField(name string, value ent.Value) e
 // this mutation.
 func (m *RelationshipAssertionMutation) AddedFields() []string {
 	var fields []string
+	if m.addauthority_rank != nil {
+		fields = append(fields, relationshipassertion.FieldAuthorityRank)
+	}
 	if m.addconfidence != nil {
 		fields = append(fields, relationshipassertion.FieldConfidence)
+	}
+	if m.addvalue_schema_version != nil {
+		fields = append(fields, relationshipassertion.FieldValueSchemaVersion)
 	}
 	if m.addprojector_compat_version != nil {
 		fields = append(fields, relationshipassertion.FieldProjectorCompatVersion)
@@ -59724,8 +60066,12 @@ func (m *RelationshipAssertionMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *RelationshipAssertionMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
+	case relationshipassertion.FieldAuthorityRank:
+		return m.AddedAuthorityRank()
 	case relationshipassertion.FieldConfidence:
 		return m.AddedConfidence()
+	case relationshipassertion.FieldValueSchemaVersion:
+		return m.AddedValueSchemaVersion()
 	case relationshipassertion.FieldProjectorCompatVersion:
 		return m.AddedProjectorCompatVersion()
 	}
@@ -59737,12 +60083,26 @@ func (m *RelationshipAssertionMutation) AddedField(name string) (ent.Value, bool
 // type.
 func (m *RelationshipAssertionMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case relationshipassertion.FieldAuthorityRank:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAuthorityRank(v)
+		return nil
 	case relationshipassertion.FieldConfidence:
 		v, ok := value.(float64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddConfidence(v)
+		return nil
+	case relationshipassertion.FieldValueSchemaVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddValueSchemaVersion(v)
 		return nil
 	case relationshipassertion.FieldProjectorCompatVersion:
 		v, ok := value.(int)
@@ -59773,6 +60133,15 @@ func (m *RelationshipAssertionMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(relationshipassertion.FieldSupersedesAssertionID) {
 		fields = append(fields, relationshipassertion.FieldSupersedesAssertionID)
+	}
+	if m.FieldCleared(relationshipassertion.FieldReviewerID) {
+		fields = append(fields, relationshipassertion.FieldReviewerID)
+	}
+	if m.FieldCleared(relationshipassertion.FieldReviewDecision) {
+		fields = append(fields, relationshipassertion.FieldReviewDecision)
+	}
+	if m.FieldCleared(relationshipassertion.FieldReviewedAt) {
+		fields = append(fields, relationshipassertion.FieldReviewedAt)
 	}
 	if m.FieldCleared(relationshipassertion.FieldCitationsJSON) {
 		fields = append(fields, relationshipassertion.FieldCitationsJSON)
@@ -59806,6 +60175,15 @@ func (m *RelationshipAssertionMutation) ClearField(name string) error {
 	case relationshipassertion.FieldSupersedesAssertionID:
 		m.ClearSupersedesAssertionID()
 		return nil
+	case relationshipassertion.FieldReviewerID:
+		m.ClearReviewerID()
+		return nil
+	case relationshipassertion.FieldReviewDecision:
+		m.ClearReviewDecision()
+		return nil
+	case relationshipassertion.FieldReviewedAt:
+		m.ClearReviewedAt()
+		return nil
 	case relationshipassertion.FieldCitationsJSON:
 		m.ClearCitationsJSON()
 		return nil
@@ -59835,6 +60213,9 @@ func (m *RelationshipAssertionMutation) ResetField(name string) error {
 	case relationshipassertion.FieldStatus:
 		m.ResetStatus()
 		return nil
+	case relationshipassertion.FieldAuthorityRank:
+		m.ResetAuthorityRank()
+		return nil
 	case relationshipassertion.FieldConfidence:
 		m.ResetConfidence()
 		return nil
@@ -59847,6 +60228,9 @@ func (m *RelationshipAssertionMutation) ResetField(name string) error {
 	case relationshipassertion.FieldValidTo:
 		m.ResetValidTo()
 		return nil
+	case relationshipassertion.FieldValueSchemaVersion:
+		m.ResetValueSchemaVersion()
+		return nil
 	case relationshipassertion.FieldRetractedAt:
 		m.ResetRetractedAt()
 		return nil
@@ -59858,6 +60242,15 @@ func (m *RelationshipAssertionMutation) ResetField(name string) error {
 		return nil
 	case relationshipassertion.FieldExtractorVersion:
 		m.ResetExtractorVersion()
+		return nil
+	case relationshipassertion.FieldReviewerID:
+		m.ResetReviewerID()
+		return nil
+	case relationshipassertion.FieldReviewDecision:
+		m.ResetReviewDecision()
+		return nil
+	case relationshipassertion.FieldReviewedAt:
+		m.ResetReviewedAt()
 		return nil
 	case relationshipassertion.FieldCitationsJSON:
 		m.ResetCitationsJSON()
