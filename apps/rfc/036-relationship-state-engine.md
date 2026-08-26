@@ -1442,17 +1442,30 @@ proofs pass together.
   installed and the CI-required policy, secret, and dependency audits passed
   with `X_GAUNTLET_REQUIRE_EXTERNAL=1`.
 - Consumer compatibility: web and desktop type checks passed after generation.
-- Public-interface smoke test: the real `cmd/server` process started with local
-  defaults. `/healthz`, `/readyz`, and `/openapi.json` returned HTTP 200. The
-  served contract mounted `/v1/relationship-observations/batch` and exposed the
-  Mission Control `value` and `reason` fields as strings plus integer authority
-  rank and value-schema version metadata.
-- Authenticated acceptance constraint: a real POST to the observation endpoint
-  reached the authentication boundary and returned HTTP 503 `auth_unavailable`
-  because the local WorkOS JWKS check was degraded. The complete signed-in
-  observation-to-projection-to-client workflow therefore remains externally
-  blocked without a working WorkOS environment and interactive user session.
-  This public-path limitation is not replaced by the passing package tests.
+- Authenticated public-interface acceptance: the real `cmd/server` process ran
+  against a freshly migrated PostgreSQL 16 database and the repository's
+  `cmd/devstack` identity provider. `/healthz` and `/readyz` returned HTTP 200,
+  with both database and JWKS checks reporting `ok`. The served
+  `/openapi.json` contract mounted `/v1/relationship-observations/batch` and
+  exposed the Mission Control `value` and `reason` fields as strings plus
+  integer authority-rank and value-schema-version metadata.
+- End-to-end authority behavior: a JWT-authenticated observation POST returned
+  HTTP 201 and completed its inline projection. A caller-supplied
+  `source_fact` remained non-canonical, leaving health `unknown` at state
+  version 0. An authenticated correction returned HTTP 201, projected health
+  to `healthy` at state version 1, and exposed an accepted
+  `user_correction` with authority rank 5, schema version 1, reviewer identity,
+  review decision, and review timestamp through Mission Control.
+- Lifecycle and replay behavior: retracting that assertion returned HTTP 200,
+  restored health to `unknown` at state version 2, and removed active health
+  support without deleting the observation timeline. Reposting the same
+  provider identity returned `duplicate: true`, preserved the original
+  observation, and did not mint caller-requested correction authority.
+- Integration boundaries: a second authenticated tenant received HTTP 404 for
+  the relationship, confirming scoped read isolation. The generated
+  `@oppulence/rowboat-api-client` was built and used against the running API to
+  list and read the relationship; it observed Mission Control contract
+  `tfa-r1.1-2026-08-26` at state version 2.
 
 This evidence closes R1.1 implementation validation only. The broader Phase 1
 exit gate still requires the full corpus, staging SLO window, key rotation,
