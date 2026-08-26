@@ -245,7 +245,7 @@ func (s *Service) activeAccountTriggers(
 			relationshipassertion.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
 			relationshipassertion.DimensionEQ("milestone"),
 			relationshipassertion.SourceTypeEQ(researchSourceType),
-			relationshipassertion.StatusEQ("active"),
+			relationshipassertion.StatusIn(relationshipAssertionStatusAccepted, relationshipAssertionStatusLegacyActive),
 			relationshipassertion.ValidFromLTE(now),
 			// Every trigger is written with a valid_to, so a null one is a row
 			// this code did not create; accept it and let the Go guard decide.

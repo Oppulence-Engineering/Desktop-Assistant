@@ -78,6 +78,7 @@ func Enrich(spec obj) {
 	addVoiceCloudSchemas(schemas)
 	addRevenueSchemas(schemas)
 	enrichEntitySchemas(schemas)
+	restoreRevenueSchemaOverrides(schemas)
 
 	paths := obj{}
 	addRuntimePaths(paths)

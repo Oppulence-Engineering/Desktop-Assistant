@@ -123,29 +123,31 @@ func TestRelationshipProjectionUsesExplicitEvaluationTimeAndStableHash(t *testin
 
 func TestRelationshipCorrectionRetractionRestoresSourceFact(t *testing.T) {
 	f := newFixture(t)
-	now := time.Date(2026, 7, 31, 15, 0, 0, 0, time.UTC)
-	f.svc.now = func() time.Time { return now }
+	base := time.Date(2026, 7, 31, 15, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return base }
 	results, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
 		DisplayName:   "Retraction Account",
 		AccountDomain: "retraction.example",
 		Source:        "hubspot",
 		ExternalID:    "company-retraction",
 		EventType:     "company.updated",
-		OccurredAt:    now,
-		ReceivedAt:    now,
+		OccurredAt:    base,
+		ReceivedAt:    base,
 		Assertions: []RelationshipAssertionInput{{
 			Dimension:  "health",
 			Value:      "needs_attention",
 			SourceType: "source_fact",
 			Confidence: 1,
 			Reason:     "The source reports an unresolved blocker.",
-			ValidFrom:  now,
+			ValidFrom:  base,
 		}},
 	}})
 	if err != nil {
 		t.Fatalf("ingest source fact: %v", err)
 	}
 	relID := results[0].Relationship.ID
+	correctionAt := base.Add(time.Hour)
+	f.svc.now = func() time.Time { return correctionAt }
 	corrected, err := f.svc.CorrectRelationship(f.ctx, f.user, relID, RelationshipCorrectionInput{
 		Dimension: "health",
 		Value:     "healthy",
@@ -163,7 +165,15 @@ func TestRelationshipCorrectionRetractionRestoresSourceFact(t *testing.T) {
 	if err != nil {
 		t.Fatalf("query correction: %v", err)
 	}
+	if correction.Status != relationshipAssertionStatusAccepted || correction.AuthorityRank != 5 ||
+		correction.ValueSchemaVersion != relationshipAssertionValueSchemaVersion ||
+		correction.ReviewerID == nil || *correction.ReviewerID != f.user.ID ||
+		correction.ReviewDecision != relationshipAssertionStatusAccepted || correction.ReviewedAt == nil {
+		t.Fatalf("correction authority audit metadata missing: %#v", correction)
+	}
 
+	retractionAt := base.Add(2 * time.Hour)
+	f.svc.now = func() time.Time { return retractionAt }
 	retracted, err := f.svc.RetractRelationshipAssertion(
 		f.ctx, f.user, relID, correction.ID, "The correction was entered against the wrong call.",
 	)
@@ -177,8 +187,19 @@ func TestRelationshipCorrectionRetractionRestoresSourceFact(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reload retracted assertion: %v", err)
 	}
-	if stored.Status != "retracted" || stored.RetractedAt == nil || stored.ValidTo == nil || stored.RetractionReason == "" {
+	if stored.Status != relationshipAssertionStatusRetracted || stored.RetractedAt == nil || stored.ValidTo == nil || stored.RetractionReason == "" {
 		t.Fatalf("retraction audit metadata missing: %#v", stored)
+	}
+	assertions, err := f.client.RelationshipAssertion.Query().All(f.ctx)
+	if err != nil {
+		t.Fatalf("query assertions for historical replay: %v", err)
+	}
+	winners, _, err := selectRelationshipAssertionsAt(assertions, base.Add(90*time.Minute))
+	if err != nil {
+		t.Fatalf("select historical assertions: %v", err)
+	}
+	if winners["health"] == nil || winners["health"].ID != correction.ID {
+		t.Fatalf("historical replay should retain the correction before retraction: %#v", winners["health"])
 	}
 
 	idempotent, err := f.svc.RetractRelationshipAssertion(
@@ -189,6 +210,114 @@ func TestRelationshipCorrectionRetractionRestoresSourceFact(t *testing.T) {
 	}
 	if idempotent.StateVersion != retracted.StateVersion {
 		t.Fatalf("idempotent retraction changed state version: %d != %d", idempotent.StateVersion, retracted.StateVersion)
+	}
+}
+
+func TestInvalidTypedAssertionRollsBackObservationBatch(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 26, 9, 30, 0, 0, time.UTC)
+
+	_, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Invalid Typed State", AccountDomain: "invalid-state.example",
+		Source: "hubspot", ExternalID: "company-invalid-state", EventType: "company.updated",
+		OccurredAt: now, ReceivedAt: now,
+		Assertions: []RelationshipAssertionInput{{
+			Dimension: "health", Value: "green", SourceType: "source_fact", Confidence: 1, Reason: "Provider emitted an unsupported health value.",
+		}},
+	}})
+	if !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("ingest error = %v, want ErrInvalidInput", err)
+	}
+	if count := f.client.Relationship.Query().CountX(f.ctx); count != 0 {
+		t.Fatalf("invalid batch persisted %d relationships", count)
+	}
+	if count := f.client.RelationshipObservation.Query().CountX(f.ctx); count != 0 {
+		t.Fatalf("invalid batch persisted %d observations", count)
+	}
+	if count := f.client.RelationshipAssertion.Query().CountX(f.ctx); count != 0 {
+		t.Fatalf("invalid batch persisted %d assertions", count)
+	}
+}
+
+func TestAuthenticatedObservationCannotMintCanonicalAssertionAuthority(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 26, 9, 45, 0, 0, time.UTC)
+	results, err := f.svc.IngestRelationshipObservationCandidates(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Untrusted Authority", AccountDomain: "untrusted-authority.example",
+		Source: "desktop_note", ExternalID: "untrusted-authority-1", EventType: "relationship.observed",
+		OccurredAt: now, ReceivedAt: now,
+		Assertions: []RelationshipAssertionInput{{
+			Dimension: "health", Value: "critical", SourceType: "source_fact", Confidence: 1,
+			Reason: "The authenticated caller claimed source authority.",
+		}},
+	}})
+	if err != nil {
+		t.Fatalf("ingest untrusted observation: %v", err)
+	}
+	if results[0].Relationship.Health != "unknown" || results[0].Relationship.StateVersion != 0 {
+		t.Fatalf("proposed assertion changed canonical state: %#v", results[0].Relationship)
+	}
+	assertion, err := f.client.RelationshipAssertion.Query().Only(f.ctx)
+	if err != nil {
+		t.Fatalf("query proposed assertion: %v", err)
+	}
+	if assertion.Status != relationshipAssertionStatusProposed || assertion.SourceType != "ai_inference" || assertion.AuthorityRank != 1 {
+		t.Fatalf("authenticated caller minted authority: %#v", assertion)
+	}
+}
+
+func TestObservationIngestionRejectsUserCorrectionAuthority(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 26, 9, 50, 0, 0, time.UTC)
+	_, err := f.svc.IngestRelationshipObservationCandidates(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Forged Correction", AccountDomain: "forged-correction.example",
+		Source: "desktop_note", ExternalID: "forged-correction-1", EventType: "relationship.observed",
+		OccurredAt: now, ReceivedAt: now,
+		Assertions: []RelationshipAssertionInput{{
+			Dimension: "health", Value: "healthy", SourceType: "user_correction", Confidence: 1,
+			Reason: "Attempted correction outside the dedicated endpoint.",
+		}},
+	}})
+	if !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("ingest error = %v, want ErrInvalidInput", err)
+	}
+	if f.client.Relationship.Query().CountX(f.ctx) != 0 ||
+		f.client.RelationshipObservation.Query().CountX(f.ctx) != 0 ||
+		f.client.RelationshipAssertion.Query().CountX(f.ctx) != 0 {
+		t.Fatal("forged correction was not rolled back atomically")
+	}
+}
+
+func TestProjectorFailsClosedOnPersistedInvalidTypedValue(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 26, 10, 0, 0, 0, time.UTC)
+	results, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Corrupted Typed State", AccountDomain: "corrupted-state.example",
+		Source: "hubspot", ExternalID: "company-corrupted-state", EventType: "company.updated",
+		OccurredAt: now, ReceivedAt: now,
+		Assertions: []RelationshipAssertionInput{{
+			Dimension: "health", Value: "healthy", SourceType: "source_fact", Confidence: 1,
+			Reason: "CRM reports healthy state.",
+		}},
+	}})
+	if err != nil {
+		t.Fatalf("ingest valid assertion: %v", err)
+	}
+	assertion, err := f.client.RelationshipAssertion.Query().Only(f.ctx)
+	if err != nil {
+		t.Fatalf("query assertion: %v", err)
+	}
+	_, err = assertion.Update().SetValue("green").Save(f.ctx)
+	if err != nil {
+		t.Fatalf("simulate persisted corruption: %v", err)
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatalf("workspace: %v", err)
+	}
+	_, err = projectRelationshipStateAt(f.ctx, f.client, ws, f.user, results[0].Relationship, now.Add(time.Minute))
+	if !errors.Is(err, ErrReviewRequired) {
+		t.Fatalf("projection error = %v, want ErrReviewRequired", err)
 	}
 }
 
@@ -209,6 +338,7 @@ func TestRelationshipCorrectionRejectsCrossDimensionSupersession(t *testing.T) {
 			Value:      "onboarding",
 			SourceType: "source_fact",
 			Confidence: 1,
+			Reason:     "CRM reports onboarding.",
 			ValidFrom:  now,
 		}},
 	}})

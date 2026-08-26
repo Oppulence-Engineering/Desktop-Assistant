@@ -2502,8 +2502,14 @@ func init() {
 	relationshipassertion.DefaultStatus = relationshipassertionDescStatus.Default.(string)
 	// relationshipassertion.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	relationshipassertion.StatusValidator = relationshipassertionDescStatus.Validators[0].(func(string) error)
+	// relationshipassertionDescAuthorityRank is the schema descriptor for authority_rank field.
+	relationshipassertionDescAuthorityRank := relationshipassertionFields[4].Descriptor()
+	// relationshipassertion.DefaultAuthorityRank holds the default value on creation for the authority_rank field.
+	relationshipassertion.DefaultAuthorityRank = relationshipassertionDescAuthorityRank.Default.(int)
+	// relationshipassertion.AuthorityRankValidator is a validator for the "authority_rank" field. It is called by the builders before save.
+	relationshipassertion.AuthorityRankValidator = relationshipassertionDescAuthorityRank.Validators[0].(func(int) error)
 	// relationshipassertionDescConfidence is the schema descriptor for confidence field.
-	relationshipassertionDescConfidence := relationshipassertionFields[4].Descriptor()
+	relationshipassertionDescConfidence := relationshipassertionFields[5].Descriptor()
 	// relationshipassertion.DefaultConfidence holds the default value on creation for the confidence field.
 	relationshipassertion.DefaultConfidence = relationshipassertionDescConfidence.Default.(float64)
 	// relationshipassertion.ConfidenceValidator is a validator for the "confidence" field. It is called by the builders before save.
@@ -2522,22 +2528,32 @@ func init() {
 			return nil
 		}
 	}()
+	// relationshipassertionDescValueSchemaVersion is the schema descriptor for value_schema_version field.
+	relationshipassertionDescValueSchemaVersion := relationshipassertionFields[9].Descriptor()
+	// relationshipassertion.DefaultValueSchemaVersion holds the default value on creation for the value_schema_version field.
+	relationshipassertion.DefaultValueSchemaVersion = relationshipassertionDescValueSchemaVersion.Default.(int)
+	// relationshipassertion.ValueSchemaVersionValidator is a validator for the "value_schema_version" field. It is called by the builders before save.
+	relationshipassertion.ValueSchemaVersionValidator = relationshipassertionDescValueSchemaVersion.Validators[0].(func(int) error)
 	// relationshipassertionDescExtractorVersion is the schema descriptor for extractor_version field.
-	relationshipassertionDescExtractorVersion := relationshipassertionFields[11].Descriptor()
+	relationshipassertionDescExtractorVersion := relationshipassertionFields[13].Descriptor()
 	// relationshipassertion.DefaultExtractorVersion holds the default value on creation for the extractor_version field.
 	relationshipassertion.DefaultExtractorVersion = relationshipassertionDescExtractorVersion.Default.(string)
+	// relationshipassertionDescReviewDecision is the schema descriptor for review_decision field.
+	relationshipassertionDescReviewDecision := relationshipassertionFields[15].Descriptor()
+	// relationshipassertion.ReviewDecisionValidator is a validator for the "review_decision" field. It is called by the builders before save.
+	relationshipassertion.ReviewDecisionValidator = relationshipassertionDescReviewDecision.Validators[0].(func(string) error)
 	// relationshipassertionDescCitationsJSON is the schema descriptor for citations_json field.
-	relationshipassertionDescCitationsJSON := relationshipassertionFields[12].Descriptor()
+	relationshipassertionDescCitationsJSON := relationshipassertionFields[17].Descriptor()
 	// relationshipassertion.CitationsJSONValidator is a validator for the "citations_json" field. It is called by the builders before save.
 	relationshipassertion.CitationsJSONValidator = relationshipassertionDescCitationsJSON.Validators[0].(func(string) error)
 	// relationshipassertionDescProjectorCompatVersion is the schema descriptor for projector_compat_version field.
-	relationshipassertionDescProjectorCompatVersion := relationshipassertionFields[13].Descriptor()
+	relationshipassertionDescProjectorCompatVersion := relationshipassertionFields[18].Descriptor()
 	// relationshipassertion.DefaultProjectorCompatVersion holds the default value on creation for the projector_compat_version field.
 	relationshipassertion.DefaultProjectorCompatVersion = relationshipassertionDescProjectorCompatVersion.Default.(int)
 	// relationshipassertion.ProjectorCompatVersionValidator is a validator for the "projector_compat_version" field. It is called by the builders before save.
 	relationshipassertion.ProjectorCompatVersionValidator = relationshipassertionDescProjectorCompatVersion.Validators[0].(func(int) error)
 	// relationshipassertionDescSupportingObservationIds is the schema descriptor for supporting_observation_ids field.
-	relationshipassertionDescSupportingObservationIds := relationshipassertionFields[14].Descriptor()
+	relationshipassertionDescSupportingObservationIds := relationshipassertionFields[19].Descriptor()
 	// relationshipassertion.DefaultSupportingObservationIds holds the default value on creation for the supporting_observation_ids field.
 	relationshipassertion.DefaultSupportingObservationIds = relationshipassertionDescSupportingObservationIds.Default.([]string)
 	// relationshipassertionDescID is the schema descriptor for id field.

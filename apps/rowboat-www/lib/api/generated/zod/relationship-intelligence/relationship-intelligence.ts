@@ -3333,8 +3333,98 @@ export const GetRelationship200Response = zod
         contractVersion: zod.string().describe("Read-contract version."),
         detectorVersion: zod.int().describe("Detector version."),
         evidence: zod
-          .record(zod.string(), zod.unknown())
-          .describe("Dimension-keyed winning assertions and evidence references."),
+          .record(
+            zod.string(),
+            zod
+              .strictObject({
+                assertionId: zod.uuid().optional().describe("Winning assertion id."),
+                authority: zod
+                  .enum([
+                    "user_correction",
+                    "source_fact",
+                    "deterministic",
+                    "external_research",
+                    "ai_inference",
+                  ])
+                  .optional()
+                  .describe("Assertion source authority."),
+                authorityRank: zod
+                  .int()
+                  .optional()
+                  .describe("Deterministic ordinal authority rank."),
+                confidence: zod.number().optional().describe("Assertion confidence."),
+                dimension: zod.string().describe("Projected dimension."),
+                evidence: zod
+                  .array(
+                    zod
+                      .strictObject({
+                        contentHash: zod.string().describe("Immutable observation content hash."),
+                        evidencePath: zod.string().describe("Authorized evidence inspection path."),
+                        observationId: zod.uuid().describe("Observation id."),
+                        observedAt: zod.iso
+                          .datetime({ offset: true })
+                          .describe("Source occurrence time."),
+                        source: zod.string().describe("Canonical source."),
+                      })
+                      .describe(
+                        "Immutable evidence supporting one projected relationship dimension.",
+                      ),
+                  )
+                  .describe("Supporting observations."),
+                extractorVersion: zod
+                  .string()
+                  .optional()
+                  .describe("Extractor or deterministic rule version."),
+                fresh: zod.boolean().describe("Whether supporting sources are fresh and complete."),
+                missingReason: zod.string().optional().describe("Why support is missing."),
+                projectorCompatVersion: zod
+                  .int()
+                  .optional()
+                  .describe("Minimum compatible projector version."),
+                reason: zod.string().optional().describe("Evidence-backed explanation."),
+                reviewDecision: zod
+                  .enum(["accepted", "rejected"])
+                  .optional()
+                  .describe("Explicit review decision."),
+                reviewedAt: zod.iso
+                  .datetime({ offset: true })
+                  .nullish()
+                  .describe("Explicit review time."),
+                reviewerId: zod.uuid().optional().describe("Explicit reviewer when present."),
+                status: zod
+                  .enum([
+                    "proposed",
+                    "accepted",
+                    "rejected",
+                    "superseded",
+                    "retracted",
+                    "expired",
+                    "active",
+                  ])
+                  .optional()
+                  .describe("Assertion lifecycle state."),
+                supported: zod
+                  .boolean()
+                  .describe("Whether accessible evidence supports the value."),
+                validFrom: zod.iso
+                  .datetime({ offset: true })
+                  .nullish()
+                  .describe("Assertion validity start."),
+                validTo: zod.iso
+                  .datetime({ offset: true })
+                  .nullish()
+                  .describe("Assertion validity end."),
+                value: zod.string().optional().describe("Typed projected value."),
+                valueSchemaVersion: zod
+                  .int()
+                  .optional()
+                  .describe("Typed dimension schema version."),
+              })
+              .describe(
+                "Winning typed assertion, authority decision, validity, and evidence for one projected dimension.",
+              ),
+          )
+          .describe("Dimension-keyed winning typed assertions and evidence references."),
         freshnessBoundary: zod.iso
           .datetime({ offset: true })
           .nullish()

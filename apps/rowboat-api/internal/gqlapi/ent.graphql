@@ -9154,12 +9154,17 @@ type RelationshipAssertion implements Node {
   dimension: String!
   sourceType: String!
   status: String!
+  authorityRank: Int!
   confidence: Float!
   validFrom: Time!
   validTo: Time
+  valueSchemaVersion: Int!
   retractedAt: Time
   supersedesAssertionID: String
   extractorVersion: String!
+  reviewerID: UUID
+  reviewDecision: String
+  reviewedAt: Time
   citationsJSON: String
   projectorCompatVersion: Int!
   supportingObservationIds: [String!]!
@@ -9258,6 +9263,17 @@ input RelationshipAssertionWhereInput {
   statusEqualFold: String
   statusContainsFold: String
   """
+  authority_rank field predicates
+  """
+  authorityRank: Int
+  authorityRankNEQ: Int
+  authorityRankIn: [Int!]
+  authorityRankNotIn: [Int!]
+  authorityRankGT: Int
+  authorityRankGTE: Int
+  authorityRankLT: Int
+  authorityRankLTE: Int
+  """
   confidence field predicates
   """
   confidence: Float
@@ -9292,6 +9308,17 @@ input RelationshipAssertionWhereInput {
   validToLTE: Time
   validToIsNil: Boolean
   validToNotNil: Boolean
+  """
+  value_schema_version field predicates
+  """
+  valueSchemaVersion: Int
+  valueSchemaVersionNEQ: Int
+  valueSchemaVersionIn: [Int!]
+  valueSchemaVersionNotIn: [Int!]
+  valueSchemaVersionGT: Int
+  valueSchemaVersionGTE: Int
+  valueSchemaVersionLT: Int
+  valueSchemaVersionLTE: Int
   """
   retracted_at field predicates
   """
@@ -9339,6 +9366,50 @@ input RelationshipAssertionWhereInput {
   extractorVersionHasSuffix: String
   extractorVersionEqualFold: String
   extractorVersionContainsFold: String
+  """
+  reviewer_id field predicates
+  """
+  reviewerID: UUID
+  reviewerIDNEQ: UUID
+  reviewerIDIn: [UUID!]
+  reviewerIDNotIn: [UUID!]
+  reviewerIDGT: UUID
+  reviewerIDGTE: UUID
+  reviewerIDLT: UUID
+  reviewerIDLTE: UUID
+  reviewerIDIsNil: Boolean
+  reviewerIDNotNil: Boolean
+  """
+  review_decision field predicates
+  """
+  reviewDecision: String
+  reviewDecisionNEQ: String
+  reviewDecisionIn: [String!]
+  reviewDecisionNotIn: [String!]
+  reviewDecisionGT: String
+  reviewDecisionGTE: String
+  reviewDecisionLT: String
+  reviewDecisionLTE: String
+  reviewDecisionContains: String
+  reviewDecisionHasPrefix: String
+  reviewDecisionHasSuffix: String
+  reviewDecisionIsNil: Boolean
+  reviewDecisionNotNil: Boolean
+  reviewDecisionEqualFold: String
+  reviewDecisionContainsFold: String
+  """
+  reviewed_at field predicates
+  """
+  reviewedAt: Time
+  reviewedAtNEQ: Time
+  reviewedAtIn: [Time!]
+  reviewedAtNotIn: [Time!]
+  reviewedAtGT: Time
+  reviewedAtGTE: Time
+  reviewedAtLT: Time
+  reviewedAtLTE: Time
+  reviewedAtIsNil: Boolean
+  reviewedAtNotNil: Boolean
   """
   citations_json field predicates
   """

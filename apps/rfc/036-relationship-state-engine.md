@@ -154,8 +154,17 @@ The following capabilities exist:
 - encrypted raw observation payloads through the service sealer;
 - assertion precedence for user corrections, source facts, deterministic
   derivations, and AI inferences;
+- versioned typed assertion validation, explicit accepted/proposed/rejected/
+  superseded/retracted/expired lifecycle states, persisted authority rank, and
+  reviewer audit metadata;
+- server-owned assertion admission: authenticated observation callers can only
+  create proposed AI-tier candidates, while accepted source facts come from
+  provider-verified internal adapters and user corrections use the dedicated
+  correction path;
 - deterministic selection and materialized relationship fields;
 - immutable snapshots when projected state changes;
+- explicit projection time, projector compatibility, stable state hashes, a
+  transactional projection outbox, retry/dead-letter handling, and replay CLI;
 - source normalizers for Gmail, Calendar, Slack, and HubSpot;
 - relationship list, create, detail, timeline, changes, evidence, correction,
   source-health, recommendation-approval, and recommendation-rejection APIs;
@@ -190,18 +199,10 @@ The current implementation is not production-complete:
   human reconciliation workflow;
 - the four source adapters are normalizers, not complete production ingestion
   pipelines;
-- assertions have no explicit `valid_to`, retraction status, review status,
-  extractor version, or projector compatibility version;
-- a high-precedence assertion can remain dominant indefinitely because
-  temporal expiry and revocation are incomplete;
 - risks and milestones are stored as arrays but projected from one winning
   assertion each;
 - commitments, risks, milestones, and participant changes are not yet fully
   modeled as independent temporal objects;
-- projection occurs synchronously inside ingestion and has no outbox,
-  asynchronous rebuild worker, replay command, or dead-letter path;
-- projector time and version are not explicit inputs, which prevents strong
-  deterministic replay guarantees;
 - source status is updated on successful observations but does not yet model
   cursor, watermark, poll time, expected cadence, lag, consent scope, or
   disconnect reason;
@@ -1415,6 +1416,18 @@ Work packages:
 | R1.7 | Source completeness and freshness projection                                           | API         | Stale-source scenarios       |
 | R1.8 | Relationship-specific metrics, traces, dashboards, and alerts                          | API + SRE   | Staging SLO dashboard        |
 
+**Implementation checkpoint (2026-08-26):** R1.1 is landed. Assertion values
+are validated against a versioned dimension contract before acceptance.
+Authority rank is deterministic and persisted. Lifecycle states and reviewer
+metadata are explicit. Untrusted observation assertions cannot self-assign
+canonical authority. Retraction and supersession preserve historical replay
+through their validity boundaries. The additive migration deliberately keeps
+legacy `active` rows and the database default until pre-R1.1 projectors have
+drained. New projectors read both statuses while new writers emit `accepted`.
+The Phase 1 exit gate remains open until the
+full corpus, operational, encryption, source-completeness, and seven-day staging
+proofs pass together.
+
 Exit gate:
 
 - deterministic replay passes for the full corpus;
@@ -1743,6 +1756,10 @@ Every work package adds links here:
 | Adapter boundary        | `apps/rowboat-api/internal/revenue/relationship_adapters.go`               |
 | API handlers            | `apps/rowboat-api/internal/revenue/handler.go`                             |
 | Current API tests       | `apps/rowboat-api/internal/revenue/relationship_state_test.go`             |
+| Assertion contract      | `apps/rowboat-api/internal/revenue/relationship_assertion_contract.go`     |
+| Assertion contract tests | `apps/rowboat-api/internal/revenue/relationship_assertion_contract_test.go` |
+| Projection lifecycle tests | `apps/rowboat-api/internal/revenue/relationship_projection_test.go`     |
+| R1.1 migration          | `apps/rowboat-api/migrations/postgres/20260826090000_relationship_assertion_authority.sql` |
 | Web client              | `apps/rowboat-www/components/revenue/relationships-view.tsx`               |
 | Desktop client          | `apps/x/apps/renderer/src/components/relationships-view.tsx`               |
 | Desktop transport       | `apps/x/packages/core/src/relationships/client.ts`                         |

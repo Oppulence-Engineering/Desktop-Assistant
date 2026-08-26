@@ -956,6 +956,7 @@ type ComplexityRoot struct {
 	}
 
 	RelationshipAssertion struct {
+		AuthorityRank            func(childComplexity int) int
 		CitationsJSON            func(childComplexity int) int
 		Confidence               func(childComplexity int) int
 		CreatedAt                func(childComplexity int) int
@@ -966,6 +967,9 @@ type ComplexityRoot struct {
 		ProjectorCompatVersion   func(childComplexity int) int
 		Relationship             func(childComplexity int) int
 		RetractedAt              func(childComplexity int) int
+		ReviewDecision           func(childComplexity int) int
+		ReviewedAt               func(childComplexity int) int
+		ReviewerID               func(childComplexity int) int
 		SourceType               func(childComplexity int) int
 		Status                   func(childComplexity int) int
 		SupersedesAssertionID    func(childComplexity int) int
@@ -974,6 +978,7 @@ type ComplexityRoot struct {
 		User                     func(childComplexity int) int
 		ValidFrom                func(childComplexity int) int
 		ValidTo                  func(childComplexity int) int
+		ValueSchemaVersion       func(childComplexity int) int
 		Workspace                func(childComplexity int) int
 	}
 
@@ -6030,6 +6035,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Relationship.Workspace(childComplexity), true
 
+	case "RelationshipAssertion.authorityRank":
+		if e.ComplexityRoot.RelationshipAssertion.AuthorityRank == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RelationshipAssertion.AuthorityRank(childComplexity), true
 	case "RelationshipAssertion.citationsJSON":
 		if e.ComplexityRoot.RelationshipAssertion.CitationsJSON == nil {
 			break
@@ -6090,6 +6101,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RelationshipAssertion.RetractedAt(childComplexity), true
+	case "RelationshipAssertion.reviewDecision":
+		if e.ComplexityRoot.RelationshipAssertion.ReviewDecision == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RelationshipAssertion.ReviewDecision(childComplexity), true
+	case "RelationshipAssertion.reviewedAt":
+		if e.ComplexityRoot.RelationshipAssertion.ReviewedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RelationshipAssertion.ReviewedAt(childComplexity), true
+	case "RelationshipAssertion.reviewerID":
+		if e.ComplexityRoot.RelationshipAssertion.ReviewerID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RelationshipAssertion.ReviewerID(childComplexity), true
 	case "RelationshipAssertion.sourceType":
 		if e.ComplexityRoot.RelationshipAssertion.SourceType == nil {
 			break
@@ -6138,6 +6167,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RelationshipAssertion.ValidTo(childComplexity), true
+	case "RelationshipAssertion.valueSchemaVersion":
+		if e.ComplexityRoot.RelationshipAssertion.ValueSchemaVersion == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RelationshipAssertion.ValueSchemaVersion(childComplexity), true
 	case "RelationshipAssertion.workspace":
 		if e.ComplexityRoot.RelationshipAssertion.Workspace == nil {
 			break
@@ -10881,18 +10916,28 @@ func (ec *executionContext) childFields_RelationshipAssertion(ctx context.Contex
 		return ec.fieldContext_RelationshipAssertion_sourceType(ctx, field)
 	case "status":
 		return ec.fieldContext_RelationshipAssertion_status(ctx, field)
+	case "authorityRank":
+		return ec.fieldContext_RelationshipAssertion_authorityRank(ctx, field)
 	case "confidence":
 		return ec.fieldContext_RelationshipAssertion_confidence(ctx, field)
 	case "validFrom":
 		return ec.fieldContext_RelationshipAssertion_validFrom(ctx, field)
 	case "validTo":
 		return ec.fieldContext_RelationshipAssertion_validTo(ctx, field)
+	case "valueSchemaVersion":
+		return ec.fieldContext_RelationshipAssertion_valueSchemaVersion(ctx, field)
 	case "retractedAt":
 		return ec.fieldContext_RelationshipAssertion_retractedAt(ctx, field)
 	case "supersedesAssertionID":
 		return ec.fieldContext_RelationshipAssertion_supersedesAssertionID(ctx, field)
 	case "extractorVersion":
 		return ec.fieldContext_RelationshipAssertion_extractorVersion(ctx, field)
+	case "reviewerID":
+		return ec.fieldContext_RelationshipAssertion_reviewerID(ctx, field)
+	case "reviewDecision":
+		return ec.fieldContext_RelationshipAssertion_reviewDecision(ctx, field)
+	case "reviewedAt":
+		return ec.fieldContext_RelationshipAssertion_reviewedAt(ctx, field)
 	case "citationsJSON":
 		return ec.fieldContext_RelationshipAssertion_citationsJSON(ctx, field)
 	case "projectorCompatVersion":
@@ -31264,6 +31309,29 @@ func (ec *executionContext) fieldContext_RelationshipAssertion_status(_ context.
 	return graphql.NewScalarFieldContext("RelationshipAssertion", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _RelationshipAssertion_authorityRank(ctx context.Context, field graphql.CollectedField, obj *ent.RelationshipAssertion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RelationshipAssertion_authorityRank(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.AuthorityRank, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RelationshipAssertion_authorityRank(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RelationshipAssertion", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
 func (ec *executionContext) _RelationshipAssertion_confidence(ctx context.Context, field graphql.CollectedField, obj *ent.RelationshipAssertion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -31333,6 +31401,29 @@ func (ec *executionContext) fieldContext_RelationshipAssertion_validTo(_ context
 	return graphql.NewScalarFieldContext("RelationshipAssertion", field, false, false, errors.New("field of type Time does not have child fields"))
 }
 
+func (ec *executionContext) _RelationshipAssertion_valueSchemaVersion(ctx context.Context, field graphql.CollectedField, obj *ent.RelationshipAssertion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RelationshipAssertion_valueSchemaVersion(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ValueSchemaVersion, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RelationshipAssertion_valueSchemaVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RelationshipAssertion", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
 func (ec *executionContext) _RelationshipAssertion_retractedAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelationshipAssertion) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -31400,6 +31491,75 @@ func (ec *executionContext) _RelationshipAssertion_extractorVersion(ctx context.
 }
 func (ec *executionContext) fieldContext_RelationshipAssertion_extractorVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("RelationshipAssertion", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _RelationshipAssertion_reviewerID(ctx context.Context, field graphql.CollectedField, obj *ent.RelationshipAssertion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RelationshipAssertion_reviewerID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ReviewerID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *uuid.UUID) graphql.Marshaler {
+			return ec.marshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_RelationshipAssertion_reviewerID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RelationshipAssertion", field, false, false, errors.New("field of type UUID does not have child fields"))
+}
+
+func (ec *executionContext) _RelationshipAssertion_reviewDecision(ctx context.Context, field graphql.CollectedField, obj *ent.RelationshipAssertion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RelationshipAssertion_reviewDecision(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ReviewDecision, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_RelationshipAssertion_reviewDecision(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RelationshipAssertion", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _RelationshipAssertion_reviewedAt(ctx context.Context, field graphql.CollectedField, obj *ent.RelationshipAssertion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RelationshipAssertion_reviewedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ReviewedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_RelationshipAssertion_reviewedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RelationshipAssertion", field, false, false, errors.New("field of type Time does not have child fields"))
 }
 
 func (ec *executionContext) _RelationshipAssertion_citationsJSON(ctx context.Context, field graphql.CollectedField, obj *ent.RelationshipAssertion) (ret graphql.Marshaler) {
@@ -85987,7 +86147,7 @@ func (ec *executionContext) unmarshalInputRelationshipAssertionWhereInput(ctx co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "dimension", "dimensionNEQ", "dimensionIn", "dimensionNotIn", "dimensionGT", "dimensionGTE", "dimensionLT", "dimensionLTE", "dimensionContains", "dimensionHasPrefix", "dimensionHasSuffix", "dimensionEqualFold", "dimensionContainsFold", "sourceType", "sourceTypeNEQ", "sourceTypeIn", "sourceTypeNotIn", "sourceTypeGT", "sourceTypeGTE", "sourceTypeLT", "sourceTypeLTE", "sourceTypeContains", "sourceTypeHasPrefix", "sourceTypeHasSuffix", "sourceTypeEqualFold", "sourceTypeContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "confidence", "confidenceNEQ", "confidenceIn", "confidenceNotIn", "confidenceGT", "confidenceGTE", "confidenceLT", "confidenceLTE", "validFrom", "validFromNEQ", "validFromIn", "validFromNotIn", "validFromGT", "validFromGTE", "validFromLT", "validFromLTE", "validTo", "validToNEQ", "validToIn", "validToNotIn", "validToGT", "validToGTE", "validToLT", "validToLTE", "validToIsNil", "validToNotNil", "retractedAt", "retractedAtNEQ", "retractedAtIn", "retractedAtNotIn", "retractedAtGT", "retractedAtGTE", "retractedAtLT", "retractedAtLTE", "retractedAtIsNil", "retractedAtNotNil", "supersedesAssertionID", "supersedesAssertionIDNEQ", "supersedesAssertionIDIn", "supersedesAssertionIDNotIn", "supersedesAssertionIDGT", "supersedesAssertionIDGTE", "supersedesAssertionIDLT", "supersedesAssertionIDLTE", "supersedesAssertionIDContains", "supersedesAssertionIDHasPrefix", "supersedesAssertionIDHasSuffix", "supersedesAssertionIDIsNil", "supersedesAssertionIDNotNil", "supersedesAssertionIDEqualFold", "supersedesAssertionIDContainsFold", "extractorVersion", "extractorVersionNEQ", "extractorVersionIn", "extractorVersionNotIn", "extractorVersionGT", "extractorVersionGTE", "extractorVersionLT", "extractorVersionLTE", "extractorVersionContains", "extractorVersionHasPrefix", "extractorVersionHasSuffix", "extractorVersionEqualFold", "extractorVersionContainsFold", "citationsJSON", "citationsJSONNEQ", "citationsJSONIn", "citationsJSONNotIn", "citationsJSONGT", "citationsJSONGTE", "citationsJSONLT", "citationsJSONLTE", "citationsJSONContains", "citationsJSONHasPrefix", "citationsJSONHasSuffix", "citationsJSONIsNil", "citationsJSONNotNil", "citationsJSONEqualFold", "citationsJSONContainsFold", "projectorCompatVersion", "projectorCompatVersionNEQ", "projectorCompatVersionIn", "projectorCompatVersionNotIn", "projectorCompatVersionGT", "projectorCompatVersionGTE", "projectorCompatVersionLT", "projectorCompatVersionLTE", "hasWorkspace", "hasWorkspaceWith", "hasRelationship", "hasRelationshipWith", "hasObservation", "hasObservationWith", "hasUser", "hasUserWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "dimension", "dimensionNEQ", "dimensionIn", "dimensionNotIn", "dimensionGT", "dimensionGTE", "dimensionLT", "dimensionLTE", "dimensionContains", "dimensionHasPrefix", "dimensionHasSuffix", "dimensionEqualFold", "dimensionContainsFold", "sourceType", "sourceTypeNEQ", "sourceTypeIn", "sourceTypeNotIn", "sourceTypeGT", "sourceTypeGTE", "sourceTypeLT", "sourceTypeLTE", "sourceTypeContains", "sourceTypeHasPrefix", "sourceTypeHasSuffix", "sourceTypeEqualFold", "sourceTypeContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "authorityRank", "authorityRankNEQ", "authorityRankIn", "authorityRankNotIn", "authorityRankGT", "authorityRankGTE", "authorityRankLT", "authorityRankLTE", "confidence", "confidenceNEQ", "confidenceIn", "confidenceNotIn", "confidenceGT", "confidenceGTE", "confidenceLT", "confidenceLTE", "validFrom", "validFromNEQ", "validFromIn", "validFromNotIn", "validFromGT", "validFromGTE", "validFromLT", "validFromLTE", "validTo", "validToNEQ", "validToIn", "validToNotIn", "validToGT", "validToGTE", "validToLT", "validToLTE", "validToIsNil", "validToNotNil", "valueSchemaVersion", "valueSchemaVersionNEQ", "valueSchemaVersionIn", "valueSchemaVersionNotIn", "valueSchemaVersionGT", "valueSchemaVersionGTE", "valueSchemaVersionLT", "valueSchemaVersionLTE", "retractedAt", "retractedAtNEQ", "retractedAtIn", "retractedAtNotIn", "retractedAtGT", "retractedAtGTE", "retractedAtLT", "retractedAtLTE", "retractedAtIsNil", "retractedAtNotNil", "supersedesAssertionID", "supersedesAssertionIDNEQ", "supersedesAssertionIDIn", "supersedesAssertionIDNotIn", "supersedesAssertionIDGT", "supersedesAssertionIDGTE", "supersedesAssertionIDLT", "supersedesAssertionIDLTE", "supersedesAssertionIDContains", "supersedesAssertionIDHasPrefix", "supersedesAssertionIDHasSuffix", "supersedesAssertionIDIsNil", "supersedesAssertionIDNotNil", "supersedesAssertionIDEqualFold", "supersedesAssertionIDContainsFold", "extractorVersion", "extractorVersionNEQ", "extractorVersionIn", "extractorVersionNotIn", "extractorVersionGT", "extractorVersionGTE", "extractorVersionLT", "extractorVersionLTE", "extractorVersionContains", "extractorVersionHasPrefix", "extractorVersionHasSuffix", "extractorVersionEqualFold", "extractorVersionContainsFold", "reviewerID", "reviewerIDNEQ", "reviewerIDIn", "reviewerIDNotIn", "reviewerIDGT", "reviewerIDGTE", "reviewerIDLT", "reviewerIDLTE", "reviewerIDIsNil", "reviewerIDNotNil", "reviewDecision", "reviewDecisionNEQ", "reviewDecisionIn", "reviewDecisionNotIn", "reviewDecisionGT", "reviewDecisionGTE", "reviewDecisionLT", "reviewDecisionLTE", "reviewDecisionContains", "reviewDecisionHasPrefix", "reviewDecisionHasSuffix", "reviewDecisionIsNil", "reviewDecisionNotNil", "reviewDecisionEqualFold", "reviewDecisionContainsFold", "reviewedAt", "reviewedAtNEQ", "reviewedAtIn", "reviewedAtNotIn", "reviewedAtGT", "reviewedAtGTE", "reviewedAtLT", "reviewedAtLTE", "reviewedAtIsNil", "reviewedAtNotNil", "citationsJSON", "citationsJSONNEQ", "citationsJSONIn", "citationsJSONNotIn", "citationsJSONGT", "citationsJSONGTE", "citationsJSONLT", "citationsJSONLTE", "citationsJSONContains", "citationsJSONHasPrefix", "citationsJSONHasSuffix", "citationsJSONIsNil", "citationsJSONNotNil", "citationsJSONEqualFold", "citationsJSONContainsFold", "projectorCompatVersion", "projectorCompatVersionNEQ", "projectorCompatVersionIn", "projectorCompatVersionNotIn", "projectorCompatVersionGT", "projectorCompatVersionGTE", "projectorCompatVersionLT", "projectorCompatVersionLTE", "hasWorkspace", "hasWorkspaceWith", "hasRelationship", "hasRelationshipWith", "hasObservation", "hasObservationWith", "hasUser", "hasUserWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -86456,6 +86616,62 @@ func (ec *executionContext) unmarshalInputRelationshipAssertionWhereInput(ctx co
 				return it, err
 			}
 			it.StatusContainsFold = data
+		case "authorityRank":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authorityRank"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AuthorityRank = data
+		case "authorityRankNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authorityRankNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AuthorityRankNEQ = data
+		case "authorityRankIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authorityRankIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AuthorityRankIn = data
+		case "authorityRankNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authorityRankNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AuthorityRankNotIn = data
+		case "authorityRankGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authorityRankGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AuthorityRankGT = data
+		case "authorityRankGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authorityRankGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AuthorityRankGTE = data
+		case "authorityRankLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authorityRankLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AuthorityRankLT = data
+		case "authorityRankLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authorityRankLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AuthorityRankLTE = data
 		case "confidence":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("confidence"))
 			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
@@ -86638,6 +86854,62 @@ func (ec *executionContext) unmarshalInputRelationshipAssertionWhereInput(ctx co
 				return it, err
 			}
 			it.ValidToNotNil = data
+		case "valueSchemaVersion":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("valueSchemaVersion"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ValueSchemaVersion = data
+		case "valueSchemaVersionNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("valueSchemaVersionNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ValueSchemaVersionNEQ = data
+		case "valueSchemaVersionIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("valueSchemaVersionIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ValueSchemaVersionIn = data
+		case "valueSchemaVersionNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("valueSchemaVersionNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ValueSchemaVersionNotIn = data
+		case "valueSchemaVersionGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("valueSchemaVersionGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ValueSchemaVersionGT = data
+		case "valueSchemaVersionGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("valueSchemaVersionGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ValueSchemaVersionGTE = data
+		case "valueSchemaVersionLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("valueSchemaVersionLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ValueSchemaVersionLT = data
+		case "valueSchemaVersionLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("valueSchemaVersionLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ValueSchemaVersionLTE = data
 		case "retractedAt":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("retractedAt"))
 			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
@@ -86904,6 +87176,251 @@ func (ec *executionContext) unmarshalInputRelationshipAssertionWhereInput(ctx co
 				return it, err
 			}
 			it.ExtractorVersionContainsFold = data
+		case "reviewerID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewerID"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewerID = data
+		case "reviewerIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewerIDNEQ"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewerIDNEQ = data
+		case "reviewerIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewerIDIn"))
+			data, err := ec.unmarshalOUUID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewerIDIn = data
+		case "reviewerIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewerIDNotIn"))
+			data, err := ec.unmarshalOUUID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewerIDNotIn = data
+		case "reviewerIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewerIDGT"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewerIDGT = data
+		case "reviewerIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewerIDGTE"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewerIDGTE = data
+		case "reviewerIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewerIDLT"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewerIDLT = data
+		case "reviewerIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewerIDLTE"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewerIDLTE = data
+		case "reviewerIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewerIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewerIDIsNil = data
+		case "reviewerIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewerIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewerIDNotNil = data
+		case "reviewDecision":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecision"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecision = data
+		case "reviewDecisionNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecisionNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecisionNEQ = data
+		case "reviewDecisionIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecisionIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecisionIn = data
+		case "reviewDecisionNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecisionNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecisionNotIn = data
+		case "reviewDecisionGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecisionGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecisionGT = data
+		case "reviewDecisionGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecisionGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecisionGTE = data
+		case "reviewDecisionLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecisionLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecisionLT = data
+		case "reviewDecisionLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecisionLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecisionLTE = data
+		case "reviewDecisionContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecisionContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecisionContains = data
+		case "reviewDecisionHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecisionHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecisionHasPrefix = data
+		case "reviewDecisionHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecisionHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecisionHasSuffix = data
+		case "reviewDecisionIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecisionIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecisionIsNil = data
+		case "reviewDecisionNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecisionNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecisionNotNil = data
+		case "reviewDecisionEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecisionEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecisionEqualFold = data
+		case "reviewDecisionContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewDecisionContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewDecisionContainsFold = data
+		case "reviewedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewedAt = data
+		case "reviewedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewedAtNEQ = data
+		case "reviewedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewedAtIn = data
+		case "reviewedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewedAtNotIn = data
+		case "reviewedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewedAtGT = data
+		case "reviewedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewedAtGTE = data
+		case "reviewedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewedAtLT = data
+		case "reviewedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewedAtLTE = data
+		case "reviewedAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewedAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewedAtIsNil = data
+		case "reviewedAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("reviewedAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ReviewedAtNotNil = data
 		case "citationsJSON":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("citationsJSON"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -123252,6 +123769,11 @@ func (ec *executionContext) _RelationshipAssertion(ctx context.Context, sel ast.
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "authorityRank":
+			out.Values[i] = ec._RelationshipAssertion_authorityRank(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "confidence":
 			out.Values[i] = ec._RelationshipAssertion_confidence(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -123264,6 +123786,11 @@ func (ec *executionContext) _RelationshipAssertion(ctx context.Context, sel ast.
 			}
 		case "validTo":
 			out.Values[i] = ec._RelationshipAssertion_validTo(ctx, field, obj)
+		case "valueSchemaVersion":
+			out.Values[i] = ec._RelationshipAssertion_valueSchemaVersion(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "retractedAt":
 			out.Values[i] = ec._RelationshipAssertion_retractedAt(ctx, field, obj)
 		case "supersedesAssertionID":
@@ -123273,6 +123800,12 @@ func (ec *executionContext) _RelationshipAssertion(ctx context.Context, sel ast.
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "reviewerID":
+			out.Values[i] = ec._RelationshipAssertion_reviewerID(ctx, field, obj)
+		case "reviewDecision":
+			out.Values[i] = ec._RelationshipAssertion_reviewDecision(ctx, field, obj)
+		case "reviewedAt":
+			out.Values[i] = ec._RelationshipAssertion_reviewedAt(ctx, field, obj)
 		case "citationsJSON":
 			out.Values[i] = ec._RelationshipAssertion_citationsJSON(ctx, field, obj)
 		case "projectorCompatVersion":

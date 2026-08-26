@@ -498,8 +498,16 @@ export interface MissionControlDimensionEvidence {
   missingReason?: string;
   assertionId?: string;
   authority?: string;
+  authorityRank?: number;
+  status?: "proposed" | "accepted" | "rejected" | "superseded" | "retracted" | "expired" | "active";
   confidence?: number;
   reason?: string;
+  valueSchemaVersion?: number;
+  extractorVersion?: string;
+  projectorCompatVersion?: number;
+  reviewerId?: string;
+  reviewDecision?: "accepted" | "rejected";
+  reviewedAt?: string;
   validFrom?: string;
   validTo?: string;
   fresh: boolean;

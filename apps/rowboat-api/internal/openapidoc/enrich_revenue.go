@@ -210,11 +210,32 @@ func addRevenueSchemas(schemas obj) {
 		"createdAt": stringSchema("Created time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}), "updatedAt": stringSchema("Updated time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
 	}, "id", "version", "relationshipId", "relationshipName", "reasonCode", "explanation", "triggeringObjectRef", "evidenceRefs", "urgencyBand", "rankScore", "rankFactors", "sourceRequirements", "status", "detectorVersion", "projectorVersion", "relationshipStateVersion", "createdAt", "updatedAt")
 
+	schemas["MissionControlEvidenceReference"] = objectSchema("Immutable evidence supporting one projected relationship dimension.", obj{
+		"observationId": uuidSchema("Observation id.", "6b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"source":        stringSchema("Canonical source.", "hubspot"),
+		"observedAt":    stringSchema("Source occurrence time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
+		"evidencePath":  stringSchema("Authorized evidence inspection path.", "/v1/relationships/9c8dfa9b-a7b2-46ea-982c-622a914c00e5/evidence/6b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"contentHash":   stringSchema("Immutable observation content hash.", "sha256:ab12"),
+	}, "observationId", "source", "observedAt", "evidencePath", "contentHash")
+
+	schemas["MissionControlDimensionEvidence"] = objectSchema("Winning typed assertion, authority decision, validity, and evidence for one projected dimension.", obj{
+		"dimension": stringSchema("Projected dimension.", "health"), "value": stringSchema("Typed projected value.", "needs_attention"),
+		"supported": boolSchema("Whether accessible evidence supports the value.", true), "missingReason": stringSchema("Why support is missing.", "No accepted assertion is valid at this boundary."),
+		"assertionId": uuidSchema("Winning assertion id.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "authority": stringEnum("Assertion source authority.", "source_fact", "user_correction", "source_fact", "deterministic", "external_research", "ai_inference"),
+		"authorityRank": intSchema("Deterministic ordinal authority rank.", 4), "status": stringEnum("Assertion lifecycle state.", "accepted", "proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active"),
+		"confidence": numberSchema("Assertion confidence.", 1), "reason": stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won."),
+		"valueSchemaVersion": intSchema("Typed dimension schema version.", 1), "extractorVersion": stringSchema("Extractor or deterministic rule version.", "hubspot-company-v1"),
+		"projectorCompatVersion": intSchema("Minimum compatible projector version.", 1), "reviewerId": uuidSchema("Explicit reviewer when present.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"reviewDecision": stringEnum("Explicit review decision.", "accepted", "accepted", "rejected"), "reviewedAt": stringSchema("Explicit review time.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}, nullable()),
+		"validFrom": stringSchema("Assertion validity start.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}, nullable()), "validTo": stringSchema("Assertion validity end.", "2026-08-31T14:00:00Z", obj{"format": "date-time"}, nullable()),
+		"fresh": boolSchema("Whether supporting sources are fresh and complete.", true), "evidence": arraySchema("Supporting observations.", ref("MissionControlEvidenceReference")),
+	}, "dimension", "supported", "fresh", "evidence")
+
 	schemas["MissionControlReadModel"] = objectSchema("One server-owned, version-consistent answer to state, change, evidence, action, completeness, and control.", obj{
-		"contractVersion": stringSchema("Read-contract version.", "tfa-2026-07-31"), "aggregateHash": stringSchema("Stable hash of every material answer in this aggregate.", "sha256:cd34"), "asOf": stringSchema("Explicit response boundary.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
+		"contractVersion": stringSchema("Read-contract version.", "tfa-r1.1-2026-08-26"), "aggregateHash": stringSchema("Stable hash of every material answer in this aggregate.", "sha256:cd34"), "asOf": stringSchema("Explicit response boundary.", "2026-07-31T14:00:00Z", obj{"format": "date-time"}),
 		"stateVersion": intSchema("Relationship state version.", 4), "stateHash": stringSchema("Stable state hash.", "sha256:ab12"), "projectorVersion": intSchema("Projector version.", 1), "detectorVersion": intSchema("Detector version.", 1),
 		"freshnessBoundary": stringSchema("Earliest source freshness boundary.", "2026-07-31T14:30:00Z", obj{"format": "date-time"}, nullable()), "previousReviewedStateVersion": intSchema("Last acknowledged version.", 3), "changedSinceReview": boolSchema("Whether material state changed.", true),
-		"changes": arraySchema("Dimension-level changes.", freeFormSchema("Mission Control change.")), "evidence": freeFormSchema("Dimension-keyed winning assertions and evidence references."),
+		"changes": arraySchema("Dimension-level changes.", freeFormSchema("Mission Control change.")), "evidence": obj{"type": "object", "description": "Dimension-keyed winning typed assertions and evidence references.", "additionalProperties": ref("MissionControlDimensionEvidence")},
 		"completeness": freeFormSchema("Source coverage, missing dimensions, ambiguity, and external-action safety."), "activeRecommendation": freeFormSchema("Active revision-bound recommendation and factors."),
 		"pending": freeFormSchema("Pending correction, identity, approval, execution, and reconciliation counts."), "capabilities": freeFormSchema("Authorized operation links."),
 	}, "contractVersion", "aggregateHash", "asOf", "stateVersion", "stateHash", "projectorVersion", "detectorVersion", "previousReviewedStateVersion", "changedSinceReview", "changes", "evidence", "completeness", "pending", "capabilities")
@@ -517,6 +538,23 @@ func addRevenueSchemas(schemas obj) {
 		"sourceEventId": stringSchema("Source event id used for deduplication.", "msg_01"),
 		"occurredAt":    stringSchema("When the outcome occurred.", "2026-07-12T14:00:00Z", obj{"format": "date-time"}),
 	}, "id", "kind", "source", "sourceEventId", "occurredAt")
+}
+
+// restoreRevenueSchemaOverrides runs after the generic Ent field documentation
+// overlay. Runtime schemas may reuse names such as status and reason with
+// domain-specific semantics, so their contract must win over entity defaults.
+func restoreRevenueSchemaOverrides(schemas obj) {
+	evidence := asObj(schemas["MissionControlDimensionEvidence"])
+	if evidence == nil {
+		return
+	}
+	properties := asObj(evidence["properties"])
+	properties["reason"] = stringSchema("Evidence-backed explanation.", "CRM deal stage changed to closed won.")
+	properties["status"] = stringEnum(
+		"Assertion lifecycle state.",
+		"accepted",
+		"proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active",
+	)
 }
 
 func addRevenuePaths(paths obj) {

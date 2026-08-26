@@ -1240,14 +1240,19 @@ var schemaGraph = func() *sqlgraph.Schema {
 			relationshipassertion.FieldValue:                    {Type: field.TypeString, Column: relationshipassertion.FieldValue},
 			relationshipassertion.FieldSourceType:               {Type: field.TypeString, Column: relationshipassertion.FieldSourceType},
 			relationshipassertion.FieldStatus:                   {Type: field.TypeString, Column: relationshipassertion.FieldStatus},
+			relationshipassertion.FieldAuthorityRank:            {Type: field.TypeInt, Column: relationshipassertion.FieldAuthorityRank},
 			relationshipassertion.FieldConfidence:               {Type: field.TypeFloat64, Column: relationshipassertion.FieldConfidence},
 			relationshipassertion.FieldReason:                   {Type: field.TypeString, Column: relationshipassertion.FieldReason},
 			relationshipassertion.FieldValidFrom:                {Type: field.TypeTime, Column: relationshipassertion.FieldValidFrom},
 			relationshipassertion.FieldValidTo:                  {Type: field.TypeTime, Column: relationshipassertion.FieldValidTo},
+			relationshipassertion.FieldValueSchemaVersion:       {Type: field.TypeInt, Column: relationshipassertion.FieldValueSchemaVersion},
 			relationshipassertion.FieldRetractedAt:              {Type: field.TypeTime, Column: relationshipassertion.FieldRetractedAt},
 			relationshipassertion.FieldRetractionReason:         {Type: field.TypeString, Column: relationshipassertion.FieldRetractionReason},
 			relationshipassertion.FieldSupersedesAssertionID:    {Type: field.TypeString, Column: relationshipassertion.FieldSupersedesAssertionID},
 			relationshipassertion.FieldExtractorVersion:         {Type: field.TypeString, Column: relationshipassertion.FieldExtractorVersion},
+			relationshipassertion.FieldReviewerID:               {Type: field.TypeUUID, Column: relationshipassertion.FieldReviewerID},
+			relationshipassertion.FieldReviewDecision:           {Type: field.TypeString, Column: relationshipassertion.FieldReviewDecision},
+			relationshipassertion.FieldReviewedAt:               {Type: field.TypeTime, Column: relationshipassertion.FieldReviewedAt},
 			relationshipassertion.FieldCitationsJSON:            {Type: field.TypeString, Column: relationshipassertion.FieldCitationsJSON},
 			relationshipassertion.FieldProjectorCompatVersion:   {Type: field.TypeInt, Column: relationshipassertion.FieldProjectorCompatVersion},
 			relationshipassertion.FieldSupportingObservationIds: {Type: field.TypeJSON, Column: relationshipassertion.FieldSupportingObservationIds},
@@ -11876,6 +11881,11 @@ func (f *RelationshipAssertionFilter) WhereStatus(p entql.StringP) {
 	f.Where(p.Field(relationshipassertion.FieldStatus))
 }
 
+// WhereAuthorityRank applies the entql int predicate on the authority_rank field.
+func (f *RelationshipAssertionFilter) WhereAuthorityRank(p entql.IntP) {
+	f.Where(p.Field(relationshipassertion.FieldAuthorityRank))
+}
+
 // WhereConfidence applies the entql float64 predicate on the confidence field.
 func (f *RelationshipAssertionFilter) WhereConfidence(p entql.Float64P) {
 	f.Where(p.Field(relationshipassertion.FieldConfidence))
@@ -11896,6 +11906,11 @@ func (f *RelationshipAssertionFilter) WhereValidTo(p entql.TimeP) {
 	f.Where(p.Field(relationshipassertion.FieldValidTo))
 }
 
+// WhereValueSchemaVersion applies the entql int predicate on the value_schema_version field.
+func (f *RelationshipAssertionFilter) WhereValueSchemaVersion(p entql.IntP) {
+	f.Where(p.Field(relationshipassertion.FieldValueSchemaVersion))
+}
+
 // WhereRetractedAt applies the entql time.Time predicate on the retracted_at field.
 func (f *RelationshipAssertionFilter) WhereRetractedAt(p entql.TimeP) {
 	f.Where(p.Field(relationshipassertion.FieldRetractedAt))
@@ -11914,6 +11929,21 @@ func (f *RelationshipAssertionFilter) WhereSupersedesAssertionID(p entql.StringP
 // WhereExtractorVersion applies the entql string predicate on the extractor_version field.
 func (f *RelationshipAssertionFilter) WhereExtractorVersion(p entql.StringP) {
 	f.Where(p.Field(relationshipassertion.FieldExtractorVersion))
+}
+
+// WhereReviewerID applies the entql [16]byte predicate on the reviewer_id field.
+func (f *RelationshipAssertionFilter) WhereReviewerID(p entql.ValueP) {
+	f.Where(p.Field(relationshipassertion.FieldReviewerID))
+}
+
+// WhereReviewDecision applies the entql string predicate on the review_decision field.
+func (f *RelationshipAssertionFilter) WhereReviewDecision(p entql.StringP) {
+	f.Where(p.Field(relationshipassertion.FieldReviewDecision))
+}
+
+// WhereReviewedAt applies the entql time.Time predicate on the reviewed_at field.
+func (f *RelationshipAssertionFilter) WhereReviewedAt(p entql.TimeP) {
+	f.Where(p.Field(relationshipassertion.FieldReviewedAt))
 }
 
 // WhereCitationsJSON applies the entql string predicate on the citations_json field.

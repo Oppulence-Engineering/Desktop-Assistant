@@ -607,7 +607,7 @@ func (s *Service) ReceiveMutualActionPlanResponse(
 	if !decision.Allowed {
 		return "", ErrNotFound
 	}
-	results, err := s.IngestRelationshipObservations(uctx, u, []RelationshipObservationInput{{
+	results, err := s.ingestTrustedRelationshipObservations(uctx, u, []RelationshipObservationInput{{
 		RelationshipID: rel.ID, Source: "browser",
 		ExternalID: "plan-response:" + input.ResponseID, SourceVersion: "1",
 		EventType: "mutual_action_plan_response_received", OccurredAt: s.now(), ReceivedAt: s.now(),

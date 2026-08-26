@@ -60,7 +60,9 @@ type RelationshipAssertionInput struct {
 	ID                     uuid.UUID  `json:"-"`
 	Dimension              string     `json:"dimension"`
 	Value                  string     `json:"value"`
+	ValueSchemaVersion     int        `json:"valueSchemaVersion,omitempty"`
 	SourceType             string     `json:"sourceType"`
+	AuthorityRank          int        `json:"-"`
 	Confidence             float64    `json:"confidence"`
 	Reason                 string     `json:"reason"`
 	ValidFrom              time.Time  `json:"validFrom"`
@@ -72,6 +74,8 @@ type RelationshipAssertionInput struct {
 	// (RFC 039): a JSON array of {title, url, excerpts[]}. Empty for every
 	// owned-data source type.
 	CitationsJSON string `json:"citationsJson,omitempty"`
+	admission     relationshipAssertionAdmission
+	status        string
 }
 
 // RelationshipObservationInput is the provider-neutral adapter contract.
@@ -130,7 +134,7 @@ type relationshipProjectionBatch struct {
 // jobs atomically. Projection runs inline as a latency optimization only after
 // evidence commits. A provider replay returns the existing observation and
 // never duplicates assertions, participants, or jobs.
-func (s *Service) IngestRelationshipObservations(
+func (s *Service) ingestTrustedRelationshipObservations(
 	ctx context.Context,
 	u *ent.User,
 	inputs []RelationshipObservationInput,
@@ -258,6 +262,27 @@ func (s *Service) IngestRelationshipObservations(
 		results[i].Observation = results[i].Observation.Unwrap()
 	}
 	return results, nil
+}
+
+// IngestRelationshipObservationCandidates is the authenticated observation
+// boundary. Caller-supplied assertions remain proposed AI-tier candidates and
+// cannot mint source-fact or user-correction authority. Provider-verified
+// adapters and deterministic jobs call ingestTrustedRelationshipObservations from
+// inside this package after establishing their own trust boundary.
+func (s *Service) IngestRelationshipObservationCandidates(
+	ctx context.Context,
+	u *ent.User,
+	inputs []RelationshipObservationInput,
+) ([]RelationshipObservationResult, error) {
+	admitted := make([]RelationshipObservationInput, len(inputs))
+	copy(admitted, inputs)
+	for i := range admitted {
+		admitted[i].Assertions = append([]RelationshipAssertionInput(nil), admitted[i].Assertions...)
+		for j := range admitted[i].Assertions {
+			admitted[i].Assertions[j].admission = relationshipAssertionAdmissionUntrustedObservation
+		}
+	}
+	return s.ingestTrustedRelationshipObservations(ctx, u, admitted)
 }
 
 func uniqueProjectionBoundaries(values []time.Time) []time.Time {
@@ -1362,6 +1387,15 @@ func createRelationshipAssertion(
 	observation *ent.RelationshipObservation,
 	input RelationshipAssertionInput,
 ) (*ent.RelationshipAssertion, error) {
+	var err error
+	input, err = normalizeRelationshipAssertionInput(input)
+	if err != nil {
+		return nil, err
+	}
+	if observation == nil && input.SourceType != "user_correction" &&
+		(input.SourceType != "external_research" || strings.TrimSpace(input.CitationsJSON) == "") {
+		return nil, fmt.Errorf("%w: accepted assertion requires source evidence or an explicit user action", ErrInvalidInput)
+	}
 	if input.ValidFrom.IsZero() {
 		input.ValidFrom = time.Now().UTC()
 	}
@@ -1372,9 +1406,6 @@ func createRelationshipAssertion(
 			return nil, fmt.Errorf("%w: assertion validTo must be after validFrom", ErrInvalidInput)
 		}
 		input.ValidTo = &validTo
-	}
-	if input.SourceType == "" {
-		input.SourceType = "ai_inference"
 	}
 	if input.Confidence == 0 && input.SourceType != "user_correction" {
 		input.Confidence = 0.5
@@ -1395,12 +1426,19 @@ func createRelationshipAssertion(
 		SetDimension(strings.TrimSpace(input.Dimension)).
 		SetValue(strings.TrimSpace(input.Value)).
 		SetSourceType(input.SourceType).
-		SetStatus("active").
+		SetStatus(input.status).
+		SetAuthorityRank(input.AuthorityRank).
 		SetConfidence(input.Confidence).
 		SetReason(input.Reason).
 		SetValidFrom(input.ValidFrom).
+		SetValueSchemaVersion(input.ValueSchemaVersion).
 		SetExtractorVersion(strings.TrimSpace(input.ExtractorVersion)).
 		SetProjectorCompatVersion(input.ProjectorCompatVersion)
+	if input.admission == relationshipAssertionAdmissionUserCorrection {
+		create.SetReviewerID(u.ID).
+			SetReviewDecision(relationshipAssertionStatusAccepted).
+			SetReviewedAt(input.ValidFrom)
+	}
 	if input.ValidTo != nil {
 		create.SetValidTo(*input.ValidTo)
 	}
@@ -1518,18 +1556,13 @@ func updateRelationshipSourceStatus(
 // weakest thing in the system rather than failing loudly, which is how a
 // misspelled tier ends up losing to the ai_inference it was meant to outrank.
 func assertionPriority(sourceType string) int {
-	switch sourceType {
-	case "user_correction":
-		return 5
-	case "source_fact":
-		return 4
-	case "deterministic":
-		return 3
-	case "external_research":
-		return 2
-	default:
+	rank, ok := relationshipAssertionAuthorityRank(sourceType)
+	if !ok {
+		// Person attributes share this helper and preserve their legacy behavior
+		// until their schema gains the same fail-closed authority metadata.
 		return 1
 	}
+	return rank
 }
 
 var relationshipProjectionDimensions = [...]string{
@@ -1712,15 +1745,60 @@ func selectRelationshipAssertionsAt(
 	superseded := make(map[string]struct{})
 	eligible := make([]*ent.RelationshipAssertion, 0, len(assertions))
 	for _, assertion := range assertions {
-		seenDimensions[assertion.Dimension] = struct{}{}
 		if assertion.ProjectorCompatVersion > relationshipProjectorVersion {
 			return nil, nil, fmt.Errorf(
 				"%w: assertion %s requires projector compatibility version %d",
 				ErrReviewRequired, assertion.ID, assertion.ProjectorCompatVersion,
 			)
 		}
-		if assertion.Status != "active" || assertion.ValidFrom.After(evaluatedAt) ||
-			(assertion.ValidTo != nil && !assertion.ValidTo.After(evaluatedAt)) {
+		expectedRank, knownSourceType := relationshipAssertionAuthorityRank(assertion.SourceType)
+		if !knownSourceType {
+			return nil, nil, fmt.Errorf(
+				"%w: assertion %s has inconsistent authority metadata",
+				ErrReviewRequired, assertion.ID,
+			)
+		}
+		if assertion.Status == relationshipAssertionStatusLegacyActive {
+			// A pre-R1.1 binary writing during a rolling deployment receives the
+			// additive database default. Derive the authoritative rank from its
+			// already-validated source type without mutating the immutable row.
+			legacy := *assertion
+			legacy.AuthorityRank = expectedRank
+			assertion = &legacy
+		} else if assertion.AuthorityRank != expectedRank {
+			return nil, nil, fmt.Errorf(
+				"%w: assertion %s has inconsistent authority metadata",
+				ErrReviewRequired, assertion.ID,
+			)
+		}
+		if assertion.ValueSchemaVersion != relationshipAssertionValueSchemaVersion {
+			return nil, nil, fmt.Errorf(
+				"%w: assertion %s uses unsupported value schema version %d",
+				ErrReviewRequired, assertion.ID, assertion.ValueSchemaVersion,
+			)
+		}
+		if valueErr := validateRelationshipAssertionValue(
+			assertion.Dimension, assertion.Value, assertion.ValueSchemaVersion,
+		); valueErr != nil {
+			return nil, nil, fmt.Errorf(
+				"%w: assertion %s failed its typed value contract: %w",
+				ErrReviewRequired, assertion.ID, valueErr,
+			)
+		}
+		eligibleAtEvaluation, validLifecycle := relationshipAssertionEligibleAt(
+			assertion.Status, assertion.ValidFrom, assertion.ValidTo, evaluatedAt,
+		)
+		if !validLifecycle {
+			return nil, nil, fmt.Errorf(
+				"%w: assertion %s has inconsistent lifecycle metadata",
+				ErrReviewRequired, assertion.ID,
+			)
+		}
+		if assertion.Status == relationshipAssertionStatusProposed || assertion.Status == relationshipAssertionStatusRejected {
+			continue
+		}
+		seenDimensions[assertion.Dimension] = struct{}{}
+		if !eligibleAtEvaluation {
 			continue
 		}
 		eligible = append(eligible, assertion)
@@ -1730,7 +1808,7 @@ func selectRelationshipAssertionsAt(
 	}
 	sort.SliceStable(eligible, func(i, j int) bool {
 		left, right := eligible[i], eligible[j]
-		lp, rp := assertionPriority(left.SourceType), assertionPriority(right.SourceType)
+		lp, rp := left.AuthorityRank, right.AuthorityRank
 		if lp != rp {
 			return lp > rp
 		}
@@ -1900,7 +1978,7 @@ func (s *Service) CorrectRelationship(
 		superseded, err = txc.RelationshipAssertion.Query().
 			Where(
 				relationshipassertion.IDEQ(assertionID),
-				relationshipassertion.StatusEQ("active"),
+				relationshipassertion.StatusIn(relationshipAssertionStatusAccepted, relationshipAssertionStatusLegacyActive),
 				relationshipassertion.HasRelationshipWith(relationship.IDEQ(rel.ID)),
 			).
 			Only(ctx)
@@ -1925,13 +2003,14 @@ func (s *Service) CorrectRelationship(
 		SupersedesAssertionID:  strings.TrimSpace(input.SupersedesAssertionID),
 		ExtractorVersion:       "user-correction-v1",
 		ProjectorCompatVersion: relationshipProjectorVersion,
+		admission:              relationshipAssertionAdmissionUserCorrection,
 	})
 	if err != nil {
 		return rollback(err)
 	}
 	if superseded != nil {
 		if _, err := superseded.Update().
-			SetStatus("superseded").
+			SetStatus(relationshipAssertionStatusSuperseded).
 			SetValidTo(evaluatedAt).
 			Save(ctx); err != nil {
 			return rollback(err)
@@ -2020,18 +2099,18 @@ func (s *Service) RetractRelationshipAssertion(
 	if assertion.SourceType != "user_correction" {
 		return rollback(fmt.Errorf("%w: only user corrections can be retracted", ErrInvalidInput))
 	}
-	if assertion.Status == "retracted" {
+	if assertion.Status == relationshipAssertionStatusRetracted {
 		if err := tx.Commit(); err != nil {
 			return nil, err
 		}
 		return rel.Unwrap(), nil
 	}
-	if assertion.Status != "active" {
+	if assertion.Status != relationshipAssertionStatusAccepted && assertion.Status != relationshipAssertionStatusLegacyActive {
 		return rollback(fmt.Errorf("%w: assertion is no longer active", ErrConflict))
 	}
 	evaluatedAt := s.now().UTC()
 	if _, err := assertion.Update().
-		SetStatus("retracted").
+		SetStatus(relationshipAssertionStatusRetracted).
 		SetValidTo(evaluatedAt).
 		SetRetractedAt(evaluatedAt).
 		SetRetractionReason(strings.TrimSpace(reason)).

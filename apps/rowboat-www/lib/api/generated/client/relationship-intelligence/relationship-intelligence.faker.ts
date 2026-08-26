@@ -2799,7 +2799,86 @@ export const getGetRelationshipResponseMock = (
       completeness: {},
       contractVersion: faker.string.alpha({ length: { min: 10, max: 20 } }),
       detectorVersion: faker.number.int(),
-      evidence: {},
+      evidence: {
+        [faker.string.alphanumeric(5)]: {
+          assertionId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+          authority: faker.helpers.arrayElement([
+            faker.helpers.arrayElement([
+              "user_correction",
+              "source_fact",
+              "deterministic",
+              "external_research",
+              "ai_inference",
+            ] as const),
+            undefined,
+          ]),
+          authorityRank: faker.helpers.arrayElement([faker.number.int(), undefined]),
+          confidence: faker.helpers.arrayElement([
+            faker.number.float({ fractionDigits: 2 }),
+            undefined,
+          ]),
+          dimension: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          evidence: Array.from(
+            { length: faker.number.int({ min: 1, max: 10 }) },
+            (_, i) => i + 1,
+          ).map(() => ({
+            contentHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
+            evidencePath: faker.string.alpha({ length: { min: 10, max: 20 } }),
+            observationId: faker.string.uuid(),
+            observedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+            source: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          })),
+          extractorVersion: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          fresh: faker.datatype.boolean(),
+          missingReason: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          projectorCompatVersion: faker.helpers.arrayElement([faker.number.int(), undefined]),
+          reason: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          reviewDecision: faker.helpers.arrayElement([
+            faker.helpers.arrayElement(["accepted", "rejected"] as const),
+            undefined,
+          ]),
+          reviewedAt: faker.helpers.arrayElement([
+            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+            undefined,
+          ]),
+          reviewerId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+          status: faker.helpers.arrayElement([
+            faker.helpers.arrayElement([
+              "proposed",
+              "accepted",
+              "rejected",
+              "superseded",
+              "retracted",
+              "expired",
+              "active",
+            ] as const),
+            undefined,
+          ]),
+          supported: faker.datatype.boolean(),
+          validFrom: faker.helpers.arrayElement([
+            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+            undefined,
+          ]),
+          validTo: faker.helpers.arrayElement([
+            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+            undefined,
+          ]),
+          value: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          valueSchemaVersion: faker.helpers.arrayElement([faker.number.int(), undefined]),
+        },
+      },
       freshnessBoundary: faker.helpers.arrayElement([
         faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
         undefined,

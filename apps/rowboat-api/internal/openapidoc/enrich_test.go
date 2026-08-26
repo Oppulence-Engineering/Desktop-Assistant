@@ -135,6 +135,21 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if delta["description"] == nil || delta["example"] == nil {
 		t.Fatal("CreditLedger.delta should have a detailed description and example")
 	}
+
+	missionControlEvidence := asObj(schemas["MissionControlDimensionEvidence"])
+	evidenceProperties := asObj(missionControlEvidence["properties"])
+	reason := asObj(evidenceProperties["reason"])
+	if reason["type"] != "string" || reason["description"] != "Evidence-backed explanation." || reason["enum"] != nil {
+		t.Fatalf("MissionControlDimensionEvidence.reason was corrupted by generic entity metadata: %#v", reason)
+	}
+	status := asObj(evidenceProperties["status"])
+	if status["type"] != "string" || status["description"] != "Assertion lifecycle state." || status["example"] != "accepted" {
+		t.Fatalf("MissionControlDimensionEvidence.status was corrupted by generic entity metadata: %#v", status)
+	}
+	value := asObj(evidenceProperties["value"])
+	if value["type"] != "string" {
+		t.Fatalf("MissionControlDimensionEvidence.value type = %#v, want string", value["type"])
+	}
 }
 
 func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
@@ -156,5 +171,12 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	schemas := asObj(asObj(spec["components"])["schemas"])
 	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil || schemas["IntegrationTemplateBlock"] == nil || schemas["SlackWorkspacesResponse"] == nil || schemas["SlackThreadReadResponse"] == nil {
 		t.Fatal("checked-in openapi json is missing enriched runtime schemas")
+	}
+	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
+	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
+		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
+	}
+	if value := asObj(evidenceProperties["value"]); value["type"] != "string" {
+		t.Fatalf("checked-in MissionControlDimensionEvidence.value is invalid: %#v", value)
 	}
 }

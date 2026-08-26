@@ -2293,7 +2293,7 @@ func (h *Handler) IngestRelationshipObservations(w http.ResponseWriter, r *http.
 		}
 		inputs = append(inputs, input)
 	}
-	results, err := h.svc.IngestRelationshipObservations(r.Context(), u, inputs)
+	results, err := h.svc.IngestRelationshipObservationCandidates(r.Context(), u, inputs)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return

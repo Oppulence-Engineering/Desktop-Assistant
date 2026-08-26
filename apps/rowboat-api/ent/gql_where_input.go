@@ -31135,6 +31135,16 @@ type RelationshipAssertionWhereInput struct {
 	StatusEqualFold    *string  `json:"statusEqualFold,omitempty"`
 	StatusContainsFold *string  `json:"statusContainsFold,omitempty"`
 
+	// "authority_rank" field predicates.
+	AuthorityRank      *int  `json:"authorityRank,omitempty"`
+	AuthorityRankNEQ   *int  `json:"authorityRankNEQ,omitempty"`
+	AuthorityRankIn    []int `json:"authorityRankIn,omitempty"`
+	AuthorityRankNotIn []int `json:"authorityRankNotIn,omitempty"`
+	AuthorityRankGT    *int  `json:"authorityRankGT,omitempty"`
+	AuthorityRankGTE   *int  `json:"authorityRankGTE,omitempty"`
+	AuthorityRankLT    *int  `json:"authorityRankLT,omitempty"`
+	AuthorityRankLTE   *int  `json:"authorityRankLTE,omitempty"`
+
 	// "confidence" field predicates.
 	Confidence      *float64  `json:"confidence,omitempty"`
 	ConfidenceNEQ   *float64  `json:"confidenceNEQ,omitempty"`
@@ -31183,6 +31193,16 @@ type RelationshipAssertionWhereInput struct {
 	ValidToLTE    *time.Time  `json:"validToLTE,omitempty"`
 	ValidToIsNil  bool        `json:"validToIsNil,omitempty"`
 	ValidToNotNil bool        `json:"validToNotNil,omitempty"`
+
+	// "value_schema_version" field predicates.
+	ValueSchemaVersion      *int  `json:"valueSchemaVersion,omitempty"`
+	ValueSchemaVersionNEQ   *int  `json:"valueSchemaVersionNEQ,omitempty"`
+	ValueSchemaVersionIn    []int `json:"valueSchemaVersionIn,omitempty"`
+	ValueSchemaVersionNotIn []int `json:"valueSchemaVersionNotIn,omitempty"`
+	ValueSchemaVersionGT    *int  `json:"valueSchemaVersionGT,omitempty"`
+	ValueSchemaVersionGTE   *int  `json:"valueSchemaVersionGTE,omitempty"`
+	ValueSchemaVersionLT    *int  `json:"valueSchemaVersionLT,omitempty"`
+	ValueSchemaVersionLTE   *int  `json:"valueSchemaVersionLTE,omitempty"`
 
 	// "retracted_at" field predicates.
 	RetractedAt       *time.Time  `json:"retractedAt,omitempty"`
@@ -31244,6 +31264,47 @@ type RelationshipAssertionWhereInput struct {
 	ExtractorVersionHasSuffix    *string  `json:"extractorVersionHasSuffix,omitempty"`
 	ExtractorVersionEqualFold    *string  `json:"extractorVersionEqualFold,omitempty"`
 	ExtractorVersionContainsFold *string  `json:"extractorVersionContainsFold,omitempty"`
+
+	// "reviewer_id" field predicates.
+	ReviewerID       *uuid.UUID  `json:"reviewerID,omitempty"`
+	ReviewerIDNEQ    *uuid.UUID  `json:"reviewerIDNEQ,omitempty"`
+	ReviewerIDIn     []uuid.UUID `json:"reviewerIDIn,omitempty"`
+	ReviewerIDNotIn  []uuid.UUID `json:"reviewerIDNotIn,omitempty"`
+	ReviewerIDGT     *uuid.UUID  `json:"reviewerIDGT,omitempty"`
+	ReviewerIDGTE    *uuid.UUID  `json:"reviewerIDGTE,omitempty"`
+	ReviewerIDLT     *uuid.UUID  `json:"reviewerIDLT,omitempty"`
+	ReviewerIDLTE    *uuid.UUID  `json:"reviewerIDLTE,omitempty"`
+	ReviewerIDIsNil  bool        `json:"reviewerIDIsNil,omitempty"`
+	ReviewerIDNotNil bool        `json:"reviewerIDNotNil,omitempty"`
+
+	// "review_decision" field predicates.
+	ReviewDecision             *string  `json:"reviewDecision,omitempty"`
+	ReviewDecisionNEQ          *string  `json:"reviewDecisionNEQ,omitempty"`
+	ReviewDecisionIn           []string `json:"reviewDecisionIn,omitempty"`
+	ReviewDecisionNotIn        []string `json:"reviewDecisionNotIn,omitempty"`
+	ReviewDecisionGT           *string  `json:"reviewDecisionGT,omitempty"`
+	ReviewDecisionGTE          *string  `json:"reviewDecisionGTE,omitempty"`
+	ReviewDecisionLT           *string  `json:"reviewDecisionLT,omitempty"`
+	ReviewDecisionLTE          *string  `json:"reviewDecisionLTE,omitempty"`
+	ReviewDecisionContains     *string  `json:"reviewDecisionContains,omitempty"`
+	ReviewDecisionHasPrefix    *string  `json:"reviewDecisionHasPrefix,omitempty"`
+	ReviewDecisionHasSuffix    *string  `json:"reviewDecisionHasSuffix,omitempty"`
+	ReviewDecisionIsNil        bool     `json:"reviewDecisionIsNil,omitempty"`
+	ReviewDecisionNotNil       bool     `json:"reviewDecisionNotNil,omitempty"`
+	ReviewDecisionEqualFold    *string  `json:"reviewDecisionEqualFold,omitempty"`
+	ReviewDecisionContainsFold *string  `json:"reviewDecisionContainsFold,omitempty"`
+
+	// "reviewed_at" field predicates.
+	ReviewedAt       *time.Time  `json:"reviewedAt,omitempty"`
+	ReviewedAtNEQ    *time.Time  `json:"reviewedAtNEQ,omitempty"`
+	ReviewedAtIn     []time.Time `json:"reviewedAtIn,omitempty"`
+	ReviewedAtNotIn  []time.Time `json:"reviewedAtNotIn,omitempty"`
+	ReviewedAtGT     *time.Time  `json:"reviewedAtGT,omitempty"`
+	ReviewedAtGTE    *time.Time  `json:"reviewedAtGTE,omitempty"`
+	ReviewedAtLT     *time.Time  `json:"reviewedAtLT,omitempty"`
+	ReviewedAtLTE    *time.Time  `json:"reviewedAtLTE,omitempty"`
+	ReviewedAtIsNil  bool        `json:"reviewedAtIsNil,omitempty"`
+	ReviewedAtNotNil bool        `json:"reviewedAtNotNil,omitempty"`
 
 	// "citations_json" field predicates.
 	CitationsJSON             *string  `json:"citationsJSON,omitempty"`
@@ -31588,6 +31649,30 @@ func (i *RelationshipAssertionWhereInput) P() (predicate.RelationshipAssertion, 
 	if i.StatusContainsFold != nil {
 		predicates = append(predicates, relationshipassertion.StatusContainsFold(*i.StatusContainsFold))
 	}
+	if i.AuthorityRank != nil {
+		predicates = append(predicates, relationshipassertion.AuthorityRankEQ(*i.AuthorityRank))
+	}
+	if i.AuthorityRankNEQ != nil {
+		predicates = append(predicates, relationshipassertion.AuthorityRankNEQ(*i.AuthorityRankNEQ))
+	}
+	if len(i.AuthorityRankIn) > 0 {
+		predicates = append(predicates, relationshipassertion.AuthorityRankIn(i.AuthorityRankIn...))
+	}
+	if len(i.AuthorityRankNotIn) > 0 {
+		predicates = append(predicates, relationshipassertion.AuthorityRankNotIn(i.AuthorityRankNotIn...))
+	}
+	if i.AuthorityRankGT != nil {
+		predicates = append(predicates, relationshipassertion.AuthorityRankGT(*i.AuthorityRankGT))
+	}
+	if i.AuthorityRankGTE != nil {
+		predicates = append(predicates, relationshipassertion.AuthorityRankGTE(*i.AuthorityRankGTE))
+	}
+	if i.AuthorityRankLT != nil {
+		predicates = append(predicates, relationshipassertion.AuthorityRankLT(*i.AuthorityRankLT))
+	}
+	if i.AuthorityRankLTE != nil {
+		predicates = append(predicates, relationshipassertion.AuthorityRankLTE(*i.AuthorityRankLTE))
+	}
 	if i.Confidence != nil {
 		predicates = append(predicates, relationshipassertion.ConfidenceEQ(*i.Confidence))
 	}
@@ -31710,6 +31795,30 @@ func (i *RelationshipAssertionWhereInput) P() (predicate.RelationshipAssertion, 
 	}
 	if i.ValidToNotNil {
 		predicates = append(predicates, relationshipassertion.ValidToNotNil())
+	}
+	if i.ValueSchemaVersion != nil {
+		predicates = append(predicates, relationshipassertion.ValueSchemaVersionEQ(*i.ValueSchemaVersion))
+	}
+	if i.ValueSchemaVersionNEQ != nil {
+		predicates = append(predicates, relationshipassertion.ValueSchemaVersionNEQ(*i.ValueSchemaVersionNEQ))
+	}
+	if len(i.ValueSchemaVersionIn) > 0 {
+		predicates = append(predicates, relationshipassertion.ValueSchemaVersionIn(i.ValueSchemaVersionIn...))
+	}
+	if len(i.ValueSchemaVersionNotIn) > 0 {
+		predicates = append(predicates, relationshipassertion.ValueSchemaVersionNotIn(i.ValueSchemaVersionNotIn...))
+	}
+	if i.ValueSchemaVersionGT != nil {
+		predicates = append(predicates, relationshipassertion.ValueSchemaVersionGT(*i.ValueSchemaVersionGT))
+	}
+	if i.ValueSchemaVersionGTE != nil {
+		predicates = append(predicates, relationshipassertion.ValueSchemaVersionGTE(*i.ValueSchemaVersionGTE))
+	}
+	if i.ValueSchemaVersionLT != nil {
+		predicates = append(predicates, relationshipassertion.ValueSchemaVersionLT(*i.ValueSchemaVersionLT))
+	}
+	if i.ValueSchemaVersionLTE != nil {
+		predicates = append(predicates, relationshipassertion.ValueSchemaVersionLTE(*i.ValueSchemaVersionLTE))
 	}
 	if i.RetractedAt != nil {
 		predicates = append(predicates, relationshipassertion.RetractedAtEQ(*i.RetractedAt))
@@ -31869,6 +31978,111 @@ func (i *RelationshipAssertionWhereInput) P() (predicate.RelationshipAssertion, 
 	}
 	if i.ExtractorVersionContainsFold != nil {
 		predicates = append(predicates, relationshipassertion.ExtractorVersionContainsFold(*i.ExtractorVersionContainsFold))
+	}
+	if i.ReviewerID != nil {
+		predicates = append(predicates, relationshipassertion.ReviewerIDEQ(*i.ReviewerID))
+	}
+	if i.ReviewerIDNEQ != nil {
+		predicates = append(predicates, relationshipassertion.ReviewerIDNEQ(*i.ReviewerIDNEQ))
+	}
+	if len(i.ReviewerIDIn) > 0 {
+		predicates = append(predicates, relationshipassertion.ReviewerIDIn(i.ReviewerIDIn...))
+	}
+	if len(i.ReviewerIDNotIn) > 0 {
+		predicates = append(predicates, relationshipassertion.ReviewerIDNotIn(i.ReviewerIDNotIn...))
+	}
+	if i.ReviewerIDGT != nil {
+		predicates = append(predicates, relationshipassertion.ReviewerIDGT(*i.ReviewerIDGT))
+	}
+	if i.ReviewerIDGTE != nil {
+		predicates = append(predicates, relationshipassertion.ReviewerIDGTE(*i.ReviewerIDGTE))
+	}
+	if i.ReviewerIDLT != nil {
+		predicates = append(predicates, relationshipassertion.ReviewerIDLT(*i.ReviewerIDLT))
+	}
+	if i.ReviewerIDLTE != nil {
+		predicates = append(predicates, relationshipassertion.ReviewerIDLTE(*i.ReviewerIDLTE))
+	}
+	if i.ReviewerIDIsNil {
+		predicates = append(predicates, relationshipassertion.ReviewerIDIsNil())
+	}
+	if i.ReviewerIDNotNil {
+		predicates = append(predicates, relationshipassertion.ReviewerIDNotNil())
+	}
+	if i.ReviewDecision != nil {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionEQ(*i.ReviewDecision))
+	}
+	if i.ReviewDecisionNEQ != nil {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionNEQ(*i.ReviewDecisionNEQ))
+	}
+	if len(i.ReviewDecisionIn) > 0 {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionIn(i.ReviewDecisionIn...))
+	}
+	if len(i.ReviewDecisionNotIn) > 0 {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionNotIn(i.ReviewDecisionNotIn...))
+	}
+	if i.ReviewDecisionGT != nil {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionGT(*i.ReviewDecisionGT))
+	}
+	if i.ReviewDecisionGTE != nil {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionGTE(*i.ReviewDecisionGTE))
+	}
+	if i.ReviewDecisionLT != nil {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionLT(*i.ReviewDecisionLT))
+	}
+	if i.ReviewDecisionLTE != nil {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionLTE(*i.ReviewDecisionLTE))
+	}
+	if i.ReviewDecisionContains != nil {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionContains(*i.ReviewDecisionContains))
+	}
+	if i.ReviewDecisionHasPrefix != nil {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionHasPrefix(*i.ReviewDecisionHasPrefix))
+	}
+	if i.ReviewDecisionHasSuffix != nil {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionHasSuffix(*i.ReviewDecisionHasSuffix))
+	}
+	if i.ReviewDecisionIsNil {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionIsNil())
+	}
+	if i.ReviewDecisionNotNil {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionNotNil())
+	}
+	if i.ReviewDecisionEqualFold != nil {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionEqualFold(*i.ReviewDecisionEqualFold))
+	}
+	if i.ReviewDecisionContainsFold != nil {
+		predicates = append(predicates, relationshipassertion.ReviewDecisionContainsFold(*i.ReviewDecisionContainsFold))
+	}
+	if i.ReviewedAt != nil {
+		predicates = append(predicates, relationshipassertion.ReviewedAtEQ(*i.ReviewedAt))
+	}
+	if i.ReviewedAtNEQ != nil {
+		predicates = append(predicates, relationshipassertion.ReviewedAtNEQ(*i.ReviewedAtNEQ))
+	}
+	if len(i.ReviewedAtIn) > 0 {
+		predicates = append(predicates, relationshipassertion.ReviewedAtIn(i.ReviewedAtIn...))
+	}
+	if len(i.ReviewedAtNotIn) > 0 {
+		predicates = append(predicates, relationshipassertion.ReviewedAtNotIn(i.ReviewedAtNotIn...))
+	}
+	if i.ReviewedAtGT != nil {
+		predicates = append(predicates, relationshipassertion.ReviewedAtGT(*i.ReviewedAtGT))
+	}
+	if i.ReviewedAtGTE != nil {
+		predicates = append(predicates, relationshipassertion.ReviewedAtGTE(*i.ReviewedAtGTE))
+	}
+	if i.ReviewedAtLT != nil {
+		predicates = append(predicates, relationshipassertion.ReviewedAtLT(*i.ReviewedAtLT))
+	}
+	if i.ReviewedAtLTE != nil {
+		predicates = append(predicates, relationshipassertion.ReviewedAtLTE(*i.ReviewedAtLTE))
+	}
+	if i.ReviewedAtIsNil {
+		predicates = append(predicates, relationshipassertion.ReviewedAtIsNil())
+	}
+	if i.ReviewedAtNotNil {
+		predicates = append(predicates, relationshipassertion.ReviewedAtNotNil())
 	}
 	if i.CitationsJSON != nil {
 		predicates = append(predicates, relationshipassertion.CitationsJSONEQ(*i.CitationsJSON))

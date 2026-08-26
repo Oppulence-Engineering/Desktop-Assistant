@@ -351,7 +351,7 @@ func (s *Service) ReconcileDueCommitments(
 			return nil, err
 		}
 		if classification == "fulfilled" && !review {
-			_, err := s.IngestRelationshipObservations(ctx, u, []RelationshipObservationInput{{
+			_, err := s.ingestTrustedRelationshipObservations(ctx, u, []RelationshipObservationInput{{
 				RelationshipID: rel.ID, Source: "user", ExternalID: evaluation.EvaluationID + ":fulfilled",
 				EventType: "commitment_status_changed", OccurredAt: now, ReceivedAt: now,
 				Facts: map[string]any{"commitment_updates": []map[string]any{{

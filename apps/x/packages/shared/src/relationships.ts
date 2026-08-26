@@ -1175,8 +1175,18 @@ export const MissionControlReadModelSchema = z.object({
       missingReason: z.string().optional(),
       assertionId: z.string().optional(),
       authority: z.string().optional(),
+      authorityRank: z.number().int().positive().optional(),
+      status: z
+        .enum(["proposed", "accepted", "rejected", "superseded", "retracted", "expired", "active"])
+        .optional(),
       confidence: z.number().optional(),
       reason: z.string().optional(),
+      valueSchemaVersion: z.number().int().positive().optional(),
+      extractorVersion: z.string().optional(),
+      projectorCompatVersion: z.number().int().positive().optional(),
+      reviewerId: z.string().optional(),
+      reviewDecision: z.enum(["accepted", "rejected"]).optional(),
+      reviewedAt: z.string().optional(),
       validFrom: z.string().optional(),
       validTo: z.string().optional(),
       fresh: z.boolean(),

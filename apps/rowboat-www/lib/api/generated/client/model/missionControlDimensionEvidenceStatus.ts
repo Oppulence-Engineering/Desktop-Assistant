@@ -5,9 +5,19 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { MissionControlDimensionEvidence } from "./missionControlDimensionEvidence";
 
 /**
- * Dimension-keyed winning typed assertions and evidence references.
+ * Assertion lifecycle state.
  */
-export type MissionControlReadModelEvidence = { [key: string]: MissionControlDimensionEvidence };
+export type MissionControlDimensionEvidenceStatus =
+  (typeof MissionControlDimensionEvidenceStatus)[keyof typeof MissionControlDimensionEvidenceStatus];
+
+export const MissionControlDimensionEvidenceStatus = {
+  proposed: "proposed",
+  accepted: "accepted",
+  rejected: "rejected",
+  superseded: "superseded",
+  retracted: "retracted",
+  expired: "expired",
+  active: "active",
+} as const;

@@ -6498,6 +6498,11 @@ func (_q *RelationshipAssertionQuery) collectField(ctx context.Context, oneNode 
 				selectedFields = append(selectedFields, relationshipassertion.FieldStatus)
 				fieldSeen[relationshipassertion.FieldStatus] = struct{}{}
 			}
+		case "authorityRank":
+			if _, ok := fieldSeen[relationshipassertion.FieldAuthorityRank]; !ok {
+				selectedFields = append(selectedFields, relationshipassertion.FieldAuthorityRank)
+				fieldSeen[relationshipassertion.FieldAuthorityRank] = struct{}{}
+			}
 		case "confidence":
 			if _, ok := fieldSeen[relationshipassertion.FieldConfidence]; !ok {
 				selectedFields = append(selectedFields, relationshipassertion.FieldConfidence)
@@ -6513,6 +6518,11 @@ func (_q *RelationshipAssertionQuery) collectField(ctx context.Context, oneNode 
 				selectedFields = append(selectedFields, relationshipassertion.FieldValidTo)
 				fieldSeen[relationshipassertion.FieldValidTo] = struct{}{}
 			}
+		case "valueSchemaVersion":
+			if _, ok := fieldSeen[relationshipassertion.FieldValueSchemaVersion]; !ok {
+				selectedFields = append(selectedFields, relationshipassertion.FieldValueSchemaVersion)
+				fieldSeen[relationshipassertion.FieldValueSchemaVersion] = struct{}{}
+			}
 		case "retractedAt":
 			if _, ok := fieldSeen[relationshipassertion.FieldRetractedAt]; !ok {
 				selectedFields = append(selectedFields, relationshipassertion.FieldRetractedAt)
@@ -6527,6 +6537,21 @@ func (_q *RelationshipAssertionQuery) collectField(ctx context.Context, oneNode 
 			if _, ok := fieldSeen[relationshipassertion.FieldExtractorVersion]; !ok {
 				selectedFields = append(selectedFields, relationshipassertion.FieldExtractorVersion)
 				fieldSeen[relationshipassertion.FieldExtractorVersion] = struct{}{}
+			}
+		case "reviewerID":
+			if _, ok := fieldSeen[relationshipassertion.FieldReviewerID]; !ok {
+				selectedFields = append(selectedFields, relationshipassertion.FieldReviewerID)
+				fieldSeen[relationshipassertion.FieldReviewerID] = struct{}{}
+			}
+		case "reviewDecision":
+			if _, ok := fieldSeen[relationshipassertion.FieldReviewDecision]; !ok {
+				selectedFields = append(selectedFields, relationshipassertion.FieldReviewDecision)
+				fieldSeen[relationshipassertion.FieldReviewDecision] = struct{}{}
+			}
+		case "reviewedAt":
+			if _, ok := fieldSeen[relationshipassertion.FieldReviewedAt]; !ok {
+				selectedFields = append(selectedFields, relationshipassertion.FieldReviewedAt)
+				fieldSeen[relationshipassertion.FieldReviewedAt] = struct{}{}
 			}
 		case "citationsJSON":
 			if _, ok := fieldSeen[relationshipassertion.FieldCitationsJSON]; !ok {

@@ -5711,6 +5711,174 @@
         ],
         "type": "object"
       },
+      "MissionControlDimensionEvidence": {
+        "description": "Winning typed assertion, authority decision, validity, and evidence for one projected dimension.",
+        "properties": {
+          "assertionId": {
+            "description": "Winning assertion id.",
+            "example": "7b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "authority": {
+            "description": "Assertion source authority.",
+            "enum": [
+              "user_correction",
+              "source_fact",
+              "deterministic",
+              "external_research",
+              "ai_inference"
+            ],
+            "example": "source_fact",
+            "type": "string"
+          },
+          "authorityRank": {
+            "description": "Deterministic ordinal authority rank.",
+            "example": 4,
+            "type": "integer"
+          },
+          "confidence": {
+            "description": "Assertion confidence.",
+            "example": 1,
+            "type": "number"
+          },
+          "dimension": {
+            "description": "Projected dimension.",
+            "example": "health",
+            "type": "string"
+          },
+          "evidence": {
+            "description": "Supporting observations.",
+            "items": {
+              "$ref": "#/components/schemas/MissionControlEvidenceReference"
+            },
+            "type": "array"
+          },
+          "extractorVersion": {
+            "description": "Extractor or deterministic rule version.",
+            "example": "hubspot-company-v1",
+            "type": "string"
+          },
+          "fresh": {
+            "description": "Whether supporting sources are fresh and complete.",
+            "example": true,
+            "type": "boolean"
+          },
+          "missingReason": {
+            "description": "Why support is missing.",
+            "example": "No accepted assertion is valid at this boundary.",
+            "type": "string"
+          },
+          "projectorCompatVersion": {
+            "description": "Minimum compatible projector version.",
+            "example": 1,
+            "type": "integer"
+          },
+          "reason": {
+            "description": "Evidence-backed explanation.",
+            "example": "CRM deal stage changed to closed won.",
+            "type": "string"
+          },
+          "reviewDecision": {
+            "description": "Explicit review decision.",
+            "enum": ["accepted", "rejected"],
+            "example": "accepted",
+            "type": "string"
+          },
+          "reviewedAt": {
+            "description": "Explicit review time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "reviewerId": {
+            "description": "Explicit reviewer when present.",
+            "example": "9c8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "description": "Assertion lifecycle state.",
+            "enum": [
+              "proposed",
+              "accepted",
+              "rejected",
+              "superseded",
+              "retracted",
+              "expired",
+              "active"
+            ],
+            "example": "accepted",
+            "type": "string"
+          },
+          "supported": {
+            "description": "Whether accessible evidence supports the value.",
+            "example": true,
+            "type": "boolean"
+          },
+          "validFrom": {
+            "description": "Assertion validity start.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "validTo": {
+            "description": "Assertion validity end.",
+            "example": "2026-08-31T14:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "value": {
+            "description": "Typed projected value.",
+            "example": "needs_attention",
+            "type": "string"
+          },
+          "valueSchemaVersion": {
+            "description": "Typed dimension schema version.",
+            "example": 1,
+            "type": "integer"
+          }
+        },
+        "required": ["dimension", "supported", "fresh", "evidence"],
+        "type": "object"
+      },
+      "MissionControlEvidenceReference": {
+        "description": "Immutable evidence supporting one projected relationship dimension.",
+        "properties": {
+          "contentHash": {
+            "description": "Immutable observation content hash.",
+            "example": "sha256:ab12",
+            "type": "string"
+          },
+          "evidencePath": {
+            "description": "Authorized evidence inspection path.",
+            "example": "/v1/relationships/9c8dfa9b-a7b2-46ea-982c-622a914c00e5/evidence/6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "type": "string"
+          },
+          "observationId": {
+            "description": "Observation id.",
+            "example": "6b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+            "format": "uuid",
+            "type": "string"
+          },
+          "observedAt": {
+            "description": "Source occurrence time.",
+            "example": "2026-07-31T14:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "source": {
+            "description": "Canonical source.",
+            "example": "hubspot",
+            "type": "string"
+          }
+        },
+        "required": ["observationId", "source", "observedAt", "evidencePath", "contentHash"],
+        "type": "object"
+      },
       "MissionControlReadModel": {
         "description": "One server-owned, version-consistent answer to state, change, evidence, action, completeness, and control.",
         "properties": {
@@ -5756,7 +5924,7 @@
           },
           "contractVersion": {
             "description": "Read-contract version.",
-            "example": "tfa-2026-07-31",
+            "example": "tfa-r1.1-2026-08-26",
             "type": "string"
           },
           "detectorVersion": {
@@ -5765,8 +5933,10 @@
             "type": "integer"
           },
           "evidence": {
-            "additionalProperties": true,
-            "description": "Dimension-keyed winning assertions and evidence references.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MissionControlDimensionEvidence"
+            },
+            "description": "Dimension-keyed winning typed assertions and evidence references.",
             "type": "object"
           },
           "freshnessBoundary": {
@@ -7123,6 +7293,9 @@
       },
       "RelationshipAssertion": {
         "properties": {
+          "authority_rank": {
+            "type": "integer"
+          },
           "citations_json": {
             "type": "string"
           },
@@ -7178,6 +7351,17 @@
           "retraction_reason": {
             "type": "string"
           },
+          "review_decision": {
+            "type": "string"
+          },
+          "reviewed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reviewer_id": {
+            "format": "uuid",
+            "type": "string"
+          },
           "source_type": {
             "type": "string"
           },
@@ -7216,6 +7400,9 @@
           "value": {
             "type": "string"
           },
+          "value_schema_version": {
+            "type": "integer"
+          },
           "workspace": {
             "$ref": "#/components/schemas/RevenueWorkspace"
           }
@@ -7228,8 +7415,10 @@
           "value",
           "source_type",
           "status",
+          "authority_rank",
           "confidence",
           "valid_from",
+          "value_schema_version",
           "extractor_version",
           "projector_compat_version",
           "supporting_observation_ids",
