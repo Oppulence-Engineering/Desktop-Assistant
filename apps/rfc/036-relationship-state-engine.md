@@ -1442,6 +1442,17 @@ proofs pass together.
   installed and the CI-required policy, secret, and dependency audits passed
   with `X_GAUNTLET_REQUIRE_EXTERNAL=1`.
 - Consumer compatibility: web and desktop type checks passed after generation.
+- Public-interface smoke test: the real `cmd/server` process started with local
+  defaults. `/healthz`, `/readyz`, and `/openapi.json` returned HTTP 200. The
+  served contract mounted `/v1/relationship-observations/batch` and exposed the
+  Mission Control `value` and `reason` fields as strings plus integer authority
+  rank and value-schema version metadata.
+- Authenticated acceptance constraint: a real POST to the observation endpoint
+  reached the authentication boundary and returned HTTP 503 `auth_unavailable`
+  because the local WorkOS JWKS check was degraded. The complete signed-in
+  observation-to-projection-to-client workflow therefore remains externally
+  blocked without a working WorkOS environment and interactive user session.
+  This public-path limitation is not replaced by the passing package tests.
 
 This evidence closes R1.1 implementation validation only. The broader Phase 1
 exit gate still requires the full corpus, staging SLO window, key rotation,
