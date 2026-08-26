@@ -1428,6 +1428,25 @@ The Phase 1 exit gate remains open until the
 full corpus, operational, encryption, source-completeness, and seven-day staging
 proofs pass together.
 
+**R1.1 validation evidence (2026-08-26):**
+
+- API repository gate: `make verify` passed.
+- API CI-only follow-through: `make migration-lint test-race security` passed.
+  Atlas reported no diagnostics for the new migration, race-enabled tests
+  passed, `govulncheck` found no vulnerabilities, and Gitleaks found no leaks.
+- Generated-contract reproducibility: `make generate-check` and the web
+  `contracts:check` gate passed with no drift.
+- Web gates: `npm run verify` passed. The CI-only `bundle:check`, Playwright
+  `test:e2e`, and Lighthouse stages also passed.
+- Desktop gates: `pnpm verify` passed. The pinned external tools were then
+  installed and the CI-required policy, secret, and dependency audits passed
+  with `X_GAUNTLET_REQUIRE_EXTERNAL=1`.
+- Consumer compatibility: web and desktop type checks passed after generation.
+
+This evidence closes R1.1 implementation validation only. The broader Phase 1
+exit gate still requires the full corpus, staging SLO window, key rotation,
+source-completeness scenarios, and operational recovery proofs listed below.
+
 Exit gate:
 
 - deterministic replay passes for the full corpus;
@@ -1746,25 +1765,25 @@ binding, approval, and auditable outcomes.
 
 Every work package adds links here:
 
-| Evidence                | Location                                                                   |
-| ----------------------- | -------------------------------------------------------------------------- |
-| Product contract        | `docs/one-pager.md`                                                        |
-| RFC contract            | `apps/rfc/036-relationship-state-engine.md`                                |
-| Domain schemas          | `apps/rowboat-api/ent/schema/relationship*.go`                             |
-| Migration               | `apps/rowboat-api/migrations/20260726114325_relationship_intelligence.sql` |
-| Ingestion and projector | `apps/rowboat-api/internal/revenue/relationship_state.go`                  |
-| Adapter boundary        | `apps/rowboat-api/internal/revenue/relationship_adapters.go`               |
-| API handlers            | `apps/rowboat-api/internal/revenue/handler.go`                             |
-| Current API tests       | `apps/rowboat-api/internal/revenue/relationship_state_test.go`             |
-| Assertion contract      | `apps/rowboat-api/internal/revenue/relationship_assertion_contract.go`     |
-| Assertion contract tests | `apps/rowboat-api/internal/revenue/relationship_assertion_contract_test.go` |
-| Projection lifecycle tests | `apps/rowboat-api/internal/revenue/relationship_projection_test.go`     |
-| R1.1 migration          | `apps/rowboat-api/migrations/postgres/20260826090000_relationship_assertion_authority.sql` |
-| Web client              | `apps/rowboat-www/components/revenue/relationships-view.tsx`               |
-| Desktop client          | `apps/x/apps/renderer/src/components/relationships-view.tsx`               |
-| Desktop transport       | `apps/x/packages/core/src/relationships/client.ts`                         |
-| Desktop schemas         | `apps/x/packages/shared/src/relationships.ts`                              |
-| Golden fixtures         | `fixtures/relationship-*.json`                                             |
+| Evidence                   | Location                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
+| Product contract           | `docs/one-pager.md`                                                                        |
+| RFC contract               | `apps/rfc/036-relationship-state-engine.md`                                                |
+| Domain schemas             | `apps/rowboat-api/ent/schema/relationship*.go`                                             |
+| Migration                  | `apps/rowboat-api/migrations/20260726114325_relationship_intelligence.sql`                 |
+| Ingestion and projector    | `apps/rowboat-api/internal/revenue/relationship_state.go`                                  |
+| Adapter boundary           | `apps/rowboat-api/internal/revenue/relationship_adapters.go`                               |
+| API handlers               | `apps/rowboat-api/internal/revenue/handler.go`                                             |
+| Current API tests          | `apps/rowboat-api/internal/revenue/relationship_state_test.go`                             |
+| Assertion contract         | `apps/rowboat-api/internal/revenue/relationship_assertion_contract.go`                     |
+| Assertion contract tests   | `apps/rowboat-api/internal/revenue/relationship_assertion_contract_test.go`                |
+| Projection lifecycle tests | `apps/rowboat-api/internal/revenue/relationship_projection_test.go`                        |
+| R1.1 migration             | `apps/rowboat-api/migrations/postgres/20260826090000_relationship_assertion_authority.sql` |
+| Web client                 | `apps/rowboat-www/components/revenue/relationships-view.tsx`                               |
+| Desktop client             | `apps/x/apps/renderer/src/components/relationships-view.tsx`                               |
+| Desktop transport          | `apps/x/packages/core/src/relationships/client.ts`                                         |
+| Desktop schemas            | `apps/x/packages/shared/src/relationships.ts`                                              |
+| Golden fixtures            | `fixtures/relationship-*.json`                                                             |
 
 Phase evidence is incomplete until it includes code, tests, runtime proof,
 security proof, operational proof, and both-client proof.
