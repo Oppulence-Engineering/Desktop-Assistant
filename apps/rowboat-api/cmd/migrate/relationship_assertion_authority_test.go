@@ -21,6 +21,15 @@ func TestRelationshipAssertionAuthorityMigrationIsRollingDeploySafe(t *testing.T
 		}
 	}
 	for _, required := range []string{
+		`legacy relationship assertions violate value schema v1`,
+		`"value" <> btrim("value")`,
+		`octet_length(btrim("value")) > 4096`,
+		`"dimension" not in`,
+		`"source_type" not in`,
+		`"dimension" = 'lifecycle'`,
+		`"dimension" = 'engagement'`,
+		`"dimension" = 'sentiment'`,
+		`"dimension" = 'health'`,
 		`add column "authority_rank"`,
 		`add column "value_schema_version"`,
 		`add column "reviewer_id"`,

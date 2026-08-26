@@ -7,18 +7,13 @@
  */
 
 /**
- * Corrected state dimension.
+ * Participant interaction direction.
  */
-export type CorrectRelationshipBodyDimension =
-  (typeof CorrectRelationshipBodyDimension)[keyof typeof CorrectRelationshipBodyDimension];
+export type IngestRelationshipObservationsBodyObservationsItemParticipantsItemDirection =
+  (typeof IngestRelationshipObservationsBodyObservationsItemParticipantsItemDirection)[keyof typeof IngestRelationshipObservationsBodyObservationsItemParticipantsItemDirection];
 
-export const CorrectRelationshipBodyDimension = {
-  lifecycle: "lifecycle",
-  engagement: "engagement",
-  sentiment: "sentiment",
-  health: "health",
-  summary: "summary",
-  next_action: "next_action",
-  risk: "risk",
-  milestone: "milestone",
+export const IngestRelationshipObservationsBodyObservationsItemParticipantsItemDirection = {
+  inbound: "inbound",
+  outbound: "outbound",
+  internal: "internal",
 } as const;

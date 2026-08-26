@@ -5,7 +5,11 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
+import type { IngestRelationshipObservationsBodyObservationsItemAssertionsItem } from "./ingestRelationshipObservationsBodyObservationsItemAssertionsItem";
+import type { IngestRelationshipObservationsBodyObservationsItemChannel } from "./ingestRelationshipObservationsBodyObservationsItemChannel";
+import type { IngestRelationshipObservationsBodyObservationsItemDirection } from "./ingestRelationshipObservationsBodyObservationsItemDirection";
 import type { IngestRelationshipObservationsBodyObservationsItemNormalizedFacts } from "./ingestRelationshipObservationsBodyObservationsItemNormalizedFacts";
+import type { IngestRelationshipObservationsBodyObservationsItemParticipantsItem } from "./ingestRelationshipObservationsBodyObservationsItemParticipantsItem";
 import type { IngestRelationshipObservationsBodyObservationsItemPayload } from "./ingestRelationshipObservationsBodyObservationsItemPayload";
 
 /**
@@ -14,6 +18,12 @@ import type { IngestRelationshipObservationsBodyObservationsItemPayload } from "
 export type IngestRelationshipObservationsBodyObservationsItem = {
   /** Exact account domain. */
   accountDomain?: string;
+  /** Typed assertion candidates. Caller authority is ignored; userConfirmed records an explicit reviewed correction. */
+  assertions?: IngestRelationshipObservationsBodyObservationsItemAssertionsItem[];
+  /** Interaction channel. */
+  channel?: IngestRelationshipObservationsBodyObservationsItemChannel;
+  /** Interaction direction. */
+  direction?: IngestRelationshipObservationsBodyObservationsItemDirection;
   /** Account display name for first ingestion. */
   displayName?: string;
   /** Normalized event type. */
@@ -24,12 +34,18 @@ export type IngestRelationshipObservationsBodyObservationsItem = {
   normalizedFacts?: IngestRelationshipObservationsBodyObservationsItemNormalizedFacts;
   /** Occurrence time. */
   occurredAt?: string;
+  /** Observed relationship participants. */
+  participants?: IngestRelationshipObservationsBodyObservationsItemParticipantsItem[];
   /** Raw provider payload, sealed at rest. */
   payload?: IngestRelationshipObservationsBodyObservationsItemPayload;
   /** Primary contact email. */
   primaryEmail?: string;
+  /** Receipt time. */
+  receivedAt?: string;
   /** Known relationship id. */
   relationshipId?: string;
+  /** Canonical product:type:externalId references. */
+  resourceRefs?: string[];
   /** Evidence source. */
   source: string;
   /** Provider account id. */

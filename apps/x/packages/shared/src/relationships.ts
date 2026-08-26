@@ -185,6 +185,8 @@ export const RelationshipObservationAssertionInputSchema = z.object({
   confidence: z.number().min(0).max(1),
   reason: z.string(),
   validFrom: z.string(),
+  /** Explicit authenticated-user acceptance; server records it as a reviewed correction. */
+  userConfirmed: z.boolean().optional(),
 });
 
 export const RelationshipObservationParticipantInputSchema = z.object({

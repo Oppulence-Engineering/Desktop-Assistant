@@ -207,10 +207,12 @@ func (s *Service) ProcessRelationshipProjectionJob(
 	if err != nil {
 		return nil, "", err
 	}
-	if job.ProjectorVersion != relationshipProjectorVersion {
+	if job.ProjectorVersion < minimumSupportedRelationshipProjectorJob ||
+		job.ProjectorVersion > relationshipProjectorVersion {
 		err = fmt.Errorf(
-			"%w: projection job requires projector version %d",
+			"%w: projection job requires projector version %d; this worker supports %d through %d",
 			ErrReviewRequired, job.ProjectorVersion,
+			minimumSupportedRelationshipProjectorJob, relationshipProjectorVersion,
 		)
 		return nil, s.failRelationshipProjectionJob(ctx, job, workerID, err), err
 	}

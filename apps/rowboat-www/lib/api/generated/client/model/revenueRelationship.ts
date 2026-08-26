@@ -60,6 +60,8 @@ export interface RevenueRelationship {
   projectedAt?: string | null;
   /** Deterministic projector version. */
   projectorVersion: number;
+  /** Canonical product:type:externalId references. */
+  resourceRefs: string[];
   /** Current relationship risks. */
   risks: string[];
   /** Observed sentiment. */

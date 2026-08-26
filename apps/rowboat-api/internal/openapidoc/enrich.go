@@ -2040,8 +2040,10 @@ func int64Schema(description string, example int64) obj {
 	return obj{"type": "integer", "format": "int64", "description": description, "example": example}
 }
 
-func numberSchema(description string, example float64) obj {
-	return obj{"type": "number", "description": description, "example": example}
+func numberSchema(description string, example float64, extra ...obj) obj {
+	s := obj{"type": "number", "description": description, "example": example}
+	merge(s, extra...)
+	return s
 }
 
 func boolSchema(description string, example bool) obj {

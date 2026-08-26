@@ -147,8 +147,36 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 		t.Fatalf("MissionControlDimensionEvidence.status was corrupted by generic entity metadata: %#v", status)
 	}
 	value := asObj(evidenceProperties["value"])
-	if value["type"] != "string" {
-		t.Fatalf("MissionControlDimensionEvidence.value type = %#v, want string", value["type"])
+	oneOf, ok := value["oneOf"].([]any)
+	if !ok || len(oneOf) != 2 || value["nullable"] != true || asObj(oneOf[0])["type"] != "string" || asObj(oneOf[1])["type"] != "array" {
+		t.Fatalf("MissionControlDimensionEvidence.value must allow scalar and list values: %#v", value)
+	}
+	relationshipProperties := asObj(asObj(schemas["RevenueRelationship"])["properties"])
+	if relationshipProperties["resourceRefs"] == nil {
+		t.Fatal("RevenueRelationship is missing runtime resourceRefs")
+	}
+
+	observationBatch := asObj(asObj(asObj(asObj(spec["paths"])["/v1/relationship-observations/batch"])["post"])["requestBody"])
+	content := asObj(observationBatch["content"])
+	bodySchema := asObj(asObj(content["application/json"])["schema"])
+	observations := asObj(asObj(bodySchema["properties"])["observations"])
+	observationInput := asObj(observations["items"])
+	observationProperties := asObj(observationInput["properties"])
+	for _, field := range []string{"relationshipId", "resourceRefs", "receivedAt", "participants", "assertions", "channel", "direction"} {
+		if observationProperties[field] == nil {
+			t.Fatalf("observation request is missing %s", field)
+		}
+	}
+	assertionItems := asObj(asObj(observationProperties["assertions"])["items"])
+	assertionProperties := asObj(assertionItems["properties"])
+	for _, field := range []string{"valueSchemaVersion", "sourceType", "confidence", "reason", "validFrom", "validTo", "extractorVersion", "projectorCompatVersion", "userConfirmed"} {
+		if assertionProperties[field] == nil {
+			t.Fatalf("observation assertion request is missing %s", field)
+		}
+	}
+	confidence := asObj(assertionProperties["confidence"])
+	if confidence["minimum"] != 0 || confidence["maximum"] != 1 {
+		t.Fatalf("observation assertion confidence bounds are invalid: %#v", confidence)
 	}
 }
 
@@ -176,7 +204,7 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
 	}
-	if value := asObj(evidenceProperties["value"]); value["type"] != "string" {
+	if value := asObj(evidenceProperties["value"]); value["oneOf"] == nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.value is invalid: %#v", value)
 	}
 }

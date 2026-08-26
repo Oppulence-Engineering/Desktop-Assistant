@@ -248,7 +248,8 @@ func TestAuthenticatedObservationCannotMintCanonicalAssertionAuthority(t *testin
 		OccurredAt: now, ReceivedAt: now,
 		Assertions: []RelationshipAssertionInput{{
 			Dimension: "health", Value: "critical", SourceType: "source_fact", Confidence: 1,
-			Reason: "The authenticated caller claimed source authority.",
+			Reason:                 "The authenticated caller claimed source authority.",
+			ProjectorCompatVersion: relationshipProjectorVersion + 100,
 		}},
 	}})
 	if err != nil {
@@ -261,8 +262,120 @@ func TestAuthenticatedObservationCannotMintCanonicalAssertionAuthority(t *testin
 	if err != nil {
 		t.Fatalf("query proposed assertion: %v", err)
 	}
-	if assertion.Status != relationshipAssertionStatusProposed || assertion.SourceType != "ai_inference" || assertion.AuthorityRank != 1 {
+	if assertion.Status != relationshipAssertionStatusProposed || assertion.SourceType != "ai_inference" || assertion.AuthorityRank != 1 ||
+		assertion.ProjectorCompatVersion != relationshipProjectorVersion {
 		t.Fatalf("authenticated caller minted authority: %#v", assertion)
+	}
+}
+
+func TestAuthenticatedUserConfirmedObservationBecomesReviewedCorrection(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 26, 9, 47, 0, 0, time.UTC)
+	decisionAt := now.Add(24 * time.Hour)
+	f.svc.now = func() time.Time { return decisionAt }
+	results, err := f.svc.IngestRelationshipObservationCandidates(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Confirmed Commitment", AccountDomain: "confirmed-commitment.example",
+		Source: "meeting", ExternalID: "confirmed-commitment-1", EventType: "relationship.reviewed",
+		OccurredAt: now, ReceivedAt: now,
+		Assertions: []RelationshipAssertionInput{{
+			Dimension: "next_action", Value: "Send the security packet", SourceType: "source_fact", Confidence: 1,
+			Reason: "The authenticated user confirmed this commitment.", UserConfirmed: true,
+			ProjectorCompatVersion: relationshipProjectorVersion + 100, SupersedesAssertionID: "00000000-0000-4000-8000-000000000001",
+		}, {
+			Dimension: "health", Value: "critical", SourceType: "source_fact", Confidence: 0,
+			Reason: "An unconfirmed explicit-zero candidate.", ProjectorCompatVersion: relationshipProjectorVersion + 100,
+		}},
+	}})
+	if err != nil {
+		t.Fatalf("ingest user-confirmed observation: %v", err)
+	}
+	if results[0].Relationship.NextAction != "Send the security packet" || results[0].Relationship.StateVersion != 1 {
+		t.Fatalf("confirmed observation did not project: %#v", results[0].Relationship)
+	}
+	assertion, err := f.client.RelationshipAssertion.Query().
+		Where(relationshipassertion.DimensionEQ("next_action")).
+		Only(f.ctx)
+	if err != nil {
+		t.Fatalf("query confirmed assertion: %v", err)
+	}
+	if assertion.Status != relationshipAssertionStatusAccepted || assertion.SourceType != "user_correction" ||
+		assertion.AuthorityRank != 5 || assertion.Confidence != 1 || assertion.ReviewerID == nil ||
+		*assertion.ReviewerID != f.user.ID || assertion.ReviewDecision != relationshipAssertionStatusAccepted ||
+		assertion.ReviewedAt == nil || !assertion.ReviewedAt.Equal(decisionAt) ||
+		assertion.ProjectorCompatVersion != relationshipProjectorVersion || assertion.SupersedesAssertionID != "" {
+		t.Fatalf("user confirmation was not recorded as a reviewed correction: %#v", assertion)
+	}
+}
+
+func TestAuthenticatedUserConfirmationCannotSupersedeAnotherDimension(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 26, 9, 48, 0, 0, time.UTC)
+	trusted, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Supersession Guard", AccountDomain: "supersession-guard.example",
+		Source: "hubspot", ExternalID: "supersession-health", EventType: "company.updated",
+		OccurredAt: now, ReceivedAt: now,
+		Assertions: []RelationshipAssertionInput{{
+			Dimension: "health", Value: "healthy", SourceType: "source_fact", Confidence: 1,
+			Reason: "The CRM reports healthy account state.",
+		}},
+	}})
+	if err != nil {
+		t.Fatalf("ingest trusted health: %v", err)
+	}
+	healthAssertion, err := f.client.RelationshipAssertion.Query().
+		Where(relationshipassertion.DimensionEQ("health")).
+		Only(f.ctx)
+	if err != nil {
+		t.Fatalf("query health assertion: %v", err)
+	}
+	confirmed, err := f.svc.IngestRelationshipObservationCandidates(f.ctx, f.user, []RelationshipObservationInput{{
+		RelationshipID: trusted[0].Relationship.ID,
+		Source:         "desktop_note", ExternalID: "supersession-next-action", EventType: "relationship.reviewed",
+		OccurredAt: now.Add(time.Minute), ReceivedAt: now.Add(time.Minute),
+		Assertions: []RelationshipAssertionInput{{
+			Dimension: "next_action", Value: "Send the security packet", SourceType: "source_fact", Confidence: 1,
+			Reason: "The user confirmed the next action.", UserConfirmed: true,
+			SupersedesAssertionID: healthAssertion.ID.String(),
+		}},
+	}})
+	if err != nil {
+		t.Fatalf("ingest confirmed next action: %v", err)
+	}
+	if confirmed[0].Relationship.Health != "healthy" || confirmed[0].Relationship.NextAction != "Send the security packet" {
+		t.Fatalf("cross-dimension supersession changed canonical state: %#v", confirmed[0].Relationship)
+	}
+	nextAction, err := f.client.RelationshipAssertion.Query().
+		Where(relationshipassertion.DimensionEQ("next_action")).
+		Only(f.ctx)
+	if err != nil {
+		t.Fatalf("query next action assertion: %v", err)
+	}
+	if nextAction.SupersedesAssertionID != "" {
+		t.Fatalf("public confirmation retained supersedesAssertionId: %#v", nextAction)
+	}
+}
+
+func TestExplicitZeroAssertionConfidenceIsPreserved(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 26, 9, 48, 0, 0, time.UTC)
+	_, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Zero Confidence", AccountDomain: "zero-confidence.example",
+		Source: "hubspot", ExternalID: "zero-confidence-1", EventType: "company.updated",
+		OccurredAt: now, ReceivedAt: now,
+		Assertions: []RelationshipAssertionInput{{
+			Dimension: "summary", Value: "A deliberately zero-confidence claim.", SourceType: "ai_inference",
+			Confidence: 0, Reason: "The extractor explicitly reported no confidence.",
+		}},
+	}})
+	if err != nil {
+		t.Fatalf("ingest zero-confidence assertion: %v", err)
+	}
+	assertion, err := f.client.RelationshipAssertion.Query().Only(f.ctx)
+	if err != nil {
+		t.Fatalf("query zero-confidence assertion: %v", err)
+	}
+	if assertion.Confidence != 0 {
+		t.Fatalf("confidence = %v, want explicit zero", assertion.Confidence)
 	}
 }
 
@@ -426,6 +539,73 @@ func TestProjectionFailurePreservesAcceptedEvidenceAndDeadLetters(t *testing.T) 
 	original, err := f.client.RelationshipProjectionJob.Get(f.ctx, job.ID)
 	if err != nil || original.Status != "dead" {
 		t.Fatalf("repair must preserve failed audit row: %#v err=%v", original, err)
+	}
+}
+
+func TestProjectionJobsFenceLegacyWorkersWhileNewWorkersDrainLegacyJobs(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 26, 15, 50, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	results, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Rolling Projector", AccountDomain: "rolling-projector.example",
+		Source: "hubspot", ExternalID: "rolling-projector", EventType: "company.updated",
+		OccurredAt: now, ReceivedAt: now,
+		Assertions: []RelationshipAssertionInput{{
+			Dimension: "health", Value: "healthy", SourceType: "source_fact",
+			Confidence: 1, Reason: "Versioned projection fixture.", ValidFrom: now,
+		}},
+	}})
+	if err != nil {
+		t.Fatalf("ingest: %v", err)
+	}
+	currentJob, err := f.client.RelationshipProjectionJob.Query().Only(f.ctx)
+	if err != nil {
+		t.Fatalf("query current projection job: %v", err)
+	}
+	if currentJob.ProjectorVersion != relationshipProjectorVersion || relationshipProjectorVersion <= 1 {
+		t.Fatalf("new job version = %d, current projector = %d", currentJob.ProjectorVersion, relationshipProjectorVersion)
+	}
+
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatalf("workspace: %v", err)
+	}
+	legacyJob, err := f.client.RelationshipProjectionJob.Create().
+		SetWorkspace(ws).
+		SetRelationship(results[0].Relationship).
+		SetUser(f.user).
+		SetIdempotencyKey("relationship-projection:legacy-worker-drain").
+		SetStatus("pending").
+		SetProjectorVersion(minimumSupportedRelationshipProjectorJob).
+		SetEvaluatedAt(now.Add(time.Second)).
+		SetTriggerRefs([]string{"legacy:v1"}).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatalf("create legacy job: %v", err)
+	}
+	if _, status, err := f.svc.ProcessRelationshipProjectionJob(
+		f.ctx, f.user, legacyJob.ID, "version-2-worker",
+	); err != nil || status != "completed" {
+		t.Fatalf("new worker did not drain legacy job: status=%s err=%v", status, err)
+	}
+
+	futureJob, err := f.client.RelationshipProjectionJob.Create().
+		SetWorkspace(ws).
+		SetRelationship(results[0].Relationship).
+		SetUser(f.user).
+		SetIdempotencyKey("relationship-projection:future-worker-fence").
+		SetStatus("pending").
+		SetProjectorVersion(relationshipProjectorVersion + 1).
+		SetEvaluatedAt(now.Add(2 * time.Second)).
+		SetTriggerRefs([]string{"future:v3"}).
+		Save(f.ctx)
+	if err != nil {
+		t.Fatalf("create future job: %v", err)
+	}
+	if _, status, err := f.svc.ProcessRelationshipProjectionJob(
+		f.ctx, f.user, futureJob.ID, "version-2-worker",
+	); !errors.Is(err, ErrReviewRequired) || status != "failed" {
+		t.Fatalf("future job was not fenced for retry: status=%s err=%v", status, err)
 	}
 }
 

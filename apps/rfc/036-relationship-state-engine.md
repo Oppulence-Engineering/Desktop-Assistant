@@ -157,10 +157,10 @@ The following capabilities exist:
 - versioned typed assertion validation, explicit accepted/proposed/rejected/
   superseded/retracted/expired lifecycle states, persisted authority rank, and
   reviewer audit metadata;
-- server-owned assertion admission: authenticated observation callers can only
-  create proposed AI-tier candidates, while accepted source facts come from
-  provider-verified internal adapters and user corrections use the dedicated
-  correction path;
+- server-owned assertion admission: ordinary authenticated observation claims
+  become proposed AI-tier candidates, accepted source facts come only from
+  provider-verified internal adapters, and an explicit `userConfirmed` decision
+  is recorded atomically as an accepted user correction with reviewer metadata;
 - deterministic selection and materialized relationship fields;
 - immutable snapshots when projected state changes;
 - explicit projection time, projector compatibility, stable state hashes, a
@@ -395,6 +395,8 @@ Every assertion must contain:
 
 Free-form string values are insufficient for typed state dimensions. The API
 must validate values against versioned dimension schemas before acceptance.
+The deterministic authority ladder is `user_correction` above `source_fact`,
+above `deterministic`, above `external_research`, above `ai_inference`.
 
 ## 7. System invariants
 
@@ -1424,12 +1426,22 @@ canonical authority. Retraction and supersession preserve historical replay
 through their validity boundaries. The additive migration deliberately keeps
 legacy `active` rows and the database default until pre-R1.1 projectors have
 drained. New projectors read both statuses while new writers emit `accepted`.
+New projection jobs require projector version 2, so a pre-R1.1 version-1 worker
+fails them for retry instead of silently completing stale state; version-2
+workers remain able to drain version-1 jobs.
 The Phase 1 exit gate remains open until the
 full corpus, operational, encryption, source-completeness, and seven-day staging
 proofs pass together.
 
 **R1.1 validation evidence (2026-08-26):**
 
+- Adversarial review: two independent reviewers and two follow-up verification
+  reviewers examined the implementation and generated contracts. Their findings
+  covered legacy-row migration safety, rolling-projector fencing, public
+  authority admission, supersession, review timestamps, explicit-zero
+  confidence, desktop outbox transport, and Mission Control response shapes.
+  Every actionable finding was fixed and received regression coverage before
+  the final repository gates ran.
 - API repository gate: `make verify` passed.
 - API CI-only follow-through: `make migration-lint test-race security` passed.
   Atlas reported no diagnostics for the new migration, race-enabled tests
@@ -1442,20 +1454,28 @@ proofs pass together.
   installed and the CI-required policy, secret, and dependency audits passed
   with `X_GAUNTLET_REQUIRE_EXTERNAL=1`.
 - Consumer compatibility: web and desktop type checks passed after generation.
-- Authenticated public-interface acceptance: the real `cmd/server` process ran
-  against a freshly migrated PostgreSQL 16 database and the repository's
-  `cmd/devstack` identity provider. `/healthz` and `/readyz` returned HTTP 200,
-  with both database and JWKS checks reporting `ok`. The served
-  `/openapi.json` contract mounted `/v1/relationship-observations/batch` and
-  exposed the Mission Control `value` and `reason` fields as strings plus
-  integer authority-rank and value-schema-version metadata.
+- Authenticated public-interface acceptance: freshly built `cmd/server` and
+  `cmd/devstack` binaries ran against a freshly migrated PostgreSQL 16
+  database. `/healthz` and `/readyz` returned HTTP 200, with database and JWKS
+  checks reporting `ok`. The served `/openapi.json` contract mounted the full
+  observation-batch request, including assertions, participants, resource
+  references, receipt time, channel, and direction. Mission Control evidence
+  values accept scalar strings, string arrays, or null where a dimension has no
+  value.
 - End-to-end authority behavior: a JWT-authenticated observation POST returned
-  HTTP 201 and completed its inline projection. A caller-supplied
-  `source_fact` remained non-canonical, leaving health `unknown` at state
-  version 0. An authenticated correction returned HTTP 201, projected health
-  to `healthy` at state version 1, and exposed an accepted
-  `user_correction` with authority rank 5, schema version 1, reviewer identity,
-  review decision, and review timestamp through Mission Control.
+  HTTP 201 and completed a projector-version-2 job. The explicit user-confirmed
+  risk became an accepted `user_correction` with server-stamped reviewer
+  metadata. Its caller-supplied future projector version was clamped to 2 and
+  its untrusted supersession target was cleared. An unconfirmed `source_fact`
+  health candidate was downgraded to proposed `ai_inference`, preserved its
+  explicit confidence of zero, and left canonical health `unknown`. The
+  resulting relationship had state version 1, the confirmed risk, empty rather
+  than null milestone data, and the submitted resource reference.
+- Generated-client acceptance: the generated Zod request schema accepted the
+  same observation payload and rejected confidence above 1. The generated
+  relationship response schema parsed the live Mission Control response,
+  including the risk string array. Omitting required assertion confidence from
+  a distinct observation returned HTTP 400.
 - Lifecycle and replay behavior: retracting that assertion returned HTTP 200,
   restored health to `unknown` at state version 2, and removed active health
   support without deleting the observation timeline. Reposting the same

@@ -366,6 +366,10 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           undefined,
         ]),
         projectorVersion: faker.number.int(),
+        resourceRefs: Array.from(
+          { length: faker.number.int({ min: 1, max: 10 }) },
+          (_, i) => i + 1,
+        ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
         risks: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
           () => faker.string.alpha({ length: { min: 10, max: 20 } }),
         ),
@@ -504,6 +508,10 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           undefined,
         ]),
         projectorVersion: faker.number.int(),
+        resourceRefs: Array.from(
+          { length: faker.number.int({ min: 1, max: 10 }) },
+          (_, i) => i + 1,
+        ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
         risks: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
           () => faker.string.alpha({ length: { min: 10, max: 20 } }),
         ),
@@ -674,6 +682,10 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     projectorVersion: faker.number.int(),
+    resourceRefs: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
     risks: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
       faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
@@ -806,6 +818,10 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     projectorVersion: faker.number.int(),
+    resourceRefs: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
     risks: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
       faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
@@ -969,6 +985,10 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     projectorVersion: faker.number.int(),
+    resourceRefs: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
     risks: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
       faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
@@ -1101,6 +1121,10 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       undefined,
     ]),
     projectorVersion: faker.number.int(),
+    resourceRefs: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
     risks: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
       faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
@@ -2123,6 +2147,10 @@ export const getListRelationshipsResponseMock = (
         undefined,
       ]),
       projectorVersion: faker.number.int(),
+      resourceRefs: Array.from(
+        { length: faker.number.int({ min: 1, max: 10 }) },
+        (_, i) => i + 1,
+      ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
       risks: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
         () => faker.string.alpha({ length: { min: 10, max: 20 } }),
       ),
@@ -2216,6 +2244,9 @@ export const getCreateRelationshipResponseMock = (
     undefined,
   ]),
   projectorVersion: faker.number.int(),
+  resourceRefs: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ),
   risks: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
     faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),
@@ -2814,7 +2845,7 @@ export const getGetRelationshipResponseMock = (
           ]),
           authorityRank: faker.helpers.arrayElement([faker.number.int(), undefined]),
           confidence: faker.helpers.arrayElement([
-            faker.number.float({ fractionDigits: 2 }),
+            faker.number.float({ min: 0, max: 1, fractionDigits: 2 }),
             undefined,
           ]),
           dimension: faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -2873,8 +2904,13 @@ export const getGetRelationshipResponseMock = (
             undefined,
           ]),
           value: faker.helpers.arrayElement([
-            faker.string.alpha({ length: { min: 10, max: 20 } }),
-            undefined,
+            faker.helpers.arrayElement([
+              faker.string.alpha({ length: { min: 10, max: 20 } }),
+              Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+                () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+              ),
+            ]),
+            null,
           ]),
           valueSchemaVersion: faker.helpers.arrayElement([faker.number.int(), undefined]),
         },
@@ -3148,6 +3184,10 @@ export const getGetRelationshipResponseMock = (
         undefined,
       ]),
       projectorVersion: faker.number.int(),
+      resourceRefs: Array.from(
+        { length: faker.number.int({ min: 1, max: 10 }) },
+        (_, i) => i + 1,
+      ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
       risks: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
         () => faker.string.alpha({ length: { min: 10, max: 20 } }),
       ),
@@ -3251,6 +3291,9 @@ export const getRetractRelationshipAssertionResponseMock = (
     undefined,
   ]),
   projectorVersion: faker.number.int(),
+  resourceRefs: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ),
   risks: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
     faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),
@@ -3692,6 +3735,10 @@ export const getCorrectConversationEvidenceResponseMock = (
       undefined,
     ]),
     projectorVersion: faker.number.int(),
+    resourceRefs: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
     risks: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
       faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
@@ -3980,6 +4027,10 @@ export const getDecideConversationChangeResponseMock = (
       undefined,
     ]),
     projectorVersion: faker.number.int(),
+    resourceRefs: Array.from(
+      { length: faker.number.int({ min: 1, max: 10 }) },
+      (_, i) => i + 1,
+    ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
     risks: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
       faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
@@ -4119,6 +4170,9 @@ export const getCorrectRelationshipResponseMock = (
     undefined,
   ]),
   projectorVersion: faker.number.int(),
+  resourceRefs: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ),
   risks: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
     faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),

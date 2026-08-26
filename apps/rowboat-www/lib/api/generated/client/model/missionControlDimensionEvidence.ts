@@ -20,7 +20,11 @@ export interface MissionControlDimensionEvidence {
   authority?: MissionControlDimensionEvidenceAuthority;
   /** Deterministic ordinal authority rank. */
   authorityRank?: number;
-  /** Assertion confidence. */
+  /**
+   * Assertion confidence.
+   * @minimum 0
+   * @maximum 1
+   */
   confidence?: number;
   /** Projected dimension. */
   dimension: string;
@@ -59,8 +63,8 @@ export interface MissionControlDimensionEvidence {
    * @nullable
    */
   validTo?: string | null;
-  /** Typed projected value. */
-  value?: string;
+  /** Typed projected value. Scalar dimensions return a string; risk and milestone return string arrays. */
+  value?: string | string[] | null;
   /** Typed dimension schema version. */
   valueSchemaVersion?: number;
 }

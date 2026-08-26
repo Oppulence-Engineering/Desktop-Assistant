@@ -7,18 +7,16 @@
  */
 
 /**
- * Corrected state dimension.
+ * Interaction channel.
  */
-export type CorrectRelationshipBodyDimension =
-  (typeof CorrectRelationshipBodyDimension)[keyof typeof CorrectRelationshipBodyDimension];
+export type IngestRelationshipObservationsBodyObservationsItemChannel =
+  (typeof IngestRelationshipObservationsBodyObservationsItemChannel)[keyof typeof IngestRelationshipObservationsBodyObservationsItemChannel];
 
-export const CorrectRelationshipBodyDimension = {
-  lifecycle: "lifecycle",
-  engagement: "engagement",
-  sentiment: "sentiment",
-  health: "health",
-  summary: "summary",
-  next_action: "next_action",
-  risk: "risk",
-  milestone: "milestone",
+export const IngestRelationshipObservationsBodyObservationsItemChannel = {
+  email: "email",
+  meeting: "meeting",
+  call: "call",
+  chat: "chat",
+  note: "note",
+  crm: "crm",
 } as const;

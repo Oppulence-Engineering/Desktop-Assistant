@@ -517,6 +517,9 @@ export const ListRelationshipIdentityCandidates200Response = zod
                   .nullish()
                   .describe("Explicit evaluation time used by the projector."),
                 projectorVersion: zod.int().describe("Deterministic projector version."),
+                resourceRefs: zod
+                  .array(zod.string().describe("Resource reference."))
+                  .describe("Canonical product:type:externalId references."),
                 risks: zod
                   .array(zod.string().describe("Risk."))
                   .describe("Current relationship risks."),
@@ -640,6 +643,9 @@ export const ListRelationshipIdentityCandidates200Response = zod
                   .nullish()
                   .describe("Explicit evaluation time used by the projector."),
                 projectorVersion: zod.int().describe("Deterministic projector version."),
+                resourceRefs: zod
+                  .array(zod.string().describe("Resource reference."))
+                  .describe("Canonical product:type:externalId references."),
                 risks: zod
                   .array(zod.string().describe("Risk."))
                   .describe("Current relationship risks."),
@@ -806,6 +812,9 @@ export const GetRelationshipIdentityCandidate200Response = zod
           .nullish()
           .describe("Explicit evaluation time used by the projector."),
         projectorVersion: zod.int().describe("Deterministic projector version."),
+        resourceRefs: zod
+          .array(zod.string().describe("Resource reference."))
+          .describe("Canonical product:type:externalId references."),
         risks: zod.array(zod.string().describe("Risk.")).describe("Current relationship risks."),
         sentiment: zod
           .enum(["unknown", "positive", "mixed", "negative"])
@@ -916,6 +925,9 @@ export const GetRelationshipIdentityCandidate200Response = zod
           .nullish()
           .describe("Explicit evaluation time used by the projector."),
         projectorVersion: zod.int().describe("Deterministic projector version."),
+        resourceRefs: zod
+          .array(zod.string().describe("Resource reference."))
+          .describe("Canonical product:type:externalId references."),
         risks: zod.array(zod.string().describe("Risk.")).describe("Current relationship risks."),
         sentiment: zod
           .enum(["unknown", "positive", "mixed", "negative"])
@@ -1087,6 +1099,9 @@ export const DecideRelationshipIdentityCandidate200Response = zod
           .nullish()
           .describe("Explicit evaluation time used by the projector."),
         projectorVersion: zod.int().describe("Deterministic projector version."),
+        resourceRefs: zod
+          .array(zod.string().describe("Resource reference."))
+          .describe("Canonical product:type:externalId references."),
         risks: zod.array(zod.string().describe("Risk.")).describe("Current relationship risks."),
         sentiment: zod
           .enum(["unknown", "positive", "mixed", "negative"])
@@ -1197,6 +1212,9 @@ export const DecideRelationshipIdentityCandidate200Response = zod
           .nullish()
           .describe("Explicit evaluation time used by the projector."),
         projectorVersion: zod.int().describe("Deterministic projector version."),
+        resourceRefs: zod
+          .array(zod.string().describe("Resource reference."))
+          .describe("Canonical product:type:externalId references."),
         risks: zod.array(zod.string().describe("Risk.")).describe("Current relationship risks."),
         sentiment: zod
           .enum(["unknown", "positive", "mixed", "negative"])
@@ -1297,6 +1315,9 @@ export const DecideRelationshipIdentityCandidate409Response = zod
  * Atomically ingests up to 100 idempotent observations from Gmail, Calendar, Slack, CRM, desktop, or another adapter, then reprojects each affected relationship once.
  * @summary Ingest relationship observations
  */
+export const ingestRelationshipObservationsBodyObservationsItemAssertionsItemConfidenceMin = 0;
+export const ingestRelationshipObservationsBodyObservationsItemAssertionsItemConfidenceMax = 1;
+
 export const IngestRelationshipObservationsBody = zod
   .strictObject({
     observations: zod
@@ -1304,6 +1325,89 @@ export const IngestRelationshipObservationsBody = zod
         zod
           .strictObject({
             accountDomain: zod.string().optional().describe("Exact account domain."),
+            assertions: zod
+              .array(
+                zod
+                  .strictObject({
+                    citationsJson: zod
+                      .string()
+                      .optional()
+                      .describe("JSON citations for external research."),
+                    confidence: zod
+                      .number()
+                      .min(
+                        ingestRelationshipObservationsBodyObservationsItemAssertionsItemConfidenceMin,
+                      )
+                      .max(
+                        ingestRelationshipObservationsBodyObservationsItemAssertionsItemConfidenceMax,
+                      )
+                      .describe("Assertion confidence, including explicit zero."),
+                    dimension: zod
+                      .enum([
+                        "lifecycle",
+                        "engagement",
+                        "sentiment",
+                        "health",
+                        "summary",
+                        "next_action",
+                        "risk",
+                        "milestone",
+                      ])
+                      .describe("Projected dimension."),
+                    extractorVersion: zod.string().optional().describe("Extractor version."),
+                    projectorCompatVersion: zod
+                      .int()
+                      .optional()
+                      .describe(
+                        "Minimum compatible projector version. Public candidates are clamped to the current version.",
+                      ),
+                    reason: zod.string().describe("Evidence-backed explanation."),
+                    sourceType: zod
+                      .enum(["source_fact", "deterministic", "external_research", "ai_inference"])
+                      .optional()
+                      .describe(
+                        "Claimed source type. Unconfirmed public assertions are downgraded to proposed AI-tier candidates.",
+                      ),
+                    supersedesAssertionId: zod
+                      .uuid()
+                      .optional()
+                      .describe(
+                        "Reserved for trusted internal writers. Public observation admission ignores it; use the correction endpoint for validated supersession.",
+                      ),
+                    userConfirmed: zod
+                      .boolean()
+                      .optional()
+                      .describe(
+                        "Whether the authenticated user explicitly accepted this value. The server records it as a user correction with reviewer metadata.",
+                      ),
+                    validFrom: zod.iso
+                      .datetime({ offset: true })
+                      .optional()
+                      .describe("Validity start."),
+                    validTo: zod.iso
+                      .datetime({ offset: true })
+                      .nullish()
+                      .describe("Optional exclusive validity end."),
+                    value: zod.string().describe("Typed assertion value."),
+                    valueSchemaVersion: zod
+                      .int()
+                      .optional()
+                      .describe("Typed value schema version."),
+                  })
+                  .describe("Observation assertion."),
+              )
+              .optional()
+              .describe(
+                "Typed assertion candidates. Caller authority is ignored; userConfirmed records an explicit reviewed correction.",
+              ),
+            channel: zod
+              .enum(["email", "meeting", "call", "chat", "note", "crm"])
+              .optional()
+              .describe("Interaction channel."),
+            direction: zod
+              .enum(["inbound", "outbound", "internal"])
+              .optional()
+              .describe("Interaction direction."),
             displayName: zod
               .string()
               .optional()
@@ -1315,12 +1419,38 @@ export const IngestRelationshipObservationsBody = zod
               .optional()
               .describe("Provider-neutral facts."),
             occurredAt: zod.iso.datetime({ offset: true }).optional().describe("Occurrence time."),
+            participants: zod
+              .array(
+                zod
+                  .strictObject({
+                    direction: zod
+                      .enum(["inbound", "outbound", "internal"])
+                      .optional()
+                      .describe("Participant interaction direction."),
+                    displayName: zod.string().describe("Participant display name."),
+                    email: zod.string().optional().describe("Participant email."),
+                    externalRefs: zod
+                      .array(zod.string().describe("Participant reference."))
+                      .optional()
+                      .describe("Provider participant references."),
+                    role: zod.string().optional().describe("Relationship role."),
+                    title: zod.string().optional().describe("Participant title."),
+                  })
+                  .describe("Observation participant."),
+              )
+              .optional()
+              .describe("Observed relationship participants."),
             payload: zod
               .record(zod.string(), zod.unknown())
               .optional()
               .describe("Raw provider payload, sealed at rest."),
             primaryEmail: zod.string().optional().describe("Primary contact email."),
+            receivedAt: zod.iso.datetime({ offset: true }).optional().describe("Receipt time."),
             relationshipId: zod.uuid().optional().describe("Known relationship id."),
+            resourceRefs: zod
+              .array(zod.string().describe("Resource reference."))
+              .optional()
+              .describe("Canonical product:type:externalId references."),
             source: zod.string().describe("Evidence source."),
             sourceAccountId: zod.string().optional().describe("Provider account id."),
             sourceVersion: zod.string().optional().describe("Provider event version."),
@@ -2504,6 +2634,9 @@ export const ListRelationships200Response = zod
               .nullish()
               .describe("Explicit evaluation time used by the projector."),
             projectorVersion: zod.int().describe("Deterministic projector version."),
+            resourceRefs: zod
+              .array(zod.string().describe("Resource reference."))
+              .describe("Canonical product:type:externalId references."),
             risks: zod
               .array(zod.string().describe("Risk."))
               .describe("Current relationship risks."),
@@ -2609,6 +2742,9 @@ export const CreateRelationship201Response = zod
       .nullish()
       .describe("Explicit evaluation time used by the projector."),
     projectorVersion: zod.int().describe("Deterministic projector version."),
+    resourceRefs: zod
+      .array(zod.string().describe("Resource reference."))
+      .describe("Canonical product:type:externalId references."),
     risks: zod.array(zod.string().describe("Risk.")).describe("Current relationship risks."),
     sentiment: zod
       .enum(["unknown", "positive", "mixed", "negative"])
@@ -2905,6 +3041,9 @@ export const GetRelationshipGraph404Response = zod
 export const GetRelationshipParams = zod.object({
   relationshipId: zod.uuid().describe("Relationship id."),
 });
+
+export const getRelationship200ResponseMissionControlEvidenceConfidenceMin = 0;
+export const getRelationship200ResponseMissionControlEvidenceConfidenceMax = 1;
 
 export const GetRelationship200Response = zod
   .strictObject({
@@ -3352,7 +3491,12 @@ export const GetRelationship200Response = zod
                   .int()
                   .optional()
                   .describe("Deterministic ordinal authority rank."),
-                confidence: zod.number().optional().describe("Assertion confidence."),
+                confidence: zod
+                  .number()
+                  .min(getRelationship200ResponseMissionControlEvidenceConfidenceMin)
+                  .max(getRelationship200ResponseMissionControlEvidenceConfidenceMax)
+                  .optional()
+                  .describe("Assertion confidence."),
                 dimension: zod.string().describe("Projected dimension."),
                 evidence: zod
                   .array(
@@ -3414,7 +3558,17 @@ export const GetRelationship200Response = zod
                   .datetime({ offset: true })
                   .nullish()
                   .describe("Assertion validity end."),
-                value: zod.string().optional().describe("Typed projected value."),
+                value: zod
+                  .union([
+                    zod.string().describe("Scalar projected value."),
+                    zod
+                      .array(zod.string().describe("Projected list item."))
+                      .describe("Collection projected value."),
+                  ])
+                  .nullish()
+                  .describe(
+                    "Typed projected value. Scalar dimensions return a string; risk and milestone return string arrays.",
+                  ),
                 valueSchemaVersion: zod
                   .int()
                   .optional()
@@ -3647,6 +3801,9 @@ export const GetRelationship200Response = zod
           .nullish()
           .describe("Explicit evaluation time used by the projector."),
         projectorVersion: zod.int().describe("Deterministic projector version."),
+        resourceRefs: zod
+          .array(zod.string().describe("Resource reference."))
+          .describe("Canonical product:type:externalId references."),
         risks: zod.array(zod.string().describe("Risk.")).describe("Current relationship risks."),
         sentiment: zod
           .enum(["unknown", "positive", "mixed", "negative"])
@@ -3848,6 +4005,9 @@ export const RetractRelationshipAssertion200Response = zod
       .nullish()
       .describe("Explicit evaluation time used by the projector."),
     projectorVersion: zod.int().describe("Deterministic projector version."),
+    resourceRefs: zod
+      .array(zod.string().describe("Resource reference."))
+      .describe("Canonical product:type:externalId references."),
     risks: zod.array(zod.string().describe("Risk.")).describe("Current relationship risks."),
     sentiment: zod
       .enum(["unknown", "positive", "mixed", "negative"])
@@ -4728,6 +4888,9 @@ export const CorrectConversationEvidence201Response = zod
           .nullish()
           .describe("Explicit evaluation time used by the projector."),
         projectorVersion: zod.int().describe("Deterministic projector version."),
+        resourceRefs: zod
+          .array(zod.string().describe("Resource reference."))
+          .describe("Canonical product:type:externalId references."),
         risks: zod.array(zod.string().describe("Risk.")).describe("Current relationship risks."),
         sentiment: zod
           .enum(["unknown", "positive", "mixed", "negative"])
@@ -5090,6 +5253,9 @@ export const DecideConversationChange201Response = zod
           .nullish()
           .describe("Explicit evaluation time used by the projector."),
         projectorVersion: zod.int().describe("Deterministic projector version."),
+        resourceRefs: zod
+          .array(zod.string().describe("Resource reference."))
+          .describe("Canonical product:type:externalId references."),
         risks: zod.array(zod.string().describe("Risk.")).describe("Current relationship risks."),
         sentiment: zod
           .enum(["unknown", "positive", "mixed", "negative"])
@@ -5417,7 +5583,16 @@ export const CorrectRelationshipParams = zod.object({
 export const CorrectRelationshipBody = zod
   .strictObject({
     dimension: zod
-      .enum(["lifecycle", "engagement", "sentiment", "health", "next_action"])
+      .enum([
+        "lifecycle",
+        "engagement",
+        "sentiment",
+        "health",
+        "summary",
+        "next_action",
+        "risk",
+        "milestone",
+      ])
       .describe("Corrected state dimension."),
     reason: zod.string().describe("Why the model is wrong."),
     supersedesAssertionId: zod
@@ -5477,6 +5652,9 @@ export const CorrectRelationship201Response = zod
       .nullish()
       .describe("Explicit evaluation time used by the projector."),
     projectorVersion: zod.int().describe("Deterministic projector version."),
+    resourceRefs: zod
+      .array(zod.string().describe("Resource reference."))
+      .describe("Canonical product:type:externalId references."),
     risks: zod.array(zod.string().describe("Risk.")).describe("Current relationship risks."),
     sentiment: zod
       .enum(["unknown", "positive", "mixed", "negative"])

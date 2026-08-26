@@ -348,6 +348,7 @@ export function confirmedCommitmentObservation(args: {
             confidence: 1,
             reason: "User confirmed this commitment from the cited meeting transcript.",
             validFrom: commitment.confirmed_at,
+            userConfirmed: true,
           },
         ]
       : [],

@@ -1,6 +1,7 @@
 package revenue
 
 import (
+	"encoding/json"
 	"errors"
 	"math"
 	"strings"
@@ -10,6 +11,22 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/google/uuid"
 )
+
+func TestRelationshipAssertionInputJSONRequiresConfidenceAndPreservesZero(t *testing.T) {
+	t.Parallel()
+	var input RelationshipAssertionInput
+	err := json.Unmarshal([]byte(`{"dimension":"health","value":"healthy","reason":"Observed."}`), &input)
+	if err == nil || !strings.Contains(err.Error(), "confidence is required") {
+		t.Fatalf("missing confidence error = %v", err)
+	}
+	err = json.Unmarshal([]byte(`{"dimension":"health","value":"healthy","confidence":0,"reason":"Observed."}`), &input)
+	if err != nil {
+		t.Fatalf("decode explicit zero: %v", err)
+	}
+	if input.Confidence != 0 {
+		t.Fatalf("confidence = %v, want explicit zero", input.Confidence)
+	}
+}
 
 func TestNormalizeRelationshipAssertionInput(t *testing.T) {
 	t.Parallel()

@@ -84,6 +84,20 @@ func normalizeRelationshipAssertionInput(input RelationshipAssertionInput) (Rela
 
 	switch input.admission {
 	case relationshipAssertionAdmissionUntrustedObservation:
+		// No public assertion may select a future projector or suppress another
+		// assertion. Explicit supersession remains a dedicated correction action
+		// where relationship, lifecycle, and dimension are validated transactionally.
+		input.ProjectorCompatVersion = relationshipProjectorVersion
+		input.SupersedesAssertionID = ""
+		if input.UserConfirmed {
+			// An authenticated user may confirm a claim in the same atomic,
+			// idempotent observation write that durably records its evidence. This
+			// is a user decision, never caller-minted provider authority.
+			input.admission = relationshipAssertionAdmissionUserCorrection
+			input.SourceType = "user_correction"
+			input.status = relationshipAssertionStatusAccepted
+			break
+		}
 		if input.SourceType == "user_correction" {
 			return input, fmt.Errorf(
 				"%w: user corrections must use the dedicated correction endpoint",

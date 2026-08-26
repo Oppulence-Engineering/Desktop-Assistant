@@ -41,7 +41,10 @@ type RelationshipState struct {
 	StateVersion int      `json:"stateVersion"`
 }
 
-const relationshipProjectorVersion = 1
+const (
+	relationshipProjectorVersion             = 2
+	minimumSupportedRelationshipProjectorJob = 1
+)
 
 // RelationshipParticipantInput identifies a participant observed in a relationship event.
 type RelationshipParticipantInput struct {
@@ -70,12 +73,39 @@ type RelationshipAssertionInput struct {
 	SupersedesAssertionID  string     `json:"supersedesAssertionId,omitempty"`
 	ExtractorVersion       string     `json:"extractorVersion,omitempty"`
 	ProjectorCompatVersion int        `json:"projectorCompatVersion,omitempty"`
+	// UserConfirmed is an explicit authenticated-user decision carried with a
+	// durable observation. It is equivalent in authority to the dedicated
+	// correction endpoint: the server ignores caller-claimed source authority,
+	// records the current user as reviewer, and emits an accepted correction.
+	UserConfirmed bool `json:"userConfirmed,omitempty"`
 	// CitationsJSON is the evidence behind an external_research assertion
 	// (RFC 039): a JSON array of {title, url, excerpts[]}. Empty for every
 	// owned-data source type.
 	CitationsJSON string `json:"citationsJson,omitempty"`
 	admission     relationshipAssertionAdmission
 	status        string
+	reviewedAt    time.Time
+}
+
+// UnmarshalJSON keeps explicit zero confidence distinct from an omitted public
+// contract field. Internal trusted writers construct this type directly, while
+// authenticated JSON callers must provide the confidence required by OpenAPI.
+func (input *RelationshipAssertionInput) UnmarshalJSON(data []byte) error {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	rawConfidence, ok := fields["confidence"]
+	if !ok || string(rawConfidence) == "null" {
+		return errors.New("assertion confidence is required")
+	}
+	type plainRelationshipAssertionInput RelationshipAssertionInput
+	var decoded plainRelationshipAssertionInput
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	*input = RelationshipAssertionInput(decoded)
+	return nil
 }
 
 // RelationshipObservationInput is the provider-neutral adapter contract.
@@ -276,10 +306,14 @@ func (s *Service) IngestRelationshipObservationCandidates(
 ) ([]RelationshipObservationResult, error) {
 	admitted := make([]RelationshipObservationInput, len(inputs))
 	copy(admitted, inputs)
+	reviewedAt := s.now().UTC()
 	for i := range admitted {
 		admitted[i].Assertions = append([]RelationshipAssertionInput(nil), admitted[i].Assertions...)
 		for j := range admitted[i].Assertions {
 			admitted[i].Assertions[j].admission = relationshipAssertionAdmissionUntrustedObservation
+			if admitted[i].Assertions[j].UserConfirmed {
+				admitted[i].Assertions[j].reviewedAt = reviewedAt
+			}
 		}
 	}
 	return s.ingestTrustedRelationshipObservations(ctx, u, admitted)
@@ -1407,9 +1441,6 @@ func createRelationshipAssertion(
 		}
 		input.ValidTo = &validTo
 	}
-	if input.Confidence == 0 && input.SourceType != "user_correction" {
-		input.Confidence = 0.5
-	}
 	if input.SourceType == "user_correction" {
 		input.Confidence = 1
 	}
@@ -1435,9 +1466,13 @@ func createRelationshipAssertion(
 		SetExtractorVersion(strings.TrimSpace(input.ExtractorVersion)).
 		SetProjectorCompatVersion(input.ProjectorCompatVersion)
 	if input.admission == relationshipAssertionAdmissionUserCorrection {
+		reviewedAt := input.reviewedAt
+		if reviewedAt.IsZero() {
+			reviewedAt = time.Now().UTC()
+		}
 		create.SetReviewerID(u.ID).
 			SetReviewDecision(relationshipAssertionStatusAccepted).
-			SetReviewedAt(input.ValidFrom)
+			SetReviewedAt(reviewedAt)
 	}
 	if input.ValidTo != nil {
 		create.SetValidTo(*input.ValidTo)
@@ -2004,6 +2039,7 @@ func (s *Service) CorrectRelationship(
 		ExtractorVersion:       "user-correction-v1",
 		ProjectorCompatVersion: relationshipProjectorVersion,
 		admission:              relationshipAssertionAdmissionUserCorrection,
+		reviewedAt:             evaluatedAt,
 	})
 	if err != nil {
 		return rollback(err)

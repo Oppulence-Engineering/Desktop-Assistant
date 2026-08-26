@@ -7,12 +7,12 @@
  */
 
 /**
- * Corrected state dimension.
+ * Projected dimension.
  */
-export type CorrectRelationshipBodyDimension =
-  (typeof CorrectRelationshipBodyDimension)[keyof typeof CorrectRelationshipBodyDimension];
+export type IngestRelationshipObservationsBodyObservationsItemAssertionsItemDimension =
+  (typeof IngestRelationshipObservationsBodyObservationsItemAssertionsItemDimension)[keyof typeof IngestRelationshipObservationsBodyObservationsItemAssertionsItemDimension];
 
-export const CorrectRelationshipBodyDimension = {
+export const IngestRelationshipObservationsBodyObservationsItemAssertionsItemDimension = {
   lifecycle: "lifecycle",
   engagement: "engagement",
   sentiment: "sentiment",
