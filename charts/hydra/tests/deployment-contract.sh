@@ -48,6 +48,7 @@ import json
 import os
 import re
 from pathlib import Path
+from urllib.parse import urlparse
 
 root = Path(os.environ["REPO_ROOT"])
 tmp = Path(os.environ["TMP_DIR"])
@@ -69,12 +70,20 @@ def enabled(item, environment):
         not item.get("environments") or environment in item["environments"]
     )
 
+def binding(item, field, environment):
+    values = item.get(field)
+    assert isinstance(values, dict), (item.get("name"), field, values)
+    value = values.get(environment)
+    assert isinstance(value, str) and value, (item.get("name"), field, environment)
+    return value
+
 for environment in ("production", "staging"):
     values = root / f"charts/rowboat-api/values-{environment}.yaml"
     rendered = tmp / f"rowboat-api-{environment}.yaml"
     public_base = chart_value(values, "PUBLIC_BASE_URL").rstrip("/")
     client_id = chart_value(values, "ORY_BROKER_CLIENT_ID")
     assert rendered_value(rendered, "PUBLIC_BASE_URL") == public_base
+    assert rendered_value(rendered, "CONNECTOR_OAUTH_LEGACY_STATE_WRITE") == "false"
     contract = verifiers["environments"][environment]
     assert contract["issuer"] == public_base
     assert contract["jwksUrl"] == public_base + "/.well-known/connector-jwks.json"
@@ -94,13 +103,14 @@ for environment in ("production", "staging"):
         ]
         expected_products.append({
             "connector": connector["name"],
-            "audience": connector["audience"],
+            "mcpUrl": binding(connector, "mcpUrls", environment),
+            "audience": binding(connector, "audiences", environment),
             "scopes": scopes,
             "requiredScopes": required_scopes,
         })
         expected_callbacks.append(f"{public_base}/v1/connections/{connector['name']}/callback")
         expected_scopes.extend(scopes)
-        expected_audiences.append(connector["audience"])
+        expected_audiences.append(binding(connector, "audiences", environment))
     assert contract["products"] == expected_products
 
     manifest = (root / f"charts/hydra/clients/connector-broker-{environment}.yaml").read_text()
@@ -118,11 +128,34 @@ for line in (root / "docs/deployment-examples/product-resource-server.env.exampl
         key, value = line.split("=", 1)
         example[key] = value
 production = verifiers["environments"]["production"]
+staging = verifiers["environments"]["staging"]
 canvas = next(product for product in production["products"] if product["connector"] == "canvas")
+staging_canvas = next(product for product in staging["products"] if product["connector"] == "canvas")
 assert example["OAUTH_ISSUER"] == production["issuer"]
 assert example["OAUTH_JWKS_URL"] == production["jwksUrl"]
 assert example["OAUTH_AUDIENCE"] == canvas["audience"]
 assert example["OAUTH_ALLOWED_ALGORITHMS"] == "RS256"
+
+commented_example = {}
+for line in (root / "docs/deployment-examples/product-resource-server.env.example").read_text().splitlines():
+    if line.startswith("# ") and "=" in line:
+        key, value = line[2:].split("=", 1)
+        commented_example[key] = value
+assert commented_example["OAUTH_ISSUER"] == staging["issuer"]
+assert commented_example["OAUTH_JWKS_URL"] == staging["jwksUrl"]
+assert commented_example["OAUTH_AUDIENCE"] == staging_canvas["audience"]
+
+production_products = {product["connector"]: product for product in production["products"]}
+staging_products = {product["connector"]: product for product in staging["products"]}
+assert production_products.keys() == staging_products.keys()
+for connector, production_product in production_products.items():
+    staging_product = staging_products[connector]
+    assert production_product["audience"] != staging_product["audience"], connector
+    production_host = urlparse(production_product["mcpUrl"]).hostname.split(".")
+    staging_host = urlparse(staging_product["mcpUrl"]).hostname.split(".")
+    assert "staging" not in production_host, (connector, production_host)
+    assert "staging" in staging_host, (connector, staging_host)
+    assert production_host != staging_host, connector
 print("rendered charts, registry, generated clients, and verifier contract agree")
 PY
 

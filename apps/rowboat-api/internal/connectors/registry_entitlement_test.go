@@ -10,9 +10,17 @@ const authoritativeRegistryFixture = `[
     "name":"product",
     "displayName":"Product",
     "description":"Product connector",
-    "mcpUrl":"https://product.example/mcp",
+    "mcpUrls":{
+      "development":"https://product.example/mcp",
+      "staging":"https://product.staging.example/mcp",
+      "production":"https://product.example/mcp"
+    },
     "authType":"oauth",
-    "audience":"mcp:product",
+    "audiences":{
+      "development":"mcp:product",
+      "staging":"mcp:product-staging",
+      "production":"mcp:product"
+    },
     "authoritativeEntitlementRequired":true,
     "scopes":[{"name":"product:records.read","displayName":"Read","description":"Read records","grantTier":"required","risk":"low"}],
     "mcpTools":[{"name":"record.list","trustTier":"read"}],

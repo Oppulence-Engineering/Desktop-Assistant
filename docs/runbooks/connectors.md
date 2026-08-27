@@ -19,6 +19,11 @@ helm history rowboat-api -n rowboat
 kubectl rollout status deployment/rowboat-api -n rowboat --timeout=180s
 ```
 
+The deployment gates resolve `mcpUrls` and `audiences` from the checked-in
+registry for each environment. Staging MCP hosts must be `.staging.`-qualified,
+production hosts must not be, and each product's staging audience must differ
+from its production audience.
+
 A disable must stop new consent starts and resource-token mints. Existing rows remain available for investigation and are shown as degraded unless the incident requires invalidation.
 
 ## Provider outage
@@ -59,7 +64,7 @@ A disable must stop new consent starts and resource-token mints. Existing rows r
 1. Identify the token class before changing any verifier. Hydra access/refresh tokens belong only to the consent-plane flow. Product MCPs accept only short-lived connector resource tokens minted by rowboat-api.
 2. Decode only a redacted test connector resource token locally. Compare `iss`, `aud`, `kid`, `exp`, `nbf`, and `iat` with product configuration. The canonical `iss` is the environment's externally reachable rowboat-api origin.
 3. Fetch `/.well-known/connector-jwks.json` from the rowboat-api origin. Confirm TLS and that the signing `kid` is published. Do not substitute Hydra discovery or Hydra `/.well-known/jwks.json`.
-4. Confirm the product uses the environment-specific issuer, connector JWKS URL, and audience from `docs/deployment-examples/product-resource-server.env.example`, with RS256-only validation.
+4. Confirm the product uses the environment-specific issuer, connector JWKS URL, MCP endpoint, and audience from `charts/hydra/contracts/product-resource-servers.json`. The operator example in `docs/deployment-examples/product-resource-server.env.example` must match it, with RS256-only validation.
 5. Check node clock skew. Do not widen skew beyond policy to hide clock problems.
 6. On unknown `kid`, force one JWKS refresh. Do not disable signature verification or accept arbitrary algorithms.
 7. If a key rotation caused rejection, restore the previous verification key/JWKS publication, then repeat rotation with overlap.
@@ -107,30 +112,32 @@ Bulk invalidation is destructive to active grants and requires incident commande
 
 Record key identifiers and timestamps, never key material.
 
-## OAuth pending-state expand and contract rollout
+## OAuth pending-state hash-only closure
 
-`CONNECTOR_OAUTH_LEGACY_STATE_WRITE` is a temporary rolling-upgrade control, not
-a permanent compatibility mode. New binaries always write `state_hash` and read
-both the hash and the legacy column. With the switch disabled, the legacy column
-contains only a `sha256:` sentinel and the bearer state is never persisted.
+The expand/drain rollout is complete. Checked-in staging and production values
+must keep `CONNECTOR_OAUTH_LEGACY_STATE_WRITE=false`. New binaries write
+`state_hash`; the legacy column contains only a `sha256:` sentinel, never the
+bearer state. `charts/rowboat-api/tests/deployment-contract.sh` and
+`charts/hydra/tests/deployment-contract.sh` fail if either rendered environment
+re-enables legacy writes.
 
-1. Deploy the expand migration and new readers while the switch remains `true`.
-   Production and staging overlays intentionally start in this mode so an old
-   callback replica can finish a flow started by a new replica.
-2. Confirm every rowboat-api replica is on the hash-aware release.
-3. Wait at least the 10-minute pending-state TTL plus clock skew. Verify no old
-   replica remains and no pre-upgrade pending flow is still active.
-4. Set `CONNECTOR_OAUTH_LEGACY_STATE_WRITE=false` in staging. Exercise start,
-   cross-replica callback, claim, and replay rejection, then verify the raw state
-   does not occur in `oauth_pendings.state` and `state_hash` matches it.
-5. Promote the same setting to production and repeat the canary checks.
-6. A later reviewed contract migration may remove the legacy lookup/column only
-   after every supported release has stopped reading it.
+Closure was permitted only after all rowboat-api replicas were hash-aware and
+the 10-minute pending-state TTL plus clock skew had drained. To verify steady
+state during a release:
 
-Rollback before step 4 may restore the old application because raw state is
-still dual-written. After step 4, roll forward or require users with an
-in-flight flow to restart authorization. Never re-enable raw-state persistence
-solely to rescue an individual expired flow.
+1. Render both environment overlays and confirm the switch is exactly `false`.
+2. Exercise start, cross-replica callback, claim, and replay rejection in
+   staging, then in the production canary.
+3. Confirm the raw bearer state does not occur in `oauth_pendings.state`, the
+   `state_hash` lookup succeeds, and the legacy column contains the matching
+   `sha256:` sentinel only.
+4. Confirm no old replica or rollback candidate requires raw-state lookup before
+   completing the rollout.
+
+After closure, roll forward or require users with an in-flight flow to restart
+authorization. Do not re-enable raw-state persistence to rescue a flow or to
+roll back to a pre-hash binary. A later reviewed contract migration may remove
+the legacy lookup/column after every supported release has stopped reading it.
 
 ## Emergency disable and re-enable
 

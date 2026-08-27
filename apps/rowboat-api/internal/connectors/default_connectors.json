@@ -3,9 +3,17 @@
     "name": "canvas",
     "displayName": "Canvas",
     "description": "Banking, invoicing, dunning, transactions",
-    "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp",
+    "mcpUrls": {
+      "development": "https://api.canvas.solomon-ai.co/v1/mcp",
+      "staging": "https://api.canvas.staging.solomon-ai.co/v1/mcp",
+      "production": "https://api.canvas.solomon-ai.co/v1/mcp"
+    },
     "authType": "oauth",
-    "audience": "mcp:canvas",
+    "audiences": {
+      "development": "mcp:canvas",
+      "staging": "mcp:canvas-staging",
+      "production": "mcp:canvas"
+    },
     "authoritativeEntitlementRequired": true,
     "scopes": [
       {
@@ -62,9 +70,17 @@
     "name": "corinthian",
     "displayName": "Corinthian",
     "description": "Accounts receivable, collections, communications",
-    "mcpUrl": "https://mcp.corinthian.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.corinthian.solomon-ai.co/mcp",
+      "staging": "https://mcp.corinthian.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.corinthian.solomon-ai.co/mcp"
+    },
     "authType": "oauth",
-    "audience": "mcp:corinthian",
+    "audiences": {
+      "development": "mcp:corinthian",
+      "staging": "mcp:corinthian-staging",
+      "production": "mcp:corinthian"
+    },
     "authoritativeEntitlementRequired": true,
     "scopes": [
       {
@@ -105,9 +121,17 @@
     "name": "cadence",
     "displayName": "Cadence",
     "description": "Billing operations, payment runs, and finance approvals",
-    "mcpUrl": "https://mcp.cadence.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.cadence.solomon-ai.co/mcp",
+      "staging": "https://mcp.cadence.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.cadence.solomon-ai.co/mcp"
+    },
     "authType": "oauth",
-    "audience": "mcp:cadence",
+    "audiences": {
+      "development": "mcp:cadence",
+      "staging": "mcp:cadence-staging",
+      "production": "mcp:cadence"
+    },
     "authoritativeEntitlementRequired": true,
     "scopes": [
       {
@@ -150,9 +174,17 @@
     "name": "conduit",
     "displayName": "Conduit",
     "description": "Data pipelines, event routing, and operational integrations",
-    "mcpUrl": "https://mcp.conduit.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.conduit.solomon-ai.co/mcp",
+      "staging": "https://mcp.conduit.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.conduit.solomon-ai.co/mcp"
+    },
     "authType": "oauth",
-    "audience": "mcp:conduit",
+    "audiences": {
+      "development": "mcp:conduit",
+      "staging": "mcp:conduit-staging",
+      "production": "mcp:conduit"
+    },
     "authoritativeEntitlementRequired": true,
     "scopes": [
       {
@@ -192,9 +224,17 @@
     "name": "eigen",
     "displayName": "Eigen",
     "description": "Knowledge retrieval, reasoning context, and governed actions",
-    "mcpUrl": "https://mcp.eigen.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.eigen.solomon-ai.co/mcp",
+      "staging": "https://mcp.eigen.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.eigen.solomon-ai.co/mcp"
+    },
     "authType": "oauth",
-    "audience": "mcp:eigen",
+    "audiences": {
+      "development": "mcp:eigen",
+      "staging": "mcp:eigen-staging",
+      "production": "mcp:eigen"
+    },
     "authoritativeEntitlementRequired": true,
     "scopes": [
       {
@@ -235,9 +275,17 @@
     "name": "wispr",
     "displayName": "Wispr Flow",
     "description": "AI dictation transcripts",
-    "mcpUrl": "https://mcp.wispr.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.wispr.solomon-ai.co/mcp",
+      "staging": "https://mcp.wispr.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.wispr.solomon-ai.co/mcp"
+    },
     "authType": "api_key",
-    "audience": "wispr-api",
+    "audiences": {
+      "development": "wispr-api",
+      "staging": "wispr-api-staging",
+      "production": "wispr-api"
+    },
     "authoritativeEntitlementRequired": true,
     "mcpTools": [
       { "name": "transcript.search", "trustTier": "read" },
@@ -262,7 +310,11 @@
     "mcpUrl": "",
     "transport": "native",
     "authType": "api_key",
-    "audience": "hubspot-api",
+    "audiences": {
+      "development": "hubspot-api",
+      "staging": "hubspot-api-staging",
+      "production": "hubspot-api"
+    },
     "authoritativeEntitlementRequired": true,
     "nativeTools": [
       { "name": "connector.read.hubspot_search", "trustTier": "read" },
@@ -294,9 +346,17 @@
     "name": "github",
     "displayName": "GitHub",
     "description": "Repositories, issues, pull requests, and code review context",
-    "mcpUrl": "https://mcp.github.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.github.solomon-ai.co/mcp",
+      "staging": "https://mcp.github.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.github.solomon-ai.co/mcp"
+    },
     "authType": "api_key",
-    "audience": "github-api",
+    "audiences": {
+      "development": "github-api",
+      "staging": "github-api-staging",
+      "production": "github-api"
+    },
     "authoritativeEntitlementRequired": true,
     "mcpTools": [
       { "name": "repository.get", "trustTier": "read" },
@@ -330,9 +390,17 @@
     "name": "linear",
     "displayName": "Linear",
     "description": "Issues, projects, comments, and triage workflows",
-    "mcpUrl": "https://mcp.linear.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.linear.solomon-ai.co/mcp",
+      "staging": "https://mcp.linear.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.linear.solomon-ai.co/mcp"
+    },
     "authType": "api_key",
-    "audience": "linear-api",
+    "audiences": {
+      "development": "linear-api",
+      "staging": "linear-api-staging",
+      "production": "linear-api"
+    },
     "authoritativeEntitlementRequired": true,
     "mcpTools": [
       { "name": "issue.search", "trustTier": "read" },
@@ -365,9 +433,17 @@
     "name": "notion",
     "displayName": "Notion",
     "description": "Workspace pages, databases, and knowledge bases",
-    "mcpUrl": "https://mcp.notion.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.notion.solomon-ai.co/mcp",
+      "staging": "https://mcp.notion.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.notion.solomon-ai.co/mcp"
+    },
     "authType": "api_key",
-    "audience": "notion-api",
+    "audiences": {
+      "development": "notion-api",
+      "staging": "notion-api-staging",
+      "production": "notion-api"
+    },
     "authoritativeEntitlementRequired": true,
     "mcpTools": [
       { "name": "page.search", "trustTier": "read" },
@@ -400,9 +476,17 @@
     "name": "stripe",
     "displayName": "Stripe",
     "description": "Customers, charges, invoices, subscriptions, and refunds",
-    "mcpUrl": "https://mcp.stripe.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.stripe.solomon-ai.co/mcp",
+      "staging": "https://mcp.stripe.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.stripe.solomon-ai.co/mcp"
+    },
     "authType": "api_key",
-    "audience": "stripe-api",
+    "audiences": {
+      "development": "stripe-api",
+      "staging": "stripe-api-staging",
+      "production": "stripe-api"
+    },
     "authoritativeEntitlementRequired": true,
     "mcpTools": [
       { "name": "customer.lookup", "trustTier": "read" },

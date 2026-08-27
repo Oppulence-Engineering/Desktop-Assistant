@@ -18,6 +18,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 REGISTRY_PATH = REPO_ROOT / "apps/rowboat-api/internal/connectors/default_connectors.json"
@@ -58,6 +59,62 @@ def enabled_for_environment(item: dict[str, Any], environment: str) -> bool:
     return not environments or environment in environments
 
 
+def environment_binding(
+    item: dict[str, Any], environment: str, bindings_key: str, legacy_key: str
+) -> str:
+    bindings = item.get(bindings_key)
+    if not isinstance(bindings, dict):
+        raise ValueError(
+            f"connector {item.get('name')!r} requires {bindings_key} environment bindings"
+        )
+    if legacy_key in item:
+        raise ValueError(
+            f"connector {item.get('name')!r} cannot mix {legacy_key} with {bindings_key}"
+        )
+    value = bindings.get(environment)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(
+            f"connector {item.get('name')!r} is missing {bindings_key}.{environment}"
+        )
+    return value.strip()
+
+
+def validate_registry_environment_isolation(registry: list[dict[str, Any]]) -> None:
+    for connector in registry:
+        production_audience = environment_binding(
+            connector, "production", "audiences", "audience"
+        )
+        staging_audience = environment_binding(
+            connector, "staging", "audiences", "audience"
+        )
+        if production_audience == staging_audience:
+            raise ValueError(
+                f"connector {connector['name']!r} production and staging audiences must differ"
+            )
+        if connector.get("transport", "mcp") == "native":
+            continue
+        production_url = environment_binding(
+            connector, "production", "mcpUrls", "mcpUrl"
+        )
+        staging_url = environment_binding(
+            connector, "staging", "mcpUrls", "mcpUrl"
+        )
+        production_host = (urlparse(production_url).hostname or "").lower()
+        staging_host = (urlparse(staging_url).hostname or "").lower()
+        if "staging" in production_host.split("."):
+            raise ValueError(
+                f"connector {connector['name']!r} production MCP host is staging-qualified"
+            )
+        if "staging" not in staging_host.split("."):
+            raise ValueError(
+                f"connector {connector['name']!r} staging MCP host is not staging-qualified"
+            )
+        if production_host == staging_host:
+            raise ValueError(
+                f"connector {connector['name']!r} production and staging MCP hosts must differ"
+            )
+
+
 def broker_contract(environment: str, registry: list[dict[str, Any]]) -> dict[str, Any]:
     values_path = ROWBOAT_VALUES / f"values-{environment}.yaml"
     public_base_url = scalar_from_values(values_path, "PUBLIC_BASE_URL").rstrip("/")
@@ -81,11 +138,13 @@ def broker_contract(environment: str, registry: list[dict[str, Any]]) -> dict[st
             if enabled_for_environment(scope, environment) and scope.get("grantTier") == "required"
         ]
         name = connector["name"]
-        audience = connector["audience"]
+        audience = environment_binding(connector, environment, "audiences", "audience")
+        mcp_url = environment_binding(connector, environment, "mcpUrls", "mcpUrl")
         callback = f"{public_base_url}/v1/connections/{name}/callback"
         connectors.append(
             {
                 "name": name,
+                "mcpUrl": mcp_url,
                 "audience": audience,
                 "scopes": connector_scopes,
                 "requiredScopes": required_scopes,
@@ -227,6 +286,7 @@ spec:
 
 def generated_outputs() -> dict[Path, str]:
     registry = json.loads(REGISTRY_PATH.read_text())
+    validate_registry_environment_isolation(registry)
     contracts = {
         environment: broker_contract(environment, registry)
         for environment in ENVIRONMENTS
@@ -246,6 +306,7 @@ def generated_outputs() -> dict[Path, str]:
                 "products": [
                     {
                         "connector": connector["name"],
+                        "mcpUrl": connector["mcpUrl"],
                         "audience": connector["audience"],
                         "scopes": connector["scopes"],
                         "requiredScopes": connector["requiredScopes"],

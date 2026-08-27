@@ -2,10 +2,16 @@
 import assert from "node:assert/strict";
 import {
   awaitApprovalAndRetry,
+  canonicalArgumentsDigest,
   configureMcpApprovalUrlOpener,
   parseMcpApprovalDeepLink,
   registerMcpApprovalResult,
 } from "../../../apps/x/packages/core/dist/mcp/product-approval.js";
+import {
+  mcpAuthorizationSessionFingerprint,
+  mcpHeadersDigest,
+  normalizeMcpEndpoint,
+} from "../../../apps/x/packages/core/dist/mcp/approval-request.js";
 
 let approvalUrl;
 configureMcpApprovalUrlOpener(async (url) => {
@@ -13,6 +19,26 @@ configureMcpApprovalUrlOpener(async (url) => {
 });
 
 const originalArguments = Object.freeze({ paymentRunId: "run_contract", amount: 1250 });
+const configuredEndpoint = normalizeMcpEndpoint("https://cadence.example.invalid/mcp");
+const requestHeaders = Object.freeze({
+  Authorization: "Bearer deployment-contract-resource-token",
+  "Mcp-Session-Id": "deployment-contract-session",
+});
+const requestBinding = Object.freeze({
+  serverName: "rowboat-cadence",
+  configuredEndpoint,
+  connectionId: "deployment-contract-connection",
+  configGeneration: 7,
+  configDigest: "deployment-contract-config-digest",
+  configuredHeadersDigest: mcpHeadersDigest(requestHeaders),
+  credentialFingerprint: "deployment-contract-credential-fingerprint",
+  endpoint: configuredEndpoint,
+  headersDigest: mcpHeadersDigest(requestHeaders),
+  authorizationSessionFingerprint: mcpAuthorizationSessionFingerprint(requestHeaders),
+  sessionId: "deployment-contract-session",
+  toolName: "payment.execute",
+  argumentsDigest: canonicalArgumentsDigest(originalArguments),
+});
 let retries = 0;
 const resultPromise = awaitApprovalAndRetry(
   "rowboat-cadence",
@@ -27,9 +53,23 @@ const resultPromise = awaitApprovalAndRetry(
       action: "payment.execute",
     }),
   },
-  async (token) => {
+  requestBinding,
+  async (token, approvedBinding) => {
     retries += 1;
     assert.equal(token, "one-time-deployment-contract-token");
+    assert.deepEqual(approvedBinding.configuredEndpoint, configuredEndpoint);
+    assert.deepEqual(approvedBinding.endpoint, configuredEndpoint);
+    assert.equal(approvedBinding.connectionId, requestBinding.connectionId);
+    assert.equal(approvedBinding.configGeneration, requestBinding.configGeneration);
+    assert.equal(approvedBinding.configDigest, requestBinding.configDigest);
+    assert.equal(approvedBinding.configuredHeadersDigest, requestBinding.configuredHeadersDigest);
+    assert.equal(approvedBinding.credentialFingerprint, requestBinding.credentialFingerprint);
+    assert.equal(approvedBinding.headersDigest, requestBinding.headersDigest);
+    assert.equal(
+      approvedBinding.authorizationSessionFingerprint,
+      requestBinding.authorizationSessionFingerprint,
+    );
+    assert.equal(approvedBinding.sessionId, requestBinding.sessionId);
     return { resumed: true, arguments: originalArguments };
   },
 );

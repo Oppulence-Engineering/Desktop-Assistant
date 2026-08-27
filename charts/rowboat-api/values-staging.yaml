@@ -31,9 +31,9 @@ config:
   ORY_BROKER_CLIENT_ID: solomon-connector-broker-staging
   CONNECTOR_REDIRECT_ALLOWLIST: solomon-ai-staging://settings/connectors,https://app.staging.solomon-ai.co/settings/connectors
   CONNECTOR_EMERGENCY_DISABLED: ""
-  # Mirror the production expand phase. Turn off after old replicas and pending
-  # OAuth states drain, then promote the same setting to production.
-  CONNECTOR_OAUTH_LEGACY_STATE_WRITE: "true"
+  # RFC 012 closure steady state. All hash-aware replicas and the pending-state
+  # TTL have drained, so raw bearer state must never be written again.
+  CONNECTOR_OAUTH_LEGACY_STATE_WRITE: "false"
   CONNECTOR_ENTITLEMENT_URLS_JSON: '{"canvas":"https://api.canvas.staging.solomon-ai.co/v1/internal/entitlements","corinthian":"https://mcp.corinthian.staging.solomon-ai.co/v1/internal/entitlements","cadence":"https://mcp.cadence.staging.solomon-ai.co/v1/internal/entitlements","conduit":"https://mcp.conduit.staging.solomon-ai.co/v1/internal/entitlements","eigen":"https://mcp.eigen.staging.solomon-ai.co/v1/internal/entitlements","wispr":"https://mcp.wispr.staging.solomon-ai.co/v1/internal/entitlements"}'
   PUBLIC_BASE_URL: https://api.x.staging.solomon-ai.co
   # Staging product verifiers use this issuer and the connector JWKS endpoint on

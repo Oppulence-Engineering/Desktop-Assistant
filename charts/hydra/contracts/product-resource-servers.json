@@ -11,6 +11,7 @@
       "products": [
         {
           "connector": "canvas",
+          "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp",
           "audience": "mcp:canvas",
           "scopes": [
             "canvas:invoices.read",
@@ -24,6 +25,7 @@
         },
         {
           "connector": "corinthian",
+          "mcpUrl": "https://mcp.corinthian.solomon-ai.co/mcp",
           "audience": "mcp:corinthian",
           "scopes": [
             "corinthian:ar.read",
@@ -35,6 +37,7 @@
         },
         {
           "connector": "cadence",
+          "mcpUrl": "https://mcp.cadence.solomon-ai.co/mcp",
           "audience": "mcp:cadence",
           "scopes": [
             "cadence:payment_runs.read",
@@ -46,6 +49,7 @@
         },
         {
           "connector": "conduit",
+          "mcpUrl": "https://mcp.conduit.solomon-ai.co/mcp",
           "audience": "mcp:conduit",
           "scopes": [
             "conduit:pipelines.read",
@@ -57,6 +61,7 @@
         },
         {
           "connector": "eigen",
+          "mcpUrl": "https://mcp.eigen.solomon-ai.co/mcp",
           "audience": "mcp:eigen",
           "scopes": [
             "eigen:knowledge.read",
@@ -77,7 +82,8 @@
       "products": [
         {
           "connector": "canvas",
-          "audience": "mcp:canvas",
+          "mcpUrl": "https://api.canvas.staging.solomon-ai.co/v1/mcp",
+          "audience": "mcp:canvas-staging",
           "scopes": [
             "canvas:invoices.read",
             "canvas:customers.read",
@@ -90,7 +96,8 @@
         },
         {
           "connector": "corinthian",
-          "audience": "mcp:corinthian",
+          "mcpUrl": "https://mcp.corinthian.staging.solomon-ai.co/mcp",
+          "audience": "mcp:corinthian-staging",
           "scopes": [
             "corinthian:ar.read",
             "corinthian:collections.read"
@@ -101,7 +108,8 @@
         },
         {
           "connector": "cadence",
-          "audience": "mcp:cadence",
+          "mcpUrl": "https://mcp.cadence.staging.solomon-ai.co/mcp",
+          "audience": "mcp:cadence-staging",
           "scopes": [
             "cadence:payment_runs.read",
             "cadence:payments.execute"
@@ -112,7 +120,8 @@
         },
         {
           "connector": "conduit",
-          "audience": "mcp:conduit",
+          "mcpUrl": "https://mcp.conduit.staging.solomon-ai.co/mcp",
+          "audience": "mcp:conduit-staging",
           "scopes": [
             "conduit:pipelines.read",
             "conduit:pipelines.write"
@@ -123,7 +132,8 @@
         },
         {
           "connector": "eigen",
-          "audience": "mcp:eigen",
+          "mcpUrl": "https://mcp.eigen.staging.solomon-ai.co/mcp",
+          "audience": "mcp:eigen-staging",
           "scopes": [
             "eigen:knowledge.read",
             "eigen:actions.execute"

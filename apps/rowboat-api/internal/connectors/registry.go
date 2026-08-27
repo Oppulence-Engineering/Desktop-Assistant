@@ -25,10 +25,12 @@ type Connector struct {
 	DisplayName                      string                     `json:"displayName"`
 	Description                      string                     `json:"description"`
 	MCPURL                           string                     `json:"mcpUrl"`
+	MCPURLs                          map[string]string          `json:"mcpUrls,omitempty"`
 	Transport                        string                     `json:"transport,omitempty"` // mcp (default) | native
 	AuthType                         string                     `json:"authType"`            // "oauth" | "api_key"
 	Audience                         string                     `json:"audience"`            // Ory token audience (e.g. canvas-api)
-	Scopes                           []string                   `json:"-"`                   // derived canonical scope names
+	Audiences                        map[string]string          `json:"audiences,omitempty"`
+	Scopes                           []string                   `json:"-"` // derived canonical scope names
 	ScopeCatalog                     []ScopeDefinition          `json:"scopes,omitempty"`
 	IconURL                          string                     `json:"iconUrl,omitempty"`
 	PolicyURL                        string                     `json:"policyUrl,omitempty"`
@@ -275,6 +277,9 @@ func parseRegistry(data []byte, environment string) ([]Connector, error) {
 				list[i].ScopeCatalog[j].Environments = append([]string(nil), list[i].Environments...)
 			}
 		}
+		if err := resolveEnvironmentBindings(&list[i], environment); err != nil {
+			return nil, err
+		}
 	}
 	if err := validateRegistry(list); err != nil {
 		return nil, err
@@ -287,6 +292,103 @@ func parseRegistry(data []byte, environment string) ([]Connector, error) {
 
 var connectorNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
 var scopeNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_-]*:[a-z][a-z0-9_-]*\.[a-z][a-z0-9_-]*$`)
+
+func resolveEnvironmentBindings(c *Connector, environment string) error {
+	hasExplicitBindings := len(c.MCPURLs) > 0 || len(c.Audiences) > 0
+	if !hasExplicitBindings {
+		if environment != "development" {
+			return fmt.Errorf("connector %q requires explicit environment-specific audiences and mcpUrls outside development", c.Name)
+		}
+		return nil
+	}
+	if strings.TrimSpace(c.MCPURL) != "" || strings.TrimSpace(c.Audience) != "" {
+		return fmt.Errorf("connector %q cannot mix legacy mcpUrl/audience fields with environment-specific bindings", c.Name)
+	}
+	if err := validateEnvironmentBindingKeys(c.Name, "audiences", c.Audiences); err != nil {
+		return err
+	}
+	if err := validateEnvironmentBindingKeys(c.Name, "mcpUrls", c.MCPURLs); err != nil {
+		return err
+	}
+
+	transport := strings.TrimSpace(c.Transport)
+	for _, env := range c.Environments {
+		if strings.TrimSpace(c.Audiences[env]) == "" {
+			return fmt.Errorf("connector %q audiences.%s is required", c.Name, env)
+		}
+		if transport == "native" {
+			if strings.TrimSpace(c.MCPURLs[env]) != "" {
+				return fmt.Errorf("connector %q native transport cannot declare mcpUrls.%s", c.Name, env)
+			}
+			continue
+		}
+		if len(c.MCPTools) == 0 && len(c.TemplateBlocks) == 0 && strings.TrimSpace(c.MCPURLs[env]) == "" {
+			continue
+		}
+		normalized, err := validateEnvironmentMCPURL(c.Name, env, c.MCPURLs[env])
+		if err != nil {
+			return err
+		}
+		c.MCPURLs[env] = normalized
+	}
+
+	productionAudience, hasProductionAudience := c.Audiences["production"]
+	stagingAudience, hasStagingAudience := c.Audiences["staging"]
+	if hasProductionAudience && hasStagingAudience && strings.TrimSpace(productionAudience) == strings.TrimSpace(stagingAudience) {
+		return fmt.Errorf("connector %q production and staging audiences must be distinct", c.Name)
+	}
+	productionURL, hasProductionURL := c.MCPURLs["production"]
+	stagingURL, hasStagingURL := c.MCPURLs["staging"]
+	if transport == "mcp" && hasProductionURL && hasStagingURL && strings.TrimSpace(productionURL) != "" && strings.TrimSpace(stagingURL) != "" {
+		production, _ := url.Parse(productionURL)
+		staging, _ := url.Parse(stagingURL)
+		if strings.EqualFold(production.Hostname(), staging.Hostname()) {
+			return fmt.Errorf("connector %q production and staging mcpUrl hosts must be distinct", c.Name)
+		}
+	}
+
+	c.Audience = strings.TrimSpace(c.Audiences[environment])
+	c.MCPURL = strings.TrimSpace(c.MCPURLs[environment])
+	if c.Audience == "" {
+		return fmt.Errorf("connector %q has no audience binding for environment %q", c.Name, environment)
+	}
+	c.Audiences = nil
+	c.MCPURLs = nil
+	return nil
+}
+
+func validateEnvironmentBindingKeys(connector, field string, bindings map[string]string) error {
+	for environment := range bindings {
+		if !slices.Contains([]string{"development", "staging", "production"}, environment) {
+			return fmt.Errorf("connector %q %s has invalid environment %q", connector, field, environment)
+		}
+	}
+	return nil
+}
+
+func validateEnvironmentMCPURL(connector, environment, raw string) (string, error) {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Fragment != "" {
+		return "", fmt.Errorf("connector %q mcpUrls.%s must be an absolute HTTPS URL without userinfo or fragment", connector, environment)
+	}
+	stagingQualified := isStagingQualifiedHost(u.Hostname())
+	if environment == "staging" && !stagingQualified {
+		return "", fmt.Errorf("connector %q staging mcpUrl host %q must be staging-qualified", connector, u.Hostname())
+	}
+	if environment == "production" && stagingQualified {
+		return "", fmt.Errorf("connector %q production mcpUrl host %q must not be staging-qualified", connector, u.Hostname())
+	}
+	return u.String(), nil
+}
+
+func isStagingQualifiedHost(host string) bool {
+	for _, label := range strings.Split(strings.ToLower(strings.TrimSuffix(host, ".")), ".") {
+		if label == "staging" {
+			return true
+		}
+	}
+	return false
+}
 
 func validateRegistry(list []Connector) error {
 	seen := map[string]struct{}{}

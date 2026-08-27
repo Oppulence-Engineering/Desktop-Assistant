@@ -4,6 +4,8 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 chart="$repo_root/charts/rowboat-api"
 verifier_example="$repo_root/docs/deployment-examples/product-resource-server.env.example"
+verifier_contract="$repo_root/charts/hydra/contracts/product-resource-servers.json"
+registry="$repo_root/apps/rowboat-api/internal/connectors/default_connectors.json"
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
@@ -38,8 +40,8 @@ render_environment() {
   assert_equal "$broker_issuer" "$public_origin" "$environment broker issuer"
 	assert_equal \
 	  "$(config_value "$manifest" CONNECTOR_OAUTH_LEGACY_STATE_WRITE)" \
-	  "true" \
-	  "$environment mixed-version OAuth state rollout switch"
+	  "false" \
+	  "$environment hash-only OAuth state closure switch"
 }
 
 helm lint "$chart" -f "$chart/values-production.yaml" >/dev/null
@@ -89,6 +91,7 @@ assert_equal "$OAUTH_ALLOWED_ALGORITHMS" "RS256" "product verifier algorithm pol
 
 staging_documented_issuer="$(sed -n 's/^# OAUTH_ISSUER=//p' "$verifier_example")"
 staging_documented_jwks="$(sed -n 's/^# OAUTH_JWKS_URL=//p' "$verifier_example")"
+staging_documented_audience="$(sed -n 's/^# OAUTH_AUDIENCE=//p' "$verifier_example")"
 staging_manifest="$tmp_dir/staging.yaml"
 staging_origin="$(config_value "$staging_manifest" PUBLIC_BASE_URL)"
 staging_issuer="$(config_value "$staging_manifest" BROKER_TOKEN_ISSUER)"
@@ -97,10 +100,16 @@ assert_equal "$staging_documented_jwks" "$staging_origin/.well-known/connector-j
 
 PRODUCTION_ISSUER="$OAUTH_ISSUER" \
 PRODUCTION_JWKS_URL="$OAUTH_JWKS_URL" \
+PRODUCTION_AUDIENCE="$OAUTH_AUDIENCE" \
 STAGING_ISSUER="$staging_documented_issuer" \
 STAGING_JWKS_URL="$staging_documented_jwks" \
+STAGING_AUDIENCE="$staging_documented_audience" \
+REGISTRY_PATH="$registry" \
+VERIFIER_CONTRACT_PATH="$verifier_contract" \
 python3 - <<'PY'
+import json
 import os
+from pathlib import Path
 from urllib.parse import urlparse
 
 for environment in ("PRODUCTION", "STAGING"):
@@ -111,6 +120,28 @@ for environment in ("PRODUCTION", "STAGING"):
     assert jwks.path == "/.well-known/connector-jwks.json"
     assert not issuer.params and not issuer.query and not issuer.fragment
     assert not jwks.params and not jwks.query and not jwks.fragment
+
+registry = json.loads(Path(os.environ["REGISTRY_PATH"]).read_text())
+verifiers = json.loads(Path(os.environ["VERIFIER_CONTRACT_PATH"]).read_text())["environments"]
+production_products = {item["connector"]: item for item in verifiers["production"]["products"]}
+staging_products = {item["connector"]: item for item in verifiers["staging"]["products"]}
+assert production_products.keys() == staging_products.keys()
+assert production_products["canvas"]["audience"] == os.environ["PRODUCTION_AUDIENCE"]
+assert staging_products["canvas"]["audience"] == os.environ["STAGING_AUDIENCE"]
+
+for connector in registry:
+    if connector.get("authType") != "oauth" or connector.get("status", "enabled") == "disabled":
+        continue
+    name = connector["name"]
+    production = production_products[name]
+    staging = staging_products[name]
+    assert production["audience"] == connector["audiences"]["production"]
+    assert staging["audience"] == connector["audiences"]["staging"]
+    assert production["audience"] != staging["audience"]
+    assert production["mcpUrl"] == connector["mcpUrls"]["production"]
+    assert staging["mcpUrl"] == connector["mcpUrls"]["staging"]
+    assert "staging" not in urlparse(production["mcpUrl"]).hostname.split(".")
+    assert "staging" in urlparse(staging["mcpUrl"]).hostname.split(".")
 PY
 
 printf 'rowboat-api deployment contract and token verifier configuration probe passed\n'
