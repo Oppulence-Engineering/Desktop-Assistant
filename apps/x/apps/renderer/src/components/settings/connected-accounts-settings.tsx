@@ -157,18 +157,16 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
     const isActive = lifecycleAction === "disconnect";
     const scopes = integration.availableScopes ?? [];
     const grantedNames = new Set((integration.grantedScopes ?? []).map((scope) => scope.name));
-    const statusCopy =
-      integration.connectionHealthMessage ??
-      (
-        {
-          active: "Healthy",
-          reauth_required: "Reconnect required",
-          revoking: "Disconnecting…",
-          revoked: "Disconnected",
-          invalidated: "Access disabled by product or policy",
-          error: "Connection needs attention",
-        } as const
-      )[integration.connectionHealth ?? "revoked"];
+    const healthCopy = (
+      {
+        active: "Healthy",
+        reauth_required: "Reconnect required",
+        revoking: "Disconnecting…",
+        revoked: "Disconnected",
+        invalidated: "Access disabled by product or policy",
+        error: "Connection needs attention",
+      } as const
+    )[integration.connectionHealth ?? "revoked"];
     const entitlementCopy =
       integration.entitlement?.allowed === false
         ? integration.entitlement.reason === "scope_not_in_plan" ||
@@ -194,11 +192,16 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
                 {isActive ? <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" /> : null}
               </div>
               <p className="mt-0.5 text-xs text-muted-foreground">{integration.description}</p>
-              <p
+              <div
                 className={`mt-1 text-xs ${isActive ? "text-emerald-600" : lifecycleAction === "reconnect" || lifecycleAction === "retry" ? "text-amber-600" : "text-muted-foreground"}`}
               >
-                {entitlementCopy ?? statusCopy}
-              </p>
+                <p>{entitlementCopy ?? `Health: ${healthCopy}`}</p>
+                {!entitlementCopy && integration.connectionHealthMessage ? (
+                  <p className="text-muted-foreground">
+                    Reason: {integration.connectionHealthMessage}
+                  </p>
+                ) : null}
+              </div>
               {scopes.length ? (
                 <div className="mt-2 space-y-1">
                   <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">

@@ -109,6 +109,16 @@ const connectorInputSchema = z
     connection_health: z.string().optional(),
     connectionHealthMessage: z.string().optional(),
     connection_health_message: z.string().optional(),
+    health: z.string().optional(),
+    reason: z.string().optional(),
+    connection: z
+      .object({
+        health: z.string().optional(),
+        state: z.string().optional(),
+        reason: z.string().optional(),
+      })
+      .passthrough()
+      .optional(),
     entitlement: z.unknown().optional(),
     requires_entitlement: z.string().optional(),
     status: z.string().optional(),
@@ -189,7 +199,12 @@ export function parseConnectorsListResponse(value: unknown): ConnectorsListRespo
     connectors: root.connectors.map((raw) => {
       const name = raw.id ?? raw.name;
       if (!name) throw new Error("connector list item returned no id or name");
-      const healthValue = raw.connectionHealth ?? raw.connection_health;
+      const healthValue =
+        raw.connectionHealth ??
+        raw.connection_health ??
+        raw.connection?.health ??
+        raw.connection?.state ??
+        raw.health;
       const connectionHealth =
         healthValue && lifecycleStates.has(healthValue as ConnectorLifecycleState)
           ? (healthValue as ConnectorLifecycleState)
@@ -215,7 +230,11 @@ export function parseConnectorsListResponse(value: unknown): ConnectorsListRespo
         grantedScopes,
         availableScopes,
         connectionHealth,
-        connectionHealthMessage: raw.connectionHealthMessage ?? raw.connection_health_message,
+        connectionHealthMessage:
+          raw.connectionHealthMessage ??
+          raw.connection_health_message ??
+          raw.connection?.reason ??
+          raw.reason,
         entitlement: normalizeEntitlement(raw.entitlement, raw.requires_entitlement),
         status: raw.status,
         iconUrl: raw.iconUrl ?? raw.icon_url,

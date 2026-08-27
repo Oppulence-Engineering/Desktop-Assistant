@@ -1,3 +1,5 @@
+import { createHash, randomBytes } from "node:crypto";
+
 export type DirectProductMcpErrorKind =
   | "authentication_required"
   | "forbidden"
@@ -11,24 +13,102 @@ export interface DirectProductMcpError {
   status?: number;
   message: string;
   approvalChallengeUrl?: string;
+  actor?: string;
+  action?: string;
 }
 
-const pendingApprovalTokens = new Map<string, string>();
+export interface McpApprovalCompletion {
+  challengeId: string;
+  serverName: string;
+  toolName: string;
+  argumentsDigest: string;
+  actor?: string;
+  action?: string;
+  status: "approved" | "denied" | "cancelled" | "expired";
+  token?: string;
+}
+
+type PendingApproval = {
+  challengeId: string;
+  serverName: string;
+  toolName: string;
+  argumentsDigest: string;
+  actor?: string;
+  action?: string;
+  expiresAt: number;
+  retry: (token: string) => Promise<unknown>;
+  resolve: (value: unknown) => void;
+  reject: (error: Error) => void;
+  timer: ReturnType<typeof setTimeout>;
+};
+
+const MAX_PENDING_APPROVALS = 32;
+const APPROVAL_TTL_MS = 5 * 60_000;
+const pendingApprovals = new Map<string, PendingApproval>();
 let openApprovalUrl: ((url: string) => Promise<void>) | undefined;
 
 export function configureMcpApprovalUrlOpener(opener: (url: string) => Promise<void>): void {
   openApprovalUrl = opener;
 }
 
-export function registerMcpApprovalResult(serverName: string, token: string): void {
-  if (!serverName || !token || token.length > 8192) return;
-  pendingApprovalTokens.set(serverName, token);
+function canonicalize(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonicalize).join(",")}]`;
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${canonicalize(record[key])}`)
+    .join(",")}}`;
 }
 
-export function consumeMcpApprovalToken(serverName: string): string | undefined {
-  const token = pendingApprovalTokens.get(serverName);
-  pendingApprovalTokens.delete(serverName);
-  return token;
+export function canonicalArgumentsDigest(input: Record<string, unknown>): string {
+  return createHash("sha256").update(canonicalize(input)).digest("base64url");
+}
+
+function finishPending(pending: PendingApproval): void {
+  clearTimeout(pending.timer);
+  pendingApprovals.delete(pending.challengeId);
+}
+
+function rejectPending(pending: PendingApproval, message: string): void {
+  finishPending(pending);
+  pending.reject(new Error(message));
+}
+
+export function cancelPendingMcpApprovals(reason = "Approval was cancelled."): void {
+  for (const pending of [...pendingApprovals.values()]) rejectPending(pending, reason);
+}
+
+export function pendingMcpApprovalCount(): number {
+  return pendingApprovals.size;
+}
+
+export function registerMcpApprovalResult(completion: McpApprovalCompletion): boolean {
+  const pending = pendingApprovals.get(completion.challengeId);
+  if (!pending) return false;
+  const matches =
+    completion.serverName === pending.serverName &&
+    completion.toolName === pending.toolName &&
+    completion.argumentsDigest === pending.argumentsDigest &&
+    completion.actor === pending.actor &&
+    completion.action === pending.action;
+  if (!matches) {
+    rejectPending(pending, "Approval completion did not match the pending product action.");
+    return false;
+  }
+  if (Date.now() >= pending.expiresAt || completion.status === "expired") {
+    rejectPending(pending, "Approval expired before the product action could resume.");
+    return false;
+  }
+  if (completion.status !== "approved" || !completion.token || completion.token.length > 8192) {
+    rejectPending(pending, `Approval was ${completion.status}.`);
+    return false;
+  }
+
+  // Remove before retrying. A replayed deep link cannot observe or reuse the token.
+  finishPending(pending);
+  void pending.retry(completion.token).then(pending.resolve, pending.reject);
+  return true;
 }
 
 function errorRecord(error: unknown): Record<string, unknown> {
@@ -64,30 +144,22 @@ export function classifyDirectProductMcpError(error: unknown): DirectProductMcpE
       status: 428,
       message: "This product action requires one-time approval.",
       approvalChallengeUrl: typeof challenge === "string" ? challenge : undefined,
+      actor: typeof parsed.actor === "string" ? parsed.actor : undefined,
+      action: typeof parsed.action === "string" ? parsed.action : undefined,
     };
   }
-  if (
-    code === "connection_revoked" ||
-    code === "connection_invalidated" ||
-    code === "policy_invalidated"
-  ) {
+  if (["connection_revoked", "connection_invalidated", "policy_invalidated"].includes(code))
     return {
       kind: "policy_invalidated",
       status: detectedStatus,
       message: "This connection was invalidated by product or policy.",
     };
-  }
-  if (
-    code === "token_expired" ||
-    code === "reauth_required" ||
-    /reauth|refresh token/i.test(text)
-  ) {
+  if (code === "token_expired" || code === "reauth_required" || /reauth|refresh token/i.test(text))
     return {
       kind: "reauth_required",
       status: detectedStatus ?? 401,
       message: "Reconnect this product before retrying.",
     };
-  }
   if (detectedStatus === 401)
     return {
       kind: "authentication_required",
@@ -108,23 +180,64 @@ export function classifyDirectProductMcpError(error: unknown): DirectProductMcpE
   };
 }
 
-export async function handleApprovalChallenge(
+export async function awaitApprovalAndRetry(
   serverName: string,
+  toolName: string,
+  input: Record<string, unknown>,
   error: unknown,
-): Promise<DirectProductMcpError> {
+  retry: (token: string) => Promise<unknown>,
+): Promise<unknown> {
   const classified = classifyDirectProductMcpError(error);
   if (classified.kind !== "approval_required" || !classified.approvalChallengeUrl)
-    return classified;
-  const url = new URL(classified.approvalChallengeUrl);
+    throw new Error(classified.message, { cause: classified });
+  let url: URL;
+  try {
+    url = new URL(classified.approvalChallengeUrl);
+  } catch {
+    throw new Error("The product returned an invalid approval URL.");
+  }
   if (
     url.protocol !== "https:" &&
     !(url.protocol === "http:" && ["localhost", "127.0.0.1", "::1"].includes(url.hostname))
-  ) {
-    return { ...classified, message: "The product returned an unsafe approval URL." };
-  }
-  if (openApprovalUrl) await openApprovalUrl(url.toString());
-  return {
-    ...classified,
-    message: `Approval opened in your browser. Complete it, then explicitly retry the action for ${serverName}.`,
-  };
+  )
+    throw new Error("The product returned an unsafe approval URL.");
+  if (!openApprovalUrl) throw new Error("Approval cannot be opened on this device.");
+  if (pendingApprovals.size >= MAX_PENDING_APPROVALS)
+    throw new Error("Too many product approvals are pending.");
+
+  const challengeId = randomBytes(32).toString("base64url");
+  const argumentsDigest = canonicalArgumentsDigest(input);
+  url.searchParams.set("desktop_challenge_id", challengeId);
+  url.searchParams.set("desktop_server", serverName);
+  url.searchParams.set("desktop_tool", toolName);
+  url.searchParams.set("desktop_arguments_digest", argumentsDigest);
+  if (classified.actor) url.searchParams.set("desktop_actor", classified.actor);
+  if (classified.action) url.searchParams.set("desktop_action", classified.action);
+
+  return await new Promise<unknown>((resolve, reject) => {
+    const expiresAt = Date.now() + APPROVAL_TTL_MS;
+    const pending: PendingApproval = {
+      challengeId,
+      serverName,
+      toolName,
+      argumentsDigest,
+      actor: classified.actor,
+      action: classified.action,
+      expiresAt,
+      retry,
+      resolve,
+      reject,
+      timer: setTimeout(() => {
+        const current = pendingApprovals.get(challengeId);
+        if (current) rejectPending(current, "Approval expired before completion.");
+      }, APPROVAL_TTL_MS),
+    };
+    pendingApprovals.set(challengeId, pending);
+    openApprovalUrl!(url.toString()).catch((openError) => {
+      if (pendingApprovals.get(challengeId) === pending) {
+        finishPending(pending);
+        reject(openError instanceof Error ? openError : new Error("Could not open approval."));
+      }
+    });
+  });
 }

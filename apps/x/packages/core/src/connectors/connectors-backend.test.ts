@@ -56,6 +56,23 @@ describe("connector broker response parsing", () => {
     ).toBe("https://example.test/new");
   });
 
+  it("accepts server lifecycle health and reason without breaking legacy fields", () => {
+    const result = parseConnectorsListResponse({
+      connectors: [
+        {
+          id: "corinthian",
+          connected: true,
+          connection: { health: "reauth_required", reason: "Refresh token rotation failed" },
+        },
+      ],
+    });
+    expect(result.connectors[0]).toMatchObject({
+      connectionHealth: "reauth_required",
+      connectionHealthMessage: "Refresh token rotation failed",
+      connected: true,
+    });
+  });
+
   it("rejects unsafe authorization URLs", () => {
     expect(() => parseConnectorStartResponse({ authorization_url: "javascript:alert(1)" })).toThrow(
       /unsafe/,

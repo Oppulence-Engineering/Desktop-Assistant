@@ -7,7 +7,7 @@ import { IMcpConfigRepo } from "./repo.js";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { connectionState, ListToolsResponse, McpServerList } from "@x/shared/mcp";
-import { consumeMcpApprovalToken, handleApprovalChallenge } from "./product-approval.js";
+import { awaitApprovalAndRetry, cancelPendingMcpApprovals } from "./product-approval.js";
 
 type mcpState = {
   state: z.infer<typeof connectionState>;
@@ -90,6 +90,7 @@ async function getClient(serverName: string, approvalToken?: string): Promise<Cl
 }
 
 export async function cleanup() {
+  cancelPendingMcpApprovals("MCP connections were closed before approval completed.");
   for (const [serverName, { client }] of Object.entries(clients)) {
     await client?.transport?.close();
     await client?.close();
@@ -103,6 +104,7 @@ export async function cleanup() {
  * Clients will be lazily reconnected on next use.
  */
 export async function forceCloseAllMcpClients(): Promise<void> {
+  cancelPendingMcpApprovals("The product action was cancelled.");
   for (const [serverName, { client }] of Object.entries(clients)) {
     try {
       await client?.close();
@@ -159,14 +161,24 @@ export async function executeTool(
   toolName: string,
   input: Record<string, unknown>,
 ): Promise<unknown> {
-  const approvalToken = consumeMcpApprovalToken(serverName);
+  return executeToolAttempt(serverName, toolName, input);
+}
+
+async function executeToolAttempt(
+  serverName: string,
+  toolName: string,
+  input: Record<string, unknown>,
+  approvalToken?: string,
+): Promise<unknown> {
   if (approvalToken) await closeMcpClient(serverName);
   const client = await getClient(serverName, approvalToken);
   try {
     return await client.callTool({ name: toolName, arguments: input });
   } catch (error) {
-    const productError = await handleApprovalChallenge(serverName, error);
-    throw new Error(productError.message, { cause: productError });
+    if (approvalToken) throw error;
+    return await awaitApprovalAndRetry(serverName, toolName, input, error, (token) =>
+      executeToolAttempt(serverName, toolName, input, token),
+    );
   } finally {
     // One-time approval credentials must never remain on a pooled transport.
     if (approvalToken) await closeMcpClient(serverName);

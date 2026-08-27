@@ -60,7 +60,7 @@ function getDeepLinkPayload(url: string): string | null {
 export function dispatchUrl(url: string): void {
   const approval = parseMcpApprovalCompletion(url);
   if (approval) {
-    registerMcpApprovalResult(approval.serverName, approval.token);
+    registerMcpApprovalResult(approval);
     const win = mainWindowRef;
     if (win && !win.isDestroyed()) focusWindow(win);
   } else if (parseAction(url)) {
@@ -74,7 +74,9 @@ export function dispatchUrl(url: string): void {
   }
 }
 
-function parseMcpApprovalCompletion(url: string): { serverName: string; token: string } | null {
+export function parseMcpApprovalCompletion(
+  url: string,
+): Parameters<typeof registerMcpApprovalResult>[0] | null {
   const rest = getDeepLinkPayload(url);
   if (rest === null) return null;
   const queryIdx = rest.indexOf("?");
@@ -82,9 +84,29 @@ function parseMcpApprovalCompletion(url: string): { serverName: string; token: s
   if (host !== "mcp-approval") return null;
   const params = new URLSearchParams(queryIdx >= 0 ? rest.slice(queryIdx + 1) : "");
   const serverName = params.get("server");
+  const challengeId = params.get("challenge_id") ?? params.get("desktop_challenge_id");
+  const toolName = params.get("tool");
+  const argumentsDigest = params.get("arguments_digest");
+  const statusValue = params.get("status") ?? "approved";
   const token = params.get("approval_token") ?? params.get("token");
-  if (!serverName || !token) return null;
-  return { serverName, token };
+  if (
+    !serverName ||
+    !challengeId ||
+    !toolName ||
+    !argumentsDigest ||
+    !["approved", "denied", "cancelled", "expired"].includes(statusValue)
+  )
+    return null;
+  return {
+    serverName,
+    challengeId,
+    toolName,
+    argumentsDigest,
+    actor: params.get("actor") ?? undefined,
+    action: params.get("action") ?? undefined,
+    status: statusValue as "approved" | "denied" | "cancelled" | "expired",
+    token: token ?? undefined,
+  };
 }
 
 export function dispatchDeepLink(url: string): void {
