@@ -238,6 +238,39 @@ describe('RFC 012 verifier contract', () => {
     await expect(verifier.verify(await sign({}, { kid: ROTATED_KID, key: rotatedPrivateKey }))).resolves.toBeDefined();
     expect(jwksRequests).toBeGreaterThan(before);
   });
+
+  it('rate limits sequential distinct-kid misses issuer-wide and allows rotation after cooldown', async () => {
+    let now = Date.parse('2026-08-27T00:00:00Z');
+    const verifier = new GenericVerifier({
+      issuerUrl: ISSUER,
+      audience: AUDIENCE,
+      jwksUrl: baseURL,
+      allowedJwksOrigins: [new URL(baseURL).origin],
+      allowLocalhostDevelopment: true,
+      unknownKidCacheTtlMs: 2_000,
+      unknownKidRefreshCooldownMs: 10_000,
+      now: () => now,
+    });
+    await verifier.verify(await sign());
+    const initialRequests = jwksRequests;
+
+    await expectRejectCode(verifier.verify(await sign({}, { kid: 'attacker-1' })), 'token_invalid_signature');
+    await expectRejectCode(verifier.verify(await sign({}, { kid: 'attacker-2' })), 'token_invalid_signature');
+    expect(jwksRequests).toBe(initialRequests + 1);
+
+    now += 3_000; // per-kid negative cache expired, issuer-wide cooldown has not
+    await expectRejectCode(verifier.verify(await sign({}, { kid: 'attacker-3' })), 'token_invalid_signature');
+    expect(jwksRequests).toBe(initialRequests + 1);
+
+    const rotation = await generateKeyPair('RS256');
+    const rotationJwk = await exportJWK(rotation.publicKey);
+    Object.assign(rotationJwk, { kid: 'post-cooldown-rotation', alg: 'RS256', use: 'sig' });
+    jwks = [...jwks, rotationJwk];
+    now += 8_000;
+    await expect(verifier.verify(await sign({}, { kid: 'post-cooldown-rotation', key: rotation.privateKey }))).resolves.toBeDefined();
+    expect(jwksRequests).toBe(initialRequests + 2);
+  });
+
 });
 
 describe('RFC 012 middleware parity', () => {

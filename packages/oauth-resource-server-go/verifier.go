@@ -20,9 +20,10 @@ import (
 )
 
 const (
-	defaultHTTPTimeout  = 10 * time.Second
-	defaultMaxJWKSBytes = int64(1 << 20)
-	defaultKidMissTTL   = 30 * time.Second
+	defaultHTTPTimeout        = 10 * time.Second
+	defaultMaxJWKSBytes       = int64(1 << 20)
+	defaultKidMissTTL         = 30 * time.Second
+	defaultKidRefreshCooldown = 30 * time.Second
 )
 
 // Config configures the fail-closed RFC 012 connector-token verifier.
@@ -38,6 +39,9 @@ type Config struct {
 	HTTPTimeout               time.Duration
 	MaxJWKSResponseBytes      int64
 	UnknownKIDCacheTTL        time.Duration
+	UnknownKIDRefreshCooldown time.Duration
+	// Now overrides the verifier clock. It is intended for deterministic tests.
+	Now func() time.Time
 }
 
 // GenericConfig configures an explicitly generic JWT verifier. Unlike Config,
@@ -45,14 +49,16 @@ type Config struct {
 type GenericConfig Config
 
 type Verifier struct {
-	cfg          Config
-	requireActor bool
-	jwksURL      *url.URL
-	client       *http.Client
-	mu           sync.Mutex
-	keys         map[string]any
-	negative     map[string]time.Time
-	refreshing   chan struct{}
+	cfg            Config
+	requireActor   bool
+	jwksURL        *url.URL
+	client         *http.Client
+	mu             sync.Mutex
+	keys           map[string]any
+	negative       map[string]time.Time
+	refreshing     chan struct{}
+	nextKidRefresh time.Time
+	now            func() time.Time
 }
 
 // New builds the primary RFC 012 verifier. It fails closed unless exact issuer
@@ -70,7 +76,7 @@ func newVerifier(ctx context.Context, cfg Config, requireActor bool) (*Verifier,
 	if strings.TrimSpace(cfg.IssuerURL) == "" || strings.TrimSpace(cfg.Audience) == "" {
 		return nil, errors.New("oauthrs: exact IssuerURL and Audience are required")
 	}
-	if cfg.AcceptableSkew < 0 || cfg.HTTPTimeout < 0 || cfg.MaxJWKSResponseBytes < 0 || cfg.UnknownKIDCacheTTL < 0 {
+	if cfg.AcceptableSkew < 0 || cfg.HTTPTimeout < 0 || cfg.MaxJWKSResponseBytes < 0 || cfg.UnknownKIDCacheTTL < 0 || cfg.UnknownKIDRefreshCooldown < 0 {
 		return nil, errors.New("oauthrs: durations and response limits must not be negative")
 	}
 	if cfg.AcceptableSkew == 0 {
@@ -84,6 +90,12 @@ func newVerifier(ctx context.Context, cfg Config, requireActor bool) (*Verifier,
 	}
 	if cfg.UnknownKIDCacheTTL == 0 {
 		cfg.UnknownKIDCacheTTL = defaultKidMissTTL
+	}
+	if cfg.UnknownKIDRefreshCooldown == 0 {
+		cfg.UnknownKIDRefreshCooldown = defaultKidRefreshCooldown
+	}
+	if cfg.Now == nil {
+		cfg.Now = time.Now
 	}
 	if len(cfg.ValidMethods) == 0 {
 		cfg.ValidMethods = []string{"RS256"}
@@ -118,7 +130,7 @@ func newVerifier(ctx context.Context, cfg Config, requireActor bool) (*Verifier,
 		return nil, fmt.Errorf("oauthrs: JWKS origin %q is not allowlisted", origin(jwksURL))
 	}
 
-	v := &Verifier{cfg: cfg, requireActor: requireActor, jwksURL: jwksURL, client: client, keys: map[string]any{}, negative: map[string]time.Time{}}
+	v := &Verifier{cfg: cfg, requireActor: requireActor, jwksURL: jwksURL, client: client, keys: map[string]any{}, negative: map[string]time.Time{}, now: cfg.Now}
 	if err := v.refresh(ctx); err != nil {
 		return nil, fmt.Errorf("oauthrs: init JWKS: %w", err)
 	}
@@ -153,11 +165,12 @@ func (v *Verifier) keyfunc(token *jwt.Token) (any, error) {
 		return nil, errors.New("token missing kid")
 	}
 	v.mu.Lock()
+	now := v.now()
 	if key := v.keys[kid]; key != nil {
 		v.mu.Unlock()
 		return key, nil
 	}
-	if until := v.negative[kid]; time.Now().Before(until) {
+	if until := v.negative[kid]; now.Before(until) {
 		v.mu.Unlock()
 		return nil, errors.New("unknown kid (negative cached)")
 	}
@@ -166,20 +179,29 @@ func (v *Verifier) keyfunc(token *jwt.Token) (any, error) {
 		<-wait
 		v.mu.Lock()
 		key := v.keys[kid]
+		if key == nil {
+			v.negative[kid] = v.now().Add(v.cfg.UnknownKIDCacheTTL)
+		}
 		v.mu.Unlock()
 		if key == nil {
 			return nil, errors.New("unknown kid")
 		}
 		return key, nil
 	}
+	if now.Before(v.nextKidRefresh) {
+		v.negative[kid] = now.Add(v.cfg.UnknownKIDCacheTTL)
+		v.mu.Unlock()
+		return nil, errors.New("unknown kid (refresh cooldown)")
+	}
 	wait := make(chan struct{})
 	v.refreshing = wait
+	v.nextKidRefresh = now.Add(v.cfg.UnknownKIDRefreshCooldown)
 	v.mu.Unlock()
 	err := v.refresh(context.Background())
 	v.mu.Lock()
 	key := v.keys[kid]
 	if key == nil {
-		v.negative[kid] = time.Now().Add(v.cfg.UnknownKIDCacheTTL)
+		v.negative[kid] = v.now().Add(v.cfg.UnknownKIDCacheTTL)
 	}
 	v.refreshing = nil
 	close(wait)

@@ -38,10 +38,11 @@ and responses are bounded. Defaults are:
 - `requestTimeoutMs`: 10 seconds
 - `maxJwksResponseBytes`: 1 MiB
 - `unknownKidCacheTtlMs`: 30 seconds
+- `unknownKidRefreshCooldownMs`: 30 seconds
 
-Concurrent unknown-`kid` misses share one refresh. A still-unknown key is
-negative-cached for the configured TTL, preventing attacker-controlled key IDs
-from creating an unbounded fetch loop.
+Concurrent unknown-`kid` misses share one refresh. An issuer-wide cooldown also
+prevents sequential distinct key IDs from forcing repeated refreshes. A
+still-unknown key is negative-cached for the configured TTL.
 
 Local HTTP is available only with `allowLocalhostDevelopment: true`, and only for
 localhost/loopback. The option does not permit arbitrary private-network hosts.

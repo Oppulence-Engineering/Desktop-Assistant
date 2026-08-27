@@ -11,6 +11,7 @@ const DEFAULT_ALGS = ['RS256'];
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_BYTES = 1 << 20;
 const DEFAULT_UNKNOWN_KID_TTL_MS = 30_000;
+const DEFAULT_UNKNOWN_KID_REFRESH_COOLDOWN_MS = 30_000;
 
 const BaseConfigSchema = z.object({
   issuerUrl: z.string().min(1),
@@ -23,6 +24,8 @@ const BaseConfigSchema = z.object({
   requestTimeoutMs: z.number().positive().optional(),
   maxJwksResponseBytes: z.number().int().positive().optional(),
   unknownKidCacheTtlMs: z.number().nonnegative().optional(),
+  unknownKidRefreshCooldownMs: z.number().nonnegative().optional(),
+  now: z.function().args().returns(z.number()).optional(),
 });
 
 /** Configuration for the fail-closed RFC 012 connector verifier. */
@@ -45,6 +48,7 @@ export class Verifier {
   private keys: KeyMap = new Map();
   private readonly negative = new Map<string, number>();
   private refreshPromise?: Promise<void>;
+  private nextUnknownKidRefreshAt = 0;
   private readonly cfg: Config;
   private readonly jwksUrl: URL;
   private readonly allowedOrigins: Set<string>;
@@ -81,12 +85,20 @@ export class Verifier {
   private async keyFor(kid: string): Promise<KeyLike | Uint8Array> {
     if (!this.keys.size) await this.refresh();
     const cached = this.keys.get(kid); if (cached) return cached;
-    if ((this.negative.get(kid) ?? 0) > Date.now()) throw new Error('unknown kid (negative cached)');
+    const now = this.now();
+    if ((this.negative.get(kid) ?? 0) > now) throw new Error('unknown kid (negative cached)');
+    if (!this.refreshPromise && now < this.nextUnknownKidRefreshAt) {
+      this.negative.set(kid, now + (this.cfg.unknownKidCacheTtlMs ?? DEFAULT_UNKNOWN_KID_TTL_MS));
+      throw new Error('unknown kid (refresh cooldown)');
+    }
+    if (!this.refreshPromise) this.nextUnknownKidRefreshAt = now + (this.cfg.unknownKidRefreshCooldownMs ?? DEFAULT_UNKNOWN_KID_REFRESH_COOLDOWN_MS);
     await this.refresh();
     const refreshed = this.keys.get(kid);
-    if (!refreshed) { this.negative.set(kid, Date.now() + (this.cfg.unknownKidCacheTtlMs ?? DEFAULT_UNKNOWN_KID_TTL_MS)); throw new Error('unknown kid'); }
+    if (!refreshed) { this.negative.set(kid, this.now() + (this.cfg.unknownKidCacheTtlMs ?? DEFAULT_UNKNOWN_KID_TTL_MS)); throw new Error('unknown kid'); }
     return refreshed;
   }
+
+  private now(): number { return this.cfg.now?.() ?? Date.now(); }
 
   private async refresh(): Promise<void> {
     if (this.refreshPromise) return this.refreshPromise;

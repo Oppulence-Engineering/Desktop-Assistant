@@ -441,6 +441,71 @@ func TestUnknownKIDRefreshIsCoalescedAndNegativeCached(t *testing.T) {
 	}
 }
 
+func TestUnknownKIDRefreshCooldownLimitsDistinctKidsAndAllowsRotation(t *testing.T) {
+	key1, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	key2, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	jwk := func(key *rsa.PrivateKey, kid string) map[string]string {
+		return map[string]string{
+			"kty": "RSA", "use": "sig", "alg": "RS256", "kid": kid,
+			"n": base64.RawURLEncoding.EncodeToString(key.N.Bytes()),
+			"e": base64.RawURLEncoding.EncodeToString(big.NewInt(int64(key.E)).Bytes()),
+		}
+	}
+	var requests atomic.Int64
+	var rotated atomic.Bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests.Add(1)
+		keys := []map[string]string{jwk(key1, "kid-1")}
+		if rotated.Load() {
+			keys = append(keys, jwk(key2, "kid-2"))
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"keys": keys})
+	}))
+	t.Cleanup(srv.Close)
+
+	var nowNanos atomic.Int64
+	nowNanos.Store(time.Date(2026, time.August, 27, 0, 0, 0, 0, time.UTC).UnixNano())
+	now := func() time.Time { return time.Unix(0, nowNanos.Load()) }
+	advance := func(d time.Duration) { nowNanos.Add(int64(d)) }
+	v, err := oauthrs.NewGeneric(context.Background(), oauthrs.GenericConfig{
+		IssuerURL: "https://oauth.solomon-ai.co", Audience: "rowboat-api", JWKSURL: srv.URL,
+		AllowedJWKSOrigins: []string{srv.URL}, AllowLocalhostDevelopment: true,
+		UnknownKIDCacheTTL: 2 * time.Second, UnknownKIDRefreshCooldown: 10 * time.Second,
+		Now: now,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, kid := range []string{"attacker-1", "attacker-2"} {
+		_, _ = v.Verify(signWithMethod(t, jwt.SigningMethodRS256, key1, kid, validClaims()))
+	}
+	if got := requests.Load(); got != 2 {
+		t.Fatalf("requests after sequential distinct kids = %d, want init + one refresh", got)
+	}
+	advance(3 * time.Second) // individual negative cache expired, issuer cooldown has not
+	_, _ = v.Verify(signWithMethod(t, jwt.SigningMethodRS256, key1, "attacker-3", validClaims()))
+	if got := requests.Load(); got != 2 {
+		t.Fatalf("distinct kid bypassed issuer cooldown: requests = %d", got)
+	}
+
+	advance(8 * time.Second)
+	rotated.Store(true)
+	rotatedToken := signWithMethod(t, jwt.SigningMethodRS256, key2, "kid-2", validClaims())
+	if _, err := v.Verify(rotatedToken); err != nil {
+		t.Fatalf("legitimate rotation after cooldown failed: %v", err)
+	}
+	if got := requests.Load(); got != 3 {
+		t.Fatalf("requests after rotation = %d, want one post-cooldown refresh", got)
+	}
+}
+
 func TestRequireMiddleware(t *testing.T) {
 	srv, key := jwksServer(t)
 	v := newVerifier(t, srv.URL)
