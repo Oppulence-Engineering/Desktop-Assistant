@@ -12,6 +12,18 @@ export function hmac(value: string, secret: string): string {
   return createHmac('sha256', secret).update(value).digest('base64url');
 }
 
+export function hookSignatureV1(
+  secret: string,
+  method: string,
+  path: string,
+  timestamp: string,
+  nonce: string,
+  body: string | Buffer,
+): string {
+  const digest = createHash('sha256').update(body).digest('hex');
+  return hmac(['v1', method.toUpperCase(), path, timestamp, nonce, digest].join('\n'), secret);
+}
+
 export function signValue(value: string, secret: string): string {
   return `${value}.${hmac(value, secret)}`;
 }

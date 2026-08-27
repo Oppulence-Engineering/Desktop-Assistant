@@ -121,10 +121,11 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// can pick up the IdP's rotated signing keys. oauthrs.New bounds its own
 	// boot-time HTTP fetches internally, so this won't hang startup.
 	v, verr := oauthrs.NewGeneric(ctx, oauthrs.GenericConfig{
-		IssuerURL:      cfg.TokenIssuer,
-		Audience:       cfg.TokenAudience,
-		JWKSURL:        cfg.JWKSURL,
-		AcceptableSkew: 60 * time.Second,
+		IssuerURL:                 cfg.TokenIssuer,
+		Audience:                  cfg.TokenAudience,
+		JWKSURL:                   cfg.JWKSURL,
+		AcceptableSkew:            60 * time.Second,
+		AllowLocalhostDevelopment: !cfg.IsProduction(),
 	})
 	if verr != nil {
 		log.Warn("auth verifier unavailable; authed routes will return 503 until JWKS is reachable", zap.Error(verr))

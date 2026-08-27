@@ -97,8 +97,11 @@ docker exec "$PG_NAME" pg_isready -U postgres -d rowboat_rfc012 >/dev/null
 docker exec "$PG_NAME" psql -U postgres -d rowboat_rfc012 -c 'CREATE EXTENSION IF NOT EXISTS pgcrypto' >/dev/null
 DATABASE_URL="postgres://postgres:postgres@127.0.0.1:${PG_PORT}/rowboat_rfc012?sslmode=disable"
 DATABASE_URL="$DATABASE_URL" AUTO_MIGRATE=false go run ./cmd/migrate apply >"$SCRATCH/migrate.log" 2>&1
+docker exec -i "$PG_NAME" psql -U postgres -d rowboat_rfc012 \
+  < ../oauth-consent/migrations/20260827210000_shared_state_and_audit_outbox.sql \
+  >>"$SCRATCH/migrate.log" 2>&1
 
-OIDC_URL="https://localhost:${OIDC_PORT}"
+OIDC_URL="http://127.0.0.1:${OIDC_PORT}"
 API_URL="http://127.0.0.1:${API_PORT}"
 API2_URL="http://127.0.0.1:${API2_PORT}"
 PRODUCT_URL="http://127.0.0.1:${PRODUCT_PORT}"
@@ -113,7 +116,6 @@ PY
 
 ADDR="127.0.0.1:${OIDC_PORT}" ISSUER="$OIDC_URL" AUDIENCE=rowboat-api HYDRA_CONSENT_URL="$CONSENT_URL" \
   FIXTURE_SUBJECT=user_rfc012_a FIXTURE_EMAIL=a@example.test \
-  TLS_CERT_FILE="$SCRATCH/fixture-tls.crt" TLS_KEY_FILE="$SCRATCH/fixture-tls.key" \
   "$SCRATCH/bin/devstack" >"$SCRATCH/devstack.log" 2>&1 & PIDS+=("$!")
 wait_http "$OIDC_URL/.well-known/openid-configuration"
 
@@ -123,7 +125,6 @@ start_api() {
   ENVIRONMENT=development \
   HTTP_ADDR="127.0.0.1:${port}" METRICS_ADDR="127.0.0.1:${metrics}" GRPC_ADDR= \
   DATABASE_URL="$DATABASE_URL" AUTO_MIGRATE=false \
-  SSL_CERT_FILE="$SCRATCH/fixture-tls.crt" \
   DB_ENCRYPTION_KEY='rfc012-local-column-encryption-key' \
   OIDC_ISSUER_URL="$OIDC_URL" TOKEN_ISSUER="$OIDC_URL" TOKEN_AUDIENCE=rowboat-api JWKS_URL="$OIDC_URL/.well-known/jwks.json" \
   ORY_PUBLIC_URL="$OIDC_URL" ORY_BROKER_CLIENT_ID=rowboat-rfc012 ORY_BROKER_CLIENT_SECRET=rfc012-secret \

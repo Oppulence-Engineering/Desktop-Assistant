@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import type { Config } from './config.js';
-import { hmac, randomToken, safeEqual } from './crypto.js';
+import { hookSignatureV1, randomToken, safeEqual } from './crypto.js';
 import { AppError, upstream } from './errors.js';
 
-const TrustTierSchema = z.enum(['low', 'medium', 'high', 'money_moving']);
+const TrustTierSchema = z.enum(['low', 'medium', 'high', 'money-moving']);
 export type TrustTier = z.infer<typeof TrustTierSchema>;
 
 export const ScopeDefinitionSchema = z
@@ -17,8 +17,8 @@ export const ScopeDefinitionSchema = z
   })
   .strict()
   .superRefine((scope, ctx) => {
-    if (scope.tier === 'money_moving' && !scope.requires_step_up) {
-      ctx.addIssue({ code: 'custom', message: 'money_moving scopes must require step-up' });
+    if (scope.tier === 'money-moving' && !scope.requires_step_up) {
+      ctx.addIssue({ code: 'custom', message: 'money-moving scopes must require step-up' });
     }
   });
 
@@ -143,10 +143,11 @@ export class RowboatHooks {
     const body = JSON.stringify(payload);
     const timestamp = String(this.now());
     const nonce = randomToken(16);
-    const signature = hmac(`${timestamp}.${nonce}.${body}`, this.cfg.hookSecret);
+    const endpoint = new URL(path, this.cfg.baseUrl);
+    const signature = hookSignatureV1(this.cfg.hookSecret, 'POST', endpoint.pathname, timestamp, nonce, body);
     let response: Response;
     try {
-      response = await fetch(new URL(path, this.cfg.baseUrl), {
+      response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           accept: 'application/json',
@@ -166,7 +167,7 @@ export class RowboatHooks {
     if (contentLength > 1_000_000) throw upstream('rowboat_hook');
     const raw = Buffer.from(await response.arrayBuffer());
     if (raw.length > 1_000_000) throw upstream('rowboat_hook');
-    this.verifyResponse(response.headers, raw, nonce);
+    this.verifyResponse(response.headers, raw, nonce, endpoint.pathname);
     try {
       return schema.parse(JSON.parse(raw.toString('utf8')));
     } catch {
@@ -174,13 +175,13 @@ export class RowboatHooks {
     }
   }
 
-  private verifyResponse(headers: Headers, body: Buffer, requestNonce: string): void {
+  private verifyResponse(headers: Headers, body: Buffer, requestNonce: string, path: string): void {
     const timestamp = headers.get('x-hook-timestamp') ?? '';
     const nonce = headers.get('x-hook-nonce') ?? '';
     const supplied = headers.get('x-hook-signature') ?? '';
     const signature = supplied.startsWith('sha256=') ? supplied.slice(7) : '';
     const age = Math.abs(this.now() - Number(timestamp));
-    const expected = hmac(`${timestamp}.${nonce}.${body.toString('utf8')}`, this.cfg.hookSecret);
+    const expected = hookSignatureV1(this.cfg.hookSecret, 'POST', path, timestamp, nonce, body);
     if (
       !timestamp ||
       nonce !== requestNonce ||

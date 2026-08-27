@@ -174,12 +174,31 @@ func TestRFC012PublicContract(t *testing.T) {
 		denied := c.json("POST", api+"/v1/connections/"+connector+"/mcp-token", tokenA, nil)
 		require.Equal(t, http.StatusForbidden, denied.status, denied.body)
 		require.NotEmpty(t, denied.code())
+		var status string
+		var refreshBytes, apiKeyBytes int
+		require.NoError(t, db.QueryRow(`SELECT status,COALESCE(octet_length(refresh_token_encrypted),0),COALESCE(octet_length(api_key_encrypted),0) FROM mcp_connections WHERE id=$1`, connectionID).Scan(&status, &refreshBytes, &apiKeyBytes))
+		require.Equal(t, "invalidated", status)
+		require.Zero(t, refreshBytes, "entitlement invalidation retained the refresh grant")
+		require.Zero(t, apiKeyBytes, "entitlement invalidation retained the API key")
 		_, err = db.Exec(`UPDATE subscriptions SET status='active',updated_at=now() WHERE user_subscription=(SELECT id FROM users WHERE workos_user_id='user_rfc012_a')`)
 		require.NoError(t, err)
 	})
 
 	t.Run("disconnect revokes upstream tombstones audits and denies product", func(t *testing.T) {
-		d := c.json("DELETE", api+"/v1/connections/"+connector, tokenA, nil)
+		// Restoring entitlement must not resurrect an invalidated grant. Re-consent
+		// explicitly before exercising the independent user-disconnect transition.
+		start := c.json("POST", api+"/v1/connections/"+connector+"/start", tokenA, map[string]any{"requestedScopes": []string{"dev:records.read", "dev:payments.execute"}})
+		require.Equal(t, http.StatusOK, start.status, start.body)
+		var started struct {
+			AuthorizeURL string `json:"authorize_url"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(start.body), &started))
+		callback := completeConsent(t, started.AuthorizeURL, []string{"dev:records.read", "dev:payments.execute"})
+		claimTicket := queryFromLocation(t, callback.header.Get("Location"), "session")
+		claim := c.json("POST", api+"/v1/connections/"+connector+"/claim", tokenA, map[string]string{"state": claimTicket})
+		require.Equal(t, http.StatusOK, claim.status, claim.body)
+
+		d := c.json("DELETE", mustEnv(t, "RFC012_API2_URL")+"/v1/connections/"+connector, tokenA, nil)
 		require.Contains(t, []int{200, 204}, d.status, d.body)
 		var status string
 		var revokedAt sql.NullTime
@@ -206,7 +225,7 @@ var csrfPattern = regexp.MustCompile(`name="csrf" value="([^"]+)"`)
 
 // completeConsent models the desktop protocol driver. It keeps browser cookies,
 // refuses implicit redirects, posts the consent decision to the second consent
-// replica, completes WorkOS MFA when requested, and stops at the rowboat://
+// replica, completes WorkOS MFA when requested, and stops at the native desktop
 // deep link returned by the public callback.
 func completeConsent(t *testing.T, authorizeURL string, scopes []string) response {
 	t.Helper()
@@ -241,7 +260,9 @@ func completeConsent(t *testing.T, authorizeURL string, scopes []string) respons
 	for i := 0; i < 5; i++ {
 		location := next.header.Get("Location")
 		require.NotEmpty(t, location)
-		if strings.HasPrefix(location, "rowboat://") {
+		redirectURL, err := url.Parse(location)
+		require.NoError(t, err)
+		if redirectURL.Scheme != "http" && redirectURL.Scheme != "https" {
 			return next
 		}
 		next = do(http.MethodGet, location, nil, "")

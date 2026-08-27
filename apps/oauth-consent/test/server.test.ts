@@ -4,7 +4,7 @@ import express, { type Express, type Request, type Response as ExpressResponse }
 import { exportJWK, generateKeyPair, SignJWT, type JWK, type JWTPayload, type KeyLike } from 'jose';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Config } from '../src/config.js';
-import { hmac, safeEqual } from '../src/crypto.js';
+import { hookSignatureV1, safeEqual } from '../src/crypto.js';
 import type { ConsentContext } from '../src/rowboat.js';
 import { buildApp } from '../src/server.js';
 import { StateStore } from '../src/state.js';
@@ -55,7 +55,7 @@ const moneyScope: Scope = {
   name: 'canvas:payments.execute',
   display_name: 'Execute a payment',
   description: 'Catalog-authored payment execution copy.',
-  tier: 'money_moving',
+  tier: 'money-moving',
   required: false,
   requires_step_up: true,
 };
@@ -105,7 +105,7 @@ class OryMock {
       skip: false,
       subject: SUBJECT,
       challenge,
-      requested_scope: scopes.map((scope) => scope.name),
+      requested_scope: ['offline_access', ...scopes.map((scope) => scope.name)],
       requested_access_token_audience: [AUDIENCE],
       client: { client_id: CLIENT_ID },
       ...overrides,
@@ -186,7 +186,7 @@ class RowboatMock {
     const timestamp = String(req.headers['x-hook-timestamp'] ?? '');
     const nonce = String(req.headers['x-hook-nonce'] ?? '');
     const supplied = String(req.headers['x-hook-signature'] ?? '').replace(/^sha256=/, '');
-    const expected = hmac(`${timestamp}.${nonce}.${String(req.body)}`, HOOK_SECRET);
+    const expected = hookSignatureV1(HOOK_SECRET, req.method, req.path, timestamp, nonce, String(req.body));
     const valid = Boolean(timestamp && nonce && safeEqual(supplied, expected));
     if (valid) this.verifiedRequests += 1;
     return valid;
@@ -196,7 +196,9 @@ class RowboatMock {
     const body = JSON.stringify(payload);
     const timestamp = String(req.headers['x-hook-timestamp']);
     const nonce = String(req.headers['x-hook-nonce']);
-    const signature = this.badResponseSignature ? 'invalid' : hmac(`${timestamp}.${nonce}.${body}`, HOOK_SECRET);
+    const signature = this.badResponseSignature
+      ? 'invalid'
+      : hookSignatureV1(HOOK_SECRET, req.method, req.path, timestamp, nonce, body);
     res.set({
       'content-type': 'application/json',
       'x-hook-timestamp': timestamp,
@@ -420,7 +422,7 @@ describe('consent rendering and decisions', () => {
     expect(html).toContain(lowScope.description);
     expect(html.indexOf('data-tier="low"')).toBeLessThan(html.indexOf('data-tier="medium"'));
     expect(html.indexOf('data-tier="medium"')).toBeLessThan(html.indexOf('data-tier="high"'));
-    expect(html.indexOf('data-tier="high"')).toBeLessThan(html.indexOf('data-tier="money_moving"'));
+    expect(html.indexOf('data-tier="high"')).toBeLessThan(html.indexOf('data-tier="money-moving"'));
     expect(html).toContain(`data-scope="${lowScope.name}" data-required="true"`);
     expect(html).toContain(`data-scope="${mediumScope.name}" data-required="false"`);
     expect(harness.ory.acceptedConsents).toHaveLength(0);
@@ -436,7 +438,7 @@ describe('consent rendering and decisions', () => {
     expect(eventNames(harness.rowboat)).toEqual(['consent.shown', 'consent.granted']);
     expect(harness.ory.acceptedConsents).toEqual([
       expect.objectContaining({
-        grant_scope: [lowScope.name, mediumScope.name],
+        grant_scope: ['offline_access', lowScope.name, mediumScope.name],
         grant_access_token_audience: [AUDIENCE],
         session: expect.objectContaining({
           access_token: { ext: expect.objectContaining({ workos_user_id: SUBJECT }) },

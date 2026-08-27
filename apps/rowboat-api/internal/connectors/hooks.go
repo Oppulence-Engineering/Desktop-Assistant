@@ -104,6 +104,12 @@ func (h *Handler) localEntitlement(ctx context.Context, owner *ent.User, conn Co
 }
 
 func (h *Handler) isEntitled(ctx context.Context, owner *ent.User, conn Connector, scopes []string) (bool, string) {
+	if allowed, reason := h.localEntitlement(ctx, owner, conn, scopes); !allowed {
+		return false, reason
+	}
+	if conn.EntitlementURL == "" {
+		return true, ""
+	}
 	return h.productEntitlement(ctx, owner, conn, scopes)
 }
 

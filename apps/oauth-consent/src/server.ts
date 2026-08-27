@@ -93,19 +93,20 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
       if (consent.challenge !== challenge || !consent.subject) throw badRequest('consent_identity_missing');
       const hydraClientId = consent.client?.client_id;
       if (!hydraClientId) throw badRequest('consent_client_missing');
+      const requestedProductScopes = consent.requested_scope.filter((scope) => scope !== 'offline_access');
       const context = await hooks.context({
         challenge,
         workosUserId: consent.subject,
         hydraClientId,
         requestedAudience: consent.requested_access_token_audience,
-        requestedScopes: consent.requested_scope,
+        requestedScopes: requestedProductScopes,
       });
       validateContext(
         context,
         consent.subject,
         hydraClientId,
         consent.requested_access_token_audience,
-        consent.requested_scope,
+        requestedProductScopes,
       );
       const session = await store.createConsent({
         challenge,
@@ -164,7 +165,7 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
       validateSelectedScopes(session.context, selected);
       const selectedDefinitions = session.context.scopes.filter((scope) => selected.includes(scope.name));
       const needsHighConfirmation = selectedDefinitions.some(
-        (scope) => scope.tier === 'high' || scope.tier === 'money_moving',
+        (scope) => scope.tier === 'high' || scope.tier === 'money-moving',
       );
       if (needsHighConfirmation && req.body.confirm_high !== 'yes') {
         throw badRequest('high_scope_confirmation_required', 'Confirm the high-trust access before approving.');
@@ -246,7 +247,7 @@ async function finishApproval(
 ): Promise<void> {
   try {
     const { redirect_to } = await ory.acceptConsent(session.challenge, {
-      grantScope: scopes,
+      grantScope: ['offline_access', ...scopes],
       grantAudience: [session.context.connector.audience],
       workosUserId: session.subject,
     });

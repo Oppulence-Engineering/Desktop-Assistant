@@ -549,13 +549,16 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 	}()
 	txp, err := tx.OAuthPending.Query().Where(oauthpending.IDEQ(pending.ID), oauthpending.LifecycleStatusEQ("callback_completed")).Only(auth.WithInternal(ctx))
 	if err != nil {
-		_ = h.ory.revoke(context.WithoutCancel(ctx), cp.RefreshToken)
+		// Another claimant may already have committed this exact grant. Revoking
+		// here would invalidate the winning connection, so replay losers must only
+		// reject their own request.
 		connectormetrics.Lifecycle.WithLabelValues(name, "claim", "replay").Inc()
 		httpx.Error(w, http.StatusConflict, "ticket already consumed", "replay")
 		return
 	}
 	if err := txp.Update().Where(oauthpending.LifecycleStatusEQ("callback_completed")).SetLifecycleStatus("claimed").SetClaimedAt(time.Now().UTC()).Exec(auth.WithInternal(ctx)); err != nil {
-		_ = h.ory.revoke(context.WithoutCancel(ctx), cp.RefreshToken)
+		// The conditional update losing a race does not own the provider grant.
+		// The transaction winner is responsible for its lifecycle.
 		connectormetrics.Lifecycle.WithLabelValues(name, "claim", "replay").Inc()
 		httpx.Error(w, http.StatusConflict, "ticket already consumed", "replay")
 		return

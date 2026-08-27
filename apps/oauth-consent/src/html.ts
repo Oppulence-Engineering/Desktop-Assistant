@@ -1,12 +1,12 @@
 import type { ConsentSession } from './state.js';
 import type { TrustTier } from './rowboat.js';
 
-const TIER_ORDER: TrustTier[] = ['low', 'medium', 'high', 'money_moving'];
+const TIER_ORDER: TrustTier[] = ['low', 'medium', 'high', 'money-moving'];
 const TIER_LABELS: Record<TrustTier, string> = {
   low: 'Low trust',
   medium: 'Medium trust',
   high: 'High trust',
-  money_moving: 'Money-moving',
+  'money-moving': 'Money-moving',
 };
 
 export function consentPage(session: ConsentSession): string {
@@ -15,7 +15,7 @@ export function consentPage(session: ConsentSession): string {
     tier,
     scopes: context.scopes.filter((scope) => scope.tier === tier),
   })).filter(({ scopes }) => scopes.length > 0);
-  const hasHigh = context.scopes.some((scope) => scope.tier === 'high' || scope.tier === 'money_moving');
+  const hasHigh = context.scopes.some((scope) => scope.tier === 'high' || scope.tier === 'money-moving');
   const hasStepUp = context.scopes.some((scope) => scope.requires_step_up);
   const scopeGroups = grouped
     .map(
