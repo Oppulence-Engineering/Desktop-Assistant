@@ -333,6 +333,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		PublicBaseURL:         cfg.PublicBaseURL,
 		DeepLinkScheme:        cfg.DesktopDeepLinkScheme,
 		RedirectAllowlist:     cfg.ConnectorRedirectAllowlist,
+		OAuthLegacyStateWrite: cfg.ConnectorOAuthLegacyStateWrite,
 	}, log)
 	if strings.TrimSpace(cfg.BrokerTokenPrivateKey) != "" {
 		resourceTokenIssuer, issuerErr := connectors.NewRSAResourceTokenIssuer(

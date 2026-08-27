@@ -107,6 +107,31 @@ Bulk invalidation is destructive to active grants and requires incident commande
 
 Record key identifiers and timestamps, never key material.
 
+## OAuth pending-state expand and contract rollout
+
+`CONNECTOR_OAUTH_LEGACY_STATE_WRITE` is a temporary rolling-upgrade control, not
+a permanent compatibility mode. New binaries always write `state_hash` and read
+both the hash and the legacy column. With the switch disabled, the legacy column
+contains only a `sha256:` sentinel and the bearer state is never persisted.
+
+1. Deploy the expand migration and new readers while the switch remains `true`.
+   Production and staging overlays intentionally start in this mode so an old
+   callback replica can finish a flow started by a new replica.
+2. Confirm every rowboat-api replica is on the hash-aware release.
+3. Wait at least the 10-minute pending-state TTL plus clock skew. Verify no old
+   replica remains and no pre-upgrade pending flow is still active.
+4. Set `CONNECTOR_OAUTH_LEGACY_STATE_WRITE=false` in staging. Exercise start,
+   cross-replica callback, claim, and replay rejection, then verify the raw state
+   does not occur in `oauth_pendings.state` and `state_hash` matches it.
+5. Promote the same setting to production and repeat the canary checks.
+6. A later reviewed contract migration may remove the legacy lookup/column only
+   after every supported release has stopped reading it.
+
+Rollback before step 4 may restore the old application because raw state is
+still dual-written. After step 4, roll forward or require users with an
+in-flight flow to restart authorization. Never re-enable raw-state persistence
+solely to rescue an individual expired flow.
+
 ## Emergency disable and re-enable
 
 1. Add connector IDs to `CONNECTOR_EMERGENCY_DISABLED` in the environment overlay or emergency Helm override.

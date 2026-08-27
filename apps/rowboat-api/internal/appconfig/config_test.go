@@ -64,6 +64,17 @@ func TestLoadDBEncryptionKeyringSeedsLegacyKey(t *testing.T) {
 	}
 }
 
+func TestLoadConnectorOAuthLegacyStateWriteDefaultsSecureAndRequiresOptIn(t *testing.T) {
+	t.Setenv("CONNECTOR_OAUTH_LEGACY_STATE_WRITE", "")
+	if Load().ConnectorOAuthLegacyStateWrite {
+		t.Fatal("legacy OAuth state write must default off")
+	}
+	t.Setenv("CONNECTOR_OAUTH_LEGACY_STATE_WRITE", "true")
+	if !Load().ConnectorOAuthLegacyStateWrite {
+		t.Fatal("legacy OAuth state write opt-in was not loaded")
+	}
+}
+
 func TestDBEncryptionKeyringParsesExplicitRotationRing(t *testing.T) {
 	cfg := Config{
 		DBEncryptionPrimaryKeyID:   "2026-08",

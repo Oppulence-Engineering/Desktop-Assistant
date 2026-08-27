@@ -36,6 +36,11 @@ type Config struct {
 	PublicBaseURL         string
 	DeepLinkScheme        string
 	RedirectAllowlist     []string
+	// OAuthLegacyStateWrite temporarily dual-writes the raw OAuth state for
+	// pre-hash callback readers during an explicitly managed rolling upgrade.
+	// It must be disabled after old replicas and the maximum pending-state TTL
+	// have drained. Hash-only storage is the secure default.
+	OAuthLegacyStateWrite bool
 }
 
 // Handler serves the connector + connection endpoints.
@@ -294,16 +299,20 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	stateHash := hashState(state)
-	// Expand/contract compatibility: during the mixed-version window the legacy
-	// column retains raw state for old readers while all new readers prefer the
-	// digest. A later contract migration removes raw state after the maximum TTL.
+	// The required legacy column receives a non-secret sentinel by default. During
+	// an explicitly managed mixed-version window, operators may temporarily
+	// dual-write raw state so pre-hash callback readers can finish in-flight flows.
+	legacyState := "sha256:" + stateHash
+	if h.cfg.OAuthLegacyStateWrite {
+		legacyState = state
+	}
 	tx, err := h.client.Tx(r.Context())
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "could not start connection", "internal_error")
 		return
 	}
 	create := tx.OAuthPending.Create().
-		SetState(state).
+		SetState(legacyState).
 		SetStateHash(stateHash).
 		SetProvider(name).
 		SetPayloadEncrypted(sealed).

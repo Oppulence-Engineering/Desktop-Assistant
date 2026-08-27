@@ -36,6 +36,10 @@ render_environment() {
   [[ -n "$public_origin" ]] || fail "$environment PUBLIC_BASE_URL is absent from the rendered ConfigMap"
   [[ -n "$broker_issuer" ]] || fail "$environment BROKER_TOKEN_ISSUER is absent from the rendered ConfigMap"
   assert_equal "$broker_issuer" "$public_origin" "$environment broker issuer"
+	assert_equal \
+	  "$(config_value "$manifest" CONNECTOR_OAUTH_LEGACY_STATE_WRITE)" \
+	  "true" \
+	  "$environment mixed-version OAuth state rollout switch"
 }
 
 helm lint "$chart" -f "$chart/values-production.yaml" >/dev/null

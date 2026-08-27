@@ -62,6 +62,9 @@ config:
   CONNECTOR_REDIRECT_ALLOWLIST: solomon-ai://settings/connectors,https://oppulence.io/settings/connectors
   # Comma-separated incident kill switch. See docs/runbooks/connectors.md.
   CONNECTOR_EMERGENCY_DISABLED: ""
+  # Temporary expand-phase switch for mixed-version rollouts. Disable only after
+  # all pre-hash API replicas and the 10-minute pending-state TTL have drained.
+  CONNECTOR_OAUTH_LEGACY_STATE_WRITE: "true"
   # Product-owned entitlement endpoints are non-secret. Each request is signed
   # with the matching product-scoped key from CONNECTOR_ENTITLEMENT_HMAC_KEYS_JSON
   # in rowboat-api-secrets. Never reuse a key across products.

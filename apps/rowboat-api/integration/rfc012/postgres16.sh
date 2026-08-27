@@ -102,9 +102,7 @@ docker exec "$PG_NAME" pg_isready -U postgres -d rowboat_rfc012 >/dev/null
 docker exec "$PG_NAME" psql -U postgres -d rowboat_rfc012 -c 'CREATE EXTENSION IF NOT EXISTS pgcrypto' >/dev/null
 DATABASE_URL="postgres://postgres:postgres@127.0.0.1:${PG_PORT}/rowboat_rfc012?sslmode=disable"
 DATABASE_URL="$DATABASE_URL" AUTO_MIGRATE=false go run ./cmd/migrate apply >"$SCRATCH/migrate.log" 2>&1
-docker exec -i "$PG_NAME" psql -U postgres -d rowboat_rfc012 \
-  < ../oauth-consent/migrations/20260827210000_shared_state_and_audit_outbox.sql \
-  >>"$SCRATCH/migrate.log" 2>&1
+(cd ../oauth-consent && DATABASE_URL="$DATABASE_URL" npm run migrate) >>"$SCRATCH/migrate.log" 2>&1
 
 echo 'JCODE_CHECKPOINT {"message":"Starting shared Redis for cross-replica refresh serialization"}'
 docker run -d --rm --name "$REDIS_NAME" -p "127.0.0.1:${REDIS_PORT}:6379" redis:7-alpine >/dev/null

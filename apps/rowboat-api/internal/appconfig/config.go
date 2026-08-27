@@ -139,6 +139,7 @@ type Config struct {
 	ConnectorEntitlementURLsJSON              string
 	ConnectorEntitlementHMACKeysJSON          string
 	ConnectorAllowLocalEntitlementDevelopment bool
+	ConnectorOAuthLegacyStateWrite            bool
 	ConnectorEmergencyDisabled                []string
 	ConnectorRedirectAllowlist                []string
 
@@ -739,6 +740,7 @@ func Load() Config {
 		ConnectorEntitlementURLsJSON:              getenv("CONNECTOR_ENTITLEMENT_URLS_JSON", ""),
 		ConnectorEntitlementHMACKeysJSON:          getenv("CONNECTOR_ENTITLEMENT_HMAC_KEYS_JSON", ""),
 		ConnectorAllowLocalEntitlementDevelopment: getbool("CONNECTOR_ALLOW_LOCAL_ENTITLEMENT_DEVELOPMENT", false),
+		ConnectorOAuthLegacyStateWrite:            getbool("CONNECTOR_OAUTH_LEGACY_STATE_WRITE", false),
 		ConnectorEmergencyDisabled:                getcsv("CONNECTOR_EMERGENCY_DISABLED", ""),
 		ConnectorRedirectAllowlist:                getcsv("CONNECTOR_REDIRECT_ALLOWLIST", ""),
 

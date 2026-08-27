@@ -142,6 +142,11 @@ func TestRFC012PublicContract(t *testing.T) {
 		other := c.json("GET", api+"/v1/connectors", tokenB, nil)
 		require.Equal(t, 200, other.status, other.body)
 		require.NotContains(t, other.body, `"connected":true`, "tenant B observed tenant A connection")
+		// Start, callback, concurrent claim, replay, and tenant-isolation checks all
+		// intentionally share the production connector burst bucket. Let that real
+		// eight-request window roll before testing the independent cross-replica
+		// refresh path instead of weakening or bypassing the limiter.
+		time.Sleep(11 * time.Second)
 		// Two replicas refresh the same grant concurrently. Shared Redis must
 		// serialize the provider refresh while both public requests succeed.
 		mints := make([]response, 2)

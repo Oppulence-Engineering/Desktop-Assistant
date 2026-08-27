@@ -46,6 +46,10 @@ func mockOry(t *testing.T) *httptest.Server {
 }
 
 func setup(t *testing.T, registry *connectors.Registry) (*ent.Client, *ent.User, *connectors.Handler) {
+	return setupWithLegacyStateWrite(t, registry, false)
+}
+
+func setupWithLegacyStateWrite(t *testing.T, registry *connectors.Registry, legacyStateWrite bool) (*ent.Client, *ent.User, *connectors.Handler) {
 	t.Helper()
 	d, err := db.Open(context.Background(), appconfig.Config{
 		DatabaseURL: "file:" + t.Name() + "?mode=memory&cache=shared&_pragma=foreign_keys(1)",
@@ -64,6 +68,7 @@ func setup(t *testing.T, registry *connectors.Registry) (*ent.Client, *ent.User,
 		OryBrokerClientSecret: "secret",
 		PublicBaseURL:         "https://api.test",
 		DeepLinkScheme:        "solomon-ai",
+		OAuthLegacyStateWrite: legacyStateWrite,
 	}, zap.NewNop())
 	h.SetResourceTokenIssuer(newTestResourceTokenIssuer(t))
 	h.SetRefreshDedup(workosauth.NewMemoryRefreshCache(), sealer)
@@ -116,13 +121,13 @@ func TestOAuthConnectorFlow(t *testing.T) {
 		}
 	}
 
-	// During the expand/contract rollout the legacy column retains raw state so
-	// old callbacks can serve new starts, while new readers use state_hash.
+	// Secure steady-state writes never persist the bearer state. The required
+	// legacy column contains only a non-secret digest sentinel.
 	pending := client.OAuthPending.Query().FirstX(context.Background())
 	authorizeURL, _ := url.Parse(startBody.AuthorizeURL)
 	state := authorizeURL.Query().Get("state")
-	if state == "" || pending.State != state || pending.StateHash == "" {
-		t.Fatalf("pending state was not dual-written for rollout: raw=%q stored=%q hash=%q", state, pending.State, pending.StateHash)
+	if state == "" || pending.State == state || pending.StateHash == "" || pending.State != "sha256:"+pending.StateHash {
+		t.Fatalf("pending state was not hash-only: raw=%q stored=%q hash=%q", state, pending.State, pending.StateHash)
 	}
 
 	// 2. Callback (browser redirect — no user in context). It parks the grant and
@@ -210,6 +215,34 @@ func TestOAuthConnectorFlow(t *testing.T) {
 	}
 	if n := client.ConnectorAuditEvent.Query().CountX(authed); n == 0 {
 		t.Fatal("semantic connector audit events should be retained")
+	}
+}
+
+func TestOAuthStartLegacyStateWriteIsExplicit(t *testing.T) {
+	client, u, h := setupWithLegacyStateWrite(t, connectors.DefaultRegistry(), true)
+	authed := auth.WithUser(context.Background(), u)
+
+	request := httptest.NewRequest(http.MethodPost, "/v1/connections/canvas/start", nil).
+		WithContext(withParam(authed, "name", "canvas"))
+	recorder := httptest.NewRecorder()
+	h.Start(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("start: want 200, got %d: %s", recorder.Code, recorder.Body.String())
+	}
+	var body struct {
+		AuthorizeURL string `json:"authorize_url"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	authorizeURL, err := url.Parse(body.AuthorizeURL)
+	if err != nil {
+		t.Fatalf("parse authorize URL: %v", err)
+	}
+	state := authorizeURL.Query().Get("state")
+	pending := client.OAuthPending.Query().FirstX(context.Background())
+	if state == "" || pending.State != state || pending.StateHash == "" {
+		t.Fatalf("legacy rollout did not dual-write state: raw=%q stored=%q hash=%q", state, pending.State, pending.StateHash)
 	}
 }
 
