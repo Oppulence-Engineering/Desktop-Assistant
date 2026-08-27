@@ -250,6 +250,7 @@ metadata:
   name: {settings['job_name']}
   labels:
     app.kubernetes.io/name: connector-broker-client
+    app.kubernetes.io/component: hydra-client-reconciler
     app.kubernetes.io/part-of: rowboat{environment_label}
   annotations:
     connector-contract.oppulence.dev/sha256: \"{digest}\"
@@ -260,6 +261,8 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: connector-broker-client
+        app.kubernetes.io/component: hydra-client-reconciler
+        networking.rowboat.dev/hydra-admin-access: "true"
     spec:
       restartPolicy: OnFailure
       automountServiceAccountToken: false

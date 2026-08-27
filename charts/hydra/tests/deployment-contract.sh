@@ -4,8 +4,11 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 tmp_dir="$(mktemp -d)"
 hydra_container="connector-contract-hydra-${RANDOM}"
+hydra_started=0
 cleanup() {
-  docker rm -f "$hydra_container" >/dev/null 2>&1 || true
+  if [[ "$hydra_started" == "1" ]]; then
+    docker rm -f "$hydra_container" >/dev/null 2>&1 || true
+  fi
   rm -rf "$tmp_dir"
 }
 trap cleanup EXIT
@@ -20,8 +23,38 @@ command -v python3 >/dev/null || fail "python3 is required"
 
 python3 "$repo_root/charts/hydra/generate_clients.py" --check
 
+assert_render_fails() {
+  local description=$1
+  shift
+  if "$@" >"$tmp_dir/unexpected-render.out" 2>"$tmp_dir/expected-render-error.out"; then
+    fail "$description unexpectedly rendered"
+  fi
+}
+
+# Environment overlays deliberately omit database CIDRs. A deployer-owned values
+# file must supply them, and the former example /32 must never render.
+assert_render_fails "oauth-consent production without PostgreSQL CIDR" \
+  helm template oauth-consent "$repo_root/charts/oauth-consent" \
+    -f "$repo_root/charts/oauth-consent/values-production.yaml"
+assert_render_fails "oauth-consent production with placeholder PostgreSQL CIDR" \
+  helm template oauth-consent "$repo_root/charts/oauth-consent" \
+    -f "$repo_root/charts/oauth-consent/values-production.yaml" \
+    --set-string 'networkPolicy.postgresql.cidrs[0]=10.0.0.10/32'
+assert_render_fails "Hydra policy production without PostgreSQL CIDR" \
+  helm template hydra-policy "$repo_root/charts/hydra/network-policy" \
+    -f "$repo_root/charts/hydra/network-policy/values-production.yaml"
+
 # Render every chart participating in the consent-broker deployment contract.
 for environment in production staging; do
+  consent_postgres_cidr="192.0.2.25/32"
+  hydra_postgres_cidr="192.0.2.30/32"
+  if [[ "$environment" == "production" ]]; then
+    consent_namespace="rowboat"
+    hydra_namespace="ory"
+  else
+    consent_namespace="rowboat-staging"
+    hydra_namespace="ory-staging"
+  fi
   helm lint "$repo_root/charts/rowboat-api" \
     -f "$repo_root/charts/rowboat-api/values-$environment.yaml" >/dev/null
   helm template rowboat-api "$repo_root/charts/rowboat-api" \
@@ -29,17 +62,31 @@ for environment in production staging; do
     >"$tmp_dir/rowboat-api-$environment.yaml"
 
   helm lint "$repo_root/charts/oauth-consent" \
-    -f "$repo_root/charts/oauth-consent/values-$environment.yaml" >/dev/null
-  helm template oauth-consent "$repo_root/charts/oauth-consent" \
     -f "$repo_root/charts/oauth-consent/values-$environment.yaml" \
+    --set-string "networkPolicy.postgresql.cidrs[0]=$consent_postgres_cidr" >/dev/null
+  helm template oauth-consent "$repo_root/charts/oauth-consent" \
+    --namespace "$consent_namespace" \
+    -f "$repo_root/charts/oauth-consent/values-$environment.yaml" \
+    --set-string "networkPolicy.postgresql.cidrs[0]=$consent_postgres_cidr" \
     >"$tmp_dir/oauth-consent-$environment.yaml"
+
+  helm lint "$repo_root/charts/hydra/network-policy" \
+    -f "$repo_root/charts/hydra/network-policy/values-$environment.yaml" \
+    --set-string "egress.postgresql.cidrs[0]=$hydra_postgres_cidr" >/dev/null
+  helm template hydra-policy "$repo_root/charts/hydra/network-policy" \
+    --namespace "$hydra_namespace" \
+    -f "$repo_root/charts/hydra/network-policy/values-$environment.yaml" \
+    --set-string "egress.postgresql.cidrs[0]=$hydra_postgres_cidr" \
+    >"$tmp_dir/hydra-policy-$environment.yaml"
 done
 
 helm repo add ory https://k8s.ory.sh/helm/charts --force-update >/dev/null
 helm template hydra ory/hydra --version 0.55.0 \
+  --namespace ory \
   -f "$repo_root/charts/hydra/values-production.yaml" \
   >"$tmp_dir/hydra-production.yaml"
 helm template hydra ory/hydra --version 0.55.0 \
+  --namespace ory-staging \
   -f "$repo_root/charts/hydra/values-staging.yaml" \
   >"$tmp_dir/hydra-staging.yaml"
 
@@ -120,6 +167,44 @@ for environment in ("production", "staging"):
         assert f'--redirect-uri "{callback}"' in manifest
     assert f"--scope {','.join(expected_scopes)}" in manifest
     assert f"--audience {','.join(expected_audiences)}" in manifest
+    assert "app.kubernetes.io/component: hydra-client-reconciler" in manifest
+    assert 'networking.rowboat.dev/hydra-admin-access: "true"' in manifest
+
+    consent = (tmp / f"oauth-consent-{environment}.yaml").read_text()
+    hydra_policy = (tmp / f"hydra-policy-{environment}.yaml").read_text()
+    hydra = (tmp / f"hydra-{environment}.yaml").read_text()
+    consent_namespace = "rowboat" if environment == "production" else "rowboat-staging"
+    hydra_namespace = "ory" if environment == "production" else "ory-staging"
+
+    # DATABASE_URL is an explicit required Secret key for migration and runtime.
+    assert consent.count("key: DATABASE_URL") == 2
+    assert consent.count('networking.rowboat.dev/hydra-admin-access: "true"') == 1
+
+    # oauth-consent reaches Hydra Admin only through namespace AND pod selectors.
+    assert consent.count("port: 4445") == 1
+    assert f"kubernetes.io/metadata.name: {hydra_namespace}" in consent
+    assert "app.kubernetes.io/name: hydra" in consent
+    assert "app.kubernetes.io/instance: hydra" in consent
+    assert "192.0.2.25/32" in consent
+
+    # Hydra is default-deny. Admin 4445 has one allow rule with exactly the two
+    # labeled peer classes: oauth-consent and same-namespace reconcilers.
+    assert hydra_policy.count("kind: NetworkPolicy") == 4
+    assert "-default-deny" in hydra_policy
+    assert hydra_policy.count("port: 4445") == 1
+    assert f"kubernetes.io/metadata.name: {consent_namespace}" in hydra_policy
+    assert f"kubernetes.io/metadata.name: {hydra_namespace}" in hydra_policy
+    assert "app.kubernetes.io/component: oauth-consent" in hydra_policy
+    assert "app.kubernetes.io/component: hydra-client-reconciler" in hydra_policy
+    assert hydra_policy.count('networking.rowboat.dev/hydra-admin-access: "true"') == 2
+    assert "192.0.2.30/32" in hydra_policy
+    assert "0.0.0.0/0" not in hydra_policy
+
+    # Upstream Hydra labels match the policy selector. Admin metrics are disabled
+    # because the default-deny contract intentionally excludes monitoring pods.
+    assert "app.kubernetes.io/name: hydra" in hydra
+    assert "app.kubernetes.io/instance: hydra" in hydra
+    assert "kind: ServiceMonitor" not in hydra
 
 # Keep the operator-facing verifier example tied to the checked-in generated contract.
 example = {}
@@ -181,6 +266,7 @@ if [[ "${SKIP_REAL_HYDRA_FIXTURE:-0}" != "1" ]]; then
     oryd/hydra:v2.2.0 serve all --dev >/dev/null; then
     fail "could not start Hydra fixture, ensure ports 4444 and 4445 are free"
   fi
+  hydra_started=1
   ready=0
   for _ in $(seq 1 60); do
     if curl --fail --silent http://127.0.0.1:4445/health/ready >/dev/null 2>&1; then

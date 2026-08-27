@@ -31,18 +31,20 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   disableDefaultCNI: true
+  podSubnet: 192.168.0.0/16
 nodes:
   - role: control-plane
 YAML
 
 echo 'JCODE_CHECKPOINT {"message":"Building oauth-consent and creating policy-enforcing kind cluster"}'
 docker build -t "$consent_image" "$repo_root/apps/oauth-consent"
-kind create cluster --name "$cluster_name" --config "$scratch/kind.yaml" --wait 120s
+kind create cluster --name "$cluster_name" --config "$scratch/kind.yaml"
 kind load docker-image "$consent_image" --name "$cluster_name"
 
 kubectl apply -f "https://raw.githubusercontent.com/projectcalico/calico/${calico_version}/manifests/calico.yaml"
 kubectl -n kube-system rollout status daemonset/calico-node --timeout=240s
 kubectl -n kube-system rollout status deployment/calico-kube-controllers --timeout=240s
+kubectl wait --for=condition=Ready nodes --all --timeout=240s
 
 for namespace in database ory rowboat other ingress-nginx; do
   kubectl create namespace "$namespace"
@@ -101,9 +103,9 @@ spec:
             - { name: DSN, value: memory }
             - { name: SECRETS_SYSTEM, value: acceptance-system-secret-at-least-32-bytes }
             - { name: SECRETS_COOKIE, value: acceptance-cookie-secret-at-least-32-bytes }
-            - { name: URLS_SELF_ISSUER, value: http://hydra-public.ory.svc.cluster.local:4444 }
-            - { name: URLS_LOGIN, value: http://oauth-consent.rowboat.svc.cluster.local/login }
-            - { name: URLS_CONSENT, value: http://oauth-consent.rowboat.svc.cluster.local/consent }
+            - { name: URLS_SELF_ISSUER, value: "http://hydra-public.ory.svc.cluster.local:4444" }
+            - { name: URLS_LOGIN, value: "http://oauth-consent.rowboat.svc.cluster.local/login" }
+            - { name: URLS_CONSENT, value: "http://oauth-consent.rowboat.svc.cluster.local/consent" }
           ports:
             - { name: public, containerPort: 4444 }
             - { name: admin, containerPort: 4445 }
@@ -160,12 +162,15 @@ spec:
             - { name: DSN, value: memory }
             - { name: SECRETS_SYSTEM, value: acceptance-impostor-system-secret-32-bytes }
             - { name: SECRETS_COOKIE, value: acceptance-impostor-cookie-secret-32-bytes }
-            - { name: URLS_SELF_ISSUER, value: http://hydra-impostor.other.svc.cluster.local:4444 }
-            - { name: URLS_LOGIN, value: http://invalid.example/login }
-            - { name: URLS_CONSENT, value: http://invalid.example/consent }
+            - { name: URLS_SELF_ISSUER, value: "http://hydra-impostor.other.svc.cluster.local:4444" }
+            - { name: URLS_LOGIN, value: "http://invalid.example/login" }
+            - { name: URLS_CONSENT, value: "http://invalid.example/consent" }
           ports:
             - { name: public, containerPort: 4444 }
             - { name: admin, containerPort: 4445 }
+          readinessProbe:
+            httpGet: { path: /health/ready, port: admin }
+            periodSeconds: 2
 ---
 apiVersion: v1
 kind: Service
@@ -218,7 +223,7 @@ table="$(kubectl -n database exec deployment/postgres -- psql -U oauth_consent -
 # /readyz performs a real database query and must return 200 through the Service.
 kubectl -n rowboat run ready-probe --rm -i --restart=Never \
   --image=curlimages/curl:8.12.1 -- \
-  curl --fail --silent --max-time 10 http://oauth-consent-oauth-consent:3000/readyz \
+  curl --fail --silent --max-time 10 http://oauth-consent-oauth-consent/readyz \
   | grep -q '"status":"ok"' || fail "oauth-consent /readyz did not return 200"
 
 consent_pod="$(kubectl -n rowboat get pod -l app.kubernetes.io/component=oauth-consent -o jsonpath='{.items[0].metadata.name}')"

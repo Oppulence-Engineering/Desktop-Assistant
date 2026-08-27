@@ -6,6 +6,7 @@ metadata:
   name: connector-broker-client
   labels:
     app.kubernetes.io/name: connector-broker-client
+    app.kubernetes.io/component: hydra-client-reconciler
     app.kubernetes.io/part-of: rowboat
   annotations:
     connector-contract.oppulence.dev/sha256: "90b1719522831babbd19b2784771d59a732619e1441f77908b0b839788987b8d"
@@ -16,6 +17,8 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: connector-broker-client
+        app.kubernetes.io/component: hydra-client-reconciler
+        networking.rowboat.dev/hydra-admin-access: "true"
     spec:
       restartPolicy: OnFailure
       automountServiceAccountToken: false
